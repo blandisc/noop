@@ -36,8 +36,9 @@ struct RoutineBuilderScreen: View {
     @State private var items: [BuilderItem] = []
     @State private var loaded = false
     @State private var showLibrary = false
-    /// Which exercise's rest is being edited (drives the rest sheet); nil = none.
-    @State private var restEdit: RestEditWrap? = nil
+    /// Which set's rest is being edited (drives the 1e push); nil = none. Rest is per-set now (choque 3):
+    /// each set carries its own `RestConfig` override, edited in the shared `RestEditorScreen`.
+    @State private var restTarget: RestEditTarget? = nil
     @FocusState private var focusedCell: String?
 
     private let routineId: String
@@ -69,6 +70,26 @@ struct RoutineBuilderScreen: View {
                     Button("Done") { focusedCell = nil }.foregroundStyle(theme.ink)
                 }
             }
+            // 1e as a push (choque 3): the shared `RestEditorScreen` edits one set's rest, with a
+            // «this set / all sets» scope. In the builder every change lands on the routine at «Save», so
+            // the «save to routine» toggle is off (persistsToRoutine: false).
+            .navigationDestination(item: $restTarget) { t in
+                RestEditorScreen(
+                    theme: theme,
+                    exerciseName: StrengthDisplay.name(items[t.ei].exercise),
+                    setNumber: workSetNumber(t.ei, t.si),
+                    current: effectiveRest(t.ei, t.si),
+                    persistsToRoutine: false,
+                    restingHR: nil, maxHR: nil,
+                    defaultApplyToAll: false,
+                    onCancel: { restTarget = nil },
+                    onApply: { config, applyToAll, _ in
+                        applyRest(ei: t.ei, si: t.si, config: config, applyToAll: applyToAll)
+                        restTarget = nil
+                    }
+                )
+                .toolbar(.hidden, for: .navigationBar)   // RestEditorScreen draws its own back/cancel header
+            }
         }
         .task {
             guard !loaded else { return }
@@ -78,10 +99,6 @@ struct RoutineBuilderScreen: View {
         .sheet(isPresented: $showLibrary) {
             ExerciseLibraryScreen { picks in append(picks) }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
-        }
-        .sheet(item: $restEdit) { wrap in
-            restSheet(wrap.index)
-                .instrumentoTheme(theme).preferredColorScheme(.light)
         }
     }
 
@@ -126,7 +143,6 @@ struct RoutineBuilderScreen: View {
                         }
                 }
                 addSetRow(idx).plainRow(top: 4)
-                if lastOfGroup(idx) { restRow(idx).plainRow(top: NoopMetrics.gap) }
             }
             addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: NoopMetrics.screenPadding)
         }
@@ -178,18 +194,19 @@ struct RoutineBuilderScreen: View {
         }
     }
 
-    /// Quiet column header (SET · KG · REPS, gated by exercise type) with a hairline underline.
+    /// Quiet column header (SET · KG · REPS · REST, gated by exercise type) with a hairline underline.
     @ViewBuilder
     private func columnHeader(_ type: ExerciseType) -> some View {
-        HStack(spacing: 10) {
-            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 34, alignment: .leading)
-            Spacer(minLength: 0)
+        HStack(spacing: 8) {
+            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 30, alignment: .leading)
             if showsWeight(type) {
-                Text(StrengthDisplay.weightUnit(system)).instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 76)
+                Text(StrengthDisplay.weightUnit(system)).instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 62)
             }
             if showsReps(type) {
-                Text("Reps").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 76)
+                Text("Reps").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 62)
             }
+            Spacer(minLength: 0)
+            Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
         }
         .padding(.bottom, 4)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -200,21 +217,59 @@ struct RoutineBuilderScreen: View {
     private func setRow(idx: Int, si: Int) -> some View {
         let set = items[idx].re.sets[si]
         let type = items[idx].exercise.type
-        return HStack(spacing: 10) {
+        return HStack(spacing: 8) {
             Text(setLabel(idx: idx, si: si))
                 .font(set.kind == .warmup ? StrandFont.caption.weight(.semibold) : StrandFont.body)
                 .foregroundStyle(set.kind == .warmup ? theme.inkTertiary : theme.inkSecondary)
-                .monospacedDigit().frame(width: 34, alignment: .leading)
-            Spacer(minLength: 0)
+                .monospacedDigit().frame(width: 30, alignment: .leading)
             if showsWeight(type) {
                 cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad)
             }
             if showsReps(type) {
                 cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad)
             }
+            Spacer(minLength: 6)
+            restChip(idx: idx, si: si)
         }
         .frame(minHeight: 46)
         .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
+    }
+
+    // MARK: - Per-set rest chip (→ 1e push)
+    //
+    // Each set carries its own rest (choque 3): the chip shows this set's EFFECTIVE rest (its own override,
+    // or the exercise's rest as fallback). Time reads in ink; an HR threshold reads in the recovery green,
+    // because the threshold is a datum. Tapping pushes the shared `RestEditorScreen` (1e).
+
+    private func restChip(idx: Int, si: Int) -> some View {
+        let cfg = effectiveRest(idx, si)
+        let isHR = cfg.mode == .heartRate
+        return Button { focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si) } label: {
+            HStack(spacing: 5) {
+                Text(restChipLabel(cfg)).font(StrandFont.caption).monospacedDigit()
+                    .foregroundStyle(isHR ? theme.dataRecovery : theme.ink).lineLimit(1)
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.horizontal, 9).padding(.vertical, 5)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(isHR ? theme.dataRecovery : theme.hairline, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Edit rest for this set"))
+    }
+
+    /// The chip's compact label (mock 1d): «1 min» / «90 s» for time, «FC · N%» for the HR threshold.
+    /// The HR prefix is localized on its own so the literal «%» never lands in a format-string key.
+    private func restChipLabel(_ cfg: RestConfig) -> String {
+        if cfg.mode == .heartRate {
+            let pct = Int((cfg.hrValue * 100).rounded())
+            guard pct > 0 else { return String(localized: "by HR") }
+            return String(localized: "HR", comment: "compact chip prefix for a heart-rate rest threshold") + " · \(pct)%"
+        }
+        let s = cfg.seconds
+        return s % 60 == 0 ? String(localized: "\(s / 60) min") : String(localized: "\(s) s")
     }
 
     /// «C» for a warm-up set; otherwise its position among the work sets (1-based, warm-ups don't count).
@@ -246,43 +301,6 @@ struct RoutineBuilderScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - Rest row (tappable → rest editor sheet; one per group)
-
-    private func restRow(_ idx: Int) -> some View {
-        Button { restEdit = RestEditWrap(index: idx) } label: {
-            HStack(spacing: 7) {
-                Image(systemName: "clock").font(.system(size: 13)).foregroundStyle(theme.inkTertiary)
-                Text(inSuperset(idx) ? "Rest after the round" : "Rest").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Text(restLabel(items[idx].re)).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 40).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func restLabel(_ re: RoutineExercise) -> String {
-        re.restMode == .heartRate ? String(localized: "by HR") : "\(re.restSeconds) s"
-    }
-
-    private func restSheet(_ idx: Int) -> some View {
-        NavigationStack {
-            List {
-                RestEditor(restMode: $items[idx].re.restMode, restSeconds: $items[idx].re.restSeconds,
-                           hrRestReference: $items[idx].re.hrRestReference, hrRestValue: $items[idx].re.hrRestValue)
-                    .plainRow()
-            }
-            .listStyle(.plain).scrollContentBackground(.hidden)
-            .background(theme.paper.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(theme.paper, for: .navigationBar)
-            .toolbar { ToolbarItem(placement: .confirmationAction) {
-                Button("Done") { restEdit = nil }.foregroundStyle(theme.ink) } }
-        }
-        .presentationDetents([.medium])
     }
 
     private var addExerciseRow: some View {
@@ -340,6 +358,37 @@ struct RoutineBuilderScreen: View {
 
     private func renumber(_ idx: Int) {
         for i in items[idx].re.sets.indices { items[idx].re.sets[i].position = i }
+    }
+
+    // MARK: - Per-set rest resolution (F0 model)
+
+    /// This set's effective rest: its own override if set, else the exercise's rest fields (the F0 fallback).
+    private func effectiveRest(_ ei: Int, _ si: Int) -> RestConfig {
+        if let r = items[ei].re.sets[si].rest { return r }
+        let re = items[ei].re
+        return RestConfig(mode: re.restMode, seconds: re.restSeconds,
+                          hrReference: re.hrRestReference, hrValue: re.hrRestValue)
+    }
+
+    /// 1-based work-set number for the 1e overline (nil for a warm-up «C» set).
+    private func workSetNumber(_ ei: Int, _ si: Int) -> Int? {
+        guard items[ei].re.sets[si].kind == .work else { return nil }
+        return items[ei].re.sets[0...si].filter { $0.kind == .work }.count
+    }
+
+    /// Apply an edited rest from 1e. «This set» writes that set's override; «All sets» writes the
+    /// exercise-level rest fields and clears every per-set override so the whole exercise inherits it.
+    private func applyRest(ei: Int, si: Int, config: RestConfig, applyToAll: Bool) {
+        guard items.indices.contains(ei), items[ei].re.sets.indices.contains(si) else { return }
+        if applyToAll {
+            items[ei].re.restMode = config.mode
+            items[ei].re.restSeconds = config.seconds
+            items[ei].re.hrRestReference = config.hrReference
+            items[ei].re.hrRestValue = config.hrValue
+            for i in items[ei].re.sets.indices { items[ei].re.sets[i].rest = nil }
+        } else {
+            items[ei].re.sets[si].rest = config
+        }
     }
 
     // MARK: - Exercise mutations
@@ -423,8 +472,8 @@ private struct BuilderItem: Identifiable {
     var id: String { re.id }
 }
 
-/// Identifiable wrapper so the rest sheet can edit one exercise's rest by index.
-private struct RestEditWrap: Identifiable { let index: Int; var id: Int { index } }
+/// Identifies the set whose rest the 1e editor is editing (exercise index + set index).
+private struct RestEditTarget: Identifiable, Hashable { let ei: Int; let si: Int; var id: String { "\(ei)-\(si)" } }
 
 // Shared list-row chrome: clear background, no system separator (rows draw their own hairline), standard
 // screen margin with tunable vertical insets — a plain List that reproduces «Instrumento» spacing.
