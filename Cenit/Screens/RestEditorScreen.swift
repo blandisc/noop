@@ -1,6 +1,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import StrandAnalytics
 
 // MARK: - Rest editor (1e, FER-716)
 //
@@ -46,9 +47,11 @@ struct RestEditorScreen: View {
         _saveToRoutine = State(initialValue: persistsToRoutine)
     }
 
+    /// The Karvonen-reserve threshold in bpm, from the SAME cited single source the rest engine uses at
+    /// runtime (`RestTarget.resolve`, Karvonen 1957) — never a forked copy of the formula (FER-716).
     private var thresholdBpm: Int? {
-        guard let r = restingHR, let m = maxHR, m > r else { return nil }
-        return Int((r + reserve * (m - r)).rounded())
+        RestTarget.resolve(reference: .karvonenReserve, value: reserve,
+                           peakHR: nil, restingHR: restingHR, maxHR: maxHR)
     }
 
     var body: some View {
@@ -205,7 +208,5 @@ struct RestEditorScreen: View {
         .padding(.top, 4)
     }
 
-    static func clock(_ seconds: Int) -> String {
-        String(format: "%d:%02d", seconds / 60, seconds % 60)
-    }
+    static func clock(_ seconds: Int) -> String { SessionClock.format(seconds) }
 }

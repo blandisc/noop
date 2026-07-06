@@ -18,6 +18,35 @@ public extension View {
     }
 }
 
+// MARK: - Pattern block
+
+public extension View {
+    /// The «patrón/conexión» block idiom (FER-708): a `patternBlock` fill with the top/bottom-right
+    /// corners rounded (0/0/8/8) and a 2.5 pt colored bar down the leading edge. Single source so the
+    /// Today brief and the strength receipt share one geometry (FER-716).
+    func patternBlock(_ theme: InstrumentoTheme, bar: Color, cornerRadius: CGFloat = 8) -> some View {
+        background(theme.patternBlock,
+                   in: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
+                                              bottomTrailingRadius: cornerRadius,
+                                              topTrailingRadius: cornerRadius, style: .continuous))
+            .overlay(alignment: .leading) { Rectangle().fill(bar).frame(width: 2.5) }
+    }
+}
+
+// MARK: - Duration formatting
+
+/// The one duration formatter for the Entrenar flow (FER-716): «M:SS» under an hour, «H:MM:SS»
+/// past it. A single source so the session clock, rest countdown, cardio stopwatch, receipt
+/// duration and the pill never drift (nor silently show «74:00» on a long session).
+public enum SessionClock {
+    public static func format(_ seconds: Int) -> String {
+        let s = max(0, seconds)
+        let h = s / 3600, m = (s % 3600) / 60, sec = s % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, sec)
+                     : String(format: "%d:%02d", m, sec)
+    }
+}
+
 // MARK: - Session progress bar
 
 /// The strength session's progress: one segment per exercise, its width ∝ its set count, filled

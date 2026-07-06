@@ -377,7 +377,7 @@ private struct ActiveSessionPillHost: View {
         if let session = model.strengthSession {
             let theme = InstrumentoTheme.base
             TimelineView(.periodic(from: .now, by: 1)) { context in
-                let elapsed = Self.clock(startTs: session.startTs, now: context.date)
+                let elapsed = SessionClock.format(Int(context.date.timeIntervalSince1970) - session.startTs)
                 SessionPill(
                     routineName: session.routineName,
                     elapsed: elapsed,
@@ -395,13 +395,6 @@ private struct ActiveSessionPillHost: View {
     private func pillLabel(_ name: String, _ elapsed: String, _ bpm: Int?) -> Text {
         if let bpm { return Text("Active session: \(name), \(elapsed), heart rate \(bpm)") }
         return Text("Active session: \(name), \(elapsed)")
-    }
-
-    /// «M:SS» / «H:MM:SS» from the session start to now (never negative).
-    static func clock(startTs: Int, now: Date) -> String {
-        let secs = max(0, Int(now.timeIntervalSince1970) - startTs)
-        let h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60
-        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
     }
 }
 #endif

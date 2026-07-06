@@ -654,10 +654,14 @@ final class AppModel: ObservableObject {
         if let rid = record.routineId,
            let prev = ((try? await store.recentSessions(limit: 100)) ?? [])
                .first(where: { $0.routineId == rid && $0.id != record.id && $0.startTs < record.startTs }) {
-            let agg = ((try? await store.sessionVolumes()) ?? [:])[prev.id]
-            comparison = .init(prevVolumeKg: agg?.volumeKg ?? 0,
-                               prevSetCount: agg?.setCount ?? 0,
-                               prevDurationS: max(0, (prev.endTs ?? prev.startTs) - prev.startTs))
+            // Aggregate that one prior session directly (targeted read), instead of a full-table
+            // GROUP BY over every set of every session (`sessionVolumes()`, which feeds the FER-504 list).
+            let prevWork = ((try? await store.setEntries(sessionId: prev.id)) ?? [])
+                .filter { $0.kind == .work && $0.done }
+            comparison = .init(
+                prevVolumeKg: prevWork.reduce(0.0) { $0 + (($1.weightKg ?? 0) * Double($1.reps ?? 0)) },
+                prevSetCount: prevWork.count,
+                prevDurationS: max(0, (prev.endTs ?? prev.startTs) - prev.startTs))
         }
 
         // «Por ejercicio» (FER-716): one row per exercise with logged sets, in plan order, carrying the

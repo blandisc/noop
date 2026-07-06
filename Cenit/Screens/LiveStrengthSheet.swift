@@ -79,6 +79,13 @@ struct StrengthSummary: Equatable {
         var prevVolumeKg: Double
         var prevSetCount: Int
         var prevDurationS: Int
+
+        /// The volume change vs last time, as a rounded percent — single-sourced so the headline and
+        /// the comparison bar never disagree. `nil` when there's no prior volume to compare against.
+        func volumeDeltaPct(_ currentVolumeKg: Double) -> Int? {
+            guard prevVolumeKg > 0 else { return nil }
+            return Int((((currentVolumeKg - prevVolumeKg) / prevVolumeKg) * 100).rounded())
+        }
     }
 
     /// One «Por ejercicio» row: logged sets, the session's top datum for its type, and the trend
@@ -218,8 +225,6 @@ final class StrengthSessionModel: ObservableObject {
 
     // MARK: Editing the current set
 
-    func setCurrentWeight(_ kg: Double) { mutateCurrentSet { $0.weightKg = max(0, kg) } }
-    func setCurrentReps(_ reps: Int) { mutateCurrentSet { $0.reps = max(0, reps) } }
     func bumpWeight(byKg delta: Double) { mutateCurrentSet { $0.weightKg = max(0, $0.weightKg + delta) } }
     func bumpReps(_ delta: Int) { mutateCurrentSet { $0.reps = max(0, $0.reps + delta) } }
     func bumpDistance(byMeters delta: Double) { mutateCurrentSet { $0.distanceM = max(0, ($0.distanceM ?? 0) + delta) } }
@@ -1690,9 +1695,8 @@ struct LiveStrengthSheet: View {
     private func achievementLine(_ s: StrengthSummary) -> String {
         if s.prs.count == 1 { return String(localized: "A new personal record.") }
         if s.prs.count > 1 { return String(localized: "\(s.prs.count) new personal records.") }
-        if let c = s.comparison, c.prevVolumeKg > 0, s.volumeKg > c.prevVolumeKg {
-            let pct = Int((((s.volumeKg - c.prevVolumeKg) / c.prevVolumeKg) * 100).rounded())
-            if pct >= 1 { return String(localized: "+\(pct)% volume vs your last one.") }
+        if let pct = s.comparison?.volumeDeltaPct(s.volumeKg), pct >= 1 {
+            return String(localized: "+\(pct)% volume vs your last one.")
         }
         if s.isFirstTime { return String(localized: "First time with this routine.") }
         return String(localized: "\(s.setCount) sets logged.")
@@ -1767,11 +1771,7 @@ struct LiveStrengthSheet: View {
                 .fixedSize()
             }
             .padding(.leading, 12).padding(.trailing, 12).padding(.vertical, 9)
-            .background(theme.patternBlock,
-                        in: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
-                                                   bottomTrailingRadius: 8, topTrailingRadius: 8,
-                                                   style: .continuous))
-            .overlay(alignment: .leading) { Rectangle().fill(theme.dataStrain).frame(width: 2.5) }
+            .patternBlock(theme, bar: theme.dataStrain)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1782,8 +1782,7 @@ struct LiveStrengthSheet: View {
     /// session of the SAME routine. The tick marks last time; the bar is this session.
     private func receiptComparison(_ s: StrengthSummary, _ c: StrengthSummary.Comparison) -> some View {
         let volDelta: String = {
-            guard c.prevVolumeKg > 0 else { return "=" }
-            let pct = Int((((s.volumeKg - c.prevVolumeKg) / c.prevVolumeKg) * 100).rounded())
+            guard let pct = c.volumeDeltaPct(s.volumeKg) else { return "=" }
             return pct == 0 ? "=" : (pct > 0 ? "+\(pct)%" : "−\(-pct)%")
         }()
         let setsDelta = s.setCount == c.prevSetCount
@@ -1942,11 +1941,7 @@ struct LiveStrengthSheet: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.patternBlock,
-                    in: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
-                                               bottomTrailingRadius: 8, topTrailingRadius: 8,
-                                               style: .continuous))
-        .overlay(alignment: .leading) { Rectangle().fill(bandColor(band)).frame(width: 2.5) }
+        .patternBlock(theme, bar: bandColor(band))
         .accessibilityElement(children: .combine)
     }
 
@@ -2111,9 +2106,7 @@ struct LiveStrengthSheet: View {
     private func displayWeight(_ kg: Double) -> Double { imperial ? UnitFormatter.kgToPounds(kg) : kg }
     private func massText(_ kg: Double) -> String { massString(kg, units: units) }
 
-    static func clock(_ seconds: Int) -> String {
-        String(format: "%d:%02d", seconds / 60, seconds % 60)
-    }
+    static func clock(_ seconds: Int) -> String { SessionClock.format(seconds) }
 }
 
 /// Strips a `List` row down to the warm-paper language: one screen margin, no native background, no native
