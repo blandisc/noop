@@ -568,6 +568,11 @@ struct MetricInfoSheet: View {
     /// `info.usesLevels`; nil otherwise. Loaded lazily on appear.
     var levelsSeriesLoader: (() async -> [(day: String, value: Double)])? = nil
 
+    /// FER-710 · «Tu patrón»: the WhatMovesIt findings for this metric, supplied by the caller. Only HRV
+    /// and resting HR carry any (the engine returns [] for the rest), so the block hides itself on the
+    /// other vitals. Default empty → hidden.
+    var whatMovesIt: [WhatMovesItFinding] = []
+
     @State private var strainCurve: [TrendPoint] = []
     @State private var strainLoading = false
     @State private var heartRateCurve: [TrendPoint] = []
@@ -648,6 +653,13 @@ struct MetricInfoSheet: View {
                     headlineText
                     if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
                     levelsBlock
+                } else if isVitalTemplate {
+                    // F2 (FER-710): the six vitals — data-driven verdict reading under the hero, the level
+                    // instrument, then «Tu patrón» (only where WhatMovesIt has an honest finding: HRV / FC).
+                    vitalReading
+                    headlineText
+                    levelsBlock
+                    vitalPatternBlock
                 } else {
                     headlineText
                     if info.usesLevels {
@@ -853,6 +865,86 @@ struct MetricInfoSheet: View {
             originDot("Band · last night", color: metricHue)
         } else {
             originDot("Band", color: metricHue)
+        }
+    }
+
+    /// The active level for today's reading — the same classification the level instrument highlights —
+    /// resolved from the metric's levels + today's value. nil with no reading or no levels yet. (FER-710)
+    private var activeLevelKey: String? {
+        guard let levels = resolvedLevels, let v = info.levelsTodayValue else { return nil }
+        return levels.first { lvl in
+            (lvl.lower.map { v >= $0 } ?? true) && (lvl.upper.map { v < $0 } ?? true)
+        }?.key
+    }
+
+    /// The vital's data-driven verdict under the hero: a short honest phrase for WHERE today's reading sits
+    /// on the metric's own levels — never a fixed direction claim, so it can't contradict the day's data
+    /// (repo rule: transparent, honest copy). nil hides it (no reading / no level yet). (FER-710)
+    @ViewBuilder private var vitalReading: some View {
+        if let phrase = vitalReadingText {
+            Text(phrase)
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var vitalReadingText: LocalizedStringKey? {
+        guard let key = activeLevelKey else { return nil }
+        switch (info.id, key) {
+        case ("hrv", "above"):        return "Above your base, a good sign."
+        case ("hrv", "inBase"):       return "In your usual range."
+        case ("hrv", "below"):        return "Below your base, worth a look."
+        case ("rhr", "athlete"):      return "Very low, athlete range."
+        case ("rhr", "excellent"):    return "Low, a strong sign."
+        case ("rhr", "normal"):       return "In a normal range."
+        case ("rhr", "elevated"):     return "Above your usual, worth a look."
+        case ("spo2", "normal"):      return "In a normal range."
+        case ("spo2", "low"):         return "Below the typical range."
+        case ("steps", "veryActive"): return "Very active today."
+        case ("steps", "active"):     return "Active, a solid day."
+        case ("steps", "sedentary"):  return "Quiet so far today."
+        case ("stress", "low"):       return "Low, a calm day so far."
+        case ("stress", "medium"):    return "Moderate so far today."
+        case ("stress", "high"):      return "Running high today."
+        case ("resp_rate", "normal"):   return "In a normal range."
+        case ("resp_rate", "elevated"): return "Above your usual."
+        default: return nil
+        }
+    }
+
+    /// «Tu patrón» (FER-710): one honest line per WhatMovesIt finding — a paper block with the metric-hue
+    /// left bar (the handoff's «patrón/conexión» shape). Only HRV and resting HR carry findings; for the
+    /// other vitals `whatMovesIt` is empty and the block disappears. Copy shared with the detail. (FER-209)
+    @ViewBuilder private var vitalPatternBlock: some View {
+        if !whatMovesIt.isEmpty {
+            HStack(spacing: 0) {
+                Rectangle().fill(metricHue).frame(width: 2.5)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Your pattern").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    ForEach(whatMovesIt) { f in
+                        Text(Self.whatMovesItPhrase(f))
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(14)
+                Spacer(minLength: 0)
+            }
+            .background(theme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    /// The metric-agnostic «Tu patrón» sentence per finding — same copy the detail uses (FER-209), so both
+    /// surfaces read identically.
+    private static func whatMovesItPhrase(_ f: WhatMovesItFinding) -> LocalizedStringKey {
+        switch (f.relationship, f.trend) {
+        case (.sleepDuration, .rises): return "Tends to run higher on nights you sleep more."
+        case (.sleepDuration, .falls): return "Tends to run lower on nights you sleep more."
+        case (.priorStrain, .rises):   return "Tends to rise the day after a hard effort."
+        case (.priorStrain, .falls):   return "Tends to dip the day after a hard effort."
         }
     }
 
@@ -1660,8 +1752,9 @@ struct MetricInfoSheet: View {
             // border — drills into the same rich detail Cuerpo opens (the handoff foot button).
             Button(action: action) {
                 HStack(spacing: 7) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 14, weight: .medium))
+                    // The actual «Tendencias» screen glyph (curve-with-nodes), not a generic chart icon. (FER-710)
+                    TendenciasGlyph(color: theme.ink, lineWidth: 1.8)
+                        .frame(width: 15, height: 15)
                     Text("See more in Trends")
                         .font(StrandFont.subhead.weight(.medium))
                 }

@@ -1,6 +1,246 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Above your base, a good sign.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your base, a good sign."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de tu base, buena señal."
+          }
+        }
+      }
+    },
+    "In your usual range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In your usual range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tu rango de siempre."
+          }
+        }
+      }
+    },
+    "Below your base, worth a look.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below your base, worth a look."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo de tu base, vale la pena mirarlo."
+          }
+        }
+      }
+    },
+    "Very low, athlete range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very low, athlete range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy baja, rango de atleta."
+          }
+        }
+      }
+    },
+    "Low, a strong sign.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low, a strong sign."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja, buena señal."
+          }
+        }
+      }
+    },
+    "In a normal range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In a normal range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En un rango normal."
+          }
+        }
+      }
+    },
+    "Above your usual, worth a look.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your usual, worth a look."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de lo usual, vale la pena mirarlo."
+          }
+        }
+      }
+    },
+    "Below the typical range.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below the typical range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo del rango típico."
+          }
+        }
+      }
+    },
+    "Very active today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Very active today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy activo hoy."
+          }
+        }
+      }
+    },
+    "Active, a solid day.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active, a solid day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo, un buen día."
+          }
+        }
+      }
+    },
+    "Quiet so far today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiet so far today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tranquilo hasta ahora."
+          }
+        }
+      }
+    },
+    "Low, a calm day so far.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low, a calm day so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajo, un día tranquilo hasta ahora."
+          }
+        }
+      }
+    },
+    "Moderate so far today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate so far today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderado hasta ahora."
+          }
+        }
+      }
+    },
+    "Running high today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running high today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alto hoy."
+          }
+        }
+      }
+    },
+    "Above your usual.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your usual."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima de lo usual."
+          }
+        }
+      }
+    },
     "Band · last night": {
       "localizations": {
         "en": {

@@ -490,7 +490,8 @@ struct TodayView: View {
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id),
             onSeeMore: seeMoreAction(for: info.id),
-            levelsSeriesLoader: levelsSeriesLoader(for: info.id)
+            levelsSeriesLoader: levelsSeriesLoader(for: info.id),
+            whatMovesIt: whatMovesItFindings(for: info.id)
         )
     }
 
