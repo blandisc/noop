@@ -193,8 +193,10 @@ public final class BLEManager: NSObject, ObservableObject {
     /// Re-entrancy guard for captureRawAccel: true while a bounded on-demand window is running.
     /// A second tap is a no-op until the active capture's asyncAfter block fires and clears this.
     private var rawCaptureInFlight = false
-    /// Ordered queue of frames awaiting drain through the serial Backfiller task.
-    private var backfillFrameQueue: [[UInt8]] = []
+    /// Ordered queue of frames awaiting drain through the serial Backfiller task. Each entry keeps
+    /// the ParsedFrame produced by the single per-frame parse in `didUpdateValueFor` (FER-183) so
+    /// the Backfiller never re-parses offload bytes (FER-752).
+    private var backfillFrameQueue: [(frame: [UInt8], parsed: ParsedFrame)] = []
     /// The single in-flight drain task, or nil when idle. Acts as the re-entrancy guard: while it is
     /// non-nil no second drain is launched, so frames are only ever consumed by ONE drain loop — even
     /// if the queue/flags are reset mid-flight on a disconnect. Replaces a bare Bool flag that could be
@@ -680,8 +682,8 @@ public final class BLEManager: NSObject, ObservableObject {
     /// Feed a frame to the Backfiller preserving exact arrival order. Frames are appended
     /// synchronously (delegate order) and drained sequentially in small slices, so START /
     /// data / END chunk assembly is never reordered while the UI still gets time to paint.
-    private func routeBackfillFrame(_ frame: [UInt8]) {
-        backfillFrameQueue.append(frame)
+    private func routeBackfillFrame(_ frame: [UInt8], parsed: ParsedFrame) {
+        backfillFrameQueue.append((frame: frame, parsed: parsed))
         if backfillDrainTask != nil { return }   // a drain is already running — it will pick up this frame
         backfillDrainTask = Task { @MainActor in
             await drainBackfillFrames()
@@ -697,7 +699,7 @@ public final class BLEManager: NSObject, ObservableObject {
             backfillFrameQueue.removeFirst(count)
 
             for f in batch {
-                await backfiller?.ingest(f)
+                await backfiller?.ingest(f.frame, parsed: f.parsed)
                 afterBackfillIngest()
                 if !backfilling {
                     backfillFrameQueue.removeAll(keepingCapacity: true)
@@ -1771,7 +1773,7 @@ extension BLEManager: CBPeripheralDelegate {
                     // the Backfiller; parsing every record through FrameRouter updates SwiftUI for
                     // no user-visible benefit and can make the app feel hung during long offloads.
                     armBackfillTimeout()
-                    routeBackfillFrame(frame)
+                    routeBackfillFrame(frame, parsed: parsed)   // parse-once: reuse the ParsedFrame (FER-752)
                     // …but a REAL-TIME physical gesture (double-tap / wrist) must still fire even mid-
                     // offload (#69). Gated on ts≈now so replayed historical EVENTs (old ts) are ignored.
                     router.dispatchLiveGestureIfFresh(parsed: parsed, now: strapClockNow)
@@ -1842,7 +1844,7 @@ extension BLEManager: CBPeripheralDelegate {
                         // Keep them out of the live UI parser during backfill and let Backfiller
                         // preserve/order/process them in the sliced drain.
                         armBackfillTimeout()
-                        routeBackfillFrame(frame)
+                        routeBackfillFrame(frame, parsed: parsed)   // parse-once: reuse the ParsedFrame (FER-752)
                         // A real-time double-tap / wrist gesture still fires during a 5/MG offload (which
                         // runs for minutes, #69); the ts≈now gate rejects replayed historical EVENTs.
                         router.dispatchLiveGestureIfFresh(parsed: parsed, now: strapClockNow)

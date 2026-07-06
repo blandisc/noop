@@ -32,7 +32,9 @@ extension WhoopStore: BackfillStoreWriting {}
 /// (.withResponse) is link-layer confirmed. Never waits on the server.
 @MainActor
 final class Backfiller {
-    typealias Extractor = ([ParsedFrame], Int, Int) -> Streams
+    /// `@Sendable` so `finishChunk` can run the extract off the main actor (FER-752); the default
+    /// (`extractHistoricalStreams`) is a pure function, so this costs test injections nothing.
+    typealias Extractor = @Sendable ([ParsedFrame], Int, Int) -> Streams
 
     /// Per-chunk "data receipt" the Backfiller hands back so BLEManager can accumulate an honest
     /// "what this sync received" tally and derive the sync verdict (FER-83). Per-sensor fields are
@@ -87,8 +89,10 @@ final class Backfiller {
     /// HISTORY_COMPLETE (FER-201). Pure; reset per session.
     private var caughtUpDetector = CaughtUpDetector()
 
-    /// Buffered data frames for the current open chunk (between START and END).
-    private var chunk: [[UInt8]] = []
+    /// Buffered data frames for the current open chunk (between START and END). Each entry carries
+    /// the raw bytes (raw-capture persistence + hex diagnostics) AND the `ParsedFrame` the caller
+    /// already produced, so no frame is ever re-parsed inside the Backfiller (FER-752).
+    private var chunk: [(raw: [UInt8], parsed: ParsedFrame)] = []
     /// Whether a START has been received and we're accumulating a chunk.
     private var chunkOpen = false
     /// Strap family for the current offload, set at begin(). Drives family-aware frame parsing (WHOOP 5/MG
@@ -134,8 +138,11 @@ final class Backfiller {
     }
 
     /// Feed one raw BLE frame into the state machine. May trigger async store operations.
-    func ingest(_ frame: [UInt8]) async {
-        switch classifyHistoricalMeta(parseFrame(frame, family: family, annotate: false)) {
+    /// `parsed` is the caller's ParsedFrame for these SAME bytes (BLEManager already parses every
+    /// frame once in `didUpdateValueFor`, FER-183) — reused here for classification and buffered
+    /// alongside the raw bytes so the offload path parses each frame exactly once (FER-752).
+    func ingest(_ frame: [UInt8], parsed: ParsedFrame) async {
+        switch classifyHistoricalMeta(parsed) {
         case .start:
             isBackfilling = true
             chunk.removeAll(keepingCapacity: true)
@@ -147,7 +154,7 @@ final class Backfiller {
             chunk.removeAll(keepingCapacity: true)
             chunkOpen = false
         case .other:
-            if chunkOpen { chunk.append(frame) }
+            if chunkOpen { chunk.append((raw: frame, parsed: parsed)) }
         }
     }
 
@@ -192,7 +199,9 @@ final class Backfiller {
             // decodes to correct wall time, and we can persist + ack + upload. The correlation is only
             // truly required to map REALTIME (type-40/43) device-epoch timestamps, never in a hist chunk.
             let ref = clockRef ?? { let now = Int(Date().timeIntervalSince1970); return ClockRef(device: now, wall: now) }()
-            let parsed = frames.map { parseFrame($0, family: family, annotate: false) }
+            // Parse-once (FER-752): the ParsedFrames travelled with the raw bytes since ingest —
+            // this used to re-parse the whole chunk (~50 frames) synchronously on the main actor.
+            let parsed = frames.map(\.parsed)
             // FER-90 diagnostic: break down what this chunk actually contained by frame type. The 4.0
             // "historical offload" sometimes returns CONSOLE_LOGS (type 50) and ZERO biometric records
             // (type 47) — the band narrating firmware errors instead of serving history. This count makes
@@ -213,7 +222,16 @@ final class Backfiller {
                 loggedUnmappedVersions.insert(v)
                 log?("Historical records use firmware layout v\(v), which Cénit doesn't decode yet — no motion data, so sleep can't be computed from the strap. Please report this (issue #30).")
             }
-            let decoded = extract(parsed, ref.device, ref.wall)
+            // Decode OFF the main actor (FER-752, same pattern as Collector.flush / FER-183):
+            // `extract` is CPU-pure (@Sendable, never touches the DB or UIKit) and `ParsedFrame` /
+            // `Streams` are Sendable, so the ~50-record chunk decode can't jank the UI. The result
+            // is AWAITED here — the insert below and the ack after it still run strictly after the
+            // decode, on the main actor, so the safe-trim ordering (insert durable → ack) holds.
+            let extract = self.extract
+            let devRef = ref.device, wallRef = ref.wall
+            let decoded = await Task.detached {
+                extract(parsed, devRef, wallRef)
+            }.value
             // Diagnostic (#77): the AGGREGATE silent-loss case — frames arrived but produced no rows at
             // all (CRC fail / unmapped layout / out-of-range timestamp), so this chunk persists nothing
             // yet still acks below and the strap trims past it. The per-version log above only catches
@@ -224,8 +242,8 @@ final class Backfiller {
                 // #91: dump a hex sample of the rejected frames so an unmapped firmware's record
                 // layout can be mapped from a user's strap log — the count alone can't be decoded.
                 for (i, f) in frames.prefix(3).enumerated() {
-                    let hex = f.prefix(64).map { String(format: "%02x", $0) }.joined()
-                    log?("Backfill: rejected frame[\(i)] \(f.count)B: \(hex)\(f.count > 64 ? "…" : "")")
+                    let hex = f.raw.prefix(64).map { String(format: "%02x", $0) }.joined()
+                    log?("Backfill: rejected frame[\(i)] \(f.raw.count)B: \(hex)\(f.raw.count > 64 ? "…" : "")")
                 }
             }
             let stored: (hr: Int, rr: Int, events: Int, battery: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int)
@@ -251,8 +269,8 @@ final class Backfiller {
                     startTs: ref.wall,
                     endTs: ref.wall,
                     frameCount: frames.count,
-                    byteSize: frames.reduce(0) { $0 + $1.count })
-                do { try await store.enqueueRawBatch(meta, frames: frames) } catch { return }
+                    byteSize: frames.reduce(0) { $0 + $1.raw.count })
+                do { try await store.enqueueRawBatch(meta, frames: frames.map(\.raw)) } catch { return }
             }
         }
         do { try await store.setCursor("strap_trim", Int(trim)) } catch { return }
