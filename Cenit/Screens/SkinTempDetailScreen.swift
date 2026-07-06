@@ -8,7 +8,7 @@ import Foundation
 // MARK: - SkinTempDetailScreen — el «Detalle de Temperatura de la piel» en «Instrumento» (FER-256)
 //
 // Hermana de `StrainDetailScreen` (FER-238) y `StressDetailScreen` (FER-241): REUSA su lenguaje visual
-// (hero con `InfoAccordion`, `theme: InstrumentoTheme` explícito, `SheetPaperBackground`,
+// (hero con `InfoAccordion`, `theme: InstrumentoTheme` explícito, `sheetPaper`,
 // `ScrollView`→`VStack`, `blockDivider`, la window-math de la tendencia, `methodDisclosure`, los wells) pero
 // con su propio modelo. Reemplaza, para la temperatura de piel en Cuerpo, la vieja hoja OSCURA del catálogo
 // (`MetricExplorerView`). Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por
@@ -51,7 +51,7 @@ struct SkinTempDetailScreen: View {
             VStack(alignment: .leading, spacing: 22) {
                 hero
                 if !model.loaded {
-                    loadingWell(height: 160)
+                    ChartWell(theme).loading(height: 160)
                 } else {
                     if model.series.count >= 2 {
                         blockDivider
@@ -66,7 +66,7 @@ struct SkinTempDetailScreen: View {
         }
         .background(theme.paper)
         .presentationDragIndicator(.visible)
-        .modifier(SkinTempSheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
         .task {
             range = .month
             parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
@@ -271,7 +271,7 @@ struct SkinTempDetailScreen: View {
                     accessibilityLabel: "Nightly skin-temperature deviation, in degrees Celsius"
                 )
             ) {
-                emptyWell(text: "Not enough days in this range to draw a trend.")
+                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
             }
             Text("Each night's deviation · the band is your typical swing (±your variation) · 0 is your baseline.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -390,30 +390,6 @@ struct SkinTempDetailScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - Wells
-
-    private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(theme.surface)
-            .frame(height: height)
-            .overlay { ProgressView().tint(theme.inkTertiary) }
-    }
-
-    private func emptyWell(text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "chart.xyaxis.line")
-                .font(.system(size: 22))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
     // MARK: - Format + window math (mirror the sibling screens, scoped to this screen)
 
     /// Skin-temp reads as a SIGNED deviation at one decimal (e.g. "+0.3", "−0.2"), like the row and hero.
@@ -480,19 +456,6 @@ struct SkinTempDetailModel {
 struct SkinTempDetailItem: Identifiable {
     let id = UUID()
     let model: SkinTempDetailModel
-}
-
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct SkinTempSheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
-    }
 }
 
 // MARK: - Preview

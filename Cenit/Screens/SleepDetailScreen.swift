@@ -8,7 +8,7 @@ import Foundation
 // MARK: - SleepDetailScreen — el «Detalle de Sueño» en lenguaje «Instrumento» (FER-212)
 //
 // Hermana de `MetricDetailScreen` (FER-185): REUSA su lenguaje visual (el scaffold `DetailBlock`, el
-// patrón `hero`, `theme: InstrumentoTheme` explícito, `SheetPaperBackground`, `ScrollView`→`VStack`,
+// patrón `hero`, `theme: InstrumentoTheme` explícito, `sheetPaper`, `ScrollView`→`VStack`,
 // `methodDisclosure`) pero con su propio modelo rico. REEMPLAZA la vieja pantalla de sueño oscura (ya
 // retirada) y es un SUPERSET de ella + un bloque NUEVO de regularidad del horario.
 //
@@ -75,7 +75,7 @@ struct SleepDetailScreen: View {
         }
         .background(theme.paper)
         .presentationDragIndicator(.visible)
-        .modifier(SleepSheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
         // Parse the full duration series to dates once (the duration trend windows off it). (FER-573)
         .onAppear {
             if durationParsed.isEmpty {
@@ -501,7 +501,7 @@ struct SleepDetailScreen: View {
                         durationMovingAverageTrend(window)
                     }
                 } else {
-                    emptyWell(text: "Not enough nights yet to draw a trend.")
+                    ChartWell(theme, icon: "moon.zzz", cornerRadius: NoopMetrics.cardRadius).empty(text: "Not enough nights yet to draw a trend.")
                 }
             }
         }
@@ -531,7 +531,7 @@ struct SleepDetailScreen: View {
                     accessibilityLabel: "Hours asleep per night, 7-day moving average"
                 )
             ) {
-                emptyWell(text: "Not enough nights in this range to draw a trend.")
+                ChartWell(theme, icon: "moon.zzz", cornerRadius: NoopMetrics.cardRadius).empty(text: "Not enough nights in this range to draw a trend.")
             }
             let s = ComparisonEngine.stat(window.values)
             DynamicAverageCaption(
@@ -579,7 +579,7 @@ struct SleepDetailScreen: View {
                 .accessibilityLabel(Text("Hours asleep per night, with classification bands"))
             }
         } else {
-            emptyWell(text: "Not enough nights yet to draw a trend.")
+            ChartWell(theme, icon: "moon.zzz", cornerRadius: NoopMetrics.cardRadius).empty(text: "Not enough nights yet to draw a trend.")
         }
     }
 
@@ -653,7 +653,6 @@ struct SleepDetailScreen: View {
         return f
     }()
     private static func weekdayNarrow(_ date: Date) -> String { weekdayFormatter.string(from: date) }
-
 
     // MARK: - 6. Métricas de la noche (grid 2-col)
 
@@ -839,23 +838,6 @@ struct SleepDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - Wells (mirror MetricDetailScreen)
-
-    private func emptyWell(text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "moon.zzz")
-                .font(.system(size: 22))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-    }
-
     // MARK: - Formatting helpers
 
     private func pct(_ minutes: Double, _ total: Double) -> Int {
@@ -955,19 +937,6 @@ struct SleepDetailScreen: View {
 
 }
 
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct SleepSheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
-    }
-}
-
 // MARK: - SleepStagesInfoSheet — the combined "what the stages mean" card (FER-227)
 //
 // One bottom sheet explaining all four sleep stages + why they're approximate, opened from the ⓘ next
@@ -1023,7 +992,7 @@ struct SleepStagesInfoSheet: View {
         .background(theme.paper)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .modifier(SleepSheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
     }
 
     private func stageRow(_ row: StageRow) -> some View {

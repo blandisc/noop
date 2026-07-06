@@ -751,7 +751,7 @@ struct MetricInfoSheet: View {
         .background(theme.paper)
         .presentationDetents(strainDetents)
         .presentationDragIndicator(.visible)
-        .modifier(PresentationBackgroundModifier(paper: theme.paper))
+        .sheetPaper(theme)
         .task {
             guard info.id == "strain", let loader = strainCurveLoader else { return }
             strainLoading = true
@@ -1279,7 +1279,7 @@ struct MetricInfoSheet: View {
             )
         } else if info.levelsRelative {
             // HRV with no personal baseline yet — an honest note, not an empty levels list.
-            emptyWell(icon: "waveform.path.ecg",
+            ChartWell(theme).empty(icon: "waveform.path.ecg",
                       text: "Your levels come from your own baseline — a few more nights and they'll appear.")
         }
     }
@@ -1443,9 +1443,9 @@ struct MetricInfoSheet: View {
                 hrFooter(v)
             }
         } else if heartRateLoading {
-            loadingWell(height: 200)
+            ChartWell(theme).loading(height: 200)
         } else {
-            emptyWell(icon: "waveform.path.ecg", text: "No readings yet today.")
+            ChartWell(theme).empty(icon: "waveform.path.ecg", text: "No readings yet today.")
         }
     }
 
@@ -1538,9 +1538,9 @@ struct MetricInfoSheet: View {
                     .accessibilityLabel(Text("14-day trend"))
                 }
             } else if trendLoading {
-                loadingWell(height: 140)
+                ChartWell(theme).loading(height: 140)
             } else {
-                emptyWell(icon: "chart.xyaxis.line", text: "No data for the last 14 days.")
+                ChartWell(theme).empty(icon: "chart.xyaxis.line", text: "No data for the last 14 days.")
             }
         }
     }
@@ -1670,9 +1670,9 @@ struct MetricInfoSheet: View {
                 .accessibilityElement()
                 .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
             } else if strainLoading {
-                loadingWell(height: 132)
+                ChartWell(theme).loading(height: 132)
             } else {
-                emptyWell(icon: "chart.xyaxis.line", text: "Not enough activity yet today to chart.")
+                ChartWell(theme).empty(icon: "chart.xyaxis.line", text: "Not enough activity yet today to chart.")
             }
         }
     }
@@ -1723,9 +1723,9 @@ struct MetricInfoSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             } else if strainLoading {
-                loadingWell(height: 130)
+                ChartWell(theme).loading(height: 130)
             } else {
-                emptyWell(icon: "chart.xyaxis.line", text: "Not enough activity yet today to chart.")
+                ChartWell(theme).empty(icon: "chart.xyaxis.line", text: "Not enough activity yet today to chart.")
             }
         }
     }
@@ -1878,30 +1878,6 @@ struct MetricInfoSheet: View {
         case .down: return "arrow.down.right"
         case .hold, .none: return "arrow.right"
         }
-    }
-
-    // MARK: - Shared chart wells (loading / empty), themed for warm paper
-
-    private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(theme.surface)
-            .frame(height: height)
-            .overlay { ProgressView().tint(theme.inkTertiary) }
-    }
-
-    private func emptyWell(icon: String, text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 22))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - Recovery weight breakdown + method disclosure (FER-108)
@@ -2281,17 +2257,6 @@ private struct StrainIntradayCurve: View {
                 }
             }
             .frame(height: 12)
-        }
-    }
-}
-
-private struct PresentationBackgroundModifier: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(macOS 13.3, iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
         }
     }
 }

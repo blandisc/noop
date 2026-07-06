@@ -76,7 +76,7 @@ struct WhyVerdictSheet: View {
         .background(theme.paper)
         .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.large])
         .presentationDragIndicator(.visible)
-        .modifier(WhySheetBackground(paper: theme.paper))
+        .sheetPaper(theme)
     }
 
     /// El bloque de «aún no hay lectura de hoy» (FER-475): título honesto + la explicación de por qué
@@ -260,13 +260,4 @@ struct WhyVerdictSheet: View {
 private struct WhySheetHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
-private struct WhySheetBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(macOS 13.3, iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else { content }
-    }
 }

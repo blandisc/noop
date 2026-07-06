@@ -9,7 +9,7 @@ import Foundation
 //
 // Hermana de `MetricDetailScreen` (FER-185), igual que `SleepDetailScreen` (FER-212): REUSA su lenguaje
 // visual (el scaffold `DetailBlock`, el hero, `InfoAccordion`, `theme: InstrumentoTheme` explícito,
-// `SheetPaperBackground`, `ScrollView`→`VStack`, `methodDisclosure`, los wells) pero con su propio modelo.
+// `sheetPaper`, `ScrollView`→`VStack`, `methodDisclosure`, los wells) pero con su propio modelo.
 // NO extiende `MetricDetailScreen`/`MetricDetailSpec` (esos son para vitales de serie ESCALAR única —
 // HRV/FC/Respiración); la recuperación es un SCORE COMPUESTO con bloques propios (desglose por driver,
 // calendario, carga). Reemplaza, para recovery, la vieja `MetricInfoSheet` que abrían Cuerpo y Hoy.
@@ -69,7 +69,7 @@ struct RecoveryDetailScreen: View {
             VStack(alignment: .leading, spacing: 22) {
                 hero
                 if !model.loaded {
-                    loadingWell(height: 160)
+                    ChartWell(theme).loading(height: 160)
                 } else if model.calibration != nil {
                     blockDivider
                     calibrationBlock
@@ -118,7 +118,7 @@ struct RecoveryDetailScreen: View {
         }
         .background(theme.paper)
         .presentationDragIndicator(.visible)
-        .modifier(RecoverySheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
         .task {
             range = .month
             parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
@@ -500,7 +500,6 @@ struct RecoveryDetailScreen: View {
         case .celsius: return String(format: "%+.1f °C", v)
         }
     }
-
 
     // MARK: - 2.5 Mañana, si descansas igual — pronóstico a 1 día (FER-277, motor FER-188)
 
@@ -903,7 +902,7 @@ struct RecoveryDetailScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - Source footer + wells
+    // MARK: - Source footer
 
     private var sourceFooter: some View {
         Text(model.isAppleHealth ? "Source · Apple Health" : "Source · your strap, on device")
@@ -911,13 +910,6 @@ struct RecoveryDetailScreen: View {
             .foregroundStyle(theme.inkTertiary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 2)
-    }
-
-    private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(theme.surface)
-            .frame(height: height)
-            .overlay { ProgressView().tint(theme.inkTertiary) }
     }
 
     static let dayParser: DateFormatter = {
@@ -950,19 +942,6 @@ private struct CalWidthKey: PreferenceKey {
 struct RecoveryDetailItem: Identifiable {
     let id = UUID()
     let model: RecoveryDetailModel
-}
-
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct RecoverySheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
-    }
 }
 
 // MARK: - RecoveryDetailModel — every derivation the screen draws, built ONCE from the repo

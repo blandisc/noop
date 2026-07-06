@@ -181,7 +181,7 @@ struct MetricDetailScreen: View {
                         calibrationBlock
                     }
                 } else {
-                    loadingWell(height: 160)
+                    ChartWell(theme).loading(height: 160)
                 }
             }
             .padding(NoopMetrics.screenPadding)
@@ -189,7 +189,7 @@ struct MetricDetailScreen: View {
         }
         .background(theme.paper)
         .presentationDragIndicator(.visible)
-        .modifier(SheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
         .task {
             range = defaultRange
             if let loader = intradayCurveLoader {
@@ -598,7 +598,7 @@ struct MetricDetailScreen: View {
                     .padding(16)
                     .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 } else {
-                    emptyWell(text: "No readings in this range.")
+                    ChartWell(theme).empty(text: "No readings in this range.")
                 }
             }
             if window.values.count > 1 {
@@ -993,7 +993,7 @@ struct MetricDetailScreen: View {
                 intradayFooter(v)
             }
         } else {
-            emptyWell(text: "No readings yet today.")
+            ChartWell(theme).empty(text: "No readings yet today.")
         }
     }
 
@@ -2293,7 +2293,7 @@ struct MetricDetailScreen: View {
                     hrStatCell("Max", "\(Int((v.max() ?? 0).rounded()))")
                 }
             } else {
-                emptyWell(text: "No readings yet today.")
+                ChartWell(theme).empty(text: "No readings yet today.")
             }
         }
         if let mins = cachedZoneMinutes, mins[1...].contains(where: { $0 > 0 }) {
@@ -2325,30 +2325,6 @@ struct MetricDetailScreen: View {
     private var EX_CONSIST_PLAIN: LocalizedStringKey { "How alike your nights are to one another. \"Steady\" means they resemble each other. When HRV starts jumping from night to night — even while the average still looks high — it tends to get ahead of fatigue, before the number drops." }
     private var EX_QUEMUEVE: LocalizedStringKey { "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)" }
     private var EX_SPO2_FLOOR: LocalizedStringKey { "95% is the typical floor for a healthy adult — the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend." }
-
-    // MARK: - Wells
-
-    private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(theme.surface)
-            .frame(height: height)
-            .overlay { ProgressView().tint(theme.inkTertiary) }
-    }
-
-    private func emptyWell(text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "chart.xyaxis.line")
-                .font(.system(size: 22))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
 
     // MARK: - Colour + format
 
@@ -2412,19 +2388,6 @@ private struct MiniSpark: View {
         }
         .frame(height: 22)
         .padding(.vertical, 3)
-    }
-}
-
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct SheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
     }
 }
 

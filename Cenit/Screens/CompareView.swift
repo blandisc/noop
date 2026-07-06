@@ -154,11 +154,11 @@ struct CompareView: View {
                 metricSection
 
                 if selected.count < minSelection {
-                    emptyWell(text: "Compare needs at least two metrics with history. Import your WHOOP export in Data Sources first.")
+                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: NoopMetrics.cardRadius, bordered: true).empty(text: "Compare needs at least two metrics with history. Import your WHOOP export in Data Sources first.")
                 } else {
                     let series = activeSeries
                     if series.allSatisfy({ $0.rows.isEmpty }) {
-                        emptyWell(text: loadedOnce
+                        ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: NoopMetrics.cardRadius, bordered: true).empty(text: loadedOnce
                             ? "No data for these metrics in \(range.phrase). Widen the range or pick metrics you've logged."
                             : "Reading your history…")
                     } else {
@@ -174,7 +174,7 @@ struct CompareView: View {
         }
         .background(theme.paper)
         .presentationDragIndicator(.visible)
-        .modifier(CompareSheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
         .sheet(isPresented: $showPicker) {
             MetricPickerSheet(selected: $selected, maxSelection: maxSelection, theme: theme)
         }
@@ -522,7 +522,7 @@ struct CompareView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 if pairs.isEmpty {
-                    emptyWell(text: "Not enough overlapping days between these metrics in \(range.phrase). Widen the range.")
+                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: NoopMetrics.cardRadius, bordered: true).empty(text: "Not enough overlapping days between these metrics in \(range.phrase). Widen the range.")
                 } else {
                     ForEach(pairs) { p in
                         pairCard(p)
@@ -587,26 +587,6 @@ struct CompareView: View {
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// The shared empty/loading well: a quiet icon + centered copy on a faint surface.
-    private func emptyWell(text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "arrow.left.arrow.right")
-                .font(.system(size: 22))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .padding(.horizontal, 16)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: - Insight language
@@ -738,7 +718,7 @@ private struct MetricPickerSheet: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .presentationDetents([.large])
-        .modifier(CompareSheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
     }
 
     private func row(_ metric: MetricDescriptor) -> some View {
@@ -989,19 +969,6 @@ private struct MultiTooltip: View {
         let preferRight = anchorX < container.width / 2
         let target = preferRight ? anchorX + half + 14 : anchorX - half - 14
         return min(max(target, half + 4), container.width - half - 4)
-    }
-}
-
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct CompareSheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
     }
 }
 

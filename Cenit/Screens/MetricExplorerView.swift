@@ -306,9 +306,9 @@ struct MetricDetailView: View {
                 hero(window: window)
                 if loaded && series.isEmpty {
                     // ONLY genuine empty state: no data in the entire history.
-                    emptyWell(text: "Import your history first. A WHOOP export in Data Sources fills every metric you can explore here in about a minute.")
+                    ChartWell(theme).empty(text: "Import your history first. A WHOOP export in Data Sources fills every metric you can explore here in about a minute.")
                 } else if !loaded {
-                    loadingWell
+                    ChartWell(theme).loading(height: 160)
                 } else {
                     blockDivider
                     trendBlock(window: window)
@@ -437,7 +437,7 @@ struct MetricDetailView: View {
                     accessibilityLabel: "\(metric.title) trend"
                 )
             ) {
-                emptyWell(text: "Not enough days in this range to draw a trend.")
+                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
             }
             if window.values.count > 1 {
                 TrendStatSummary(
@@ -565,29 +565,6 @@ struct MetricDetailView: View {
         r >= 0 ? theme.verdict : theme.critical
     }
 
-    // MARK: - Wells
-
-    private var loadingWell: some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(theme.surface)
-            .frame(height: 160)
-            .overlay { ProgressView().tint(theme.inkTertiary) }
-    }
-
-    private func emptyWell(text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "chart.xyaxis.line")
-                .font(.system(size: 22))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
 }
 
 // MARK: - Preview
