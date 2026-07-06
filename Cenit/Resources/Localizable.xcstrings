@@ -529,22 +529,6 @@
         }
       }
     },
-    "Source · calculated": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Source · calculated"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Origen · calculado"
-          }
-        }
-      }
-    },
     "Looked steady.": {
       "extractionState": "manual",
       "localizations": {

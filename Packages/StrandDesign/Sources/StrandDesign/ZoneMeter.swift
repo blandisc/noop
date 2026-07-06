@@ -96,6 +96,8 @@ public struct ZoneMeter: View {
             .frame(height: 24)
         }
         .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Level"))
+        .accessibilityValue(Text(verbatim: segments.first(where: { $0.isActive })?.label ?? ""))
     }
 }
 

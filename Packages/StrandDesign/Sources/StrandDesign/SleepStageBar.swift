@@ -76,6 +76,8 @@ public struct SleepStageBar: View {
             }
         }
         .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Sleep stages"))
+        .accessibilityValue(Text(verbatim: stages.map { "\($0.label) \(hm($0.minutes))" }.joined(separator: ", ")))
     }
 }
 

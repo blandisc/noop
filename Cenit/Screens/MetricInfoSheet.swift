@@ -25,9 +25,6 @@ struct MetricInfo: Identifiable {
     /// against the band-only baseline (the same slice the persisted score folds — FER-519/FER-629).
     /// nil hides the block (calibrating, no band reading today, or any non-recovery metric).
     var impact: RecoveryImpact.Result? = nil
-    /// FER-642 · «Vs ayer»: the day-over-day recovery change + top movers, shown as one compact line under
-    /// the level attribution. nil hides it (no band yesterday, calibrating, or any non-recovery metric).
-    var change: RecoveryChange.Result? = nil
     var method: Method? = nil
     var disclaimer: LocalizedStringKey? = nil
     var calibration: Calibration? = nil
@@ -472,8 +469,7 @@ extension MetricInfo {
     /// header numeral is tinted by the WHOOP recovery band (green ≥67 · yellow 34–67 · red <34),
     /// mirroring TodayView's `recoveryDataColor`. (FER-108 / FER-162)
     static func recovery(score: Int?, calibrationNights: Int?, nightsNeeded: Int,
-                         impact: RecoveryImpact.Result? = nil,
-                         change: RecoveryChange.Result? = nil) -> MetricInfo {
+                         impact: RecoveryImpact.Result? = nil) -> MetricInfo {
         let disclaimer: LocalizedStringKey = "It's an estimate, not a diagnosis."
 
         if let done = calibrationNights {
@@ -512,7 +508,6 @@ extension MetricInfo {
             bands: [],
             note: nil,
             impact: impact,
-            change: change,
             method: Method(
                 prose: "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights — HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5% — and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.",
                 citation: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."
@@ -893,6 +888,7 @@ struct MetricInfoSheet: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("Source"))
+        .accessibilityValue(Text(label))
     }
 
     /// The vital header's origin dot: the metric hue for a band reading («Band · last night» for a nightly
