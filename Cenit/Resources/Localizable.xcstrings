@@ -49523,6 +49523,23 @@
           }
         }
       }
+    },
+    "Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu techo es un punto de referencia según tu carga reciente y qué tan recuperado amaneciste. Es contexto, no una meta, y puedes pasarlo."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

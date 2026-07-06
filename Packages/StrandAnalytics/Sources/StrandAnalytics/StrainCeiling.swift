@@ -22,10 +22,16 @@ import WhoopStore
 // nil until there is enough chronic history (`minChronic` strain-days) AND a recovery score —
 // so a caller omits the line rather than inventing one.
 //
-// References: Gabbett 2016 (Br J Sports Med 50:273 — ACWR "sweet spot", the SAME heuristic
-// ReadinessEngine cites). The coupled-ratio caveat (acute sits inside chronic, inflating the
-// correlation — Lolli 2019) applies here too: this is a debated heuristic, not a validated
-// threshold, which is why the surface frames it as context, never an instruction.
+// Honesty about what is and isn't published: the 0.8–1.3 BAND is Gabbett 2016 (Br J Sports Med
+// 50:273 — the ACWR "sweet spot", the same heuristic ReadinessEngine cites). The linear map from
+// recovery onto that band (the `0.5` slope, the linearity) is NOT from Gabbett or anyone — it is a
+// NOOP product calibration: recovered → aim for the top of the band (you may push above chronic),
+// run-down → hold near the bottom. Physiologically sensible, but an unvalidated knob, not a
+// published result. What this ceiling inherits from the ACWR literature is only that the band is a
+// DEBATED heuristic, not a validated threshold — NOT the coupled-ratio artifact (Lolli 2019: acute
+// sitting inside chronic inflates the correlation), which bites a MEASURED acute/chronic ratio; the
+// ceiling never divides — it multiplies chronic by a recovery-derived factor. Either way this is
+// context, never an instruction: the surface frames it as a reference you can read past.
 public enum StrainCeiling {
 
     /// Chronic-load window (days). Matches `ReadinessEngine.chronicWindow` so the ceiling's chronic

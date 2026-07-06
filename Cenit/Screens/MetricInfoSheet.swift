@@ -1685,6 +1685,14 @@ struct MetricInfoSheet: View {
                     if strainCeiling != nil { ceilingLegend }
                     if trainingWindow != nil { windowLegend }
                 }
+                if strainCeiling != nil {
+                    // Honest framing (FER-732 / CSO): the ceiling is a personal reference, not a goal
+                    // or a medical instruction, and you can pass it.
+                    Text("Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it.")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             } else if strainLoading {
                 loadingWell(height: 130)
             } else {
