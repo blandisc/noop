@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los nombres largos del entrenamiento de hoy ya caben mejor / Long workout names on today's card now fit better.**
+  **ES** — En **Entrenar**, el título del entrenamiento de hoy (p. ej. «Día A — Empuje y cuádriceps») ahora **se ajusta solo**: los nombres cortos se ven igual de grandes que antes, y los largos se encogen un poco para caber en dos líneas en vez de apretarse.
+  **EN** — In **Train**, today's workout title (e.g. "Día A — Empuje y cuádriceps") now **scales itself**: short names stay full size, and long ones shrink slightly to fit two lines instead of cramping.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Cada ejercicio de Entrenar ya reserva su espacio para el video / Every exercise in Train now reserves its space for video.**
   **ES** — En todo el flujo de **Entrenar** aparece ahora una **miniatura** junto a cada ejercicio: en el constructor de rutinas, en la biblioteca, en la ficha de la rutina y dentro de la sesión, más un **recuadro grande** arriba en la hoja de cada ejercicio. Por ahora es un cuadro de papel en blanco (todavía sin imagen, y sin usar internet), pero deja el hueco exacto listo para que, más adelante, la imagen o el video del ejercicio entre **sin que nada se mueva de lugar**.
   **EN** — Across the whole **Train** flow, a **thumbnail** now sits next to each exercise: in the routine builder, the library, the routine card and inside the session, plus a **large frame** at the top of each exercise's sheet. For now it's a blank paper tile (no image yet, and no network use), but it reserves the exact slot so that, later, the exercise's image or video can drop in **without anything shifting around**.
