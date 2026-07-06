@@ -2387,6 +2387,40 @@
         }
       }
     },
+    "%lld of your last 28 days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of your last 28 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de tus últimos 28 días"
+          }
+        }
+      }
+    },
+    "%lld of your last 28 days in this lane": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of your last 28 days in this lane"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld de tus últimos 28 días en este carril"
+          }
+        }
+      }
+    },
     "%lld of ~%lld nights": {
       "localizations": {
         "es": {
@@ -3685,6 +3719,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "1 año"
+          }
+        }
+      }
+    },
+    "1.3–1.5": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1.3–1.5"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1.3–1.5"
+          }
+        }
+      }
+    },
+    "1.5 and up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1.5 and up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1.5 y más"
           }
         }
       }
@@ -7167,6 +7235,23 @@
         }
       }
     },
+    "Below 0.8": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below 0.8"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menos de 0.8"
+          }
+        }
+      }
+    },
     "BMI": {
       "localizations": {
         "en": {
@@ -8683,6 +8768,23 @@
         }
       }
     },
+    "Calculated · today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculated · today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculado · hoy"
+          }
+        }
+      }
+    },
     "CONNECTED": {
       "localizations": {
         "en": {
@@ -8695,6 +8797,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "CONECTADO"
+          }
+        }
+      }
+    },
+    "Context for your recovery, not an injury prediction · Calculated from your strap's strain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Context for your recovery, not an injury prediction · Calculated from your strap's strain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contexto para tu recuperación, no una predicción de lesiones · Calculado a partir del esfuerzo de tu banda"
           }
         }
       }
@@ -20187,7 +20306,21 @@
       }
     },
     "Load": {
-      "localizations": {}
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga"
+          }
+        }
+      }
     },
     "Load scale. Today: %@.": {
       "extractionState": "manual",
@@ -29759,6 +29892,23 @@
         }
       }
     },
+    "See pattern →": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See pattern →"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver patrón →"
+          }
+        }
+      }
+    },
     "SESSION DONE": {
       "localizations": {
         "en": {
@@ -33693,6 +33843,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sincronizando…"
+          }
+        }
+      }
+    },
+    "The green crest is your zone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The green crest is your zone"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La cresta verde es tu zona"
+          }
+        }
+      }
+    },
+    "The hill": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The hill"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La colina"
           }
         }
       }
@@ -40031,6 +40215,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu Apple Watch estima el VO₂max a partir de tu frecuencia cardiaca y tu ritmo en caminatas y carreras al aire libre con buena señal de GPS, así que se actualiza de vez en cuando, no a diario. Leemos dónde cae entre adultos sanos de tu edad y sexo (la mediana de referencia FRIEND) y lo traducimos en una banda sencilla. Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas, es uno de los marcadores de salud a largo plazo mejor fundamentados."
+          }
+        }
+      }
+    },
+    "Your balance 0.8–1.3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your balance 0.8–1.3"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu equilibrio 0.8–1.3"
           }
         }
       }
