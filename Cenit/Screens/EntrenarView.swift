@@ -189,40 +189,50 @@ private struct EntrenarLanding: View {
 
     private var hoyCard: some View {
         card {
-            Text(hoyOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            if let r = todayRoutine {
-                // Name + a routine-tinted square (the handoff's per-routine color), with the exercise/time
-                // meta trailing on the same line. The tint is the ONE point of color the mock allows here.
-                HStack(alignment: .center, spacing: 9) {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(routineTint(r.name)).frame(width: 8, height: 8)
-                    Text(r.name).font(StrandFont.title3).foregroundStyle(theme.ink)
-                        // Long routine names («Día A — Empuje y cuádriceps») sit at the quieter
-                        // title3 and shrink further to fit two lines instead of wrapping tall;
-                        // short names read at full title3 size.
-                        .lineLimit(2).minimumScaleFactor(0.75)
-                    Spacer(minLength: 8)
-                    metaText(r.id).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Text(hoyOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                if let r = todayRoutine {
+                    // Name + a routine-tinted square (the handoff's per-routine color) sit alone on
+                    // their row — the dot top-aligns to the title's cap-height instead of centering
+                    // against a wrapped 2-line name. Exercise/time meta and muscle line drop below as
+                    // their own quieter tier, so identity and context stop competing for one row.
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .top, spacing: 9) {
+                            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                .fill(routineTint(r.name)).frame(width: 8, height: 8)
+                                .padding(.top, 7)
+                            Text(r.name).font(StrandFont.title3).foregroundStyle(theme.ink)
+                                // Long routine names («Día A — Empuje y cuádriceps») sit at the quieter
+                                // title3 and shrink further to fit two lines instead of wrapping tall;
+                                // short names read at full title3 size.
+                                .lineLimit(2).minimumScaleFactor(0.75)
+                        }
+                        metaText(r.id).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            .padding(.leading, 17)
+                        if let muscles = routineMuscleLine(r.id) {
+                            Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                                .padding(.leading, 17)
+                        }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Rest").font(StrandFont.title2).foregroundStyle(theme.inkSecondary)
+                        Text("Your plan doesn't schedule today. A good day to recover.")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                .padding(.top, 3)
-                if let muscles = routineMuscleLine(r.id) {
-                    Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 2)
+                if let rec = recovery {
+                    Divider().overlay(theme.hairline)
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
+                        Text(recoveryLine(rec)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-            } else {
-                Text("Rest").font(StrandFont.title2).foregroundStyle(theme.inkSecondary).padding(.top, 3)
-                Text("Your plan doesn't schedule today. A good day to recover.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 2)
-                    .fixedSize(horizontal: false, vertical: true)
+                empezarButton
             }
-            if let rec = recovery {
-                Divider().overlay(theme.hairline).padding(.vertical, 12)
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
-                    Text(recoveryLine(rec)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            empezarButton.padding(.top, 12)
         }
     }
 
