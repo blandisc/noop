@@ -47262,6 +47262,146 @@
           }
         }
       }
+    },
+    "Share": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartir"
+          }
+        }
+      }
+    },
+    "Share…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartir…"
+          }
+        }
+      }
+    },
+    "bar": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "barra"
+          }
+        }
+      }
+    },
+    "Bar": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra"
+          }
+        }
+      }
+    },
+    "My plates": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mis discos"
+          }
+        }
+      }
+    },
+    "Include heart rate": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incluir frecuencia cardiaca"
+          }
+        }
+      }
+    },
+    "Include calories": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incluir calorías"
+          }
+        }
+      }
+    },
+    "Include records": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incluir marcas"
+          }
+        }
+      }
+    },
+    "Insert warm-up into the session": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insertar calentamiento en la sesión"
+          }
+        }
+      }
+    },
+    "Bar only": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra sola"
+          }
+        }
+      }
+    },
+    "Suggested warm-up up to %@ kg": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calentamiento sugerido hasta %@ kg"
+          }
+        }
+      }
+    },
+    "The work weight is light. No warm-up needed.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El peso de trabajo es ligero. No necesitas calentamiento."
+          }
+        }
+      }
+    },
+    "Nothing leaves the app without this step. No social feed.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nada sale de la app sin este paso. Sin red social."
+          }
+        }
+      }
+    },
+    "%@ kg short of %@ with your plates": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kg por debajo de %@ con tus discos"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
