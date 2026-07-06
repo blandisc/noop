@@ -161,7 +161,7 @@ struct TrainingLoadSheet: View {
     /// Altura natural medida, para que el detent se ajuste al contenido (patrón de `MetricInfoSheet`).
     @State private var contentHeight: CGFloat = 0
     /// El periodo de la gráfica (S/M/3M/6M/1A). La franja de equilibrio y los carriles no cambian con él.
-    @State private var period: LoadPeriod = .month
+    @State private var period: LoadPeriod = .week
     /// El carril destacado en la gráfica (por defecto el de hoy); tocarlo re-sombrea la franja y la etiqueta.
     @State private var featured: ReadinessEngine.LoadBand? = nil
 

@@ -514,8 +514,6 @@ struct TodayView: View {
             appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
             appleSource: fromApple && info.displayValue != "—",
             strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
-            trainingBlock: info.id == "strain" ? trainingBlock : nil,
-            onStartTraining: info.id == "strain" ? { tabRouter.startTodayTraining() } : nil,
             strainCeiling: info.id == "strain" ? strainCeiling : nil,
             trainingWindow: info.id == "strain" ? trainingWindow : nil,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
