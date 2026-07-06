@@ -295,8 +295,9 @@ struct TrainingLoadSheet: View {
                 Text("The green crest is your zone").groteskOverline(small: true).foregroundStyle(theme.inkMuted)
             }
             HillView(acwr: acwr, band: band, theme: theme)
-                .frame(height: 118)
+                .frame(height: 128)
                 .accessibilityHidden(true)
+                .padding(.bottom, 4)
         }
     }
 
@@ -317,7 +318,7 @@ struct TrainingLoadSheet: View {
                 .font(InstrumentoType.grotesk(12, weight: .bold)).tracking(1.8).textCase(.uppercase)
                 .foregroundStyle(shown.flag.color(theme))
             LoadChartView(series: chartSeries, featured: shown, isTodayLane: isToday, theme: theme)
-                .frame(height: 130)
+                .frame(height: 152)
                 .accessibilityHidden(true)
             Text("\(counts[shown, default: 0]) of your last 28 days in this lane")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -390,9 +391,15 @@ struct TrainingLoadSheet: View {
             theme: theme
         ) {
             if let acwr {
-                Text("acute:chronic \(String(format: "%.2f", acwr)) · ACWR")
-                    .font(StrandFont.bodyNumber)
-                    .foregroundStyle(theme.ink)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("Load ratio").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                        Text(String(format: "%.2f", acwr)).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
+                    }
+                    Text("acute (~7 d) ÷ chronic (~28 d) · what science calls ACWR")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -409,14 +416,18 @@ struct TrainingLoadSheet: View {
     // MARK: Ver más en Tendencias + hedge
 
     private func seeTrendsButton(_ action: @escaping () -> Void) -> some View {
+        // Botón ancho con borde ink + glifo de Tendencias, unificado con la hoja de resumen de cada métrica
+        // (`MetricInfoSheet.seeMoreLink`), en vez de la cápsula chica que tenía antes.
         Button { dismiss(); action() } label: {
             HStack(spacing: 7) {
-                Image(systemName: "chart.line.uptrend.xyaxis").font(.system(size: 14, weight: .medium))
-                Text("See more in Trends").font(InstrumentoType.grotesk(12, weight: .bold))
+                TendenciasGlyph(color: theme.ink, lineWidth: 1.8).frame(width: 15, height: 15)
+                Text("See more in Trends").font(StrandFont.subhead.weight(.medium))
             }
             .foregroundStyle(theme.ink)
-            .padding(.vertical, 9).padding(.horizontal, 16)
-            .overlay(Capsule(style: .continuous).strokeBorder(theme.ink, lineWidth: 1.5))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 13)
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                .strokeBorder(theme.ink, lineWidth: 1.5))
         }
         .buttonStyle(.plain)
     }
@@ -556,6 +567,34 @@ private struct LoadChartView: View {
     }
 
     var body: some View {
+        VStack(spacing: 6) {
+            chart
+            dateAxis
+        }
+    }
+
+    /// El eje X: primera fecha · fecha del medio · «hoy» (el último punto de la serie es hoy). Complementa
+    /// al tooltip del scrub (FER-748) con una referencia de tiempo siempre visible, en reposo.
+    private var dateAxis: some View {
+        HStack(spacing: 0) {
+            Text(series.isEmpty ? "" : Self.axisFmt.string(from: date(forIndex: 0)))
+            Spacer(minLength: 0)
+            if series.count > 3 {
+                Text(Self.axisFmt.string(from: date(forIndex: series.count / 2)))
+                Spacer(minLength: 0)
+            }
+            Text("today")
+        }
+        .font(InstrumentoType.grotesk(9, weight: .regular))
+        .foregroundStyle(theme.inkMuted)
+    }
+
+    /// «d MMM» localizado para las marcas del eje X.
+    private static let axisFmt: DateFormatter = {
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
+    }()
+
+    private var chart: some View {
         GeometryReader { g in
             let w = g.size.width
             let head: CGFloat = 8          // margen para que el punto final no se recorte
@@ -626,6 +665,7 @@ private struct LoadChartView: View {
             .environment(\.instrumentoFlat, true)
             .animation(StrandMotion.fade, value: hoverX)
         }
+        .frame(height: 130)
     }
 }
 

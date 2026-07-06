@@ -793,13 +793,41 @@ struct MetricInfoSheet: View {
     /// The datum leads: the name drops to a quiet overline and the value becomes the hero numeral
     /// (rule 1 — one dominant element; rule 4 — name as overline), so the two no longer compete on the
     /// same baseline. Tint still resolves through `headerTint` (band/level/neutral), unchanged. (FER-243)
+    /// The SF Symbol that anchors each redesigned summary header, mirroring Carga's hill glyph: a small
+    /// stroke mark tinted in the metric's own data hue (colour on the datum, quiet everywhere else). One
+    /// per Today card; recovery (its own hero score) and any unmapped id stay glyph-less. (standardization)
+    private var metricGlyphName: String? {
+        switch info.id {
+        case "sleep":     return "moon"
+        case "hrv":       return "waveform.path.ecg"
+        case "rhr":       return "heart"
+        case "strain":    return "bolt"
+        case "steps":     return "figure.walk"
+        case "spo2":      return "drop"
+        case "resp_rate": return "lungs"
+        case "stress":    return "waveform.path"
+        default:          return nil
+        }
+    }
+
+    @ViewBuilder private var metricGlyph: some View {
+        if let name = metricGlyphName {
+            Image(systemName: name)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(metricHue)
+                .accessibilityHidden(true)
+        }
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .firstTextBaseline) {
                 if isRedesignedHeader {
                     // F2 (FER-710): recovery / strain / the six vitals / sleep share the Grotesk uppercase
                     // title + ⓘ, retiring the serif title + boxed source chip. A calculated score shows a
-                    // «Calculated» origin dot; a measured signal shows its band/Apple dot.
+                    // «Calculated» origin dot; a measured signal shows its band/Apple dot. A leading metric
+                    // glyph (tinted in the metric's own hue) anchors the header the way Carga's hill does.
+                    metricGlyph
                     Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
                     infoButton
                     Spacer()
@@ -1246,6 +1274,7 @@ struct MetricInfoSheet: View {
                     ? { mins in let h = Int(mins) / 60; let m = Int(mins) % 60; return m == 0 ? "\(h)h" : "\(h)h \(m)m" }
                     : { "\(Int($0.rounded()))" },
                 nightly: BandSummaryCopy.isNightly(metricID: info.id),
+                inkThumb: true,
                 accessibilityLabel: info.name
             )
         } else if info.levelsRelative {
