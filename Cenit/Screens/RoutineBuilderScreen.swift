@@ -42,12 +42,30 @@ struct RoutineBuilderScreen: View {
     @FocusState private var focusedCell: String?
 
     private let routineId: String
+    /// A pre-filled list of exercises to seed a NEW routine with (v3 · 2A «Duplicar como rutina», FER-718):
+    /// the exercises of a finished session, re-based onto a fresh routine id. When set, the builder skips its
+    /// store fetch and starts from these. nil = normal new/edit behavior.
+    private let seed: [(re: RoutineExercise, exercise: Exercise)]?
 
     init(routine: Routine?, onSaved: (() async -> Void)? = nil) {
         self.routine = routine
         self.onSaved = onSaved
         self.routineId = routine?.id ?? UUID().uuidString
+        self.seed = nil
         _name = State(initialValue: routine?.name ?? "")
+    }
+
+    /// «Duplicar como rutina» (2A): a fresh routine pre-filled with a session's exercises. `suggestedName`
+    /// seeds the name field; `seed` re-bases each exercise onto the new routine id.
+    init(seedName: String, seed: [(re: RoutineExercise, exercise: Exercise)], onSaved: (() async -> Void)? = nil) {
+        self.routine = nil
+        self.onSaved = onSaved
+        let newId = UUID().uuidString
+        self.routineId = newId
+        self.seed = seed.enumerated().map { idx, item in
+            var re = item.re; re.routineId = newId; re.position = idx; return (re, item.exercise)
+        }
+        _name = State(initialValue: seedName)
     }
 
     var body: some View {
@@ -441,6 +459,10 @@ struct RoutineBuilderScreen: View {
     // MARK: - Load + save
 
     private func loadExisting() async {
+        if let seed {   // «Duplicar como rutina» (2A): start from the seeded exercises, no store fetch.
+            items = seed.map { BuilderItem(re: $0.re, exercise: $0.exercise) }
+            return
+        }
         guard let routine else { return }
         let res = await repo.routineExercises(routineId: routine.id)
         let all = await repo.allExercises()
