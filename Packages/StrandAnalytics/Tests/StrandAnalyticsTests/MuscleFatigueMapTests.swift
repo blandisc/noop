@@ -1,26 +1,29 @@
 import XCTest
 @testable import StrandAnalytics
 
-/// FER-350 — per-muscle load / freshness crossed with systemic recovery. Covers the empty state,
-/// the cited decay, the primary/secondary weighting, the window cutoff, relative normalization, the
-/// Schoenfeld weekly band, the systemic-recovery cross, and days-since-last.
+/// FER-350 / FER-719 — per-muscle load / freshness crossed with systemic recovery. Covers the empty
+/// state, the cited decay (2-day half-life, exact input→output cases), the primary/secondary
+/// weighting, relative normalization, the Schoenfeld weekly band, the systemic-recovery cross,
+/// days-since-last, and the weekly-volume-per-muscle API for the «Volumen por músculo» screen.
 final class MuscleFatigueMapTests: XCTestCase {
 
     typealias Event = MuscleFatigueMap.MuscleSetEvent
 
     // 1 — no events → empty map (the honest empty state).
     func testNoEventsIsEmpty() {
-        XCTAssertTrue(MuscleFatigueMap.loads(events: [], window: .d7).isEmpty)
+        XCTAssertTrue(MuscleFatigueMap.loads(events: []).isEmpty)
     }
 
-    // 2 — decay is monotonic: a set today loads more than the same set 2 then 4 days ago.
-    func testDecayIsMonotonicByRecency() {
-        XCTAssertGreaterThan(MuscleFatigueMap.decay(daysAgo: 0), MuscleFatigueMap.decay(daysAgo: 2))
-        XCTAssertGreaterThan(MuscleFatigueMap.decay(daysAgo: 2), MuscleFatigueMap.decay(daysAgo: 4))
-        // 2-day half-life: today = 1.0, 2d ago = 0.5, 4d ago = 0.25.
+    // 2 — the cited decay, exact input→output (FER-719 acceptance criterion): a set 0/2/4/8 days
+    // ago weighs 1.0 / 0.5 / 0.25 / 0.0625 (2-day half-life, MacDougall 1995; Damas 2015).
+    func testDecayExactCases() {
         XCTAssertEqual(MuscleFatigueMap.decay(daysAgo: 0), 1.0, accuracy: 1e-9)
         XCTAssertEqual(MuscleFatigueMap.decay(daysAgo: 2), 0.5, accuracy: 1e-9)
         XCTAssertEqual(MuscleFatigueMap.decay(daysAgo: 4), 0.25, accuracy: 1e-9)
+        XCTAssertEqual(MuscleFatigueMap.decay(daysAgo: 8), 0.0625, accuracy: 1e-9)
+        // monotonic in recency
+        XCTAssertGreaterThan(MuscleFatigueMap.decay(daysAgo: 0), MuscleFatigueMap.decay(daysAgo: 2))
+        XCTAssertGreaterThan(MuscleFatigueMap.decay(daysAgo: 2), MuscleFatigueMap.decay(daysAgo: 4))
     }
 
     // 3 — a primary muscle (1.0) loads exactly twice a secondary (0.5) at the same recency.
@@ -28,17 +31,22 @@ final class MuscleFatigueMapTests: XCTestCase {
         let loads = MuscleFatigueMap.loads(events: [
             Event(muscle: "chest", involvement: 1.0, daysAgo: 1),
             Event(muscle: "triceps", involvement: 0.5, daysAgo: 1),
-        ], window: .d7)
+        ])
         let chest = loads.first { $0.muscle == "chest" }!
         let triceps = loads.first { $0.muscle == "triceps" }!
         XCTAssertEqual(chest.load, triceps.load * 2, accuracy: 1e-9)
     }
 
-    // 4 — the window filters: a set 10 days ago is out for d7, in for d14.
-    func testWindowCutoff() {
-        let events = [Event(muscle: "lats", involvement: 1.0, daysAgo: 10)]
-        XCTAssertTrue(MuscleFatigueMap.loads(events: events, window: .d7).isEmpty)
-        XCTAssertEqual(MuscleFatigueMap.loads(events: events, window: .d14).count, 1)
+    // 4 — no recency window (FER-719): an old set still enters the map, but the decay alone has
+    // already made it negligible — time lives in the math, not in a filter.
+    func testNoWindowDecayCarriesTime() {
+        let loads = MuscleFatigueMap.loads(events: [
+            Event(muscle: "lats", involvement: 1.0, daysAgo: 10),
+        ])
+        XCTAssertEqual(loads.count, 1)
+        XCTAssertEqual(loads[0].load, pow(2.0, -5), accuracy: 1e-9)   // ≈ 0.031
+        // a negative daysAgo (future set) is invalid input and is dropped
+        XCTAssertTrue(MuscleFatigueMap.loads(events: [Event(muscle: "x", involvement: 1, daysAgo: -1)]).isEmpty)
     }
 
     // 5 — relative load is normalized to the user's most-loaded muscle (= 1.0).
@@ -46,7 +54,7 @@ final class MuscleFatigueMapTests: XCTestCase {
         let loads = MuscleFatigueMap.loads(events: [
             Event(muscle: "quadriceps", involvement: 1.0, daysAgo: 0),  // biggest
             Event(muscle: "calves", involvement: 0.5, daysAgo: 4),      // smaller
-        ], window: .d7)
+        ])
         let quads = loads.first { $0.muscle == "quadriceps" }!
         XCTAssertEqual(quads.relative, 1.0, accuracy: 1e-9)
         XCTAssertEqual(quads.state, .loaded)
@@ -61,28 +69,14 @@ final class MuscleFatigueMapTests: XCTestCase {
         XCTAssertEqual(MuscleFatigueMap.band(weeklySets: 25), .above)
     }
 
-    // weeklySets only counts the last 7 days, never decayed; a set 10 days ago (d14 window) adds 0.
+    // weeklySets only counts the last 7 days, never decayed; a set 10 days ago adds 0 to it even
+    // though it still (negligibly) enters the load.
     func testWeeklySetsIgnoreBeyond7Days() {
         let loads = MuscleFatigueMap.loads(events: [
             Event(muscle: "lats", involvement: 1.0, daysAgo: 10),
             Event(muscle: "lats", involvement: 1.0, daysAgo: 1),
-        ], window: .d14)
+        ])
         XCTAssertEqual(loads.first { $0.muscle == "lats" }!.weeklySets, 1.0, accuracy: 1e-9)
-    }
-
-    // weeklySets is a fixed 7-day count, INDEPENDENT of the display window: a muscle in the .d3 map that
-    // also trained 5–6 days ago shows the full 7-day volume, identical to .d7 (regression for the .d3
-    // truncation bug, where days 4–7 were dropped before the ≤7 weekly guard and read 1.0 vs 3.0).
-    func testWeeklySetsIndependentOfWindow() {
-        let events = [
-            Event(muscle: "back", involvement: 1.0, daysAgo: 1),  // inside .d3 → muscle appears in map
-            Event(muscle: "back", involvement: 1.0, daysAgo: 5),  // outside .d3 window, inside 7-day count
-            Event(muscle: "back", involvement: 1.0, daysAgo: 6),
-        ]
-        let d3 = MuscleFatigueMap.loads(events: events, window: .d3).first { $0.muscle == "back" }!
-        let d7 = MuscleFatigueMap.loads(events: events, window: .d7).first { $0.muscle == "back" }!
-        XCTAssertEqual(d3.weeklySets, 3.0, accuracy: 1e-9)   // was 1.0 before the fix
-        XCTAssertEqual(d3.weeklySets, d7.weeklySets, accuracy: 1e-9)
     }
 
     // 7 — cross with systemic recovery: red recovery gates everything; high recovery clears fresh muscles.
@@ -90,7 +84,7 @@ final class MuscleFatigueMapTests: XCTestCase {
         let loads = MuscleFatigueMap.loads(events: [
             Event(muscle: "chest", involvement: 1.0, daysAgo: 0),   // loaded (the max)
             Event(muscle: "calves", involvement: 0.5, daysAgo: 6),  // fresh
-        ], window: .d7)
+        ])
 
         let gated = MuscleFatigueMap.recommendation(loads: loads, recovery: 20)
         XCTAssertTrue(gated.gatedBySystemic)
@@ -115,7 +109,44 @@ final class MuscleFatigueMapTests: XCTestCase {
         let loads = MuscleFatigueMap.loads(events: [
             Event(muscle: "biceps", involvement: 1.0, daysAgo: 5),
             Event(muscle: "biceps", involvement: 1.0, daysAgo: 2),
-        ], window: .d7)
+        ])
         XCTAssertEqual(loads.first { $0.muscle == "biceps" }!.daysSinceLast, 2)
+    }
+
+    // MARK: - Weekly volume per muscle (FER-719, the «Volumen por músculo» screen)
+
+    // 9 — exact input→output: 28 days with 48 involvement-weighted sets of chest → 12/week (within);
+    // 8 sets of hamstrings over the same 4 weeks → 2/week (below → amber in the UI).
+    func testWeeklyVolumesAveragesOverTheFullSpan() {
+        // 48 chest sets and 16 half-involvement hamstring sets spread anywhere inside the 28-day
+        // span — the average only depends on the totals.
+        let events = (0..<48).map { Event(muscle: "chest", involvement: 1.0, daysAgo: $0 % 28) }
+            + (0..<16).map { Event(muscle: "hamstrings", involvement: 0.5, daysAgo: $0 % 28) }
+
+        let vols = MuscleFatigueMap.weeklyVolumes(events: events, days: 28)
+        let chest = vols.first { $0.muscle == "chest" }!
+        XCTAssertEqual(chest.setsPerWeek, 12.0, accuracy: 1e-9)     // 48 / 4 weeks
+        XCTAssertEqual(chest.band, .within)
+        let hams = vols.first { $0.muscle == "hamstrings" }!
+        XCTAssertEqual(hams.setsPerWeek, 2.0, accuracy: 1e-9)       // 16·0.5 / 4 weeks
+        XCTAssertEqual(hams.band, .below)
+        // sorted by volume descending
+        XCTAssertEqual(vols.map(\.muscle), ["chest", "hamstrings"])
+    }
+
+    // 10 — the span filters: a set outside the trailing `days` doesn't count; the divisor is the
+    // full span even if the user only trained part of it (honest average, not best week).
+    func testWeeklyVolumesSpanFilterAndDilution() {
+        let events = [
+            Event(muscle: "back", involvement: 1.0, daysAgo: 3),
+            Event(muscle: "back", involvement: 1.0, daysAgo: 40),   // outside a 30-day span
+        ]
+        let vols = MuscleFatigueMap.weeklyVolumes(events: events, days: 30)
+        XCTAssertEqual(vols.count, 1)
+        XCTAssertEqual(vols[0].setsPerWeek, 1.0 / (30.0 / 7.0), accuracy: 1e-9)   // ≈ 0.23/wk
+        XCTAssertEqual(vols[0].band, .below)
+        // days is clamped to ≥ 7 (a week is the smallest unit)
+        let clamped = MuscleFatigueMap.weeklyVolumes(events: [Event(muscle: "back", involvement: 1.0, daysAgo: 0)], days: 1)
+        XCTAssertEqual(clamped[0].setsPerWeek, 1.0, accuracy: 1e-9)
     }
 }

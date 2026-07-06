@@ -1,6 +1,278 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    " below the band · they could take 2–3 more sets a week.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " below the band · they could take 2–3 more sets a week."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " bajo la banda · podrían absorber 2–3 series más por semana."
+          }
+        }
+      }
+    },
+    " still carries load.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " still carries load."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " aún carga."
+          }
+        }
+      }
+    },
+    "%@ sets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sets"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ series"
+          }
+        }
+      }
+    },
+    "%@ sets per week": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sets per week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ series por semana"
+          }
+        }
+      }
+    },
+    "1 y": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 y"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 a"
+          }
+        }
+      }
+    },
+    "30 d": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 d"
+          }
+        }
+      }
+    },
+    "6 m": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 m"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6 m"
+          }
+        }
+      }
+    },
+    "90 d": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90 d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90 d"
+          }
+        }
+      }
+    },
+    "above the band": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "above the band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sobre la banda"
+          }
+        }
+      }
+    },
+    "All fresh.\nTrain what you like.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All fresh.\nTrain what you like."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo fresco.\nEntrena lo que quieras."
+          }
+        }
+      }
+    },
+    "below the band": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "below the band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bajo la banda"
+          }
+        }
+      }
+    },
+    "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against a 10–20 sets-per-muscle band (Schoenfeld 2017). The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against a 10–20 sets-per-muscle band (Schoenfeld 2017). The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días: el curso temporal de la síntesis de proteína muscular (MacDougall 1995; Damas 2015). El color es relativo a tu músculo más cargado, así que lee cuáles de tus músculos están calientes ahora. El volumen semanal se juzga contra una banda de 10–20 series por músculo (Schoenfeld 2017). La recomendación lo cruza con la recuperación de tu banda: un día de recuperación baja lo manda todo a descanso."
+          }
+        }
+      }
+    },
+    "Each set loads the muscles it works and fades by half every 2 days · ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each set loads the muscles it works and fades by half every 2 days · "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada serie carga los músculos que trabaja y decae a la mitad cada 2 días · "
+          }
+        }
+      }
+    },
+    "Every muscle you train is inside or above the band.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every muscle you train is inside or above the band."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos los músculos que entrenas están dentro o encima de la banda."
+          }
+        }
+      }
+    },
+    "Everything still carries load.\nGive it a day or go light.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything still carries load.\nGive it a day or go light."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo aún carga.\nDale un día o entrena ligero."
+          }
+        }
+      }
+    },
+    "Fresh: ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fresh: "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fresco: "
+          }
+        }
+      }
+    },
+    "Log your workouts and you'll see each muscle's weekly volume against the band.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log your workouts and you'll see each muscle's weekly volume against the band."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra tus entrenamientos y verás el volumen semanal de cada músculo contra la banda."
+          }
+        }
+      }
+    },
     "Looked steady.": {
       "extractionState": "manual",
       "localizations": {
@@ -31,6 +303,166 @@
           "stringUnit": {
             "state": "translated",
             "value": "Se vieron algunos latidos extra o salteados."
+          }
+        }
+      }
+    },
+    "Most loaded · 7 days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Most loaded · 7 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más cargados · 7 días"
+          }
+        }
+      }
+    },
+    "No recovery reading today · the map shows muscle load only.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No recovery reading today · the map shows muscle load only."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin lectura de recuperación hoy · el mapa muestra solo la carga muscular."
+          }
+        }
+      }
+    },
+    "No sets in this range": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sets in this range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin series en este rango"
+          }
+        }
+      }
+    },
+    "Recovery %lld · keep it moderate today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery %lld · keep it moderate today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación %lld · hoy modera la intensidad."
+          }
+        }
+      }
+    },
+    "Recovery %lld · today calls for rest.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery %lld · today calls for rest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación %lld · hoy manda el descanso."
+          }
+        }
+      }
+    },
+    "Recovery %lld · today's gate doesn't hold you back.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery %lld · today's gate doesn't hold you back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación %lld · el semáforo de hoy no te frena."
+          }
+        }
+      }
+    },
+    "See the method ›": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See the method ›"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver el método ›"
+          }
+        }
+      }
+    },
+    "Sets per week · the gray band is the 10–20 range (Schoenfeld 2017)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sets per week · the gray band is the 10–20 range (Schoenfeld 2017)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series por semana · la franja gris es la banda 10–20 (Schoenfeld 2017)"
+          }
+        }
+      }
+    },
+    "The rest can wait.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The rest can wait."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo demás puede esperar."
+          }
+        }
+      }
+    },
+    "Today calls for rest.\nRecover first.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today calls for rest.\nRecover first."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy toca descanso.\nRecupera primero."
           }
         }
       }
@@ -116,6 +548,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Un vistazo a tu ritmo"
+          }
+        }
+      }
+    },
+    "Volume per muscle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume per muscle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen por músculo"
           }
         }
       }
@@ -681,6 +1129,22 @@
         }
       }
     },
+    "within the band": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "within the band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dentro de la banda"
+          }
+        }
+      }
+    },
     "Your rhythm, beat to beat": {
       "extractionState": "manual",
       "localizations": {
@@ -816,16 +1280,6 @@
           "stringUnit": {
             "state": "translated",
             "value": " de %@. Una semana lo confirma en tu cuerpo."
-          }
-        }
-      }
-    },
-    " — give it a day before training them again.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": ", dales un día antes de volver."
           }
         }
       }
@@ -3180,36 +3634,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld años más joven que tu edad de %lld."
-          }
-        }
-      }
-    },
-    "%lld · Base": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld · Base"
-          }
-        }
-      }
-    },
-    "%lld · Clear": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld · Despejada"
-          }
-        }
-      }
-    },
-    "%lld · Low": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld · Baja"
           }
         }
       }
@@ -12866,16 +13290,6 @@
         }
       }
     },
-    "Each set adds load to the muscles it works, decaying by half every two days — the time course of muscle protein synthesis (MacDougall 1995). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against a 10–20 sets-per-muscle band (Schoenfeld 2017). The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días, el curso de la síntesis de proteína muscular (MacDougall 1995). El color es relativo a tu músculo más cargado, así que lees cuáles de tus músculos están calientes ahora. El volumen semanal se compara con una banda de 10–20 series por músculo (Schoenfeld 2017). La recomendación lo cruza con la recuperación de tu banda: un día de baja recuperación lo manda todo a descansar."
-          }
-        }
-      }
-    },
     "Each signal becomes a score of how far above or below your personal average it sits (a z-score). They're combined with the weights above and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis.": {
       "extractionState": "manual",
       "localizations": {
@@ -13908,22 +14322,6 @@
         }
       }
     },
-    "Everything you train is still loaded.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Everything you train is still loaded."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Todo lo que entrenas sigue cargado."
-          }
-        }
-      }
-    },
     "Excellent": {
       "extractionState": "manual",
       "localizations": {
@@ -14782,32 +15180,6 @@
         }
       }
     },
-    "Fresh to train today:": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Frescos para entrenar hoy:"
-          }
-        }
-      }
-    },
-    "Fresh to train — pick anything.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fresh to train — pick anything."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fresco para entrenar: elige lo que quieras."
-          }
-        }
-      }
-    },
     "From": {
       "localizations": {
         "en": {
@@ -15080,22 +15452,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prepara tu banda"
-          }
-        }
-      }
-    },
-    "Give it a day or train light.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Give it a day or train light."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dale un día o entrena suave."
           }
         }
       }
@@ -21112,22 +21468,6 @@
         }
       }
     },
-    "Most loaded": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Most loaded"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Más cargados"
-          }
-        }
-      }
-    },
     "Most of the night. A transition in which your body winds down.": {
       "extractionState": "manual",
       "localizations": {
@@ -26896,26 +27236,6 @@
         }
       }
     },
-    "Recovery is at base": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recuperación en base"
-          }
-        }
-      }
-    },
-    "Recovery is clear": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recuperación despejada"
-          }
-        }
-      }
-    },
     "Recovery is clear and these muscles are fresh.": {
       "localizations": {
         "en": {
@@ -26928,22 +27248,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu recuperación está en verde y estos músculos están frescos."
-          }
-        }
-      }
-    },
-    "Recovery is low": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recovery is low"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La recuperación está baja"
           }
         }
       }
@@ -27058,16 +27362,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "La recuperación pondera tu HRV contra tu línea base personal (~60%), la frecuencia cardiaca en reposo (~20%), el rendimiento de sueño (~15%) y la respiración (~5%). El esfuerzo del día es una carga cardiovascular de 0 a 21 según el tiempo en zonas de frecuencia cardiaca. El sueño se clasifica por etapas a partir del movimiento y la frecuencia cardiaca. Todo se calcula aquí con los datos crudos de la banda, funciona para cualquier día en que NOOP haya recolectado datos."
-          }
-        }
-      }
-    },
-    "Recovery · today's gate": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recuperación · el gate de hoy"
           }
         }
       }
@@ -31348,16 +31642,6 @@
         }
       }
     },
-    "Still loaded today: ": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sigue cargado hoy: "
-          }
-        }
-      }
-    },
     "Still loaded — give it a day or two before training it again.": {
       "localizations": {
         "en": {
@@ -32283,22 +32567,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "HOY"
-          }
-        }
-      }
-    },
-    "Take it easy — recover first.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Take it easy — recover first."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tómatelo con calma: recupérate primero."
           }
         }
       }
@@ -33977,16 +34245,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cronometrando, %lld segundos. Objetivo %lld segundos."
-          }
-        }
-      }
-    },
-    "Tint lens": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lente del tinte"
           }
         }
       }
@@ -37512,22 +37770,6 @@
         }
       }
     },
-    "Window %lld days": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Window %lld days"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ventana de %lld días"
-          }
-        }
-      }
-    },
     "Windred et al., Sleep 2024 (regularity); Miller et al., J Sports Sci 2020 (wrist staging vs PSG); Hirshkowitz et al., 2015 (sleep need).": {
       "extractionState": "manual",
       "localizations": {
@@ -38197,22 +38439,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tienes la versión más reciente (%@)."
-          }
-        }
-      }
-    },
-    "You're recovered — everything's fresh.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You're recovered — everything's fresh."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estás recuperado: todo está fresco."
           }
         }
       }
@@ -39541,16 +39767,6 @@
         }
       }
     },
-    "Your recovery is clear — fresh to train:": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu recuperación está despejada, frescos para entrenar:"
-          }
-        }
-      }
-    },
     "Your recovery is high for you. A good day to add weight or sets.": {
       "localizations": {
         "en": {
@@ -39616,22 +39832,6 @@
         }
       }
     },
-    "Your recovery is low today.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your recovery is low today."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu recuperación está baja hoy."
-          }
-        }
-      }
-    },
     "Your recovery is low — rest or train light today.": {
       "localizations": {
         "en": {
@@ -39644,16 +39844,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu recuperación está baja: descansa o entrena suave hoy."
-          }
-        }
-      }
-    },
-    "Your recovery is moderate — fresh to train:": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu recuperación es moderada, frescos para entrenar:"
           }
         }
       }
@@ -42318,54 +42508,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "ms"
-          }
-        }
-      }
-    },
-    "muscleMap.gateTick.base": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "BASE"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "BASE"
-          }
-        }
-      }
-    },
-    "muscleMap.gateTick.clear": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "CLEAR"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DESPEJADA"
-          }
-        }
-      }
-    },
-    "muscleMap.gateTick.low": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "LOW"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "BAJA"
           }
         }
       }

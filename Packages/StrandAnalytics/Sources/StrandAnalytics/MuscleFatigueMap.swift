@@ -19,8 +19,14 @@ import Foundation
 //        Damas F, Phillips S, Vechin FC, Ugrinowitsch C. "A review of resistance training-induced
 //        changes in skeletal muscle protein synthesis…" Sports Med 45(6):801–7, 2015.
 //
-//   • The 3/7/14-day window FILTERS which sets enter (sets older than the window are dropped);
-//     a wider window shows more accumulated history. Decay is the same across windows.
+//   • There is NO recency window anymore (FER-719): the decay itself carries time — a set 10 days
+//     old weighs 2^(−5) ≈ 0.03 and vanishes on its own. The old 3/7/14-day lens double-encoded
+//     recency (filter + decay) and was retired with the Entrenar v3 handoff; the caller bounds the
+//     event span it fetches (the screens read ~84 days).
+//
+//   • The manual «mark all recovered» reset (FER-525) is PRESERVED and is orthogonal to the decay:
+//     it is a data filter applied by the caller (work sets before the reset timestamp never become
+//     events), so the map reads all-fresh without touching this math or deleting history.
 //
 //   • «Fresh vs loaded» is RELATIVE to the user's own current map — `relative = load / max(load)`
 //     across their muscles — so it reads "which of YOUR muscles are most loaded right now" with
@@ -78,12 +84,6 @@ public enum MuscleFatigueMap {
         }
     }
 
-    /// The recency lens for the map. Filters which sets count; wider = more accumulated history.
-    public enum Window: Int, Sendable, CaseIterable {
-        case d3 = 3, d7 = 7, d14 = 14
-        public var days: Int { rawValue }
-    }
-
     // MARK: - Outputs
 
     /// How loaded a muscle is relative to the user's own map.
@@ -98,11 +98,11 @@ public enum MuscleFatigueMap {
     /// One muscle's row in the map.
     public struct MuscleLoad: Sendable, Equatable {
         public let muscle: String
-        /// Decayed, involvement-weighted load within the window (the map's color magnitude).
+        /// Decayed, involvement-weighted load (the map's color magnitude).
         public let load: Double
         /// `load` as a fraction of the most-loaded muscle (0…1).
         public let relative: Double
-        /// Whole days since the most recent set that hit this muscle (within the window).
+        /// Whole days since the most recent set that hit this muscle.
         public let daysSinceLast: Int
         public let state: LoadState
         /// Raw involvement-weighted work sets in the last 7 days (no decay).
@@ -134,24 +134,23 @@ public enum MuscleFatigueMap {
         pow(2.0, -Double(max(0, daysAgo)) / halfLifeDays)
     }
 
-    /// Per-muscle load map for the given window, sorted by load descending (most-loaded first).
-    /// Returns an empty array when there are no events in the window — the honest empty state.
-    public static func loads(events: [MuscleSetEvent], window: Window) -> [MuscleLoad] {
-        let inWindow = events.filter { $0.daysAgo >= 0 && $0.daysAgo <= window.days }
-        guard !inWindow.isEmpty else { return [] }
+    /// Per-muscle load map, sorted by load descending (most-loaded first). Every non-negative event
+    /// enters; the decay alone decides how much of it is still felt (no recency window, FER-719).
+    /// Returns an empty array when there are no events — the honest empty state.
+    public static func loads(events: [MuscleSetEvent]) -> [MuscleLoad] {
+        let valid = events.filter { $0.daysAgo >= 0 }
+        guard !valid.isEmpty else { return [] }
 
-        // Weekly volume is a fixed 7-day count, INDEPENDENT of the display window: compute it over the
-        // FULL event set, not `inWindow`. (Bug fix: accumulating over `inWindow` meant the .d3 lens
-        // dropped sets at daysAgo 4…7 before the ≤7 guard ran — identical data read 1.0 set/wk on .d3 vs
-        // 3.0 on .d7/.d14, which could flip a muscle's Schoenfeld band purely from the chosen lens.)
+        // Weekly volume stays a fixed 7-day raw count — the Schoenfeld band judges sets/week, not
+        // decayed load.
         var weekly: [String: Double] = [:]
-        for e in events where e.daysAgo >= 0 && e.daysAgo <= 7 {
+        for e in valid where e.daysAgo <= 7 {
             weekly[e.muscle, default: 0] += e.involvement
         }
 
         var decayed: [String: Double] = [:]
         var lastSeen: [String: Int] = [:]
-        for e in inWindow {
+        for e in valid {
             decayed[e.muscle, default: 0] += e.involvement * decay(daysAgo: e.daysAgo)
             lastSeen[e.muscle] = min(lastSeen[e.muscle] ?? Int.max, e.daysAgo)
         }
@@ -187,6 +186,38 @@ public enum MuscleFatigueMap {
         return .within
     }
 
+    // MARK: - Weekly volume per muscle (the «Volumen por músculo» screen, FER-719)
+
+    /// One muscle's average weekly volume over a chosen span, judged against the Schoenfeld band.
+    public struct MuscleWeeklyVolume: Sendable, Equatable {
+        public let muscle: String
+        /// Involvement-weighted work sets per week, averaged over the whole span (total / weeks).
+        public let setsPerWeek: Double
+        public let band: VolumeBand
+        public init(muscle: String, setsPerWeek: Double, band: VolumeBand) {
+            self.muscle = muscle; self.setsPerWeek = setsPerWeek; self.band = band
+        }
+    }
+
+    /// Average effective (involvement-weighted) sets per week per muscle over the trailing `days`,
+    /// sorted by volume descending. The average divides by the FULL span (`days / 7` weeks), so an
+    /// untrained stretch honestly dilutes the number — «what you actually averaged», not «your best
+    /// week». Judged against the same 10–20 sets/week band (Schoenfeld 2017; the 20 ceiling is a
+    /// product convention — see the header). `days` is clamped to ≥ 7 so a week is the smallest unit.
+    public static func weeklyVolumes(events: [MuscleSetEvent], days: Int) -> [MuscleWeeklyVolume] {
+        let span = max(7, days)
+        let weeks = Double(span) / 7.0
+        var totals: [String: Double] = [:]
+        for e in events where e.daysAgo >= 0 && e.daysAgo < span {
+            totals[e.muscle, default: 0] += e.involvement
+        }
+        return totals.map { muscle, total in
+            let perWeek = total / weeks
+            return MuscleWeeklyVolume(muscle: muscle, setsPerWeek: perWeek, band: band(weeklySets: perWeek))
+        }
+        .sorted { ($0.setsPerWeek, $1.muscle) > ($1.setsPerWeek, $0.muscle) }
+    }
+
     // MARK: - Cross with systemic recovery
 
     /// Per-muscle readiness, crossing local freshness with the strap's systemic recovery (0–100,
@@ -201,7 +232,7 @@ public enum MuscleFatigueMap {
     }
 
     /// The whole-map recommendation: the fresh muscles cleared to train today, gated by systemic
-    /// recovery. `loads` is expected already sorted by load (as `loads(events:window:)` returns it);
+    /// recovery. `loads` is expected already sorted by load (as `loads(events:)` returns it);
     /// ready muscles come back most-fresh first.
     public static func recommendation(loads: [MuscleLoad], recovery: Double?) -> Recommendation {
         if let r = recovery, r < recoveryRedMax {
