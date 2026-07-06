@@ -545,6 +545,15 @@ struct MetricInfoSheet: View {
     /// other metric (and on macOS). Run lazily when the sheet appears. (FER-110)
     var strainCurveLoader: (() async -> [TrendPoint])? = nil
 
+    /// FER-730 §5 · «Hoy en tu plan» in the Day Strain summary: the SAME `TrainingBlock` Today's card
+    /// shows (routine / rest / streak / pace), so the two never disagree. Supplied only for the strain
+    /// sheet; nil (or no split) hides the block. (FER-710)
+    var trainingBlock: DailyBrief.TrainingBlock? = nil
+
+    /// The «Empezar» action for the plan block's CTA — opens Entrenar on today's session, mirroring the
+    /// Today card. nil hides the CTA (and on a rest day there is none).
+    var onStartTraining: (() -> Void)? = nil
+
     /// Loads today's 24h HR curve (5-minute buckets). Supplied only for the Heart Rate sheet; nil
     /// elsewhere (and on macOS). Run lazily when the sheet appears. (FER-137)
     var heartRateCurveLoader: (() async -> [TrendPoint])? = nil
@@ -672,11 +681,14 @@ struct MetricInfoSheet: View {
                     levelsBlock
                     sleepParaEstaNoche
                 } else if isStrainSummary {
-                    // F2 (FER-710): Day Strain — verdict by level + the level instrument. (The intraday
-                    // accumulated curve of §5 is a later refinement; the sheet reads the levels today.)
+                    // F2 (FER-710) + §5 (FER-730): Day Strain — verdict by level, then the intraday
+                    // accumulated curve (between the verdict and the selector), the level instrument, and
+                    // «Hoy en tu plan».
                     vitalReading
                     headlineText
+                    strainIntradaySection
                     levelsBlock
+                    if let tb = trainingBlock { strainPlanBlock(tb) }
                 } else {
                     headlineText
                     if info.usesLevels {
@@ -1669,6 +1681,149 @@ struct MetricInfoSheet: View {
     }()
     private static func hourString(_ date: Date) -> String { hourFormatter.string(from: date) }
 
+    // MARK: - Day-strain intraday curve + «Hoy en tu plan» (FER-730 §5)
+
+    /// «Hoy, hora a hora»: today's accumulated strain — solid through the lived portion, a flat dashed
+    /// projection from «now» to midnight (strain only accumulates, so the honest projection is «if you
+    /// stop here»), a breathing dot at now, and a fixed 00/6/12/18/24 axis. No recommended ceiling or
+    /// planned-training window is drawn: neither has a real data source yet, so those handoff adornments
+    /// are omitted rather than invented (a follow-up issue owns the real guardrail + window). (§5)
+    @ViewBuilder private var strainIntradaySection: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            Text("Today, hour by hour").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if strainCurve.count > 1 {
+                StrainIntradayCurve(points: strainCurve, hue: theme.dataStrain, theme: theme)
+                    .frame(height: 130)
+                    .accessibilityElement()
+                    .accessibilityLabel(Text("Accumulated day strain, rising through the day and projected flat to midnight."))
+                HStack(spacing: 16) {
+                    curveLegend(dashed: false, label: "lived")
+                    curveLegend(dashed: true, label: "projected")
+                }
+            } else if strainLoading {
+                loadingWell(height: 130)
+            } else {
+                emptyWell(icon: "chart.xyaxis.line", text: "Not enough activity yet today to chart.")
+            }
+        }
+    }
+
+    /// One legend entry: a short solid swatch, or three dashes, in the strain hue + its label.
+    private func curveLegend(dashed: Bool, label: LocalizedStringKey) -> some View {
+        HStack(spacing: 5) {
+            if dashed {
+                HStack(spacing: 3) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        Capsule().fill(theme.dataStrain.opacity(0.75)).frame(width: 3, height: 2.4)
+                    }
+                }
+            } else {
+                Capsule().fill(theme.dataStrain).frame(width: 14, height: 2.4)
+            }
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «Hoy en tu plan» (§5): the same training block Today's card shows, in a paper block with the strain
+    /// left bar — training day (routine + streak + pace + «Empezar» CTA) or rest day. Copy is the shared
+    /// es-MX literals Today already ships, so the two surfaces never drift. No em dashes.
+    @ViewBuilder private func strainPlanBlock(_ tb: DailyBrief.TrainingBlock) -> some View {
+        HStack(spacing: 0) {
+            Rectangle().fill(theme.dataStrain).frame(width: 2.5)
+            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                Text("Hoy en tu plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                switch tb.state {
+                case .training:
+                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                        Text(tb.routineName ?? "").font(StrandFont.title2).foregroundStyle(theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        planStreakChip(tb.streakDays)
+                        Spacer(minLength: 0)
+                    }
+                    if let copy = tb.paceCopy {
+                        HStack(spacing: NoopMetrics.space2) {
+                            Image(systemName: planPaceGlyph(tb.pace)).font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(planPaceColor(tb.pace))
+                            Text(copy).font(StrandFont.subhead).foregroundStyle(planPaceColor(tb.pace))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                    if let start = onStartTraining {
+                        Button(action: start) {
+                            HStack(spacing: NoopMetrics.space2) {
+                                Text(tb.routineName ?? String(localized: "Tu entrenamiento"))
+                                    .font(InstrumentoType.grotesk(13, weight: .bold))
+                                    .foregroundStyle(theme.paperHi)
+                                    .lineLimit(1).minimumScaleFactor(0.8)
+                                Spacer(minLength: NoopMetrics.space2)
+                                HStack(spacing: NoopMetrics.space1) {
+                                    Text("Empezar")
+                                        .font(InstrumentoType.grotesk(11, weight: .semibold))
+                                        .tracking(1.2).textCase(.uppercase)
+                                    Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
+                                }
+                                .foregroundStyle(theme.ctaAccent)
+                            }
+                            .padding(.horizontal, NoopMetrics.cardPadding)
+                            .padding(.vertical, 14)
+                            .background(theme.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, NoopMetrics.space1)
+                        .accessibilityHint(Text("Abre Entrenar y arranca la sesión de hoy"))
+                    }
+                case .rest:
+                    HStack(spacing: NoopMetrics.gap) {
+                        Image(systemName: "moon.fill").font(.system(size: 16)).foregroundStyle(theme.inkSecondary)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Hoy descansas").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                            Text("tu split no asigna rutina hoy").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(14)
+            Spacer(minLength: 0)
+        }
+        .background(theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// The streak chip: flame + «racha N días» (singular «día» at 1). Same number Entrenar shows.
+    private func planStreakChip(_ days: Int) -> some View {
+        let unit = days == 1 ? "día" : "días"
+        return HStack(spacing: 4) {
+            Image(systemName: "flame.fill").font(.system(size: 11)).foregroundStyle(theme.warning)
+            Text("racha \(days) \(unit)").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        }
+        .padding(.horizontal, NoopMetrics.space2).padding(.vertical, 2)
+        .background(theme.paper, in: Capsule())
+        .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 0.5))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Racha de \(days) \(unit) en tu plan"))
+    }
+
+    private func planPaceColor(_ pace: DailyBrief.TrainingBlock.Pace?) -> Color {
+        switch pace {
+        case .up:   return theme.verdict
+        case .down: return theme.warning
+        case .hold, .none: return theme.inkSecondary
+        }
+    }
+
+    private func planPaceGlyph(_ pace: DailyBrief.TrainingBlock.Pace?) -> String {
+        switch pace {
+        case .up:   return "arrow.up.right"
+        case .down: return "arrow.down.right"
+        case .hold, .none: return "arrow.right"
+        }
+    }
+
     // MARK: - Shared chart wells (loading / empty), themed for warm paper
 
     private func loadingWell(height: CGFloat) -> some View {
@@ -1951,6 +2106,66 @@ private struct SheetContentHeightKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
+/// The bespoke intraday accumulated-strain curve (FER-730 §5). Solid through the lived portion, a flat
+/// dashed projection from «now» to midnight, an area wash under the lived line, a breathing dot at now,
+/// and a fixed 00/6/12/18/24 hour axis. Pure StrandDesign tokens; no invented ceiling/window (§5).
+private struct StrainIntradayCurve: View {
+    let points: [TrendPoint]
+    let hue: Color
+    let theme: InstrumentoTheme
+
+    var body: some View {
+        VStack(spacing: 4) {
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                let startOfDay = Calendar.current.startOfDay(for: points.last?.date ?? Date())
+                let peak = points.map(\.value).max() ?? 1
+                let vMax = max(peak * 1.15, 1)
+                let pts: [CGPoint] = points.map { p in
+                    let f = min(max(p.date.timeIntervalSince(startOfDay) / 86_400, 0), 1)
+                    return CGPoint(x: CGFloat(f) * w, y: h - CGFloat(p.value / vMax) * h)
+                }
+                let nowPt = pts.last ?? CGPoint(x: 0, y: h)
+
+                ZStack(alignment: .topLeading) {
+                    Path { p in p.move(to: CGPoint(x: 0, y: h)); p.addLine(to: CGPoint(x: w, y: h)) }
+                        .stroke(theme.hairline, lineWidth: 1)
+                    // Area wash under the lived line.
+                    Path { p in
+                        guard let first = pts.first else { return }
+                        p.move(to: CGPoint(x: first.x, y: h))
+                        for pt in pts { p.addLine(to: pt) }
+                        p.addLine(to: CGPoint(x: nowPt.x, y: h))
+                        p.closeSubpath()
+                    }.fill(hue.opacity(0.10))
+                    // Lived line (solid).
+                    Path { p in
+                        guard let first = pts.first else { return }
+                        p.move(to: first)
+                        for pt in pts.dropFirst() { p.addLine(to: pt) }
+                    }.stroke(hue, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                    // Projection: flat, dashed, now → midnight (strain only accumulates).
+                    if nowPt.x < w - 0.5 {
+                        Path { p in
+                            p.move(to: nowPt)
+                            p.addLine(to: CGPoint(x: w, y: nowPt.y))
+                        }.stroke(hue.opacity(0.75), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [1.5, 4]))
+                    }
+                    BreathingDot(color: hue, radius: 3.4).position(x: nowPt.x, y: nowPt.y)
+                }
+            }
+            HStack(spacing: 0) {
+                ForEach(["00", "6", "12", "18", "24"], id: \.self) { label in
+                    Text(verbatim: label).font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
+                    if label != "24" { Spacer(minLength: 0) }
+                }
+            }
+            .frame(height: 12)
+        }
+    }
+}
+
 private struct PresentationBackgroundModifier: ViewModifier {
     let paper: Color
     func body(content: Content) -> some View {
@@ -1980,7 +2195,11 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
 #Preview("MetricInfoSheet — Strain (curve)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .strain(11.5),
-                        strainCurveLoader: { sampleStrainCurve(score: 11.5) })
+                        strainCurveLoader: { sampleStrainCurve(score: 11.5) },
+                        trainingBlock: DailyBrief.TrainingBlock(
+                            state: .training, routineName: "Empuje A", streakDays: 6,
+                            pace: .up, paceCopy: "Recuperación alta para ti · puedes con todo el plan"),
+                        onStartTraining: {})
     }
 }
 
