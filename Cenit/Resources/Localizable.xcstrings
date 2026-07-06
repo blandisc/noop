@@ -27521,7 +27521,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Primario en tinta llena · asistente a media"
+            "value": "Principal en tinta plena · asistente en media"
           }
         }
       }
@@ -50898,6 +50898,118 @@
           "stringUnit": {
             "state": "translated",
             "value": "agudo (~7 d) ÷ crónico (~28 d) · lo que la ciencia llama ACWR"
+          }
+        }
+      }
+    },
+    "Variants": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variants"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variantes"
+          }
+        }
+      }
+    },
+    "Watch on YouTube": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watch on YouTube"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver en YouTube"
+          }
+        }
+      }
+    },
+    "Opens outside the app · uses the internet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens outside the app · uses the internet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre fuera de la app · usa internet"
+          }
+        }
+      }
+    },
+    "assisting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "assisting"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "asistente"
+          }
+        }
+      }
+    },
+    "View": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vista"
+          }
+        }
+      }
+    },
+    "Watch %@ on YouTube": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watch %@ on YouTube"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver %@ en YouTube"
+          }
+        }
+      }
+    },
+    "Opens YouTube outside the app": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens YouTube outside the app"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre YouTube fuera de la app"
           }
         }
       }

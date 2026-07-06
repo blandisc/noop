@@ -55,6 +55,17 @@ enum StrengthDisplay {
         }
     }
 
+    /// The resolved (localized) type label as a plain `String` — for the title overline, where it must
+    /// be de-duplicated against the equipment label (FER-739). Mirrors `typeLabel`'s keys.
+    static func typeName(_ t: ExerciseType) -> String {
+        switch t {
+        case .weightReps: return String(localized: "Weight × reps")
+        case .bodyweight: return String(localized: "Bodyweight")
+        case .time:       return String(localized: "Time")
+        case .distance:   return String(localized: "Distance")
+        }
+    }
+
     static func typeDetail(_ t: ExerciseType) -> LocalizedStringKey {
         switch t {
         case .weightReps: return "Barbell, dumbbell, machine, cable"
