@@ -40,6 +40,10 @@ struct MetricLevelsExplorer: View {
     /// Count overnight readings as «nights» rather than «days» in the phrase + the per-level counts. Sleep's
     /// duration block sets this true; the others read daily. (FER-572)
     var nightly: Bool = false
+    /// Bolder «ink thumb» selector (the active pill is a solid ink capsule with paper text) — the same
+    /// segmented look the Carga sheet uses. The summary sheets (`MetricInfoSheet`) opt in so every Today
+    /// card's selector reads identically; the Recuperación detail keeps the quiet surface thumb. (default false)
+    var inkThumb: Bool = false
     let accessibilityLabel: LocalizedStringKey
 
     /// The level the user is exploring — nil shows today's. Tapping a row highlights its band and re-reads
@@ -82,7 +86,7 @@ struct MetricLevelsExplorer: View {
 
     private var rangeControl: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme, inkThumb: inkThumb) { $0.label }
                 .onChange(of: range) { _ in selectedLevelIndex = nil }
             if window.fellBack {
                 Text("Showing the last \(window.rows.count) days")

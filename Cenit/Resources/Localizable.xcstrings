@@ -50869,6 +50869,38 @@
           }
         }
       }
+    },
+    "Load ratio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load ratio"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ratio de carga"
+          }
+        }
+      }
+    },
+    "acute (~7 d) ÷ chronic (~28 d) · what science calls ACWR": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "acute (~7 d) ÷ chronic (~28 d) · what science calls ACWR"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "agudo (~7 d) ÷ crónico (~28 d) · lo que la ciencia llama ACWR"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
