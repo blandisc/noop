@@ -1,0 +1,6 @@
+// FER-722: default (empty) key for the opt-in exercise-media downloader. Missing/empty is safe —
+// ExerciseDBClient.init? simply fails to construct and the feature stays inert.
+// To enable it locally: copy Cenit/Secrets.xcconfig.example to Cenit/Secrets.xcconfig (gitignored)
+// and set your own RapidAPI key there — it's `#include?`d below, so it only takes effect if present.
+EDB_API_KEY =
+#include? "Secrets.xcconfig"

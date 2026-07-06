@@ -554,6 +554,14 @@ struct MetricInfoSheet: View {
     /// Today card. nil hides the CTA (and on a rest day there is none).
     var onStartTraining: (() -> Void)? = nil
 
+    /// FER-732 · today's recommended day-strain ceiling (0–21), a personal recovery-scaled guardrail
+    /// (`StrainCeiling`). Supplied only for the strain sheet; nil hides the ceiling line.
+    var strainCeiling: Double? = nil
+
+    /// FER-732 · the habitual training window (`TrainingHabit`), derived from past session start hours.
+    /// Supplied only for the strain sheet; nil hides the amber band.
+    var trainingWindow: TrainingHabit.Window? = nil
+
     /// Loads today's 24h HR curve (5-minute buckets). Supplied only for the Heart Rate sheet; nil
     /// elsewhere (and on macOS). Run lazily when the sheet appears. (FER-137)
     var heartRateCurveLoader: (() async -> [TrendPoint])? = nil
@@ -1658,20 +1666,32 @@ struct MetricInfoSheet: View {
 
     /// «Hoy, hora a hora»: today's accumulated strain — solid through the lived portion, a flat dashed
     /// projection from «now» to midnight (strain only accumulates, so the honest projection is «if you
-    /// stop here»), a breathing dot at now, and a fixed 00/6/12/18/24 axis. No recommended ceiling or
-    /// planned-training window is drawn: neither has a real data source yet, so those handoff adornments
-    /// are omitted rather than invented (a follow-up issue owns the real guardrail + window). (§5)
+    /// stop here»), a breathing dot at now, and a fixed 00/6/12/18/24 axis. When the real data exists it
+    /// also draws the recommended ceiling (`StrainCeiling`, a dashed ink guardrail) and the habitual
+    /// training window (`TrainingHabit`, an amber band); each is omitted when its source is absent, so the
+    /// curve stays exactly as it was when neither is available. (§5, FER-732)
     @ViewBuilder private var strainIntradaySection: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             Text("Today, hour by hour").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if strainCurve.count > 1 {
-                StrainIntradayCurve(points: strainCurve, hue: theme.dataStrain, theme: theme)
+                StrainIntradayCurve(points: strainCurve, hue: theme.dataStrain, theme: theme,
+                                    ceiling: strainCeiling, window: trainingWindow)
                     .frame(height: 130)
                     .accessibilityElement()
-                    .accessibilityLabel(Text("Accumulated day strain, rising through the day and projected flat to midnight."))
+                    .accessibilityLabel(strainCurveAxLabel)
                 HStack(spacing: 16) {
                     curveLegend(dashed: false, label: "lived")
                     curveLegend(dashed: true, label: "projected")
+                    if strainCeiling != nil { ceilingLegend }
+                    if trainingWindow != nil { windowLegend }
+                }
+                if strainCeiling != nil {
+                    // Honest framing (FER-732 / CSO): the ceiling is a personal reference, not a goal
+                    // or a medical instruction, and you can pass it.
+                    Text("Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it.")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             } else if strainLoading {
                 loadingWell(height: 130)
@@ -1696,6 +1716,40 @@ struct MetricInfoSheet: View {
             Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// Legend entry for the recommended ceiling: a short dashed ink line. (FER-732)
+    private var ceilingLegend: some View {
+        HStack(spacing: 5) {
+            HStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Capsule().fill(theme.inkSecondary.opacity(0.55)).frame(width: 3, height: 1.6)
+                }
+            }
+            Text("ceiling").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Legend entry for the habitual training window: a small amber swatch. (FER-732)
+    private var windowLegend: some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 2).fill(theme.warning.opacity(0.14)).frame(width: 14, height: 9)
+            Text("your training").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// VoiceOver label for the curve, naming the ceiling / window only when they are actually drawn. (FER-732)
+    private var strainCurveAxLabel: Text {
+        var s = String(localized: "Accumulated day strain, rising through the day and projected flat to midnight.")
+        if strainCeiling != nil {
+            s += " " + String(localized: "A dashed line marks your recommended ceiling for today.")
+        }
+        if trainingWindow != nil {
+            s += " " + String(localized: "An amber band marks when you usually train.")
+        }
+        return Text(s)
     }
 
     /// «Hoy en tu plan» (§5): the same training block Today's card shows, in a paper block with the strain
@@ -2086,6 +2140,10 @@ private struct StrainIntradayCurve: View {
     let points: [TrendPoint]
     let hue: Color
     let theme: InstrumentoTheme
+    /// FER-732 · the recommended day-strain ceiling (0–21), a personal recovery-scaled guardrail. nil hides it.
+    var ceiling: Double? = nil
+    /// FER-732 · the habitual training window in decimal clock hours [0, 24]. nil hides the amber band.
+    var window: TrainingHabit.Window? = nil
 
     var body: some View {
         VStack(spacing: 4) {
@@ -2094,7 +2152,8 @@ private struct StrainIntradayCurve: View {
                 let h = geo.size.height
                 let startOfDay = Calendar.current.startOfDay(for: points.last?.date ?? Date())
                 let peak = points.map(\.value).max() ?? 1
-                let vMax = max(peak * 1.15, 1)
+                // The ceiling shares the axis, so keep it in view when it sits above today's peak.
+                let vMax = max(max(peak, ceiling ?? 0) * 1.15, 1)
                 let pts: [CGPoint] = points.map { p in
                     let f = min(max(p.date.timeIntervalSince(startOfDay) / 86_400, 0), 1)
                     return CGPoint(x: CGFloat(f) * w, y: h - CGFloat(p.value / vMax) * h)
@@ -2102,8 +2161,29 @@ private struct StrainIntradayCurve: View {
                 let nowPt = pts.last ?? CGPoint(x: 0, y: h)
 
                 ZStack(alignment: .topLeading) {
+                    // Planned-training window (amber), drawn first so the curve reads over it. (FER-732)
+                    if let window {
+                        let x0 = CGFloat(min(max(window.start / 24, 0), 1)) * w
+                        let x1 = CGFloat(min(max(window.end / 24, 0), 1)) * w
+                        theme.warning.opacity(0.14)
+                            .frame(width: max(0, x1 - x0), height: h)
+                            .position(x: (x0 + x1) / 2, y: h / 2)
+                    }
                     Path { p in p.move(to: CGPoint(x: 0, y: h)); p.addLine(to: CGPoint(x: w, y: h)) }
                         .stroke(theme.hairline, lineWidth: 1)
+                    // Recommended ceiling: a dashed ink line labelled at the left. (FER-732)
+                    if let ceiling {
+                        let cy = h - CGFloat(min(ceiling, vMax) / vMax) * h
+                        Path { p in p.move(to: CGPoint(x: 0, y: cy)); p.addLine(to: CGPoint(x: w, y: cy)) }
+                            .stroke(theme.inkSecondary.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                        Text("ceiling")
+                            .font(.system(size: 10))
+                            .foregroundStyle(theme.inkTertiary)
+                            .padding(.horizontal, 3)
+                            .background(theme.paper.opacity(0.85))
+                            .fixedSize()
+                            .position(x: 20, y: max(6, cy - 8))
+                    }
                     // Area wash under the lived line.
                     Path { p in
                         guard let first = pts.first else { return }
@@ -2172,7 +2252,9 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
                         trainingBlock: DailyBrief.TrainingBlock(
                             state: .training, routineName: "Empuje A", streakDays: 6,
                             pace: .up, paceCopy: "Recuperación alta para ti · puedes con todo el plan"),
-                        onStartTraining: {})
+                        onStartTraining: {},
+                        strainCeiling: 14.2,
+                        trainingWindow: TrainingHabit.Window(start: 16.5, end: 18.5))
     }
 }
 

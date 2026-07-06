@@ -36,8 +36,9 @@ Cénit is an iOS app — you build it from source:
 See [`docs/BUILD.md`](docs/BUILD.md) for the full build instructions.
 
 Everything runs **on your device**. The built-in Coach answers locally, with no
-network at all; the only thing that can ever leave your iPhone is the optional
-external AI Coach, and only after you add your own API key (see [Privacy](#privacy)).
+network at all; the only things that can ever leave your iPhone are the optional
+external AI Coach (only after you add your own API key) and the opt-in exercise
+media downloader (off by default — see [Privacy](#privacy)).
 
 ---
 
@@ -365,10 +366,21 @@ device and never leave it.
 
 The built-in Coach ("Ask your data") answers **on-device** — via Apple
 Intelligence when available, or a deterministic engine otherwise — with **no
-network**. The single exception in the whole app is the **optional external AI
-Coach**: off until you add your own API key, and even then it sends only a short
-text summary of recent metrics plus your question, never raw streams or
-identifiers. See [`docs/PRIVACY_SECURITY.md`](docs/PRIVACY_SECURITY.md).
+network**. There are exactly two exceptions in the whole app, both off by default:
+
+- The **optional external AI Coach**: off until you add your own API key, and
+  even then it sends only a short text summary of recent metrics plus your
+  question, never raw streams or identifiers.
+- The **opt-in exercise media downloader** ("Descargar biblioteca de
+  ejercicios" in Ajustes): off by default. If you turn it on, Cénit downloads
+  exercise thumbnails and short video loops from ExerciseDB (a third-party
+  service, via RapidAPI) and caches them on your iPhone forever, so they work
+  offline afterward. Only your IP address and the exercise's name are sent to
+  that service — no other data about you or your workouts ever is. Turning it
+  off stops future downloads without deleting what's already cached; a
+  separate "Borrar media descargada" button clears the cache.
+
+See [`docs/PRIVACY_SECURITY.md`](docs/PRIVACY_SECURITY.md).
 
 ---
 
