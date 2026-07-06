@@ -196,10 +196,11 @@ private struct EntrenarLanding: View {
                 HStack(alignment: .center, spacing: 9) {
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
                         .fill(routineTint(r.name)).frame(width: 8, height: 8)
-                    Text(r.name).font(StrandFont.title2).foregroundStyle(theme.ink)
-                        // Long routine names («Día A — Empuje y cuádriceps») shrink to fit two
-                        // lines instead of wrapping tall; short names stay at full title2 size.
-                        .lineLimit(2).minimumScaleFactor(0.8)
+                    Text(r.name).font(StrandFont.title3).foregroundStyle(theme.ink)
+                        // Long routine names («Día A — Empuje y cuádriceps») sit at the quieter
+                        // title3 and shrink further to fit two lines instead of wrapping tall;
+                        // short names read at full title3 size.
+                        .lineLimit(2).minimumScaleFactor(0.75)
                     Spacer(minLength: 8)
                     metaText(r.id).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 }

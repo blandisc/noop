@@ -32,6 +32,11 @@ public enum StrandFont {
     /// Title2 22 / Semibold (relative to `.title2`, 22pt at default).
     public static let title2 = Font.system(.title2, weight: .semibold)
 
+    /// Title3 20 / Semibold (relative to `.title3`, 20pt at default) — a quieter title for
+    /// card headings that carry long strings (e.g. «Día A — Empuje y cuádriceps») and need to
+    /// sit calmly on two lines rather than shout at `title2`.
+    public static let title3 = Font.system(.title3, weight: .semibold)
+
     /// Tab/landing wordmark title 21 / Semibold — «Patrones», «Tendencias», «Train». FIXED (not
     /// Dynamic Type): it's chrome paired with a 22×22 glyph, so the three tab headers must stay the
     /// same size to align as you swipe between tabs. Pair with `.tracking(-0.3)` (or use
@@ -138,6 +143,7 @@ public extension View {
             Text("88").font(StrandFont.display(72)).foregroundStyle(InstrumentoTheme.base.ink)
             Text("Title 1 / Bold 28").font(StrandFont.title1).foregroundStyle(InstrumentoTheme.base.ink)
             Text("Title 2 / Semibold 22").font(StrandFont.title2).foregroundStyle(InstrumentoTheme.base.ink)
+            Text("Title 3 / Semibold 20").font(StrandFont.title3).foregroundStyle(InstrumentoTheme.base.ink)
             Text("Headline / Semibold 17").font(StrandFont.headline).foregroundStyle(InstrumentoTheme.base.ink)
             Text("Body / Regular 15 — the thread of you, read in full.")
                 .font(StrandFont.body).foregroundStyle(InstrumentoTheme.base.ink)
