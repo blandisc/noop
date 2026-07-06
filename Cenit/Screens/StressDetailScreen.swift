@@ -9,7 +9,7 @@ import Foundation
 //
 // Hermana de `MetricDetailScreen` (FER-185), igual que `RecoveryDetailScreen` (FER-225) y
 // `SleepDetailScreen` (FER-212): REUSA su lenguaje visual (el scaffold `block(title:)`, el hero,
-// `InfoAccordion`, `theme: InstrumentoTheme` explícito, `SheetPaperBackground`, `ScrollView`→`VStack`,
+// `InfoAccordion`, `theme: InstrumentoTheme` explícito, `sheetPaper`, `ScrollView`→`VStack`,
 // `methodDisclosure`, los wells) pero con su propio modelo. NO extiende `MetricDetailScreen`/`MetricDetailSpec`
 // (esos son para vitales de serie ESCALAR única — HRV/FC/Respiración); el estrés es un ÍNDICE DERIVADO 0–3
 // con BANDAS UNIVERSALES y bloques propios (qué lo mueve = RHR/HRV, tiempo en calma, placeholder de
@@ -106,7 +106,7 @@ struct StressDetailScreen: View {
         }
         .background(theme.paper)
         .presentationDragIndicator(.visible)
-        .modifier(StressSheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
         .task {
             range = .month
             parsed = (model?.fullTrend ?? []).map {
@@ -288,7 +288,7 @@ struct StressDetailScreen: View {
                     accessibilityLabel: "Daily stress index, 0 to 3"
                 )
             ) {
-                emptyWell(text: "Not enough days in this range to draw a trend.")
+                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
             }
             averageCaption(window)   // handoff «Media · periodo · valor · Δ% vs previo» + rango (↓) (FER-587)
         }
@@ -515,23 +515,6 @@ struct StressDetailScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - Wells
-
-    private func emptyWell(text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "chart.xyaxis.line")
-                .font(.system(size: 22))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
     // MARK: - Series + format
 
     /// Format a 0–3 stress value at one decimal (the index's precision).
@@ -563,19 +546,6 @@ struct StressDetailScreen: View {
 struct StressDetailItem: Identifiable {
     let id = UUID()
     let model: StressModel?
-}
-
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct StressSheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
-    }
 }
 
 // MARK: - Preview

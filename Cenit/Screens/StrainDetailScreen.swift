@@ -9,7 +9,7 @@ import Foundation
 //
 // Hermana de `MetricDetailScreen` (FER-185), `RecoveryDetailScreen` (FER-225) y `SleepDetailScreen`
 // (FER-212): REUSA su lenguaje visual (hero, `InfoAccordion`, `theme: InstrumentoTheme` explícito,
-// `SheetPaperBackground`, `ScrollView`→`VStack`, `methodDisclosure`, los wells, la window-math de la
+// `sheetPaper`, `ScrollView`→`VStack`, `methodDisclosure`, los wells, la window-math de la
 // tendencia) pero con su propio modelo. NO extiende `MetricDetailScreen`/`MetricDetailSpec` (esos son
 // para vitales de serie ESCALAR única — HRV/FC/Respiración, con hero = promedio móvil 7d y rango normal
 // personal). El esfuerzo es una métrica COMPUESTA con forma propia: el hero es el valor de HOY en escala
@@ -67,7 +67,7 @@ struct StrainDetailScreen: View {
                 // daily check; Strain needed no condensing (light cut).
                 hero
                 if !model.loaded {
-                    loadingWell(height: 160)
+                    ChartWell(theme).loading(height: 160)
                 } else {
                     // The intraday curve needs a score / activity today; it's hidden when there's none.
                     if model.hasData {
@@ -95,7 +95,7 @@ struct StrainDetailScreen: View {
         }
         .background(theme.paper)
         .presentationDragIndicator(.visible)
-        .modifier(StrainSheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
         .task {
             range = .month
             parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
@@ -189,9 +189,9 @@ struct StrainDetailScreen: View {
                     .accessibilityElement()
                     .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
                 } else if !curveLoaded {
-                    loadingWell(height: 160)
+                    ChartWell(theme).loading(height: 160)
                 } else {
-                    emptyWell(text: "Not enough activity yet today to chart.")
+                    ChartWell(theme).empty(text: "Not enough activity yet today to chart.")
                 }
             }
         }
@@ -264,7 +264,7 @@ struct StrainDetailScreen: View {
                     accessibilityLabel: "Day strain, 7-day moving average"
                 )
             ) {
-                emptyWell(text: "Not enough days in this range to draw a trend.")
+                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
             }
             if window.values.count > 1 {
                 Text("7-day moving average")
@@ -420,30 +420,6 @@ struct StrainDetailScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: - Wells
-
-    private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .fill(theme.surface)
-            .frame(height: height)
-            .overlay { ProgressView().tint(theme.inkTertiary) }
-    }
-
-    private func emptyWell(text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "chart.xyaxis.line")
-                .font(.system(size: 22))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
     // MARK: - Colour + format
 
     private var chartGradient: Gradient { Gradient(colors: [theme.dataStrain.opacity(0.5), theme.dataStrain]) }
@@ -480,19 +456,6 @@ struct StrainDetailScreen: View {
 struct StrainDetailItem: Identifiable {
     let id = UUID()
     let model: StrainDetailModel
-}
-
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct StrainSheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
-    }
 }
 
 // MARK: - StrainDetailModel — every derivation the screen draws, built ONCE from the repo

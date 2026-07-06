@@ -134,7 +134,7 @@ struct MetricLevelsExplorer: View {
                 accessibilityLabel: accessibilityLabel
             )
         ) {
-            emptyWell
+            ChartWell(theme).note(text: "No readings in this range.")
         }
     }
 
@@ -161,14 +161,6 @@ struct MetricLevelsExplorer: View {
     private func yTicks(_ d: LevelData) -> [Double]? {
         let t = Set(d.levels.flatMap { [$0.lower, $0.upper].compactMap { $0 } }).sorted()
         return t.isEmpty ? nil : t
-    }
-
-    private var emptyWell: some View {
-        Text("No readings in this range.")
-            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: Levels list

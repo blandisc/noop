@@ -46,7 +46,7 @@ struct BodyAgeSheet: View {
         .background(theme.paper)
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        .modifier(BodyAgeSheetPaper(paper: theme.paper))
+        .sheetPaper(theme)
     }
 
     // MARK: - With data
@@ -264,16 +264,6 @@ struct BodyAgeSheet: View {
         case "steps":       return String(localized: "Steps")
         default:            return key
         }
-    }
-}
-
-/// Paints the sheet's warm paper onto the presentation surface (iOS 16.4+). Mirrors `MetricInfoSheet` /
-/// `ActivityRecoverySheet`.
-private struct BodyAgeSheetPaper: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, macOS 13.3, *) { content.presentationBackground(paper) }
-        else { content }
     }
 }
 

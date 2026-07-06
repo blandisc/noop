@@ -100,7 +100,7 @@ struct ManualWorkoutSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .presentationDragIndicator(.visible)
-        .modifier(SheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
     }
 
     // MARK: - Sections
@@ -222,15 +222,6 @@ struct ManualWorkoutSheet: View {
         guard let row = builtRow else { return }
         onSave(row, editing)
         dismiss()
-    }
-}
-
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct SheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) { content.presentationBackground(paper) } else { content }
     }
 }
 

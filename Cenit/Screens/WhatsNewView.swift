@@ -34,7 +34,7 @@ struct WhatsNewView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.paper)
-        .modifier(WhatsNewSheetBackground(paper: theme.paper))
+        .sheetPaper(theme)
     }
 
     private var header: some View {
@@ -125,16 +125,5 @@ struct WhatsNewView: View {
             .keyboardShortcut(.defaultAction)
         }
         .padding(16)
-    }
-}
-
-/// Paints the sheet's backing in warm paper so the chrome behind the content (drag rubber-band, safe
-/// areas) matches — same pattern as `WhyVerdictSheet` (FER-167).
-private struct WhatsNewSheetBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, macOS 13.3, *) {
-            content.presentationBackground(paper)
-        } else { content }
     }
 }

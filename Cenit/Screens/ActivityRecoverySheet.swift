@@ -65,7 +65,7 @@ struct ActivityRecoverySheet: View {
         .background(theme.paper)
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        .modifier(SheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
     }
 
     // MARK: - Sport card
@@ -211,19 +211,6 @@ struct ActivityRecoverySheet: View {
 }
 
 // MARK: - Helpers
-
-/// Paints the sheet's own background onto the presentation surface (iOS 16.4+), so the warm paper
-/// reaches the sheet's edges instead of the default system chrome. Mirrors `MetricInfoSheet`.
-private struct SheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, macOS 13.3, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
-    }
-}
 
 // MARK: - Preview
 

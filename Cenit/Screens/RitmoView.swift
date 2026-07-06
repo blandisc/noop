@@ -30,7 +30,7 @@ struct RitmoView: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .presentationDragIndicator(.visible)
-        .modifier(RitmoSheetPaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
         .task { if read == nil { read = await NightRhythmProvider.load(from: repo) } }
     }
 
@@ -277,18 +277,5 @@ private struct MessageState: View {
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
         .padding(.horizontal, 8)
-    }
-}
-
-// MARK: - Sheet paper background (iOS 16.4+ presentationBackground)
-
-private struct RitmoSheetPaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(paper)
-        } else {
-            content
-        }
     }
 }

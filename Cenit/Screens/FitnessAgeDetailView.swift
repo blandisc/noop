@@ -54,7 +54,7 @@ struct FitnessAgeDetailView: View {
         .background(theme.paper)
         .presentationDetents(contentHeight > 0 ? [.height(contentHeight)] : [.large])
         .presentationDragIndicator(.visible)
-        .modifier(FitnessAgePaperBackground(paper: theme.paper))
+        .sheetPaper(theme)
     }
 
     // MARK: - Ready / estimate
@@ -350,13 +350,6 @@ struct FitnessAgeDetailView: View {
 private struct FitnessAgeSheetHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
-private struct FitnessAgePaperBackground: ViewModifier {
-    let paper: Color
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) { content.presentationBackground(paper) } else { content }
-    }
 }
 
 // MARK: - Preview
