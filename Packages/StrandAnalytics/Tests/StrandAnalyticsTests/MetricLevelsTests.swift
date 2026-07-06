@@ -196,4 +196,39 @@ final class MetricLevelsTests: XCTestCase {
         XCTAssertEqual(c.total, 0)
         XCTAssertNil(c.activeIndex)
     }
+
+    // MARK: - name(for:) — the single key→label home (FER-731)
+
+    /// FER-638, pinned in ONE place: the 70–88 recovery zone (`primed`) reads "High", never "A punto".
+    /// This is the rule the app's `MetricLevelsExplorer.label` / `MetricInfoSheet.recoveryLevelLabel`
+    /// now read through, so it can't drift per screen again.
+    func testPrimedNameIsHighNotAPunto() {
+        XCTAssertEqual(MetricLevels.name(for: "primed"), "High")
+    }
+
+    /// Every recovery level key resolves to its finalized English label — the map the app localises.
+    func testRecoveryLevelNames() {
+        let names = MetricLevels.levels(for: .recovery).map { MetricLevels.name(for: $0.key) }
+        XCTAssertEqual(names, ["Depleted", "Low", "Moderate", "High", "Peak"])
+    }
+
+    /// Unknown keys echo back verbatim (the old per-screen `default` behaviour), so a new level key
+    /// degrades to its raw key instead of crashing or vanishing.
+    func testUnknownKeyEchoesBack() {
+        XCTAssertEqual(MetricLevels.name(for: "brandNewLevel"), "brandNewLevel")
+    }
+
+    // MARK: - activeIndex(for:in:) — the single public classifier (FER-731)
+
+    func testActiveIndexMatchesInternalClassifier() {
+        let lv = MetricLevels.levels(for: .recovery)
+        // 75 sits in `primed` (70–88), index 3; boundary 88 falls to the upper `peak` (half-open).
+        XCTAssertEqual(MetricLevels.activeIndex(for: 75, in: lv), 3)
+        XCTAssertEqual(MetricLevels.activeIndex(for: 88, in: lv), 4)
+        XCTAssertEqual(MetricLevels.activeIndex(for: 0, in: lv), 0)
+    }
+
+    func testActiveIndexEmptyLevelsIsNil() {
+        XCTAssertNil(MetricLevels.activeIndex(for: 50, in: []))
+    }
 }

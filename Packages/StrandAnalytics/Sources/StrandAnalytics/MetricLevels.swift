@@ -15,8 +15,9 @@ import Foundation
 ///   gives Recovery a personal view on top of its fixed 0–100 scale.
 ///
 /// Pure and database-free: no `import` of UIKit / SwiftUI / CoreBluetooth, no device clock, no I/O.
-/// It defines ONLY keys, thresholds and counts — **never** colours or UI copy; F6b/F6c
-/// (`StrandDesign` / `Cenit`) own the presentation. These thresholds are the NEW canonical set the
+/// It defines keys, thresholds and counts — plus `name(for:)`, the ONE stable English key→label map
+/// (FER-731) — but **never** colours; F6b/F6c (`StrandDesign` / `Cenit`) own colour and the es-MX
+/// localisation of those names. These thresholds are the NEW canonical set the
 /// redesigned metric detail adopts (the F6 README numbers); they are not the same as the shipped
 /// `MetricInfo.Band` (Cenit) / `TrendBands` (StrandDesign), which several screens still render and
 /// which this phase deliberately leaves untouched. F6b/F6c migrate those consumers onto this engine,
@@ -171,6 +172,64 @@ public enum MetricLevels {
     /// Index of the level a single `value` belongs to, for a fixed metric.
     public static func index(of value: Double, for metric: FixedMetric) -> Int {
         index(of: value, in: levels(for: metric))
+    }
+
+    /// Index of the level `value` sits in for ANY caller-supplied `levels` array (fixed, relative or a
+    /// bespoke set) — the single public classifier so every surface highlights the SAME level from the
+    /// SAME half-open `[lower, upper)` test, instead of re-implementing the interval test inline. Returns
+    /// the last index as a safe fallback if `levels` is somehow not total; on an EMPTY array there is no
+    /// level, so it returns `nil` (the caller decides what "no level" means). (FER-731)
+    public static func activeIndex(for value: Double, in levels: [Level]) -> Int? {
+        levels.isEmpty ? nil : index(of: value, in: levels)
+    }
+
+    /// The stable ENGLISH display name for a level `key` — the ONE home for the key→label map (FER-731).
+    ///
+    /// This is the app's source-language string; the es-MX comes from the app's `Localizable.xcstrings`
+    /// (the English string IS the catalog key, so `LocalizedStringKey(name(for:))` / `String(localized:)`
+    /// resolve «Alto», «Agotado», … at render). It is deliberately English (not `LocalizedStringKey`) so
+    /// the map stays testable in pure `swift test` and free of SwiftUI. `DailyBrief.recoveryZoneName` is a
+    /// SEPARATE es-only home: it interpolates Spanish sentences inside this pure package (no catalog to
+    /// reach), so its words can't come from here — the two are one-per-language by necessity.
+    ///
+    /// **FER-638 lives here, once:** the 70–88 recovery zone (`primed`) reads **"High"** (es «Alto»),
+    /// never «A punto» — that word belongs only to the dial's verdict. A level rename touches this map and
+    /// nothing else. Unknown keys echo back verbatim (matches the old per-screen `default`).
+    public static func name(for key: String) -> String {
+        switch key {
+        // Recovery (FER-638: `primed` → "High", never "A punto")
+        case "depleted":   return "Depleted"
+        case "primed":     return "High"
+        case "peak":       return "Peak"
+        // Strain
+        case "rest":       return "Rest"
+        case "hard":       return "Hard"
+        case "extreme":    return "Extreme"
+        // Sleep
+        case "short":      return "Short"
+        case "adequate":   return "Adequate"
+        case "optimal":    return "Optimal"
+        case "extended":   return "Extended"
+        // Stress
+        case "medium":     return "Medium"
+        case "high":       return "High"
+        // Shared / vitals
+        case "light":      return "Light"
+        case "low":        return "Low"
+        case "moderate":   return "Moderate"
+        case "normal":     return "Normal"
+        case "elevated":   return "Elevated"
+        case "athlete":    return "Athlete"
+        case "excellent":  return "Excellent"
+        case "sedentary":  return "Sedentary"
+        case "active":     return "Active"
+        case "veryActive": return "Very active"
+        // Relative-to-base (HRV, Recovery personal view)
+        case "below":      return "Below your base"
+        case "inBase":     return "In your base"
+        case "above":      return "Above your base"
+        default:           return key
+        }
     }
 
     /// Classify a window of fixed-metric `values` (oldest→newest is irrelevant) into the metric's
