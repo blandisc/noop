@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El número de recuperación se queda quieto y con color mientras sincroniza / The recovery number stays still and in color while syncing.**
+  **ES** — En **Hoy**, mientras la banda sincroniza, el número grande de recuperación ya **no se apaga a gris ni brinca**: conserva su color de veredicto y se queda en su lugar. Quitamos la animación de «celebración» que reseteaba el número a 0 y lo hacía rodar de vuelta a su valor, y la que encendía las **cinco reglas** en secuencia; ahora tanto el número como las reglas se muestran asentados de una vez. Además apretamos un poco el espacio arriba y abajo del bloque de recuperación.
+  **EN** — On **Today**, while the band syncs, the big recovery number no longer **greys out or jumps**: it keeps its verdict color and stays put. We removed the "celebration" animation that reset the number to 0 and rolled it back up, and the one that lit the **five rules** in sequence; the number and the rules now settle straight to their values. We also tightened the spacing above and below the recovery block a little.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Cada ejercicio de Entrenar ya reserva su espacio para el video / Every exercise in Train now reserves its space for video.**
   **ES** — En todo el flujo de **Entrenar** aparece ahora una **miniatura** junto a cada ejercicio: en el constructor de rutinas, en la biblioteca, en la ficha de la rutina y dentro de la sesión, más un **recuadro grande** arriba en la hoja de cada ejercicio. Por ahora es un cuadro de papel en blanco (todavía sin imagen, y sin usar internet), pero deja el hueco exacto listo para que, más adelante, la imagen o el video del ejercicio entre **sin que nada se mueva de lugar**.
   **EN** — Across the whole **Train** flow, a **thumbnail** now sits next to each exercise: in the routine builder, the library, the routine card and inside the session, plus a **large frame** at the top of each exercise's sheet. For now it's a blank paper tile (no image yet, and no network use), but it reserves the exact slot so that, later, the exercise's image or video can drop in **without anything shifting around**.
