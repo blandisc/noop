@@ -49,8 +49,17 @@ final class RestTargetTests: XCTestCase {
     }
 
     func testRestingMarginDelegatesToEvaluate() {
-        // restingMargin is FER-348's path — resolve returns nil so evaluate() owns the resting+margin target.
+        // value 0 is FER-348's default path — resolve returns nil so evaluate() owns the resting+20 target.
         XCTAssertNil(RestTarget.resolve(reference: .restingMargin, value: 0, peakHR: 170, restingHR: 60, maxHR: 190))
+    }
+
+    // FER-759: a custom margin (bpm) pulls the target down toward resting — target = round(resting) + margin.
+    func testRestingMarginCustomValue() {
+        // resting 78, margin +15 → 93 bpm (below the +20 default of 98), letting the user lower the target.
+        XCTAssertEqual(RestTarget.resolve(reference: .restingMargin, value: 15, peakHR: nil, restingHR: 78, maxHR: nil), 93)
+        XCTAssertEqual(RestTarget.resolve(reference: .restingMargin, value: 10, peakHR: nil, restingHR: 60, maxHR: nil), 70)
+        // No resting baseline → can't compute honestly → nil (falls back to the fixed timer).
+        XCTAssertNil(RestTarget.resolve(reference: .restingMargin, value: 15, peakHR: nil, restingHR: nil, maxHR: nil))
     }
 
     // The target override threads through evaluate(): an explicit target is used instead of resting+margin.
