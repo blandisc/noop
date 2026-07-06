@@ -1,12 +1,12 @@
 import XCTest
 import WhoopStore
-@testable import Cenit
+import StrandAnalytics
 
-/// Pins FER-224: `StressModel` must anchor "today" to the device's LOCAL day and ignore a
+/// Pins FER-224: `DailyStressModel` must anchor "today" to the device's LOCAL day and ignore a
 /// future-dated daily row (the UTC-bucketed ghost row of FER-226) — otherwise `days.last` reads that
 /// empty row and the tile falls to "—" even when today has RHR/HRV. It must also derive from whatever
 /// the layered `displayDays` provides (Apple-health fallback) on a strap-partial night.
-final class StressModelTests: XCTestCase {
+final class DailyStressModelTests: XCTestCase {
 
     private func dm(_ day: String, rhr: Int? = nil, hrv: Double? = nil) -> DailyMetric {
         DailyMetric(day: day, totalSleepMin: nil, efficiency: nil, deepMin: nil, remMin: nil,
@@ -25,7 +25,7 @@ final class StressModelTests: XCTestCase {
         var days = baseline()
         days.append(dm("2026-06-17", rhr: 58, hrv: 38))   // real local "today"
         days.append(dm("2026-06-18", rhr: nil, hrv: nil)) // UTC ghost "tomorrow", empty
-        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        let model = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17")
         XCTAssertNotNil(model, "the empty future row (18) must be ignored; today (17) has signal")
         XCTAssertEqual(model?.rhrToday, 58)
         XCTAssertEqual(model?.hrvToday, 38)
@@ -36,7 +36,7 @@ final class StressModelTests: XCTestCase {
     func testPartialTodayWithFallbackDerives() {
         var days = baseline()
         days.append(dm("2026-06-17", rhr: 57, hrv: 41))   // value present via the Apple-backed twin
-        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        let model = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17")
         XCTAssertNotNil(model)
         XCTAssertEqual(model?.hrvToday, 41)
     }
@@ -44,13 +44,13 @@ final class StressModelTests: XCTestCase {
     /// No RHR/HRV anywhere and no stored value → honest nil (the tile renders "—").
     func testNoSignalReturnsNil() {
         let days = [dm("2026-06-16"), dm("2026-06-17")]   // every field nil
-        XCTAssertNil(StressModel(days: days, stored: [], todayKey: "2026-06-17"))
+        XCTAssertNil(DailyStressModel(days: days, stored: [], todayKey: "2026-06-17"))
     }
 
     /// Only future rows exist (none at or before today) → nil, never a future read.
     func testAllFutureReturnsNil() {
         let days = [dm("2026-06-18", rhr: 60, hrv: 50)]
-        XCTAssertNil(StressModel(days: days, stored: [], todayKey: "2026-06-17"))
+        XCTAssertNil(DailyStressModel(days: days, stored: [], todayKey: "2026-06-17"))
     }
 
     // MARK: - FER-397 — fall back to the most recent reading (cap: yesterday), never blank the screen
@@ -61,7 +61,7 @@ final class StressModelTests: XCTestCase {
         var days = baseline()
         days.append(dm("2026-06-16", rhr: 60, hrv: 40))   // yesterday: a real reading
         days.append(dm("2026-06-17"))                      // today: still empty
-        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        let model = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17")
         XCTAssertNotNil(model)
         XCTAssertEqual(model?.heroIsFresh, true)
         XCTAssertEqual(model?.anchorIsToday, false, "yesterday's reading must be dated, not passed as today's")
@@ -74,7 +74,7 @@ final class StressModelTests: XCTestCase {
         var days = baseline()
         days.append(dm("2026-06-16"))                      // yesterday: no RHR/HRV
         days.append(dm("2026-06-17"))                      // today: empty
-        let model = StressModel(days: days, stored: [("2026-06-16", 2.2)], todayKey: "2026-06-17")
+        let model = DailyStressModel(days: days, stored: [("2026-06-16", 2.2)], todayKey: "2026-06-17")
         XCTAssertNotNil(model)
         XCTAssertEqual(model?.anchorDayKey, "2026-06-16")
         XCTAssertEqual(model?.heroIsFresh, true)
@@ -89,7 +89,7 @@ final class StressModelTests: XCTestCase {
         var days = baseline()                              // 2026-06-01…10 carry signal
         days.append(dm("2026-06-16"))                      // yesterday empty
         days.append(dm("2026-06-17"))                      // today empty
-        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        let model = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17")
         XCTAssertNotNil(model)
         XCTAssertEqual(model?.heroIsFresh, false, "anchor (2026-06-10) is older than yesterday → hide hero")
         XCTAssertEqual(model?.anchorDayKey, "2026-06-10")
@@ -100,7 +100,7 @@ final class StressModelTests: XCTestCase {
     func testTodayPresentIsFreshAndNotDated() {
         var days = baseline()
         days.append(dm("2026-06-17", rhr: 59, hrv: 39))
-        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        let model = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17")
         XCTAssertEqual(model?.heroIsFresh, true)
         XCTAssertEqual(model?.anchorIsToday, true)
         XCTAssertEqual(model?.anchorDayKey, "2026-06-17")
@@ -113,8 +113,8 @@ final class StressModelTests: XCTestCase {
     func testSoloBandaIdentity() {
         var days = baseline()
         days.append(dm("2026-06-17", rhr: 58, hrv: 38))
-        let withParam = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
-        let noParam   = StressModel(days: days, stored: [], todayKey: "2026-06-17")
+        let withParam = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
+        let noParam   = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17")
         XCTAssertEqual(withParam?.score ?? -1, noParam?.score ?? -2, accuracy: 1e-9)
         XCTAssertEqual(withParam?.hrvDelta ?? .nan, noParam?.hrvDelta ?? .nan, accuracy: 1e-9)
     }
@@ -126,8 +126,8 @@ final class StressModelTests: XCTestCase {
         var days = (1...9).map { i in dm(String(format: "2026-06-%02d", i), rhr: 58 + i % 4, hrv: 48 + Double(i % 5)) }
         days.append(dm("2026-06-10", rhr: 60, hrv: 90))   // an "SDNN" outlier night (~1.8× the RMSSD band)
         days.append(dm("2026-06-17", rhr: 58, hrv: 50))   // today: a band night
-        let mixed = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
-        let clean = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-10"])
+        let mixed = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
+        let clean = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-10"])
         XCTAssertNotNil(mixed); XCTAssertNotNil(clean)
         // Excluding the outlier lowers the band mean → today's delta (today − mean) is higher (less negative).
         XCTAssertGreaterThan(clean!.hrvDelta!, mixed!.hrvDelta!)
@@ -143,8 +143,8 @@ final class StressModelTests: XCTestCase {
         var days = (1...9).map { i in dm(String(format: "2026-06-%02d", i), rhr: 58 + i % 4, hrv: 48 + Double(i % 5)) }
         days.append(dm("2026-06-10", rhr: 80, hrv: 50))   // an "awake" RHR outlier night (~20 bpm high)
         days.append(dm("2026-06-17", rhr: 62, hrv: 50))   // today: a band night
-        let mixed = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
-        let clean = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-10"])
+        let mixed = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: [])
+        let clean = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-10"])
         XCTAssertNotNil(mixed); XCTAssertNotNil(clean)
         // Excluding the high outlier lowers the band RHR mean → today's delta (today − mean) is higher.
         XCTAssertGreaterThan(clean!.rhrDelta!, mixed!.rhrDelta!)
@@ -158,7 +158,7 @@ final class StressModelTests: XCTestCase {
         days += (9...14).map { i in dm(String(format: "2026-06-%02d", i), rhr: 68, hrv: 60) }           // Apple nights
         days.append(dm("2026-06-17", rhr: 67, hrv: 60))                                                 // today: Apple
         let appleDays = Set((9...14).map { String(format: "2026-06-%02d", $0) } + ["2026-06-17"])
-        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: appleDays)
+        let model = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: appleDays)
         XCTAssertNotNil(model)
         XCTAssertEqual(model?.rhrDelta ?? .nan, -1, accuracy: 0.001,
                        "today's Apple RHR is scored against the Apple base (~68), not a merged base")
@@ -172,7 +172,7 @@ final class StressModelTests: XCTestCase {
     func testAppleOnlyAnchorWithNoSameSourceBaseIsNil() {
         var days = baseline()                              // all band (RMSSD + sleep-nadir RHR) nights
         days.append(dm("2026-06-17", rhr: 64, hrv: 80))   // today: Apple-only, no Apple base behind it
-        let model = StressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-17"])
+        let model = DailyStressModel(days: days, stored: [], todayKey: "2026-06-17", appleDays: ["2026-06-17"])
         XCTAssertNil(model, "no same-source base for RHR or HRV → nil, never a cross-source comparison")
     }
 }
