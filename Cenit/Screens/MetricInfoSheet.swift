@@ -776,27 +776,15 @@ struct MetricInfoSheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .firstTextBaseline) {
-                if info.id == "recovery" {
-                    // F2 (FER-710): the redesigned recovery sheet leads with the Grotesk uppercase title +
-                    // ⓘ + a data-origin dot (recovery is a calculated score), retiring the serif title here.
+                if isRedesignedHeader {
+                    // F2 (FER-710): recovery / strain / the six vitals / sleep share the Grotesk uppercase
+                    // title + ⓘ, retiring the serif title + boxed source chip. A calculated score shows a
+                    // «Calculated» origin dot; a measured signal shows its band/Apple dot.
                     Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
                     infoButton
                     Spacer()
-                    originDot("Calculated", color: theme.inkTertiary)
-                } else if info.id == "strain" {
-                    // F2 (FER-710): Day Strain is a calculated score, so it shares recovery's Grotesk header
-                    // with a «Calculated» origin dot (never band/Apple).
-                    Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
-                    infoButton
-                    Spacer()
-                    originDot("Calculated", color: theme.inkTertiary)
-                } else if isVitalTemplate || info.id == "sleep" {
-                    // F2 (FER-710): the six vitals + sleep share the recovery header skin — Grotesk uppercase
-                    // title + ⓘ + an origin dot (band/Apple), retiring the serif title + boxed source chip.
-                    Text(info.name).groteskSheetTitle().foregroundStyle(theme.ink)
-                    infoButton
-                    Spacer()
-                    vitalOriginDot
+                    if isCalculatedSummary { originDot("Calculated", color: theme.inkTertiary) }
+                    else { vitalOriginDot }
                 } else if info.usesLevels {
                     // FER-607 (migrated metric): the title leads in serif (headline role only), with the
                     // ⓘ beside it and the source chip trailing — the handoff header.
@@ -817,28 +805,15 @@ struct MetricInfoSheet: View {
             // The rich sleep summary replaces the single numeral with its own doble-dato (in the body). (FER-710)
             if !isSleepSummary {
             HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
-                if info.id == "recovery" {
-                    // Grotesk 56 sheet numeral + «/ 100» (only when there's a real score). (FER-710)
+                if isCalculatedSummary || isVitalTemplate {
+                    // Grotesk 56 numeral + suffix: «/ 100» (recovery, scored) · «/ 21» (strain, scored) ·
+                    // the unit (a vital). (FER-710)
                     Text(info.displayValue)
                         .groteskSheetNumeral()
                         .foregroundStyle(tintColor(info.headerTint))
-                    if isRecoverySummary {
-                        Text(verbatim: "/ 100").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                    }
-                } else if info.id == "strain" {
-                    // Grotesk 56 numeral + «/ 21» (Day Strain's ceiling). (FER-710)
-                    Text(info.displayValue)
-                        .groteskSheetNumeral()
-                        .foregroundStyle(tintColor(info.headerTint))
-                    if info.displayValue != "—" {
-                        Text(verbatim: "/ 21").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                    }
-                } else if isVitalTemplate {
-                    // Grotesk 56 sheet numeral + unit — the vital's value of today as the one datum. (FER-710)
-                    Text(info.displayValue)
-                        .groteskSheetNumeral()
-                        .foregroundStyle(tintColor(info.headerTint))
-                    if let unit = info.unit {
+                    if let suffix = calculatedNumeralSuffix {
+                        Text(verbatim: suffix).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    } else if isVitalTemplate, let unit = info.unit {
                         Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                     }
                 } else {
@@ -854,6 +829,20 @@ struct MetricInfoSheet: View {
             }
             }
         }
+    }
+
+    /// Recovery + Day Strain: calculated scores that share the Grotesk header with a «Calculated» origin
+    /// dot and a «/ max» numeral suffix. (FER-710)
+    private var isCalculatedSummary: Bool { info.id == "recovery" || info.id == "strain" }
+    /// Any F2-redesigned sheet (recovery / strain / the six vitals / sleep): Grotesk uppercase title, no
+    /// serif, an origin dot instead of the boxed source chip. (FER-710)
+    private var isRedesignedHeader: Bool { isCalculatedSummary || isVitalTemplate || info.id == "sleep" }
+    /// The «/ N» ceiling suffix for a calculated summary's numeral, only when there's a real score. nil for
+    /// vitals (they show a unit instead) and for a calibrating/no-data calculated score. (FER-710)
+    private var calculatedNumeralSuffix: String? {
+        if info.id == "recovery" { return isRecoverySummary ? "/ 100" : nil }
+        if info.id == "strain"   { return info.displayValue != "—" ? "/ 21" : nil }
+        return nil
     }
 
     /// The redesigned recovery summary path (F2): a scored recovery reading. Calibrating / no-data
