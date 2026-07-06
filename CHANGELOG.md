@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Hoy» ya no se congela ni calienta el teléfono / "Today" no longer freezes or heats up your phone.**
+  **ES** — Se corrigió un cuelgue en el que la pantalla de **Hoy** trababa toda la app con el CPU al 99% (el teléfono se calentaba). El alto del carrusel Señales/Brief se animaba con un valor que se **mide en cada pasada de dibujado** y tiembla una fracción de punto, lo que reactivaba el dibujado en bucle infinito. Ahora la transición de alto se anima solo al **cambiar de página**, que es cuando de verdad debe moverse.
+  **EN** — Fixed a hang where the **Today** screen locked up the whole app at 99% CPU (the phone got hot). The Signals/Brief pager height was being animated off a value that is **measured every layout pass** and jitters by a sub-point, which re-triggered layout in an infinite loop. The height transition now animates only when the **page actually changes**, which is when it should move.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **El bloque de recuperación queda un poco más apretado en «Hoy» / The recovery block is a little tighter on "Today".**
   **ES** — Se redujo otro paso el espacio **arriba y abajo** del número grande de recuperación (de 12 a 8 pt), para que la página de **Señales** quepa con menos scroll.
   **EN** — Tightened the space **above and below** the big recovery number one more step (12 → 8 pt), so the **Signals** page fits with less scrolling.

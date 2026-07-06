@@ -1815,7 +1815,10 @@ struct TodayView: View {
         }
         .frame(height: activeHeight, alignment: .top)
         .padding(.horizontal, -NoopMetrics.screenPadding)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: activeHeight)
+        // Anima el alto al CAMBIAR de página (valor discreto y estable), NUNCA con `activeHeight`:
+        // ese alto se mide en el layout y tiembla sub-punto en cada pasada, así que animarlo implícito
+        // reactiva el layout en bucle infinito → main thread al 99% y la pantalla se congela.
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: pagerPage)
     }
 
     /// Una página del pager (FER-725): ancho COMPLETO de pantalla con su contenido re-insetado por
