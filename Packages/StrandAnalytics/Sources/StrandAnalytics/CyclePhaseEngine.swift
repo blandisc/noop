@@ -12,7 +12,9 @@ import Foundation
 //
 // Verified physiology (each is an APPROXIMATE, documented driver — see docs/ANALYTICS.md):
 //   • Skin temp ↑ in luteal — the DOMINANT, most robust driver. Maijala et al. 2019, BMC Women's Health
-//     19 (doi:10.1186/s12905-019-0844-9): nightly finger/wrist skin temp +0.30 °C (SD 0.12), p<0.001.
+//     19 (doi:10.1186/s12905-019-0844-9): nightly FINGER skin temp +0.30 °C (SD 0.12), p<0.001 (Oura
+//     ring). NOOP applies this luteal signature to WRIST skin temp (WHOOP) as an approximation of the
+//     finger site — the direction holds; the magnitude is an on-device estimate, not the finger value.
 //     Gombert-Labedens et al. 2024, J Biol Rhythms 39(4):331–350 (doi:10.1177/07487304241247893):
 //     post-ovulatory thermal shift detectable in ~85% of cycles with a wearable.
 //   • Resting HR ↑ in luteal — consistent, small CORROBORATION. Shilaih et al. 2017, Sci Rep 7
