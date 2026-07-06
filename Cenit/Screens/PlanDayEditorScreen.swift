@@ -70,14 +70,15 @@ struct PlanDayEditorScreen: View {
             RestEditorScreen(
                 theme: theme,
                 exerciseName: StrengthDisplay.name(items[t.ei].exercise),
-                setNumber: workSetNumber(t.ei, t.si),
-                current: effectiveRest(t.ei, t.si),
+                setNumber: RoutineSetEditing.workSetNumber(items[t.ei].re, t.si),
+                current: RoutineSetEditing.effectiveRest(items[t.ei].re, t.si),
                 persistsToRoutine: false,
                 restingHR: nil, maxHR: nil,
                 defaultApplyToAll: false,
                 onCancel: { restTarget = nil },
                 onApply: { config, applyToAll, _ in
-                    applyRest(ei: t.ei, si: t.si, config: config, applyToAll: applyToAll)
+                    RoutineSetEditing.applyRest(to: &items[t.ei].re, si: t.si, config: config, applyToAll: applyToAll)
+                    dirty = true
                     restTarget = nil
                 }
             )
@@ -272,7 +273,9 @@ struct PlanDayEditorScreen: View {
                 cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad, width: 58)
             }
             Spacer(minLength: 6)
-            restChip(idx: idx, si: si)
+            RestChip(cfg: RoutineSetEditing.effectiveRest(items[idx].re, si), timeColor: theme.inkSecondary) {
+                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
+            }
         }
         .frame(minHeight: 44)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -281,7 +284,7 @@ struct PlanDayEditorScreen: View {
     /// The set numeral in a 23 px ring of the routine hue («C» for a warm-up set).
     private func numeralRing(idx: Int, si: Int) -> some View {
         let warmup = items[idx].re.sets[si].kind == .warmup
-        return Text(setLabel(idx: idx, si: si))
+        return Text(RoutineSetEditing.setLabel(items[idx].re, si))
             .font(InstrumentoType.grotesk(11, weight: .semibold)).monospacedDigit()
             .foregroundStyle(routineTint)
             .frame(width: 23, height: 23)
@@ -298,27 +301,6 @@ struct PlanDayEditorScreen: View {
             .frame(width: width, height: 31)
             .background(theme.surface)
             .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(theme.hairlineStrong))
-    }
-
-    // MARK: - Per-set rest chip (→ 1e push)
-
-    private func restChip(idx: Int, si: Int) -> some View {
-        let cfg = effectiveRest(idx, si)
-        let isHR = cfg.mode == .heartRate
-        return Button { focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si) } label: {
-            HStack(spacing: 5) {
-                Text(restChipLabel(cfg)).font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(isHR ? theme.dataRecovery : theme.inkSecondary).lineLimit(1)
-                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(isHR ? theme.dataRecovery : theme.hairline, lineWidth: 1))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Edit rest for this set"))
     }
 
     private func addSetRow(_ idx: Int) -> some View {
@@ -445,50 +427,6 @@ struct PlanDayEditorScreen: View {
         dirty = true
     }
 
-    // MARK: - Per-set rest resolution (F0 model — mirrors the builder)
-
-    private func effectiveRest(_ ei: Int, _ si: Int) -> RestConfig {
-        if let r = items[ei].re.sets[si].rest { return r }
-        let re = items[ei].re
-        return RestConfig(mode: re.restMode, seconds: re.restSeconds, hrReference: re.hrRestReference, hrValue: re.hrRestValue)
-    }
-
-    private func workSetNumber(_ ei: Int, _ si: Int) -> Int? {
-        guard items[ei].re.sets[si].kind == .work else { return nil }
-        return items[ei].re.sets[0...si].filter { $0.kind == .work }.count
-    }
-
-    private func applyRest(ei: Int, si: Int, config: RestConfig, applyToAll: Bool) {
-        guard items.indices.contains(ei), items[ei].re.sets.indices.contains(si) else { return }
-        if applyToAll {
-            items[ei].re.restMode = config.mode
-            items[ei].re.restSeconds = config.seconds
-            items[ei].re.hrRestReference = config.hrReference
-            items[ei].re.hrRestValue = config.hrValue
-            for i in items[ei].re.sets.indices { items[ei].re.sets[i].rest = nil }
-        } else {
-            items[ei].re.sets[si].rest = config
-        }
-        dirty = true
-    }
-
-    /// The chip's compact label: «1 min» / «90 s» for time, «FC · N%» for the HR threshold.
-    private func restChipLabel(_ cfg: RestConfig) -> String {
-        if cfg.mode == .heartRate {
-            let pct = Int((cfg.hrValue * 100).rounded())
-            guard pct > 0 else { return String(localized: "by HR") }
-            return String(localized: "HR", comment: "compact chip prefix for a heart-rate rest threshold") + " · \(pct)%"
-        }
-        let s = cfg.seconds
-        return s % 60 == 0 ? String(localized: "\(s / 60) min") : String(localized: "\(s) s")
-    }
-
-    private func setLabel(idx: Int, si: Int) -> String {
-        if items[idx].re.sets[si].kind == .warmup { return String(localized: "C") }
-        let workIndex = items[idx].re.sets[0...si].filter { $0.kind == .work }.count
-        return "\(workIndex)"
-    }
-
     // MARK: - Meta computations
 
     private var totalSets: Int { items.reduce(0) { $0 + $1.re.sets.filter { $0.kind == .work }.count } }
@@ -497,9 +435,9 @@ struct PlanDayEditorScreen: View {
     /// resolved rest, summed and rounded to minutes.
     private var estimatedMinutes: Int {
         var seconds = 0
-        for (ei, item) in items.enumerated() {
+        for item in items {
             for si in item.re.sets.indices where item.re.sets[si].kind == .work {
-                seconds += 40 + effectiveRest(ei, si).seconds
+                seconds += 40 + RoutineSetEditing.effectiveRest(item.re, si).seconds
             }
         }
         return max(1, Int((Double(seconds) / 60).rounded()))
@@ -584,9 +522,6 @@ private struct DayEditItem: Identifiable {
     var exercise: Exercise
     var id: String { re.id }
 }
-
-/// Identifies the set whose rest the 1e editor is editing (exercise index + set index).
-private struct RestEditTarget: Identifiable, Hashable { let ei: Int; let si: Int; var id: String { "\(ei)-\(si)" } }
 
 // Shared list-row chrome: clear background, no system separator, standard screen margin with tunable
 // vertical insets — a plain List that reproduces «Instrumento» spacing (same pattern as the builder).

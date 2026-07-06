@@ -95,14 +95,14 @@ struct RoutineBuilderScreen: View {
                 RestEditorScreen(
                     theme: theme,
                     exerciseName: StrengthDisplay.name(items[t.ei].exercise),
-                    setNumber: workSetNumber(t.ei, t.si),
-                    current: effectiveRest(t.ei, t.si),
+                    setNumber: RoutineSetEditing.workSetNumber(items[t.ei].re, t.si),
+                    current: RoutineSetEditing.effectiveRest(items[t.ei].re, t.si),
                     persistsToRoutine: false,
                     restingHR: nil, maxHR: nil,
                     defaultApplyToAll: false,
                     onCancel: { restTarget = nil },
                     onApply: { config, applyToAll, _ in
-                        applyRest(ei: t.ei, si: t.si, config: config, applyToAll: applyToAll)
+                        RoutineSetEditing.applyRest(to: &items[t.ei].re, si: t.si, config: config, applyToAll: applyToAll)
                         restTarget = nil
                     }
                 )
@@ -236,7 +236,7 @@ struct RoutineBuilderScreen: View {
         let set = items[idx].re.sets[si]
         let type = items[idx].exercise.type
         return HStack(spacing: 8) {
-            Text(setLabel(idx: idx, si: si))
+            Text(RoutineSetEditing.setLabel(items[idx].re, si))
                 .font(set.kind == .warmup ? StrandFont.caption.weight(.semibold) : StrandFont.body)
                 .foregroundStyle(set.kind == .warmup ? theme.inkTertiary : theme.inkSecondary)
                 .monospacedDigit().frame(width: 30, alignment: .leading)
@@ -247,54 +247,12 @@ struct RoutineBuilderScreen: View {
                 cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad)
             }
             Spacer(minLength: 6)
-            restChip(idx: idx, si: si)
+            RestChip(cfg: RoutineSetEditing.effectiveRest(items[idx].re, si), timeColor: theme.ink) {
+                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
+            }
         }
         .frame(minHeight: 46)
         .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
-    }
-
-    // MARK: - Per-set rest chip (→ 1e push)
-    //
-    // Each set carries its own rest (choque 3): the chip shows this set's EFFECTIVE rest (its own override,
-    // or the exercise's rest as fallback). Time reads in ink; an HR threshold reads in the recovery green,
-    // because the threshold is a datum. Tapping pushes the shared `RestEditorScreen` (1e).
-
-    private func restChip(idx: Int, si: Int) -> some View {
-        let cfg = effectiveRest(idx, si)
-        let isHR = cfg.mode == .heartRate
-        return Button { focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si) } label: {
-            HStack(spacing: 5) {
-                Text(restChipLabel(cfg)).font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(isHR ? theme.dataRecovery : theme.ink).lineLimit(1)
-                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(isHR ? theme.dataRecovery : theme.hairline, lineWidth: 1))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Edit rest for this set"))
-    }
-
-    /// The chip's compact label (mock 1d): «1 min» / «90 s» for time, «FC · N%» for the HR threshold.
-    /// The HR prefix is localized on its own so the literal «%» never lands in a format-string key.
-    private func restChipLabel(_ cfg: RestConfig) -> String {
-        if cfg.mode == .heartRate {
-            let pct = Int((cfg.hrValue * 100).rounded())
-            guard pct > 0 else { return String(localized: "by HR") }
-            return String(localized: "HR", comment: "compact chip prefix for a heart-rate rest threshold") + " · \(pct)%"
-        }
-        let s = cfg.seconds
-        return s % 60 == 0 ? String(localized: "\(s / 60) min") : String(localized: "\(s) s")
-    }
-
-    /// «C» for a warm-up set; otherwise its position among the work sets (1-based, warm-ups don't count).
-    private func setLabel(idx: Int, si: Int) -> String {
-        if items[idx].re.sets[si].kind == .warmup { return String(localized: "C") }
-        let workIndex = items[idx].re.sets[0...si].filter { $0.kind == .work }.count
-        return "\(workIndex)"
     }
 
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType) -> some View {
@@ -376,37 +334,6 @@ struct RoutineBuilderScreen: View {
 
     private func renumber(_ idx: Int) {
         for i in items[idx].re.sets.indices { items[idx].re.sets[i].position = i }
-    }
-
-    // MARK: - Per-set rest resolution (F0 model)
-
-    /// This set's effective rest: its own override if set, else the exercise's rest fields (the F0 fallback).
-    private func effectiveRest(_ ei: Int, _ si: Int) -> RestConfig {
-        if let r = items[ei].re.sets[si].rest { return r }
-        let re = items[ei].re
-        return RestConfig(mode: re.restMode, seconds: re.restSeconds,
-                          hrReference: re.hrRestReference, hrValue: re.hrRestValue)
-    }
-
-    /// 1-based work-set number for the 1e overline (nil for a warm-up «C» set).
-    private func workSetNumber(_ ei: Int, _ si: Int) -> Int? {
-        guard items[ei].re.sets[si].kind == .work else { return nil }
-        return items[ei].re.sets[0...si].filter { $0.kind == .work }.count
-    }
-
-    /// Apply an edited rest from 1e. «This set» writes that set's override; «All sets» writes the
-    /// exercise-level rest fields and clears every per-set override so the whole exercise inherits it.
-    private func applyRest(ei: Int, si: Int, config: RestConfig, applyToAll: Bool) {
-        guard items.indices.contains(ei), items[ei].re.sets.indices.contains(si) else { return }
-        if applyToAll {
-            items[ei].re.restMode = config.mode
-            items[ei].re.restSeconds = config.seconds
-            items[ei].re.hrRestReference = config.hrReference
-            items[ei].re.hrRestValue = config.hrValue
-            for i in items[ei].re.sets.indices { items[ei].re.sets[i].rest = nil }
-        } else {
-            items[ei].re.sets[si].rest = config
-        }
     }
 
     // MARK: - Exercise mutations
@@ -493,9 +420,6 @@ private struct BuilderItem: Identifiable {
     let exercise: Exercise
     var id: String { re.id }
 }
-
-/// Identifies the set whose rest the 1e editor is editing (exercise index + set index).
-private struct RestEditTarget: Identifiable, Hashable { let ei: Int; let si: Int; var id: String { "\(ei)-\(si)" } }
 
 // Shared list-row chrome: clear background, no system separator (rows draw their own hairline), standard
 // screen margin with tunable vertical insets — a plain List that reproduces «Instrumento» spacing.
