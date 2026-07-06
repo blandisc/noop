@@ -30,6 +30,10 @@ struct EntrenarView: View {
     /// Push «Mis rutinas» (the routine library) — the single home for create/import/templates/library now
     /// (F4): reached from the secondary chooser's «Otra rutina» and the rest sheet's «Elegir una rutina».
     var openRoutines: () -> Void
+    /// Push «Hoy descansas» (v3 · 2B) — the rest-day screen (was a sheet, now a push, FER-718).
+    var openRestDay: () -> Void
+    /// Push «Otra forma de entrenar» (v3 · 3e) — the alternative-training chooser (was a sheet, now a push).
+    var openOtherWays: () -> Void
     /// Push a completed strength session's detail (from a «done» day in the week strip).
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
@@ -37,7 +41,8 @@ struct EntrenarView: View {
         EntrenarLanding(openRoutine: openRoutine,
                         openBreathe: openBreathe, openIntervals: openIntervals, openDiet: openDiet,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
-                        openRoutines: openRoutines, openWorkoutSession: openWorkoutSession)
+                        openRoutines: openRoutines, openRestDay: openRestDay,
+                        openOtherWays: openOtherWays, openWorkoutSession: openWorkoutSession)
             .instrumentoTheme(.base)
     }
 }
@@ -55,6 +60,8 @@ private struct EntrenarLanding: View {
     var openHistory: () -> Void
     var openWeeklyPlan: () -> Void
     var openRoutines: () -> Void
+    var openRestDay: () -> Void
+    var openOtherWays: () -> Void
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     @State private var loaded = false
@@ -70,16 +77,6 @@ private struct EntrenarLanding: View {
     /// Today's routine resolved into guided-session slots, prefetched on load so «Empezar» starts in one
     /// tap (F1). Empty when today is a rest day or the routine has no exercises.
     @State private var todaySlots: [StrengthSessionModel.PlanSlot] = []
-    /// Drives the secondary «¿otro tipo?» chooser (otra rutina / intervals / breathe / live).
-    @State private var showChooser = false
-    /// What the chooser picked — performed on its dismiss, so we never stack two sheets.
-    @State private var pendingStart: StartKind? = nil
-    /// Drives the «Hoy descansas» rest sheet (F3).
-    @State private var showRestSheet = false
-    /// What the rest sheet picked — performed on its dismiss (so the session sheet / a push never stacks).
-    @State private var pendingRest: RestAction? = nil
-    /// Drives the live-workout sheet (the chooser's / rest sheet's «En vivo»).
-    @State private var showLive = false
     /// Drives the templates sheet opened straight on the mobility routine from the ③ «softer» suggestion
     /// (a TRAINING-day nudge; the rest sheet starts mobility directly instead). FER-554.
     @State private var showMobilityTemplate = false
@@ -91,10 +88,6 @@ private struct EntrenarLanding: View {
     /// The Daily Brief's «Empezar» arrived (via `TabRouter`) before this view finished loading its
     /// prefetched slots — start today's session as soon as `load()` completes (FER-613).
     @State private var startWhenLoaded = false
-
-    private enum StartKind { case routine, intervals, breathe, live }
-    /// What the rest sheet can launch. `mobility` is a one-off guided session (not saved to the plan).
-    private enum RestAction { case mobility, intervals, chooseRoutine, breathe, live }
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -125,23 +118,6 @@ private struct EntrenarLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        // The secondary «¿otro tipo?» chooser. Its choice is performed on dismiss so a push / live-sheet
-        // never races the chooser's own dismissal.
-        .sheet(isPresented: $showChooser, onDismiss: performPendingStart) {
-            chooserSheet
-                .presentationDetents([.height(340)])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-        }
-        // The «Hoy descansas» rest sheet (F3). Like the chooser, its action runs on dismiss.
-        .sheet(isPresented: $showRestSheet, onDismiss: performPendingRest) {
-            restSheet
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-        }
         // The ③ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
         // «Empezar» starts a one-off guided session (on the sheet's dismiss, so it never stacks — FER-171),
         // with «Add to my routines» as the secondary action. Theme doesn't cross the sheet boundary.
@@ -149,15 +125,6 @@ private struct EntrenarLanding: View {
             StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility"),
                                   onStart: { name, slots in pendingMobility = (name, slots) }) { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
-        }
-        // Live workout (the chooser's / rest sheet's «En vivo»).
-        .sheet(isPresented: $showLive) {
-            LiveWorkoutSheet(theme: theme)
-                .environmentObject(model)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
         }
         // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
         // doesn't cross the `.sheet` boundary, FER-162), no nested NavigationStack (FER-171). (FER-557)
@@ -307,7 +274,7 @@ private struct EntrenarLanding: View {
     /// F1: a day with a routine starts the guided session in one tap (slots prefetched on load); an empty
     /// routine opens its plan to edit instead of an empty session; a rest day opens the «Hoy descansas» sheet.
     private func startToday() {
-        guard let r = todayRoutine else { showRestSheet = true; return }
+        guard let r = todayRoutine else { openRestDay(); return }
         guard !todaySlots.isEmpty else { openRoutine(r.id); return }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots)
     }
@@ -403,7 +370,7 @@ private struct EntrenarLanding: View {
                 planRoutineRow(row)
             }
             utilityRow(icon: "figure.cooldown",
-                       title: String(localized: "Mobility · intervals · breathe · live")) { showChooser = true }
+                       title: String(localized: "Mobility · intervals · breathe · live")) { openOtherWays() }
             utilityRow(icon: "fork.knife",
                        title: String(localized: "Diet · log today's meals"), last: true) { openDiet() }
         }
@@ -556,158 +523,6 @@ private struct EntrenarLanding: View {
         .frame(maxWidth: .infinity).padding(.vertical, 30).padding(.horizontal, 18)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    // MARK: - Secondary «¿otro tipo?» chooser
-
-    private var chooserSheet: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Another type?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("What are you training?").font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 2)
-            chooserOption("dumbbell", "Another routine", subtitle: String(localized: "Pick or build one")) { pick(.routine) }
-            chooserOption("timer", "Intervals", subtitle: nil) { pick(.intervals) }
-            chooserOption("wind", "Breathe", subtitle: nil) { pick(.breathe) }
-            chooserOption("dot.radiowaves.left.and.right", "Live", subtitle: nil) { pick(.live) }
-            Spacer(minLength: 0)
-        }
-        .padding(NoopMetrics.screenPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.paper)
-    }
-
-    private func chooserOption(_ icon: String, _ title: LocalizedStringKey, subtitle: String?,
-                              action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 13) {
-                Image(systemName: icon).font(.system(size: 20)).foregroundStyle(theme.inkSecondary).frame(width: 26)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
-                    if let subtitle { Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
-            }
-            .padding(.vertical, 14).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
-    }
-
-    private func pick(_ kind: StartKind) { pendingStart = kind; showChooser = false }
-
-    private func performPendingStart() {
-        guard let kind = pendingStart else { return }
-        pendingStart = nil
-        switch kind {
-        case .routine:   openRoutines()   // pick / build a different routine in «Mis rutinas»
-        case .intervals: openIntervals()
-        case .breathe:   openBreathe()
-        case .live:      if model.activeWorkout == nil { model.startWorkout() }; showLive = true
-        }
-    }
-
-    // MARK: - «Hoy descansas» rest sheet (F3)
-    //
-    // What «Empezar» presents on a rest day: a hero suggested by recovery (one-off, never saved to the
-    // plan), the other ways to train (a routine off-plan, breathe, live), and a reminder that resting is
-    // valid. The hero/title is driven by the cited `TrainingRegulation.lightAlternative` (StrandAnalytics):
-    //   • .softer (low/normal recovery) → «Movilidad · 20 min»
-    //   • .optionalLight (high recovery) → «Intervalos · 12 min»
-    //   • nil (no signal) → no hero, just the options.
-
-    private var restSheet: some View {
-        let alt = TrainingRegulation.lightAlternative(recovery: recovery)
-        return VStack(alignment: .leading, spacing: 0) {
-            Text("Today you rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            if let alt {
-                Text(restTitle(alt)).font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 3)
-                restHero(alt).padding(.top, 18)
-            } else {
-                Text("Your plan doesn't train today.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 6)
-            }
-            VStack(spacing: 0) {
-                restOption("list.bullet", "Pick a routine") { pendingRest = .chooseRoutine; showRestSheet = false }
-                restOption("wind", "Breathe") { pendingRest = .breathe; showRestSheet = false }
-                restOption("dot.radiowaves.left.and.right", "Live") { pendingRest = .live; showRestSheet = false }
-            }
-            .padding(.top, alt != nil ? 14 : 18)
-            Text("Resting keeps your streak too.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .center).padding(.top, 16)
-            Spacer(minLength: 0)
-        }
-        .padding(NoopMetrics.screenPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.paper)
-    }
-
-    private func restTitle(_ alt: TrainingRegulation.LightAlternative) -> LocalizedStringKey {
-        switch alt {
-        case .softer:        return "Up for something light?"
-        case .optionalLight: return "Feeling energetic?"
-        }
-    }
-
-    private func restHero(_ alt: TrainingRegulation.LightAlternative) -> some View {
-        let name: LocalizedStringKey = alt == .softer ? "Mobility · 20 min" : "Intervals · 12 min"
-        let tag: LocalizedStringKey = alt == .softer ? "gentle" : "extra"
-        return card {
-            Text("Suggested by your recovery").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 9) {
-                Text(name).font(StrandFont.title2).foregroundStyle(theme.ink)
-                Text(tag).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .padding(.horizontal, 9).padding(.vertical, 2)
-                    .background(theme.paper, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .padding(.top, 5)
-            Button { pendingRest = (alt == .softer ? .mobility : .intervals); showRestSheet = false } label: {
-                Text("Empezar").font(StrandFont.headline).foregroundStyle(theme.paperHi)
-                    .frame(maxWidth: .infinity).padding(.vertical, 14)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).padding(.top, 14)
-        }
-    }
-
-    private func restOption(_ icon: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon).font(.system(size: 18)).foregroundStyle(theme.inkSecondary).frame(width: 26)
-                Text(title).font(StrandFont.body).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
-            }
-            .padding(.vertical, 14).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
-    }
-
-    private func performPendingRest() {
-        guard let action = pendingRest else { return }
-        pendingRest = nil
-        switch action {
-        case .mobility:      startMobilityOneOff()
-        case .intervals:     openIntervals()
-        case .chooseRoutine: openRoutines()
-        case .breathe:       openBreathe()
-        case .live:          if model.activeWorkout == nil { model.startWorkout() }; showLive = true
-        }
-    }
-
-    /// Start the mobility one-off queued from the rest sheet's hero (FER-554/560): a guided session built
-    /// from the bundled mobility template, NOT saved to the plan (`routineId: nil`).
-    private func startMobilityOneOff() {
-        guard let t = StarterTemplates.byID("mobility") else { return }
-        let name = String(localized: "Mobility")
-        let (_, exercises) = t.makeRoutine(name: name, now: Int(Date().timeIntervalSince1970))
-        let slots = exercises.map {
-            StrengthSessionModel.PlanSlot(re: $0, exercise: ExerciseCatalog.byID($0.exerciseId), lastSets: [])
-        }
-        model.startStrengthSession(routineId: nil, routineName: name, slots: slots)
     }
 
     /// Start the mobility session «Empezar» queued from the TRAINING-day template sheet (FER-560).
@@ -921,6 +736,222 @@ struct TrainingSoonSheet: View {
         .padding(NoopMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
+    }
+}
+
+// MARK: - «Hoy descansas. También cuenta.» (v3 · 2B) — a PUSHED screen now (FER-718)
+//
+// What «Empezar» opens on a rest day, and what the streak row protects. Reframed to the mock: the streak
+// is explicitly SAFE (resting does not break it), a card «Sugerido por tu recuperación» carries the one
+// cited light alternative (`TrainingRegulation.lightAlternative` — the only solid gate), a quieter «Si aun
+// así quieres entrenar» section lists the other ways, and a footer names tomorrow's routine from the split.
+
+struct RestDayScreen: View {
+    var openIntervals: () -> Void
+    var openBreathe: () -> Void
+    var openRoutines: () -> Void
+
+    @Environment(\.instrumentoTheme) private var theme
+    @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var model: AppModel
+
+    @State private var split: [Int: String] = [:]
+    @State private var routineNames: [String: String] = [:]
+    @State private var showLive = false
+
+    private var recovery: Double? { repo.today?.recovery }
+    private var alt: TrainingRegulation.LightAlternative? {
+        TrainingRegulation.lightAlternative(recovery: recovery)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Today you rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Today you rest. It counts too.")
+                    .font(StrandFont.title1).foregroundStyle(theme.ink).padding(.top, 3)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                streakBullet.padding(.top, 16)
+
+                if let alt {
+                    suggestedCard(alt).padding(.top, NoopMetrics.sectionGap)
+                }
+
+                Text("If you still want to train").instrumentoOverline()
+                    .foregroundStyle(theme.inkTertiary).padding(.top, NoopMetrics.sectionGap)
+                VStack(spacing: 0) {
+                    if alt != .softer { row("figure.cooldown", "Mobility · 20 min") { model.startMobilityOneOff() } }
+                    if alt != .optionalLight { row("timer", "Intervals · 12 min") { openIntervals() } }
+                    row("list.bullet", "Pick a routine") { openRoutines() }
+                    row("wind", "Breathe") { openBreathe() }
+                    row("dot.radiowaves.left.and.right", "Live", last: true) { startLive() }
+                }
+                .padding(.top, 6)
+
+                if let tomorrow = tomorrowRoutineName {
+                    Divider().overlay(theme.hairline).padding(.top, NoopMetrics.sectionGap)
+                    Text("Tomorrow: \(tomorrow)")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 14)
+                }
+            }
+            .padding(.top, 20)
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .sheet(isPresented: $showLive) {
+            LiveWorkoutSheet(theme: theme)
+                .environmentObject(model)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
+        }
+        .task { await load() }
+    }
+
+    /// The streak-protected reassurance: color only on the recovery bullet, copy explicit that resting
+    /// keeps the streak intact.
+    private var streakBullet: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Circle().fill(theme.dataRecovery).frame(width: 8, height: 8)
+            Text("Resting doesn't break your streak. A planned rest day keeps it going.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The one cited light alternative, in a card — the only solid recovery gate we surface here.
+    private func suggestedCard(_ alt: TrainingRegulation.LightAlternative) -> some View {
+        let name: LocalizedStringKey = alt == .softer ? "Mobility · 20 min" : "Intervals · 12 min"
+        let tag: LocalizedStringKey = alt == .softer ? "gentle" : "extra"
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("Suggested by your recovery").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 9) {
+                Text(name).font(StrandFont.title2).foregroundStyle(theme.ink)
+                Text(tag).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .padding(.horizontal, 9).padding(.vertical, 2)
+                    .background(theme.paper, in: Capsule())
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .padding(.top, 5)
+            Button { if alt == .softer { model.startMobilityOneOff() } else { openIntervals() } } label: {
+                Text("Empezar").font(StrandFont.headline).foregroundStyle(theme.paperHi)
+                    .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).padding(.top, 14)
+        }
+        .padding(NoopMetrics.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    private func row(_ icon: String, _ title: LocalizedStringKey, last: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.system(size: 18)).foregroundStyle(theme.inkSecondary).frame(width: 26)
+                Text(title).font(StrandFont.body).foregroundStyle(theme.ink)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+            }
+            .padding(.vertical, 14).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
+    }
+
+    private func startLive() {
+        if model.activeWorkout == nil { model.startWorkout() }
+        showLive = true
+    }
+
+    /// Tomorrow's routine name from the weekly split (nil = tomorrow is also a rest day).
+    private var tomorrowRoutineName: String? {
+        let tomorrow = (Calendar.current.component(.weekday, from: Date()) % 7) + 1
+        return split[tomorrow].flatMap { routineNames[$0] }
+    }
+
+    private func load() async {
+        guard let store = await repo.storeHandle() else { return }
+        let sched = (try? await store.routineSchedule()) ?? []
+        split = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
+        let rs = (try? await store.routines()) ?? []
+        routineNames = Dictionary(rs.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+    }
+}
+
+// MARK: - «Otra forma de entrenar» (v3 · 3e) — a PUSHED screen now (FER-718)
+//
+// The alternative-training chooser, reframed to the mock: four large rows (Mobility · Intervals · Breathe
+// · Live) and a footer that reassures nothing here breaks the streak or the plan.
+
+struct OtherWaysScreen: View {
+    var openIntervals: () -> Void
+    var openBreathe: () -> Void
+
+    @Environment(\.instrumentoTheme) private var theme
+    @EnvironmentObject private var model: AppModel
+    @State private var showLive = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Another type?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Another way to train").font(StrandFont.title1).foregroundStyle(theme.ink).padding(.top, 3)
+
+                VStack(spacing: 0) {
+                    bigRow("figure.cooldown", "Mobility", subtitle: String(localized: "Gentle · 20 min")) { model.startMobilityOneOff() }
+                    bigRow("timer", "Intervals", subtitle: String(localized: "Bursts · 12 min")) { openIntervals() }
+                    bigRow("wind", "Breathe", subtitle: String(localized: "Slow it down")) { openBreathe() }
+                    bigRow("dot.radiowaves.left.and.right", "Live", subtitle: String(localized: "Beat by beat"), last: true) { startLive() }
+                }
+                .padding(.top, NoopMetrics.sectionGap)
+
+                Text("None of this breaks your streak or your plan.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .center).padding(.top, NoopMetrics.sectionGap)
+            }
+            .padding(.top, 20)
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .sheet(isPresented: $showLive) {
+            LiveWorkoutSheet(theme: theme)
+                .environmentObject(model)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
+        }
+    }
+
+    private func bigRow(_ icon: String, _ title: LocalizedStringKey, subtitle: String, last: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 15) {
+                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(theme.inkSecondary).frame(width: 30)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
+                    Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(theme.inkDim)
+            }
+            .padding(.vertical, 18).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
+    }
+
+    private func startLive() {
+        if model.activeWorkout == nil { model.startWorkout() }
+        showLive = true
     }
 }
 #endif

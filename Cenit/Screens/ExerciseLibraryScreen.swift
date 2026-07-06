@@ -16,10 +16,18 @@ struct ExerciseLibraryScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     @State private var exercises: [Exercise] = []
     @State private var muscleOptions: [String] = []
     @State private var equipmentOptions: [String] = []
+    /// Exercise ids the user has logged work sets for (v3 · 1f) — surfaces «Con historial tuyo» first.
+    @State private var historyIds: Set<String> = []
+    /// Per-exercise best-weight PR + a max-weight-by-day sparkline, for the «Con historial tuyo» rows. Only
+    /// built for the (small) set of exercises with history, so it stays cheap.
+    @State private var bestKg: [String: Double] = [:]
+    @State private var sparklines: [String: [Double]] = [:]
     @State private var loaded = false
     @State private var search = ""
     @State private var muscle: String? = nil
@@ -74,6 +82,12 @@ struct ExerciseLibraryScreen: View {
             Text(addMode ? "Add to routine" : "Train")
                 .instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text("Library").font(StrandFont.title1).foregroundStyle(theme.ink)
+            // The count reflects the REAL loaded catalog (never a made-up figure). Hidden until loaded so
+            // it never flashes a wrong 0.
+            if loaded {
+                Text("\(exercises.count) exercises")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
         }
     }
 
@@ -134,20 +148,36 @@ struct ExerciseLibraryScreen: View {
 
     private var exerciseList: some View {
         let rows = filtered   // filter the 800+ catalog once per body pass, not per ForEach read
+        let mine = rows.filter { historyIds.contains($0.id) }
+        let rest = rows.filter { !historyIds.contains($0.id) }
         return LazyVStack(alignment: .leading, spacing: 0) {
             if loaded && rows.isEmpty {
                 Text("No exercises match your filters.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 18)
             }
-            ForEach(rows) { ex in
-                exerciseRow(ex)
-                if ex.id != rows.last?.id { Divider().overlay(theme.hairline.opacity(0.7)) }
+            // «Con historial tuyo» — the exercises you've logged, first, each with its best mark + sparkline.
+            if !mine.isEmpty {
+                Text("With your history").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    .padding(.top, 4).padding(.bottom, 6)
+                ForEach(mine) { ex in
+                    exerciseRow(ex, showsHistory: true)
+                    if ex.id != mine.last?.id { Divider().overlay(theme.hairline.opacity(0.7)) }
+                }
+            }
+            // «De la biblioteca» — the rest of the catalog.
+            if !rest.isEmpty {
+                Text("From the library").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    .padding(.top, mine.isEmpty ? 4 : 18).padding(.bottom, 6)
+                ForEach(rest) { ex in
+                    exerciseRow(ex, showsHistory: false)
+                    if ex.id != rest.last?.id { Divider().overlay(theme.hairline.opacity(0.7)) }
+                }
             }
         }
     }
 
-    private func exerciseRow(_ ex: Exercise) -> some View {
+    private func exerciseRow(_ ex: Exercise, showsHistory: Bool) -> some View {
         Button {
             if addMode { toggle(ex) } else { detail = ex }
         } label: {
@@ -155,21 +185,46 @@ struct ExerciseLibraryScreen: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .multilineTextAlignment(.leading)
-                    Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    // Best mark for a history row; the muscle subtitle otherwise.
+                    if showsHistory, let kg = bestKg[ex.id] {
+                        Text("Best \(StrengthDisplay.weight(kg, system: system))")
+                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    } else {
+                        Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
                 }
                 Spacer(minLength: 8)
-                if addMode {
-                    Image(systemName: selected.contains(ex.id) ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 21))
-                        .foregroundStyle(selected.contains(ex.id) ? theme.ink : theme.hairlineStrong)
-                } else {
-                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
+                // A quiet weight-over-time sparkline in the «paper trench» for history rows.
+                if showsHistory, let s = sparklines[ex.id], s.count >= 2 {
+                    Sparkline(values: s,
+                              gradient: Gradient(colors: [theme.inkTertiary, theme.inkSecondary]),
+                              bandColor: theme.hairlineStrong,
+                              showsHead: false, showsScrub: false)
+                        .frame(width: 56, height: 20)
+                        .accessibilityHidden(true)
                 }
+                trailingAccessory(ex)
             }
             .padding(.vertical, 11).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// The trailing control: an «Add» affordance in ADD mode (a check when picked), a chevron in BROWSE.
+    @ViewBuilder
+    private func trailingAccessory(_ ex: Exercise) -> some View {
+        if addMode {
+            if selected.contains(ex.id) {
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)
+            } else {
+                Text("Add").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+        } else {
+            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(theme.inkTertiary)
+        }
     }
 
     private var createRow: some View {
@@ -205,7 +260,33 @@ struct ExerciseLibraryScreen: View {
         // Filter options are invariant between reloads — derive them once here, not per body pass.
         muscleOptions = Set(exercises.flatMap { $0.primaryMuscles }).sorted()
         equipmentOptions = Set(exercises.compactMap { $0.equipment }).sorted()
+        await loadHistory()
         loaded = true
+    }
+
+    /// «Con historial tuyo» (1f): the exercises the user has ever logged, plus each one's best weight and a
+    /// weight-by-day sparkline. `recentWorkSets(sinceTs: 0)` gives the id set cheaply; the per-exercise
+    /// history is fetched only for that (small) set, so a huge catalog stays fast.
+    private func loadHistory() async {
+        let events = await repo.recentWorkSets(sinceTs: 0)
+        let ids = Set(events.map(\.exerciseId))
+        historyIds = ids
+        var best: [String: Double] = [:]
+        var sparks: [String: [Double]] = [:]
+        for id in ids {
+            let hist = await repo.exerciseHistory(exerciseId: id)   // oldest→newest (startTs, weightKg, reps)
+            guard !hist.isEmpty else { continue }
+            best[id] = hist.map(\.weightKg).max()
+            // Max weight per day, oldest→newest — a quiet progress trace.
+            var byDay: [String: Double] = [:]
+            for h in hist {
+                let key = Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval(h.startTs)))
+                byDay[key] = Swift.max(byDay[key] ?? 0, h.weightKg)
+            }
+            sparks[id] = byDay.sorted { $0.key < $1.key }.map(\.value)
+        }
+        bestKg = best
+        sparklines = sparks
     }
 
     private func toggle(_ ex: Exercise) {
