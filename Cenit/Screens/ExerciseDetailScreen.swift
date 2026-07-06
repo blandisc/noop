@@ -33,6 +33,11 @@ struct ExerciseDetailScreen: View {
     /// The v3 · 1g/1h segmented view: Guide (muscles + how-to) / Progress (trend + records) / History (per-day sets).
     @State private var tab: DetailTab = .guide
     @State private var loaded = false
+    /// A tapped variant chip opens that exercise's own sheet (FER-739). Self-contained here so it works
+    /// regardless of which screen presented this one.
+    @State private var variant: Exercise?
+    /// Other catalog exercises that share this one's primary muscle — derived once (FER-739).
+    @State private var variants: [Exercise] = []
 
     private enum DetailTab: String, CaseIterable, Identifiable {
         case guide, progress, history
@@ -95,20 +100,39 @@ struct ExerciseDetailScreen: View {
             async let ov = repo.exerciseTypeOverride(exercise.id)
             (history, prs) = await (h, p)
             hasTypeOverride = await ov != nil
+            variants = Self.variants(for: exercise)
             loaded = true
             thumbURL = mediaCoordinator.cachedThumbURL(for: exercise)
             loopURL = nil
+        }
+        .sheet(item: $variant) { ex in
+            NavigationStack {
+                ExerciseDetailScreen(exercise: ex)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { variant = nil }.foregroundStyle(theme.ink)
+                    } }
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(theme)
+            .environmentObject(repo)
+            .environmentObject(mediaCoordinator)
+            .preferredColorScheme(.light)
         }
     }
 
     // MARK: - Tabs (v3 · 1g/1h)
 
-    /// «Guía» — how the exercise loads the body and how to do it.
+    /// «Guía» — how the exercise loads the body and how to do it. In the handoff's order (FER-739):
+    /// muscles (chips) → how-to → variants → «measured by» + YouTube at the foot. The reserved media
+    /// hero (`ExerciseThumbnail`, FER-751) already sits above the segmented; the opt-in `mediaSection`
+    /// (FER-722) stays as its always-available in-guide fallback (hidden by default).
     @ViewBuilder private var guideTab: some View {
-        measurementSection
         musclesSection
         if mediaCoordinator.isEnabled, thumbURL != nil { mediaSection }
         if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
+        variantsSection
+        measurementSection
         youtubeRow
     }
 
@@ -214,7 +238,7 @@ struct ExerciseDetailScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 3) {
-            (Text(StrengthDisplay.subtitle(exercise) + " · ") + Text(StrengthDisplay.typeLabel(effectiveType)))
+            Text(metaLine)
                 .instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(StrengthDisplay.name(exercise))
                 .font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -222,10 +246,22 @@ struct ExerciseDetailScreen: View {
         }
     }
 
+    /// The overline under the title: «equipment · type» (e.g. «Barra · Peso × reps»). Collapses to a
+    /// single term when they'd read the same (a bodyweight exercise's equipment «body only» and its type
+    /// both localize to «Peso corporal») — fixing the doubled-equipment overline (FER-739).
+    private var metaLine: String {
+        let type = StrengthDisplay.typeName(effectiveType)
+        guard let eq = exercise.equipment, !eq.isEmpty else { return type }
+        let eqLabel = StrengthDisplay.equipment(eq)
+        if eqLabel.caseInsensitiveCompare(type) == .orderedSame { return type }
+        return "\(eqLabel) · \(type)"
+    }
+
     // MARK: - Measurement type (FER-541) — let the user re-type any exercise, incl. a catalog one
 
     private var measurementSection: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Divider().overlay(theme.hairline).padding(.bottom, 10)
             Text("Measured by").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(spacing: 12) {
                 Menu {
@@ -268,48 +304,77 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    // MARK: - Muscles (primary at full ink, assistants at half)
+    // MARK: - Muscles (chips: primary at full ink, assistants outlined · FER-739)
+    // The handoff has no anatomical figure and no bars — the muscles read as chips. A primary mover is a
+    // full-ink chip; an assistant is an outlined one. Derived from the exercise's own muscle data (no
+    // bundled art, no network). Hidden when an exercise carries no muscles (a bare custom one).
 
-    private var musclesSection: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            Text("Muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            // The worked-muscle silhouette (FER-389): front/back figures reusing the muscle-map atlas,
-            // primaries in full ink and assistants at half. Derived from the exercise's own muscle data —
-            // no bundled art, no network. Hidden when an exercise carries no muscles (a bare custom one).
-            if !exercise.primaryMuscles.isEmpty || !exercise.secondaryMuscles.isEmpty {
-                ExerciseMuscleFigures(theme: theme,
-                                      primary: Set(exercise.primaryMuscles),
-                                      secondary: Set(exercise.secondaryMuscles))
-                    .padding(.bottom, 4)
-            }
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(exercise.primaryMuscles, id: \.self) { m in muscleBar(m, primary: true) }
-                ForEach(exercise.secondaryMuscles, id: \.self) { m in muscleBar(m, primary: false) }
-            }
-            if !exercise.secondaryMuscles.isEmpty {
-                Text("Primary at full ink · assisting at half")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+    @ViewBuilder private var musclesSection: some View {
+        if !exercise.primaryMuscles.isEmpty || !exercise.secondaryMuscles.isEmpty {
+            VStack(alignment: .leading, spacing: 11) {
+                Text("Muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                ChipFlow(spacing: 8) {
+                    ForEach(exercise.primaryMuscles, id: \.self) { m in muscleChip(m, primary: true) }
+                    ForEach(exercise.secondaryMuscles, id: \.self) { m in muscleChip(m, primary: false) }
+                }
+                if !exercise.secondaryMuscles.isEmpty {
+                    Text("Primary at full ink · assisting at half")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
             }
         }
     }
 
-    private func muscleBar(_ muscle: String, primary: Bool) -> some View {
-        HStack(spacing: 12) {
-            Text(StrengthDisplay.muscle(muscle))
-                .font(StrandFont.subhead)
-                .foregroundStyle(primary ? theme.ink : theme.inkSecondary)
-                .frame(width: 116, alignment: .leading)
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(theme.hairline).frame(height: 7)
-                    Capsule().fill(primary ? theme.ink : theme.inkTertiary)
-                        .frame(width: geo.size.width * (primary ? 1.0 : 0.5), height: 7)
+    private func muscleChip(_ muscle: String, primary: Bool) -> some View {
+        Text(StrengthDisplay.muscle(muscle))
+            .font(StrandFont.subhead)
+            .foregroundStyle(primary ? theme.paper : theme.inkSecondary)
+            .padding(.horizontal, 13).padding(.vertical, 6)
+            .background(primary ? theme.ink : Color.clear, in: Capsule(style: .continuous))
+            .overlay(Capsule(style: .continuous)
+                .strokeBorder(primary ? theme.ink : theme.hairlineStrong, lineWidth: 1))
+            .accessibilityElement()
+            .accessibilityLabel("\(StrengthDisplay.muscle(muscle)), \(String(localized: primary ? "primary" : "assisting"))")
+    }
+
+    // MARK: - Variants (FER-739) — other catalog exercises for the same primary muscle
+
+    /// A row of chips for sibling exercises that load the same primary muscle; tapping one opens its
+    /// sheet. Derived from the catalog (no new «variants» field), so it's empty for a bare custom
+    /// exercise or one whose primary muscle nothing else shares.
+    @ViewBuilder private var variantsSection: some View {
+        if !variants.isEmpty {
+            VStack(alignment: .leading, spacing: 11) {
+                Divider().overlay(theme.hairline).padding(.bottom, 4)
+                Text("Variants").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                ChipFlow(spacing: 8) {
+                    ForEach(variants) { ex in variantChip(ex) }
                 }
             }
-            .frame(height: 7)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(StrengthDisplay.muscle(muscle)), \(primary ? "primary" : "assisting")")
+    }
+
+    private func variantChip(_ ex: Exercise) -> some View {
+        Button { variant = ex } label: {
+            Text(StrengthDisplay.name(ex))
+                .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .padding(.horizontal, 13).padding(.vertical, 6)
+                .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(StrengthDisplay.name(ex)))
+    }
+
+    /// Sibling exercises for the variants row: catalog entries that share this exercise's first primary
+    /// muscle, minus itself, by display name, capped so the row stays a couple of lines. Pure + static so
+    /// it's computed once in `.task`, not on every body pass over the 800-entry catalog.
+    private static func variants(for exercise: Exercise) -> [Exercise] {
+        guard let key = exercise.primaryMuscles.first else { return [] }
+        let localized = StrengthDisplay.localized
+        return ExerciseCatalog.all
+            .filter { $0.id != exercise.id && $0.primaryMuscles.contains(key) }
+            .sorted { $0.displayName(localized: localized) < $1.displayName(localized: localized) }
+            .prefix(8).map { $0 }
     }
 
     // MARK: - How to (offline text cues from the bundled catalog · FER-387)
@@ -530,52 +595,35 @@ struct ExerciseDetailScreen: View {
     }
 }
 
-// MARK: - Worked-muscle silhouette (FER-389)
+// MARK: - Chip flow (FER-739)
 
-/// Front + back schematic figures that tint the muscles an exercise works — primaries in full ink,
-/// assistants at half — reusing the muscle-map atlas (`MuscleAtlas`/`RegionShape`/`BodyOutlineShape`,
-/// FER-350). Pure presentation off the exercise's own `primaryMuscles`/`secondaryMuscles`: no bundled
-/// art, no network. Involvement is anatomical, not a live datum, so it reads in ink opacity — the
-/// Instrumento «color only on the physiological datum» rule keeps color for HR/strain/recovery. The
-/// figures are decorative reinforcement; the named muscle bars below carry the VoiceOver detail.
-private struct ExerciseMuscleFigures: View {
-    let theme: InstrumentoTheme
-    let primary: Set<String>
-    let secondary: Set<String>
+/// Minimal flow layout: lays chips left-to-right, wrapping to a new row when the next would overflow the
+/// proposed width — so the muscle + variant chips wrap instead of truncating at large Dynamic Type sizes.
+/// (Same shape as `LiveStrengthSheet`'s private `ChipFlow`; kept local so neither file exports it.)
+private struct ChipFlow: Layout {
+    var spacing: CGFloat = 8
 
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            figure(.front)
-            figure(.back)
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxW = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
+        for v in subviews {
+            let sz = v.sizeThatFits(.unspecified)
+            if x > 0, x + sz.width > maxW { x = 0; y += rowH + spacing; rowH = 0 }
+            x += sz.width + spacing
+            rowH = max(rowH, sz.height)
         }
-        .accessibilityHidden(true)
+        return CGSize(width: maxW.isFinite ? maxW : x, height: y + rowH)
     }
 
-    private func figure(_ side: MuscleAtlas.Side) -> some View {
-        VStack(spacing: 6) {
-            ZStack {
-                BodyOutlineShape(side: side).stroke(theme.hairline, lineWidth: 1.2)
-                ForEach(MuscleAtlas.regions.filter { $0.side == side }) { region in
-                    if let fill = fill(for: region.muscle) {
-                        let shape = RegionShape(region: region)
-                        shape.fill(fill)
-                            .overlay(shape.stroke(theme.hairline.opacity(0.5), lineWidth: 0.5))
-                    }
-                }
-            }
-            .aspectRatio(100.0 / 220.0, contentMode: .fit)
-            .frame(maxHeight: 184)
-            Text(side == .front ? "Front" : "Back")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
+        for v in subviews {
+            let sz = v.sizeThatFits(.unspecified)
+            if x > 0, x + sz.width > bounds.width { x = 0; y += rowH + spacing; rowH = 0 }
+            v.place(at: CGPoint(x: bounds.minX + x, y: bounds.minY + y), proposal: ProposedViewSize(sz))
+            x += sz.width + spacing
+            rowH = max(rowH, sz.height)
         }
-        .frame(maxWidth: .infinity)
-    }
-
-    /// Full ink for a primary mover, half for an assistant, nothing for an uninvolved muscle.
-    private func fill(for muscle: String) -> Color? {
-        if primary.contains(muscle) { return theme.ink }
-        if secondary.contains(muscle) { return theme.ink.opacity(0.4) }
-        return nil
     }
 }
 #endif
