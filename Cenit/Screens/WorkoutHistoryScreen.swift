@@ -82,6 +82,19 @@ struct WorkoutHistoryScreen: View {
             Text("The strength sessions you've finished.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+            // «Volumen por músculo» (Entrenar v3 · 3d, FER-719) — the history's stats view.
+            NavigationLink(value: MuscleVolumeRoute()) {
+                HStack(spacing: 6) {
+                    Image(systemName: "chart.bar.xaxis").font(.system(size: 12, weight: .semibold))
+                    Text("Volume per muscle").font(StrandFont.caption).fontWeight(.semibold)
+                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(theme.inkSecondary)
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 8)
         }
     }
 

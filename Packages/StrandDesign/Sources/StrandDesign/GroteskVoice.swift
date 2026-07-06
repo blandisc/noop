@@ -97,6 +97,31 @@ public extension InstrumentoType {
     static let groteskLane = grotesk(12, weight: .bold)
     /// Tracking for lane labels.
     static let groteskLaneTracking: CGFloat = 1.8
+
+    // MARK: Entrenar v3 session (FER-716) — sizes from the «Flujo Entrenar v3» handoff. All FIXED
+    // (geometry-driven numerals / chrome), all tabular where they carry a live value.
+
+    /// The strength session's running clock («23:41») — 27/700 tabular, tracking −1. FIXED.
+    static let groteskSessionClock = groteskNumber(27)
+    static let groteskSessionClockTracking: CGFloat = -1
+
+    /// The rest card's live datum — the pulse dropping toward the threshold, or the time countdown
+    /// («116» / «1:12») — 38/600 tabular, tracking −0.8. FIXED.
+    static let groteskRestPulse = groteskNumber(38, weight: .semibold)
+    static let groteskRestPulseTracking: CGFloat = -0.8
+
+    /// A push-screen title inside the session («Descanso al terminar») — 25/700, tracking −0.9. FIXED.
+    static let groteskScreenTitle = grotesk(25, weight: .bold)
+    static let groteskScreenTitleTracking: CGFloat = -0.9
+
+    /// The receipt's editorial headline («Pierna, hecha.») — 26/700, tracking −1. FIXED (read as a
+    /// title, but sized to the layout like the other grotesk headlines).
+    static let groteskReceiptHeadline = grotesk(26, weight: .bold)
+    static let groteskReceiptHeadlineTracking: CGFloat = -1
+
+    /// A receipt metric's value (duration / volume / strain / kcal) — 22/700 tabular, tracking −0.8. FIXED.
+    static let groteskReceiptStat = groteskNumber(22)
+    static let groteskReceiptStatTracking: CGFloat = -0.8
 }
 
 // MARK: - Text helpers

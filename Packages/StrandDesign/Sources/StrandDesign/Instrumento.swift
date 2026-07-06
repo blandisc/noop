@@ -241,6 +241,10 @@ public extension InstrumentoTheme {
     var dataSleepDeep: Color { Color(hex: "#3F3C78") }
     /// Light-sleep stage fill.
     var dataSleepLight: Color { Color(hex: "#8E8BC4") }
+    /// A keycap on the session's custom numeric keypad (FER-716) — the ONE white surface the paper
+    /// language allows, calqued from the UIKit keycap over `surface` (with its own hairline + 1px
+    /// shadow). Not a canvas; never used as a background elsewhere.
+    var keyCap: Color { Color(hex: "#FFFFFF") }
 
     // Data-origin dots (6px): where a reading comes from, always visible. Aliases of
     // existing roles so origin and metric hues can never drift apart.

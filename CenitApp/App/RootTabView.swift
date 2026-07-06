@@ -40,6 +40,11 @@ struct RootTabView: View {
     /// App-level cross-tab navigation (FER-378). A screen can ask to jump tabs; we apply + clear it.
     @EnvironmentObject private var tabRouter: TabRouter
 
+    /// The strength session lives here (FER-716): it presents as a full-screen cover (over the dock, no
+    /// grabber) from ANY tab, and its floating pill hovers over the bar on all five tabs. Owned by
+    /// AppModel so navigation never kills it — dismissing the cover only minimizes it (the pill re-opens).
+    @EnvironmentObject private var appModel: AppModel
+
     /// The visible tab. Starts on Today, the launch screen.
     @State private var selection: Tab = .today
     /// Tabs whose content has been shown at least once. Only Today is built at launch; the one heavy
@@ -102,6 +107,9 @@ struct RootTabView: View {
                 .navigationDestination(for: WorkoutSessionRoute.self) { route in
                     trainChrome(WorkoutSessionDetailScreen(route: route))
                 }
+                .navigationDestination(for: MuscleVolumeRoute.self) { _ in
+                    trainChrome(MuscleVolumeScreen())
+                }
             }
             .environmentObject(workoutHistory)
             .toolbar(.hidden, for: .tabBar)
@@ -157,6 +165,30 @@ struct RootTabView: View {
                         Color.clear.preference(key: BarHeightKey.self, value: proxy.size.height)
                     }
                 )
+        }
+        // The active-session pill (FER-716): floats over the dock on ALL five tabs while a session is
+        // running and the full-screen cover is minimized. Tapping it re-opens the session.
+        .overlay(alignment: .bottom) {
+            if appModel.strengthSession != nil && !appModel.strengthSheetPresented {
+                ActiveSessionPillHost(model: appModel)
+                    .padding(.bottom, barHeight + NoopMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(StrandMotion.gentle, value: appModel.strengthSheetPresented)
+        .animation(StrandMotion.gentle, value: appModel.strengthSession == nil)
+        // The guided strength session (FER-347/716): a full-screen cover so it covers the dock with no
+        // grabber, opened from any tab. The session lives in AppModel, so dismissing the cover only hides
+        // it (the pill re-opens); the summary is ended by `closeStrengthSummary` on its «Listo».
+        .fullScreenCover(isPresented: $appModel.strengthSheetPresented, onDismiss: {
+            if appModel.strengthSession?.summary != nil { appModel.closeStrengthSummary() }
+        }) {
+            if let session = appModel.strengthSession {
+                LiveStrengthSheet(session: session, theme: .base)
+                    .environmentObject(appModel)
+                    .environmentObject(tabRouter)
+                    .preferredColorScheme(.light)
+            }
         }
         .onPreferenceChange(BarHeightKey.self) { barHeight = $0 }
         // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
@@ -331,6 +363,38 @@ private extension View {
         safeAreaInset(edge: .bottom, spacing: 0) {
             Color.clear.frame(height: height)
         }
+    }
+}
+
+/// Hosts the `SessionPill` with a live-ticking clock (FER-716): a `TimelineView` recomputes the
+/// elapsed time each second, and the BPM is the app's LIVE smoothed value (`model.bpm` — the same
+/// source as the session header; nil = no strap streaming, so the pill drops its ♥ segment instead
+/// of freezing a stale sample). Tapping re-opens the session. The routine hue is the effort ember
+/// (`dataStrain`) — the same hue the session screen and the approved previews use.
+private struct ActiveSessionPillHost: View {
+    @ObservedObject var model: AppModel
+    var body: some View {
+        if let session = model.strengthSession {
+            let theme = InstrumentoTheme.base
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let elapsed = SessionClock.format(Int(context.date.timeIntervalSince1970) - session.startTs)
+                SessionPill(
+                    routineName: session.routineName,
+                    elapsed: elapsed,
+                    bpm: model.bpm,
+                    hue: theme.dataStrain,
+                    theme: theme,
+                    accessibilityLabel: pillLabel(session.routineName, elapsed, model.bpm),
+                    accessibilityHint: Text("Returns to the session")
+                ) { model.resumeStrengthSession() }
+            }
+        }
+    }
+
+    /// VoiceOver label for the pill — localized here because the StrandDesign package has no catalog.
+    private func pillLabel(_ name: String, _ elapsed: String, _ bpm: Int?) -> Text {
+        if let bpm { return Text("Active session: \(name), \(elapsed), heart rate \(bpm)") }
+        return Text("Active session: \(name), \(elapsed)")
     }
 }
 #endif
