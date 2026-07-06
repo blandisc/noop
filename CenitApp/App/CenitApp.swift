@@ -56,6 +56,12 @@ struct CenitApp: App {
         mirroring.onWatchEndedSession = { [weak model] sid, save in
             model?.endStrengthSessionFromWatch(sessionId: sid, save: save)
         }
+        // FER-742: surface the bridge's watch state on AppModel, which the Settings row + strength sheet observe.
+        mirroring.onPairingChanged = { [weak model] paired, installed in
+            model?.watchPaired = paired
+            model?.watchAppInstalled = installed
+        }
+        mirroring.onSessionStatusChanged = { [weak model] status in model?.watchSessionStatus = status }
         model.mirroringBridge = mirroring
         _mirroring = StateObject(wrappedValue: mirroring)
     }

@@ -61,6 +61,9 @@ struct StrengthSummary: Equatable {
     var comparison: Comparison?
     /// One row per exercise with logged sets, in plan order — the receipt's «Por ejercicio» list.
     var exercises: [ExerciseLine]
+    /// FER-742: the Apple Watch recorded the real FC/kcal and saved the workout to Health (the one-workout
+    /// invariant then omitted the iPhone's estimate). Drives the receipt's watch-origin line; false = as today.
+    var watchRecorded: Bool = false
 
     /// One new record set this session (already filtered to those that strictly beat a prior PR).
     /// `priorValueKg`/`priorReps` carry the beaten record, for the «100 → 102,5 kg» framing.
@@ -862,6 +865,10 @@ struct LiveStrengthSheet: View {
                 Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            // Row 6: the Apple Watch mirror status (FER-742) — one tertiary line, silent unless the watch
+            // is recording or failed to answer. Never competes with the session; never blocks it.
+            watchStatusLine
         }
         .padding(.horizontal, NoopMetrics.screenPadding)
         .padding(.top, 14)
@@ -926,6 +933,38 @@ struct LiveStrengthSheet: View {
         case .recoveryLow:  return String(localized: "Recovery low for you · maybe ease the volume today.")
         default:            return String(localized: "Recovery in your range · train at your usual load.")
         }
+    }
+
+    /// The Apple Watch mirror line (FER-742): «Reloj grabando» when the watch confirms; «El reloj no
+    /// respondió» + «Reintentar» on a first miss; «Sin reloj esta sesión» once the retry is spent. Nothing
+    /// while the mirror is off, absent, or still connecting — the tertiary ink keeps it out of the way.
+    @ViewBuilder
+    private var watchStatusLine: some View {
+        switch model.watchSessionStatus {
+        case .recording:
+            watchLine("applewatch", "Watch recording", retry: false)
+        case .notResponding:
+            watchLine("applewatch.slash", "The watch didn't respond", retry: true)
+        case .unavailable:
+            watchLine("applewatch.slash", "No watch this session", retry: false)
+        case .inactive, .waiting:
+            EmptyView()
+        }
+    }
+
+    private func watchLine(_ icon: String, _ text: LocalizedStringKey, retry: Bool) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                .accessibilityHidden(true)
+            Text(text).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            if retry {
+                Button { model.retryWatchMirroring() } label: {
+                    Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
+                }
+                .buttonStyle(.plain).padding(.leading, 2)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: Exercise header + inline rows
@@ -1669,6 +1708,7 @@ struct LiveStrengthSheet: View {
     private func summaryPhase(_ s: StrengthSummary) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             receiptHeader(s)
+            if s.watchRecorded { receiptWatchOrigin }
             receiptHeadline(s)
             receiptStats(s)
             if let kcal = s.energyKcal { receiptDietBlock(kcal: kcal, estimated: s.energySource == .estimated) }
@@ -1730,8 +1770,22 @@ struct LiveStrengthSheet: View {
             Text("\(String(localized: "Session saved")) · \(receiptDate(s.endTs))")
                 .groteskOverline().foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 8)
-            if let src = s.energySource { originRow(src) }
+            // FER-742: when the watch recorded, its origin line replaces the iPhone's energy-origin dot below.
+            if let src = s.energySource, !s.watchRecorded { originRow(src) }
         }
+    }
+
+    /// FER-742: the receipt's origin line when the Apple Watch recorded the real FC/kcal and saved the
+    /// workout to Health — shown instead of the iPhone's energy-origin dot.
+    private var receiptWatchOrigin: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "applewatch").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                .accessibilityHidden(true)
+            Text("Heart rate and calories from Apple Watch, saved to Health")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func receiptDate(_ ts: Int) -> String {

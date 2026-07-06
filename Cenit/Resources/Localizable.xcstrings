@@ -31190,6 +31190,142 @@
         }
       }
     },
+    "Record on Apple Watch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record on Apple Watch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grabar en el Apple Watch"
+          }
+        }
+      }
+    },
+    "When you start a strength session, your watch records real heart rate and calories and closes your rings. It replaces the estimated save for that session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you start a strength session, your watch records real heart rate and calories and closes your rings. It replaces the estimated save for that session."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al iniciar una sesión de fuerza, tu reloj graba pulso y calorías reales y cierra tus anillos. Sustituye el guardado estimado de esa sesión."
+          }
+        }
+      }
+    },
+    "Install Cénit on your watch from the Watch app.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Cénit on your watch from the Watch app."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instala Cénit en tu reloj desde la app Watch."
+          }
+        }
+      }
+    },
+    "Watch recording": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Watch recording"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reloj grabando"
+          }
+        }
+      }
+    },
+    "The watch didn't respond": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The watch didn't respond"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El reloj no respondió"
+          }
+        }
+      }
+    },
+    "No watch this session": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No watch this session"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin reloj esta sesión"
+          }
+        }
+      }
+    },
+    "Retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reintentar"
+          }
+        }
+      }
+    },
+    "Heart rate and calories from Apple Watch, saved to Health": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heart rate and calories from Apple Watch, saved to Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FC y calorías del Apple Watch, guardado en Salud"
+          }
+        }
+      }
+    },
     "Saved to your routine.": {
       "localizations": {
         "es": {
