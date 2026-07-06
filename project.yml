@@ -62,6 +62,10 @@ targets:
           - "Resources/Info.plist"
           - "Resources/NOOP.entitlements"
       - path: CenitShared
+      # FER-721: the ActivityKit contract + intents + cross-process bridge are shared with the widget
+      # extension, so both processes agree on the state shape. Only `Shared/` (not the widget's own
+      # views) compiles into the app.
+      - path: CenitWidgets/Shared
     info:
       path: CenitApp/Resources/Info.plist
       properties:
@@ -82,6 +86,9 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         UIBackgroundModes:
           - bluetooth-central
+        # FER-721: required to start any Live Activity (the guided-session rest timer on the lock
+        # screen + Dynamic Island). The extension that renders it is the CenitWidgets target below.
+        NSSupportsLiveActivities: true
         NSBluetoothAlwaysUsageDescription: "Cénit connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device."
         NSHealthShareUsageDescription: "Cénit reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device."
         NSHealthUpdateUsageDescription: "Cénit writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it."
@@ -120,6 +127,47 @@ targets:
       - package: StrandImport
       - package: StrandDesign
       - package: StrandTraining
+      # FER-721: embed the Live Activity / widget extension into the app bundle.
+      - target: CenitWidgets
+
+  # ---------------------------------------------------------------------------
+  # FER-721: the app's first app-extension target — a WidgetKit extension that hosts the guided
+  # session's rest Live Activity (lock screen + Dynamic Island). Shares the App Group with the app for
+  # the «+30 s»/«Saltar» action inbox. Only builds/signs on a physical iPhone (personal team).
+  CenitWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: CenitWidgets
+        excludes:
+          - "Resources/Info.plist"
+          - "Resources/CenitWidgets.entitlements"
+    info:
+      path: CenitWidgets/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Cénit
+        CFBundleName: CenitWidgets
+        # Match the host app's version — an embedded extension must, or App Store upload rejects it.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: CenitWidgets/Resources/CenitWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.feriracheta.noop
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.feriracheta.noop.CenitWidgets
+        PRODUCT_NAME: CenitWidgets
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_EMIT_LOC_STRINGS: NO
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: StrandDesign
 
   # ---------------------------------------------------------------------------
   # UI test bundle that drives the Cenit app in the simulator and captures
@@ -169,6 +217,7 @@ schemes:
     build:
       targets:
         Cenit: all
+        CenitWidgets: all
         CenitUITests: [testing]
         CenitUnitTests: [testing]
     run:
