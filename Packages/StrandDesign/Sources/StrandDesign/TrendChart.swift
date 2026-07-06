@@ -611,7 +611,7 @@ extension View {
     /// Position updates use a non-animating Transaction to prevent SwiftUI Charts from
     /// re-running its draw-on animation when `hoverX` changes mid-gesture (#104).
     @ViewBuilder
-    func scrubGesture(enabled: Bool, hoverX: Binding<CGFloat?>) -> some View {
+    public func scrubGesture(enabled: Bool, hoverX: Binding<CGFloat?>) -> some View {
         #if os(iOS)
         self.highPriorityGesture(
             DragGesture(minimumDistance: 0)

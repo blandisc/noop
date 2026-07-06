@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Arrastra el dedo sobre la curva de Esfuerzo y la de carga para leer cada punto / Drag your finger across the Effort curve and the load chart to read any point.**
+  **ES** — Dos gráficas que antes eran solo de ver ahora responden al dedo, igual que el resto del app: en el **resumen de Esfuerzo** de «Hoy», arrastra sobre la curva del día y una cruz con un punto te muestra el **esfuerzo acumulado y la hora** de donde tocas (en la parte proyectada se ancla a «ahora»); en la hoja de **Carga de entrenamiento**, arrastra sobre la línea bajo el selector de periodo y ves el **ratio, la fecha y la banda** de ese día. Da un toque háptico al pasar de un punto a otro y no interfiere con el desplazamiento de la hoja.
+  **EN** — Two charts that used to be read-only now follow your finger, like the rest of the app: in the **Effort summary** on "Today", drag across the day's curve and a crosshair with a dot shows the **accumulated effort and the time** where you touch (in the projected part it anchors to "now"); in the **Training load** sheet, drag across the line below the period selector to see that day's **ratio, date and band**. It gives a haptic tick as you move between points and doesn't interfere with scrolling the sheet.
+  ([MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [TrainingLoadSheet.swift](Cenit/Screens/TrainingLoadSheet.swift), [ChartScrub.swift](Packages/StrandDesign/Sources/StrandDesign/ChartScrub.swift))
+
 - **La etiqueta de VoiceOver de «Señales» ahora se traduce / «Signals» VoiceOver label is now localized.**
   **ES** — En un dispositivo en inglés, VoiceOver leía cada regla de «Señales» en español (texto fijo, sin traducir, que llegó con la compactación de FER-743). Ahora usa la vía localizada del app (`String(localized:)`), así que respeta el idioma del dispositivo.
   **EN** — On an English device, VoiceOver read each «Signals» rule in Spanish (a hardcoded, untranslated label introduced by the FER-743 compaction). It now goes through the app's localized path (`String(localized:)`), so it honors the device language.
