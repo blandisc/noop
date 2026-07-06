@@ -167,12 +167,20 @@ public enum ChartScrubMath {
 
 /// A thin vertical crosshair line drawn at a given x with a hairline-strong
 /// stroke. Shared by TrendChart / Sparkline so the rule reads identically.
-struct CrosshairRule: View {
+/// Public so app-layer `Canvas`-drawn charts (e.g. the day-strain and ACWR
+/// curves) reuse the exact same crosshair instead of re-implementing it. (FER-748)
+public struct CrosshairRule: View {
     var x: CGFloat
     var height: CGFloat
     var color: Color = InstrumentoTheme.base.hairlineStrong
 
-    var body: some View {
+    public init(x: CGFloat, height: CGFloat, color: Color = InstrumentoTheme.base.hairlineStrong) {
+        self.x = x
+        self.height = height
+        self.color = color
+    }
+
+    public var body: some View {
         Path { p in
             p.move(to: CGPoint(x: x, y: 0))
             p.addLine(to: CGPoint(x: x, y: height))
@@ -190,14 +198,19 @@ struct CrosshairRule: View {
 /// A small accented dot marking the snapped sample on a line. In the dark system it blooms; on
 /// warm paper (`\.instrumentoFlat`) it reads as a flat, ENLARGED scrub handle — a paper-filled disc
 /// with a colored ring (no bloom), big enough to read as the draggable indicator (FER-131 · 03/10).
-struct HighlightDot: View {
+public struct HighlightDot: View {
     var color: Color
     var diameter: CGFloat = 9
 
     @Environment(\.instrumentoFlat) private var flat
     @Environment(\.instrumentoTheme) private var theme
 
-    var body: some View {
+    public init(color: Color, diameter: CGFloat = 9) {
+        self.color = color
+        self.diameter = diameter
+    }
+
+    public var body: some View {
         Group {
             if flat {
                 // Enlarged flat handle: paper fill + colored ring, matching the «Instrumento» chart.
@@ -231,14 +244,20 @@ struct HighlightDot: View {
 
 /// Wraps a tooltip so its measured size feeds back into placement. Fades in
 /// with StrandMotion and positions itself within `container` near `anchor`.
-struct PositionedTooltip: View {
+public struct PositionedTooltip: View {
     var anchor: CGPoint
     var container: CGSize
     var tooltip: ChartTooltip
 
     @State private var measured: CGSize = .zero
 
-    var body: some View {
+    public init(anchor: CGPoint, container: CGSize, tooltip: ChartTooltip) {
+        self.anchor = anchor
+        self.container = container
+        self.tooltip = tooltip
+    }
+
+    public var body: some View {
         tooltip
             .background(
                 GeometryReader { g in

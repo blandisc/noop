@@ -474,6 +474,22 @@ private struct LoadChartView: View {
     let isTodayLane: Bool
     let theme: InstrumentoTheme
 
+    /// La x del dedo que arrastra (nil sin arrastre) — dibuja la cruz + tooltip. (FER-748)
+    @State private var hoverX: CGFloat? = nil
+
+    /// Fecha corta y localizada para el tooltip de scrub (ej. «sáb 4 jul»).
+    private static let dayFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return f
+    }()
+
+    /// La fecha del punto `i`: el último punto es hoy, cada índice previo es un día atrás. (FER-748)
+    private func date(forIndex i: Int) -> Date {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        return Calendar.current.date(byAdding: .day, value: -(series.count - 1 - i), to: startOfToday) ?? startOfToday
+    }
+
     /// El mapeo ratio → y sobre 130 de alto (0.3 abajo, subiendo con el ratio), como el mock.
     private func cy(_ r: Double) -> CGFloat { min(max(122 - (CGFloat(r) - 0.3) * 72, 10), 122) }
 
@@ -536,7 +552,36 @@ private struct LoadChartView: View {
                 }
                 BreathingDot(color: theme.dataStrain, radius: 3.2)
                     .position(x: endX, y: cy(last))
+
+                // Scrub: cruz + punto + tooltip (ratio · fecha · banda) que siguen el dedo. La banda
+                // del punto se lee de su propio ratio, no de la destacada. Reusa el scrub compartido. (FER-748)
+                let snapped: Int? = hoverX.flatMap {
+                    ChartScrubMath.nearestIndex(toX: $0, count: n, width: endX)
+                }
+                Color.clear
+                    .contentShape(Rectangle())
+                    .scrubGesture(enabled: n > 1, hoverX: $hoverX)
+                    .onChange(of: snapped) { if $0 != nil { ChartHaptics.datumChanged() } }
+                if let i = snapped, series.indices.contains(i) {
+                    let px = CGFloat(i) / CGFloat(max(n - 1, 1)) * endX
+                    let py = cy(series[i])
+                    let band = ReadinessEngine.loadBand(forACWR: series[i])
+                    CrosshairRule(x: px, height: g.size.height)
+                    HighlightDot(color: band.flag.color(theme)).position(x: px, y: py)
+                    PositionedTooltip(
+                        anchor: CGPoint(x: px, y: py),
+                        container: g.size,
+                        tooltip: ChartTooltip(
+                            value: String(format: "%.2f", series[i]),
+                            label: "\(Self.dayFmt.string(from: date(forIndex: i))) · \(band.shortLabel)",
+                            accent: band.flag.color(theme)
+                        )
+                    )
+                }
             }
+            .environment(\.instrumentoTheme, theme)
+            .environment(\.instrumentoFlat, true)
+            .animation(StrandMotion.fade, value: hoverX)
         }
     }
 }

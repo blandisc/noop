@@ -2145,6 +2145,16 @@ private struct StrainIntradayCurve: View {
     /// FER-732 · the habitual training window in decimal clock hours [0, 24]. nil hides the amber band.
     var window: TrainingHabit.Window? = nil
 
+    /// The x of the scrubbing finger (nil when not scrubbing) — drives the crosshair + tooltip. (FER-748)
+    @State private var hoverX: CGFloat? = nil
+
+    /// Locale-aware hour:minute for the scrub tooltip (12/24h per region).
+    private static let hourFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("j:mm")
+        return f
+    }()
+
     var body: some View {
         VStack(spacing: 4) {
             GeometryReader { geo in
@@ -2206,7 +2216,34 @@ private struct StrainIntradayCurve: View {
                         }.stroke(hue.opacity(0.75), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [1.5, 4]))
                     }
                     BreathingDot(color: hue, radius: 3.4).position(x: nowPt.x, y: nowPt.y)
+
+                    // Scrub: crosshair + handle + tooltip that follow the finger over the LIVED curve.
+                    // Beyond «now» the finger anchors to the last real point (the projection is synthetic,
+                    // so there is no datum to read there). Reuses the shared StrandDesign scrub. (FER-748)
+                    let snapped: Int? = hoverX.flatMap { hx in
+                        ChartScrubMath.nearestIndex(toX: min(hx, nowPt.x), xs: pts.map(\.x))
+                    }
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .scrubGesture(enabled: pts.count > 1, hoverX: $hoverX)
+                        .onChange(of: snapped) { if $0 != nil { ChartHaptics.datumChanged() } }
+                    if let i = snapped, pts.indices.contains(i) {
+                        CrosshairRule(x: pts[i].x, height: h)
+                        HighlightDot(color: hue).position(x: pts[i].x, y: pts[i].y)
+                        PositionedTooltip(
+                            anchor: pts[i],
+                            container: geo.size,
+                            tooltip: ChartTooltip(
+                                value: String(format: "%.1f", points[i].value),
+                                label: Self.hourFmt.string(from: points[i].date),
+                                accent: hue
+                            )
+                        )
+                    }
                 }
+                .environment(\.instrumentoTheme, theme)
+                .environment(\.instrumentoFlat, true)
+                .animation(StrandMotion.fade, value: hoverX)
             }
             HStack(spacing: 0) {
                 ForEach(["00", "6", "12", "18", "24"], id: \.self) { label in
