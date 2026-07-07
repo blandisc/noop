@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Entrena sin plan con "Rápido de fuerza" / Train off-plan with "Quick strength".**
+  **ES** — En Entrenar, una nueva fila bajo "También en tu plan" arranca una sesión de fuerza que empieza vacía y con el cronómetro corriendo, sin necesidad de una rutina. Te sugiere ejercicios según qué músculos están frescos hoy (con tu peso/reps de la última vez), tienes un buscador de la biblioteca, y en cuanto agregas el primer ejercicio se comporta como cualquier sesión guiada. También, los días de descanso en "Tu semana" ahora muestran un guioncito en vez de un espacio en blanco.
+  **EN** — In Train, a new row under "Also in your plan" starts a strength session that begins empty with the timer already running, no routine required. It suggests exercises based on which muscles are fresh today (with your last weight/reps), gives you a library search, and behaves like any guided session as soon as you add the first exercise. Also, rest days in "Your week" now show a small dash instead of a blank space.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift), [LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
 - **La tarjeta "Hoy" de Entrenar respira mejor / The "Today" card in Train breathes better.**
   **ES** — En la pestaña Entrenar, la tarjeta del día ya no apelmaza el nombre de la rutina contra el meta ("N ejercicios · ~NN min") cuando el nombre es largo: el meta ahora baja a su propia línea. También se corrigió un bug donde la línea de veredicto de recuperación ("Recuperación en tu rango · entrena con tu carga de siempre.") dejaba un hueco en blanco a la derecha antes de envolver, en vez de usar todo el ancho de la tarjeta. Sin cambios de datos ni de comportamiento.
   **EN** — In the Train tab, the "today" card no longer crowds a long routine name against its meta ("N exercises · ~NN min") — the meta now drops to its own line. Also fixed a layout bug where the recovery verdict line ("Recovery in your range · train at your usual load.") left a blank gap on the right before wrapping, instead of using the card's full width. No data or behavior changes.

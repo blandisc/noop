@@ -1650,20 +1650,26 @@ struct LiveStrengthSheet: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 2)
+                .accessibilityLabel(Text("Search the exercise library"))
 
-                Text("Suggested · muscles fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.top, 10)
-                ForEach(freshSuggestions) { s in suggestionRow(s) }
+                // FER-762: a brand-new user has no muscle-load history yet — `loadFreshSuggestions` then
+                // returns no picks. Falling back to the search-only flow (no orphaned "Suggested" header
+                // over an empty list) rather than a section with nothing under it.
+                if !freshSuggestions.isEmpty {
+                    Text("Suggested · muscles fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .padding(.top, 10)
+                    ForEach(freshSuggestions) { s in suggestionRow(s) }
 
-                if let muscle = loadedMuscle {
-                    (Text(MuscleAtlas.name(muscle)) + Text(verbatim: " ") + Text("still carries load · suggestions avoid it."))
-                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 13).padding(.vertical, 11)
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                            .strokeBorder(theme.hairline, lineWidth: 1))
-                        .padding(.top, 3)
+                    if let muscle = loadedMuscle {
+                        (Text(MuscleAtlas.name(muscle)) + Text(verbatim: " ") + Text("still carries load · suggestions avoid it."))
+                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 13).padding(.vertical, 11)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                                .strokeBorder(theme.hairline, lineWidth: 1))
+                            .padding(.top, 3)
+                    }
                 }
 
                 Divider().overlay(theme.hairline).padding(.top, 10)
@@ -1712,6 +1718,7 @@ struct LiveStrengthSheet: View {
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text("Add \(StrengthDisplay.name(s.exercise))"))
         }
         .padding(.vertical, 8)
         .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }

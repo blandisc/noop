@@ -51395,6 +51395,40 @@
           }
         }
       }
+    },
+    "Add %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agregar %@"
+          }
+        }
+      }
+    },
+    "Search the exercise library": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search the exercise library"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscar en la biblioteca de ejercicios"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
