@@ -1732,75 +1732,50 @@ struct MetricDetailScreen: View {
             disclosureTitle: "Your normal range", disclosureText: EX_RANGO)
     }
 
+    // Handoff v2 (reconciliación B): el slider de posición SIMPLE — track del rango normal + pulgar en tu
+    // posición + 3 etiquetas (bajo · tu normal · alto), reemplaza la barra de banda tocable.
     @ViewBuilder private var inlineBandSection: some View {
         if let b = inlineBandData {
-            VStack(alignment: .leading, spacing: 0) {
-                Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("band") } } label: {
-                    inlineBandBar(b)
-                }
-                .buttonStyle(.plain)
+            positionSlider(b)
+                .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(b.disclosureTitle))
-                if openDisclosure == "band" {
-                    inlineDisclosure(label: b.disclosureTitle, text: b.disclosureText).padding(.top, 9)
-                }
-            }
+                .accessibilityValue(Text(b.markLabel))
         }
     }
 
-    private func inlineBandBar(_ b: InlineBand) -> some View {
-        VStack(spacing: 6) {
-            // The bar, today's value above the thumb, and the edge numbers under their ACTUAL positions
-            // (the band's edges for a personal range, the axis ends for SpO₂) — anchored by fraction with
-            // `.position`, so a number never floats away from the mark it labels. `.position` is clamped a
-            // hair off each edge so a label at frac≈0 or ≈1 isn't half-cut. (Detalle de Vital fix — rótulos
-            // desalineados: el 36/51 colgaban de los extremos de la barra, no de la banda.)
-            GeometryReader { geo in
-                let w = geo.size.width
-                let clampX: (CGFloat) -> CGFloat = { x in min(max(x, 14), w - 14) }
-                ZStack(alignment: .topLeading) {
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(theme.hairline)
-                        Capsule().fill(b.fillColor)
-                            .frame(width: max(0, w * (b.bandHiFrac - b.bandLoFrac)))
-                            .offset(x: w * b.bandLoFrac)
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 2, style: .continuous).fill(theme.paper)
-                                .frame(width: 7, height: 16)
-                            RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(theme.ink)
-                                .frame(width: 3, height: 14)
-                        }
-                        .offset(x: w * b.markFrac - 3.5)
-                    }
-                    .frame(width: w, height: 8)
-                    .position(x: w / 2, y: 23)
-
-                    Text(b.markLabel).font(StrandFont.footnote).monospacedDigit()
-                        .foregroundStyle(b.markOutside ? theme.warning : theme.ink)
-                        .fixedSize()
-                        .position(x: clampX(w * b.markFrac), y: 8)
-
-                    Text(b.loLabel).font(StrandFont.footnote).monospacedDigit()
-                        .foregroundStyle(theme.inkTertiary).fixedSize()
-                        .position(x: clampX(w * b.loLabelFrac), y: 38)
-                    Text(b.hiLabel).font(StrandFont.footnote).monospacedDigit()
-                        .foregroundStyle(theme.inkTertiary).fixedSize()
-                        .position(x: clampX(w * b.hiLabelFrac), y: 38)
+    /// The handoff's position slider: a 64%-wide normal-range track centered on the rail, with a circular
+    /// thumb marking where today sits inside your normal range, and lo · «tu normal» · hi labels beneath.
+    private func positionSlider(_ b: InlineBand) -> some View {
+        // Today's position WITHIN the normal band, clamped to [0,1] → mapped onto the 18%…82% track.
+        let span = max(b.bandHiFrac - b.bandLoFrac, 0.0001)
+        let t = min(max((b.markFrac - b.bandLoFrac) / span, 0), 1)
+        return GeometryReader { geo in
+            let w = geo.size.width
+            let clampX: (CGFloat) -> CGFloat = { min(max($0, 14), w - 14) }
+            ZStack(alignment: .topLeading) {
+                // Normal-range track (64% wide, centered) + the position thumb.
+                ZStack(alignment: .leading) {
+                    Capsule().fill(theme.trackWarm)
+                        .frame(width: w * 0.64, height: 10)
+                        .offset(x: w * 0.18)
+                    Circle().fill(b.fillColor)
+                        .frame(width: 12, height: 12)
+                        .offset(x: w * (0.18 + t * 0.64) - 6)
                 }
-            }
-            .frame(height: 46)
-            // The center caption sits in normal flow below, centered and free to shrink on a narrow sheet.
-            HStack(spacing: 4) {
+                .frame(width: w, height: 12)
+                .position(x: w / 2, y: 8)
+                // lo · «tu normal» · hi under the track's edges/center.
+                Text(b.loLabel).font(StrandFont.footnote).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    .fixedSize().position(x: clampX(w * 0.18), y: 30)
                 Text(b.centerLabel).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                    .fixedSize().position(x: w * 0.5, y: 30)
+                Text(b.hiLabel).font(StrandFont.footnote).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    .fixedSize().position(x: clampX(w * 0.82), y: 30)
             }
         }
-        .padding(4)
-        // No open-state fill behind the band: any tint near the rail color (`hairline`) swallows the track —
-        // when the disclosure opened the café tint matched the rail and the range chart vanished. The open
-        // state is already signalled by the disclosure card below. (Detalle de Vital fix)
-        .contentShape(Rectangle())
+        .frame(height: 40)
     }
+
 
     // MARK: Narrative body
 
