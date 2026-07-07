@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Registra series y controla el descanso desde el Apple Watch / Log sets and control rest from the Apple Watch.**
+  **ES** — Durante una sesión de fuerza, el reloj deja de solo mirar: aparece un botón grande **Registrar serie** en la cara de pulso (o el gesto de acción de la muñeca), y en el descanso salen las pastillas **+30 s**, **−30** y **Saltar** junto a una barra de progreso y la línea «Sigue: serie N». El iPhone sigue siendo la fuente de verdad: la muñeca solo manda la intención y el teléfono aplica y reenvía, igual que los botones de la pantalla de bloqueo. Funciona aunque el iPhone no esté cerca: la acción se encola y se aplica al reconectar.
+  **EN** — During a strength session the watch stops just watching: a big **Log set** button appears on the pulse face (or the wrist action gesture), and during rest you get **+30 s**, **−30** and **Skip** pills next to a progress bar and a «Next: set N» line. The iPhone stays the source of truth: the wrist only sends intent and the phone applies and re-emits, exactly like the lock-screen buttons. It works even when the iPhone is away: the action queues and applies on reconnect.
+  ([WorkoutMirrorMessage.swift](CenitShared/Mirroring/WorkoutMirrorMessage.swift), [WatchLiveFaceView.swift](CenitWatch/Screens/WatchLiveFaceView.swift), [WatchWorkoutManager.swift](CenitWatch/Health/WatchWorkoutManager.swift))
+
 - **Actividad y longevidad cierran la estandarización / Activity and longevity finish the standardization.**
   **ES** — Entrenamientos, Edad física, Edad corporal y «Tras cada deporte» adoptan el título con icono de la métrica (sin serif) y el *sello de origen* al pie. (Pasos y VO₂max ya lo habían adoptado con los vitales.) Con esto, las 17 pantallas de detalle de Tendencias/Cuerpo comparten el mismo estándar visual.
   **EN** — Workouts, Physical age, Body age and «After each sport» adopt the metric-icon title (no serif) and the *origin seal* at the foot. (Steps and VO₂max already adopted it with the vitals.) All 17 Trends/Body detail screens now share the same visual standard.

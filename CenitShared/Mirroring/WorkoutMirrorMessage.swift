@@ -36,6 +36,29 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// watch → iPhone: the watch could not / will not save (no permission, error, mirror lost) → the
     /// iPhone takes over and saves its estimated workout as it does today.
     case watchWillNotSave(sessionId: String, reason: WatchSaveFailure)
+
+    /// watch → iPhone: the user logged the current set from the wrist (FER-808). The iPhone runs the
+    /// SAME path as the Live Activity's `RestCompleteSetIntent` (`registerCurrentSet`) and re-emits the
+    /// next snapshot — the wrist and the lock screen share one source of truth, no duplicated logic.
+    case completeSet(sessionId: String)
+
+    /// watch → iPhone: skip the current rest from the wrist (FER-808). Same path as the LA's `RestSkipIntent`.
+    case skipRest(sessionId: String)
+
+    /// watch → iPhone: nudge the current rest ceiling by `deltaS` (±30) from the wrist (FER-808). Same path
+    /// as the LA's `RestAddThirtyIntent` / `RestRemoveThirtyIntent`. A negative delta is gated by the
+    /// sender (the «−30» affordance is hidden once the rest has expired), and `extendRest` floors at «now».
+    case adjustRest(sessionId: String, deltaS: Int)
+}
+
+/// A wrist-initiated action on the live strength session (FER-808), decoded from the three watch→iPhone
+/// control messages above. The iPhone maps each to the exact same session mutator the Live Activity uses,
+/// so «Registrar serie / Saltar / ±30 s» behave identically whether they come from the lock screen or the
+/// wrist. Defined here (the shared contract) so both the mirroring bridge and `AppModel` see one type.
+public enum WatchWorkoutAction: Equatable {
+    case completeSet
+    case skipRest
+    case adjustRest(deltaS: Int)
 }
 
 /// Why the watch won't be the one to save the `HKWorkout` — the iPhone reads this to decide whether to

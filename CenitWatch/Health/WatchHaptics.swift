@@ -15,12 +15,16 @@ enum WatchHaptic {
     case restEnded
     /// The session ended and saved — the rising `.success` pattern.
     case sessionEnded
+    /// A wrist action registered (log set / skip / ±30, FER-808) — a soft `.click`, distinct from the
+    /// three session-lifecycle signatures so a routine tap never feels like «rest over» or «saved».
+    case actionTapped
 
     var type: WKHapticType {
         switch self {
         case .sessionStart: return .start
         case .restEnded:    return .notification
         case .sessionEnded: return .success
+        case .actionTapped: return .click
         }
     }
 

@@ -1,6 +1,36 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Log set" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Log set" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Registrar serie" } }
+      }
+    },
+    "Skip" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Saltar" } }
+      }
+    },
+    "+30 s" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "+30 s" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "+30 s" } }
+      }
+    },
+    "−30" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "−30" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "−30" } }
+      }
+    },
+    "Next: set %lld · %@" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next: set %lld · %@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sigue: serie %lld · %@" } }
+      }
+    },
     "%lld kcal" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld kcal" } },
