@@ -716,6 +716,25 @@ final class MigrationTests: XCTestCase {
         }
     }
 
+    /// `addColumnIfMissing` (FER-792) is the reusable guard behind idempotent migrations: adding a column
+    /// that's absent works; calling it again once the column exists is a silent no-op, never a
+    /// "duplicate column" throw.
+    func testAddColumnIfMissingIsIdempotent() async throws {
+        let dbQueue = try DatabaseQueue()
+        try await dbQueue.write { db in
+            try db.create(table: "t") { $0.column("id", .integer).primaryKey() }
+
+            // First call adds the column.
+            try WhoopStore.addColumnIfMissing(db, "note", on: "t") { $0.add(column: "note", .text) }
+            XCTAssertTrue(try db.columns(in: "t").contains { $0.name == "note" }, "first call must add it")
+
+            // Second call, column already present → must NOT throw (a plain ALTER would).
+            try WhoopStore.addColumnIfMissing(db, "note", on: "t") { $0.add(column: "note", .text) }
+            XCTAssertEqual(try db.columns(in: "t").filter { $0.name == "note" }.count, 1,
+                           "second call is a no-op, no duplicate column")
+        }
+    }
+
     /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.
     func testV12CreatesExperimentTable() async throws {
         let store = try await WhoopStore.inMemory()
