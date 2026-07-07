@@ -23,15 +23,54 @@ struct RestAddThirtyIntent: LiveActivityIntent {
     }
 }
 
-/// Ends the current rest immediately and returns focus to the set.
+/// Removes 30 seconds from the current rest — floored at «now», so it never goes negative (see `extendRest`).
+struct RestRemoveThirtyIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Remove 30 seconds"
+    static var description = IntentDescription("Shortens the current rest by 30 seconds.")
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        RestActivityBridge.enqueue(.removeThirty)
+        return .result()
+    }
+}
+
+/// Ends the current rest immediately and returns focus to the set — does NOT log the set (FER-789).
 struct RestSkipIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Skip rest"
-    static var description = IntentDescription("Ends the current rest and returns to the set.")
+    static var description = IntentDescription("Ends the current rest without logging the set.")
 
     init() {}
 
     func perform() async throws -> some IntentResult {
         RestActivityBridge.enqueue(.skip)
+        return .result()
+    }
+}
+
+/// Registers the upcoming set as done (planned values) and starts its rest — the card's primary action (FER-789).
+struct RestCompleteSetIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Complete set"
+    static var description = IntentDescription("Logs the upcoming set and starts the next rest.")
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        RestActivityBridge.enqueue(.completeSet)
+        return .result()
+    }
+}
+
+/// Registers the routine's last set and ends the workout — the primary action on the final rest (FER-789).
+struct RestFinishWorkoutIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Finish workout"
+    static var description = IntentDescription("Logs the last set and ends the workout.")
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        RestActivityBridge.enqueue(.finishWorkout)
         return .result()
     }
 }

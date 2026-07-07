@@ -355,6 +355,30 @@ watch is regression-free. Heart rate for the iPhone's own strain still comes fro
 **on the iPhone** — the watch is a control + display surface in F1.1, and adopting its physiology into the
 recovery/strain engine is Phase 2.
 
+### Rest Live Activity + the app→widget media channel (FER-721 / FER-789)
+
+The same `RestActivitySnapshot` (`CenitShared`) drives the **rest Live Activity** on the lock screen /
+Dynamic Island (`RestActivityController`, `Cenit/LiveActivity/`) → `RestActivityAttributes.ContentState`
+(`CenitWidgets/Shared/`, ActivityKit-gated). Lock-screen buttons fire `LiveActivityIntent`s
+(`RestActivityIntents`) that don't apply anything inline — they **enqueue** onto a durable inbox in the
+shared App Group `group.com.feriracheta.noop` (`RestActivityBridge`: `UserDefaults(suiteName:)` + a Darwin
+notification), and the app drains it into `AppModel.applyRestAction` → the live `StrengthSessionModel`; the
+normal reconcile loop reflects the result back onto the Activity. FER-789's four actions map to existing
+model methods — **Completar ≠ Saltar**: `completeSet` logs the upcoming set (`registerCurrentSet`) and rests
+again, `skip` only cuts the timer; `±30` is `extendRest` (−30 floored at now); `finishWorkout` registers the
+last set and ends the session. The `ContentState`/`RestActivitySnapshot` contract is **additive and
+Optional** so an Activity started under an older app decodes unchanged (missing keys → nil).
+
+The widget extension can't read the app-local `MediaCache` (`applicationSupportDirectory`), so FER-789 opens
+a **one-way app→widget media channel** through the App Group: `RestThumbnailProvider` (app) copies the active
+exercise's already-cached thumbnail into `group…/RestThumb/<name>.jpg` at each rest, and the widget resolves
+it via the shared `RestThumbnailStore` (same path constant, compiled into both targets). The snapshot carries
+the file **name only, never image bytes** (kept small — ActivityKit serializes it on every update); the file
+is a single slot, overwritten per rest and cleared when the rest/session ends and at launch. The
+**"no thumbnail" state is first-class** (exercise media is opt-in, §"Network exceptions") — the card omits the
+circle, never a placeholder. No network is introduced; the provider only copies a file the opt-in media
+download already fetched.
+
 ---
 
 ## 6. The BLE connection lifecycle

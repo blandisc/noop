@@ -129,7 +129,10 @@ final class RestActivityController {
             routineName: s.routineName, setNumber: s.setNumber, setTotal: s.setTotal,
             exerciseName: s.exerciseName, returnDetail: s.returnDetail,
             restStartedAt: s.restStartedAt, restEndsAt: s.restEndsAt,
-            isHRMode: s.isHRMode, hrTarget: s.hrTarget, bpm: s.bpm)
+            isHRMode: s.isHRMode, hrTarget: s.hrTarget, bpm: s.bpm,
+            thumbnailName: s.thumbnailName,
+            phase: s.phaseRaw.flatMap(RestPhase.init(rawValue:)),
+            nextExerciseName: s.nextExerciseName)
     }
 
     /// The state with heart rate zeroed out — the structural fingerprint used to tell an HR-only
