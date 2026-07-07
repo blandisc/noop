@@ -137,7 +137,7 @@ struct RecoveryDetailScreen: View {
         // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Replaces the InfoAccordion
         // wrapper; the explanation stays behind the ⓘ exactly as before — only the title turns serif.
         return VStack(alignment: .leading, spacing: 10) {
-            InstrumentoScreenTitle("Recovery", theme: theme, explanation: heroExplanation)
+            InstrumentoScreenTitle("Recovery", theme: theme, explanation: heroExplanation, glyph: .recovery)
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -905,9 +905,8 @@ struct RecoveryDetailScreen: View {
     // MARK: - Source footer
 
     private var sourceFooter: some View {
-        Text(model.isAppleHealth ? "Source · Apple Health" : "Source · your strap, on device")
-            .font(StrandFont.footnote)
-            .foregroundStyle(theme.inkTertiary)
+        // Recovery is a score computed on-device from your signals → «Calculado». (FER-803)
+        OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 2)
     }

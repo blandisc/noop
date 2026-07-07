@@ -163,23 +163,44 @@ public struct InstrumentoScreenTitle: View {
     var size: CGFloat
     var theme: InstrumentoTheme
     var explanation: LocalizedStringKey?
+    /// When set, the title renders as the §8.7 overline (metric icon in its hue + ALL-CAPS grotesk)
+    /// instead of the legacy serif — the standardized «Tendencias v2» header. Provenance is NOT here;
+    /// it lives in the `OriginStamp` at the foot.
+    var glyph: MetricGlyph?
     @State private var open = false
 
     public init(_ title: LocalizedStringKey, size: CGFloat = 23,
-                theme: InstrumentoTheme, explanation: LocalizedStringKey? = nil) {
+                theme: InstrumentoTheme, explanation: LocalizedStringKey? = nil,
+                glyph: MetricGlyph? = nil) {
         self.title = title
         self.size = size
         self.theme = theme
         self.explanation = explanation
+        self.glyph = glyph
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(title)
-                    .font(StrandFont.serif(size))
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: glyph == nil ? .firstTextBaseline : .center, spacing: 6) {
+                if let glyph {
+                    Image(systemName: glyph.sfSymbol)
+                        .font(.system(size: 12))
+                        .foregroundStyle(glyph.hue(theme))
+                        .frame(width: 14, height: 14)
+                        .accessibilityHidden(true)
+                    Text(title)
+                        .font(InstrumentoType.grotesk(12, weight: .bold))
+                        .tracking(2.4)
+                        .textCase(.uppercase)
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 6)
+                } else {
+                    Text(title)
+                        .font(StrandFont.serif(size))
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if explanation != nil {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) { open.toggle() }

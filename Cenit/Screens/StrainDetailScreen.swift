@@ -88,6 +88,10 @@ struct StrainDetailScreen: View {
                     }
                     blockDivider
                     methodDisclosure
+                    // Standardized origin seal (FER-803): strain is a score computed on-device, live today.
+                    OriginStamp(origin: .computed, when: String(localized: "hoy, en curso"), theme: theme)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
                 }
             }
             .padding(NoopMetrics.screenPadding)
@@ -127,7 +131,8 @@ struct StrainDetailScreen: View {
         // the ⓘ exactly as the old InfoAccordion had it.
         return VStack(alignment: .leading, spacing: 6) {
             InstrumentoScreenTitle("Day Strain", theme: theme,
-                explanation: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)")
+                explanation: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)",
+                glyph: .strain)
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(v.map { fmt($0) } ?? "—")

@@ -204,6 +204,9 @@ struct TrainingLoadSheet: View {
                 }
                 if let onSeeTrends { seeTrendsButton(onSeeTrends) }
                 hedgeFooter
+                // Standardized origin seal at the foot (FER-803): load is computed from your strap's strain.
+                OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+                    .padding(.top, 2)
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -226,10 +229,7 @@ struct TrainingLoadSheet: View {
                 .frame(width: 14, height: 14)
             Text("Training load").groteskSheetTitle().foregroundStyle(theme.ink)
             Spacer(minLength: 8)
-            HStack(spacing: 4) {
-                Circle().fill(theme.inkMuted).frame(width: 6, height: 6)
-                Text("Calculated · today").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            }
+            // §8.7 (FER-803): no origin dot in the title — provenance moved to the OriginStamp at the foot.
         }
     }
 
