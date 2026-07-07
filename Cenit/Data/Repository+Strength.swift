@@ -233,7 +233,8 @@ extension Exercise {
     /// The id is kept, so PRs / history / matching stay linked; `Exercise` is an immutable value type.
     func retyped(to t: ExerciseType) -> Exercise {
         Exercise(id: id, name: name, nameES: nameES, type: t, equipment: equipment,
-                 primaryMuscles: primaryMuscles, secondaryMuscles: secondaryMuscles, cues: cues, cuesES: cuesES)
+                 bodyParts: bodyParts, primaryMuscles: primaryMuscles, secondaryMuscles: secondaryMuscles,
+                 instructions: instructions, instructionsES: instructionsES, gifUrl: gifUrl)
     }
 
     /// Apply a user type-override map (FER-541): re-type if this exercise's id is overridden, else

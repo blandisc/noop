@@ -359,7 +359,7 @@ private struct AjustesLanding: View {
                     if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
                     else { mediaCoordinator.resetDownloadState() }
                 }
-                Text("Descarga miniaturas y un video corto por ejercicio desde ExerciseDB (RapidAPI), un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin señal después. Esta es la única excepción a la regla de NOOP de cero red — tu IP y el nombre del ejercicio se comparten con ese servicio; ningún otro dato tuyo sale jamás. Apagar esto detiene descargas futuras, no borra lo ya guardado.")
+                Text("Descarga la animación de cada ejercicio desde el CDN de imágenes de ExerciseDB, un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin señal después. Esta es la única excepción a la regla de NOOP de cero red — al bajar cada imagen tu IP es visible para ese servicio, como al cargar cualquier imagen en internet; ningún otro dato tuyo (ni el nombre del ejercicio) sale jamás. Apagar esto detiene descargas futuras, no borra lo ya guardado.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 mediaDownloadStatus
