@@ -128,6 +128,90 @@
           }
         }
       }
+    },
+    "−30 s" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "−30 s" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "−30 s" } }
+      }
+    },
+    "Remove 30 seconds" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Remove 30 seconds" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Restar 30 segundos" } }
+      }
+    },
+    "Complete set" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Complete set" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Completar serie" } }
+      }
+    },
+    "Logs the set and advances" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Logs the set and advances" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Registra la serie y avanza" } }
+      }
+    },
+    "Finish workout" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Finish workout" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Terminar entreno" } }
+      }
+    },
+    "Logs the last set and ends the workout" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Logs the last set and ends the workout" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Registra la última serie y termina el entreno" } }
+      }
+    },
+    "Ends the rest without logging the set" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ends the rest without logging the set" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Corta el descanso sin registrar la serie" } }
+      }
+    },
+    "last set of the workout" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "last set of the workout" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Última serie del entreno" } }
+      }
+    },
+    "Next up: %@" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next up: %@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sigue: %@" } }
+      }
+    },
+    "Next: set %lld of %lld" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next: set %1$lld of %2$lld" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Siguiente: serie %1$lld de %2$lld" } }
+      }
+    },
+    "Shortens the current rest by 30 seconds." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shortens the current rest by 30 seconds." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Acorta el descanso 30 segundos." } }
+      }
+    },
+    "Ends the current rest without logging the set." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ends the current rest without logging the set." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Termina el descanso sin registrar la serie." } }
+      }
+    },
+    "Logs the upcoming set and starts the next rest." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Logs the upcoming set and starts the next rest." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Registra la siguiente serie y arranca su descanso." } }
+      }
+    },
+    "Logs the last set and ends the workout." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Logs the last set and ends the workout." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Registra la última serie y termina el entreno." } }
+      }
     }
   },
   "version" : "1.0"

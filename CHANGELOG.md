@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Controla tu descanso desde la pantalla bloqueada / Control your rest from the lock screen.**
+  **ES** — La tarjeta de descanso entre series ahora lidera con el ejercicio que sigue y su miniatura, y trae acciones completas sin abrir la app: completar la serie (una palomita), sumar o quitar 30 s, o saltar el descanso. En la última serie del entreno la palomita se vuelve una bandera para terminar. El cronómetro sigue siendo el único número grande; todo lo demás es tinta quieta sobre papel.
+  **EN** — The rest card between sets now leads with the next exercise and its thumbnail, and carries full actions without opening the app: complete the set (a check), add or remove 30 s, or skip the rest. On the workout's last set the check becomes a flag to finish. The countdown stays the only big number; everything else is quiet ink on paper.
+  ([RestLiveActivity.swift](CenitWidgets/RestLiveActivity.swift), [RestThumbnailProvider.swift](Cenit/Media/RestThumbnailProvider.swift))
+
 - **Un cuerpo de verdad en tu mapa de fatiga / A real body on your fatigue map.**
   **ES** — El mapa muscular de Entrenar cambia el monigote esquemático por una silueta anatómica de frente y espalda, dibujada en tu teléfono. El cuerpo es «papel»: solo el calor es dato — un músculo fresco casi desaparece en el fondo cálido y uno cargado salta en ámbar. Se lee de un vistazo qué entrenar hoy y qué todavía carga trabajo.
   **EN** — Entrenar's muscle map trades the schematic stick-figure for a real front/back anatomical silhouette, drawn on your phone. The body is «paper»: only heat is data — a fresh muscle nearly vanishes into the warm background while a loaded one leaps out in amber. You read at a glance what to train today and what still carries load.

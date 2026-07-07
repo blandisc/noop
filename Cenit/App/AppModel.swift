@@ -230,6 +230,7 @@ final class AppModel: ObservableObject {
         // ended at launch so none lingers on the lock screen.
         restActivity.onAction = { [weak self] action in self?.applyRestAction(action) }
         restActivity.endOrphans()
+        RestThumbnailStore.clear()   // FER-789: sweep any rest thumbnail left by a killed session
         // Illness/strain early-warning recomputes when the daily history changes. `days` is no longer
         // its own @Published (folded into `dashboard` for single-publish refreshes, FER-30), so watch
         // the dashboard and project its days — still one emission per refresh.
@@ -542,20 +543,33 @@ final class AppModel: ObservableObject {
                                                targetHR: s.currentRestTarget)
             if v.ready, v.reason == .hrRecovered {
                 s.skipRest()
+                clearRestThumb()
                 restActivity.reconcile(nil)
                 mirroringBridge?.pushRestEnded(sessionId: s.id, recovered: true)
                 return
             }
         }
         let snapshot = computeRestSnapshot()
+        if snapshot == nil { clearRestThumb() }   // FER-789: no stale App Group image once the rest ends
         restActivity.reconcile(snapshot)
         if let snapshot { mirroringBridge?.pushRest(snapshot) }
         else if let sid = strengthSession?.id { mirroringBridge?.pushRestEnded(sessionId: sid) }
     }
 
+    /// Drop the staged rest thumbnail (App Group file + memo) — called whenever the rest/session ends so
+    /// the next rest never shows the previous exercise's image (FER-789).
+    private func clearRestThumb() {
+        RestThumbnailStore.clear()
+        preparedRestThumb = nil
+    }
+
     /// The most recent nightly resting HR — the baseline for HR-guided rest targets (FER-348/FER-758).
     /// Same source the live sheet reads, so both compute the identical «recovered» target.
     private var restingHrBaseline: Double? { repo.days.compactMap(\.restingHr).last.map(Double.init) }
+
+    /// The exercise whose thumbnail is currently staged in the App Group, and the resulting file name —
+    /// so a rest snapshot copies the JPG only when the focused exercise changes, not on every reconcile.
+    private var preparedRestThumb: (exerciseId: String, name: String?)?
 
     /// The display-ready rest snapshot, or nil when there's nothing to show (no session, showing the
     /// receipt, not resting, or the focused set is gone).
@@ -570,21 +584,47 @@ final class AppModel: ObservableObject {
         let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
         // No band (disconnected / off-wrist) → no pulse: the surfaces then show only the timer.
         let bandBpm: Int? = (live.connected && live.worn) ? bpm : nil
+        // FER-789 — phase drives the card's primary action + context line: the routine's last pending set
+        // → «Terminar entreno» (flag); an exercise's last set → «Sigue: {next}»; otherwise the check.
+        let phase: RestPhase = s.pendingCount <= 1 ? .lastSetOfRoutine
+            : (s.pendingInCurrentRun <= 1 ? .lastSetOfExercise : .midExercise)
+        let nextName = phase == .lastSetOfExercise ? s.nextPendingExerciseName : nil
         return RestActivitySnapshot(
             sessionId: s.id, routineName: s.routineName,
             setNumber: run.currentSet + 1, setTotal: run.sets.count,
             exerciseName: run.name, returnDetail: detail,
             restStartedAt: startedAt, restEndsAt: endsAt,
-            isHRMode: s.currentRestMode == .heartRate, hrTarget: s.currentRestTarget, bpm: bandBpm)
+            isHRMode: s.currentRestMode == .heartRate, hrTarget: s.currentRestTarget, bpm: bandBpm,
+            phaseRaw: phase.rawValue, nextExerciseName: nextName,
+            thumbnailName: restThumbName(for: run.exerciseId))
+    }
+
+    /// The App Group thumbnail file name for the focused exercise, copying the JPG only when the exercise
+    /// changes (memoized). nil when media is off or the exercise has no cached image → the card omits it.
+    private func restThumbName(for exerciseId: String) -> String? {
+        if let cached = preparedRestThumb, cached.exerciseId == exerciseId { return cached.name }
+        let enabled = UserDefaults.standard.bool(forKey: MediaDownloadCoordinator.enabledKey)
+        let name = RestThumbnailProvider.prepare(exerciseId: exerciseId, mediaEnabled: enabled)
+        preparedRestThumb = (exerciseId, name)
+        return name
     }
 
     /// Apply a lock-screen action to the live session; the reconcile that follows reflects it back onto
-    /// the Activity (a longer countdown, or ending it on «Saltar»).
+    /// the Activity (a longer countdown, a shorter one, ending it, or advancing the session). FER-789
+    /// adds ±30, complete-set and finish-workout. Completar ≠ Saltar: `completeSet` logs the upcoming set
+    /// (`registerCurrentSet`) and rests again; `skip` only cuts the timer and leaves the set pending.
     private func applyRestAction(_ action: RestActivityBridge.Action) {
         guard let s = strengthSession, s.phase == .resting else { return }
         switch action {
-        case .addThirty: s.extendRest(byseconds: 30)
-        case .skip:      s.skipRest()
+        case .addThirty:    s.extendRest(byseconds: 30)
+        case .removeThirty: s.extendRest(byseconds: -30)   // floored at «now» by extendRest — never negative
+        case .skip:         s.skipRest()
+        case .completeSet:
+            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
+        case .finishWorkout:
+            // Last set of the routine: log it, then end the session (which ends the Live Activity).
+            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
+            endStrengthSession(save: true)
         }
     }
 
