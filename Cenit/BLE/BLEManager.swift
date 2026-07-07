@@ -339,7 +339,15 @@ public final class BLEManager: NSObject, ObservableObject {
         if let bootstrapTask { _ = await bootstrapTask.value; return }
         let task = Task { @MainActor () -> Bool in
             guard let path = try? StorePaths.defaultDatabasePath() else { return false }
-            guard let store = try? await WhoopStore(path: path) else { return false }
+            // Observable failure, not a silent nil (FER-793): a swallowed store-open error here left a
+            // wedged migration undebuggable. Log it, then degrade (return false) as before.
+            let store: WhoopStore
+            do {
+                store = try await WhoopStore(path: path)
+            } catch {
+                print("[FER-793] WhoopStore failed to open at \(path): \(error)")
+                return false
+            }
             try? await store.upsertDevice(id: deviceId, mac: nil, name: "WHOOP 4.0")
             // Research toggle — OFF by default. When disabled the app is decoded-only and never
             // persists raw frames. Flip "enableRawCapture" in UserDefaults to capture raw again.
