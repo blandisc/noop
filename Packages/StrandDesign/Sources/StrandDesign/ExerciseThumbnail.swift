@@ -11,15 +11,16 @@ import SwiftUI
 // Two forms, one look — a warm `hairline → hairlineStrong` gradient (the handoff swatch), no
 // play glyph: the row thumbnail reads as a still image, and the exercise sheet's video control
 // (auto-play + top-right play/pause, Hevy-style) is FER-722's job, not the placeholder's.
-//   • `.init(side:)`   — the square row tile: 1d 40 · 1j/1k 44 · 1f 48 · 1i 54.
-//   • `.init(heroHeight:)` — the full-width hero (~168) on the exercise sheet (1g/1h).
+//   • `.init(side:)` — the square row tile: 1d 40 · 1j/1k 44 · 1f 48 · 1i 54.
+//   • `.init(hero:)`  — the full-width SQUARE hero on the exercise sheet (1g/1h). Square because the
+//     ExerciseDB media is a square GIF; a square slot shows the whole animation with no crop (FER-790).
 
 public struct ExerciseThumbnail: View {
     @Environment(\.instrumentoTheme) private var theme
 
     private enum Form {
         case tile(side: CGFloat)      // square row thumbnail; corner scales with the side
-        case hero(height: CGFloat)    // full-width banner; fixed corner
+        case hero                     // full-width square banner; fixed corner
     }
 
     private let form: Form
@@ -37,9 +38,9 @@ public struct ExerciseThumbnail: View {
         self.image = image
     }
 
-    /// The full-width hero on the exercise sheet (1g/1h), ~168 pt tall.
-    public init(heroHeight: CGFloat = 168, image: Image? = nil) {
-        self.form = .hero(height: heroHeight)
+    /// The full-width square hero on the exercise sheet (1g/1h).
+    public init(hero image: Image? = nil) {
+        self.form = .hero
         self.image = image
     }
 
@@ -77,8 +78,8 @@ public struct ExerciseThumbnail: View {
             switch form {
             case .tile(let side):
                 content.frame(width: side, height: side)
-            case .hero(let height):
-                content.frame(maxWidth: .infinity).frame(height: height)
+            case .hero:
+                content.aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
             }
         }
     }
@@ -95,7 +96,7 @@ public struct ExerciseThumbnail: View {
                 }
             }
         }
-        ExerciseThumbnail(heroHeight: 168)
+        ExerciseThumbnail(hero: nil)
     }
     .padding(24)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
