@@ -100,6 +100,15 @@ public enum ExerciseCatalog {
     /// user-created exercise, which the app resolves from WhoopStore instead).
     public static func byID(_ id: String) -> Exercise? { index[id] }
 
+    /// The baked row-thumbnail still for an exercise, or nil if none was baked (FER-800). Each still
+    /// is the first frame of that exercise's ExerciseDB GIF, extracted at build time into
+    /// `Resources/exercise-stills/{id}.jpg` (~1324 of them). This is the OFFLINE, always-available
+    /// image for exercise rows — no network, no opt-in toggle. Exercises with no baked still (dead
+    /// CDN media, or user-created ones) return nil → the caller shows the paper placeholder.
+    public static func stillURL(id: String) -> URL? {
+        Bundle.module.url(forResource: id, withExtension: "jpg", subdirectory: "exercise-stills")
+    }
+
     private static func load() -> [Exercise] {
         guard let url = Bundle.module.url(forResource: "exercises", withExtension: "json"),
               let data = try? Data(contentsOf: url),

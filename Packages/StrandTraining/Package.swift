@@ -18,6 +18,7 @@ let package = Package(
             resources: [
                 .process("Resources/exercises.json"),
                 .process("Resources/exercises.es.json"),       // Spanish overlay (FER-501/FER-779)
+                .copy("Resources/exercise-stills"),            // baked row thumbnails, {id}.jpg (FER-800)
             ]
         ),
         .testTarget(
