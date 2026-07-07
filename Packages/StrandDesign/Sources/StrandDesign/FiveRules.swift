@@ -43,7 +43,8 @@ public struct FiveRulesView: View {
     private static let rowHeight: CGFloat = 18
     // A hair of air between rows: at spacing 0 a lit mark's top (y≈1) sat right against the
     // hairline divider of the row above it, reading as touching/overlapping rows.
-    private static let rowSpacing: CGFloat = 2
+    // 2 → 5: el dueño sentía las reglas demasiado pegadas; más aire entre filas.
+    private static let rowSpacing: CGFloat = 5
     private static let labelWidth: CGFloat = 74
     private static let valueWidth: CGFloat = 40
 
