@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tu entrenamiento de fuerza sobrevive un cierre inesperado / Your strength workout survives an unexpected quit.**
+  **ES** — Si la app se cierra o se reinicia a mitad de una sesión de fuerza guiada, al volver a abrirla la sesión se recupera con tus series ya registradas, en vez de perderse. Así, terminar desde el Apple Watch sigue guardando el entrenamiento y su recibo, sin duplicarlo en Apple Salud.
+  **EN** — If the app quits or restarts mid-way through a guided strength session, it comes back with your logged sets intact instead of losing the workout. Ending from the Apple Watch then still saves the workout and its receipt, without duplicating it in Apple Health.
+  ([AppModel.swift](Cenit/App/AppModel.swift), [InProgressStrengthStore.swift](Packages/WhoopStore/Sources/WhoopStore/InProgressStrengthStore.swift))
+
 - **Los vitales muestran tu posición con un slider más simple / Vitals show your position with a simpler slider.**
   **ES** — En VFC, FC en reposo y respiración, la posición de hoy dentro de tu rango normal se muestra con un slider limpio (pista del rango + marcador + «bajo · tu normal · alto»), como el diseño de referencia.
   **EN** — For HRV, resting HR and respiration, today's position within your normal range is shown with a clean slider (range track + thumb + «low · your normal · high»), matching the reference design.

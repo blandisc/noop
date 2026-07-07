@@ -770,4 +770,17 @@ final class MigrationTests: XCTestCase {
             XCTAssertTrue(adherenceCols.contains(expected), "dietAdherence missing column \(expected)")
         }
     }
+
+    /// v28 (FER-798) creates `inProgressStrengthSession` (singleton control table, PK `id`).
+    func testV28CreatesInProgressStrengthSessionTable() async throws {
+        let store = try await WhoopStore.inMemory()
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("inProgressStrengthSession"), "missing inProgressStrengthSession table")
+        let pk = try await store.primaryKeyColumns("inProgressStrengthSession")
+        XCTAssertEqual(pk, ["id"])
+        let cols = try await store.columnNamesForTest(table: "inProgressStrengthSession")
+        for expected in ["id", "snapshot", "updatedTs"] {
+            XCTAssertTrue(cols.contains(expected), "inProgressStrengthSession missing column \(expected)")
+        }
+    }
 }
