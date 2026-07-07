@@ -255,6 +255,10 @@ public extension InstrumentoTheme {
     var originApple: Color { dataSpO2 }
     /// Origin dot — computed on-device.
     var originComputed: Color { inkMuted }
+
+    /// Warm track behind compact segmented pills (`CompactTrendToggle`) — one step warmer than
+    /// `surface` so the active ink chip riding on it reads.
+    var trackWarm: Color { Color(hex: "#EFEAE0") }
 }
 
 // MARK: - Environment injection

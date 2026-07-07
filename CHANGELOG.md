@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Iconos de métrica unificados entre Hoy y Tendencias / Unified metric icons across Today and Trends.**
+  **ES** — Nuevos componentes compartidos del sistema de diseño para la estandarización «Tendencias v2»: el *sello de origen* (`OriginStamp` — punto de color + «{Banda / Apple Salud / Calculado} · cuándo» al pie de una pantalla de detalle), el *toggle compacto* Media ⇄ Rangos (`CompactTrendToggle`) y una **fuente única de iconos por métrica** (`MetricGlyph`: SF Symbol + hue). Las tiles de SEÑALES en Hoy ahora leen sus iconos de esa fuente, así que Hoy y Tendencias no pueden divergir.
+  **EN** — New design-system components for the «Trends v2» standardization: the *origin seal* (`OriginStamp`), the *compact* Media ⇄ Ranges *toggle* (`CompactTrendToggle`), and a **single per-metric icon source** (`MetricGlyph`: SF Symbol + hue). Today's SEÑALES tiles now read their icons from it, so Today and Trends can't drift apart.
+  ([MetricGlyph.swift](Packages/StrandDesign/Sources/StrandDesign/MetricGlyph.swift), [OriginStamp.swift](Packages/StrandDesign/Sources/StrandDesign/OriginStamp.swift), [CompactTrendToggle.swift](Packages/StrandDesign/Sources/StrandDesign/CompactTrendToggle.swift))
+
 - **El import ahora también entiende plurales y nombres coloquiales / Import now also understands plurals and colloquial names.**
   **ES** — Afinación del emparejador de ejercicios: "Sentadillas", "Curls de bíceps" o "Pájaros" ya se reconocen igual que su forma exacta, y se sumaron ~40 nombres comunes de gym a la tabla (press militar con mancuernas, face pull, pec fly, curl en polea…). Mismas garantías: todo emparejado automático se marca y se puede cambiar.
   **EN** — Matcher tuning: plurals and colloquial gym names now resolve like their exact forms, and ~40 common names were added to the table. Same guarantees: every automatic match is marked and changeable.
