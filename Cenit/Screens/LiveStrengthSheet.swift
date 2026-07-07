@@ -230,6 +230,23 @@ final class StrengthSessionModel: ObservableObject {
     var doneCount: Int { runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.filter(\.done).count } }
     var pendingCount: Int { runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.filter { !$0.done }.count } }
 
+    /// Pending (not-done) sets left in the focused exercise, including the current one (FER-789). 0 when
+    /// focus is parked on a done/skipped run. Drives the rest card's phase: 1 here means the upcoming set
+    /// is this exercise's last, so completing it moves to a different exercise.
+    var pendingInCurrentRun: Int { current.map { $0.sets.filter { !$0.done }.count } ?? 0 }
+
+    /// The name of the next non-skipped exercise (after the current one) that still has a pending set —
+    /// the rest card's «Sigue: …» line when the upcoming set is the current exercise's last (FER-789).
+    var nextPendingExerciseName: String? {
+        guard runs.indices.contains(currentIndex) else { return nil }
+        for offset in 1...max(1, runs.count) {
+            let idx = (currentIndex + offset) % max(1, runs.count)
+            guard idx != currentIndex, runs.indices.contains(idx), !runs[idx].skipped else { continue }
+            if runs[idx].sets.contains(where: { !$0.done }) { return runs[idx].name }
+        }
+        return nil
+    }
+
     // MARK: Editing the current set
 
     func bumpWeight(byKg delta: Double) { mutateCurrentSet { $0.weightKg = max(0, $0.weightKg + delta) } }

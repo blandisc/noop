@@ -14,8 +14,10 @@ enum RestActivityBridge {
     /// The App Group both targets already share (see NOOP.entitlements / CenitWidgets.entitlements).
     static let appGroup = "group.com.feriracheta.noop"
 
-    /// The lock-screen actions the Live Activity can request.
-    enum Action: String, Codable { case addThirty, skip }
+    /// The lock-screen actions the Live Activity can request. FER-789 adds `removeThirty` (−30 s),
+    /// `completeSet` (register the upcoming set and rest again) and `finishWorkout` (register the last
+    /// set and end the session). New raw values decode as-is; older payloads never carry them.
+    enum Action: String, Codable { case addThirty, removeThirty, skip, completeSet, finishWorkout }
 
     /// Darwin notification the extension posts and the app observes (cross-process, unlike
     /// `NotificationCenter`). Named, not payload-carrying — the payload is the App Group inbox.

@@ -22,9 +22,22 @@ public struct RestActivitySnapshot: Equatable, Codable {
     public var hrTarget: Int?
     public var bpm: Int?
 
+    // FER-789 — enrich the rest Live Activity's lock-screen card. Kept as plain types (a raw String
+    // for the phase, not the `RestPhase` enum) so `CenitShared` stays free of the widget-only contract
+    // and the watch target — which also decodes this snapshot — compiles without it. All Optional and
+    // defaulted, so existing construction sites (incl. the watch) are unchanged.
+    /// Raw value of the widget's `RestPhase` (midExercise / lastSetOfExercise / lastSetOfRoutine); nil
+    /// = pre-FER-789 → the card falls back to the check action.
+    public var phaseRaw: String?
+    /// The next exercise's name, only when `phaseRaw == "lastSetOfExercise"` (the card's «Sigue: …» line).
+    public var nextExerciseName: String?
+    /// File name of the exercise thumbnail in the shared App Group; nil = no image (the card omits it).
+    public var thumbnailName: String?
+
     public init(sessionId: String, routineName: String, setNumber: Int, setTotal: Int,
                 exerciseName: String, returnDetail: String, restStartedAt: Date, restEndsAt: Date,
-                isHRMode: Bool, hrTarget: Int?, bpm: Int?) {
+                isHRMode: Bool, hrTarget: Int?, bpm: Int?,
+                phaseRaw: String? = nil, nextExerciseName: String? = nil, thumbnailName: String? = nil) {
         self.sessionId = sessionId
         self.routineName = routineName
         self.setNumber = setNumber
@@ -36,5 +49,8 @@ public struct RestActivitySnapshot: Equatable, Codable {
         self.isHRMode = isHRMode
         self.hrTarget = hrTarget
         self.bpm = bpm
+        self.phaseRaw = phaseRaw
+        self.nextExerciseName = nextExerciseName
+        self.thumbnailName = thumbnailName
     }
 }
