@@ -110,24 +110,30 @@ private struct EntrenarLanding: View {
     private var recovery: Double? { repo.today?.recovery }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: sectionRhythm) {
-                header
-                if loaded {
-                    if split.isEmpty {
-                        emptyStateB
-                    } else {
-                        hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
-                        suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
-                        tambienEnTuPlan  // ③ the rest of the plan + access pills (Rápido, Más formas, Dieta)
-                        constanciaCard   // ④ 90-day dot grid above the dock — no streak guilt (mock 1a)
+        GeometryReader { geo in
+            ScrollView {
+                VStack(alignment: .leading, spacing: sectionRhythm) {
+                    header
+                    if loaded {
+                        if split.isEmpty {
+                            emptyStateB
+                        } else {
+                            hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
+                            suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
+                            tambienEnTuPlan  // ③ the rest of the plan + «Formas de entrenar» (FER-783)
+                            // ④ Constancia drifts to the bottom: a flexible spacer eats the dead space above
+                            // the dock when the content is shorter than the screen, and collapses otherwise
+                            // (FER-784) — hierarchy by space, no guilt streak.
+                            Spacer(minLength: sectionRhythm)
+                            constanciaCard
+                        }
                     }
                 }
+                .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
+                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.bottom, NoopMetrics.screenPadding)
+                .frame(maxWidth: .infinity, minHeight: geo.size.height, alignment: .leading)
             }
-            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
         // The ③ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
@@ -315,7 +321,7 @@ private struct EntrenarLanding: View {
     /// day leaves it open but quiet (outline). Both route through `startToday`.
     private var empezarButton: some View {
         Button { startToday() } label: {
-            (todayRoutine.map { Text("Empezar") + Text(verbatim: " \($0.name)") } ?? Text("Empezar"))
+            Text("Empezar")
                 .font(StrandFont.headline)
                 .foregroundStyle(todayRoutine != nil ? theme.paperHi : theme.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 15)
@@ -336,26 +342,6 @@ private struct EntrenarLanding: View {
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots)
     }
 
-    /// «Empezar» on a «También en tu plan» routine (mock 1a): load that routine's slots on demand (same
-    /// catalog + override + «la última vez» resolution as today's prefetch) and start the guided session.
-    /// An empty routine opens its plan to edit instead of an empty session.
-    private func startRoutine(_ rid: String, name: String) {
-        Task {
-            guard let store = await repo.storeHandle() else { return }
-            let exs = (try? await store.routineExercises(routineId: rid)) ?? []
-            guard !exs.isEmpty else { openRoutine(rid); return }
-            let custom = (try? await store.customExercises()) ?? []
-            let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-            let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
-            var slots: [StrengthSessionModel.PlanSlot] = []
-            for re in exs {
-                let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
-                let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
-                slots.append(.init(re: re, exercise: ex, lastSets: last))
-            }
-            model.startStrengthSession(routineId: rid, routineName: name, slots: slots)
-        }
-    }
 
     /// «Entrenamiento rápido de fuerza» (mock 1p, FER-762): no routine, no slots — the session starts
     /// empty and `LiveStrengthSheet` shows its own empty-state (search + freshness suggestions) until the
@@ -528,11 +514,12 @@ private struct EntrenarLanding: View {
         showLive = true
     }
 
-    /// One «También en tu plan» routine: tint + name + «day · muscles», with an «Empezar» pill that starts
-    /// that routine's session (its slots load on tap). Tapping the rest of the row opens the routine.
+    /// One «También en tu plan» routine: the whole row is a single tap target that opens the routine
+    /// (FER-784). The trailing chevron carries THAT routine's tint (same color as the leading dot) — a
+    /// glanceable «this opens» affordance, one color per routine, no new tokens.
     private func planRoutineRow(_ row: (routineId: String, name: String, days: String)) -> some View {
-        HStack(spacing: 12) {
-            Button { openRoutine(row.routineId) } label: {
+        Button { openRoutine(row.routineId) } label: {
+            HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 7) {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
@@ -542,18 +529,13 @@ private struct EntrenarLanding: View {
                     Text(planRowSubtitle(row)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                         .padding(.leading, 15)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(routineTint(region(name: row.name)))
             }
-            .buttonStyle(.plain)
-            // «Empezar» takes its routine's tint (mock 1a · change 3): the border is the tint softened onto
-            // paper, the text the full tint — still one glanceable color per routine, no new tokens.
-            Button { startRoutine(row.routineId, name: row.name) } label: {
-                Text("Empezar").font(StrandFont.subhead).foregroundStyle(routineTint(region(name: row.name)))
-                    .padding(.horizontal, 14).padding(.vertical, 6)
-                    .overlay(Capsule().strokeBorder(routineTint(region(name: row.name)).opacity(0.45), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .padding(.vertical, 9)
         .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
     }

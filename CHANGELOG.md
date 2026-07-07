@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Entrenar más despejado: un botón, filas tocables, Constancia con aire / A calmer Train: one button, tappable rows, Consistency with room.**
+  **ES** — El botón grande de Hoy ahora dice solo «Empezar». Las otras rutinas de tu plan ya no traen un botón «Empezar» aparte: tocas la fila completa para abrirlas, con una flecha en el color de esa rutina. Y Constancia baja hacia el dock, aprovechando el espacio libre para que la pantalla respire.
+  **EN** — Today's big button now just says «Empezar». The other routines in your plan drop their separate «Empezar» button: tap the whole row to open them, with a chevron in that routine's color. And Consistency drifts down toward the dock, using the free space so the screen breathes.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Un solo botón «Formas de entrenar» en Entrenar / One «Formas de entrenar» button in Train.**
   **ES** — Los tres botones sueltos (Rápido · Más formas · Dieta) se juntan en uno solo, «Formas de entrenar». Al tocarlo se despliega con un resorte y aparecen los seis tipos como íconos —Rápido, En vivo, Intervalo, Movilidad, Respirar y Dieta— entrando escalonados; tocas uno y arranca. Menos botones compitiendo, la pantalla respira.
   **EN** — The three loose buttons (Rápido · Más formas · Dieta) fold into a single «Formas de entrenar» button. Tapping it springs open a row of six training types as icons —Rápido, En vivo, Intervalo, Movilidad, Respirar and Dieta— entering staggered; tap one to start. Fewer competing buttons, a calmer screen.
