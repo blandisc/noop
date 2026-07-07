@@ -250,17 +250,18 @@ public struct WorkoutProgramImporter {
 public struct WorkoutExerciseReconciler {
     private let byNormalizedName: [String: Exercise]
     private let byId: [String: Exercise]
-    private let byAlias: [String: Exercise]
     private let byLearned: [String: Exercise]
     /// Each known exercise's per-name token sets (the EN name and, when present, the ES name — kept
     /// separate so one language's extra words don't dilute the other's similarity), for fuzzy suggestions.
     private let tokenized: [(exercise: Exercise, tokenSets: [Set<String>])]
 
-    /// Build from the known exercises (catalog + custom). Indexes each exercise by its `id` (FER-521),
-    /// by BOTH its English `name` and Spanish `nameES` (FER-501), by the curated synonym table (FER-522),
-    /// and by the user's learned aliases (FER-523, `learned`: normalized-name → exercise-id). So a plan
-    /// matches by the id the LLM picked, by name in either language, by a common variant, or by a name
-    /// the user mapped before. On a normalized-name collision the first wins — deterministic.
+    /// Build from the known exercises (catalog + custom). Indexes each exercise by its `id` (FER-521,
+    /// now the native ExerciseDB id), by BOTH its English `name` and Spanish `nameES` (FER-501), and by
+    /// the user's learned aliases (FER-523, `learned`: normalized-name → exercise-id). So a plan matches
+    /// by the id the LLM picked, by name in either language, or by a name the user mapped before. On a
+    /// normalized-name collision the first wins — deterministic. (The curated synonym table, FER-522, was
+    /// retired with FER-779 — native ids let the LLM pick the exact exercise, so hand-curated slugs are
+    /// no longer needed.)
     public init(known: [Exercise], learned: [String: String] = [:]) {
         var map: [String: Exercise] = [:]
         var ids: [String: Exercise] = [:]
@@ -275,13 +276,6 @@ public struct WorkoutExerciseReconciler {
             }
             tokens.append((ex, sets))
         }
-        // Curated synonyms (FER-522): normalize each alias; keep only those pointing at a known exercise.
-        var aliases: [String: Exercise] = [:]
-        for (alias, id) in ExerciseAliases.all {
-            guard let ex = ids[id] else { continue }
-            let key = Self.normalize(alias)
-            if aliases[key] == nil { aliases[key] = ex }
-        }
         // Learned aliases (FER-523): the keys are already normalized (the app stores them that way), but
         // re-normalize defensively; keep only those still pointing at a known exercise.
         var learnedMap: [String: Exercise] = [:]
@@ -291,7 +285,6 @@ public struct WorkoutExerciseReconciler {
         }
         byNormalizedName = map
         byId = ids
-        byAlias = aliases
         byLearned = learnedMap
         tokenized = tokens
     }
@@ -302,13 +295,13 @@ public struct WorkoutExerciseReconciler {
     }
 
     /// Resolve an imported exercise to a known one, in cascade: declared catalog `id` (FER-521) >
-    /// normalized name EN/ES (FER-501) > curated synonym (FER-522) > learned alias (FER-523). An
-    /// unknown/invalid id is ignored, degrading to the next step. Returns nil only when none resolves
-    /// (→ the user maps it, and that choice becomes a learned alias for next time).
+    /// normalized name EN/ES (FER-501) > learned alias (FER-523). An unknown/invalid id is ignored,
+    /// degrading to the next step. Returns nil only when none resolves (→ the user maps it, and that
+    /// choice becomes a learned alias for next time).
     public func resolve(_ exercise: WorkoutExercise) -> Exercise? {
         if let id = exercise.id, let hit = byId[id] { return hit }
         let key = Self.normalize(Self.preClean(exercise.name))
-        return byNormalizedName[key] ?? byAlias[key] ?? byLearned[key]
+        return byNormalizedName[key] ?? byLearned[key]
     }
 
     /// Up to `limit` catalog/custom exercises whose name is closest to `name` by token-set overlap

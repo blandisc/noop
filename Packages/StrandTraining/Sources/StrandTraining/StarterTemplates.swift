@@ -73,76 +73,77 @@ public extension StarterTemplate {
 /// exercise catalog (`ExerciseCatalog`); schemes are conventional starting points the user edits.
 public enum StarterTemplates {
 
+    // Slots reference native ExerciseDB ids (FER-779); re-curated from the new catalog by movement.
     public static let all: [StarterTemplate] = [
         // — Push / Pull / Legs — the classic 3-day split, each day its own copyable routine.
         StarterTemplate(id: "ppl-push", group: .pushPullLegs, slots: [
-            .init("Barbell_Bench_Press_-_Medium_Grip", sets: 4, reps: 6, rest: 150),
-            .init("Seated_Dumbbell_Press", sets: 3, reps: 8, rest: 120),
-            .init("Incline_Dumbbell_Press", sets: 3, reps: 10, rest: 90),
-            .init("Side_Lateral_Raise", sets: 3, reps: 12, rest: 60),
-            .init("Triceps_Pushdown", sets: 3, reps: 12, rest: 60),
+            .init("EIeI8Vf", sets: 4, reps: 6, rest: 150),   // barbell bench press
+            .init("znQUdHY", sets: 3, reps: 8, rest: 120),   // dumbbell seated shoulder press
+            .init("ns0SIbU", sets: 3, reps: 10, rest: 90),   // dumbbell incline bench press
+            .init("DsgkuIt", sets: 3, reps: 12, rest: 60),   // dumbbell lateral raise
+            .init("gAwDzB3", sets: 3, reps: 12, rest: 60),   // cable triceps pushdown (v-bar)
         ]),
         StarterTemplate(id: "ppl-pull", group: .pushPullLegs, slots: [
-            .init("Barbell_Deadlift", sets: 3, reps: 5, rest: 180),
-            .init("Pullups", sets: 3, reps: 8, rest: 120),
-            .init("Bent_Over_Barbell_Row", sets: 3, reps: 8, rest: 120),
-            .init("Wide-Grip_Lat_Pulldown", sets: 3, reps: 10, rest: 90),
-            .init("Face_Pull", sets: 3, reps: 15, rest: 60),
-            .init("Barbell_Curl", sets: 3, reps: 10, rest: 60),
+            .init("ila4NZS", sets: 3, reps: 5, rest: 180),   // barbell deadlift
+            .init("lBDjFxJ", sets: 3, reps: 8, rest: 120),   // pull-up
+            .init("eZyBC3j", sets: 3, reps: 8, rest: 120),   // barbell bent over row
+            .init("LEprlgG", sets: 3, reps: 10, rest: 90),   // cable lat pulldown
+            .init("wqNPGCg", sets: 3, reps: 15, rest: 60),   // cable rear delt row (face-pull)
+            .init("25GPyDY", sets: 3, reps: 10, rest: 60),   // barbell curl
         ]),
         StarterTemplate(id: "ppl-legs", group: .pushPullLegs, slots: [
-            .init("Barbell_Squat", sets: 4, reps: 6, rest: 150),
-            .init("Romanian_Deadlift", sets: 3, reps: 8, rest: 120),
-            .init("Leg_Press", sets: 3, reps: 10, rest: 90),
-            .init("Lying_Leg_Curls", sets: 3, reps: 12, rest: 60),
-            .init("Standing_Calf_Raises", sets: 4, reps: 15, rest: 45),
+            .init("qXTaZnJ", sets: 4, reps: 6, rest: 150),   // barbell full squat
+            .init("wQ2c4XD", sets: 3, reps: 8, rest: 120),   // barbell romanian deadlift
+            .init("V07qpXy", sets: 3, reps: 10, rest: 90),   // lever leg press
+            .init("17lJ1kr", sets: 3, reps: 12, rest: 60),   // lever lying leg curl
+            .init("ykUOVze", sets: 4, reps: 15, rest: 45),   // lever standing calf raise
         ]),
 
         // — Full body — one balanced session, low frequency-friendly.
         StarterTemplate(id: "full-body", group: .fullBody, slots: [
-            .init("Barbell_Squat", sets: 3, reps: 5, rest: 150),
-            .init("Barbell_Bench_Press_-_Medium_Grip", sets: 3, reps: 5, rest: 150),
-            .init("Bent_Over_Barbell_Row", sets: 3, reps: 8, rest: 120),
-            .init("Seated_Dumbbell_Press", sets: 3, reps: 10, rest: 90),
-            .init("Barbell_Curl", sets: 3, reps: 12, rest: 60),
+            .init("qXTaZnJ", sets: 3, reps: 5, rest: 150),   // barbell full squat
+            .init("EIeI8Vf", sets: 3, reps: 5, rest: 150),   // barbell bench press
+            .init("eZyBC3j", sets: 3, reps: 8, rest: 120),   // barbell bent over row
+            .init("znQUdHY", sets: 3, reps: 10, rest: 90),   // dumbbell seated shoulder press
+            .init("25GPyDY", sets: 3, reps: 12, rest: 60),   // barbell curl
         ]),
 
         // — Upper / Lower — the 2-day split, each half its own routine.
         StarterTemplate(id: "upper", group: .upperLower, slots: [
-            .init("Barbell_Bench_Press_-_Medium_Grip", sets: 4, reps: 6, rest: 150),
-            .init("Bent_Over_Barbell_Row", sets: 4, reps: 6, rest: 150),
-            .init("Seated_Dumbbell_Press", sets: 3, reps: 10, rest: 90),
-            .init("Wide-Grip_Lat_Pulldown", sets: 3, reps: 10, rest: 90),
-            .init("Barbell_Curl", sets: 3, reps: 12, rest: 60),
-            .init("Triceps_Pushdown", sets: 3, reps: 12, rest: 60),
+            .init("EIeI8Vf", sets: 4, reps: 6, rest: 150),   // barbell bench press
+            .init("eZyBC3j", sets: 4, reps: 6, rest: 150),   // barbell bent over row
+            .init("znQUdHY", sets: 3, reps: 10, rest: 90),   // dumbbell seated shoulder press
+            .init("LEprlgG", sets: 3, reps: 10, rest: 90),   // cable lat pulldown
+            .init("25GPyDY", sets: 3, reps: 12, rest: 60),   // barbell curl
+            .init("gAwDzB3", sets: 3, reps: 12, rest: 60),   // cable triceps pushdown (v-bar)
         ]),
         StarterTemplate(id: "lower", group: .upperLower, slots: [
-            .init("Barbell_Squat", sets: 4, reps: 6, rest: 150),
-            .init("Romanian_Deadlift", sets: 3, reps: 8, rest: 120),
-            .init("Leg_Press", sets: 3, reps: 12, rest: 90),
-            .init("Seated_Leg_Curl", sets: 3, reps: 12, rest: 60),
-            .init("Standing_Calf_Raises", sets: 4, reps: 15, rest: 45),
+            .init("qXTaZnJ", sets: 4, reps: 6, rest: 150),   // barbell full squat
+            .init("wQ2c4XD", sets: 3, reps: 8, rest: 120),   // barbell romanian deadlift
+            .init("V07qpXy", sets: 3, reps: 12, rest: 90),   // lever leg press
+            .init("Zg3XY7P", sets: 3, reps: 12, rest: 60),   // lever seated leg curl
+            .init("ykUOVze", sets: 4, reps: 15, rest: 45),   // lever standing calf raise
         ]),
 
         // — At home — bodyweight only, no equipment.
         StarterTemplate(id: "home", group: .home, slots: [
-            .init("Pushups", sets: 3, reps: 12, rest: 60),
-            .init("Bodyweight_Squat", sets: 3, reps: 15, rest: 60),
-            .init("Mountain_Climbers", sets: 3, reps: 20, rest: 45),
-            .init("Crunches", sets: 3, reps: 15, rest: 45),
-            .init("Plank", sets: 3, reps: 30, rest: 45),
+            .init("I4hDWkc", sets: 3, reps: 12, rest: 60),   // push-up
+            .init("9E25EOx", sets: 3, reps: 15, rest: 60),   // split squats (bodyweight)
+            .init("RJgzwny", sets: 3, reps: 20, rest: 45),   // mountain climber
+            .init("TFqbd8t", sets: 3, reps: 15, rest: 45),   // crunch floor
+            .init("hCjGsRQ", sets: 3, reps: 30, rest: 45),   // plank
         ]),
 
         // — Mobility & light cardio — the «softer day» the planner suggests on low recovery (FER-554).
         // Bodyweight only: warm the shoulders, mobilize hips/spine, a touch of light cardio, then cool
         // down. ~20 min. Not a clinical protocol — a gentle reset, never a substitute for real rest.
         StarterTemplate(id: "mobility", group: .mobility, slots: [
-            .init("Arm_Circles", sets: 2, reps: 20, rest: 20),
-            .init("Worlds_Greatest_Stretch", sets: 2, reps: 8, rest: 30),
-            .init("Cat_Stretch", sets: 2, reps: 10, rest: 20),
-            .init("Bodyweight_Walking_Lunge", sets: 3, reps: 12, rest: 30),
-            .init("Mountain_Climbers", sets: 3, reps: 20, rest: 30),
-            .init("Childs_Pose", sets: 2, reps: 30, rest: 20),
+            .init("Uto7l43", sets: 2, reps: 20, rest: 20),   // chest & front-of-shoulder stretch
+            .init("K9VL0Jq", sets: 2, reps: 8, rest: 30),    // lunge with twist (world's greatest)
+            .init("JbC2iaV", sets: 2, reps: 10, rest: 20),   // spine stretch (cat-cow)
+            .init("IZVHb27", sets: 3, reps: 12, rest: 30),   // walking lunge
+            .init("RJgzwny", sets: 3, reps: 20, rest: 30),   // mountain climber
+            .init("99rWm7w", sets: 2, reps: 30, rest: 20),   // hamstring stretch (child's-pose-like)
         ]),
     ]
 

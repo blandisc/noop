@@ -668,7 +668,7 @@ final class StrengthStoreTests: XCTestCase {
         let store = try await WhoopStore.inMemory()
         let e = Exercise(id: "ex-1", name: "Jalón neutro", type: .weightReps, equipment: "cable",
                          primaryMuscles: ["lats"], secondaryMuscles: ["biceps"],
-                         cues: ["Baja controlado", "Codos pegados"])
+                         instructions: ["Baja controlado", "Codos pegados"])
         try await store.saveCustomExercise(e)
         let all = try await store.customExercises()
         XCTAssertEqual(all, [e])  // arrays + enum round-trip via JSON

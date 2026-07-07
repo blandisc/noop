@@ -632,6 +632,17 @@ extension WhoopStore {
                 t.add(column: "energySource", .text)      // 'band_calculated' | 'estimated'
             }
         }
+        // v27 (FER-779): the catalog is now ExerciseDB. Custom exercises gain the two fields the new
+        // `Exercise` model carries — `bodyParts` (coarse regions) and a remote `gifUrl`. Append-only;
+        // the v13 `cues` column stays and is reused to store `instructions` (the field was renamed,
+        // the column was not, so shipped migrations aren't edited). Existing custom rows get the
+        // defaults (empty parts, no gif).
+        migrator.registerMigration("v27") { db in
+            try db.alter(table: "customExercise") { t in
+                t.add(column: "bodyParts", .text).notNull().defaults(to: "[]")   // JSON array
+                t.add(column: "gifUrl", .text)                                    // NULL = no media
+            }
+        }
         return migrator
     }
 }
