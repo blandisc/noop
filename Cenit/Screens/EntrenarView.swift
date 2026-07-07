@@ -618,8 +618,6 @@ private struct EntrenarLanding: View {
                         if m.id != months.last?.id { Spacer(minLength: 6) }
                     }
                 }
-                Text("Toca un día para ver qué entrenaste.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
         }
     }
