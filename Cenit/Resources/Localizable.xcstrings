@@ -52072,6 +52072,91 @@
           }
         }
       }
+    },
+    "7-DAY AVG": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-DAY AVG"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MEDIA 7 D"
+          }
+        }
+      }
+    },
+    "STREAK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "STREAK"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RACHA"
+          }
+        }
+      }
+    },
+    "What moves your steps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What moves your steps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué mueve tus pasos"
+          }
+        }
+      }
+    },
+    "Your weekends average about %@ steps — roughly %@ more than your weekdays.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your weekends average about %@ steps — roughly %@ more than your weekdays."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus fines de semana promedian unos %@ pasos, alrededor de %@ más que entre semana."
+          }
+        }
+      }
+    },
+    "Your weekends average about %@ steps — roughly %@ fewer than your weekdays.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your weekends average about %@ steps — roughly %@ fewer than your weekdays."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus fines de semana promedian unos %@ pasos, alrededor de %@ menos que entre semana."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -18,6 +18,15 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-824 — Pasos: 3 tiles + «Qué mueve tus pasos».
+    "TODAY": "HOY",
+    "7-DAY AVG": "MEDIA 7 D",
+    "STREAK": "RACHA",
+    "What moves your steps": "Qué mueve tus pasos",
+    "Your weekends average about %@ steps — roughly %@ more than your weekdays.":
+        "Tus fines de semana promedian unos %@ pasos, alrededor de %@ más que entre semana.",
+    "Your weekends average about %@ steps — roughly %@ fewer than your weekdays.":
+        "Tus fines de semana promedian unos %@ pasos, alrededor de %@ menos que entre semana.",
     # FER-806 — Tendencias v2: sello de origen + toggle compacto Media/Rangos.
     "Computed": "Calculado",
     "Mean": "Media",
