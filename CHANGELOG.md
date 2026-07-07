@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tocar un ejercicio abre su ficha, no lo agrega / Tapping an exercise opens its detail, no longer adds it.**
+  **ES** — En «Agregar a rutina» → Biblioteca, tocar la fila de un ejercicio lo agregaba a la selección de una — no había forma de ver su ficha antes de decidir. Ahora tocar la fila abre siempre el detalle del ejercicio; el botón **«Agregar»** es su propio control y es lo único que agrega o quita el ejercicio de la selección.
+  **EN** — In «Add to routine» → Library, tapping an exercise's row added it to the selection right away — there was no way to see its detail before deciding. Tapping the row now always opens the exercise's detail; the **«Add»** button is its own control and is the only thing that adds or removes the exercise from the selection.
+  ([ExerciseLibraryScreen.swift](Cenit/Screens/ExerciseLibraryScreen.swift))
+
 - **El color de cada rutina en Entrenar sale de sus ejercicios / Each routine's color in Train comes from its exercises.**
   **ES** — Los colores de rutina en Entrenar (los puntos de "También en tu plan", la leyenda y el grid de Constancia) se adivinaban por el nombre de la rutina; los nombres genéricos ("Día B", "Día C", "Cardio") caían a un color al azar que además podía cambiar entre aperturas de la app, y a veces tres rutinas distintas pintaban igual. Ahora el color se deriva de los músculos reales de sus ejercicios —empuje ámbar · tirón teal · pierna índigo · mezcla degradado— así que "Día B" (cadena posterior y jalón) sale de tirón y el color de cada rutina es estable. Una rutina sin ejercicios clasificables (cardio) usa el color por defecto.
   **EN** — Routine colors in Train (the "Also in your plan" dots, the legend and the Consistency grid) were guessed from the routine's name; generic names ("Día B", "Día C", "Cardio") fell back to a random color that could even change between app launches, and sometimes three different routines painted the same. The color is now derived from the exercises' actual muscles —push amber · pull teal · leg indigo · mix gradient— so "Día B" (posterior chain and pull) reads as pull, and each routine's color is stable. A routine with no classifiable exercises (cardio) uses the default color.

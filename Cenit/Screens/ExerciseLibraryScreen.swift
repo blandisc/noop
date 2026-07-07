@@ -179,7 +179,7 @@ struct ExerciseLibraryScreen: View {
 
     private func exerciseRow(_ ex: Exercise, showsHistory: Bool) -> some View {
         Button {
-            if addMode { toggle(ex) } else { detail = ex }
+            detail = ex
         } label: {
             HStack(spacing: 13) {
                 ExerciseThumbnail(side: 48)   // reserved media slot (FER-751); FER-722 fills it
@@ -212,16 +212,23 @@ struct ExerciseLibraryScreen: View {
     }
 
     /// The trailing control: an «Add» affordance in ADD mode (a check when picked), a chevron in BROWSE.
+    /// In ADD mode this is its own button — the row itself only opens the detail sheet.
     @ViewBuilder
     private func trailingAccessory(_ ex: Exercise) -> some View {
         if addMode {
-            if selected.contains(ex.id) {
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)
-            } else {
-                Text("Add").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 5)
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            Button {
+                toggle(ex)
+            } label: {
+                if selected.contains(ex.id) {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)
+                } else {
+                    Text("Add").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .padding(.horizontal, 12).padding(.vertical, 5)
+                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                }
             }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
         } else {
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
