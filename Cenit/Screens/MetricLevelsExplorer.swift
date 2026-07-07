@@ -44,6 +44,10 @@ struct MetricLevelsExplorer: View {
     /// segmented look the Carga sheet uses. The summary sheets (`MetricInfoSheet`) opt in so every Today
     /// card's selector reads identically; the Recuperación detail keeps the quiet surface thumb. (default false)
     var inkThumb: Bool = false
+    /// The «Media ⇄ Rangos» toggle (handoff v2, FER-803). When bound, the block shows the compact toggle
+    /// inline with the period selector and SWAPS the moving-average line («Media») for the population lanes
+    /// list («Rangos»). nil → legacy behavior: line AND lanes shown together, no toggle.
+    var mode: Binding<TrendMode>? = nil
     let accessibilityLabel: LocalizedStringKey
 
     /// The level the user is exploring — nil shows today's. Tapping a row highlights its band and re-reads
@@ -76,11 +80,15 @@ struct MetricLevelsExplorer: View {
 
     var body: some View {
         let d = data
+        // With the toggle bound: «Media» → the line only, «Rangos» → the lanes list only. Without it
+        // (legacy): both. The phrase (the active level + count) always shows — it's the shared summary.
+        let showChart = mode.map { $0.wrappedValue == .media } ?? true
+        let showList = mode.map { $0.wrappedValue == .rangos } ?? true
         return VStack(alignment: .leading, spacing: 14) {
             rangeControl
             phrase(d)
-            chart(d)
-            list(d)
+            if showChart { chart(d) }
+            if showList { list(d) }
         }
     }
 
@@ -88,6 +96,12 @@ struct MetricLevelsExplorer: View {
         VStack(alignment: .leading, spacing: 8) {
             SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme, inkThumb: inkThumb) { $0.label }
                 .onChange(of: range) { _ in selectedLevelIndex = nil }
+            if let mode {
+                HStack {
+                    Spacer(minLength: 0)
+                    CompactTrendToggle(mode: mode, theme: theme)
+                }
+            }
             if window.fellBack {
                 Text("Showing the last \(window.rows.count) days")
                     .font(StrandFont.footnote).foregroundStyle(theme.warning)

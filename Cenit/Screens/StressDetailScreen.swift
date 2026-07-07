@@ -51,6 +51,11 @@ struct StressDetailScreen: View {
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
     @State private var range: ExploreRange = .month
+    /// «Media ⇄ Rangos» toggle for the history block (handoff v2, FER-803): the daily 0–3 line vs the
+    /// population lanes (Calm / Base / Activated with per-band counts). Starts on «Media» (the line).
+    @State private var historyMode: TrendMode = .media
+    /// The lane a user tapped in Rangos mode (highlights it), or nil. Tap again to clear. (FER-803)
+    @State private var activeStressLane: Int? = nil
     /// The stress series with each point's `Date` already parsed (from `fullTrend`) — the window math reads
     /// `date` straight from here (no string re-parsing). Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
@@ -97,6 +102,10 @@ struct StressDetailScreen: View {
                     }
                     blockDivider
                     methodDisclosure(model)
+                    // Standardized origin seal (FER-803): stress is a score computed on-device.
+                    OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
                 } else {
                     emptyHero
                 }
@@ -129,7 +138,8 @@ struct StressDetailScreen: View {
         // the ⓘ exactly as the old InfoAccordion had it.
         VStack(alignment: .leading, spacing: 14) {
             InstrumentoScreenTitle("Stress", theme: theme,
-                explanation: "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). This number is your whole day against your baseline of the last ~30 days — a different lens from the day map below, which marks the moments you spiked. It's an estimate, not a diagnosis.")
+                explanation: "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). This number is your whole day against your baseline of the last ~30 days — a different lens from the day map below, which marks the moments you spiked. It's an estimate, not a diagnosis.",
+                glyph: .stress)
             VStack(alignment: .leading, spacing: 14) {
                 // When the reading isn't today's (fell back to yesterday at the midnight boundary), date
                 // it so it's never passed off as today's. (FER-397)
@@ -269,28 +279,76 @@ struct StressDetailScreen: View {
     private func historySection(_ model: StressModel) -> some View {
         let window = MetricWindowMath.make(parsed, selected: range)
         return VStack(alignment: .leading, spacing: 12) {
-            Text("See your history").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            // The daily 0–3 line over the three fixed band zones (Low / Moderate / High), drawn by
-            // `MetricTrendChart`'s native bands with explicit Y ticks at 0/1/2/3. Raw daily values, not a
-            // moving average — the stress signal is read day to day.
-            MetricTrendChart(
-                range: $range,
-                window: window,
-                theme: theme,
-                style: .init(
-                    gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
-                    showsArea: false,
-                    valueRange: { _ in 0...3 },
-                    valueFormat: { String(format: "%.1f", $0) },
-                    bands: { stressBands(activeValue: $0) },
-                    bandColor: { bandColor(StressBand(score: $0)) },
-                    yAxisValues: [0, 1, 2, 3],
-                    accessibilityLabel: "Daily stress index, 0 to 3"
-                )
-            ) {
-                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
+            HStack(alignment: .center) {
+                Text("See your history").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                // «Media ⇄ Rangos» toggle (FER-803): the line vs the population lanes.
+                CompactTrendToggle(mode: $historyMode, theme: theme)
             }
-            averageCaption(window)   // handoff «Media · periodo · valor · Δ% vs previo» + rango (↓) (FER-587)
+            if historyMode == .media {
+                // The daily 0–3 line over the three fixed band zones (Low / Moderate / High), drawn by
+                // `MetricTrendChart`'s native bands with explicit Y ticks at 0/1/2/3. Raw daily values, not a
+                // moving average — the stress signal is read day to day.
+                MetricTrendChart(
+                    range: $range,
+                    window: window,
+                    theme: theme,
+                    style: .init(
+                        gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
+                        showsArea: false,
+                        valueRange: { _ in 0...3 },
+                        valueFormat: { String(format: "%.1f", $0) },
+                        bands: { stressBands(activeValue: $0) },
+                        bandColor: { bandColor(StressBand(score: $0)) },
+                        yAxisValues: [0, 1, 2, 3],
+                        accessibilityLabel: "Daily stress index, 0 to 3"
+                    )
+                ) {
+                    ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
+                }
+                averageCaption(window)   // handoff «Media · periodo · valor · Δ% vs previo» + rango (↓) (FER-587)
+            } else {
+                SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+                stressLanes(window)
+            }
+        }
+    }
+
+    /// «Rangos» mode (FER-803): the three fixed stress zones as tappable population lanes — how many days
+    /// in the window fell in Calm (0–1) / Base (1–2) / Activated (2–3). Tap a lane to highlight it.
+    @ViewBuilder private func stressLanes(_ window: MetricWindow) -> some View {
+        let lanes: [(label: LocalizedStringKey, range: String, color: Color, count: Int)] = [
+            ("Calm",      "0–1", theme.verdict,  window.values.filter { $0 < 1 }.count),
+            ("Base",      "1–2", theme.warning,  window.values.filter { $0 >= 1 && $0 < 2 }.count),
+            ("Activated", "2–3", theme.critical, window.values.filter { $0 >= 2 }.count),
+        ]
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(lanes.enumerated()), id: \.offset) { i, lane in
+                let active = activeStressLane == i
+                Button {
+                    withAnimation(StrandMotion.interactive) { activeStressLane = active ? nil : i }
+                } label: {
+                    HStack(spacing: 10) {
+                        RoundedRectangle(cornerRadius: 2).fill(lane.color).frame(width: 9, height: 9)
+                        Text(lane.label).font(StrandFont.subhead)
+                            .foregroundStyle(active ? theme.ink : theme.inkSecondary)
+                        Spacer(minLength: 8)
+                        Text(lane.range).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
+                        Text(BandSummaryCopy.countLabel(lane.count, nightly: false))
+                            .font(StrandFont.captionNumber)
+                            .foregroundStyle(active ? lane.color : theme.inkTertiary.opacity(0.85))
+                            .frame(minWidth: 50, alignment: .trailing)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 11)
+                    .frame(maxWidth: .infinity)
+                    .background(active ? lane.color.opacity(0.10) : Color.clear,
+                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                if i < lanes.count - 1 { Divider().overlay(theme.hairline).padding(.leading, 34) }
+            }
         }
     }
 

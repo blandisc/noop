@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Pantallas de detalle más consistentes: título con icono, sello de origen y toggle Media/Rangos / More consistent detail screens: icon title, origin seal, Average/Ranges toggle.**
+  **ES** — Las 5 pantallas de detalle compound (Recuperación, Sueño, Esfuerzo, Estrés, Carga de entrenamiento) adoptan el estándar «Tendencias v2»: el título ahora es el icono de la métrica + su nombre en mayúsculas (sin serif), la procedencia del dato baja a un *sello de origen* al pie, y el bloque de historial deja alternar entre la línea **Media** y los **Rangos** poblacionales (nuevo en Recuperación y Estrés, con carriles tocables).
+  **EN** — The 5 compound detail screens (Recovery, Sleep, Strain, Stress, Training load) adopt the «Trends v2» standard: the title is now the metric icon + its name in caps (no serif), provenance moves to an *origin seal* at the foot, and the history block switches between the **Average** line and the population **Ranges** (new on Recovery and Stress, with tappable lanes).
+  ([RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift), [SleepDetailScreen.swift](Cenit/Screens/SleepDetailScreen.swift), [StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift), [MetricLevelsExplorer.swift](Cenit/Screens/MetricLevelsExplorer.swift))
+
 - **Iconos de métrica unificados entre Hoy y Tendencias / Unified metric icons across Today and Trends.**
   **ES** — Nuevos componentes compartidos del sistema de diseño para la estandarización «Tendencias v2»: el *sello de origen* (`OriginStamp` — punto de color + «{Banda / Apple Salud / Calculado} · cuándo» al pie de una pantalla de detalle), el *toggle compacto* Media ⇄ Rangos (`CompactTrendToggle`) y una **fuente única de iconos por métrica** (`MetricGlyph`: SF Symbol + hue). Las tiles de SEÑALES en Hoy ahora leen sus iconos de esa fuente, así que Hoy y Tendencias no pueden divergir.
   **EN** — New design-system components for the «Trends v2» standardization: the *origin seal* (`OriginStamp`), the *compact* Media ⇄ Ranges *toggle* (`CompactTrendToggle`), and a **single per-metric icon source** (`MetricGlyph`: SF Symbol + hue). Today's SEÑALES tiles now read their icons from it, so Today and Trends can't drift apart.

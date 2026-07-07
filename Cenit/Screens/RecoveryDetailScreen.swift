@@ -58,6 +58,9 @@ struct RecoveryDetailScreen: View {
     /// Measured available width for the calendar, so the heat grid can size its cells to fill it. (FER-225)
     @State private var calWidth: CGFloat = 0
     @State private var methodExpanded = false
+    /// «Media ⇄ Rangos» toggle for the levels block (handoff v2, FER-803): the moving-average line vs the
+    /// population lanes. Starts on «Media» (the line).
+    @State private var levelsMode: TrendMode = .media
     /// The calendar day the user tapped, for the read-out below the grid (touch — FER-235).
     @State private var selectedHeatDay: RecoveryDay? = nil
     /// Level-3 disclosure: the calendar + trend live under «See your history», collapsed on open. The only
@@ -137,7 +140,7 @@ struct RecoveryDetailScreen: View {
         // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Replaces the InfoAccordion
         // wrapper; the explanation stays behind the ⓘ exactly as before — only the title turns serif.
         return VStack(alignment: .leading, spacing: 10) {
-            InstrumentoScreenTitle("Recovery", theme: theme, explanation: heroExplanation)
+            InstrumentoScreenTitle("Recovery", theme: theme, explanation: heroExplanation, glyph: .recovery)
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -673,6 +676,7 @@ struct RecoveryDetailScreen: View {
                 unit: "",
                 valueFormat: { "\(Int($0.rounded()))" },
                 domain: 0...100,
+                mode: $levelsMode,
                 accessibilityLabel: "Recovery by level"
             )
             averageCaption
@@ -905,9 +909,8 @@ struct RecoveryDetailScreen: View {
     // MARK: - Source footer
 
     private var sourceFooter: some View {
-        Text(model.isAppleHealth ? "Source · Apple Health" : "Source · your strap, on device")
-            .font(StrandFont.footnote)
-            .foregroundStyle(theme.inkTertiary)
+        // Recovery is a score computed on-device from your signals → «Calculado». (FER-803)
+        OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 2)
     }

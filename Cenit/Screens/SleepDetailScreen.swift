@@ -105,8 +105,9 @@ struct SleepDetailScreen: View {
     private func hero(_ night: SleepDetailModel.Night) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                // Serif in-screen title (FER-581). Keeps Sleep's own ⓘ that reveals «what we measure».
-                Text("Sleep").font(StrandFont.serif(23)).foregroundStyle(theme.ink)
+                // §8.7 header (FER-803): metric icon + ALL-CAPS overline instead of serif. Keeps Sleep's
+                // own ⓘ that reveals «what we measure»; provenance goes to the OriginStamp at the foot.
+                MetricOverline(.sleep, "Sleep", theme: theme)
                 Spacer(minLength: 8)
                 Button {
                     withAnimation(StrandMotion.interactive) { heroInfoOpen.toggle() }
@@ -485,6 +486,14 @@ struct SleepDetailScreen: View {
     // The handoff «Detalle · Sueño» keeps this toggle, NOT the F6c levels list (which FER-572 mis-applied
     // here and FER-595 reverted). The caption is `DynamicAverageCaption` (the handoff line-caption from
     // FER-587), not the older `TrendStatSummary`.
+    /// Bridges the compact toggle's `TrendMode` to the existing `chartMode` state (FER-803).
+    private var sleepTrendMode: Binding<TrendMode> {
+        Binding(
+            get: { chartMode == .ranges ? .rangos : .media },
+            set: { chartMode = ($0 == .rangos) ? .ranges : .movingAverage }
+        )
+    }
+
     @ViewBuilder
     private var durationTrendBlock: some View {
         let window = MetricWindowMath.make(durationParsed, selected: range)
@@ -492,8 +501,10 @@ struct SleepDetailScreen: View {
             VStack(alignment: .leading, spacing: 12) {
                 if window.values.count >= 2 {
                     SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
-                    SegmentedPillControl(MetricDetailScreen.ChartMode.allCases, selection: $chartMode, theme: theme) {
-                        sleepChartModeLabel($0)
+                    // Compact Media ⇄ Rangos toggle, right-aligned (FER-803) — replaces the full-width pill.
+                    HStack {
+                        Spacer(minLength: 0)
+                        CompactTrendToggle(mode: sleepTrendMode, theme: theme)
                     }
                     if chartMode == .ranges {
                         durationRangesTrend(window)
@@ -505,10 +516,6 @@ struct SleepDetailScreen: View {
                 }
             }
         }
-    }
-
-    private func sleepChartModeLabel(_ m: MetricDetailScreen.ChartMode) -> String {
-        m == .movingAverage ? String(localized: "Moving average") : String(localized: "Ranges")
     }
 
     /// «Media móvil» mode: the 7-day MA line over the selected window behind the optimal 7–9 h band, plus
@@ -795,15 +802,9 @@ struct SleepDetailScreen: View {
 
     private var sourceFooter: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: model.isAppleHealth ? "heart.fill" : "antenna.radiowaves.left.and.right")
-                    .font(.system(size: 10))
-                    .foregroundStyle(theme.inkTertiary)
-                Text(model.isAppleHealth ? "From Apple Health" : "From your band, on your device")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            .accessibilityElement(children: .combine)
+            // Standardized origin seal (FER-803): sleep is measured overnight → «anoche».
+            OriginStamp(origin: model.isAppleHealth ? .apple : .band,
+                        when: String(localized: "anoche"), theme: theme)
             // FER-670: when band AND Apple both reported this night, say whether they agree — both
             // totals stay visible, a conflict is flagged, nothing is averaged.
             if let agreement = model.sourceAgreement {
