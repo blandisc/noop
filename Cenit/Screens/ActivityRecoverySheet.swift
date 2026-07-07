@@ -84,6 +84,14 @@ struct ActivityRecoverySheet: View {
                 Spacer(minLength: 8)
                 confidenceBadge(cost.confidence)
             }
+            // Handoff v2 (reconciliación): el dato numérico prominente en ámbar (una Charge más baja al
+            // día siguiente se lee como «−N pts»). Sólo cuando el efecto supera el piso de ruido.
+            if abs(cost.delta) >= ActivityCostEngine.barelyMovesPoints {
+                let pts = Int(abs(cost.delta).rounded())
+                Text(verbatim: "\(cost.delta >= 0 ? "−" : "+")\(pts) pts")
+                    .font(InstrumentoType.groteskNumber(21))
+                    .foregroundStyle(theme.dataStrain)
+            }
             Text(sentence(for: cost))
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)

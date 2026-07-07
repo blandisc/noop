@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Detalles de Tendencias más fieles al diseño / Trends details truer to the design.**
+  **ES** — Reconciliación con el handoff: el calendario de 90 días de Recuperación queda visible (ya no colapsado), «Qué la mueve» de Edad física pasa a dos tiles, y «Tras cada deporte» muestra el impacto como un dato prominente «−N pts» en ámbar.
+  **EN** — Design reconciliation: Recovery's 90-day calendar is now visible (no longer collapsed), Fitness age's «What moves it» becomes two tiles, and «After each sport» shows the impact as a prominent «−N pts» amber datum.
+  ([RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift), [FitnessAgeDetailView.swift](Cenit/Screens/FitnessAgeDetailView.swift), [ActivityRecoverySheet.swift](Cenit/Screens/ActivityRecoverySheet.swift))
+
 - **Actividad y longevidad cierran la estandarización / Activity and longevity finish the standardization.**
   **ES** — Entrenamientos, Edad física, Edad corporal y «Tras cada deporte» adoptan el título con icono de la métrica (sin serif) y el *sello de origen* al pie. (Pasos y VO₂max ya lo habían adoptado con los vitales.) Con esto, las 17 pantallas de detalle de Tendencias/Cuerpo comparten el mismo estándar visual.
   **EN** — Workouts, Physical age, Body age and «After each sport» adopt the metric-icon title (no serif) and the *origin seal* at the foot. (Steps and VO₂max already adopted it with the vitals.) All 17 Trends/Body detail screens now share the same visual standard.

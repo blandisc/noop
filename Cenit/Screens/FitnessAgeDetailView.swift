@@ -117,42 +117,40 @@ struct FitnessAgeDetailView: View {
 
     // MARK: "What moves it" — the two levers (resting HR drives, activity supports)
 
+    // Handoff v2 (reconciliación): «Qué la mueve» en DOS tiles separados (no dos filas en un contenedor).
     private var leversSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("What moves it").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(spacing: 0) {
-                leverRow(icon: "heart", label: "Resting heart rate",
-                         note: "The lower it is, the younger.",
-                         value: snapshot.restingHR.map { "\(Int($0.rounded()))" } ?? "—",
-                         unit: "bpm", hue: theme.dataHeart)
-                Divider().overlay(theme.hairline).padding(.leading, 48)
-                leverRow(icon: "flame", label: "Recent activity",
-                         note: "More active days also bring it down.",
-                         value: "\(snapshot.activeDays)", unit: "/ 7 days", hue: theme.dataStrain)
+            HStack(alignment: .top, spacing: 8) {
+                leverTile(icon: "heart", label: "Resting heart rate",
+                          note: "The lower it is, the younger.",
+                          value: snapshot.restingHR.map { "\(Int($0.rounded()))" } ?? "—",
+                          unit: "bpm", hue: theme.dataHeart)
+                leverTile(icon: "flame", label: "Recent activity",
+                          note: "More active days also bring it down.",
+                          value: "\(snapshot.activeDays)", unit: "/ 7 days", hue: theme.dataStrain)
             }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
-    private func leverRow(icon: String, label: LocalizedStringKey, note: LocalizedStringKey,
-                          value: String, unit: LocalizedStringKey, hue: Color) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 18)).foregroundStyle(hue)
-                .frame(width: 24)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
-                Text(note).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+    /// One «what moves it» tile (icon + label · value·unit · note) — the handoff's two-tile layout.
+    private func leverTile(icon: String, label: LocalizedStringKey, note: LocalizedStringKey,
+                           value: String, unit: LocalizedStringKey, hue: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 12)).foregroundStyle(hue).frame(width: 16)
+                Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
-            Spacer(minLength: 8)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value).font(StrandFont.number(20)).foregroundStyle(hue)
+                Text(value).font(InstrumentoType.groteskNumber(21)).foregroundStyle(theme.ink)
                 Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
+            Text(note).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 14).padding(.vertical, 13)
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: "What we're using" — transparency checklist (drivesAge items only; VO₂max is out of scope)
