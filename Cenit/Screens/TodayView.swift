@@ -2385,7 +2385,7 @@ struct TodayView: View {
                 // Sueño — day-scoped (solo hoy); más es mejor dentro de lo razonable.
                 metricTile(TodayMetricTile(
                     label: "Sleep",
-                    icon: "moon.fill",
+                    icon: MetricGlyph.sleep.sfSymbol,
                     value: sleepR.map { sleepClockText($0.value) } ?? "—",
                     valueColor: theme.dataSleep,
                     source: sleepR?.fromApple == true ? .apple : .band,
@@ -2396,7 +2396,7 @@ struct TodayView: View {
                 // HRV — más alta es mejor.
                 metricTile(TodayMetricTile(
                     label: "HRV",
-                    icon: "waveform.path.ecg",
+                    icon: MetricGlyph.hrv.sfSymbol,
                     value: hrvR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "ms"),
                     valueColor: theme.dataHrv,
                     source: hrvR?.fromApple == true ? .apple : .band,
@@ -2406,7 +2406,7 @@ struct TodayView: View {
                 // FC en reposo — más alta es PEOR.
                 metricTile(TodayMetricTile(
                     label: "Resting HR",
-                    icon: "bed.double.fill",
+                    icon: MetricGlyph.restingHR.sfSymbol,
                     value: rhrR.map { "\(Int($0.value.rounded()))" } ?? "—", unit: String(localized: "bpm"),
                     valueColor: theme.dataHeart,
                     source: rhrR?.fromApple == true ? .apple : .band,
@@ -2416,7 +2416,7 @@ struct TodayView: View {
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
                     label: "Day Strain",
-                    icon: "bolt.fill",
+                    icon: MetricGlyph.strain.sfSymbol,
                     value: strainT.map { String(format: "%.1f", $0) } ?? "—",
                     valueColor: theme.dataStrain,
                     source: .calculated,
@@ -2430,7 +2430,7 @@ struct TodayView: View {
                 let stepsTileHistory = stepsEstimated ? stepsEstHistory : history(base) { $0.steps.map(Double.init) }
                 metricTile(TodayMetricTile(
                     label: "Steps",
-                    icon: "figure.walk",
+                    icon: MetricGlyph.steps.sfSymbol,
                     value: stepsT.map { intString($0) } ?? "—",
                     unit: stepsEstimated ? String(localized: "est.") : nil,
                     valueColor: theme.dataSteps,
@@ -2442,7 +2442,7 @@ struct TodayView: View {
                 // cerca de tu base, no «más = mejor»), así que Δ en tinta neutra. Valor con signo (+0.3).
                 metricTile(TodayMetricTile(
                     label: "Skin temp",
-                    icon: "thermometer.medium",
+                    icon: MetricGlyph.skinTemp.sfSymbol,
                     value: skinTempR.map { String(format: "%+.1f", $0.value) } ?? "—", unit: "°C",
                     valueColor: theme.dataStrain,
                     source: skinTempR?.fromApple == true ? .apple : .band,
@@ -2452,7 +2452,7 @@ struct TodayView: View {
                 // Respiración — «en rango» es lo normal; sin valencia simple (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
                     label: "Respiration",
-                    icon: "lungs.fill",
+                    icon: MetricGlyph.respiration.sfSymbol,
                     value: respR.map { String(format: "%.1f", $0.value) } ?? "—", unit: String(localized: "rpm"),
                     valueColor: theme.dataSpO2,
                     source: respR?.fromApple == true ? .apple : .band,
@@ -2462,7 +2462,7 @@ struct TodayView: View {
                 // Estrés — más alto es PEOR; valor bandeado por nivel 0–3 (verde/ámbar/rojo).
                 metricTile(TodayMetricTile(
                     label: "Stress",
-                    icon: "gauge.medium",
+                    icon: MetricGlyph.stress.sfSymbol,
                     value: stressT.map { String(format: "%.1f", $0) } ?? "—",
                     unit: stressT == nil ? nil : "/ 3",
                     valueColor: stressT.map(stressDataColor) ?? theme.inkTertiary,
