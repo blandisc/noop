@@ -94,6 +94,8 @@ private struct EntrenarLanding: View {
     /// Presents the live-HR workout sheet from the expanded «Más formas» → «En vivo» (same sheet the
     /// rest-day / other-ways screens use).
     @State private var showLive = false
+    /// The Constancia day currently popped open (tap-to-reveal what you trained that day).
+    @State private var constancyPopup: ConstancyPopup? = nil
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -614,8 +616,8 @@ private struct EntrenarLanding: View {
                         if m.id != months.last?.id { Spacer(minLength: 6) }
                     }
                 }
-                Divider().overlay(theme.hairline)
-                legend
+                Text("Toca un día para ver qué entrenaste.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
         }
     }
@@ -664,42 +666,43 @@ private struct EntrenarLanding: View {
             }
         }
         .frame(width: cell, height: cell)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard day <= m.daysInMonth, let name = m.trained[day] else { return }
+            constancyPopup = ConstancyPopup(monthId: m.id, day: day, name: name)
+        }
+        .popover(isPresented: Binding(
+            get: { constancyPopup?.monthId == m.id && constancyPopup?.day == day },
+            set: { if !$0 { constancyPopup = nil } }
+        )) {
+            if let popup = constancyPopup { constancyPopoverContent(popup, month: m) }
+        }
     }
 
     /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
     private var todayRingTint: Color { todayRoutine.map { routineTint($0.name) } ?? theme.hairlineStrong }
 
-    /// Legend: one swatch per routine family present in the plan, in a 2-column grid so the full
-    /// routine name (e.g. "Día B — Cadena posterior y jalón") gets enough width to wrap cleanly
-    /// instead of cramming 4 long labels into a single row. «hoy» sits on its own line below.
-    private var legend: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            LazyVGrid(columns: [GridItem(.flexible(), alignment: .top), GridItem(.flexible(), alignment: .top)],
-                      alignment: .leading, spacing: 8) {
-                ForEach(legendItems, id: \.name) { item in
-                    HStack(alignment: .top, spacing: 5) {
-                        RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                            .fill(routineFill(item.name)).frame(width: 7, height: 7)
-                            .padding(.top, 3)
-                        Text(item.label).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                    }
-                }
-            }
-            HStack(spacing: 5) {
-                Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1.5).frame(width: 8, height: 8)
-                Text("hoy").font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-            }
-        }
+    /// Which Constancia day is popped open (month + day identify the cell; name is what to show) — one
+    /// popover shared across the whole grid, gated per-cell by matching identity in `dayCell`.
+    private struct ConstancyPopup: Equatable {
+        let monthId: Int
+        let day: Int
+        let name: String
     }
 
-    /// One legend entry per distinct routine in the split (first-seen order), name-tagged for its swatch fill.
-    private var legendItems: [(name: String, label: String)] {
-        var seen = Set<String>(); var out: [(name: String, label: String)] = []
-        for wd in orderedWeekdays {
-            guard let id = split[wd], let name = routinesById[id]?.name, !seen.contains(id) else { continue }
-            seen.insert(id); out.append((name, name))
+    /// The tapped day's popover: routine name + its date, paper-toned to match Instrumento.
+    @ViewBuilder
+    private func constancyPopoverContent(_ popup: ConstancyPopup, month: ConstancyMonth) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(popup.name).font(StrandFont.subhead).foregroundStyle(theme.ink)
+            if let date = Calendar.current.date(from: DateComponents(year: month.year, month: month.month, day: popup.day)) {
+                Text(date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+            }
         }
-        return out
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(theme.surface)
+        .presentationCompactAdaptation(.popover)
     }
 
     // MARK: - Empty state B (no split yet → build the week)
@@ -759,6 +762,8 @@ private struct EntrenarLanding: View {
     private struct ConstancyMonth: Identifiable {
         let id: Int              // 0 = current month, 1 = last month, 2 = two months ago
         let label: String        // «Jul»
+        let year: Int
+        let month: Int           // calendar month (1...12) — lets a tapped day rebuild its exact date
         let count: Int           // sessions that month
         let daysInMonth: Int
         let trained: [Int: String]   // dayOfMonth → the (latest) routine's name that day («» = unknown routine)
@@ -789,9 +794,12 @@ private struct EntrenarLanding: View {
             guard let monthDate = cal.date(byAdding: .month, value: -offset, to: startOfThisMonth),
                   let month = cal.dateComponents([.month], from: monthDate).month else { return nil }
             let ym = cal.dateComponents([.year, .month], from: monthDate)
+            guard let year = ym.year else { return nil }
             let bucket = byYM[DateComponents(year: ym.year, month: ym.month)] ?? (0, [:])
             return ConstancyMonth(id: offset,
                                   label: cal.shortMonthSymbols[(month - 1) % 12].capitalized,
+                                  year: year,
+                                  month: month,
                                   count: bucket.count,
                                   daysInMonth: cal.range(of: .day, in: .month, for: monthDate)?.count ?? 30,
                                   trained: bucket.trained,

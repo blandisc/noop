@@ -19,9 +19,9 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
-- **Leyenda de Constancia en grilla de 2 columnas / Constancy legend in a 2-column grid.**
-  **ES** — Los nombres completos de rutina en la leyenda bajo el grid de Constancia ("Día B — Cadena posterior y jalón", etc.) se apelmazaban en una sola fila de 4 columnas, partiendo palabras a la mitad. Ahora la leyenda es una grilla de 2 columnas: cada etiqueta tiene el doble de ancho antes de wrappear.
-  **EN** — The full routine names in the Constancy legend below the grid ("Día B — Cadena posterior y jalón", etc.) were cramming into a single 4-column row, breaking words mid-way. The legend is now a 2-column grid: each label gets twice the width before wrapping.
+- **Toca un día de Constancia para ver qué entrenaste / Tap a Consistency day to see what you trained.**
+  **ES** — La leyenda de texto bajo el grid de Constancia amontonaba los 4 nombres de rutina en una sola fila, partiendo palabras a la mitad. Se quita por completo: ahora tocas cualquier día entrenado y un popover ligero muestra la rutina y la fecha, sin salir de Entrenar.
+  **EN** — The text legend below the Consistency grid crammed all 4 routine names into a single row, breaking words mid-way. It's gone: tap any trained day and a lightweight popover shows the routine and date, without leaving Train.
   ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
 
 - **«Constancia» y «Más formas» en la landing de Entrenar / «Consistency» and «More ways» on the Train landing.**
