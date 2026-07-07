@@ -41,13 +41,16 @@ public struct FiveRulesView: View {
     // Un pase más (20 → 18) para cerrar el scroll residual: la marca lit mide 12 pt sobre la
     // baseline (`rowHeight − 5` = 13), así que el trazo top queda en y=1 y sigue cabiendo entero.
     private static let rowHeight: CGFloat = 18
+    // A hair of air between rows: at spacing 0 a lit mark's top (y≈1) sat right against the
+    // hairline divider of the row above it, reading as touching/overlapping rows.
+    private static let rowSpacing: CGFloat = 2
     private static let labelWidth: CGFloat = 74
     private static let valueWidth: CGFloat = 40
 
     public var body: some View {
         let maxMarks = max(rows.map(\.marks).max() ?? 1, 1)
         let visible = visibleLitByRow()
-        VStack(spacing: 0) {
+        VStack(spacing: Self.rowSpacing) {
             ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
                 ruleRow(row, visibleLit: visible[i], maxMarks: maxMarks)
             }

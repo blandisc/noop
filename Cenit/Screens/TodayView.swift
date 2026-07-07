@@ -1222,10 +1222,10 @@ struct TodayView: View {
                     HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                         Text(stateLabel(lvl))
                             .font(InstrumentoType.groteskVerdict)
-                            .foregroundStyle(verdictDataColor(lvl))
+                            .foregroundStyle(theme.ink)
                             .overlay(alignment: .bottom) {
                                 Line()
-                                    .stroke(verdictDataColor(lvl).opacity(0.5),
+                                    .stroke(theme.ink.opacity(0.4),
                                             style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
                                     .frame(height: 1)
                                     .offset(y: 2)
@@ -1245,7 +1245,7 @@ struct TodayView: View {
             if let delta = recoveryVsAverage {
                 Text(delta >= 0 ? "+\(delta) vs your average" : "−\(abs(delta)) vs your average")
                     .font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(delta >= 0 ? theme.positiveText : theme.inkSecondary)
+                    .foregroundStyle(theme.inkSecondary)
             }
         case .calibrating(let nights):
             Text("Calibrating")
