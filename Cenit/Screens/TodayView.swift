@@ -1211,14 +1211,16 @@ struct TodayView: View {
     }
 
     /// La columna junto al numeral: con veredicto, la palabra del nivel (20/700, subrayado punteado +
-    /// ⓘ → hoja Recuperación) y el delta vs tu promedio; en los demás estados, la palabra honesta del
-    /// momento con su renglón de contexto.
+    /// ⓘ → hoja «¿Por qué?», `WhyVerdictSheet`) y el delta vs tu promedio; en los demás estados, la
+    /// palabra honesta del momento con su renglón de contexto. El numeral abre Recuperación (arriba); la
+    /// palabra abre el porqué del veredicto — dos toques, dos hojas (como antes de FER-709; se habían
+    /// fusionado sin querer en el mismo botón).
     @ViewBuilder private func heroVerdictColumn(_ s: HeroState) -> some View {
         switch s {
         case .verdict:
             let lvl = readiness.level
             if lvl != .insufficient {
-                Button { metricDetail = recoveryInfo } label: {
+                Button { showWhyVerdict = true } label: {
                     HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                         Text(stateLabel(lvl))
                             .font(InstrumentoType.groteskVerdict)
@@ -1236,7 +1238,7 @@ struct TodayView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint(Text("Opens your recovery detail"))
+                .accessibilityHint(Text("Opens why the verdict reads this way"))
             } else {
                 Text("Not enough context for a verdict")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)

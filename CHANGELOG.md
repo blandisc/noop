@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Recupera el "¿por qué?" del veredicto en el héroe / Restores the verdict's "why?" in the hero.**
+  **ES** — El rediseño de julio (FER-709) fusionó, sin querer, los dos toques del héroe en uno solo: tanto el numeral como la palabra del veredicto ("Equilibrado", "A punto", etc.) abrían el mismo resumen de Recuperación. Se pierde la tarjeta que explicaba por qué el veredicto se leía así. Ahora el numeral sigue abriendo Recuperación y la palabra del veredicto abre de nuevo esa explicación (`WhyVerdictSheet`), como antes del rediseño.
+  **EN** — July's redesign (FER-709) accidentally merged the hero's two taps into one: both the numeral and the verdict word ("Balanced", "Primed", etc.) opened the same Recovery summary. The card explaining why the verdict read that way was lost. The numeral still opens Recovery, and the verdict word again opens that explanation (`WhyVerdictSheet`), as it did before the redesign.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Entrena sin plan con "Rápido de fuerza" / Train off-plan with "Quick strength".**
   **ES** — En Entrenar, una nueva fila bajo "También en tu plan" arranca una sesión de fuerza que empieza vacía y con el cronómetro corriendo, sin necesidad de una rutina. Te sugiere ejercicios según qué músculos están frescos hoy (con tu peso/reps de la última vez), tienes un buscador de la biblioteca, y en cuanto agregas el primer ejercicio se comporta como cualquier sesión guiada. También, los días de descanso en "Tu semana" ahora muestran un guioncito en vez de un espacio en blanco.
   **EN** — In Train, a new row under "Also in your plan" starts a strength session that begins empty with the timer already running, no routine required. It suggests exercises based on which muscles are fresh today (with your last weight/reps), gives you a library search, and behaves like any guided session as soon as you add the first exercise. Also, rest days in "Your week" now show a small dash instead of a blank space.
