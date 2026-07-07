@@ -251,20 +251,26 @@ public struct WorkoutExerciseReconciler {
     private let byNormalizedName: [String: Exercise]
     private let byId: [String: Exercise]
     private let byLearned: [String: Exercise]
-    /// Each known exercise's per-name token sets (the EN name and, when present, the ES name — kept
-    /// separate so one language's extra words don't dilute the other's similarity), for fuzzy suggestions.
+    /// Content-key index (FER-794): normalized name minus es/en stopwords, tokens sorted — so
+    /// "Press banca con barra" and "Press de banca con barra" collapse to one key. First wins.
+    private let byContentKey: [String: Exercise]
+    /// Derived alias table (FER-794): normalized common gym name → exercise. Restores the bridge the
+    /// retired synonym table (FER-522) provided, now derived from `Tools/bake-exercisedb`.
+    private let byAlias: [String: Exercise]
+    /// Each known exercise's per-name content-token sets (the EN name and, when present, the ES name —
+    /// kept separate so one language's extra words don't dilute the other's similarity), for fuzzy
+    /// suggestions. Content tokens (stopwords stripped, FER-794) so "de/con/the/with" don't count.
     private let tokenized: [(exercise: Exercise, tokenSets: [Set<String>])]
 
     /// Build from the known exercises (catalog + custom). Indexes each exercise by its `id` (FER-521,
-    /// now the native ExerciseDB id), by BOTH its English `name` and Spanish `nameES` (FER-501), and by
-    /// the user's learned aliases (FER-523, `learned`: normalized-name → exercise-id). So a plan matches
-    /// by the id the LLM picked, by name in either language, or by a name the user mapped before. On a
-    /// normalized-name collision the first wins — deterministic. (The curated synonym table, FER-522, was
-    /// retired with FER-779 — native ids let the LLM pick the exact exercise, so hand-curated slugs are
-    /// no longer needed.)
-    public init(known: [Exercise], learned: [String: String] = [:]) {
+    /// now the native ExerciseDB id), by BOTH its English `name` and Spanish `nameES` (FER-501), by its
+    /// content key (FER-794), by the derived aliases (`aliases`: common-name → exercise-id, FER-794),
+    /// and by the user's learned aliases (FER-523, `learned`: normalized-name → exercise-id). On a
+    /// key collision the first wins — deterministic.
+    public init(known: [Exercise], learned: [String: String] = [:], aliases: [String: String] = [:]) {
         var map: [String: Exercise] = [:]
         var ids: [String: Exercise] = [:]
+        var content: [String: Exercise] = [:]
         var tokens: [(Exercise, [Set<String>])] = []
         for ex in known {
             ids[ex.id] = ex
@@ -272,12 +278,19 @@ public struct WorkoutExerciseReconciler {
             for name in [ex.name, ex.nameES].compactMap({ $0 }) {
                 let key = Self.normalize(name)
                 if map[key] == nil { map[key] = ex }
-                sets.append(Set(key.split(separator: " ").map(String.init)))
+                let ckey = Self.contentKey(name)
+                if !ckey.isEmpty, content[ckey] == nil { content[ckey] = ex }
+                sets.append(Self.contentTokens(name))
             }
             tokens.append((ex, sets))
         }
-        // Learned aliases (FER-523): the keys are already normalized (the app stores them that way), but
-        // re-normalize defensively; keep only those still pointing at a known exercise.
+        // Derived aliases (FER-794) and learned aliases (FER-523): normalize the keys defensively;
+        // keep only those still pointing at a known exercise.
+        var aliasMap: [String: Exercise] = [:]
+        for (name, id) in aliases {
+            guard let ex = ids[id] else { continue }
+            aliasMap[Self.normalize(name)] = ex
+        }
         var learnedMap: [String: Exercise] = [:]
         for (name, id) in learned {
             guard let ex = ids[id] else { continue }
@@ -286,6 +299,8 @@ public struct WorkoutExerciseReconciler {
         byNormalizedName = map
         byId = ids
         byLearned = learnedMap
+        byContentKey = content
+        byAlias = aliasMap
         tokenized = tokens
     }
 
@@ -304,10 +319,31 @@ public struct WorkoutExerciseReconciler {
         return byNormalizedName[key] ?? byLearned[key]
     }
 
+    /// Resolve a name that `resolve` couldn't, WITHOUT the user (FER-794) — the auto-match tier the
+    /// import screen pre-fills and marks as "matched automatically" (always visible and reversible
+    /// there; never imported silently). Three strict sub-tiers, in order:
+    ///  1. content-key equality — same words minus stopwords ("Press banca con barra" ==
+    ///     "Press de banca con barra"), deterministic;
+    ///  2. derived alias — the common gym name maps to the movement's basic variant;
+    ///  3. confident fuzzy — top suggestion scores ≥ 0.8 with ≥ 0.15 separation from the runner-up,
+    ///     and the query has ≥ 2 content tokens (a bare "press" can never auto-match).
+    /// Anything below that bar returns nil → the user maps it, as before.
+    public func autoMatch(_ name: String) -> Exercise? {
+        let cleaned = Self.preClean(name)
+        let ckey = Self.contentKey(cleaned)
+        if !ckey.isEmpty, let hit = byContentKey[ckey] { return hit }
+        if let hit = byAlias[Self.normalize(cleaned)] { return hit }
+        guard Self.contentTokens(cleaned).count >= 2 else { return nil }
+        let scored = scoredSuggestions(for: name)
+        guard let top = scored.first, top.score >= 0.8 else { return nil }
+        if scored.count > 1, scored[1].score > top.score - 0.15 { return nil }
+        return top.exercise
+    }
+
     /// Up to `limit` catalog/custom exercises whose name is closest to `name` by token-set overlap
-    /// (Jaccard over normalized tokens), above a minimum similarity. The "did you mean…?" suggestions the
-    /// import screen offers for a name that didn't resolve (FER-523). Ranked by similarity, then name for
-    /// a stable order. Never auto-applied — the user confirms.
+    /// (Jaccard over content tokens — stopwords stripped, FER-794), above a minimum similarity. The
+    /// "did you mean…?" suggestions the import screen offers for a name that didn't resolve (FER-523).
+    /// Ranked by similarity, then name for a stable order. Never auto-applied — the user confirms.
     public func suggestions(for name: String, limit: Int = 3) -> [Exercise] {
         scoredSuggestions(for: name).prefix(limit).map { $0.exercise }
     }
@@ -317,7 +353,7 @@ public struct WorkoutExerciseReconciler {
     /// the adversarial test (FER-542) uses the scores to assert that trap names surface no high-confidence
     /// match, so loosening coverage can't quietly start auto-suggesting garbage.
     func scoredSuggestions(for name: String) -> [(exercise: Exercise, score: Double)] {
-        let query = Set(Self.normalize(Self.preClean(name)).split(separator: " ").map(String.init))
+        let query = Self.contentTokens(Self.preClean(name))
         guard !query.isEmpty else { return [] }
         return tokenized.compactMap { entry -> (exercise: Exercise, score: Double)? in
             // Best Jaccard over the exercise's name variants (EN / ES), so a long name in the OTHER
@@ -356,6 +392,28 @@ public struct WorkoutExerciseReconciler {
         let folded = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
         let parts = folded.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
         return parts.joined(separator: " ")
+    }
+
+    /// es/en function words that carry no exercise identity — stripped for content matching (FER-794)
+    /// so "Press banca con barra" and "Press de banca con barra" compare equal. Deliberately excludes
+    /// quantity words ("una", "dos", "one", "two"): "a una pierna" (single-leg) must stay distinct.
+    private static let stopwords: Set<String> = [
+        "de", "del", "la", "el", "los", "las", "con", "en", "al", "a", "y", "o", "u", "para", "por",
+        "the", "with", "on", "in", "an", "and", "to", "of", "for", "at",
+    ]
+
+    /// The name's identity-bearing tokens: normalized, split, stopwords removed. Falls back to the
+    /// full token set if everything was a stopword (degenerate input like "de la a").
+    static func contentTokens(_ name: String) -> Set<String> {
+        let all = Self.normalize(name).split(separator: " ").map(String.init)
+        let content = all.filter { !stopwords.contains($0) }
+        return Set(content.isEmpty ? all : content)
+    }
+
+    /// Order-independent equality key over the content tokens ("banca barra press") — the index key
+    /// for the content-exact tier of `autoMatch`.
+    static func contentKey(_ name: String) -> String {
+        contentTokens(name).sorted().joined(separator: " ")
     }
 
     /// Strip the formatting noise an LLM (or a user pasting its output) wraps around an exercise name,

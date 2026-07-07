@@ -32,6 +32,10 @@ python3 transform.py
 
 # 4) Ensamblar el overlay es-MX desde los lotes traducidos.
 python3 build_es_overlay.py <dir_de_lotes> [<dir2> ...]
+
+# 5) Regenerar la tabla de alias del import (FER-794): nombres comunes de gym → id nativo.
+#    Falla en voz alta si un ejercicio referenciado desapareció del catálogo.
+python3 build_aliases.py
 ```
 
 `./cache/` está gitignored (dataset crudo + artefactos intermedios). Solo se commitean los dos

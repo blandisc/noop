@@ -21984,6 +21984,23 @@
         }
       }
     },
+    "Matched automatically · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matched automatically · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emparejado automático · %@"
+          }
+        }
+      }
+    },
     "Matched · %@": {
       "extractionState": "manual",
       "localizations": {

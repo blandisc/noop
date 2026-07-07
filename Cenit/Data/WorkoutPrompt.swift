@@ -49,8 +49,11 @@ enum WorkoutPrompt {
     - Detecta el idioma del plan y ponlo en "idioma": "es" o "en".
     - Las llaves del JSON quedan en español tal como están; solo los VALORES siguen el idioma del plan.
     - "id": si el ejercicio está en el CATÁLOGO de abajo, copia su "id" EXACTO (la columna izquierda,
-      antes del tabulador). Elige el que mejor coincida aunque el plan lo nombre distinto. Si NO está en
-      el catálogo, deja "id":"" y pon un "nombre" claro.
+      antes del tabulador). Elige el que mejor coincida aunque el plan lo nombre distinto. El catálogo
+      tiene muchas variantes del mismo movimiento (agarre, inclinación, máquina): si el plan NO
+      especifica la variante, elige la BÁSICA con el mismo equipo (ej. "press de banca" → "Press de
+      banca con barra", no la variante guillotina ni la declinada). Es mejor el id de la variante
+      básica que dejar "id" vacío. Si NO está en el catálogo, deja "id":"" y pon un "nombre" claro.
     - "nombre" del ejercicio: cópialo TAL CUAL aparece en el plan, no lo traduzcas ni lo cambies.
     - "unidad": "kg" o "lb" según en qué unidad están los pesos del plan.
     - Una entrada en "rutinas" por cada día/rutina del plan (ej. Empuje, Jalón, Pierna), en orden.
@@ -85,7 +88,10 @@ enum WorkoutPrompt {
     - Detect the plan's language and set "idioma": "es" or "en".
     - The JSON keys stay in Spanish as shown; only the VALUES follow the plan's language.
     - "id": if the exercise is in the CATALOG below, copy its EXACT "id" (the left column, before the
-      tab). Pick the best match even if the plan names it differently. If it's NOT in the catalog, leave
+      tab). Pick the best match even if the plan names it differently. The catalog holds many variants
+      of the same movement (grip, incline, machine): if the plan does NOT specify the variant, pick the
+      BASIC one with the same equipment (e.g. "bench press" → "barbell bench press", not the guillotine
+      or decline variant). A basic-variant id beats an empty "id". If it's NOT in the catalog, leave
       "id":"" and give a clear "nombre".
     - Each exercise "nombre": copy it EXACTLY as written in the plan, don't translate or change it.
     - "unidad": "kg" or "lb", matching the unit the plan's weights are written in.

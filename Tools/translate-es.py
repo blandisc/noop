@@ -1858,6 +1858,7 @@ ES: dict[str, str] = {
     "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself.": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta, el paso de la IA lo haces tú.",
     "%lld exercises to set up": "%lld ejercicios por ubicar",
     "These aren't in your library. Match each one to an exercise you have, or create it.": "Estos no están en tu biblioteca. Empareja cada uno con un ejercicio que tengas, o créalo.",
+    "Matched automatically · %@": "Emparejado automático · %@",
     "Matched · %@": "Emparejado · %@",
     "Create new": "Crear nuevo",
     "Resolve %lld more to continue": "Resuelve %lld más para continuar",
