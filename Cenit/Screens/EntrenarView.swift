@@ -103,44 +103,32 @@ private struct EntrenarLanding: View {
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
-    /// Cap for the two upper flexible gaps (FER-785): they grow from `sectionGap` up to this, then stop, so
-    /// the uncapped gap ABOVE Constancia absorbs the rest — Constancia settles at the bottom while hero+plan
-    /// stay a tight cluster. Derived from the section token, not a magic number.
-    private let flexGapCap: CGFloat = NoopMetrics.sectionGap * 2
     private var todayWeekday: Int { Calendar.current.component(.weekday, from: Date()) }
     private var recovery: Double? { repo.today?.recovery }
 
     var body: some View {
-        GeometryReader { geo in
-            ScrollView {
-                // Spacing is owned by explicit spacers, not the VStack, so the air between blocks can flex
-                // (FER-785): flexible gaps share the dead space when the plan is short and compress to
-                // `sectionGap` as it grows toward 7 days. Never below `sectionGap` — blocks never touch.
-                VStack(alignment: .leading, spacing: 0) {
-                    header
-                    if loaded {
-                        if split.isEmpty {
-                            Spacer().frame(height: NoopMetrics.sectionGap)
-                            emptyStateB
-                        } else {
-                            Spacer().frame(height: NoopMetrics.sectionGap)   // header → hero: fixed top anchor
-                            hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
-                            Spacer(minLength: NoopMetrics.sectionGap).frame(maxHeight: flexGapCap)
-                            suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
-                            Spacer(minLength: NoopMetrics.sectionGap).frame(maxHeight: flexGapCap)
-                            tambienEnTuPlan  // ③ the rest of the plan + «Formas de entrenar» (FER-783)
-                            // ④ Constancia: the uncapped gap takes the lion's share of the dead space, so it
-                            // settles at the bottom over the dock (weighted, not even — FER-784/785).
-                            Spacer(minLength: NoopMetrics.sectionGap)
-                            constanciaCard
-                        }
+        // Fixed section rhythm in a plain ScrollView (FER-786 hotfix): the earlier GeometryReader +
+        // `.frame(minHeight: geo.size.height)` + flexible/capped spacers (FER-784/785) fed the measured
+        // height back into layout and looped as the plan grew — 99% CPU, «Invalid frame dimension», freeze.
+        // `sectionGap` (28) still gives more air between blocks than the old 18; no measured-height feedback.
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                header
+                if loaded {
+                    if split.isEmpty {
+                        emptyStateB
+                    } else {
+                        hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
+                        suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
+                        tambienEnTuPlan  // ③ the rest of the plan + «Formas de entrenar» (FER-783)
+                        constanciaCard   // ④ 90-day dot grid above the dock — no streak guilt (mock 1a)
                     }
                 }
-                .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
-                .padding(.horizontal, NoopMetrics.screenPadding)
-                .padding(.bottom, NoopMetrics.screenPadding)
-                .frame(maxWidth: .infinity, minHeight: geo.size.height, alignment: .leading)
             }
+            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
         // The ③ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
