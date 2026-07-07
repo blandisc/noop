@@ -92,8 +92,8 @@ private struct EntrenarLanding: View {
     /// The Daily Brief's «Empezar» arrived (via `TabRouter`) before this view finished loading its
     /// prefetched slots — start today's session as soon as `load()` completes (FER-613).
     @State private var startWhenLoaded = false
-    /// Whether the «Más formas» access pill is expanded (mock 1a): side pills fold to icons, four
-    /// direct-jump destinations appear.
+    /// Whether the «Formas de entrenar» button is expanded (FER-783): the six training-door icon chips
+    /// enter staggered; tapping one runs its action and collapses.
     @State private var moreFormsExpanded = false
     /// Presents the live-HR workout sheet from the expanded «Más formas» → «En vivo» (same sheet the
     /// rest-day / other-ways screens use).
@@ -437,118 +437,88 @@ private struct EntrenarLanding: View {
         }
     }
 
-    // MARK: - Access pills (mock 1a · change 2 — replace the three utility rows)
+    // MARK: - «Formas de entrenar» — one expanding button of six training doors (FER-783)
     //
-    // Three equal-width tinted pills: Rápido (ember) · Más formas (teal) · Dieta (green). Tapping «Más
-    // formas» expands it in place — the side pills fold to icon-only circles and four underlined
-    // destinations appear that jump STRAIGHT to each mode (skipping the 3e chooser). Tapping the pill's
-    // background collapses it again. Colors are derived from the flow's data tokens (tint over paper), so
-    // no raw hex or new tokens; color still lands only on the datum.
+    // The three utility pills (Rápido · Más formas · Dieta) collapse into ONE full-width outline button.
+    // Tapping it expands a row of six icon chips — the six existing training doors — that enter staggered
+    // under a native spring; tapping a chip runs its action AND collapses the row. Color still lands ONLY on
+    // the datum (each icon's data-token tint over paper), so no raw hex or new tokens.
+
+    private struct FormOption: Identifiable {
+        let icon: String
+        let label: LocalizedStringKey
+        let tint: Color
+        let action: () -> Void
+        var id: String { icon }
+    }
+
+    /// The six training doors, in row order. Each keeps its existing action; the tint follows the flow's
+    /// data tokens (strain for «Rápido», hrv for the live/timed forms, recovery for «Dieta»).
+    private var formOptions: [FormOption] {
+        [
+            FormOption(icon: "bolt.fill", label: "Rápido", tint: theme.dataStrain) { startQuickStrength() },
+            FormOption(icon: "dot.radiowaves.left.and.right", label: "En vivo", tint: theme.dataHrv) { startLive() },
+            FormOption(icon: "timer", label: "Intervalo", tint: theme.dataHrv) { openIntervals() },
+            FormOption(icon: "figure.flexibility", label: "Movilidad", tint: theme.dataHrv) { model.startMobilityOneOff() },
+            FormOption(icon: "wind", label: "Respirar", tint: theme.dataHrv) { openBreathe() },
+            FormOption(icon: "fork.knife", label: "Dieta", tint: theme.dataRecovery) { openDiet() },
+        ]
+    }
 
     private var accessPills: some View {
-        HStack(spacing: 6) {
-            if !moreFormsExpanded {
-                pill(tint: theme.dataStrain, icon: "bolt.fill", label: "Rápido") { startQuickStrength() }
-            } else {
-                iconPill(tint: theme.dataStrain, icon: "bolt.fill") { startQuickStrength() }
+        VStack(spacing: 10) {
+            Button {
+                moreFormsExpanded.toggle()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.grid.2x2").font(.system(size: 13, weight: .semibold))
+                    Text("Formas de entrenar").font(StrandFont.caption.weight(.semibold))
+                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                        .rotationEffect(.degrees(moreFormsExpanded ? 180 : 0))
+                }
+                .foregroundStyle(theme.inkSecondary)
+                .frame(maxWidth: .infinity).padding(.vertical, 10)
+                .background(theme.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .contentShape(Capsule())
             }
+            .buttonStyle(.plain)
 
-            moreFormsPill
-
-            if !moreFormsExpanded {
-                pill(tint: theme.dataRecovery, icon: "fork.knife", label: "Dieta") { openDiet() }
-            } else {
-                iconPill(tint: theme.dataRecovery, icon: "fork.knife") { openDiet() }
+            if moreFormsExpanded {
+                HStack(alignment: .top, spacing: 6) {
+                    ForEach(Array(formOptions.enumerated()), id: \.element.id) { index, opt in
+                        formChip(opt)
+                            .transition(.scale(scale: 0.9).combined(with: .opacity))
+                            .animation(.spring(response: 0.4, dampingFraction: 0.86)
+                                .delay(Double(index) * 0.04), value: moreFormsExpanded)
+                    }
+                }
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.86), value: moreFormsExpanded)
     }
 
-    /// A full-width tinted access pill (collapsed state): pale tint fill, softer tinted border, icon + label.
-    private func pill(tint: Color, icon: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: 13, weight: .semibold))
-                Text(label).font(StrandFont.caption.weight(.semibold))
-            }
-            .foregroundStyle(tint)
-            .frame(maxWidth: .infinity).padding(.vertical, 9)
-            .background(tint.opacity(0.12), in: Capsule())
-            .overlay(Capsule().strokeBorder(tint.opacity(0.32), lineWidth: 1))
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// A folded, icon-only access pill (36 pt circle) — what the side pills become while «Más formas» is open.
-    private func iconPill(tint: Color, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(tint)
-                .frame(width: 36, height: 36)
-                .background(tint.opacity(0.12), in: Circle())
-                .overlay(Circle().strokeBorder(tint.opacity(0.32), lineWidth: 1))
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// The expandable «Más formas» pill. Collapsed: icon + label, tapping expands. Expanded: it flexes to
-    /// fill the row and shows the four underlined destinations (each jumps direct); tapping the pill's own
-    /// background collapses it.
-    private var moreFormsPill: some View {
-        let tint = theme.dataHrv
-        return Button {
-            moreFormsExpanded.toggle()
-        } label: {
-            Group {
-                if moreFormsExpanded {
-                    HStack(spacing: 6) {
-                        moreDestination("Movilidad") { model.startMobilityOneOff() }
-                        moreSeparator
-                        moreDestination("Intervalos") { openIntervals() }
-                        moreSeparator
-                        moreDestination("Respirar") { openBreathe() }
-                        moreSeparator
-                        moreDestination("En vivo") { startLive() }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .minimumScaleFactor(0.8)
-                } else {
-                    HStack(spacing: 6) {
-                        Image(systemName: "waveform.path.ecg").font(.system(size: 13, weight: .semibold))
-                        Text("Más formas").font(StrandFont.caption.weight(.semibold))
-                    }
-                    .foregroundStyle(tint)
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.vertical, 9)
-            .background(tint.opacity(0.12), in: Capsule())
-            .overlay(Capsule().strokeBorder(tint.opacity(0.32), lineWidth: 1))
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .layoutPriority(moreFormsExpanded ? 1 : 0)
-    }
-
-    /// One underlined destination inside the expanded «Más formas» pill. Runs its action AND collapses.
-    private func moreDestination(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+    /// One icon chip in the expanded «Formas de entrenar» row: a tinted glyph on a paper circle over a small
+    /// label. Runs its door's action AND collapses the row.
+    private func formChip(_ opt: FormOption) -> some View {
         Button {
             moreFormsExpanded = false
-            action()
+            opt.action()
         } label: {
-            Text(label)
-                .font(StrandFont.footnote.weight(.semibold))
-                .foregroundStyle(theme.dataHrv)
-                .underline(true, color: theme.dataHrv.opacity(0.55))
-                .lineLimit(1)
+            VStack(spacing: 5) {
+                Image(systemName: opt.icon).font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(opt.tint)
+                    .frame(width: 42, height: 42)
+                    .background(theme.surface, in: Circle())
+                    .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                Text(opt.label).font(StrandFont.overline).foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1).minimumScaleFactor(0.75)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private var moreSeparator: some View {
-        Text(verbatim: "·").font(StrandFont.footnote)
-            .foregroundStyle(theme.dataHrv.opacity(0.5))
     }
 
     /// «En vivo» from the expanded pill: start (or resume) the live HR workout and present its sheet — the
