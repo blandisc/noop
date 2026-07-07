@@ -276,6 +276,38 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         restEndedBanner = false
     }
 
+    // MARK: - Wrist actions (FER-808)
+
+    /// Log the current set from the wrist. Sends `.completeSet`; the iPhone runs `registerCurrentSet` and
+    /// re-emits the snapshot (which flips this face to the rest countdown). The confirmation haptic + the
+    /// 400 ms check are the view's job. Stays available with no permission / no iPhone (the message queues
+    /// over `transferUserInfo` and applies on reconnect) — the CTA is never a dead button.
+    func completeSetFromWrist() {
+        guard let sid = sessionId else { return }
+        send(.completeSet(sessionId: sid))
+    }
+
+    /// Skip the current rest from the wrist. Sends `.skipRest` and clears the local rest immediately so the
+    /// face returns to capture without waiting for the round-trip (honest even if the iPhone is away).
+    func skipRestFromWrist() {
+        guard let sid = sessionId, rest != nil else { return }
+        send(.skipRest(sessionId: sid))
+        restEndTask?.cancel()
+        rest = nil
+    }
+
+    /// Nudge the current rest by `deltaS` (±30) from the wrist. Sends `.adjustRest`, then optimistically
+    /// moves the local ceiling and re-arms `scheduleRestEnd` so the countdown and its buzz stay honest even
+    /// while the iPhone is unreachable; the iPhone's next snapshot is authoritative. Caller hides «−30»
+    /// once the rest has expired, and `extendRest` floors the ceiling at «now».
+    func adjustRestFromWrist(by deltaS: Int) {
+        guard let sid = sessionId, let snap = rest else { return }
+        send(.adjustRest(sessionId: sid, deltaS: deltaS))
+        let newEnd = max(Date(), snap.restEndsAt.addingTimeInterval(TimeInterval(deltaS)))
+        rest?.restEndsAt = newEnd
+        scheduleRestEnd(at: newEnd)
+    }
+
     // MARK: - Message handling
 
     private func handle(_ message: WorkoutMirrorMessage) {
@@ -300,8 +332,9 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             sessionId = sid
             externalUUID = ext
             Task { await endSession(endedAt: endedAt, save: save) }
-        case .watchDidSaveWorkout, .watchWillNotSave:
-            break   // watch → iPhone only
+        case .watchDidSaveWorkout, .watchWillNotSave,
+             .completeSet, .skipRest, .adjustRest:
+            break   // watch → iPhone only (FER-808)
         }
     }
 

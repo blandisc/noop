@@ -715,6 +715,25 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Apply a wrist-initiated action (FER-808) to the live session. Routes to the SAME session mutators
+    /// the lock-screen rest actions use (`registerCurrentSet` / `skipRest` / `extendRest`) — one path, no
+    /// duplicated logic — and the `objectWillChange` reconcile that follows re-emits the fresh snapshot to
+    /// both the wrist and the Live Activity. `completeSet` is phase-agnostic (the wrist logs a set from the
+    /// capture face); skip/adjust apply only while resting, mirroring `applyRestAction`.
+    func applyWatchWorkoutAction(_ action: WatchWorkoutAction, sessionId: String) {
+        guard let s = strengthSession, s.id == sessionId else { return }
+        switch action {
+        case .completeSet:
+            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
+        case .skipRest:
+            guard s.phase == .resting else { return }
+            s.skipRest()
+        case let .adjustRest(deltaS):
+            guard s.phase == .resting else { return }
+            s.extendRest(byseconds: deltaS)   // floored at «now» by extendRest — never negative
+        }
+    }
+
     // MARK: - Manual workout tracking
 
     /// Begin a manually-tracked workout. The active card on Live then shows elapsed time, live HR and

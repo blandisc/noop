@@ -19,6 +19,8 @@ struct WatchLiveFaceView: View {
 private struct WatchFaceMetrics: View {
     @EnvironmentObject var manager: WatchWorkoutManager
     private let t = InstrumentoTheme.base
+    /// FER-808: brief check shown on the «Registrar serie» CTA right after a wrist log.
+    @State private var loggedCheck = false
 
     private var elapsedStart: Date { manager.startDate ?? Date() }
 
@@ -50,6 +52,38 @@ private struct WatchFaceMetrics: View {
             elapsed
             if manager.healthAccessDenied { permissionWarning }
             else { Text(routineTitle).font(StrandFont.caption).foregroundStyle(t.inkSecondary).lineLimit(2) }
+            registerCTA
+        }
+    }
+
+    // FER-808 — «Registrar serie» from the wrist. Solid CTA (chrome ink, never a data hue) plus the native
+    // primary-action wrist gesture (watchOS 11+, the closest interceptable stand-in for a Digital Crown
+    // press, which the system reserves). A soft `.click` + a 400 ms check confirm the log. Stays alive with
+    // no permission / no iPhone: the message queues and applies on reconnect — no dead button.
+    @ViewBuilder private var registerCTA: some View {
+        let button = Button(action: logSet) {
+            Group {
+                if loggedCheck { Image(systemName: "checkmark").accessibilityHidden(true) }
+                else { Text("Log set") }
+            }
+            .font(StrandFont.caption)
+            .frame(maxWidth: .infinity, minHeight: 38)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(t.ink)
+        .accessibilityLabel(Text("Log set"))
+
+        if #available(watchOS 11.0, *) { button.handGestureShortcut(.primaryAction) }
+        else { button }
+    }
+
+    private func logSet() {
+        manager.completeSetFromWrist()
+        WatchHaptic.actionTapped.play()
+        withAnimation(.easeOut(duration: 0.15)) { loggedCheck = true }
+        Task {
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            withAnimation(.easeIn(duration: 0.15)) { loggedCheck = false }
         }
     }
 
@@ -59,16 +93,45 @@ private struct WatchFaceMetrics: View {
         VStack(alignment: .leading, spacing: NoopMetrics.space1) {
             Text("Rest").instrumentoOverline().foregroundStyle(t.inkTertiary).accessibilityHidden(true)
             Text(timerInterval: rest.restStartedAt...rest.restEndsAt, countsDown: true)
-                .instrumentoHero(50)
+                .instrumentoHero(44)
                 .foregroundStyle(t.dataStrain)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
                 .accessibilityLabel(Text("Rest, \(secondsLeft(rest)) seconds left"))
-            Spacer(minLength: NoopMetrics.space2)
+            // FER-808 — rest progress bar, coherent with the iPhone Live Activity. The datum's amber hue.
+            ProgressView(timerInterval: rest.restStartedAt...rest.restEndsAt, countsDown: false) {
+                EmptyView()
+            } currentValueLabel: { EmptyView() }
+                .tint(t.dataStrain)
+                .accessibilityHidden(true)
+            restControls(rest)
+            Spacer(minLength: NoopMetrics.space1)
             heartSecondary
-            Text(rest.returnDetail).font(StrandFont.caption).foregroundStyle(t.inkSecondary).lineLimit(2)
+            Text("Next: set \(rest.setNumber) · \(rest.returnDetail)")
+                .font(StrandFont.footnote).foregroundStyle(t.inkSecondary).lineLimit(2)
             if manager.healthAccessDenied { permissionWarning }
         }
+    }
+
+    // FER-808 — the rest controls the iPhone Live Activity already has: ±30 s and Skip, now on the wrist.
+    // «−30» is hidden once the rest has run out (nothing left to trim; `extendRest` also floors at «now»).
+    private func restControls(_ rest: RestActivitySnapshot) -> some View {
+        HStack(spacing: NoopMetrics.space1) {
+            if secondsLeft(rest) > 0 { pill("−30") { manager.adjustRestFromWrist(by: -30) } }
+            pill("+30 s") { manager.adjustRestFromWrist(by: 30) }
+            pill("Skip") { manager.skipRestFromWrist() }
+        }
+    }
+
+    private func pill(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button {
+            WatchHaptic.actionTapped.play()
+            action()
+        } label: {
+            Text(title).font(StrandFont.footnote).frame(maxWidth: .infinity, minHeight: 30)
+        }
+        .buttonStyle(.bordered)
+        .tint(t.inkSecondary)
     }
 
     // «--» in muted ink (never a made-up number) when the sensor hasn't read or Health access is denied.

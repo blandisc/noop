@@ -45,6 +45,9 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     var onWatchEndedSession: ((_ sessionId: String, _ save: Bool) -> Void)?
     /// The watch declined to save (no permission / error / mirror lost) → the iPhone takes over.
     var onWatchWillNotSave: ((_ sessionId: String) -> Void)?
+    /// FER-808: the user logged a set / skipped or adjusted a rest from the wrist → apply it to the live
+    /// session exactly as the lock-screen actions do (`AppModel` routes to the shared session mutators).
+    var onWatchAction: ((_ sessionId: String, _ action: WatchWorkoutAction) -> Void)?
 
     // FER-742: state the iPhone UI paints, pushed to `AppModel` (which the Settings row + the strength
     // sheet already observe) via these closures — same fire-on-main-actor pattern as the ones above.
@@ -245,6 +248,12 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         case let .watchWillNotSave(sessionId, reason):
             log.log("Watch won't save \(sessionId, privacy: .public): \(reason.rawValue, privacy: .public)")
             onWatchWillNotSave?(sessionId)
+        case let .completeSet(sessionId):
+            onWatchAction?(sessionId, .completeSet)
+        case let .skipRest(sessionId):
+            onWatchAction?(sessionId, .skipRest)
+        case let .adjustRest(sessionId, deltaS):
+            onWatchAction?(sessionId, .adjustRest(deltaS: deltaS))
         case .start, .rest, .restEnded:
             break   // iPhone → watch only
         }
