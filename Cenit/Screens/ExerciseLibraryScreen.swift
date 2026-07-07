@@ -421,7 +421,7 @@ private struct CreateExerciseSheet: View {
     private func create() {
         let ex = Exercise(id: UUID().uuidString, name: name.trimmingCharacters(in: .whitespaces),
                           type: type, equipment: equip.isEmpty ? nil : equip,
-                          primaryMuscles: muscle.isEmpty ? [] : [muscle], secondaryMuscles: [], cues: [])
+                          primaryMuscles: muscle.isEmpty ? [] : [muscle], secondaryMuscles: [], instructions: [])
         onCreate(ex); dismiss()
     }
 }

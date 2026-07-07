@@ -16,7 +16,7 @@ final class StrengthSessionModelTests: XCTestCase {
 
     private func ex(_ id: String, _ name: String, type: ExerciseType = .weightReps) -> Exercise {
         Exercise(id: id, name: name, type: type, equipment: nil,
-                 primaryMuscles: [], secondaryMuscles: [], cues: [])
+                 primaryMuscles: [], secondaryMuscles: [], instructions: [])
     }
 
     private func lastSet(_ exId: String, weight: Double, reps: Int) -> SetEntry {

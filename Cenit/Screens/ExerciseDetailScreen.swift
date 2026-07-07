@@ -140,7 +140,7 @@ struct ExerciseDetailScreen: View {
     /// (FER-751/722/778) already sits above the segmented control, so nothing repeats it here.
     @ViewBuilder private var guideTab: some View {
         musclesSection
-        if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
+        if !exercise.displayInstructions(localized: StrengthDisplay.localized).isEmpty { howToSection }
         variantsSection
         measurementSection
         youtubeRow
@@ -402,7 +402,7 @@ struct ExerciseDetailScreen: View {
             Divider().overlay(theme.hairline)
             Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, 18)
             VStack(alignment: .leading, spacing: 10) {
-                ForEach(Array(exercise.displayCues(localized: StrengthDisplay.localized).enumerated()), id: \.offset) { index, cue in
+                ForEach(Array(exercise.displayInstructions(localized: StrengthDisplay.localized).enumerated()), id: \.offset) { index, cue in
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text(verbatim: "\(index + 1)")
                             .font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)

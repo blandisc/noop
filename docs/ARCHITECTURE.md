@@ -664,18 +664,18 @@ is hermetic in CI):
 
 - **AI Coach** (`Cenit/AI/AICoach.swift`) — bring-your-own-key LLM chat; nothing leaves the device
   until the user pastes their own provider key and asks a question.
-- **Exercise media** (`Cenit/Media/`, FER-722) — opt-in thumb/video-loop cache from ExerciseDB
-  (RapidAPI), gated by `noop.exerciseMediaEnabled` (default off). `MediaDownloadCoordinator` is the
-  single point where the toggle is read; both its entry points (`bulkDownloadThumbsIfNeeded`,
-  `loopIfNeeded(for:)`) guard on `isEnabled` before constructing `ExerciseDBClient` or touching
-  `URLSession`, so toggle-off is zero requests by construction, not by convention. Media downloads
-  once per exercise into `Application Support/OpenWhoop/MediaCache/{thumbs,videos}/` — presence of the
-  file on disk **is** the "downloaded" record, no GRDB table — and stays there (offline-readable)
-  until the user taps "Borrar media descargada"; turning the toggle off stops future downloads but
-  never deletes the cache. `ExerciseDBClient`'s key is injected via a gitignored
-  `Cenit/Secrets.xcconfig` → `Info.plist` → `Bundle.main.object(forInfoDictionaryKey:)`, never
-  committed. Catalog→EDB mapping is a runtime name lookup (`exercise.name`), not a static id table —
-  see the file header for why.
+- **Exercise media** (`Cenit/Media/`, FER-722/786) — opt-in thumb/video-loop cache from ExerciseDB,
+  gated by `noop.exerciseMediaEnabled` (default off). `MediaDownloadCoordinator` is the single point
+  where the toggle is read; both its entry points (`bulkDownloadThumbsIfNeeded`, `loopIfNeeded(for:)`)
+  guard on `isEnabled` before touching `URLSession`, so toggle-off is zero requests by construction,
+  not by convention. Media downloads once per exercise into
+  `Application Support/OpenWhoop/MediaCache/{thumbs,videos}/` — presence of the file on disk **is** the
+  "downloaded" record, no GRDB table — and stays there (offline-readable) until the user taps "Borrar
+  media descargada"; turning the toggle off stops future downloads but never deletes the cache. Since
+  FER-786 the download is a **plain GET of each exercise's baked `gifUrl`** (native ExerciseDB id, from
+  the FER-779 catalog) off the public CDN `static.exercisedb.dev` — **no runtime name lookup, no API
+  key** (the old `ExerciseDBClient`/RapidAPI path and its `EDBApiKey` were retired). An exercise with
+  no `gifUrl` is a miss → the YouTube hand-off fallback stays.
 
 ### The «Instrumento diurno» theme (single warm day paper)
 
