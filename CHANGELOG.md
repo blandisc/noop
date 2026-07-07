@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El color de cada rutina en Entrenar sale de sus ejercicios / Each routine's color in Train comes from its exercises.**
+  **ES** — Los colores de rutina en Entrenar (los puntos de "También en tu plan", la leyenda y el grid de Constancia) se adivinaban por el nombre de la rutina; los nombres genéricos ("Día B", "Día C", "Cardio") caían a un color al azar que además podía cambiar entre aperturas de la app, y a veces tres rutinas distintas pintaban igual. Ahora el color se deriva de los músculos reales de sus ejercicios —empuje ámbar · tirón teal · pierna índigo · mezcla degradado— así que "Día B" (cadena posterior y jalón) sale de tirón y el color de cada rutina es estable. Una rutina sin ejercicios clasificables (cardio) usa el color por defecto.
+  **EN** — Routine colors in Train (the "Also in your plan" dots, the legend and the Consistency grid) were guessed from the routine's name; generic names ("Día B", "Día C", "Cardio") fell back to a random color that could even change between app launches, and sometimes three different routines painted the same. The color is now derived from the exercises' actual muscles —push amber · pull teal · leg indigo · mix gradient— so "Día B" (posterior chain and pull) reads as pull, and each routine's color is stable. A routine with no classifiable exercises (cardio) uses the default color.
+  ([RoutineClassifier.swift](Packages/StrandTraining/Sources/StrandTraining/RoutineClassifier.swift), [EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Leyenda de Constancia en grilla de 2 columnas / Constancy legend in a 2-column grid.**
   **ES** — Los nombres completos de rutina en la leyenda bajo el grid de Constancia ("Día B — Cadena posterior y jalón", etc.) se apelmazaban en una sola fila de 4 columnas, partiendo palabras a la mitad. Ahora la leyenda es una grilla de 2 columnas: cada etiqueta tiene el doble de ancho antes de wrappear.
   **EN** — The full routine names in the Constancy legend below the grid ("Día B — Cadena posterior y jalón", etc.) were cramming into a single 4-column row, breaking words mid-way. The legend is now a 2-column grid: each label gets twice the width before wrapping.
