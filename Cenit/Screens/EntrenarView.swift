@@ -88,6 +88,12 @@ private struct EntrenarLanding: View {
     /// The Daily Brief's «Empezar» arrived (via `TabRouter`) before this view finished loading its
     /// prefetched slots — start today's session as soon as `load()` completes (FER-613).
     @State private var startWhenLoaded = false
+    /// Whether the «Más formas» access pill is expanded (mock 1a): side pills fold to icons, four
+    /// direct-jump destinations appear.
+    @State private var moreFormsExpanded = false
+    /// Presents the live-HR workout sheet from the expanded «Más formas» → «En vivo» (same sheet the
+    /// rest-day / other-ways screens use).
+    @State private var showLive = false
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -107,8 +113,8 @@ private struct EntrenarLanding: View {
                     } else {
                         hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
                         suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
-                        tambienEnTuPlan  // ③ the rest of the plan + utility rows (otra forma, Dieta)
-                        weekInstrument   // ④ compact week progress + streak above the dock
+                        tambienEnTuPlan  // ③ the rest of the plan + access pills (Rápido, Más formas, Dieta)
+                        constanciaCard   // ④ 90-day dot grid above the dock — no streak guilt (mock 1a)
                     }
                 }
             }
@@ -130,6 +136,16 @@ private struct EntrenarLanding: View {
         // doesn't cross the `.sheet` boundary, FER-162), no nested NavigationStack (FER-171). (FER-557)
         .sheet(item: $recoveryDetail) { item in
             RecoveryDetailScreen(theme: theme, model: item.model)
+        }
+        // «En vivo» from the expanded «Más formas» pill — the live-HR free workout, same sheet the
+        // rest-day / other-ways screens present (theme passed explicitly; it doesn't cross `.sheet`).
+        .sheet(isPresented: $showLive) {
+            LiveWorkoutSheet(theme: theme)
+                .environmentObject(model)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
         }
         // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
         // full-screen cover with a floating pill on all five tabs (FER-716), so it survives tab switches
@@ -199,7 +215,7 @@ private struct EntrenarLanding: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(alignment: .top, spacing: 9) {
                             RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                .fill(routineTint(r.name)).frame(width: 8, height: 8)
+                                .fill(routineFill(r.name)).frame(width: 8, height: 8)
                                 .padding(.top, 7)
                             Text(r.name).font(StrandFont.title3).foregroundStyle(theme.ink)
                                 // Long routine names («Día A — Empuje y cuádriceps») sit at the quieter
@@ -236,17 +252,40 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// The handoff's per-routine tint (mock 1a). The four flow colors coincide with existing Instrumento
-    /// data tokens, so we reuse them rather than hand-editing the generated theme: push → `dataStrain`
-    /// (ember), pull → `dataHrv` (teal), leg → `dataSleep` (indigo). We map by the routine name's split
-    /// keyword (es/en); anything else gets a stable pick so each routine keeps one consistent dot.
-    private func routineTint(_ name: String) -> Color {
+    /// The split family a routine belongs to, read from its name's keyword (es/en). Drives every
+    /// routine-tinted mark on this screen (hero dot, plan dots + «Empezar» pills, the Constancia grid).
+    private enum RoutineKind { case push, pull, leg, fullBody, other(Int) }
+
+    private func routineKind(_ name: String) -> RoutineKind {
         let n = name.lowercased()
-        if n.contains("empuj") || n.contains("push") || n.contains("pecho") { return theme.dataStrain }
-        if n.contains("tir") || n.contains("pull") || n.contains("espalda") { return theme.dataHrv }
-        if n.contains("pierna") || n.contains("leg") || n.contains("quad") || n.contains("glúteo") { return theme.dataSleep }
-        let tints = [theme.dataStrain, theme.dataHrv, theme.dataSleep]
-        return tints[abs(name.hashValue) % tints.count]
+        if n.contains("empuj") || n.contains("push") || n.contains("pecho") { return .push }
+        if n.contains("tir") || n.contains("pull") || n.contains("espalda") { return .pull }
+        if n.contains("pierna") || n.contains("leg") || n.contains("quad") || n.contains("glúteo") { return .leg }
+        if n.contains("full") || n.contains("cuerpo") || n.contains("completo") { return .fullBody }
+        return .other(abs(name.hashValue) % 3)
+    }
+
+    /// The handoff's per-routine tint (mock 1a). The flow colors coincide with existing Instrumento data
+    /// tokens, so we reuse them rather than hand-editing the generated theme: push → `dataStrain` (ember),
+    /// pull → `dataHrv` (teal), leg / full body → `dataSleep` (indigo). Used for the SOLID marks (text,
+    /// borders, legend); full body reads as indigo here and only becomes a gradient in `routineFill`.
+    private func routineTint(_ name: String) -> Color {
+        switch routineKind(name) {
+        case .push:            return theme.dataStrain
+        case .pull:            return theme.dataHrv
+        case .leg, .fullBody:  return theme.dataSleep
+        case .other(let i):    return [theme.dataStrain, theme.dataHrv, theme.dataSleep][i]
+        }
+    }
+
+    /// The FILL for a routine's dot/square. Same as `routineTint` except full body reads as the mock's
+    /// 135° ember→indigo gradient (its whole point is that it spans the split).
+    private func routineFill(_ name: String) -> AnyShapeStyle {
+        if case .fullBody = routineKind(name) {
+            return AnyShapeStyle(LinearGradient(colors: [theme.dataStrain, theme.dataSleep],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+        return AnyShapeStyle(routineTint(name))
     }
 
     /// Exercise count + a rough time estimate for the hero meta line. The estimate is a transparent
@@ -390,13 +429,129 @@ private struct EntrenarLanding: View {
             ForEach(otherPlanRoutines, id: \.routineId) { row in
                 planRoutineRow(row)
             }
-            utilityRow(icon: "bolt",
-                       title: String(localized: "Quick strength workout · starts empty")) { startQuickStrength() }
-            utilityRow(icon: "figure.cooldown",
-                       title: String(localized: "Mobility · intervals · breathe · live")) { openOtherWays() }
-            utilityRow(icon: "fork.knife",
-                       title: String(localized: "Diet · log today's meals"), last: true) { openDiet() }
+            accessPills.padding(.top, 12)
         }
+    }
+
+    // MARK: - Access pills (mock 1a · change 2 — replace the three utility rows)
+    //
+    // Three equal-width tinted pills: Rápido (ember) · Más formas (teal) · Dieta (green). Tapping «Más
+    // formas» expands it in place — the side pills fold to icon-only circles and four underlined
+    // destinations appear that jump STRAIGHT to each mode (skipping the 3e chooser). Tapping the pill's
+    // background collapses it again. Colors are derived from the flow's data tokens (tint over paper), so
+    // no raw hex or new tokens; color still lands only on the datum.
+
+    private var accessPills: some View {
+        HStack(spacing: 6) {
+            if !moreFormsExpanded {
+                pill(tint: theme.dataStrain, icon: "bolt.fill", label: "Rápido") { startQuickStrength() }
+            } else {
+                iconPill(tint: theme.dataStrain, icon: "bolt.fill") { startQuickStrength() }
+            }
+
+            moreFormsPill
+
+            if !moreFormsExpanded {
+                pill(tint: theme.dataRecovery, icon: "fork.knife", label: "Dieta") { openDiet() }
+            } else {
+                iconPill(tint: theme.dataRecovery, icon: "fork.knife") { openDiet() }
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.86), value: moreFormsExpanded)
+    }
+
+    /// A full-width tinted access pill (collapsed state): pale tint fill, softer tinted border, icon + label.
+    private func pill(tint: Color, icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 13, weight: .semibold))
+                Text(label).font(StrandFont.caption.weight(.semibold))
+            }
+            .foregroundStyle(tint)
+            .frame(maxWidth: .infinity).padding(.vertical, 9)
+            .background(tint.opacity(0.12), in: Capsule())
+            .overlay(Capsule().strokeBorder(tint.opacity(0.32), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// A folded, icon-only access pill (36 pt circle) — what the side pills become while «Más formas» is open.
+    private func iconPill(tint: Color, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(tint)
+                .frame(width: 36, height: 36)
+                .background(tint.opacity(0.12), in: Circle())
+                .overlay(Circle().strokeBorder(tint.opacity(0.32), lineWidth: 1))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The expandable «Más formas» pill. Collapsed: icon + label, tapping expands. Expanded: it flexes to
+    /// fill the row and shows the four underlined destinations (each jumps direct); tapping the pill's own
+    /// background collapses it.
+    private var moreFormsPill: some View {
+        let tint = theme.dataHrv
+        return Button {
+            moreFormsExpanded.toggle()
+        } label: {
+            Group {
+                if moreFormsExpanded {
+                    HStack(spacing: 6) {
+                        moreDestination("Movilidad") { model.startMobilityOneOff() }
+                        moreSeparator
+                        moreDestination("Intervalos") { openIntervals() }
+                        moreSeparator
+                        moreDestination("Respirar") { openBreathe() }
+                        moreSeparator
+                        moreDestination("En vivo") { startLive() }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .minimumScaleFactor(0.8)
+                } else {
+                    HStack(spacing: 6) {
+                        Image(systemName: "waveform.path.ecg").font(.system(size: 13, weight: .semibold))
+                        Text("Más formas").font(StrandFont.caption.weight(.semibold))
+                    }
+                    .foregroundStyle(tint)
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.vertical, 9)
+            .background(tint.opacity(0.12), in: Capsule())
+            .overlay(Capsule().strokeBorder(tint.opacity(0.32), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .layoutPriority(moreFormsExpanded ? 1 : 0)
+    }
+
+    /// One underlined destination inside the expanded «Más formas» pill. Runs its action AND collapses.
+    private func moreDestination(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button {
+            moreFormsExpanded = false
+            action()
+        } label: {
+            Text(label)
+                .font(StrandFont.footnote.weight(.semibold))
+                .foregroundStyle(theme.dataHrv)
+                .underline(true, color: theme.dataHrv.opacity(0.55))
+                .lineLimit(1)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var moreSeparator: some View {
+        Text(verbatim: "·").font(StrandFont.footnote)
+            .foregroundStyle(theme.dataHrv.opacity(0.5))
+    }
+
+    /// «En vivo» from the expanded pill: start (or resume) the live HR workout and present its sheet — the
+    /// same door `RestDayScreen`/`OtherWaysScreen` use, so it lands directly without the 3e chooser.
+    private func startLive() {
+        if model.activeWorkout == nil { model.startWorkout() }
+        showLive = true
     }
 
     /// One «También en tu plan» routine: tint + name + «day · muscles», with an «Empezar» pill that starts
@@ -407,7 +562,7 @@ private struct EntrenarLanding: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 7) {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(routineTint(row.name)).frame(width: 8, height: 8)
+                            .fill(routineFill(row.name)).frame(width: 8, height: 8)
                         Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
                     }
                     Text(planRowSubtitle(row)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -416,30 +571,17 @@ private struct EntrenarLanding: View {
                 .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            // «Empezar» takes its routine's tint (mock 1a · change 3): the border is the tint softened onto
+            // paper, the text the full tint — still one glanceable color per routine, no new tokens.
             Button { startRoutine(row.routineId, name: row.name) } label: {
-                Text("Empezar").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Text("Empezar").font(StrandFont.subhead).foregroundStyle(routineTint(row.name))
                     .padding(.horizontal, 14).padding(.vertical, 6)
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    .overlay(Capsule().strokeBorder(routineTint(row.name).opacity(0.45), lineWidth: 1))
             }
             .buttonStyle(.plain)
         }
         .padding(.vertical, 9)
         .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
-    }
-
-    /// A utility row in «También en tu plan» (otra forma de entrenar, Diet): glyph + label + chevron.
-    private func utilityRow(icon: String, title: String, last: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: icon).font(.system(size: 15)).foregroundStyle(theme.inkSecondary).frame(width: 18)
-                Text(title).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.vertical, 12).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
     }
 
     /// «day · muscles» for a plan routine: the weekdays it trains, then its top primary muscles (if known).
@@ -448,84 +590,111 @@ private struct EntrenarLanding: View {
         return muscles.isEmpty ? row.days : ([row.days] + muscles).joined(separator: " · ")
     }
 
-    // MARK: - ④ Week instrument — compact progress + streak above the dock (mock 1a)
+    // MARK: - ④ Constancia — a 90-day dot grid above the dock (mock 1a, replaces the week strip + streak)
+    //
+    // Three months side by side; every day is a faint base dot, a day you trained lights up in its
+    // routine's tint, today is a paper-filled ring in the scheduled routine's tint. No streak, no «2 of 4»,
+    // no guilt: a gap breaks nothing — the pattern just reads itself. Data is the last-90-days of completed
+    // strength sessions, bucketed by day and routine.
 
-    private var weekInstrument: some View {
-        let states = WeeklySplit.weekStates(split: split, completedWeekdays: completedWeekdays,
-                                            todayWeekday: todayWeekday, orderedWeekdays: orderedWeekdays)
-        return VStack(alignment: .leading, spacing: 0) {
-            Divider().overlay(theme.hairline).padding(.bottom, 12)
-            HStack(alignment: .firstTextBaseline) {
-                (Text("Your week") + Text(verbatim: " · ") + weekSummary)
-                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                Button { openHistory() } label: {
-                    Text(streakText).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                        .contentShape(Rectangle())
+    private var constanciaCard: some View {
+        let months = constancyMonths
+        let total = months.reduce(0) { $0 + $1.count }
+        return card {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Constancia").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 8)
+                    Text("\(total) sesiones · 90 días")
+                        .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("See full history"))
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(months) { m in
+                        monthColumn(m)
+                        if m.id != months.last?.id { Spacer(minLength: 6) }
+                    }
+                }
+                Divider().overlay(theme.hairline)
+                legend
             }
-            HStack(spacing: 6) {
-                ForEach(states, id: \.weekday) { st in dayToken(st) }
-            }
-            .padding(.top, 9)
         }
     }
 
-    /// This week's progress («2 of 4»), as `Text` so it composes flush inside the overline.
-    private var weekSummary: Text {
-        Text("\(weekDoneCount) of \(weekPlannedCount)")
-    }
-
-    /// The adherence streak in the mock's «12 días en racha» voice.
-    private var streakText: String {
-        streakDays == 1 ? String(localized: "1 day on streak") : String(localized: "\(streakDays) days on streak")
-    }
-
-    private func dayToken(_ st: WeeklySplit.DayStatus) -> some View {
-        let initial = split[st.weekday].flatMap { routinesById[$0]?.name }.map { String($0.prefix(1)).uppercased() } ?? ""
-        return VStack(spacing: 6) {
-            Text(weekdayLetter(st.weekday)).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            tokenBody(st, initial: initial)
+    /// One month block: label «Jul · 6» over the dot grid, with the temporal fade (older months quieter).
+    private func monthColumn(_ m: ConstancyMonth) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            (Text(m.label) + Text(verbatim: " · ") + Text("\(m.count)"))
+                .font(StrandFont.overline).tracking(0.6)
+                .foregroundStyle(m.isCurrent ? theme.ink : theme.inkTertiary)
+            monthGrid(m)
         }
-        .frame(maxWidth: .infinity)
-        .contentShape(Rectangle())
-        // F7: a done day opens its session; today's token starts the session (the same door as the hero).
-        // Upcoming / rest tokens are inert (and never look tappable).
-        .onTapGesture {
-            switch st.state {
-            case .done:  openSession(st.weekday)
-            case .today: startToday()
-            default:     break
+        .opacity(m.fade)
+    }
+
+    /// The 7-wide dot grid for a month: a faint base dot per day, a tinted dot for days trained, and a
+    /// ring for today. Days fill row by row (day 1 top-left).
+    private func monthGrid(_ m: ConstancyMonth) -> some View {
+        let cell: CGFloat = 14, cols = 7
+        let rows = (m.daysInMonth + cols - 1) / cols
+        return VStack(spacing: 0) {
+            ForEach(0..<rows, id: \.self) { r in
+                HStack(spacing: 0) {
+                    ForEach(0..<cols, id: \.self) { c in
+                        let day = r * cols + c + 1
+                        dayCell(m, day: day, cell: cell)
+                    }
+                }
             }
         }
     }
 
     @ViewBuilder
-    private func tokenBody(_ st: WeeklySplit.DayStatus, initial: String) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 11, style: .continuous)
+    private func dayCell(_ m: ConstancyMonth, day: Int, cell: CGFloat) -> some View {
         ZStack {
-            switch st.state {
-            case .done:
-                shape.fill(theme.ink)
-                Image(systemName: "checkmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.paper)
-            case .today:
-                shape.fill(theme.paperHi).overlay(shape.strokeBorder(theme.ink, lineWidth: 1.5))
-                Text(initial).font(StrandFont.title2).foregroundStyle(theme.ink)
-                Circle().fill(theme.dataRecovery).frame(width: 6, height: 6)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing).padding(5)
-            case .upcoming:
-                shape.strokeBorder(theme.hairlineStrong, lineWidth: 1)
-                Text(initial).font(StrandFont.title2).foregroundStyle(theme.inkSecondary)
-            case .rest:
-                shape.strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong)
-                // A minimal horizontal dash reads as an instrument, not an illustration — no moon/zzz/heart
-                // (design decision, FER-762).
-                Image(systemName: "minus").font(.system(size: 14, weight: .semibold)).foregroundStyle(theme.hairlineStrong)
+            if day <= m.daysInMonth {
+                Circle().fill(theme.hairlineStrong).frame(width: 4, height: 4)
+                if let name = m.trained[day] {
+                    Circle().fill(routineFill(name)).frame(width: 9, height: 9)
+                }
+                if m.isCurrent && day == todayDayOfMonth {
+                    Circle().fill(theme.surface)
+                        .overlay(Circle().strokeBorder(todayRingTint, lineWidth: 1.5))
+                        .frame(width: 12, height: 12)
+                }
             }
         }
-        .frame(height: 46)
+        .frame(width: cell, height: cell)
+    }
+
+    /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
+    private var todayRingTint: Color { todayRoutine.map { routineTint($0.name) } ?? theme.hairlineStrong }
+
+    /// Legend: one swatch per routine family present in the plan, plus the «hoy» ring.
+    private var legend: some View {
+        HStack(spacing: 13) {
+            ForEach(legendItems, id: \.name) { item in
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                        .fill(routineFill(item.name)).frame(width: 7, height: 7)
+                    Text(item.label).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                }
+            }
+            Spacer(minLength: 8)
+            HStack(spacing: 5) {
+                Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1.5).frame(width: 8, height: 8)
+                Text("hoy").font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+            }
+        }
+    }
+
+    /// One legend entry per distinct routine in the split (first-seen order), name-tagged for its swatch fill.
+    private var legendItems: [(name: String, label: String)] {
+        var seen = Set<String>(); var out: [(name: String, label: String)] = []
+        for wd in orderedWeekdays {
+            guard let id = split[wd], let name = routinesById[id]?.name, !seen.contains(id) else { continue }
+            seen.insert(id); out.append((name, name))
+        }
+        return out
     }
 
     // MARK: - Empty state B (no split yet → build the week)
@@ -579,39 +748,52 @@ private struct EntrenarLanding: View {
     private var todayRoutineId: String? { WeeklySplit.todayRoutineId(split: split, todayWeekday: todayWeekday) }
     private var todayRoutine: Routine? { todayRoutineId.flatMap { routinesById[$0] } }
 
-    /// A Monday-anchored calendar for bucketing sessions into weeks.
-    private var weekCalendar: Calendar { var c = Calendar.current; c.firstWeekday = 2; return c }
-    private func weekStart(_ date: Date) -> Date { weekCalendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date }
-    private var thisWeekStart: Date { weekStart(Date()) }
+    private var todayDayOfMonth: Int { Calendar.current.component(.day, from: Date()) }
 
-    /// Completed sessions of THIS week, keyed by local weekday (the most recent per day).
-    private var completedThisWeek: [Int: StrengthSession] {
-        var out: [Int: StrengthSession] = [:]
+    /// One month's worth of Constancia dot-grid data.
+    private struct ConstancyMonth: Identifiable {
+        let id: Int              // 0 = current month, 1 = last month, 2 = two months ago
+        let label: String        // «Jul»
+        let count: Int           // sessions that month
+        let daysInMonth: Int
+        let trained: [Int: String]   // dayOfMonth → the (latest) routine's name that day («» = unknown routine)
+        let isCurrent: Bool
+        let fade: Double
+    }
+
+    /// The last three calendar months (oldest → current) as dot-grid data: for each, the days you trained
+    /// keyed to the latest routine that day, plus the session count. Read from the last-200 completed
+    /// sessions (well over 90 days' worth). No streak, no adherence — just the pattern.
+    private var constancyMonths: [ConstancyMonth] {
+        let cal = Calendar.current
+        guard let startOfThisMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date())) else { return [] }
+        // Bucket completed sessions by (year, month); within a month keep the first-seen (latest) routine per day.
+        var byYM: [DateComponents: (count: Int, trained: [Int: String])] = [:]
         for s in sessions where s.endTs != nil {
-            let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
-            guard weekStart(date) == thisWeekStart else { continue }
-            let wd = Calendar.current.component(.weekday, from: date)
-            if out[wd] == nil { out[wd] = s }   // sessions are newest-first → first seen is the latest
+            let c = cal.dateComponents([.year, .month, .day], from: Date(timeIntervalSince1970: TimeInterval(s.startTs)))
+            let key = DateComponents(year: c.year, month: c.month)
+            var bucket = byYM[key] ?? (0, [:])
+            bucket.count += 1
+            if let day = c.day, bucket.trained[day] == nil {
+                bucket.trained[day] = s.routineId.flatMap { routinesById[$0]?.name } ?? ""
+            }
+            byYM[key] = bucket
         }
-        return out
+        let fades: [Double] = [0.72, 0.88, 1.0]
+        return (0..<3).reversed().compactMap { offset in     // 2,1,0 → oldest first
+            guard let monthDate = cal.date(byAdding: .month, value: -offset, to: startOfThisMonth),
+                  let month = cal.dateComponents([.month], from: monthDate).month else { return nil }
+            let ym = cal.dateComponents([.year, .month], from: monthDate)
+            let bucket = byYM[DateComponents(year: ym.year, month: ym.month)] ?? (0, [:])
+            return ConstancyMonth(id: offset,
+                                  label: cal.shortMonthSymbols[(month - 1) % 12].capitalized,
+                                  count: bucket.count,
+                                  daysInMonth: cal.range(of: .day, in: .month, for: monthDate)?.count ?? 30,
+                                  trained: bucket.trained,
+                                  isCurrent: offset == 0,
+                                  fade: fades[2 - offset])
+        }
     }
-    private var completedWeekdays: Set<Int> { Set(completedThisWeek.keys) }
-    private var weekPlannedCount: Int { split.keys.count }
-    private var weekDoneCount: Int { Set(split.keys).intersection(completedWeekdays).count }
-
-    private func openSession(_ weekday: Int) {
-        guard let s = completedThisWeek[weekday] else { return }
-        let name = s.routineId.flatMap { routinesById[$0]?.name } ?? String(localized: "Workout")
-        openWorkoutSession(WorkoutSessionRoute(id: s.id, startTs: s.startTs, endTs: s.endTs,
-                                               strain: s.strain, avgHr: s.avgHr, routineName: name))
-    }
-
-    /// «Días cumpliendo el plan» — delega en el helper compartido `TrainingStreak` para que el número sea
-    /// EXACTAMENTE el mismo que muestra el bloque «Hoy en tu plan» del Daily Brief (FER-613).
-    private var adherenceStates: [WeeklySplit.DayAdherence] {
-        TrainingStreak.adherenceStates(sessions: sessions, split: split)
-    }
-    private var streakDays: Int { WeeklySplit.adherenceStreak(adherenceStates) }
 
     /// One row per distinct routine in the split: its name + the weekdays it's assigned to.
     private var planRows: [(routineId: String, name: String, days: String)] {
