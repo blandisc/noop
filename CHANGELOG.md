@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El Apple Watch ya puede grabar la sesión de fuerza / The Apple Watch can now record the strength session.**
+  **ES** — Al iniciar una sesión de fuerza con «Grabar en el Apple Watch» activado, el reloj se quedaba en «El reloj no respondió» y la sesión terminaba sin reloj. Faltaba el permiso `workout-processing` que watchOS exige para cualquier sesión de entrenamiento, así que el reloj nunca podía arrancar la grabación. Ya se agregó; el reloj engancha y graba frecuencia cardiaca y calorías.
+  **EN** — Starting a strength session with «Record on Apple Watch» on left the watch stuck on «Watch didn't respond», and the session ran without it. The `workout-processing` background mode that watchOS requires for any workout session was missing, so the watch could never start recording. It's now declared; the watch connects and records heart rate and calories.
+  ([project.yml](project.yml))
+
 - **Tocar un ejercicio abre su ficha, no lo agrega / Tapping an exercise opens its detail, no longer adds it.**
   **ES** — En «Agregar a rutina» → Biblioteca, tocar la fila de un ejercicio lo agregaba a la selección de una — no había forma de ver su ficha antes de decidir. Ahora tocar la fila abre siempre el detalle del ejercicio; el botón **«Agregar»** es su propio control y es lo único que agrega o quita el ejercicio de la selección.
   **EN** — In «Add to routine» → Library, tapping an exercise's row added it to the selection right away — there was no way to see its detail before deciding. Tapping the row now always opens the exercise's detail; the **«Add»** button is its own control and is the only thing that adds or removes the exercise from the selection.

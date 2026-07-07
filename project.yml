@@ -165,6 +165,11 @@ targets:
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.feriracheta.noop
         WKRunsIndependentlyOfCompanionApp: false
+        # Required by watchOS for ANY HKWorkoutSession (incl. the mirrored strength session
+        # of FER-391 F1). Without it startMirroringToCompanionDevice() fails and the iPhone
+        # times out to «El reloj no respondió». Matches Apple's multidevice-workout sample.
+        WKBackgroundModes:
+          - workout-processing
         NSHealthShareUsageDescription: "Cénit lee tu frecuencia cardiaca en el reloj durante la sesión de fuerza para grabar el entrenamiento. Todo se queda en tu dispositivo."
         NSHealthUpdateUsageDescription: "Cénit guarda tu sesión de fuerza como entrenamiento en Apple Salud, en el dispositivo y solo cuando tú lo permites."
     entitlements:
