@@ -156,7 +156,7 @@ struct ExerciseDetailScreen: View {
         if mediaCoordinator.isEnabled, let mediaURL, UIImage(contentsOfFile: mediaURL.path) != nil {
             ZStack(alignment: .topTrailing) {
                 AnimatedGIFView(url: mediaURL, isPlaying: isLoopPlaying)
-                    .frame(maxWidth: .infinity).frame(height: 168)
+                    .aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous))
                     .accessibilityHidden(true)
                 Button { isLoopPlaying.toggle() } label: {
@@ -172,7 +172,7 @@ struct ExerciseDetailScreen: View {
         } else {
             VStack(alignment: .leading, spacing: 8) {
                 ZStack {
-                    ExerciseThumbnail(heroHeight: 168)
+                    ExerciseThumbnail(hero: nil)
                     if loadingMedia { ProgressView().tint(theme.inkTertiary) }
                 }
                 if !mediaCoordinator.isEnabled { mediaOffHint }

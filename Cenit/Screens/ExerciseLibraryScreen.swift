@@ -16,6 +16,7 @@ struct ExerciseLibraryScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
@@ -182,7 +183,7 @@ struct ExerciseLibraryScreen: View {
             detail = ex
         } label: {
             HStack(spacing: 13) {
-                ExerciseThumbnail(side: 48)   // reserved media slot (FER-751); FER-722 fills it
+                ExerciseThumbView(exercise: ex, side: 48)   // cached GIF still, or paper placeholder (FER-790)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .multilineTextAlignment(.leading)

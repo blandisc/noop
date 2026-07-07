@@ -115,6 +115,14 @@ final class MediaDownloadCoordinator: ObservableObject {
         return cache.hasThumb(for: exercise.id) ? cache.thumbPath(exercise.id) : nil
     }
 
+    /// The exercise's already-cached media file, or nil — NEVER downloads. For list rows (FER-790):
+    /// a scrolling catalog of ~1500 exercises must show the thumb only when it's already on disk,
+    /// never fire a per-row GET. Keeps the zero-request guarantee: no cache / not cached ⇒ nil.
+    func cachedMediaURL(for exercise: Exercise) -> URL? {
+        guard let cache, cache.hasThumb(for: exercise.id) else { return nil }
+        return cache.thumbPath(exercise.id)
+    }
+
     /// Deletes every cached GIF and forgets recorded misses, so a future bulk run retries
     /// everything. Independent of the toggle: callable regardless of `isEnabled`.
     func deleteAllCachedMedia() {

@@ -14,7 +14,10 @@ struct AnimatedGIFView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIImageView {
         let view = UIImageView()
-        view.contentMode = .scaleAspectFill
+        // `.scaleAspectFit`, not `.fill`: the ExerciseDB media is a square GIF (180×180). Filling a
+        // non-square slot cropped the figure's head/feet and zoomed it (FER-790 follow-up); fitting a
+        // square slot shows the whole animation with no crop.
+        view.contentMode = .scaleAspectFit
         view.clipsToBounds = true
         if let decoded = Self.decode(url) {
             view.animationImages = decoded.frames
