@@ -21,9 +21,4 @@ final class MediaCacheTests: XCTestCase {
         try cache.deleteAll()
         XCTAssertFalse(cache.hasThumb(for: id))
     }
-
-    func testVideoURLIsNilWhenNotCached() throws {
-        let cache = try MediaCache()
-        XCTAssertNil(cache.videoURL(for: "MediaCacheTests-never-cached"))
-    }
 }

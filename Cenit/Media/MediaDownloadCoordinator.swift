@@ -1,17 +1,18 @@
 import Foundation
 import StrandTraining
 
-// MARK: - The single gate for exercise-media downloads (FER-722, FER-786)
+// MARK: - The single gate for exercise-media downloads (FER-722, FER-786, FER-790)
 //
 // Every network call this feature ever makes flows through `bulkDownloadThumbsIfNeeded()` or
-// `loopIfNeeded(for:)`, and both guard on `isEnabled` before touching `URLSession` at all. With the
+// `mediaIfNeeded(for:)`, and both guard on `isEnabled` before touching `URLSession` at all. With the
 // toggle off (the default), nothing is ever fetched — this is what makes "toggle off ⇒ zero requests"
 // a structural property, checkable by a unit test, rather than a promise buried in call-site discipline.
 //
 // Catalog→media mapping (FER-786): since the catalog IS ExerciseDB (FER-779), each exercise carries its
 // own `gifUrl` baked by id — no runtime name search, no API key. The download is a plain GET of that
 // URL off the ExerciseDB CDN. An exercise with no `gifUrl` is a miss → the YouTube hand-off fallback
-// stays. The GIF serves as both the still thumbnail and the looping clip.
+// stays. The GIF is a single asset that serves as both the still thumbnail and the animated loop
+// (FER-790) — one download, one cached file, rendered still in rows and animated in the detail hero.
 @MainActor
 final class MediaDownloadCoordinator: ObservableObject {
     static let enabledKey = "noop.exerciseMediaEnabled"
@@ -96,26 +97,25 @@ final class MediaDownloadCoordinator: ObservableObject {
         downloadState = matched == 0 ? .failed : .completed(matched: matched, total: toDownload.count)
     }
 
-    /// The cached thumb for `exercise`, if the bulk download already fetched it. Never triggers a
-    /// download itself — that only happens in `bulkDownloadThumbsIfNeeded()`.
-    func cachedThumbURL(for exercise: Exercise) -> URL? {
-        guard let cache, cache.hasThumb(for: exercise.id) else { return nil }
-        return cache.thumbPath(exercise.id)
-    }
-
-    /// Fetch the loop for one exercise, on demand (called from the detail screen). Returns the
-    /// cached file if present; otherwise downloads its baked `gifUrl` and caches it, or nil if unavailable.
-    func loopIfNeeded(for exercise: Exercise) async -> URL? {
-        guard isEnabled, let cache else { return nil }
-        if let cached = cache.videoURL(for: exercise.id) { return cached }
-        guard let loopURL = mediaURL(for: exercise) else {
-            recordMisses([exercise.id])
+    /// The exercise's media file (the animated GIF) for the detail hero, on demand. Returns the
+    /// cached file if already downloaded; otherwise, only if enabled, downloads its baked `gifUrl`
+    /// and caches it. Nil if the toggle is off and nothing is cached, or the exercise has no media —
+    /// so the hero falls back to the placeholder. The zero-request guarantee holds: a disabled
+    /// coordinator with no cache never reaches the GET.
+    func mediaIfNeeded(for exercise: Exercise) async -> URL? {
+        guard let cache else { return nil }
+        if cache.hasThumb(for: exercise.id) { return cache.thumbPath(exercise.id) }
+        guard isEnabled, let url = mediaURL(for: exercise) else {
+            if isEnabled { recordMisses([exercise.id]) }
             return nil
         }
-        return try? await cache.storeVideo(from: loopURL, for: exercise.id, session: session)
+        guard let (data, response) = try? await session.data(from: url),
+              (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        try? cache.storeThumb(data, for: exercise.id)
+        return cache.hasThumb(for: exercise.id) ? cache.thumbPath(exercise.id) : nil
     }
 
-    /// Deletes every cached thumb/video and forgets recorded misses, so a future bulk run retries
+    /// Deletes every cached GIF and forgets recorded misses, so a future bulk run retries
     /// everything. Independent of the toggle: callable regardless of `isEnabled`.
     func deleteAllCachedMedia() {
         try? cache?.deleteAll()
