@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Importar un plan ya reconoce tus ejercicios / Importing a plan now recognizes your exercises.**
+  **ES** — Al importar un plan con IA, la app ahora empareja sola la gran mayoría de los ejercicios: entiende variaciones del nombre ("Press banca" = "Press de banca con barra"), conoce los nombres comunes de gym ("press militar de pie", "prensa 45") y marca cada emparejado automático con ✨ para que lo revises o cambies antes de importar — nada entra sin pasar por ti. Los dudosos siguen pidiendo tu decisión, como antes. El prompt que copias a tu IA también mejoró para que elija la variante correcta del catálogo.
+  **EN** — When importing an AI plan, the app now auto-matches the vast majority of exercises: it understands name variations, knows common gym names, and marks every automatic match with ✨ so you can review or change it before importing — nothing gets in without passing through you. Uncertain ones still ask for your decision, as before. The prompt you copy to your AI also improved so it picks the right catalog variant.
+  ([WorkoutProgram.swift](Packages/StrandImport/Sources/StrandImport/WorkoutProgram.swift), [exercise-aliases.json](Packages/StrandImport/Sources/StrandImport/Resources/exercise-aliases.json), [WorkoutImportView.swift](Cenit/Screens/WorkoutImportView.swift), [WorkoutPrompt.swift](Cenit/Data/WorkoutPrompt.swift))
+
 - **Los ejercicios en español ya suenan a gimnasio / Exercise names in Spanish now sound like the gym.**
   **ES** — Se retradujeron los 1,500 nombres de la biblioteca de ejercicios con una guía de estilo: capitalización uniforme, terminología real de gym mexicano (press, remo, jalón, peso muerto, sentadilla búlgara…), equipo consistente al final ("con barra", "con mancuernas", "en máquina Smith") y sin traducciones literales raras. Se nota en la Biblioteca, al armar rutinas y en las sugerencias al importar un plan.
   **EN** — All 1,500 exercise-library names were retranslated with a style guide: uniform capitalization, real Mexican-gym terminology, consistent equipment phrasing, and no odd literal translations. Visible in the Library, when building routines, and in the suggestions when importing a plan.

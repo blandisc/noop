@@ -14,6 +14,8 @@ let package = Package(
         .target(name: "StrandImport", dependencies: [
             "WhoopStore", "StrandTraining",
             .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+        ], resources: [
+            .process("Resources"),
         ]),
         .testTarget(name: "StrandImportTests", dependencies: ["StrandImport", "WhoopStore"], resources: [
             .copy("Resources"),

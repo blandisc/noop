@@ -43,6 +43,7 @@ struct WorkoutImportView: View {
     @State private var reconciler: WorkoutExerciseReconciler?   // built once at parse, reused at save
     @State private var unmatched: [String] = []
     @State private var resolution: [String: Exercise] = [:]
+    @State private var autoMatched: Set<String> = []   // resolved by autoMatch (FER-794) — marked, reversible
     @State private var omitted: Set<String> = []   // normalized names the user chose not to import (FER-536)
     @State private var mappingTarget: MappingName?  // name being mapped → drives the library picker sheet
     @State private var createdCount = 0
@@ -186,14 +187,18 @@ struct WorkoutImportView: View {
                 }
                 .accessibilityElement(children: .combine)
             } else if let resolved {
+                let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
                 HStack(spacing: NoopMetrics.space2) {
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
                         .font(StrandFont.subhead).foregroundStyle(theme.verdict)
                         .accessibilityHidden(true)
-                    Text("Matched · \(StrengthDisplay.name(resolved))")
-                        .font(StrandFont.subhead).foregroundStyle(theme.verdict)
+                    Group {
+                        if isAuto { Text("Matched automatically · \(StrengthDisplay.name(resolved))") }
+                        else { Text("Matched · \(StrengthDisplay.name(resolved))") }
+                    }
+                    .font(StrandFont.subhead).foregroundStyle(theme.verdict)
                     Spacer(minLength: NoopMetrics.space2)
-                    undoLink { resolution[key] = nil }
+                    undoLink { resolution[key] = nil; autoMatched.remove(key) }
                     Button { mappingTarget = MappingName(name: name) } label: {
                         Text("Change mapping").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
                     }
@@ -346,6 +351,7 @@ struct WorkoutImportView: View {
     private func resolve(_ name: String, with exercise: Exercise) {
         let key = norm(name)
         resolution[key] = exercise
+        autoMatched.remove(key)    // a user pick is no longer "automatic" (FER-794)
         omitted.remove(key)        // resolving overrides a prior omit
         mappingTarget = nil
         // The learned alias is persisted at save() (FER-536), not here, so Undo can revert cleanly.
@@ -382,10 +388,19 @@ struct WorkoutImportView: View {
             let p = try importer.parse(data)
             program = p
             parseError = nil
-            let r = WorkoutExerciseReconciler(known: catalog, learned: learnedAliases)
+            let r = WorkoutExerciseReconciler(known: catalog, learned: learnedAliases,
+                                              aliases: ExerciseAliasTable.bundled)
             reconciler = r
             unmatched = r.unmatchedNames(in: p)
             resolution = [:]
+            autoMatched = []
+            // FER-794: pre-resolve what autoMatch can (content-key / derived alias / confident fuzzy)
+            // and MARK it — the mapping step still shows it, reversible, before anything is imported.
+            for (name, hit) in r.autoMatches(in: p) {
+                let key = norm(name)
+                resolution[key] = hit
+                autoMatched.insert(key)
+            }
             phase = unmatched.isEmpty ? .confirm : .mapping
         } catch let error as WorkoutProgramParseError {
             parseError = error
@@ -405,7 +420,8 @@ struct WorkoutImportView: View {
     /// Resolve every exercise to a catalog id (matched or user-resolved) and write one `Routine` per
     /// program routine, in order. Idempotent ids are fresh UUIDs — re-importing makes new routines.
     private func save(_ program: WorkoutProgram) {
-        let reconciler = self.reconciler ?? WorkoutExerciseReconciler(known: catalog)
+        let reconciler = self.reconciler
+            ?? WorkoutExerciseReconciler(known: catalog, aliases: ExerciseAliasTable.bundled)
         let now = Int(Date().timeIntervalSince1970)
         let omittedSnapshot = omitted
         let resolutionSnapshot = resolution
