@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Un cuerpo de verdad en tu mapa de fatiga / A real body on your fatigue map.**
+  **ES** — El mapa muscular de Entrenar cambia el monigote esquemático por una silueta anatómica de frente y espalda, dibujada en tu teléfono. El cuerpo es «papel»: solo el calor es dato — un músculo fresco casi desaparece en el fondo cálido y uno cargado salta en ámbar. Se lee de un vistazo qué entrenar hoy y qué todavía carga trabajo.
+  **EN** — Entrenar's muscle map trades the schematic stick-figure for a real front/back anatomical silhouette, drawn on your phone. The body is «paper»: only heat is data — a fresh muscle nearly vanishes into the warm background while a loaded one leaps out in amber. You read at a glance what to train today and what still carries load.
+  ([MuscleAtlas.swift](Cenit/Screens/MuscleAtlas.swift), [MuscleMapScreen.swift](Cenit/Screens/MuscleMapScreen.swift))
+
 - **Las animaciones de ejercicio ahora siempre embonan / Exercise animations now always line up.**
   **ES** — Si activas «Descargar biblioteca de ejercicios» en Ajustes, cada ejercicio baja su animación por su identificador propio, no adivinando por nombre. Resultado: se acabaron los ejercicios sin imagen porque el nombre no coincidía. Sigue siendo opcional (apagado por defecto) y todo se guarda en tu teléfono; ya ni siquiera hace falta una llave de API.
   **EN** — If you turn on «Descargar biblioteca de ejercicios» in Settings, each exercise fetches its animation by its own id instead of guessing by name. The result: no more exercises missing their image because a name didn't match. Still opt-in (off by default) and cached on your phone — and it no longer needs an API key at all.
