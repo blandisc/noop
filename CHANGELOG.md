@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los vitales y la frecuencia cardíaca adoptan el mismo estándar / Vitals and heart rate adopt the same standard.**
+  **ES** — Las pantallas de VFC, FC en reposo, respiración, oxígeno en sangre, temperatura de piel y frecuencia cardíaca ahora llevan el título con icono de la métrica (sin serif) y el *sello de origen* al pie (banda, Apple Salud o calculado). Donde aplica (FC en reposo, respiración, pasos) el toggle Media/Rangos pasó a la versión compacta.
+  **EN** — The HRV, resting HR, respiration, blood oxygen, skin temperature and heart-rate screens now use the metric-icon title (no serif) and the *origin seal* at the foot (band, Apple Health or computed). Where it applies (resting HR, respiration, steps) the Average/Ranges toggle became the compact one.
+  ([MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift), [SkinTempDetailScreen.swift](Cenit/Screens/SkinTempDetailScreen.swift))
+
 - **Pantallas de detalle más consistentes: título con icono, sello de origen y toggle Media/Rangos / More consistent detail screens: icon title, origin seal, Average/Ranges toggle.**
   **ES** — Las 5 pantallas de detalle compound (Recuperación, Sueño, Esfuerzo, Estrés, Carga de entrenamiento) adoptan el estándar «Tendencias v2»: el título ahora es el icono de la métrica + su nombre en mayúsculas (sin serif), la procedencia del dato baja a un *sello de origen* al pie, y el bloque de historial deja alternar entre la línea **Media** y los **Rangos** poblacionales (nuevo en Recuperación y Estrés, con carriles tocables).
   **EN** — The 5 compound detail screens (Recovery, Sleep, Strain, Stress, Training load) adopt the «Trends v2» standard: the title is now the metric icon + its name in caps (no serif), provenance moves to an *origin seal* at the foot, and the history block switches between the **Average** line and the population **Ranges** (new on Recovery and Stress, with tappable lanes).
