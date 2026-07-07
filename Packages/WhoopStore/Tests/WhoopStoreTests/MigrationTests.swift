@@ -656,6 +656,37 @@ final class MigrationTests: XCTestCase {
         }
     }
 
+    /// v27 (FER-779): custom exercises gain `bodyParts`/`gifUrl` for the ExerciseDB model. Append-only —
+    /// a pre-v27 row survives with the new columns at their defaults (empty parts, no gif), and the v13
+    /// `cues` column (reused for `instructions`) is untouched.
+    func testV27AddsCustomExerciseColumnsAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v26")
+
+        // A pre-v27 custom exercise (v13 schema: no bodyParts / gifUrl).
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO customExercise (id, name, type, equipment, primaryMuscles, secondaryMuscles, cues)
+                VALUES ('ex1','Jalón neutro','weightReps','cable','["lats"]','["biceps"]','["Baja controlado"]')
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v27
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "customExercise").map(\.name)
+            XCTAssertTrue(cols.contains("bodyParts"), "v27 must add customExercise.bodyParts")
+            XCTAssertTrue(cols.contains("gifUrl"), "v27 must add customExercise.gifUrl")
+            let row = try Row.fetchOne(db, sql: "SELECT * FROM customExercise WHERE id='ex1'")
+            XCTAssertNotNil(row, "the pre-v27 custom exercise must survive")
+            XCTAssertEqual(row?["bodyParts"] as String?, "[]", "new bodyParts column defaults to empty JSON array")
+            XCTAssertNil(row?["gifUrl"] as String?, "new gifUrl column defaults to NULL")
+            XCTAssertEqual(row?["cues"] as String?, "[\"Baja controlado\"]", "the reused cues column is untouched")
+            XCTAssertEqual(row?["name"] as String?, "Jalón neutro", "existing columns untouched")
+        }
+    }
+
     /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.
     func testV12CreatesExperimentTable() async throws {
         let store = try await WhoopStore.inMemory()
