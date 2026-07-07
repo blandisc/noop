@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El Apple Watch ya puede grabar la sesión de fuerza / The Apple Watch can now record the strength session.**
+  **ES** — Al iniciar una sesión de fuerza con «Grabar en el Apple Watch» activado, el reloj se quedaba en «El reloj no respondió» y la sesión terminaba sin reloj. Faltaba el permiso `workout-processing` que watchOS exige para cualquier sesión de entrenamiento, así que el reloj nunca podía arrancar la grabación. Ya se agregó; el reloj engancha y graba frecuencia cardiaca y calorías.
+  **EN** — Starting a strength session with «Record on Apple Watch» on left the watch stuck on «Watch didn't respond», and the session ran without it. The `workout-processing` background mode that watchOS requires for any workout session was missing, so the watch could never start recording. It's now declared; the watch connects and records heart rate and calories.
+  ([project.yml](project.yml))
+
 - **La hoja «Agregar a rutina» ya habla español / The «Add to routine» sheet now speaks Spanish.**
   **ES** — La hoja «Agregar a rutina» → Biblioteca mezclaba inglés y español en pantalla («Add», «Search exercise», «Select exercises», «Create exercise», etc.). Se tradujeron todos los literales pendientes y los conteos («N ejercicios», «Agregar N ejercicio(s)») ahora usan una plantilla de plural real (1 ejercicio / 2 ejercicios) en vez de una «s» final fija a la inglesa — arreglo que de paso corrige un botón que se había quedado en inglés puro por un ternario que perdía la localización.
   **EN** — The «Add to routine» → Library sheet mixed English and Spanish on screen («Add», «Search exercise», «Select exercises», «Create exercise», etc.). All remaining literals were translated, and the counts («N exercises», «Add N exercise(s)») now use a real plural template (1 exercise / 2 exercises) instead of a fixed English-style trailing «s» — which also fixed a button that had silently fallen back to plain English due to a ternary that lost its localization.
