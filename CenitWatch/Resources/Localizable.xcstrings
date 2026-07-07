@@ -1,6 +1,18 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Set %lld / %lld" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set %lld / %lld" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Serie %lld / %lld" } }
+      }
+    },
+    "Skip rest" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip rest" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Saltar descanso" } }
+      }
+    },
     "Log set" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Log set" } },

@@ -29,6 +29,11 @@ final class WorkoutMirrorContractTests: XCTestCase {
             .skipRest(sessionId: "s1"),
             .adjustRest(sessionId: "s1", deltaS: 30),
             .adjustRest(sessionId: "s1", deltaS: -30),
+            // FER-809 — capture context (iPhone → watch), with and without a load.
+            .capture(WorkoutCaptureSnapshot(sessionId: "s1", routineName: "Empuje", setNumber: 3, setTotal: 4,
+                                            exerciseName: "Press banca", returnDetail: "60 kg × 8", bpm: 118)),
+            .capture(WorkoutCaptureSnapshot(sessionId: "s1", routineName: "Empuje", setNumber: 1, setTotal: 3,
+                                            exerciseName: "Plancha", returnDetail: "", bpm: nil)),
         ]
 
         for message in messages {
