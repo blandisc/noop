@@ -350,6 +350,32 @@ extension MetricInfo {
         )
     }
 
+    /// Skin temperature — the nightly deviation (°C) from your own baseline, the way the strap reports it
+    /// (not an absolute temperature). Modelled like the other vitals: the F6 levels instrument over the
+    /// engine's own cut points (`MetricLevels.skinTemp`, ±0.4 / +0.8 °C, mirroring `ReadinessEngine`), so
+    /// the summary reads «where today sits vs your base» with the chart + range selector, never a clinical
+    /// claim. Blood oxygen used to hold this tile but only ever came from Apple Health; skin temp is a real
+    /// on-device band signal at rest, so it earns the slot. (FER-763)
+    static func skinTemp(_ value: Double?) -> MetricInfo {
+        MetricInfo(
+            id: "skin_temp",
+            name: "Skin Temperature",
+            headline: "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness.",
+            displayValue: value.map { String(format: "%+.1f", $0) } ?? "—",
+            unit: "°C",
+            headerTint: value == nil ? .neutral : .metric,
+            bands: [],
+            note: value == nil
+                ? "No skin temperature last night. That can happen if you didn't wear the strap, or it hasn't gathered enough nights to set your baseline yet."
+                : "Measured at your wrist; the deviation from your personal baseline matters more than the absolute value. An isolated reading is usually noise, like a cold room or how the sensor sat. A sustained run is what's worth a look.",
+            method: Method(
+                prose: "Your strap reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C).",
+                citation: "Baseline-relative skin temperature as an early illness signal (cf. Oura ~+0.5 °C). A wrist trend, not a clinical thermometer. NOOP is not a medical device."),
+            levelsMetric: .skinTemp,
+            levelsTodayValue: value
+        )
+    }
+
     /// VO₂max (Apple Health, measured · FER-257). No fixed band table — VO₂max norms are age- & sex-
     /// specific, so the "where you stand" reading lives in the detail's category block (`VO2maxReference`),
     /// not a one-size table here. The method disclosure carries the source (Apple Watch), the reference
@@ -622,6 +648,7 @@ struct MetricInfoSheet: View {
         case "hrv":                 return theme.dataHrv
         case "heart_rate", "rhr":   return theme.dataHeart
         case "spo2":                return theme.dataSpO2
+        case "skin_temp":           return theme.dataStrain
         case "steps":               return theme.dataSteps
         case "recovery":            return theme.dataRecovery
         // Stress has no single data hue: its bands are tinted by level (verdict/warning/critical), so
@@ -793,6 +820,7 @@ struct MetricInfoSheet: View {
         case "strain":    return "bolt"
         case "steps":     return "figure.walk"
         case "spo2":      return "drop"
+        case "skin_temp": return "thermometer.medium"
         case "resp_rate": return "lungs"
         case "stress":    return "waveform.path"
         default:          return nil
@@ -902,7 +930,7 @@ struct MetricInfoSheet: View {
     /// The redesigned vital template path (F2 §6-11): the six single-signal vitals (HRV · resting HR ·
     /// SpO₂ · steps · stress · respiration) share one Grotesk header + hero skin. Sleep and strain carry
     /// bespoke blocks, so they keep their own layout; recovery has its own path above. (FER-710)
-    private static let vitalTemplateIDs: Set<String> = ["hrv", "rhr", "spo2", "steps", "stress", "resp_rate"]
+    private static let vitalTemplateIDs: Set<String> = ["hrv", "rhr", "spo2", "skin_temp", "steps", "stress", "resp_rate"]
     private var isVitalTemplate: Bool { info.usesLevels && Self.vitalTemplateIDs.contains(info.id) }
 
     /// The data-origin dot for a redesigned header: a 6px dot in the origin's colour + a short label. The
@@ -970,6 +998,10 @@ struct MetricInfoSheet: View {
         case ("stress", "high"):      return "Running high today."
         case ("resp_rate", "normal"):   return "In a normal range."
         case ("resp_rate", "elevated"): return "Above your usual."
+        case ("skin_temp", "below"):    return "Below your base."
+        case ("skin_temp", "inBase"):   return "In your base."
+        case ("skin_temp", "warm"):     return "Running warm vs your base."
+        case ("skin_temp", "elevated"): return "Well above your base, worth a look."
         case ("strain", "rest"):     return "Very light day so far."
         case ("strain", "light"):    return "A light day so far."
         case ("strain", "moderate"): return "A solid, moderate day."
@@ -2226,6 +2258,18 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
 #Preview("MetricInfoSheet — SpO₂") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .spo2(97))
+    }
+}
+
+#Preview("MetricInfoSheet — Skin temp") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .skinTemp(0.3))
+    }
+}
+
+#Preview("MetricInfoSheet — Skin temp (no data)") {
+    Color.clear.sheet(isPresented: .constant(true)) {
+        MetricInfoSheet(info: .skinTemp(nil))
     }
 }
 
