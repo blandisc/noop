@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los vitales muestran tu posición con un slider más simple / Vitals show your position with a simpler slider.**
+  **ES** — En VFC, FC en reposo y respiración, la posición de hoy dentro de tu rango normal se muestra con un slider limpio (pista del rango + marcador + «bajo · tu normal · alto»), como el diseño de referencia.
+  **EN** — For HRV, resting HR and respiration, today's position within your normal range is shown with a clean slider (range track + thumb + «low · your normal · high»), matching the reference design.
+  ([MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **Detalles de Tendencias más fieles al diseño / Trends details truer to the design.**
   **ES** — Reconciliación con el handoff: el calendario de 90 días de Recuperación queda visible (ya no colapsado), «Qué la mueve» de Edad física pasa a dos tiles, y «Tras cada deporte» muestra el impacto como un dato prominente «−N pts» en ámbar.
   **EN** — Design reconciliation: Recovery's 90-day calendar is now visible (no longer collapsed), Fitness age's «What moves it» becomes two tiles, and «After each sport» shows the impact as a prominent «−N pts» amber datum.
