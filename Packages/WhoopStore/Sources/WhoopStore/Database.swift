@@ -638,9 +638,17 @@ extension WhoopStore {
         // the column was not, so shipped migrations aren't edited). Existing custom rows get the
         // defaults (empty parts, no gif).
         migrator.registerMigration("v27") { db in
+            // Idempotent add: a partial pre-release build could have already grown these columns
+            // without recording v27 (the ALTER then throws "duplicate column" on every launch and
+            // wedges startup). Guard on the live schema so re-running is a no-op, not a crash.
+            let existing = Set(try db.columns(in: "customExercise").map(\.name))
             try db.alter(table: "customExercise") { t in
-                t.add(column: "bodyParts", .text).notNull().defaults(to: "[]")   // JSON array
-                t.add(column: "gifUrl", .text)                                    // NULL = no media
+                if !existing.contains("bodyParts") {
+                    t.add(column: "bodyParts", .text).notNull().defaults(to: "[]")   // JSON array
+                }
+                if !existing.contains("gifUrl") {
+                    t.add(column: "gifUrl", .text)                                    // NULL = no media
+                }
             }
         }
         return migrator

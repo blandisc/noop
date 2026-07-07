@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La app ya no se queda atorada al abrir tras actualizar / The app no longer gets stuck on open after an update.**
+  **ES** — Se corrige un caso en que, al actualizar sobre una instalación previa, la app se quedaba trabada en el arranque (la base de datos intentaba crear una columna que ya existía y fallaba en cada intento). Ahora la actualización de la base de datos revisa lo que ya está antes de tocarlo, así que abre normal.
+  **EN** — Fixes a case where, updating over a previous install, the app got stuck on launch (its database tried to create a column that already existed and failed on every attempt). The database update now checks what's already there before touching it, so it opens normally.
+  ([Database.swift](Packages/WhoopStore/Sources/WhoopStore/Database.swift))
+
 - **La animación se ve completa y las miniaturas ya aparecen / The animation shows in full and thumbnails now appear.**
   **ES** — Dos arreglos al media de ejercicios: (1) la animación de la ficha ya no se recorta ni se acerca de más — el marco es cuadrado como el GIF, así que se ve el cuerpo entero de cabeza a pies. (2) Las filas de la Biblioteca por fin muestran su miniatura (el primer cuadro del GIF ya descargado) en vez de un recuadro vacío; se cargan solo al aparecer en pantalla y solo si ya están en disco, sin descargas por fila. Nota: los GIF de la fuente (ExerciseDB) son de 180×180, así que se ven algo pixelados — es el límite del origen, no un defecto del app.
   **EN** — Two fixes to exercise media: (1) the card's animation no longer crops or over-zooms — the frame is square like the GIF, so you see the whole body head to toe. (2) Library rows finally show their thumbnail (the first frame of the already-downloaded GIF) instead of an empty tile; they load only as they scroll into view and only if already on disk, with no per-row downloads. Note: the source GIFs (ExerciseDB) are 180×180, so they look a bit pixelated — that's the source's limit, not an app defect.
