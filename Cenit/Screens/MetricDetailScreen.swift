@@ -153,6 +153,38 @@ struct MetricDetailScreen: View {
     /// The default window: a short week in focus, a month at full depth.
     private var defaultRange: ExploreRange { depth == .focus ? .week : .month }
 
+    // MARK: - §8.7 header + origin seal (handoff v2, FER-804)
+
+    /// The metric's standardized icon + hue for the §8.7 title overline. nil → keep the plain title.
+    private var metricGlyph: MetricGlyph? {
+        switch spec.descriptor.key {
+        case "hrv":        return .hrv
+        case "rhr":        return .restingHR
+        case "resp_rate":  return .respiration
+        case "spo2":       return .spo2
+        case "heart_rate": return .heartRate
+        case "steps":      return .steps
+        case "vo2max":     return .vo2max
+        default:           return nil
+        }
+    }
+
+    /// Where this metric's reading comes from, for the OriginStamp at the foot. Steps + VO₂max are Apple
+    /// Health metrics; the cross-source vitals follow today's actual source; the rest default to the band.
+    private var footerOrigin: DataOrigin {
+        switch spec.descriptor.key {
+        case "steps", "vo2max": return .apple
+        default:                return todayFromApple ? .apple : .band
+        }
+    }
+
+    /// The standardized origin seal at the foot (`● {Banda/Apple Salud/Calculado} · hoy`).
+    private var originFooter: some View {
+        OriginStamp(origin: footerOrigin, when: String(localized: "hoy"), theme: theme)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 2)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -183,6 +215,10 @@ struct MetricDetailScreen: View {
                     }
                 } else {
                     ChartWell(theme).loading(height: 160)
+                }
+                // Standardized origin seal at the foot (FER-804), once there's data to attribute.
+                if loaded, !series.isEmpty || !intradayCurve.isEmpty {
+                    originFooter
                 }
             }
             .padding(NoopMetrics.screenPadding)
@@ -425,7 +461,7 @@ struct MetricDetailScreen: View {
         VStack(alignment: .leading, spacing: 6) {
             // Serif in-screen title (FER-581). The "· 7-day average / · today" context the old overline
             // carried now lives in `heroSecondary` below the numeral; the title is just the metric name.
-            InstrumentoScreenTitle(legacyHeroTitle, theme: theme)
+            InstrumentoScreenTitle(legacyHeroTitle, theme: theme, glyph: metricGlyph)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(heroValue.map { fmt($0) } ?? "—")
                     .instrumentoHero(44)
@@ -549,7 +585,12 @@ struct MetricDetailScreen: View {
             // rangos» toggle: your trend + personal band, or the classification ranges showing where you
             // fall. The period picker lives in `periodSelector` above. (Detalle de Vital)
             if hasRangesMode {
-                SegmentedPillControl(ChartMode.allCases, selection: $chartMode, theme: theme) { chartModeLabel($0) }
+                // Compact «Media ⇄ Rangos» toggle, right-aligned (handoff v2, FER-804) — replaces the
+                // full-width pill. The period picker lives in `periodSelector` above.
+                HStack {
+                    Spacer(minLength: 0)
+                    CompactTrendToggle(mode: chartModeBridge, theme: theme)
+                }
             }
             MetricTrendChart(
                 range: $range,
@@ -701,8 +742,12 @@ struct MetricDetailScreen: View {
         return ticks
     }
 
-    private func chartModeLabel(_ m: ChartMode) -> String {
-        m == .movingAverage ? String(localized: "Moving average") : String(localized: "Ranges")
+    /// Bridges the compact toggle's `TrendMode` to the existing `chartMode` state (FER-804).
+    private var chartModeBridge: Binding<TrendMode> {
+        Binding(
+            get: { chartMode == .ranges ? .rangos : .media },
+            set: { chartMode = ($0 == .rangos) ? .ranges : .movingAverage }
+        )
     }
 
     /// Y-axis ticks at the band thresholds (e.g. SpO₂ 90/95/100) for the clinical chart; `nil` otherwise
@@ -1528,7 +1573,7 @@ struct MetricDetailScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             // Serif in-screen title (the «Instrumento» detail identity, FER-581). No ⓘ: the dueño chose to
             // keep the plain-language reading always visible below the hero, so a disclosure is redundant.
-            InstrumentoScreenTitle(narrativeHeroTitle, theme: theme)
+            InstrumentoScreenTitle(narrativeHeroTitle, theme: theme, glyph: metricGlyph)
             if isIntraday {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(heroTodayValue.map { fmt($0) } ?? "—")
