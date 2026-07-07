@@ -180,7 +180,7 @@ struct MetricDetailScreen: View {
 
     /// The standardized origin seal at the foot (`● {Banda/Apple Salud/Calculado} · hoy`).
     private var originFooter: some View {
-        OriginStamp(origin: footerOrigin, when: String(localized: "hoy"), theme: theme)
+        OriginStamp(origin: footerOrigin, when: String(localized: "today"), theme: theme)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 2)
     }

@@ -205,7 +205,7 @@ struct TrainingLoadSheet: View {
                 if let onSeeTrends { seeTrendsButton(onSeeTrends) }
                 hedgeFooter
                 // Standardized origin seal at the foot (FER-803): load is computed from your strap's strain.
-                OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+                OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
                     .padding(.top, 2)
             }
             .padding(20)

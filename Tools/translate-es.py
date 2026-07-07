@@ -18,6 +18,11 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-806 — Tendencias v2: sello de origen + toggle compacto Media/Rangos.
+    "Computed": "Calculado",
+    "Mean": "Media",
+    "today, in progress": "hoy, en curso",
+    "Base": "Base",
     # FER-459/469 — «N días/noches» por banda en la lista de rangos. Las líneas
     # «%lld of the last %lld days/nights in this range» y «%lld days» ya existen en el catálogo.
     "%lld day": "%lld día",

@@ -42,7 +42,7 @@ struct BodyAgeSheet: View {
                 if let r = result {
                     withData(r)
                     // Standardized origin seal (FER-805): body age is computed on-device.
-                    OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+                    OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 2)
                 } else { emptyState }
