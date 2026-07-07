@@ -103,28 +103,35 @@ private struct EntrenarLanding: View {
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
-    /// Tighter section rhythm than the global `NoopMetrics.sectionGap` (28): the planner stacks several
-    /// sections, so the default rhythm left too much dead vertical space (FER-578). Local to Entrenar.
-    private let sectionRhythm: CGFloat = 18
+    /// Cap for the two upper flexible gaps (FER-785): they grow from `sectionGap` up to this, then stop, so
+    /// the uncapped gap ABOVE Constancia absorbs the rest — Constancia settles at the bottom while hero+plan
+    /// stay a tight cluster. Derived from the section token, not a magic number.
+    private let flexGapCap: CGFloat = NoopMetrics.sectionGap * 2
     private var todayWeekday: Int { Calendar.current.component(.weekday, from: Date()) }
     private var recovery: Double? { repo.today?.recovery }
 
     var body: some View {
         GeometryReader { geo in
             ScrollView {
-                VStack(alignment: .leading, spacing: sectionRhythm) {
+                // Spacing is owned by explicit spacers, not the VStack, so the air between blocks can flex
+                // (FER-785): flexible gaps share the dead space when the plan is short and compress to
+                // `sectionGap` as it grows toward 7 days. Never below `sectionGap` — blocks never touch.
+                VStack(alignment: .leading, spacing: 0) {
                     header
                     if loaded {
                         if split.isEmpty {
+                            Spacer().frame(height: NoopMetrics.sectionGap)
                             emptyStateB
                         } else {
+                            Spacer().frame(height: NoopMetrics.sectionGap)   // header → hero: fixed top anchor
                             hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
+                            Spacer(minLength: NoopMetrics.sectionGap).frame(maxHeight: flexGapCap)
                             suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
+                            Spacer(minLength: NoopMetrics.sectionGap).frame(maxHeight: flexGapCap)
                             tambienEnTuPlan  // ③ the rest of the plan + «Formas de entrenar» (FER-783)
-                            // ④ Constancia drifts to the bottom: a flexible spacer eats the dead space above
-                            // the dock when the content is shorter than the screen, and collapses otherwise
-                            // (FER-784) — hierarchy by space, no guilt streak.
-                            Spacer(minLength: sectionRhythm)
+                            // ④ Constancia: the uncapped gap takes the lion's share of the dead space, so it
+                            // settles at the bottom over the dock (weighted, not even — FER-784/785).
+                            Spacer(minLength: NoopMetrics.sectionGap)
                             constanciaCard
                         }
                     }
