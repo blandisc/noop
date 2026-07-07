@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Un solo botón «Formas de entrenar» en Entrenar / One «Formas de entrenar» button in Train.**
+  **ES** — Los tres botones sueltos (Rápido · Más formas · Dieta) se juntan en uno solo, «Formas de entrenar». Al tocarlo se despliega con un resorte y aparecen los seis tipos como íconos —Rápido, En vivo, Intervalo, Movilidad, Respirar y Dieta— entrando escalonados; tocas uno y arranca. Menos botones compitiendo, la pantalla respira.
+  **EN** — The three loose buttons (Rápido · Más formas · Dieta) fold into a single «Formas de entrenar» button. Tapping it springs open a row of six training types as icons —Rápido, En vivo, Intervalo, Movilidad, Respirar and Dieta— entering staggered; tap one to start. Fewer competing buttons, a calmer screen.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Constancia más compacta en Entrenar / Tighter Consistency card in Train.**
   **ES** — Se quitó la línea de ayuda «Toca un día para ver qué entrenaste» que dejaba un hueco bajo el calendario. La tarjeta termina justo en los puntos, con menos ruido; tocar un día entrenado sigue mostrando la rutina y la fecha.
   **EN** — Removed the «Tap a day to see what you trained» helper line that left a gap under the calendar. The card now ends right at the dots, with less clutter; tapping a trained day still shows the routine and date.
