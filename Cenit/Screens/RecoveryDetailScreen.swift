@@ -65,7 +65,6 @@ struct RecoveryDetailScreen: View {
     @State private var selectedHeatDay: RecoveryDay? = nil
     /// Level-3 disclosure: the calendar + trend live under «See your history», collapsed on open. The only
     /// new state the re-sequencing adds; everything else is unchanged. (Detalles escalonados)
-    @State private var historyExpanded = false
 
     var body: some View {
         ScrollView {
@@ -714,41 +713,15 @@ struct RecoveryDetailScreen: View {
     // copy mirror «See the method». Holds the 90-day calendar. (The period-selector trend that used to sit
     // here alongside it was removed in FER-703.)
 
+    // Handoff v2 (reconciliación): el calendario 90d va VISIBLE, no colapsado bajo «Ver tu historial».
     @ViewBuilder private var historySection: some View {
-        VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "90-day calendar")
-            if historyExpanded {
-                calendarBlock
-            }
+        VStack(alignment: .leading, spacing: 14) {
+            Text("90-day calendar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            calendarBlock
         }
     }
 
     /// The «See your history» row: a tappable header that toggles the Level-3 disclosure in place. The
-    /// chevron rotates with the house interactive spring (same motion as `InfoAccordion`). Shared shape
-    /// across the four detail screens. (Detalles escalonados)
-    private func historyDisclosureHeader(caption: LocalizedStringKey) -> some View {
-        Button {
-            withAnimation(StrandMotion.interactive) { historyExpanded.toggle() }
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("See your history").instrumentoOverline().foregroundStyle(theme.ink)
-                    Text(caption).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-                    .rotationEffect(.degrees(historyExpanded ? 0 : -90))
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
-    }
-
     // MARK: - Calendario · 90 días (YearHeatStrip re-tintado, a todo el ancho) — en «See your history»
 
     private var calendarBlock: some View {
