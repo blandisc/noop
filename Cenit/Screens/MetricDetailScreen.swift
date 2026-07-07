@@ -750,7 +750,6 @@ struct MetricDetailScreen: View {
         )
     }
 
-
     /// Y-axis ticks at the band thresholds (e.g. SpO₂ 90/95/100) for the clinical chart; `nil` otherwise
     /// so the vitals keep automatic ticks. (FER-252)
     private var clinicalYAxisValues: [Double]? {
