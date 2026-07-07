@@ -396,11 +396,10 @@ struct WorkoutImportView: View {
             autoMatched = []
             // FER-794: pre-resolve what autoMatch can (content-key / derived alias / confident fuzzy)
             // and MARK it — the mapping step still shows it, reversible, before anything is imported.
-            for name in unmatched {
-                if let hit = r.autoMatch(name) {
-                    resolution[norm(name)] = hit
-                    autoMatched.insert(norm(name))
-                }
+            for (name, hit) in r.autoMatches(in: p) {
+                let key = norm(name)
+                resolution[key] = hit
+                autoMatched.insert(key)
             }
             phase = unmatched.isEmpty ? .confirm : .mapping
         } catch let error as WorkoutProgramParseError {
@@ -421,7 +420,8 @@ struct WorkoutImportView: View {
     /// Resolve every exercise to a catalog id (matched or user-resolved) and write one `Routine` per
     /// program routine, in order. Idempotent ids are fresh UUIDs — re-importing makes new routines.
     private func save(_ program: WorkoutProgram) {
-        let reconciler = self.reconciler ?? WorkoutExerciseReconciler(known: catalog)
+        let reconciler = self.reconciler
+            ?? WorkoutExerciseReconciler(known: catalog, aliases: ExerciseAliasTable.bundled)
         let now = Int(Date().timeIntervalSince1970)
         let omittedSnapshot = omitted
         let resolutionSnapshot = resolution
