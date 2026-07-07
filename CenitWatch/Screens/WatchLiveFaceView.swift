@@ -56,12 +56,12 @@ private struct WatchFaceMetrics: View {
         }
     }
 
-    // FER-808 — «Registrar serie» from the wrist. Solid CTA (chrome ink, never a data hue) plus the native
-    // primary-action wrist gesture (watchOS 11+, the closest interceptable stand-in for a Digital Crown
-    // press, which the system reserves). A soft `.click` + a 400 ms check confirm the log. Stays alive with
-    // no permission / no iPhone: the message queues and applies on reconnect — no dead button.
-    @ViewBuilder private var registerCTA: some View {
-        let button = Button(action: logSet) {
+    // FER-808 — «Registrar serie» from the wrist: a solid CTA (chrome ink, never a data hue). A soft
+    // `.click` + a 400 ms check confirm the log. Stays alive with no permission / no iPhone: the message
+    // queues and applies on reconnect — no dead button. (A literal Digital Crown *press* is reserved by
+    // watchOS and can't be intercepted; the big button is the affordance, per the product decision.)
+    private var registerCTA: some View {
+        Button(action: logSet) {
             Group {
                 if loggedCheck { Image(systemName: "checkmark").accessibilityHidden(true) }
                 else { Text("Log set") }
@@ -72,9 +72,6 @@ private struct WatchFaceMetrics: View {
         .buttonStyle(.borderedProminent)
         .tint(t.ink)
         .accessibilityLabel(Text("Log set"))
-
-        if #available(watchOS 11.0, *) { button.handGestureShortcut(.primaryAction) }
-        else { button }
     }
 
     private func logSet() {
