@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Pasos: tres tiles y «Qué mueve tus pasos» / Steps: three tiles and «What moves your steps».**
+  **ES** — El detalle de Pasos ahora muestra, bajo la gráfica, tres tiles (HOY · MEDIA 7 D · RACHA) y un bloque «Qué mueve tus pasos» que compara tus fines de semana con tus días entre semana. La racha se mide contra tu propia media (no hay meta), y el patrón sólo aparece cuando hay suficientes días. Los rangos y el toggle no cambian.
+  **EN** — The Steps detail now shows, under the chart, three tiles (TODAY · 7-DAY AVG · STREAK) and a «What moves your steps» block comparing weekends with weekdays. The streak is measured against your own average (there's no goal), and the pattern only shows with enough days. The ranges and toggle are unchanged.
+  ([MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **Los vitales muestran tu posición con un slider más simple / Vitals show your position with a simpler slider.**
   **ES** — En VFC, FC en reposo y respiración, la posición de hoy dentro de tu rango normal se muestra con un slider limpio (pista del rango + marcador + «bajo · tu normal · alto»), como el diseño de referencia.
   **EN** — For HRV, resting HR and respiration, today's position within your normal range is shown with a clean slider (range track + thumb + «low · your normal · high»), matching the reference design.

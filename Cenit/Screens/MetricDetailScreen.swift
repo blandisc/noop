@@ -314,6 +314,16 @@ struct MetricDetailScreen: View {
             blockDivider
             whatMovesItBlock
         }
+        // Steps extras (handoff v2, FER-824): the 3-tile strip + «what moves your steps», under the chart
+        // and above the method. The ranges (Ranges mode) stay behind the toggle — nothing is removed.
+        if spec.descriptor.key == "steps", !series.isEmpty {
+            blockDivider
+            stepsTilesBlock
+            if stepsMovers != nil {
+                blockDivider
+                stepsMoversBlock
+            }
+        }
         // VO₂max's age/sex-anchored extras (change over the period · fitness category · cardiorespiratory-
         // equivalent age · why it matters) sit between the chart and the method. (FER-257)
         if spec.descriptor.key == "vo2max" {
@@ -328,6 +338,80 @@ struct MetricDetailScreen: View {
     /// A subtle 1px rule between blocks (token-only, no hex). (FER-216)
     private var blockDivider: some View {
         Rectangle().fill(theme.hairline).frame(height: 1)
+    }
+
+    // MARK: - Steps extras (handoff v2, FER-824): 3 tiles + «Qué mueve tus pasos»
+
+    /// Today's step count (the hero datum; may still be accumulating).
+    private var stepsToday: Double? { series.last?.value }
+    /// The 7-day moving average (same figure the hero context reads).
+    private var stepsAvg7: Double? { SeriesShape.latestMovingAverage(allValues, window: 7) }
+    /// «Active streak»: consecutive most-recent COMPLETED days (excluding today, which may be partial)
+    /// at or above your own 7-day average. There's no step goal in the app, so the streak is measured
+    /// against your own baseline, never a target. nil until there's enough history.
+    private var stepsStreak: Int? {
+        guard let avg = stepsAvg7, avg > 0, series.count >= 2 else { return nil }
+        var n = 0
+        for row in series.dropLast().reversed() {   // drop today (incomplete)
+            if row.value >= avg { n += 1 } else { break }
+        }
+        return n
+    }
+
+    /// A weekend-vs-weekday reading of your steps, computed from the dated series — an honest «what moves
+    /// it» with no extra engine. nil unless both groups have ≥3 completed days. (FER-824)
+    private var stepsMovers: (weekendAvg: Double, pct: Int, weekendHigher: Bool)? {
+        var wkend: [Double] = [], wkday: [Double] = []
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC") ?? cal.timeZone
+        for row in parsedSeries.dropLast() {          // completed days only
+            guard let d = row.date else { continue }
+            if cal.isDateInWeekend(d) { wkend.append(row.value) } else { wkday.append(row.value) }
+        }
+        guard wkend.count >= 3, wkday.count >= 3 else { return nil }
+        let we = wkend.reduce(0, +) / Double(wkend.count)
+        let wd = wkday.reduce(0, +) / Double(wkday.count)
+        guard wd > 0 else { return nil }
+        let pct = Int((abs(we - wd) / wd * 100).rounded())
+        guard pct >= 5 else { return nil }            // below ~noise, don't overclaim a pattern
+        return (we, pct, we >= wd)
+    }
+
+    /// The 3-tile strip: HOY · MEDIA 7 D · RACHA.
+    @ViewBuilder private var stepsTilesBlock: some View {
+        HStack(spacing: 8) {
+            stepsTile(label: "TODAY", value: stepsToday.map(fmt) ?? "—", hue: theme.dataSteps)
+            stepsTile(label: "7-DAY AVG", value: stepsAvg7.map(fmt) ?? "—", hue: theme.ink)
+            stepsTile(label: "STREAK", value: stepsStreak.map { "\($0)" } ?? "—", hue: theme.ink)
+        }
+    }
+
+    private func stepsTile(label: LocalizedStringKey, value: String, hue: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(value).font(InstrumentoType.groteskNumber(21)).foregroundStyle(hue)
+            Text(label).font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(1.2)
+                .foregroundStyle(theme.inkTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 0.5))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «What moves your steps» — the weekend/weekday reading. Hidden when there isn't a clear pattern.
+    @ViewBuilder private var stepsMoversBlock: some View {
+        if let m = stepsMovers {
+            let pctStr = "\(m.pct)%"
+            VStack(alignment: .leading, spacing: 8) {
+                Text("What moves your steps").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(m.weekendHigher
+                     ? "Your weekends average about \(fmt(m.weekendAvg)) steps — roughly \(pctStr) more than your weekdays."
+                     : "Your weekends average about \(fmt(m.weekendAvg)) steps — roughly \(pctStr) fewer than your weekdays.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     // MARK: - Derived series
