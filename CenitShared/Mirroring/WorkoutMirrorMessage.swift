@@ -26,6 +26,10 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// (`decode` is `try?`), so it degrades to the plain pulse face.
     case capture(WorkoutCaptureSnapshot)
 
+    /// iPhone → watch: the lightweight routine plan (FER-810) for the read-only rotor page — each exercise's
+    /// name, sets done / total, and which one is current. Additive; sent only when the plan changes.
+    case plan(WorkoutPlanSnapshot)
+
     /// iPhone → watch: the rest window ended without ending the session. `recovered == true` means the
     /// pulse dropped back to target (FER-758) → the watch fires the «ready» buzz + banner; `false` means
     /// the user simply returned to the set → the watch cancels its local timer silently, no buzz.
@@ -83,6 +87,33 @@ public struct WorkoutCaptureSnapshot: Equatable, Codable {
         self.exerciseName = exerciseName
         self.returnDetail = returnDetail
         self.bpm = bpm
+    }
+}
+
+/// The lightweight routine plan the iPhone mirrors to the wrist for the read-only rotor page (FER-810):
+/// each exercise's name, its sets done / total, and which one is current. The watch never edits the plan
+/// (it's a glance), so this carries only what the rotor draws — done ✓ / current • / pending ○ + «N/M».
+public struct WorkoutPlanSnapshot: Equatable, Codable {
+    public struct Exercise: Equatable, Codable {
+        public var name: String
+        public var setsDone: Int
+        public var setsTotal: Int
+        public var isCurrent: Bool
+        public init(name: String, setsDone: Int, setsTotal: Int, isCurrent: Bool) {
+            self.name = name; self.setsDone = setsDone; self.setsTotal = setsTotal; self.isCurrent = isCurrent
+        }
+    }
+    public var sessionId: String
+    public var routineName: String
+    public var exercises: [Exercise]
+    public init(sessionId: String, routineName: String, exercises: [Exercise]) {
+        self.sessionId = sessionId; self.routineName = routineName; self.exercises = exercises
+    }
+
+    /// A cheap change key so the iPhone only mirrors the plan when its visible state actually moves
+    /// (a set completed or the current exercise advanced), not on every HR tick.
+    public var signature: String {
+        exercises.map { "\($0.setsDone)/\($0.setsTotal)\($0.isCurrent ? "*" : "")" }.joined(separator: ",")
     }
 }
 

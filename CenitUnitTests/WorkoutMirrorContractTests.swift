@@ -34,6 +34,12 @@ final class WorkoutMirrorContractTests: XCTestCase {
                                             exerciseName: "Press banca", returnDetail: "60 kg × 8", bpm: 118)),
             .capture(WorkoutCaptureSnapshot(sessionId: "s1", routineName: "Empuje", setNumber: 1, setTotal: 3,
                                             exerciseName: "Plancha", returnDetail: "", bpm: nil)),
+            // FER-810 — plan rotor snapshot (iPhone → watch).
+            .plan(WorkoutPlanSnapshot(sessionId: "s1", routineName: "Empuje", exercises: [
+                .init(name: "Press banca", setsDone: 2, setsTotal: 4, isCurrent: true),
+                .init(name: "Aperturas", setsDone: 0, setsTotal: 3, isCurrent: false),
+            ])),
+            .plan(WorkoutPlanSnapshot(sessionId: "s1", routineName: "Empuje", exercises: [])),
         ]
 
         for message in messages {

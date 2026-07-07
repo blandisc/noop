@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El reloj gana una página de plan / The watch gains a plan page.**
+  **ES** — Una tercera página (deslizando) muestra el plan de la rutina de un vistazo: cada ejercicio con hecho ✓ / actual • / pendiente ○ y su «N/M» de series, reflejado desde el iPhone. Es solo lectura: tocar un ejercicio no hace nada (el reloj no edita el plan). El color aterriza solo en el ✓ de lo hecho.
+  **EN** — A third page (swipe) shows the routine plan at a glance: each exercise with done ✓ / current • / pending ○ and its «N/M» sets, mirrored from the iPhone. Read-only: tapping an exercise does nothing (the watch doesn't edit the plan). Color lands only on the done ✓.
+  ([WorkoutMirrorMessage.swift](CenitShared/Mirroring/WorkoutMirrorMessage.swift), [WatchLiveFaceView.swift](CenitWatch/Screens/WatchLiveFaceView.swift), [AppModel.swift](Cenit/App/AppModel.swift))
+
 - **El reloj muestra qué serie toca y suma una página de control / The watch shows which set is up and adds a control page.**
   **ES** — Entre descansos, la cara del reloj ya no es solo el pulso: muestra **«Serie N / M»** con una barra de progreso y **qué toca** (ejercicio · peso × reps), reflejado desde el iPhone. Y al deslizar, la página de control ofrece la acción real según el momento (**Registrar serie** mientras trabajas, **Saltar descanso** mientras descansas) más **Terminar** con confirmación de un paso. Sin banda, el pulso muestra «--», nunca un cero inventado.
   **EN** — Between rests the watch face is no longer just the pulse: it shows **«Set N / M»** with a progress bar and **what's up** (exercise · weight × reps), mirrored from the iPhone. And on swipe, the control page offers the action that fits the moment (**Log set** while you work, **Skip rest** while you rest) plus **End** behind a one-step confirmation. With no band the pulse shows «--», never a made-up zero.

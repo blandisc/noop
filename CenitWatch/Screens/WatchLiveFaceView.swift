@@ -9,6 +9,7 @@ struct WatchLiveFaceView: View {
         TabView {
             WatchFaceMetrics()
             WatchControlPage()
+            WatchPlanRotor()
         }
         .tabViewStyle(.page)
     }
@@ -251,5 +252,53 @@ private struct WatchControlPage: View {
             Button("End", role: .destructive) { manager.endFromWrist() }
             Button("Keep going", role: .cancel) { }
         }
+    }
+}
+
+// MARK: - Plan rotor (swipe) — read-only glance at the routine (FER-810)
+
+// A third page: done ✓ / current • / pending ○ + «N/M» per exercise. The watch never edits the plan, so
+// rows carry no tap target — it's a glance, not a control. Color lands only on the «done» check (verdict),
+// as on the rest-over screen; the current marker is chrome ink.
+private struct WatchPlanRotor: View {
+    @EnvironmentObject var manager: WatchWorkoutManager
+    private let t = InstrumentoTheme.base
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                Text("Plan").instrumentoOverline().foregroundStyle(t.inkTertiary)
+                if let plan = manager.plan, !plan.exercises.isEmpty {
+                    ForEach(Array(plan.exercises.enumerated()), id: \.offset) { _, ex in planRow(ex) }
+                } else {
+                    Text("No plan yet").font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, NoopMetrics.gap)
+            .padding(.vertical, NoopMetrics.space2)
+        }
+    }
+
+    private func planRow(_ ex: WorkoutPlanSnapshot.Exercise) -> some View {
+        let done = ex.setsTotal > 0 && ex.setsDone >= ex.setsTotal
+        return HStack(spacing: NoopMetrics.space1) {
+            marker(done: done, current: ex.isCurrent)
+            Text(ex.name)
+                .font(StrandFont.caption)
+                .foregroundStyle(done ? t.inkTertiary : t.ink)
+                .lineLimit(1)
+            Spacer(minLength: NoopMetrics.space1)
+            Text("\(ex.setsDone)/\(ex.setsTotal)")
+                .font(StrandFont.footnote)
+                .foregroundStyle(t.inkSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private func marker(done: Bool, current: Bool) -> some View {
+        if done { Image(systemName: "checkmark").font(StrandFont.footnote).foregroundStyle(t.verdict) }
+        else if current { Image(systemName: "circle.fill").font(StrandFont.footnote).foregroundStyle(t.ink) }
+        else { Image(systemName: "circle").font(StrandFont.footnote).foregroundStyle(t.inkTertiary) }
     }
 }
