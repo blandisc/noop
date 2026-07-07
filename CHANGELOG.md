@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El número de recuperación de Hoy usa su color de recuperación / Today's recovery number uses its recovery color.**
+  **ES** — El numeral grande de recuperación en Hoy se pintaba con el color del veredicto (listo/tenso/agotado). Ahora se pinta con el color de su propia banda de recuperación (verde/ámbar/rojo según el score), igual que en Cuerpo: el número habla de la recuperación, así que su color también. La palabra del veredicto conserva su color.
+  **EN** — Today's big recovery numeral was tinted by the verdict color (primed/strained/rundown). It now uses its own recovery band color (green/amber/red by score), matching Cuerpo: the number is about recovery, so its color is too. The verdict word keeps its own color.
+  ([Cenit/Screens/TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **El Apple Watch ya puede grabar la sesión de fuerza / The Apple Watch can now record the strength session.**
   **ES** — Al iniciar una sesión de fuerza con «Grabar en el Apple Watch» activado, el reloj se quedaba en «El reloj no respondió» y la sesión terminaba sin reloj. Faltaba el permiso `workout-processing` que watchOS exige para cualquier sesión de entrenamiento, así que el reloj nunca podía arrancar la grabación. Ya se agregó; el reloj engancha y graba frecuencia cardiaca y calorías.
   **EN** — Starting a strength session with «Record on Apple Watch» on left the watch stuck on «Watch didn't respond», and the session ran without it. The `workout-processing` background mode that watchOS requires for any workout session was missing, so the watch could never start recording. It's now declared; the watch connects and records heart rate and calories.
