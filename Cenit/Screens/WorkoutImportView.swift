@@ -356,7 +356,7 @@ struct WorkoutImportView: View {
     /// learned alias for the import name is persisted at save(), not here (FER-536).
     private func createNew(_ name: String) {
         let exercise = Exercise(id: UUID().uuidString, name: name, type: declaredType(name),
-                                equipment: nil, primaryMuscles: [], secondaryMuscles: [], cues: [])
+                                equipment: nil, primaryMuscles: [], secondaryMuscles: [], instructions: [])
         Task {
             try? await repo.saveCustomExercise(exercise)
             catalog.append(exercise)   // keep the local catalog current without a full re-fetch

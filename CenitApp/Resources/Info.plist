@@ -29,8 +29,6 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>EDBApiKey</key>
-	<string>$(EDB_API_KEY)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.healthcare-fitness</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>

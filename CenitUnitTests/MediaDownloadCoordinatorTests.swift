@@ -2,9 +2,9 @@ import XCTest
 import StrandTraining
 @testable import Cenit
 
-// FER-722: the structural guarantee behind "toggle off ⇒ zero network requests" — both entry
-// points must never build an `ExerciseDBClient` (and therefore never touch `URLSession`) while
-// the toggle is off. `hasBuiltClient` lets the test observe this without mocking HTTP.
+// FER-722/786: the structural guarantee behind "toggle off ⇒ zero network requests" — both entry
+// points guard on `isEnabled` before touching `URLSession` at all, so with the toggle off a bulk
+// download is a no-op (state stays `.idle`) and a loop fetch returns nil without any request.
 @MainActor
 final class MediaDownloadCoordinatorTests: XCTestCase {
     private func freshDefaults() -> UserDefaults {
@@ -13,18 +13,17 @@ final class MediaDownloadCoordinatorTests: XCTestCase {
         return suite
     }
 
-    func testDisabledNeverBuildsClientOnBulkDownload() async {
+    func testDisabledBulkDownloadIsANoOp() async {
         let coordinator = MediaDownloadCoordinator(userDefaults: freshDefaults())
         await coordinator.bulkDownloadThumbsIfNeeded()
-        XCTAssertFalse(coordinator.hasBuiltClient)
+        XCTAssertEqual(coordinator.downloadState, .idle, "a disabled bulk download must not start")
     }
 
-    func testDisabledNeverBuildsClientOnLoopFetch() async {
+    func testDisabledLoopFetchReturnsNil() async {
         let coordinator = MediaDownloadCoordinator(userDefaults: freshDefaults())
         let exercise = ExerciseCatalog.all.first!
         let result = await coordinator.loopIfNeeded(for: exercise)
-        XCTAssertNil(result)
-        XCTAssertFalse(coordinator.hasBuiltClient)
+        XCTAssertNil(result, "a disabled loop fetch resolves to nil without a request")
     }
 
     func testDeleteAllCachedMediaDoesNotTouchTheToggle() {

@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Las animaciones de ejercicio ahora siempre embonan / Exercise animations now always line up.**
+  **ES** — Si activas «Descargar biblioteca de ejercicios» en Ajustes, cada ejercicio baja su animación por su identificador propio, no adivinando por nombre. Resultado: se acabaron los ejercicios sin imagen porque el nombre no coincidía. Sigue siendo opcional (apagado por defecto) y todo se guarda en tu teléfono; ya ni siquiera hace falta una llave de API.
+  **EN** — If you turn on «Descargar biblioteca de ejercicios» in Settings, each exercise fetches its animation by its own id instead of guessing by name. The result: no more exercises missing their image because a name didn't match. Still opt-in (off by default) and cached on your phone — and it no longer needs an API key at all.
+  ([MediaDownloadCoordinator.swift](Cenit/Media/MediaDownloadCoordinator.swift))
+
 - **Biblioteca de ejercicios nueva, más grande y con guía en español / A new, bigger exercise library, guided in Spanish.**
   **ES** — Cénit estrena una biblioteca de ejercicios mucho más grande (~1500 ejercicios de ExerciseDB), con instrucciones «cómo se hace» traducidas al español de México y su animación (GIF) por ejercicio. Como cada ejercicio trae su identificador propio, la animación y los datos siempre embonan — se acabaron los ejercicios sin video por diferencias de nombre. Todo se descarga una sola vez y vive en tu teléfono; nada se consulta en línea al usarlo.
   **EN** — Cénit ships a much larger exercise library (~1500 exercises from ExerciseDB), with «how to» instructions translated to Mexican Spanish and a per-exercise animation (GIF). Because every exercise carries its own native id, the animation and data always line up — no more exercises missing media because a name didn't match. Everything is baked once and lives on your phone; nothing is fetched online while you use it.
