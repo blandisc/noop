@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Biblioteca de ejercicios nueva, más grande y con guía en español / A new, bigger exercise library, guided in Spanish.**
+  **ES** — Cénit estrena una biblioteca de ejercicios mucho más grande (~1500 ejercicios de ExerciseDB), con instrucciones «cómo se hace» traducidas al español de México y su animación (GIF) por ejercicio. Como cada ejercicio trae su identificador propio, la animación y los datos siempre embonan — se acabaron los ejercicios sin video por diferencias de nombre. Todo se descarga una sola vez y vive en tu teléfono; nada se consulta en línea al usarlo.
+  **EN** — Cénit ships a much larger exercise library (~1500 exercises from ExerciseDB), with «how to» instructions translated to Mexican Spanish and a per-exercise animation (GIF). Because every exercise carries its own native id, the animation and data always line up — no more exercises missing media because a name didn't match. Everything is baked once and lives on your phone; nothing is fetched online while you use it.
+  ([exercises.json](Packages/StrandTraining/Sources/StrandTraining/Resources/exercises.json), [Tools/bake-exercisedb](Tools/bake-exercisedb/README.md))
+
 - **Entrenar más despejado: un botón, filas tocables, Constancia con aire / A calmer Train: one button, tappable rows, Consistency with room.**
   **ES** — El botón grande de Hoy ahora dice solo «Empezar». Las otras rutinas de tu plan ya no traen un botón «Empezar» aparte: tocas la fila completa para abrirlas, con una flecha en el color de esa rutina. Y Constancia baja hacia el dock, aprovechando el espacio libre para que la pantalla respire.
   **EN** — Today's big button now just says «Empezar». The other routines in your plan drop their separate «Empezar» button: tap the whole row to open them, with a chevron in that routine's color. And Consistency drifts down toward the dock, using the free space so the screen breathes.

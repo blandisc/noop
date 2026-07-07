@@ -92,7 +92,7 @@ Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compi
 Packages/                       Cross-platform Swift packages (iOS 16+ / macOS 13+)
 ├── WhoopProtocol/              BLE frame parsing, CRC, command/event/packet decode
 ├── WhoopStore/                 GRDB/SQLite persistence (actor)
-├── StrandTraining/             strength domain types + bundled exercise catalog (pure, no DB)
+├── StrandTraining/             strength domain types + bundled exercise catalog (ExerciseDB OSS, FER-779; pure, no DB)
 ├── StrandAnalytics/            HRV/recovery/strain/sleep/correlation math
 ├── StrandImport/               WHOOP CSV + Apple Health importers
 └── StrandDesign/               SwiftUI design system (palette, components, charts)
@@ -153,9 +153,11 @@ StrandImport ───────▶ WhoopProtocol + WhoopStore + ZIPFoundation
 | **StrandAnalytics** | All physiological math, as pure functions over inputs. HRV, recovery, strain, sleep staging, workout detection, baselines, HR zones, correlation/comparison. | `AnalyticsEngine.analyzeDay(...)` → `DayResult`, `HRVAnalyzer`, `RecoveryScorer`, `StrainScorer`, `SleepStager`, `WorkoutDetector`, `Baselines`, `CorrelationEngine`, `DailyBriefEngine`, `WeeklySplit` (split → today's routine / day states / consistency streak, FER-531) | **Pure** — never touches the database. Produces `DailyMetric`/`CachedSleepSession` shapes for the store. |
 | **StrandImport** | Parse data the user already owns: WHOOP CSV exports and Apple Health exports (`export.xml`, streaming). | `ImportCoordinator.detectAndImport`, `WhoopExportImporter`, `AppleHealthImporter`, `AppleHealthAggregator`, `SleepHKEncoder`/`SleepHKDecoder` | **Parsing only** — returns normalized model arrays; the app maps them into the store. |
 | **StrandDesign** | The SwiftUI design system: palette, typography, motion, charts, components. | `StrandPalette`, `StrandCard`, `RecoveryRing`, `StrainGauge`, `Hypnogram`, `TrendChart`, `Sparkline`, `YearHeatStrip` | No data or protocol deps — pure presentation. |
-| **StrandTraining** | Strength-tracker domain types + the bundled, read-only exercise catalog (free-exercise-db, public domain). The value models WhoopStore persists and StrandAnalytics computes over. | `Exercise`, `ExerciseType`, `ExerciseCatalog`, `Routine`, `RoutineExercise` (with `supersetGroup`, FER-346), `RoutineSet` (per-set prescription, FER-492; optional per-set `RestConfig` override with exercise fallback, FER-715), `RoutineSchedule` (the weekly split, FER-531), `StrengthSession` (with persisted `energyKcal`/`EnergySource`, FER-715), `SetEntry`, `PersonalRecord` | **Pure** — Foundation only (no GRDB/UIKit). GRDB conformance lives in WhoopStore by extension. (FER-345) |
+| **StrandTraining** | Strength-tracker domain types + the bundled, read-only exercise catalog (**ExerciseDB OSS**, ~1500 exercises with native ids like `01qpYSe`; FER-779). The value models WhoopStore persists and StrandAnalytics computes over. | `Exercise`, `ExerciseType`, `ExerciseCatalog`, `Routine`, `RoutineExercise` (with `supersetGroup`, FER-346), `RoutineSet` (per-set prescription, FER-492; optional per-set `RestConfig` override with exercise fallback, FER-715), `RoutineSchedule` (the weekly split, FER-531), `StrengthSession` (with persisted `energyKcal`/`EnergySource`, FER-715), `SetEntry`, `PersonalRecord` | **Pure** — Foundation only (no GRDB/UIKit). GRDB conformance lives in WhoopStore by extension. (FER-345) |
 
 > **Exercise type override (FER-541).** The user can override an exercise's `ExerciseType` — including a catalog entry's (e.g. mark a "Plank" as time-based). The override is *user data*, so it lives in WhoopStore (`exerciseTypeOverride`, migration v24), **not** in the read-only bundled catalog. Precedence (user override > custom > catalog) is decided by the pure `ExerciseTypeResolver` and applied at a single resolver in `Cenit/Data/Repository+Strength.swift` (`resolvedExercise` / `allExercises`), which materializes the effective type into `Exercise.type`. Every downstream reader (guided session, builder, detail) sees the resolved type without bespoke logic; the catalog JSON is never mutated, so reverting is a plain delete.
+
+> **Catalog adoption (FER-779).** The seed catalog is **ExerciseDB OSS** (~1500 exercises, native ids), baked offline by `Tools/bake-exercisedb/` into `exercises.json` (+ a `exercises.es.json` es-MX overlay, LLM-translated at bake). The bake normalizes ExerciseDB's ~50 muscle names down to NOOP's 17 canonical `MuscleAtlas` keys (so `MuscleAtlas`/`MuscleVocabulary`/`MuscleFatigueMap` are untouched), derives `ExerciseType` from equipment/bodyParts/name, and strips the `Step:N ` instruction prefixes. `Exercise.id` is the native ExerciseDB id, so media/data resolve **by id, without name matching** — the runtime name lookup (media, FER-722) and the curated synonym table (import, FER-522) are retired. The model renamed `cues`→`instructions` and gained `bodyParts`/`gifUrl`; custom exercises persist those via migration **v27** (append-only; the v13 `cues` column is reused for `instructions`). There is **no history migration** — catalog ids were never a DB foreign key — so old routines pointing at retired free-exercise-db slugs simply resolve to "unknown" (accepted: fresh start, owner-confirmed).
 
 ### Multi-generation protocol support
 
@@ -390,7 +392,7 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `24`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `27`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
