@@ -29,6 +29,7 @@ struct RoutineBuilderScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
@@ -39,6 +40,8 @@ struct RoutineBuilderScreen: View {
     /// Which set's rest is being edited (drives the 1e push); nil = none. Rest is per-set now (choque 3):
     /// each set carries its own `RestConfig` override, edited in the shared `RestEditorScreen`.
     @State private var restTarget: RestEditTarget? = nil
+    /// Which exercise's info sheet is open (tap the row's name/thumb to open its detail, like the library).
+    @State private var detail: Exercise? = nil
     @FocusState private var focusedCell: String?
 
     private let routineId: String
@@ -116,7 +119,19 @@ struct RoutineBuilderScreen: View {
         }
         .sheet(isPresented: $showLibrary) {
             ExerciseLibraryScreen { picks in append(picks) }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+                .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
+        }
+        // Tap an exercise's name/thumb to read its info — same detail sheet as the library (parity with 1f).
+        .sheet(item: $detail) { ex in
+            NavigationStack {
+                ExerciseDetailScreen(exercise: ex)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { detail = nil }.foregroundStyle(theme.ink)
+                    } }
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
     }
 
@@ -184,15 +199,22 @@ struct RoutineBuilderScreen: View {
         let item = items[idx]
         return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             HStack(spacing: 11) {
-                ExerciseThumbnail(side: 40)   // reserved media slot (FER-751); FER-722 fills it
-                VStack(alignment: .leading, spacing: 1) {
-                    if item.exercise.type != .weightReps {
-                        Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                // Tapping the thumb/name opens the exercise info sheet (parity with the library, FER-776).
+                Button { detail = item.exercise } label: {
+                    HStack(spacing: 11) {
+                        ExerciseThumbView(exercise: item.exercise, side: 40)   // cached GIF still, or paper placeholder (FER-790)
+                        VStack(alignment: .leading, spacing: 1) {
+                            if item.exercise.type != .weightReps {
+                                Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            }
+                            Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(theme.ink)
+                                .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
+                        }
+                        Spacer(minLength: 8)
                     }
-                    Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
+                    .contentShape(Rectangle())
                 }
-                Spacer(minLength: 8)
+                .buttonStyle(.plain)
                 Menu {
                     if idx > 0 { Button { moveUp(idx) } label: { Label("Move up", systemImage: "arrow.up") } }
                     if idx < items.count - 1 { Button { moveDown(idx) } label: { Label("Move down", systemImage: "arrow.down") } }
@@ -217,7 +239,7 @@ struct RoutineBuilderScreen: View {
     @ViewBuilder
     private func columnHeader(_ type: ExerciseType) -> some View {
         HStack(spacing: 8) {
-            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 30, alignment: .leading)
+            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).lineLimit(1).frame(width: 44, alignment: .leading)
             if showsWeight(type) {
                 Text(StrengthDisplay.weightUnit(system)).instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 62)
             }
@@ -240,7 +262,7 @@ struct RoutineBuilderScreen: View {
             Text(RoutineSetEditing.setLabel(items[idx].re, si))
                 .font(set.kind == .warmup ? StrandFont.caption.weight(.semibold) : StrandFont.body)
                 .foregroundStyle(set.kind == .warmup ? theme.inkTertiary : theme.inkSecondary)
-                .monospacedDigit().frame(width: 30, alignment: .leading)
+                .monospacedDigit().frame(width: 44, alignment: .leading)
             if showsWeight(type) {
                 cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad)
             }
