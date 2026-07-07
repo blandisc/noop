@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La animación del ejercicio por fin se ve en su ficha / The exercise animation finally shows on its card.**
+  **ES** — Con la descarga de biblioteca activada, la ficha de cada ejercicio ya reproduce su animación (el GIF de ExerciseDB) arriba, en loop, con botón de play/pausa. Antes no se veía nada porque el reproductor era de video (no sabe leer GIFs animados) y el archivo se guardaba con una extensión que mentía. Ahora es un solo archivo por ejercicio que sirve de imagen fija y de animación a la vez, sin descargas dobles. Con la descarga apagada, la ficha sigue igual (placeholder + la pista para activarla en Ajustes).
+  **EN** — With library downloads on, each exercise's card now plays its animation (the ExerciseDB GIF) at the top, looping, with a play/pause button. Before, nothing showed because the player was a video player (which can't read animated GIFs) and the file was saved with a lying extension. It's now a single file per exercise that serves as both the still and the animation, with no double downloads. With downloads off, the card is unchanged (placeholder + the hint to turn it on in Settings).
+  ([AnimatedGIFView.swift](Cenit/Media/AnimatedGIFView.swift), [MediaCache.swift](Cenit/Media/MediaCache.swift), [MediaDownloadCoordinator.swift](Cenit/Media/MediaDownloadCoordinator.swift), [ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift))
+
 - **Un cuerpo de verdad en tu mapa de fatiga / A real body on your fatigue map.**
   **ES** — El mapa muscular de Entrenar cambia el monigote esquemático por una silueta anatómica de frente y espalda, dibujada en tu teléfono. El cuerpo es «papel»: solo el calor es dato — un músculo fresco casi desaparece en el fondo cálido y uno cargado salta en ámbar. Se lee de un vistazo qué entrenar hoy y qué todavía carga trabajo.
   **EN** — Entrenar's muscle map trades the schematic stick-figure for a real front/back anatomical silhouette, drawn on your phone. The body is «paper»: only heat is data — a fresh muscle nearly vanishes into the warm background while a loaded one leaps out in amber. You read at a glance what to train today and what still carries load.
