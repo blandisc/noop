@@ -40,6 +40,8 @@ final class WorkoutMirrorContractTests: XCTestCase {
                 .init(name: "Aperturas", setsDone: 0, setsTotal: 3, isCurrent: false),
             ])),
             .plan(WorkoutPlanSnapshot(sessionId: "s1", routineName: "Empuje", exercises: [])),
+            // FER-810 — «Ver recibo en iPhone» (watch → iPhone).
+            .openReceipt(sessionId: "s1"),
         ]
 
         for message in messages {

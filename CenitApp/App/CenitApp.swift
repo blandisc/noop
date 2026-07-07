@@ -60,6 +60,10 @@ struct CenitApp: App {
         mirroring.onWatchAction = { [weak model] sid, action in
             model?.applyWatchWorkoutAction(action, sessionId: sid)
         }
+        // FER-810: «Ver recibo en iPhone» from the wrist → open the saved workout's history detail.
+        mirroring.onOpenReceipt = { [weak model] sid in
+            Task { @MainActor in await model?.openWorkoutReceipt(sessionId: sid) }
+        }
         // FER-742: surface the bridge's watch state on AppModel, which the Settings row + strength sheet observe.
         mirroring.onPairingChanged = { [weak model] paired, installed in
             model?.watchPaired = paired

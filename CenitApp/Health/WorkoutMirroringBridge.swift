@@ -48,6 +48,8 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     /// FER-808: the user logged a set / skipped or adjusted a rest from the wrist → apply it to the live
     /// session exactly as the lock-screen actions do (`AppModel` routes to the shared session mutators).
     var onWatchAction: ((_ sessionId: String, _ action: WatchWorkoutAction) -> Void)?
+    /// FER-810: «Ver recibo en iPhone» from the wrist summary → open the saved workout's history detail.
+    var onOpenReceipt: ((_ sessionId: String) -> Void)?
 
     // FER-742: state the iPhone UI paints, pushed to `AppModel` (which the Settings row + the strength
     // sheet already observe) via these closures — same fire-on-main-actor pattern as the ones above.
@@ -268,6 +270,8 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
             onWatchAction?(sessionId, .skipRest)
         case let .adjustRest(sessionId, deltaS):
             onWatchAction?(sessionId, .adjustRest(deltaS: deltaS))
+        case let .openReceipt(sessionId):
+            onOpenReceipt?(sessionId)
         case .start, .rest, .restEnded, .capture, .plan:
             break   // iPhone → watch only
         }

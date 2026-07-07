@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Del resumen del reloj al recibo completo en el iPhone / From the watch summary to the full receipt on iPhone.**
+  **ES** — El resumen del reloj al terminar suma **«Ver recibo en iPhone ›»**: abre en el teléfono el detalle guardado de ese entreno (volumen, récords, etc.), sin dejar de ser mínimo en la muñeca. El iPhone salta a Entrenar y muestra la sesión directo.
+  **EN** — The watch's end-of-session summary gains **«See receipt on iPhone ›»**: it opens that workout's saved detail on the phone (volume, records, etc.) while staying minimal on the wrist. The iPhone jumps to Entrenar and shows the session directly.
+  ([WatchSummaryView.swift](CenitWatch/Screens/WatchSummaryView.swift), [RootTabView.swift](CenitApp/App/RootTabView.swift), [AppModel.swift](Cenit/App/AppModel.swift))
+
 - **El reloj gana una página de plan / The watch gains a plan page.**
   **ES** — Una tercera página (deslizando) muestra el plan de la rutina de un vistazo: cada ejercicio con hecho ✓ / actual • / pendiente ○ y su «N/M» de series, reflejado desde el iPhone. Es solo lectura: tocar un ejercicio no hace nada (el reloj no edita el plan). El color aterriza solo en el ✓ de lo hecho.
   **EN** — A third page (swipe) shows the routine plan at a glance: each exercise with done ✓ / current • / pending ○ and its «N/M» sets, mirrored from the iPhone. Read-only: tapping an exercise does nothing (the watch doesn't edit the plan). Color lands only on the done ✓.
