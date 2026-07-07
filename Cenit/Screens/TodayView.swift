@@ -919,6 +919,17 @@ struct TodayView: View {
         }
     }
 
+    /// El color del DATO de recuperación por banda del score (no del veredicto): el numeral habla del
+    /// score de recuperación, así que su color es el de su banda. green → `dataRecovery`, yellow →
+    /// `warning`, red → `critical` (mismo mapeo que Cuerpo, vía `RecoveryScorer.band`).
+    private func recoveryBandColor(_ score: Int) -> Color {
+        switch RecoveryScorer.band(Double(score)) {
+        case "green":  return theme.dataRecovery
+        case "yellow": return theme.warning
+        default:       return theme.critical
+        }
+    }
+
     /// El header del handoff «Hoy» 2026-07 (FER-709): fecha · batería de la banda · BPM vivo tocable ·
     /// sello del dial (la firma de 24 h, que también es el spinner del pull-to-refresh). Debajo, en
     /// reposo, la línea de frescura «última lectura hace N min»; sincronizando, «Sincronizando con tu
@@ -1187,7 +1198,7 @@ struct TodayView: View {
             let score = recoveryScore ?? 0
             let lvl = readiness.level
             let hasWord = lvl != .insufficient
-            let color = hasWord ? verdictDataColor(lvl) : theme.ink
+            let color = hasWord ? recoveryBandColor(score) : theme.ink
             let estimated = repo.isRecoveryEstimated(Repository.localDayKey(Date()))
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 if estimated {

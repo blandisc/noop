@@ -20,6 +20,16 @@ final class MediaDownloadCoordinator: ObservableObject {
     /// (≤873 strings), non-critical — UserDefaults is fine; re-derivable by re-running the bulk pass.
     private static let missedIdsKey = "noop.exerciseMediaMissedIds"
 
+    /// The bulk thumb download's observable progress (FER-778) — Ajustes reads this instead of a
+    /// mute button. A miss (EDB had no match for that exercise) is expected and normal; `.failed`
+    /// is reserved for the case where NOTHING downloaded at all (almost certainly no connection).
+    enum DownloadState: Equatable {
+        case idle
+        case downloading(completed: Int, total: Int)
+        case completed(matched: Int, total: Int)
+        case failed
+    }
+
     private let userDefaults: UserDefaults
     private let session: URLSession
     /// Both built lazily, only once actually needed — never while the toggle is off, so a disabled
@@ -33,10 +43,16 @@ final class MediaDownloadCoordinator: ObservableObject {
 
     var isEnabled: Bool { userDefaults.bool(forKey: Self.enabledKey) }
 
+    @Published private(set) var downloadState: DownloadState = .idle
+
     init(userDefaults: UserDefaults = .standard, session: URLSession = .shared) {
         self.userDefaults = userDefaults
         self.session = session
     }
+
+    /// Turning the toggle off doesn't delete anything, but the progress row should go quiet again —
+    /// same layout as before the toggle existed.
+    func resetDownloadState() { downloadState = .idle }
 
     /// Bulk-download every catalog exercise's thumb, skipping ones already cached or already known
     /// to miss. Bounded concurrency (6 in flight) so a fresh opt-in doesn't fire 873 requests at once.
@@ -45,7 +61,10 @@ final class MediaDownloadCoordinator: ObservableObject {
 
         let missed = missedIds
         let toDownload = ExerciseCatalog.all.filter { !cache.hasThumb(for: $0.id) && !missed.contains($0.id) }
-        guard !toDownload.isEmpty else { return }
+        guard !toDownload.isEmpty else { downloadState = .completed(matched: 0, total: 0); return }
+
+        downloadState = .downloading(completed: 0, total: toDownload.count)
+        var completed = 0
 
         // Misses are collected here and persisted once at the end, not per-download — up to ~873
         // individual UserDefaults read-modify-writes would otherwise pile up during one bulk run.
@@ -54,7 +73,11 @@ final class MediaDownloadCoordinator: ObservableObject {
             var newMisses: Set<String> = []
             for exercise in toDownload {
                 if inFlight >= 6 {
-                    if let missedId = await group.next(), let missedId { newMisses.insert(missedId) }
+                    if let missedId = await group.next() {
+                        if let missedId { newMisses.insert(missedId) }
+                        completed += 1
+                        downloadState = .downloading(completed: completed, total: toDownload.count)
+                    }
                     inFlight -= 1
                 }
                 group.addTask { [weak self] in
@@ -64,10 +87,14 @@ final class MediaDownloadCoordinator: ObservableObject {
             }
             for await missedId in group {
                 if let missedId { newMisses.insert(missedId) }
+                completed += 1
+                downloadState = .downloading(completed: completed, total: toDownload.count)
             }
             return newMisses
         }
         if !newMisses.isEmpty { recordMisses(newMisses) }
+        let matched = toDownload.count - newMisses.count
+        downloadState = matched == 0 ? .failed : .completed(matched: matched, total: toDownload.count)
     }
 
     /// The cached thumb for `exercise`, if the bulk download already fetched it. Never triggers a

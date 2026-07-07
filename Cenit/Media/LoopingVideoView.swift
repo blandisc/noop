@@ -2,16 +2,20 @@
 import SwiftUI
 import AVFoundation
 
-/// Silently loops a locally-cached exercise clip (FER-722). No controls, no network — `url` is
-/// always a file already on disk (`MediaCache`), never streamed.
+/// Silently loops a locally-cached exercise clip (FER-722). No network — `url` is always a file
+/// already on disk (`MediaCache`), never streamed. `isPlaying` drives an external play/pause
+/// affordance (the hero's top-right control, FER-778); the view itself has no controls of its own.
 struct LoopingVideoView: UIViewRepresentable {
     let url: URL
+    var isPlaying: Bool = true
 
     func makeUIView(context: Context) -> PlayerLoopingView {
         PlayerLoopingView(url: url)
     }
 
-    func updateUIView(_ uiView: PlayerLoopingView, context: Context) {}
+    func updateUIView(_ uiView: PlayerLoopingView, context: Context) {
+        uiView.setPlaying(isPlaying)
+    }
 
     final class PlayerLoopingView: UIView {
         private var looper: AVPlayerLooper?
@@ -30,6 +34,10 @@ struct LoopingVideoView: UIViewRepresentable {
         }
 
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+        func setPlaying(_ playing: Bool) {
+            if playing { queuePlayer.play() } else { queuePlayer.pause() }
+        }
 
         private var playerLayer: AVPlayerLayer?
         override func layoutSubviews() {

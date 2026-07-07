@@ -27,6 +27,10 @@ public struct ExerciseThumbnail: View {
     /// keeps the exact same frame, so no screen recomposes its layout.
     private let image: Image?
 
+    /// The hero form's corner radius, exposed so a caller overlaying extra content (e.g. a playing
+    /// video loop, FER-778) can clip it to the exact same shape as the reserved slot.
+    public static let heroCornerRadius: CGFloat = 16
+
     /// A square row thumbnail (1d 40 · 1j/1k 44 · 1f 48 · 1i 54 pt).
     public init(side: CGFloat, image: Image? = nil) {
         self.form = .tile(side: side)
@@ -42,7 +46,7 @@ public struct ExerciseThumbnail: View {
     private var corner: CGFloat {
         switch form {
         case .tile(let side): return side * 0.22   // 40→9 · 44→10 · 48→11 · 54→12, matching the handoff
-        case .hero:           return 16
+        case .hero:           return Self.heroCornerRadius
         }
     }
 

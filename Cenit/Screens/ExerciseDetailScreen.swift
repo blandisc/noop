@@ -15,14 +15,18 @@ struct ExerciseDetailScreen: View {
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.openURL) private var openURL
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
+    @EnvironmentObject private var tabRouter: TabRouter
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
-    /// FER-722: the cached thumb (if any) and, once tapped, the on-demand loop for this exercise.
+    /// FER-722/778: the cached thumb (if any) and, once fetched, the auto-playing loop for this
+    /// exercise — both consumed by the hero, not a secondary card.
     @State private var thumbURL: URL?
     @State private var loopURL: URL?
     @State private var loadingLoop = false
+    @State private var isLoopPlaying = true
 
     /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
     @State private var history: [(startTs: Int, weightKg: Double, reps: Int)] = []
@@ -75,9 +79,9 @@ struct ExerciseDetailScreen: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
                 // Reserved media hero (FER-751, handoff 1g/1h): sits between the title and the
-                // segmented control. Placeholder-first today; FER-722 fills this same slot with the
-                // cached loop/thumb (auto-play + top-right play/pause) without shifting the layout.
-                ExerciseThumbnail(heroHeight: 168)
+                // segmented control. FER-722/778 fill this same slot with the cached loop/thumb
+                // (auto-play + top-right play/pause) without shifting the layout.
+                heroSection
                 Picker("View", selection: $tab) {
                     ForEach(DetailTab.allCases) { t in Text(t.label).tag(t) }
                 }
@@ -104,6 +108,14 @@ struct ExerciseDetailScreen: View {
             loaded = true
             thumbURL = mediaCoordinator.cachedThumbURL(for: exercise)
             loopURL = nil
+            isLoopPlaying = true
+            // Auto-play (1g/1h): fetch the loop as soon as the hero has a thumb to show, no tap
+            // needed. `loopIfNeeded` itself no-ops with zero requests while the toggle is off.
+            if mediaCoordinator.isEnabled, thumbURL != nil {
+                loadingLoop = true
+                loopURL = await mediaCoordinator.loopIfNeeded(for: exercise)
+                loadingLoop = false
+            }
         }
         .sheet(item: $variant) { ex in
             NavigationStack {
@@ -124,60 +136,66 @@ struct ExerciseDetailScreen: View {
     // MARK: - Tabs (v3 · 1g/1h)
 
     /// «Guía» — how the exercise loads the body and how to do it. In the handoff's order (FER-739):
-    /// muscles (chips) → how-to → variants → «measured by» + YouTube at the foot. The reserved media
-    /// hero (`ExerciseThumbnail`, FER-751) already sits above the segmented; the opt-in `mediaSection`
-    /// (FER-722) stays as its always-available in-guide fallback (hidden by default).
+    /// muscles (chips) → how-to → variants → «measured by» + YouTube at the foot. The media hero
+    /// (FER-751/722/778) already sits above the segmented control, so nothing repeats it here.
     @ViewBuilder private var guideTab: some View {
         musclesSection
-        if mediaCoordinator.isEnabled, thumbURL != nil { mediaSection }
         if !exercise.displayCues(localized: StrengthDisplay.localized).isEmpty { howToSection }
         variantsSection
         measurementSection
         youtubeRow
     }
 
-    // MARK: - Cached exercise media (opt-in · FER-722)
-    // Same card slot/style as `youtubeRow` below, which stays as the always-available fallback.
-    // Toggle off or no cached thumb (default) → this section doesn't render at all, so the layout
-    // is pixel-identical to before FER-722.
+    // MARK: - Media hero (FER-751 reserved slot, filled by FER-722/778)
+    // The thumb/loop render INSIDE the same reserved `ExerciseThumbnail` slot — no secondary card,
+    // so there's nothing to duplicate. Toggle off or no cached thumb (default) → plain placeholder,
+    // pixel-identical to before FER-722; a discreet hint appears ONLY when the toggle itself is off.
 
-    @ViewBuilder private var mediaSection: some View {
-        Button {
-            guard loopURL == nil, !loadingLoop else { return }
-            loadingLoop = true
-            Task {
-                loopURL = await mediaCoordinator.loopIfNeeded(for: exercise)
-                loadingLoop = false
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: 8) {
+    @ViewBuilder private var heroSection: some View {
+        if mediaCoordinator.isEnabled, let thumbURL, let uiImage = UIImage(contentsOfFile: thumbURL.path) {
+            ZStack(alignment: .topTrailing) {
+                ExerciseThumbnail(heroHeight: 168, image: Image(uiImage: uiImage))
                 if let loopURL {
-                    LoopingVideoView(url: loopURL)
-                        .frame(height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                } else if let thumbURL, let uiImage = UIImage(contentsOfFile: thumbURL.path) {
-                    Image(uiImage: uiImage)
-                        .resizable().scaledToFill()
-                        .frame(height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                        .overlay(alignment: .center) {
-                            if loadingLoop {
-                                ProgressView().tint(theme.ink)
-                            } else {
-                                Image(systemName: "play.circle.fill")
-                                    .font(.system(size: 34)).foregroundStyle(.white)
-                            }
-                        }
+                    LoopingVideoView(url: loopURL, isPlaying: isLoopPlaying)
+                        .frame(maxWidth: .infinity, alignment: .center).frame(height: 168)
+                        .clipShape(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous))
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                    Button { isLoopPlaying.toggle() } label: {
+                        Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                            .padding(8).background(.black.opacity(0.35), in: Circle())
+                    }
+                    .buttonStyle(.plain).padding(10)
+                    .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
+                } else if loadingLoop {
+                    ProgressView().tint(.white).padding(10)
+                        .accessibilityLabel(Text("\(exercise.name) preview"))
                 }
             }
-            .frame(maxWidth: .infinity)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                ExerciseThumbnail(heroHeight: 168)
+                if !mediaCoordinator.isEnabled { mediaOffHint }
+            }
+        }
+    }
+
+    /// Discreet nudge shown only when the media download toggle is off — never when it's on and this
+    /// exercise simply has no EDB match (that's a quiet, honest miss, not something to fix in Ajustes).
+    private var mediaOffHint: some View {
+        Button {
+            tabRouter.select(.settings)
+            dismiss()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "play.rectangle").font(.system(size: 12))
+                Text("Turn on library downloads in Settings to see video")
+                    .font(StrandFont.footnote)
+            }
+            .foregroundStyle(theme.inkTertiary)
         }
         .buttonStyle(.plain)
-        .disabled(loopURL != nil)
-        .accessibilityLabel("\(exercise.name) preview")
     }
 
     /// «Progreso» — the metric trend + personal records (or an honest empty when nothing's logged).

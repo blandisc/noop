@@ -357,10 +357,12 @@ private struct AjustesLanding: View {
                 .frame(minHeight: 44)
                 .onChange(of: exerciseMediaEnabled) { _, enabled in
                     if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
+                    else { mediaCoordinator.resetDownloadState() }
                 }
                 Text("Descarga miniaturas y un video corto por ejercicio desde ExerciseDB (RapidAPI), un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin señal después. Esta es la única excepción a la regla de NOOP de cero red — tu IP y el nombre del ejercicio se comparten con ese servicio; ningún otro dato tuyo sale jamás. Apagar esto detiene descargas futuras, no borra lo ya guardado.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
+                mediaDownloadStatus
                 divider
                 Button(role: .destructive) { confirmDeleteMedia = true } label: {
                     Text("Borrar media descargada").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -378,6 +380,30 @@ private struct AjustesLanding: View {
                 navRow("About & support",
                        subtitle: Text("Version \(appVersion) · help · licenses")) { darkScreen = .support }
             }
+        }
+    }
+
+    /// Real feedback for the bulk thumb download (FER-778) — replaces the mute toggle-and-hope. Quiet
+    /// by design: nothing while idle/off, a live count while running, a one-line result after.
+    @ViewBuilder
+    private var mediaDownloadStatus: some View {
+        switch mediaCoordinator.downloadState {
+        case .idle:
+            EmptyView()
+        case .downloading(let completed, let total):
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Downloading \(completed)/\(total)…")
+            }
+            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        case .completed(let matched, let total):
+            Text(total == 0
+                 ? String(localized: "Already fully downloaded.")
+                 : String(localized: "Download complete: \(matched)/\(total) exercises with video."))
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+        case .failed:
+            Text("Couldn't download. Check your connection and try again.")
+                .font(StrandFont.caption).foregroundStyle(theme.critical)
         }
     }
 
