@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Entrenar respira según tu plan / Train breathes with your plan.**
+  **ES** — El espacio entre secciones de Entrenar ahora es dinámico: con pocos días de plan las secciones se separan y respiran, y conforme agregas días (hasta siete) el aire se comprime con gracia para que todo quepa sin encimarse. Constancia se asienta al fondo.
+  **EN** — The spacing between Train's sections is now dynamic: with a short plan the sections spread out and breathe, and as you add days (up to seven) the air compresses gracefully so everything fits without crowding. Consistency settles at the bottom.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Entrenar más despejado: un botón, filas tocables, Constancia con aire / A calmer Train: one button, tappable rows, Consistency with room.**
   **ES** — El botón grande de Hoy ahora dice solo «Empezar». Las otras rutinas de tu plan ya no traen un botón «Empezar» aparte: tocas la fila completa para abrirlas, con una flecha en el color de esa rutina. Y Constancia baja hacia el dock, aprovechando el espacio libre para que la pantalla respire.
   **EN** — Today's big button now just says «Empezar». The other routines in your plan drop their separate «Empezar» button: tap the whole row to open them, with a chevron in that routine's color. And Consistency drifts down toward the dock, using the free space so the screen breathes.
