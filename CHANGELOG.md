@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Un solo semáforo en el héroe de Hoy / A single traffic light in Today's hero.**
+  **ES** — En un día conflictivo (recuperación en banda ámbar, veredicto verde, carga en rojo) el héroe de "Hoy" mostraba tres colores independientes compitiendo. Ahora solo el numeral de recuperación lleva el color del veredicto; la palabra del veredicto ("Equilibrado", etc.), su subrayado punteado y el delta "+N vs tu promedio" pasan a tinta neutra. La franja de CARGA no cambia — conserva su propio semáforo. (FER-764)
+  **EN** — On a conflicting day (recovery in the amber band, a green verdict, red load) Today's hero showed three independent colors competing. Now only the recovery numeral carries the verdict color; the verdict word ("Balanced", etc.), its dotted underline, and the "+N vs your average" delta move to neutral ink. The LOAD strip is unchanged — it keeps its own traffic light. (FER-764)
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **La tarjeta "Hoy" de Entrenar respira mejor / The "Today" card in Train breathes better.**
   **ES** — En la pestaña Entrenar, la tarjeta del día ya no apelmaza el nombre de la rutina contra el meta ("N ejercicios · ~NN min") cuando el nombre es largo: el meta ahora baja a su propia línea. También se corrigió un bug donde la línea de veredicto de recuperación ("Recuperación en tu rango · entrena con tu carga de siempre.") dejaba un hueco en blanco a la derecha antes de envolver, en vez de usar todo el ancho de la tarjeta. Sin cambios de datos ni de comportamiento.
   **EN** — In the Train tab, the "today" card no longer crowds a long routine name against its meta ("N exercises · ~NN min") — the meta now drops to its own line. Also fixed a layout bug where the recovery verdict line ("Recovery in your range · train at your usual load.") left a blank gap on the right before wrapping, instead of using the card's full width. No data or behavior changes.
