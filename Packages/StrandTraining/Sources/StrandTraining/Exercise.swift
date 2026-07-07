@@ -13,31 +13,42 @@ public enum ExerciseType: String, Codable, Sendable, CaseIterable {
 /// (`ExerciseCatalog`) and user-created exercises (persisted by WhoopStore). Pure —
 /// no DB, no UIKit.
 public struct Exercise: Codable, Sendable, Identifiable, Equatable, Hashable {
-    /// Stable id: the dataset slug for catalog entries, a UUID string for user-created.
+    /// Stable id: the native ExerciseDB id for catalog entries (e.g. "01qpYSe"), a UUID
+    /// string for user-created. Since FER-779 the catalog IS ExerciseDB, so the id is the
+    /// media/data key directly — no name matching.
     public let id: String
     public let name: String
-    /// Spanish display name, for bundled catalog entries (FER-501). `nil` for user-created
-    /// exercises (the user types their own, in their own language) — the `es` overlay only
-    /// covers the seed catalog. Optional so previously-persisted custom rows decode unchanged.
+    /// Spanish display name, for bundled catalog entries. `nil` for user-created exercises
+    /// (the user types their own, in their own language) — the `es` overlay only covers the
+    /// seed catalog. Optional so previously-persisted custom rows decode unchanged.
     public let nameES: String?
     public let type: ExerciseType
-    /// Free-form equipment label (e.g. "barbell", "dumbbell", "body only"). Optional.
+    /// Free-form equipment label (e.g. "barbell", "dumbbell", "body weight"). Optional.
     public let equipment: String?
-    /// Normalized (lowercased) muscle names. Primary = directly targeted.
+    /// ExerciseDB coarse body-part regions (e.g. "chest", "upper legs", "waist"). Library filter
+    /// input (FER-779). Distinct from `primaryMuscles`, which drive the muscle map / load math.
+    public let bodyParts: [String]
+    /// Muscle names, normalized to NOOP's 17 canonical `MuscleAtlas` keys at bake time. Primary =
+    /// directly targeted.
     public let primaryMuscles: [String]
     /// Secondary = assisting muscles.
     public let secondaryMuscles: [String]
-    /// Step-by-step "how to" cues (offline; the bundled instructions). FER-351 adds media.
-    public let cues: [String]
-    /// Spanish "how to" cues, for bundled catalog entries (FER-503). `nil` for user-created exercises
-    /// (no overlay). Same step structure as `cues` when present. Optional so older rows decode unchanged.
-    public let cuesES: [String]?
+    /// Step-by-step "how to" instructions (offline; from ExerciseDB, `Step:N ` prefix stripped).
+    public let instructions: [String]
+    /// Spanish instructions, for bundled catalog entries (LLM-translated at bake). `nil` for
+    /// user-created exercises. Optional so older rows decode unchanged.
+    public let instructionsES: [String]?
+    /// Remote ExerciseDB GIF (thumbnail + looping clip). A string only — the binary is fetched
+    /// lazily via the opt-in media flow (FER-722), never at catalog load. `nil` for custom.
+    public let gifUrl: String?
 
     public init(id: String, name: String, nameES: String? = nil, type: ExerciseType, equipment: String?,
-                primaryMuscles: [String], secondaryMuscles: [String], cues: [String], cuesES: [String]? = nil) {
+                bodyParts: [String] = [], primaryMuscles: [String], secondaryMuscles: [String],
+                instructions: [String], instructionsES: [String]? = nil, gifUrl: String? = nil) {
         self.id = id; self.name = name; self.nameES = nameES; self.type = type; self.equipment = equipment
+        self.bodyParts = bodyParts
         self.primaryMuscles = primaryMuscles; self.secondaryMuscles = secondaryMuscles
-        self.cues = cues; self.cuesES = cuesES
+        self.instructions = instructions; self.instructionsES = instructionsES; self.gifUrl = gifUrl
     }
 
     /// The name to show: Spanish when asked for the localized form and a translation exists,
@@ -47,10 +58,10 @@ public struct Exercise: Codable, Sendable, Identifiable, Equatable, Hashable {
         (localized ? nameES : nil) ?? name
     }
 
-    /// The "how to" cues to show: the Spanish steps when asked for the localized form and a translation
-    /// exists, otherwise the English ones. Pure — caller decides `localized`. (FER-503)
-    public func displayCues(localized: Bool) -> [String] {
-        (localized ? cuesES : nil) ?? cues
+    /// The "how to" steps to show: the Spanish steps when asked for the localized form and a
+    /// translation exists, otherwise the English ones. Pure — caller decides `localized`.
+    public func displayInstructions(localized: Bool) -> [String] {
+        (localized ? instructionsES : nil) ?? instructions
     }
 }
 
@@ -70,11 +81,13 @@ public extension Exercise {
 
 /// The bundled, read-only seed catalog of exercises.
 ///
-/// Source: **free-exercise-db** (https://github.com/yuhonas/free-exercise-db), released
-/// into the public domain under the Unlicense. Normalized at build time into our schema
-/// (id, name, type, equipment, primary/secondary muscles, cues) and shipped as a package
-/// resource so it works fully offline. User-created exercises live in WhoopStore and are
-/// merged with this catalog by the app's library.
+/// Source: **ExerciseDB OSS** (https://oss.exercisedb.dev), ~1500 exercises with native ids
+/// (FER-779). Baked offline by `Tools/bake-exercisedb/` into our schema (native id, name, derived
+/// `ExerciseType`, equipment, body parts, muscles normalized to our 17 canonical keys, offline
+/// instructions, and a remote `gifUrl`) and shipped as a package resource so it works fully
+/// offline. The es-MX overlay (name + instructions) is LLM-translated at bake into
+/// `exercises.es.json`. User-created exercises live in WhoopStore and are merged with this catalog
+/// by the app's library.
 public enum ExerciseCatalog {
     /// Every bundled exercise, decoded once and cached.
     public static let all: [Exercise] = load()
@@ -92,23 +105,25 @@ public enum ExerciseCatalog {
               let data = try? Data(contentsOf: url),
               let list = try? JSONDecoder().decode([Exercise].self, from: data)
         else { return [] }
-        let es = loadSpanishOverlay()           // id → Spanish name + cues (FER-501/FER-503)
+        let es = loadSpanishOverlay()           // id → Spanish name + instructions
         guard !es.isEmpty else { return list }
         return list.map { ex in
             guard let entry = es[ex.id] else { return ex }
             return Exercise(id: ex.id, name: ex.name, nameES: entry.name, type: ex.type,
-                            equipment: ex.equipment, primaryMuscles: ex.primaryMuscles,
-                            secondaryMuscles: ex.secondaryMuscles, cues: ex.cues, cuesES: entry.cues)
+                            equipment: ex.equipment, bodyParts: ex.bodyParts,
+                            primaryMuscles: ex.primaryMuscles, secondaryMuscles: ex.secondaryMuscles,
+                            instructions: ex.instructions, instructionsES: entry.instructions,
+                            gifUrl: ex.gifUrl)
         }
     }
 
-    /// One Spanish-overlay entry, keyed by the catalog id: the Spanish name (FER-501) and, optionally,
-    /// the Spanish cues (FER-503). Tolerant of extra fields for forward-compat.
-    private struct SpanishEntry: Decodable { let id: String; let name: String?; let cues: [String]? }
+    /// One Spanish-overlay entry, keyed by the catalog id: the Spanish name and, optionally, the
+    /// Spanish instructions. Tolerant of extra fields for forward-compat.
+    private struct SpanishEntry: Decodable { let id: String; let name: String?; let instructions: [String]? }
 
-    /// Load the bundled `exercises.es.json` overlay → id → (Spanish name, Spanish cues). A separate file
-    /// (not inline in `exercises.json`) so the English catalog stays a clean mirror of the upstream
-    /// dataset and the Spanish diff is reviewable on its own. Missing/empty → falls back to English.
+    /// Load the bundled `exercises.es.json` overlay → id → (Spanish name, Spanish instructions). A
+    /// separate file (not inline in `exercises.json`) so the English catalog stays a clean mirror of
+    /// the upstream dataset and the Spanish diff is reviewable on its own. Missing/empty → English.
     private static func loadSpanishOverlay() -> [String: SpanishEntry] {
         guard let url = Bundle.module.url(forResource: "exercises.es", withExtension: "json"),
               let data = try? Data(contentsOf: url),

@@ -30,17 +30,20 @@ extension WhoopStore {
 
     public func saveCustomExercise(_ e: Exercise) async throws {
         try syncWrite { db in
+            // The `cues` column (v13) is reused to store `instructions` (FER-779 renamed the field;
+            // the column name stays for append-only migration hygiene). `bodyParts`/`gifUrl` are v27.
             let args: [DatabaseValueConvertible?] = [
                 e.id, e.name, e.type.rawValue, e.equipment,
-                encodeJSON(e.primaryMuscles), encodeJSON(e.secondaryMuscles), encodeJSON(e.cues)
+                encodeJSON(e.primaryMuscles), encodeJSON(e.secondaryMuscles), encodeJSON(e.instructions),
+                encodeJSON(e.bodyParts), e.gifUrl
             ]
             try db.execute(sql: """
-                INSERT INTO customExercise (id, name, type, equipment, primaryMuscles, secondaryMuscles, cues)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO customExercise (id, name, type, equipment, primaryMuscles, secondaryMuscles, cues, bodyParts, gifUrl)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     name = excluded.name, type = excluded.type, equipment = excluded.equipment,
                     primaryMuscles = excluded.primaryMuscles, secondaryMuscles = excluded.secondaryMuscles,
-                    cues = excluded.cues
+                    cues = excluded.cues, bodyParts = excluded.bodyParts, gifUrl = excluded.gifUrl
                 """, arguments: StatementArguments(args))
         }
     }
@@ -89,9 +92,11 @@ extension WhoopStore {
         Exercise(id: r["id"], name: r["name"],
                  type: ExerciseType(rawValue: r["type"]) ?? .weightReps,
                  equipment: r["equipment"],
+                 bodyParts: decodeJSON(r["bodyParts"], as: [String].self, default: []),
                  primaryMuscles: decodeJSON(r["primaryMuscles"], as: [String].self, default: []),
                  secondaryMuscles: decodeJSON(r["secondaryMuscles"], as: [String].self, default: []),
-                 cues: decodeJSON(r["cues"], as: [String].self, default: []))
+                 instructions: decodeJSON(r["cues"], as: [String].self, default: []),
+                 gifUrl: r["gifUrl"])
     }
 
     // MARK: - Learned exercise aliases (FER-523)

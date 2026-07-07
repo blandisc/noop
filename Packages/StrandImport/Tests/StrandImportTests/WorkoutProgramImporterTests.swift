@@ -177,7 +177,7 @@ final class WorkoutProgramImporterTests: XCTestCase {
 
     private func ex(_ id: String, _ name: String) -> Exercise {
         Exercise(id: id, name: name, type: .weightReps, equipment: nil,
-                 primaryMuscles: [], secondaryMuscles: [], cues: [])
+                 primaryMuscles: [], secondaryMuscles: [], instructions: [])
     }
 
     func testReconcilerMatchesExactlyAndByNormalization() {
@@ -237,19 +237,7 @@ final class WorkoutProgramImporterTests: XCTestCase {
 
     private func bench(_ id: String, _ nameES: String) -> Exercise {
         Exercise(id: id, name: "Barbell Bench Press", nameES: nameES, type: .weightReps, equipment: nil,
-                 primaryMuscles: [], secondaryMuscles: [], cues: [])
-    }
-
-    func testReconcilerMatchesCuratedSynonyms() {
-        // FER-522: a common variant that is neither the exact catalog name nor an id still resolves via
-        // the curated alias table — in Spanish or English, accents folded.
-        let r = WorkoutExerciseReconciler(known: ExerciseCatalog.all)
-        XCTAssertEqual(r.resolve(we("press plano"))?.id, "Barbell_Bench_Press_-_Medium_Grip")
-        XCTAssertEqual(r.resolve(we("flat bench press"))?.id, "Barbell_Bench_Press_-_Medium_Grip")
-        XCTAssertEqual(r.resolve(we("Jalón Dorsal"))?.id, "Wide-Grip_Lat_Pulldown")   // case + accents folded
-        XCTAssertEqual(r.resolve(we("sentadilla profunda"))?.id, "Barbell_Full_Squat")
-        XCTAssertEqual(r.resolve(we("desplantes"))?.id, "Dumbbell_Lunges")           // es-MX variant
-        XCTAssertNil(r.resolve(we("ejercicio que no existe en ningún lado")))         // no id/name/alias
+                 primaryMuscles: [], secondaryMuscles: [], instructions: [])
     }
 
     private func we(_ name: String) -> WorkoutExercise { WorkoutExercise(name: name, sets: 1) }
@@ -281,7 +269,7 @@ final class WorkoutProgramImporterTests: XCTestCase {
         // An exercise that carries both names (catalog entry, FER-501) matches a plan written in
         // either language; an exercise with only an English name still matches English.
         let bench = Exercise(id: "bench", name: "Barbell Bench Press", nameES: "Press de banca con barra",
-                             type: .weightReps, equipment: nil, primaryMuscles: [], secondaryMuscles: [], cues: [])
+                             type: .weightReps, equipment: nil, primaryMuscles: [], secondaryMuscles: [], instructions: [])
         let squatEnOnly = ex("squat", "Squat")
         let r = WorkoutExerciseReconciler(known: [bench, squatEnOnly])
         XCTAssertEqual(r.match("Press de banca con barra")?.id, "bench")   // Spanish

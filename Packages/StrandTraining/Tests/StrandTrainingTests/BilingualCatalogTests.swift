@@ -1,15 +1,13 @@
 import XCTest
 @testable import StrandTraining
 
-// FER-501 — the Spanish overlay loads into the catalog, the vocabulary tables are exhaustive, and
-// the localized-name helper falls back safely. The overlay is partial (curated common exercises) for
-// now; F2/the data fill completes it — so these assert correctness, not full coverage.
+// FER-501 / FER-779 — the es-MX overlay loads into the catalog (now ExerciseDB, LLM-translated at
+// bake), the vocabulary tables are exhaustive, and the localized helpers fall back safely.
 final class BilingualCatalogTests: XCTestCase {
 
     func testEveryCatalogEntryHasSpanishName() {
-        // F1 ships a complete overlay: every one of the ~873 catalog exercises has a non-empty Spanish
-        // name, and keeps its English one. (A custom exercise — not in the catalog — has nameES nil; see
-        // testDisplayNameFallsBackToEnglishWithoutOverlay.)
+        // The bake ships a complete overlay: every catalog exercise has a non-empty Spanish name and
+        // keeps its English one. (A custom exercise — not in the catalog — has nameES nil.)
         for e in ExerciseCatalog.all {
             let es = e.nameES
             XCTAssertNotNil(es, "\(e.id) has no Spanish name in the overlay")
@@ -19,48 +17,41 @@ final class BilingualCatalogTests: XCTestCase {
     }
 
     func testKnownExerciseIsTranslated() {
-        let squat = ExerciseCatalog.byID("Barbell_Squat")
-        XCTAssertEqual(squat?.nameES, "Sentadilla con barra")
-        XCTAssertEqual(squat?.displayName(localized: true), "Sentadilla con barra")
-        XCTAssertEqual(squat?.displayName(localized: false), "Barbell Squat")
+        // Resolve by English name (ids are opaque ExerciseDB ids), then assert the localized name is a
+        // non-empty Spanish string distinct from the English.
+        guard let bench = ExerciseCatalog.all.first(where: { $0.name == "barbell bench press" }) else {
+            return XCTFail("expected 'barbell bench press' in the catalog")
+        }
+        XCTAssertEqual(bench.displayName(localized: false), "barbell bench press")
+        let es = bench.displayName(localized: true)
+        XCTAssertFalse(es.isEmpty)
+        XCTAssertNotEqual(es, "barbell bench press", "Spanish mode should show the translated name")
     }
 
     func testDisplayNameFallsBackToEnglishWithoutOverlay() {
         // A custom-style exercise (built by hand, no nameES) always shows its given name.
         let custom = Exercise(id: "x", name: "Mi ejercicio", type: .weightReps, equipment: nil,
-                              primaryMuscles: [], secondaryMuscles: [], cues: [])
+                              primaryMuscles: [], secondaryMuscles: [], instructions: [])
         XCTAssertNil(custom.nameES)
         XCTAssertEqual(custom.displayName(localized: true), "Mi ejercicio")
         XCTAssertEqual(custom.displayName(localized: false), "Mi ejercicio")
     }
 
-    func testSpanishCuesLoadAndFallBack() {
-        // F2 ships a PARTIAL cues overlay (common exercises); an entry with Spanish cues exposes them
-        // localized and keeps the English; one without falls back to English. Step counts match.
-        let squat = ExerciseCatalog.byID("Barbell_Squat")
-        XCTAssertNotNil(squat?.cuesES, "Barbell_Squat should have Spanish cues in the F2 batch")
-        XCTAssertEqual(squat?.displayCues(localized: true).count, squat?.cues.count, "step count must match English")
-        XCTAssertEqual(squat?.displayCues(localized: false), squat?.cues, "English mode shows English cues")
-        XCTAssertNotEqual(squat?.displayCues(localized: true), squat?.cues, "Spanish mode shows Spanish cues")
-
-        // An exercise outside the batch falls back to English cues (safe degradation).
-        let untranslated = ExerciseCatalog.all.first { $0.cuesES == nil && !$0.cues.isEmpty }
-        XCTAssertNotNil(untranslated, "the cues overlay is partial — some exercises have no Spanish cues yet")
-        XCTAssertEqual(untranslated?.displayCues(localized: true), untranslated?.cues, "no Spanish cues → English")
-
-        // A custom exercise (no overlay) shows whatever cues it was built with, in both modes.
-        let custom = Exercise(id: "z", name: "X", type: .weightReps, equipment: nil,
-                              primaryMuscles: [], secondaryMuscles: [], cues: ["paso uno"])
-        XCTAssertEqual(custom.displayCues(localized: true), ["paso uno"])
-    }
-
-    func testEveryAliasPointsToACatalogId() {
-        // FER-522: every curated synonym must target a real catalog exercise (a typo'd id would silently
-        // never match). The table is non-empty.
-        XCTAssertFalse(ExerciseAliases.all.isEmpty, "the alias table should be bundled and non-empty")
-        for (alias, id) in ExerciseAliases.all {
-            XCTAssertNotNil(ExerciseCatalog.byID(id), "alias '\(alias)' points to unknown id '\(id)'")
+    func testSpanishInstructionsLoadAndFallBack() {
+        // A catalog exercise exposes Spanish instructions localized and keeps the English; step counts match.
+        guard let e = ExerciseCatalog.all.first(where: { !$0.instructions.isEmpty }) else {
+            return XCTFail("catalog has no instructions")
         }
+        XCTAssertNotNil(e.instructionsES, "\(e.id) should have Spanish instructions (overlay is complete)")
+        XCTAssertEqual(e.displayInstructions(localized: true).count, e.instructions.count,
+                       "step count must match English")
+        XCTAssertEqual(e.displayInstructions(localized: false), e.instructions, "English mode shows English")
+
+        // A custom exercise (no overlay) shows whatever instructions it was built with, in both modes.
+        let custom = Exercise(id: "z", name: "X", type: .weightReps, equipment: nil,
+                              primaryMuscles: [], secondaryMuscles: [], instructions: ["paso uno"])
+        XCTAssertEqual(custom.displayInstructions(localized: true), ["paso uno"])
+        XCTAssertEqual(custom.displayInstructions(localized: false), ["paso uno"])
     }
 
     func testMuscleVocabularyCoversEveryCatalogMuscle() {
@@ -74,6 +65,13 @@ final class BilingualCatalogTests: XCTestCase {
         let used = Set(ExerciseCatalog.all.compactMap { $0.equipment })
         for eq in used {
             XCTAssertNotNil(EquipmentVocabulary.es[eq], "missing Spanish for equipment key '\(eq)'")
+        }
+    }
+
+    func testBodyPartVocabularyCoversEveryCatalogBodyPart() {
+        let used = Set(ExerciseCatalog.all.flatMap { $0.bodyParts })
+        for bp in used {
+            XCTAssertNotNil(BodyPartVocabulary.es[bp], "missing Spanish for body-part key '\(bp)'")
         }
     }
 }

@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Biblioteca de ejercicios nueva, más grande y con guía en español / A new, bigger exercise library, guided in Spanish.**
+  **ES** — Cénit estrena una biblioteca de ejercicios mucho más grande (~1500 ejercicios de ExerciseDB), con instrucciones «cómo se hace» traducidas al español de México y su animación (GIF) por ejercicio. Como cada ejercicio trae su identificador propio, la animación y los datos siempre embonan — se acabaron los ejercicios sin video por diferencias de nombre. Todo se descarga una sola vez y vive en tu teléfono; nada se consulta en línea al usarlo.
+  **EN** — Cénit ships a much larger exercise library (~1500 exercises from ExerciseDB), with «how to» instructions translated to Mexican Spanish and a per-exercise animation (GIF). Because every exercise carries its own native id, the animation and data always line up — no more exercises missing media because a name didn't match. Everything is baked once and lives on your phone; nothing is fetched online while you use it.
+  ([exercises.json](Packages/StrandTraining/Sources/StrandTraining/Resources/exercises.json), [Tools/bake-exercisedb](Tools/bake-exercisedb/README.md))
+
 - **Entrenar reorganizado: tu plan arriba, las formas al pie / Train reorganized: your plan up top, the ways at the foot.**
   **ES** — «También en tu plan» sube justo debajo de «Empezar». «Formas de entrenar» deja de ser un botón que se despliega: sus seis accesos —Rápido, En vivo, Intervalo, Movilidad, Respirar y Dieta— quedan siempre a la vista como íconos al pie de la pantalla, debajo de Constancia. Además, tu plan se actualiza al volver de editarlo.
   **EN** — «También en tu plan» moves right below «Empezar». «Formas de entrenar» is no longer a button you expand: its six shortcuts —Rápido, En vivo, Intervalo, Movilidad, Respirar and Dieta— now stay visible as icons at the foot of the screen, below Consistency. Your plan also refreshes when you return from editing it.

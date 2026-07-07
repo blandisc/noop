@@ -62,7 +62,7 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 26)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 27)
     }
 
     /// v23 (FER-531): the weekly-split table exists with `weekday` as its PRIMARY KEY (one routine per
@@ -124,7 +124,7 @@ final class MigrationTests: XCTestCase {
         }
         let pk = try await store.primaryKeyColumns("circadianPhase")
         XCTAssertEqual(pk, ["deviceId", "day"], "PK is (deviceId, day) → at most one record per day")
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 26)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 27)
     }
 
     /// v25 upsert is idempotent by (deviceId, day): writing the same day twice keeps one row, latest wins.
@@ -653,6 +653,37 @@ final class MigrationTests: XCTestCase {
             XCTAssertNil(sess?["energyKcal"] as Double?, "a pre-v26 session has NULL energy")
             XCTAssertNil(sess?["energySource"] as String?)
             XCTAssertEqual(sess?["strain"] as Double?, 5.5, "existing columns untouched")
+        }
+    }
+
+    /// v27 (FER-779): custom exercises gain `bodyParts`/`gifUrl` for the ExerciseDB model. Append-only —
+    /// a pre-v27 row survives with the new columns at their defaults (empty parts, no gif), and the v13
+    /// `cues` column (reused for `instructions`) is untouched.
+    func testV27AddsCustomExerciseColumnsAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v26")
+
+        // A pre-v27 custom exercise (v13 schema: no bodyParts / gifUrl).
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO customExercise (id, name, type, equipment, primaryMuscles, secondaryMuscles, cues)
+                VALUES ('ex1','Jalón neutro','weightReps','cable','["lats"]','["biceps"]','["Baja controlado"]')
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v27
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "customExercise").map(\.name)
+            XCTAssertTrue(cols.contains("bodyParts"), "v27 must add customExercise.bodyParts")
+            XCTAssertTrue(cols.contains("gifUrl"), "v27 must add customExercise.gifUrl")
+            let row = try Row.fetchOne(db, sql: "SELECT * FROM customExercise WHERE id='ex1'")
+            XCTAssertNotNil(row, "the pre-v27 custom exercise must survive")
+            XCTAssertEqual(row?["bodyParts"] as String?, "[]", "new bodyParts column defaults to empty JSON array")
+            XCTAssertNil(row?["gifUrl"] as String?, "new gifUrl column defaults to NULL")
+            XCTAssertEqual(row?["cues"] as String?, "[\"Baja controlado\"]", "the reused cues column is untouched")
+            XCTAssertEqual(row?["name"] as String?, "Jalón neutro", "existing columns untouched")
         }
     }
 
