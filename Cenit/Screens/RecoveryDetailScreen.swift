@@ -58,6 +58,9 @@ struct RecoveryDetailScreen: View {
     /// Measured available width for the calendar, so the heat grid can size its cells to fill it. (FER-225)
     @State private var calWidth: CGFloat = 0
     @State private var methodExpanded = false
+    /// «Media ⇄ Rangos» toggle for the levels block (handoff v2, FER-803): the moving-average line vs the
+    /// population lanes. Starts on «Media» (the line).
+    @State private var levelsMode: TrendMode = .media
     /// The calendar day the user tapped, for the read-out below the grid (touch — FER-235).
     @State private var selectedHeatDay: RecoveryDay? = nil
     /// Level-3 disclosure: the calendar + trend live under «See your history», collapsed on open. The only
@@ -673,6 +676,7 @@ struct RecoveryDetailScreen: View {
                 unit: "",
                 valueFormat: { "\(Int($0.rounded()))" },
                 domain: 0...100,
+                mode: $levelsMode,
                 accessibilityLabel: "Recovery by level"
             )
             averageCaption
