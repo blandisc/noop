@@ -109,8 +109,8 @@ struct RegionShape: Shape {
 // MARK: - Anatomical figure (FER-350 redesign · #7 · body FER-781)
 //
 // The redesigned muscle map (`MuscleMapScreen`) draws DETAILED anatomical silhouettes instead of the
-// schematic `RegionShape` ellipses/rects (which the exercise-detail figure still uses). The shapes are
-// authored as SVG path data over a fixed 160×340 viewBox — front and back, plus a shared base body
+// schematic `RegionShape` ellipses/rects (now unused — kept for reference, pre-existing dead code). The
+// shapes are authored as SVG path data over a fixed 200×430 viewBox — front and back, plus a shared base body
 // (torso / arms / legs / head) drawn in hairline behind the tinted muscle groups. Each muscle path keeps
 // the catalog muscle key (`MuscleFatigueMap` / `MuscleAtlas.name`) so the same load tint and tap target
 // apply. No math, no assets, no network — just `Shape`s derived from the atlas, like the rest of the map.
