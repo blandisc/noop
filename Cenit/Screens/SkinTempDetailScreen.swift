@@ -59,6 +59,13 @@ struct SkinTempDetailScreen: View {
                     }
                     blockDivider
                     methodDisclosure
+                    // Standardized origin seal at the foot (FER-804): skin temp is a band sensor, measured
+                    // overnight (the model has no Apple-source flag; it's the strap's thermistor).
+                    if !model.series.isEmpty {
+                        OriginStamp(origin: .band, when: String(localized: "anoche"), theme: theme)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 2)
+                    }
                 }
             }
             .padding(NoopMetrics.screenPadding)
@@ -89,7 +96,7 @@ struct SkinTempDetailScreen: View {
         let v = model.today
         return VStack(alignment: .leading, spacing: 10) {
             // Serif in-screen title (FER-581). No ⓘ — the reading below stays always visible.
-            InstrumentoScreenTitle("Skin temp", theme: theme)
+            InstrumentoScreenTitle("Skin temp", theme: theme, glyph: .skinTemp)
             HStack(alignment: .top) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(v.map { fmt($0) } ?? "—")
