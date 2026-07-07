@@ -24,6 +24,11 @@ approximate; Cénit is built from source — see the [README](README.md).
   **EN** — When importing an AI plan, the app now auto-matches the vast majority of exercises: it understands name variations, knows common gym names, and marks every automatic match with ✨ so you can review or change it before importing — nothing gets in without passing through you. Uncertain ones still ask for your decision, as before. The prompt you copy to your AI also improved so it picks the right catalog variant.
   ([WorkoutProgram.swift](Packages/StrandImport/Sources/StrandImport/WorkoutProgram.swift), [exercise-aliases.json](Packages/StrandImport/Sources/StrandImport/Resources/exercise-aliases.json), [WorkoutImportView.swift](Cenit/Screens/WorkoutImportView.swift), [WorkoutPrompt.swift](Cenit/Data/WorkoutPrompt.swift))
 
+- **Al armar una rutina ya ves y tocas cada ejercicio / Building a routine now shows and opens each exercise.**
+  **ES** — En «Nueva rutina» cada ejercicio muestra su miniatura (el mismo GIF cacheado que la Biblioteca) y ahora puedes tocar su nombre o miniatura para abrir su ficha completa, igual que en la Biblioteca. Además se arregló el encabezado «SERIE», que se partía en dos renglones.
+  **EN** — In "New routine" each exercise shows its thumbnail (the same cached GIF as the Library), and you can now tap its name or thumbnail to open its full detail sheet, just like in the Library. Also fixed the "SET/SERIE" column header, which was wrapping onto two lines.
+  ([RoutineBuilderScreen.swift](Cenit/Screens/RoutineBuilderScreen.swift))
+
 - **Los ejercicios en español ya suenan a gimnasio / Exercise names in Spanish now sound like the gym.**
   **ES** — Se retradujeron los 1,500 nombres de la biblioteca de ejercicios con una guía de estilo: capitalización uniforme, terminología real de gym mexicano (press, remo, jalón, peso muerto, sentadilla búlgara…), equipo consistente al final ("con barra", "con mancuernas", "en máquina Smith") y sin traducciones literales raras. Se nota en la Biblioteca, al armar rutinas y en las sugerencias al importar un plan.
   **EN** — All 1,500 exercise-library names were retranslated with a style guide: uniform capitalization, real Mexican-gym terminology, consistent equipment phrasing, and no odd literal translations. Visible in the Library, when building routines, and in the suggestions when importing a plan.
