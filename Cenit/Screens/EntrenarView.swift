@@ -522,9 +522,7 @@ private struct EntrenarLanding: View {
                 shape.strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong)
                 // A minimal horizontal dash reads as an instrument, not an illustration — no moon/zzz/heart
                 // (design decision, FER-762).
-                Path { p in p.move(to: CGPoint(x: 0, y: 7)); p.addLine(to: CGPoint(x: 14, y: 7)) }
-                    .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                    .frame(width: 14, height: 14)
+                Image(systemName: "minus").font(.system(size: 14, weight: .semibold)).foregroundStyle(theme.hairlineStrong)
             }
         }
         .frame(height: 46)

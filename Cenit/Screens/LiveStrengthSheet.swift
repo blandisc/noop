@@ -625,11 +625,12 @@ struct LiveStrengthSheet: View {
     @State private var shareReceipt: ShareRef?
 
     /// The empty «Rápido de fuerza» state (FER-762): no routine, no exercises added yet. Its search field
-    /// opens `ExerciseLibraryScreen` in ADD mode; the freshness suggestions load once when this state appears.
+    /// opens `ExerciseLibraryScreen` in ADD mode; the freshness suggestions load once when this state
+    /// appears. `nil` = not loaded yet (the `.task` hasn't resolved); `[]` = loaded, honestly no fresh
+    /// muscle to suggest — one optional instead of a separate "have I tried yet" flag.
     @State private var showLibraryPicker = false
-    @State private var freshSuggestions: [QuickSuggestion] = []
+    @State private var freshSuggestions: [QuickSuggestion]?
     @State private var loadedMuscle: String?
-    @State private var quickSuggestionsLoaded = false
 
     /// One «Sugeridos · músculos frescos hoy» row: an exercise for a fresh muscle, with its last logged set.
     struct QuickSuggestion: Identifiable {
@@ -1655,10 +1656,10 @@ struct LiveStrengthSheet: View {
                 // FER-762: a brand-new user has no muscle-load history yet — `loadFreshSuggestions` then
                 // returns no picks. Falling back to the search-only flow (no orphaned "Suggested" header
                 // over an empty list) rather than a section with nothing under it.
-                if !freshSuggestions.isEmpty {
+                if let suggestions = freshSuggestions, !suggestions.isEmpty {
                     Text("Suggested · muscles fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .padding(.top, 10)
-                    ForEach(freshSuggestions) { s in suggestionRow(s) }
+                    ForEach(suggestions) { s in suggestionRow(s) }
 
                     if let muscle = loadedMuscle {
                         (Text(MuscleAtlas.name(muscle)) + Text(verbatim: " ") + Text("still carries load · suggestions avoid it."))
@@ -1687,8 +1688,7 @@ struct LiveStrengthSheet: View {
         .background(theme.paper)
         .safeAreaInset(edge: .top, spacing: 0) { sessionHeader }
         .task {
-            guard !quickSuggestionsLoaded else { return }
-            quickSuggestionsLoaded = true
+            guard freshSuggestions == nil else { return }
             await loadFreshSuggestions()
         }
         .sheet(isPresented: $showLibraryPicker) {
@@ -1745,18 +1745,33 @@ struct LiveStrengthSheet: View {
         let loads = MuscleFatigueMap.loads(events: events)
         let historyIds = Set(history.map(\.exerciseId))
 
-        let freshMuscles = loads.filter { $0.state == .fresh }.sorted { $0.relative < $1.relative }.map(\.muscle)
-        var picked: [QuickSuggestion] = []
+        // Same engine call `MuscleMapScreen` reads (`.readyMuscles`), not a hand-rolled filter/sort: it
+        // already gates fresh muscles behind systemic recovery (a red-recovery day suggests nothing).
+        let freshMuscles = MuscleFatigueMap.recommendation(loads: loads, recovery: recovery).readyMuscles
+        var picked: [(exercise: Exercise, muscle: String)] = []
         var usedExerciseIds: Set<String> = []
         for muscle in freshMuscles {
             guard picked.count < 3 else { break }
             let candidates = exercises.filter { $0.primaryMuscles.contains(muscle) && !usedExerciseIds.contains($0.id) }
             guard let ex = candidates.first(where: { historyIds.contains($0.id) }) ?? candidates.first else { continue }
             usedExerciseIds.insert(ex.id)
-            let last = await model.repo.exerciseHistory(exerciseId: ex.id).last
-            picked.append(QuickSuggestion(exercise: ex, muscle: muscle, lastWeightKg: last?.weightKg, lastReps: last?.reps))
+            picked.append((exercise: ex, muscle: muscle))
         }
-        freshSuggestions = picked
+        // The per-exercise "last time" lookups are independent JOINs — run them concurrently, not one
+        // await per loop iteration.
+        freshSuggestions = await withTaskGroup(of: QuickSuggestion.self) { group in
+            for (ex, muscle) in picked {
+                group.addTask {
+                    let last = await self.model.repo.exerciseHistory(exerciseId: ex.id).last
+                    return QuickSuggestion(exercise: ex, muscle: muscle, lastWeightKg: last?.weightKg, lastReps: last?.reps)
+                }
+            }
+            var results: [QuickSuggestion] = []
+            for await s in group { results.append(s) }
+            // Restore freshness order (most-fresh-first) — a TaskGroup completes in arbitrary order.
+            let order = Dictionary(uniqueKeysWithValues: picked.enumerated().map { ($1.exercise.id, $0) })
+            return results.sorted { (order[$0.exercise.id] ?? 0) < (order[$1.exercise.id] ?? 0) }
+        }
         loadedMuscle = loads.filter { $0.state == .loaded }.max { $0.load < $1.load }?.muscle
     }
 
@@ -1764,9 +1779,20 @@ struct LiveStrengthSheet: View {
     /// each from its last logged set when there's history. The empty state falls away on its own once
     /// `session.runs` isn't empty.
     private func addExercises(_ picks: [Exercise]) async {
+        let lasts = await withTaskGroup(of: (String, Double?, Int?).self) { group in
+            for ex in picks {
+                group.addTask {
+                    let last = await self.model.repo.exerciseHistory(exerciseId: ex.id).last
+                    return (ex.id, last?.weightKg, last?.reps)
+                }
+            }
+            var results: [String: (Double?, Int?)] = [:]
+            for await (id, weight, reps) in group { results[id] = (weight, reps) }
+            return results
+        }
         for ex in picks {
-            let last = await model.repo.exerciseHistory(exerciseId: ex.id).last
-            session.addExercise(ex, lastWeightKg: last?.weightKg, lastReps: last?.reps)
+            let last = lasts[ex.id]
+            session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
         }
     }
 
