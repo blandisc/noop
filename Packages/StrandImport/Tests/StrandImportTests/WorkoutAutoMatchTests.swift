@@ -52,6 +52,23 @@ final class WorkoutAutoMatchTests: XCTestCase {
             + unresolved.joined(separator: "\n"))
     }
 
+    /// FER-797 — the second wave of realistic names (plurals, colloquial es/en) that the first pass
+    /// missed. Singularization + content-keyed aliases + the extended table must resolve them all.
+    func testColloquialAndPluralNames() {
+        let probes = [
+            "Sentadillas con barra", "Curls de bíceps", "Press de banca plano",
+            "Dominadas lastradas", "Elevaciones frontales", "Remo con mancuerna a una mano",
+            "Press militar con mancuernas", "Extensión de tríceps con mancuerna",
+            "Aperturas inclinadas", "Remo en máquina", "Curl de bíceps en polea",
+            "Elevación de talones sentado", "Abdominales en polea", "Zancadas caminando",
+            "Face pull", "Pájaros", "Walking lunges", "Seated leg curl", "Pec fly",
+            "Hip thrust en máquina",
+        ]
+        let unresolved = probes.filter { Self.reconciler.autoMatch($0) == nil }
+        XCTAssertTrue(unresolved.isEmpty,
+            "Colloquial/plural names that no longer auto-match:\n" + unresolved.joined(separator: "\n"))
+    }
+
     /// The content-key tier: stopword/word-order differences collapse; the alias tier is not involved.
     func testContentKeyEquality() {
         let plain = WorkoutExerciseReconciler(known: ExerciseCatalog.all)   // no aliases
