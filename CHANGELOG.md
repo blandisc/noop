@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Más aire entre las filas de "Por qué N" / More breathing room between "Why N" rows.**
+  **ES** — En el bloque "POR QUÉ N" de Hoy (las cinco reglas: HRV, FC en reposo, Sueño, Temp. de piel, Respiración), las filas estaban pegadas entre sí — la marca encendida de una fila casi tocaba la línea divisoria de la fila de arriba. Se agregó un pequeño espacio vertical entre filas para que se lean por separado.
+  **EN** — In Today's "WHY N" block (the five rules: HRV, Resting HR, Sleep, Skin temp, Respiration), rows sat flush against each other — a lit mark in one row nearly touched the divider of the row above. Added a small vertical gap between rows so they read as distinct.
+  ([FiveRules.swift](Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift))
+
 - **Un solo semáforo en el héroe de Hoy / A single traffic light in Today's hero.**
   **ES** — En un día conflictivo (recuperación en banda ámbar, veredicto verde, carga en rojo) el héroe de "Hoy" mostraba tres colores independientes compitiendo. Ahora solo el numeral de recuperación lleva el color del veredicto; la palabra del veredicto ("Equilibrado", etc.), su subrayado punteado y el delta "+N vs tu promedio" pasan a tinta neutra. La franja de CARGA no cambia — conserva su propio semáforo. (FER-764)
   **EN** — On a conflicting day (recovery in the amber band, a green verdict, red load) Today's hero showed three independent colors competing. Now only the recovery numeral carries the verdict color; the verdict word ("Balanced", etc.), its dotted underline, and the "+N vs your average" delta move to neutral ink. The LOAD strip is unchanged — it keeps its own traffic light. (FER-764)
