@@ -179,7 +179,7 @@ struct ExerciseLibraryScreen: View {
 
     private func exerciseRow(_ ex: Exercise, showsHistory: Bool) -> some View {
         Button {
-            if addMode { toggle(ex) } else { detail = ex }
+            detail = ex
         } label: {
             HStack(spacing: 13) {
                 ExerciseThumbnail(side: 48)   // reserved media slot (FER-751); FER-722 fills it
@@ -212,16 +212,23 @@ struct ExerciseLibraryScreen: View {
     }
 
     /// The trailing control: an «Add» affordance in ADD mode (a check when picked), a chevron in BROWSE.
+    /// In ADD mode this is its own button — the row itself only opens the detail sheet.
     @ViewBuilder
     private func trailingAccessory(_ ex: Exercise) -> some View {
         if addMode {
-            if selected.contains(ex.id) {
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)
-            } else {
-                Text("Add").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 5)
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            Button {
+                toggle(ex)
+            } label: {
+                if selected.contains(ex.id) {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)
+                } else {
+                    Text("Add").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .padding(.horizontal, 12).padding(.vertical, 5)
+                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                }
             }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
         } else {
             Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
@@ -243,7 +250,12 @@ struct ExerciseLibraryScreen: View {
 
     private var addBar: some View {
         Button { onAdd?(exercises.filter { selected.contains($0.id) }); dismiss() } label: {
-            Text(selected.isEmpty ? "Select exercises" : "Add \(selected.count) exercise\(selected.count == 1 ? "" : "s")")
+            // A ternary with an interpolated branch resolves to plain `String`, not `LocalizedStringKey` —
+            // wrap each branch in `String(localized:)` so both localize (and the count uses the catalog's
+            // es-MX plural template) instead of silently falling back to English.
+            Text(selected.isEmpty
+                 ? String(localized: "Select exercises")
+                 : String(localized: "Add \(selected.count) exercise(s)"))
                 .font(StrandFont.headline).foregroundStyle(selected.isEmpty ? theme.inkTertiary : theme.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 14)
                 .background(theme.surface, in: Capsule(style: .continuous))

@@ -26,6 +26,10 @@
 	<string>Cénit guarda tu sesión de fuerza como entrenamiento en Apple Salud, en el dispositivo y solo cuando tú lo permites.</string>
 	<key>WKApplication</key>
 	<true/>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>workout-processing</string>
+	</array>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>com.feriracheta.noop</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>

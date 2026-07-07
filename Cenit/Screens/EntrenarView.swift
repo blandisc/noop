@@ -70,6 +70,10 @@ private struct EntrenarLanding: View {
     /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
     /// fetch that feeds `exerciseCounts` — drives the hero muscle line and the «También en tu plan» subtitles.
     @State private var routineMuscles: [String: [String]] = [:]
+    /// The classified training region per routine id (`RoutineClassifier`, FER-775), built from the same
+    /// per-routine exercise fetch as `routineMuscles`. Drives every routine-tinted mark (hero dot, plan
+    /// dots + «Empezar» pills, Constancia grid). Absent = no classifiable exercises → default hue.
+    @State private var routineCategory: [String: RoutineRegion] = [:]
     /// The weekly split, `weekday → routineId` (Calendar convention, 1 = Sun … 7 = Sat). FER-531.
     @State private var split: [Int: String] = [:]
     /// Completed strength sessions (newest first), for the week strip's day states and the daily streak.
@@ -217,7 +221,7 @@ private struct EntrenarLanding: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(alignment: .top, spacing: 9) {
                             RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                .fill(routineFill(r.name)).frame(width: 8, height: 8)
+                                .fill(routineFill(region(name: r.name))).frame(width: 8, height: 8)
                                 .padding(.top, 7)
                             Text(r.name).font(StrandFont.title3).foregroundStyle(theme.ink)
                                 // Long routine names («Día A — Empuje y cuádriceps») sit at the quieter
@@ -254,40 +258,38 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// The split family a routine belongs to, read from its name's keyword (es/en). Drives every
-    /// routine-tinted mark on this screen (hero dot, plan dots + «Empezar» pills, the Constancia grid).
-    private enum RoutineKind { case push, pull, leg, fullBody, other(Int) }
-
-    private func routineKind(_ name: String) -> RoutineKind {
-        let n = name.lowercased()
-        if n.contains("empuj") || n.contains("push") || n.contains("pecho") { return .push }
-        if n.contains("tir") || n.contains("pull") || n.contains("espalda") { return .pull }
-        if n.contains("pierna") || n.contains("leg") || n.contains("quad") || n.contains("glúteo") { return .leg }
-        if n.contains("full") || n.contains("cuerpo") || n.contains("completo") { return .fullBody }
-        return .other(abs(name.hashValue) % 3)
-    }
-
-    /// The handoff's per-routine tint (mock 1a). The flow colors coincide with existing Instrumento data
-    /// tokens, so we reuse them rather than hand-editing the generated theme: push → `dataStrain` (ember),
-    /// pull → `dataHrv` (teal), leg / full body → `dataSleep` (indigo). Used for the SOLID marks (text,
-    /// borders, legend); full body reads as indigo here and only becomes a gradient in `routineFill`.
-    private func routineTint(_ name: String) -> Color {
-        switch routineKind(name) {
+    /// The handoff's per-routine tint (mock 1a). The family is derived from the routine's exercises'
+    /// `primaryMuscles` via the shared `RoutineClassifier` (FER-775) — never guessed from the name or a
+    /// per-process hash, so a routine keeps the same color across launches. The flow colors coincide with
+    /// existing Instrumento data tokens, so we reuse them: push → `dataStrain` (ember), pull → `dataHrv`
+    /// (teal), leg / full body → `dataSleep` (indigo). A routine with no classifiable exercises (cardio,
+    /// «Rápido» without a routine) falls back to `dataStrain`, the screen's default hue. Used for the SOLID
+    /// marks (text, borders); full body reads as indigo here and only becomes a gradient in `routineFill`.
+    private func routineTint(_ region: RoutineRegion?) -> Color {
+        switch region {
         case .push:            return theme.dataStrain
         case .pull:            return theme.dataHrv
-        case .leg, .fullBody:  return theme.dataSleep
-        case .other(let i):    return [theme.dataStrain, theme.dataHrv, theme.dataSleep][i]
+        case .legs, .fullBody: return theme.dataSleep
+        case nil:              return theme.dataStrain   // no classifiable exercises → default hue
         }
     }
 
     /// The FILL for a routine's dot/square. Same as `routineTint` except full body reads as the mock's
     /// 135° ember→indigo gradient (its whole point is that it spans the split).
-    private func routineFill(_ name: String) -> AnyShapeStyle {
-        if case .fullBody = routineKind(name) {
+    private func routineFill(_ region: RoutineRegion?) -> AnyShapeStyle {
+        if region == .fullBody {
             return AnyShapeStyle(LinearGradient(colors: [theme.dataStrain, theme.dataSleep],
                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
         }
-        return AnyShapeStyle(routineTint(name))
+        return AnyShapeStyle(routineTint(region))
+    }
+
+    /// The classified region for a routine name — the hero, plan rows and Constancia grid all key
+    /// their tinted marks by the routine's name (that's what completed sessions record), so resolve the
+    /// name back to its routine's precomputed category. `nil` (unknown / unclassifiable) → default hue.
+    private func region(name: String) -> RoutineRegion? {
+        guard let id = routines.first(where: { $0.name == name })?.id else { return nil }
+        return routineCategory[id]
     }
 
     /// Exercise count + a rough time estimate for the hero meta line. The estimate is a transparent
@@ -564,7 +566,7 @@ private struct EntrenarLanding: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 7) {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(routineFill(row.name)).frame(width: 8, height: 8)
+                            .fill(routineFill(region(name: row.name))).frame(width: 8, height: 8)
                         Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
                     }
                     Text(planRowSubtitle(row)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -576,9 +578,9 @@ private struct EntrenarLanding: View {
             // «Empezar» takes its routine's tint (mock 1a · change 3): the border is the tint softened onto
             // paper, the text the full tint — still one glanceable color per routine, no new tokens.
             Button { startRoutine(row.routineId, name: row.name) } label: {
-                Text("Empezar").font(StrandFont.subhead).foregroundStyle(routineTint(row.name))
+                Text("Empezar").font(StrandFont.subhead).foregroundStyle(routineTint(region(name: row.name)))
                     .padding(.horizontal, 14).padding(.vertical, 6)
-                    .overlay(Capsule().strokeBorder(routineTint(row.name).opacity(0.45), lineWidth: 1))
+                    .overlay(Capsule().strokeBorder(routineTint(region(name: row.name)).opacity(0.45), lineWidth: 1))
             }
             .buttonStyle(.plain)
         }
@@ -656,7 +658,7 @@ private struct EntrenarLanding: View {
             if day <= m.daysInMonth {
                 Circle().fill(theme.hairlineStrong).frame(width: 4, height: 4)
                 if let name = m.trained[day] {
-                    Circle().fill(routineFill(name)).frame(width: 9, height: 9)
+                    Circle().fill(routineFill(region(name: name))).frame(width: 9, height: 9)
                 }
                 if m.isCurrent && day == todayDayOfMonth {
                     Circle().fill(theme.surface)
@@ -680,7 +682,7 @@ private struct EntrenarLanding: View {
     }
 
     /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
-    private var todayRingTint: Color { todayRoutine.map { routineTint($0.name) } ?? theme.hairlineStrong }
+    private var todayRingTint: Color { todayRoutine.map { routineTint(region(name: $0.name)) } ?? theme.hairlineStrong }
 
     /// Which Constancia day is popped open (month + day identify the cell; name is what to show) — one
     /// popover shared across the whole grid, gated per-cell by matching identity in `dayCell`.
@@ -856,10 +858,19 @@ private struct EntrenarLanding: View {
         let customAllByID = Dictionary(customAll.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         var counts: [String: Int] = [:]
         var muscles: [String: [String]] = [:]
+        var categories: [String: RoutineRegion] = [:]
         for r in rs {
             let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
             counts[r.id] = exs.count
             muscles[r.id] = Self.topMuscles(exs, customByID: customAllByID)
+            // Derive the routine's color family from its exercises' primary muscles (FER-775) — the same
+            // resolution `topMuscles` uses. Absent when nothing classifies → the tint falls back to the hue.
+            let perExercise = exs.compactMap { re in
+                (ExerciseCatalog.byID(re.exerciseId) ?? customAllByID[re.exerciseId])?.primaryMuscles
+            }
+            if let cat = RoutineClassifier.classify(primaryMusclesPerExercise: perExercise) {
+                categories[r.id] = cat
+            }
         }
         let sched = (try? await store.routineSchedule()) ?? []
         let splitMap = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
@@ -881,6 +892,7 @@ private struct EntrenarLanding: View {
         routines = rs
         exerciseCounts = counts
         routineMuscles = muscles
+        routineCategory = categories
         split = splitMap
         todaySlots = slots
         sessions = (try? await store.recentSessions(limit: 200)) ?? []
