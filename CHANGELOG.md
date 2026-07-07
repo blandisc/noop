@@ -24,9 +24,19 @@ approximate; Cénit is built from source — see the [README](README.md).
   **EN** — Cénit ships a much larger exercise library (~1500 exercises from ExerciseDB), with «how to» instructions translated to Mexican Spanish and a per-exercise animation (GIF). Because every exercise carries its own native id, the animation and data always line up — no more exercises missing media because a name didn't match. Everything is baked once and lives on your phone; nothing is fetched online while you use it.
   ([exercises.json](Packages/StrandTraining/Sources/StrandTraining/Resources/exercises.json), [Tools/bake-exercisedb](Tools/bake-exercisedb/README.md))
 
+- **Entrenar reorganizado: tu plan arriba, las formas al pie / Train reorganized: your plan up top, the ways at the foot.**
+  **ES** — «También en tu plan» sube justo debajo de «Empezar». «Formas de entrenar» deja de ser un botón que se despliega: sus seis accesos —Rápido, En vivo, Intervalo, Movilidad, Respirar y Dieta— quedan siempre a la vista como íconos al pie de la pantalla, debajo de Constancia. Además, tu plan se actualiza al volver de editarlo.
+  **EN** — «También en tu plan» moves right below «Empezar». «Formas de entrenar» is no longer a button you expand: its six shortcuts —Rápido, En vivo, Intervalo, Movilidad, Respirar and Dieta— now stay visible as icons at the foot of the screen, below Consistency. Your plan also refreshes when you return from editing it.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
+- **Entrenar con más aire, sin congelarse / More air in Train, no more freeze.**
+  **ES** — Las secciones de Entrenar tienen más espacio entre ellas para que la pantalla respire. Se corrigió además un congelamiento que ocurría al agregar varios días al plan.
+  **EN** — Train's sections now have more space between them so the screen breathes. Also fixed a freeze that happened when adding several days to the plan.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Entrenar más despejado: un botón, filas tocables, Constancia con aire / A calmer Train: one button, tappable rows, Consistency with room.**
-  **ES** — El botón grande de Hoy ahora dice solo «Empezar». Las otras rutinas de tu plan ya no traen un botón «Empezar» aparte: tocas la fila completa para abrirlas, con una flecha en el color de esa rutina. Y Constancia baja hacia el dock, aprovechando el espacio libre para que la pantalla respire.
-  **EN** — Today's big button now just says «Empezar». The other routines in your plan drop their separate «Empezar» button: tap the whole row to open them, with a chevron in that routine's color. And Consistency drifts down toward the dock, using the free space so the screen breathes.
+  **ES** — El botón grande de Hoy ahora dice solo «Empezar». Las otras rutinas de tu plan ya no traen un botón «Empezar» aparte: tocas la fila completa para abrirlas, con una flecha en el color de esa rutina.
+  **EN** — Today's big button now just says «Empezar». The other routines in your plan drop their separate «Empezar» button: tap the whole row to open them, with a chevron in that routine's color.
   ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
 
 - **Un solo botón «Formas de entrenar» en Entrenar / One «Formas de entrenar» button in Train.**
