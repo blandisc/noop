@@ -177,7 +177,17 @@ final class Repository: ObservableObject {
         if let storeInit { return await storeInit.value }   // a creation is already in flight — join it
         let task = Task { () -> WhoopStore? in
             guard let path = try? StorePaths.defaultDatabasePath() else { return nil }
-            let s = try? await WhoopStore(path: path)
+            // Don't mask a store-open/migration failure as a silent nil (FER-793). This offline app
+            // degrades (returns nil) rather than crashing when the DB won't open, but the failure must
+            // be observable — a swallowed `try?` here left a wedged migration undebuggable ("app se trabó"
+            // with no error). Log the real error; callers still get nil and degrade.
+            let s: WhoopStore?
+            do {
+                s = try await WhoopStore(path: path)
+            } catch {
+                print("[FER-793] WhoopStore failed to open at \(path): \(error)")
+                s = nil
+            }
             if let s { try? await s.upsertDevice(id: deviceId, mac: nil, name: "WHOOP") }
             return s
         }
