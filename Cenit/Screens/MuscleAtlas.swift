@@ -106,37 +106,11 @@ struct RegionShape: Shape {
     }
 }
 
-/// A schematic humanoid outline (same front/back), stroked in hairline behind the muscle regions.
-struct BodyOutlineShape: Shape {
-    let side: MuscleAtlas.Side
-    func path(in rect: CGRect) -> Path {
-        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
-        }
-        var p = Path()
-        // Head
-        p.addEllipse(in: CGRect(x: rect.minX + 0.39 * rect.width, y: rect.minY + 0.015 * rect.height,
-                                width: 0.22 * rect.width, height: 0.12 * rect.height))
-        // Body outline (clockwise from the left neck)
-        let outline: [(CGFloat, CGFloat)] = [
-            (0.42, 0.13), (0.20, 0.19), (0.13, 0.22), (0.10, 0.42), (0.09, 0.52), (0.16, 0.52),
-            (0.30, 0.30), (0.33, 0.46), (0.30, 0.52), (0.34, 0.74), (0.36, 0.95), (0.46, 0.95),
-            (0.50, 0.55), (0.54, 0.95), (0.64, 0.95), (0.66, 0.74), (0.70, 0.52), (0.67, 0.46),
-            (0.70, 0.30), (0.84, 0.52), (0.91, 0.52), (0.90, 0.42), (0.87, 0.22), (0.80, 0.19),
-            (0.58, 0.13),
-        ]
-        p.move(to: pt(outline[0].0, outline[0].1))
-        for q in outline.dropFirst() { p.addLine(to: pt(q.0, q.1)) }
-        p.closeSubpath()
-        return p
-    }
-}
-
-// MARK: - Anatomical figure (FER-350 redesign · #7)
+// MARK: - Anatomical figure (FER-350 redesign · #7 · body FER-781)
 //
 // The redesigned muscle map (`MuscleMapScreen`) draws DETAILED anatomical silhouettes instead of the
-// schematic `RegionShape` ellipses/rects (which the exercise-detail figure still uses). The shapes are
-// authored as SVG path data over a fixed 160×340 viewBox — front and back, plus a shared base body
+// schematic `RegionShape` ellipses/rects (now unused — kept for reference, pre-existing dead code). The
+// shapes are authored as SVG path data over a fixed 200×430 viewBox — front and back, plus a shared base body
 // (torso / arms / legs / head) drawn in hairline behind the tinted muscle groups. Each muscle path keeps
 // the catalog muscle key (`MuscleFatigueMap` / `MuscleAtlas.name`) so the same load tint and tap target
 // apply. No math, no assets, no network — just `Shape`s derived from the atlas, like the rest of the map.
@@ -149,60 +123,67 @@ struct AnatomyPath: Identifiable {
 }
 
 enum MuscleAnatomy {
-    /// The figure's coordinate space (matches the authored SVG viewBox).
-    static let viewBox = CGSize(width: 160, height: 340)
+    /// The figure's coordinate space (matches the owner-approved SVG viewBox, FER-781).
+    static let viewBox = CGSize(width: 200, height: 430)
 
-    /// The shared body silhouette (neck, torso, arms, legs) — same on front and back. The head is a
-    /// separate ellipse drawn by `AnatomyBaseShape`.
+    /// The shared body silhouette contour (neck → torso → arms → legs), same on front and back, stroked
+    /// in hairline behind the tinted muscle groups. The head is a separate ellipse drawn by
+    /// `AnatomyBaseShape`. A single closed contour (owner-approved body, FER-781).
     static let baseBody: [String] = [
-        "M72,42 L88,42 L89,55 L71,55 Z",
-        "M62,52 C58,52 54,54 52,58 L46,62 C44,72 44,86 46,100 C48,120 50,135 52,150 L58,172 L102,172 L108,150 C110,135 112,120 114,100 C116,86 116,72 114,62 L108,58 C106,54 102,52 98,52 Z",
-        "M48,60 C40,62 34,69 31,82 C28,98 26,116 26,136 C26,154 26,172 28,186 C29,192 33,193 35,188 C37,170 39,152 42,134 C44,114 46,94 47,80 C48,71 48,65 48,60 Z",
-        "M112,60 C120,62 126,69 129,82 C132,98 134,116 134,136 C134,154 134,172 132,186 C131,192 127,193 125,188 C123,170 121,152 118,134 C116,114 114,94 113,80 C112,71 112,65 112,60 Z",
-        "M58,170 C54,200 52,235 54,265 C55,290 58,315 62,328 C64,333 70,333 71,328 C73,300 73,265 74,235 L76,172 Z",
-        "M102,170 C106,200 108,235 106,265 C105,290 102,315 98,328 C96,333 90,333 89,328 C87,300 87,265 86,235 L84,172 Z",
+        """
+        M91,48 C90,53 88,57 82,60 C68,64 58,70 52,80 C46,92 45,108 48,124 \
+        L40,128 C33,148 30,176 30,200 C30,214 32,214 35,206 C39,186 43,168 48,152 \
+        C49,168 49,186 50,206 C50,250 52,300 56,352 C58,384 62,410 68,420 \
+        C72,426 80,426 82,418 C86,392 87,352 90,308 C92,282 96,270 100,270 \
+        C104,270 108,282 110,308 C113,352 114,392 118,418 C120,426 128,426 132,420 \
+        C138,410 142,384 144,352 C148,300 150,250 150,206 C151,186 151,168 152,152 \
+        C157,168 161,186 165,206 C168,214 170,214 170,200 C170,176 167,148 160,128 \
+        L152,124 C155,108 154,92 148,80 C142,70 132,64 118,60 C112,57 110,53 109,48 Z
+        """,
     ]
 
     /// Front muscle groups. Obliques have no catalog muscle of their own, so they ride `abdominals`.
     static let front: [AnatomyPath] = build([
-        ("traps", "M70,52 C62,53 55,56 50,61 C56,62 64,60 70,57 Z"),
-        ("traps", "M90,52 C98,53 105,56 110,61 C104,62 96,60 90,57 Z"),
-        ("shoulders", "M50,60 C41,62 35,70 33,82 C32,89 38,92 44,88 C49,84 51,71 52,61 Z"),
-        ("shoulders", "M110,60 C119,62 125,70 127,82 C128,89 122,92 116,88 C111,84 109,71 108,61 Z"),
-        ("chest", "M78,58 L78,92 C68,93 58,89 54,79 C51,70 56,61 67,58 C71,57 75,57 78,58 Z"),
-        ("chest", "M82,58 L82,92 C92,93 102,89 106,79 C109,70 104,61 93,58 C89,57 85,57 82,58 Z"),
-        ("biceps", "M31,88 C29,98 29,112 31,122 C33,128 45,128 47,120 C48,108 47,96 45,87 C42,83 34,83 31,88 Z"),
-        ("biceps", "M129,88 C131,98 131,112 129,122 C127,128 115,128 113,120 C112,108 113,96 115,87 C118,83 126,83 129,88 Z"),
-        ("forearms", "M29,126 C27,140 27,160 29,180 C30,187 41,187 43,180 C44,160 44,142 45,128 C40,124 33,124 29,126 Z"),
-        ("forearms", "M131,126 C133,140 133,160 131,180 C130,187 119,187 117,180 C116,160 116,142 115,128 C120,124 127,124 131,126 Z"),
-        ("abdominals", "M71,92 C71,91 89,91 89,92 L89,142 C89,147 71,147 71,142 Z"),
-        ("abdominals", "M70,96 C64,99 60,110 61,124 C62,134 67,138 70,132 Z"),
-        ("abdominals", "M90,96 C96,99 100,110 99,124 C98,134 93,138 90,132 Z"),
-        ("quadriceps", "M68,150 C58,153 53,166 54,184 C55,204 60,222 68,230 C72,232 75,226 75,214 L75,160 C74,152 72,149 68,150 Z"),
-        ("quadriceps", "M92,150 C102,153 107,166 106,184 C105,204 100,222 92,230 C88,232 85,226 85,214 L85,160 C86,152 88,149 92,150 Z"),
-        ("adductors", "M76,152 L76,210 C71,207 68,194 68,180 C68,166 71,156 76,152 Z"),
-        ("adductors", "M84,152 L84,210 C89,207 92,194 92,180 C92,166 89,156 84,152 Z"),
+        ("neck", "M92,49 L108,49 C107,54 104,58 100,59 C96,58 93,54 92,49 Z"),
+        ("shoulders", "M83,61 C71,64 62,71 57,81 C54,88 61,94 69,89 C76,84 80,73 84,63 Z"),
+        ("shoulders", "M117,61 C129,64 138,71 143,81 C146,88 139,94 131,89 C124,84 120,73 116,63 Z"),
+        ("chest", "M98,66 L98,104 C82,106 66,100 61,86 C58,74 66,64 82,63 C89,63 94,64 98,66 Z"),
+        ("chest", "M102,66 L102,104 C118,106 134,100 139,86 C142,74 134,64 118,63 C111,63 106,64 102,66 Z"),
+        ("biceps", "M48,90 C45,104 45,124 48,140 C51,150 66,150 68,138 C69,120 68,102 64,89 C59,84 52,84 48,90 Z"),
+        ("biceps", "M152,90 C155,104 155,124 152,140 C149,150 134,150 132,138 C131,120 132,102 136,89 C141,84 148,84 152,90 Z"),
+        ("forearms", "M44,146 C41,166 41,192 44,214 C46,224 60,224 61,212 C62,190 62,168 65,148 C58,142 49,142 44,146 Z"),
+        ("forearms", "M156,146 C159,166 159,192 156,214 C154,224 140,224 139,212 C138,190 138,168 135,148 C142,142 151,142 156,146 Z"),
+        ("abdominals", "M89,106 L111,106 L111,176 C111,182 89,182 89,176 Z"),
+        ("abdominals", "M88,112 C79,116 73,132 74,152 C75,166 82,170 88,162 Z"),
+        ("abdominals", "M112,112 C121,116 127,132 126,152 C125,166 118,170 112,162 Z"),
+        ("quadriceps", "M84,190 C69,194 62,214 63,240 C64,272 71,300 84,312 C90,316 95,306 95,288 L95,204 C94,193 90,189 84,190 Z"),
+        ("quadriceps", "M116,190 C131,194 138,214 137,240 C136,272 129,300 116,312 C110,316 105,306 105,288 L105,204 C106,193 110,189 116,190 Z"),
+        ("adductors", "M97,194 L97,286 C89,282 84,262 84,238 C84,214 89,199 97,194 Z"),
+        ("adductors", "M103,194 L103,286 C111,282 116,262 116,238 C116,214 111,199 103,194 Z"),
     ])
 
     /// Back muscle groups.
     static let back: [AnatomyPath] = build([
-        ("traps", "M80,50 C70,52 61,57 56,63 C63,69 71,72 80,73 C89,72 97,69 104,63 C99,57 90,52 80,50 Z"),
-        ("traps", "M80,74 C73,74 66,72 60,68 C64,82 71,92 80,97 C89,92 96,82 100,68 C94,72 87,74 80,74 Z"),
-        ("shoulders", "M50,60 C41,62 35,70 33,82 C32,89 38,92 44,88 C49,84 51,71 52,61 Z"),
-        ("shoulders", "M110,60 C119,62 125,70 127,82 C128,89 122,92 116,88 C111,84 109,71 108,61 Z"),
-        ("triceps", "M31,88 C29,98 29,114 31,124 C33,130 45,130 47,122 C48,109 47,96 45,87 C42,83 34,83 31,88 Z"),
-        ("triceps", "M129,88 C131,98 131,114 129,124 C127,130 115,130 113,122 C112,109 113,96 115,87 C118,83 126,83 129,88 Z"),
-        ("forearms", "M29,126 C27,140 27,160 29,180 C30,187 41,187 43,180 C44,160 44,142 45,128 C40,124 33,124 29,126 Z"),
-        ("forearms", "M131,126 C133,140 133,160 131,180 C130,187 119,187 117,180 C116,160 116,142 115,128 C120,124 127,124 131,126 Z"),
-        ("lats", "M56,66 C48,72 44,86 46,104 C47,114 56,116 64,108 C68,101 67,84 64,72 C62,67 59,64 56,66 Z"),
-        ("lats", "M104,66 C112,72 116,86 114,104 C113,114 104,116 96,108 C92,101 93,84 96,72 C98,67 101,64 104,66 Z"),
-        ("lower back", "M73,108 C70,116 69,130 71,144 C73,152 77,154 80,154 C83,154 87,152 89,144 C91,130 90,116 87,108 C84,113 76,113 73,108 Z"),
-        ("glutes", "M79,150 C69,150 62,159 63,172 C64,185 72,190 79,187 Z"),
-        ("glutes", "M81,150 C91,150 98,159 97,172 C96,185 88,190 81,187 Z"),
-        ("hamstrings", "M68,190 C59,193 55,208 57,228 C58,242 64,248 71,240 C74,232 74,206 73,192 C72,189 70,189 68,190 Z"),
-        ("hamstrings", "M92,190 C101,193 105,208 103,228 C102,242 96,248 89,240 C86,232 86,206 87,192 C88,189 90,189 92,190 Z"),
-        ("calves", "M67,246 C61,250 59,266 61,282 C62,292 68,294 72,286 C75,274 74,256 71,248 C70,245 68,245 67,246 Z"),
-        ("calves", "M93,246 C99,250 101,266 99,282 C98,292 92,294 88,286 C85,274 86,256 89,248 C90,245 92,245 93,246 Z"),
+        ("traps", "M100,50 C86,52 74,58 66,66 C76,74 88,78 100,79 C112,78 124,74 134,66 C126,58 114,52 100,50 Z"),
+        ("traps", "M100,80 C90,80 80,77 71,71 C77,90 88,104 100,110 C112,104 123,90 129,71 C120,77 110,80 100,80 Z"),
+        ("shoulders", "M83,61 C71,64 62,71 57,81 C54,88 61,94 69,89 C76,84 80,73 84,63 Z"),
+        ("shoulders", "M117,61 C129,64 138,71 143,81 C146,88 139,94 131,89 C124,84 120,73 116,63 Z"),
+        ("triceps", "M48,90 C45,104 45,126 48,142 C51,152 66,152 68,140 C69,122 68,102 64,89 C59,84 52,84 48,90 Z"),
+        ("triceps", "M152,90 C155,104 155,126 152,142 C149,152 134,152 132,140 C131,122 132,102 136,89 C141,84 148,84 152,90 Z"),
+        ("forearms", "M44,148 C41,168 41,192 44,214 C46,224 60,224 61,212 C62,190 62,170 65,150 C58,144 49,144 44,148 Z"),
+        ("forearms", "M156,148 C159,168 159,192 156,214 C154,224 140,224 139,212 C138,190 138,170 135,150 C142,144 151,144 156,148 Z"),
+        ("lats", "M84,84 C71,92 65,112 68,138 C70,152 84,156 94,144 C99,134 98,108 94,90 C91,83 87,82 84,84 Z"),
+        ("lats", "M116,84 C129,92 135,112 132,138 C130,152 116,156 106,144 C101,134 102,108 106,90 C109,83 113,82 116,84 Z"),
+        ("middle back", "M96,112 L104,112 L104,150 C104,156 96,156 96,150 Z"),
+        ("lower back", "M91,156 C87,166 85,182 88,198 C90,208 95,210 100,210 C105,210 110,208 112,198 C115,182 113,166 109,156 C104,162 96,162 91,156 Z"),
+        ("glutes", "M98,206 C84,206 74,218 75,236 C76,254 88,262 98,256 Z"),
+        ("glutes", "M102,206 C116,206 126,218 125,236 C124,254 112,262 102,256 Z"),
+        ("abductors", "M76,212 C68,216 65,228 67,242 C69,252 78,252 80,242 C81,232 80,222 79,214 Z"),
+        ("abductors", "M124,212 C132,216 135,228 133,242 C131,252 122,252 120,242 C119,232 120,222 121,214 Z"),
+        ("hamstrings", "M84,258 C71,262 65,284 68,312 C70,332 79,340 89,328 C93,316 93,278 92,260 C90,256 87,256 84,258 Z"),
+        ("hamstrings", "M116,258 C129,262 135,284 132,312 C130,332 121,340 111,328 C107,316 107,278 108,260 C110,256 113,256 116,258 Z"),
+        ("calves", "M83,336 C74,341 71,362 74,384 C76,398 85,400 91,388 C95,372 93,348 89,338 C87,334 85,334 83,336 Z"),
+        ("calves", "M117,336 C126,341 129,362 126,384 C124,398 115,400 109,388 C105,372 107,348 111,338 C113,334 115,334 117,336 Z"),
     ])
 
     static func paths(for side: MuscleAtlas.Side) -> [AnatomyPath] {
@@ -299,9 +280,9 @@ struct AnatomyBaseShape: Shape {
         let vb = MuscleAnatomy.viewBox
         let sx = rect.width / vb.width, sy = rect.height / vb.height
         var p = Path()
-        // Head — ellipse cx 80, cy 28, rx 14, ry 17.
-        p.addEllipse(in: CGRect(x: rect.minX + (80 - 14) * sx, y: rect.minY + (28 - 17) * sy,
-                                width: 28 * sx, height: 34 * sy))
+        // Head — ellipse cx 100, cy 26, rx 19, ry 23 (owner-approved body, FER-781).
+        p.addEllipse(in: CGRect(x: rect.minX + (100 - 19) * sx, y: rect.minY + (26 - 23) * sy,
+                                width: 38 * sx, height: 46 * sy))
         for d in MuscleAnatomy.baseBody {
             p.addPath(SVGPath(d).path(in: rect))
         }

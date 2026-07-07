@@ -138,16 +138,17 @@ public extension InstrumentoTheme {
          Color(hex: "#C4631F"), Color(hex: "#9C3D14")]
     }
 
-    // MARK: - Muscle-load ramp (FER-350)
+    // MARK: - Muscle-load ramp (FER-350 · warm mono-tone FER-781)
 
-    /// The fresh→loaded color scale for the muscle-fatigue map: sage-green when a muscle is fresh,
-    /// deepening through ember to a heavy brick-red when it's loaded. The same warm five-stop family as
-    /// `hrZoneRamp` (which reads correctly on warm paper, where the dark system's bright hues muddy), but
-    /// named for its own role so the map isn't borrowing the workout-zone token. A silhouette fill, not
-    /// text, so AA-on-paper isn't required — the ranking and legend carry the meaning. (FER-350)
+    /// The fresh→loaded color scale for the muscle-fatigue map, tuned to the «Instrumento» DNA rule that
+    /// color lives ONLY in the datum: a single warm tone that RISES in intensity rather than shifting hue.
+    /// The low stops are not green — they are tinted paper, so a fresh muscle almost disappears into the
+    /// silhouette while a loaded one GRITA in the saturated `dataStrain` ember at the top (FER-781, the
+    /// owner-approved body). A silhouette fill, not text, so AA-on-paper isn't required — the ranking and
+    /// legend carry the meaning. The anchor top stop IS `dataStrain` (#C4631F), the system's heat.
     var muscleLoadRamp: [Color] {
-        [Color(hex: "#8FA98C"), Color(hex: "#C8A24A"), Color(hex: "#D98A3D"),
-         Color(hex: "#C4631F"), Color(hex: "#9C3D14")]
+        [Color(hex: "#E3DFD0"), Color(hex: "#E7B98E"), Color(hex: "#DB9A5A"),
+         Color(hex: "#CE7B34"), Color(hex: "#C4631F")]
     }
 
     /// A color along `muscleLoadRamp` for a 0…1 load fraction (0 = fresh, 1 = most loaded), interpolated

@@ -448,9 +448,9 @@ struct MuscleMapScreen: View {
 
     private var emptyState: some View {
         VStack(spacing: 14) {
-            BodyOutlineShape(side: .front)
-                .stroke(theme.hairlineStrong, lineWidth: 1.4)
-                .aspectRatio(100.0 / 220.0, contentMode: .fit)
+            AnatomyBaseShape()
+                .stroke(theme.hairline, lineWidth: 1.2)
+                .aspectRatio(200.0 / 430.0, contentMode: .fit)
                 .frame(maxHeight: 220)
                 .padding(.top, 8)
             Text("Train to fill your map")
@@ -550,10 +550,10 @@ private struct BodyFiguresView: View {
     private func figure(_ side: MuscleAtlas.Side) -> some View {
         VStack(spacing: 5) {
             ZStack {
+                // The silhouette is stroke-only (fill:none) so the body reads as paper and color
+                // lives only in the tinted muscles — the «Instrumento» rule (owner-approved, FER-781).
                 AnatomyBaseShape()
-                    .fill(theme.hairline)
-                AnatomyBaseShape()
-                    .stroke(theme.hairlineStrong, lineWidth: 0.9)
+                    .stroke(theme.hairline, lineWidth: 1.2)
                 ForEach(MuscleAnatomy.paths(for: side)) { item in
                     let shape = SVGPath(item.d)
                     let isTop = highlight == item.muscle
@@ -567,7 +567,7 @@ private struct BodyFiguresView: View {
                         .accessibilityValue(Text(stateText(item.muscle)))
                 }
             }
-            .aspectRatio(160.0 / 340.0, contentMode: .fit)
+            .aspectRatio(200.0 / 430.0, contentMode: .fit)
             Text(side == .front ? "Front" : "Back")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
