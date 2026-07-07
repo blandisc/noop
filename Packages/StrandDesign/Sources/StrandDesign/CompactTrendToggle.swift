@@ -17,11 +17,11 @@ public enum TrendMode: String, Sendable, CaseIterable {
     /// The population-lane ranges.
     case rangos
 
-    /// es-MX segment label.
-    var label: LocalizedStringKey {
+    /// Segment label. English keys resolve against the app bundle (es: Media / Rangos).
+    var label: String {
         switch self {
-        case .media:  return "Media"
-        case .rangos: return "Rangos"
+        case .media:  return String(localized: "Mean", bundle: .main)
+        case .rangos: return String(localized: "Ranges", bundle: .main)
         }
     }
 }
@@ -47,7 +47,7 @@ public struct CompactTrendToggle: View {
 
     private func segment(_ m: TrendMode) -> some View {
         let active = mode == m
-        return Text(m.label)
+        return Text(verbatim: m.label)
             .font(InstrumentoType.grotesk(10, weight: .semibold))
             .tracking(0.6)
             .textCase(.uppercase)

@@ -910,7 +910,7 @@ struct RecoveryDetailScreen: View {
 
     private var sourceFooter: some View {
         // Recovery is a score computed on-device from your signals → «Calculado». (FER-803)
-        OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+        OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 2)
     }

@@ -57,7 +57,7 @@ struct ActivityRecoverySheet: View {
                         .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                     // Standardized origin seal (FER-805): computed on-device from your history.
-                    OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+                    OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }

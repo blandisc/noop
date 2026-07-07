@@ -804,7 +804,7 @@ struct SleepDetailScreen: View {
         VStack(alignment: .leading, spacing: 8) {
             // Standardized origin seal (FER-803): sleep is measured overnight → «anoche».
             OriginStamp(origin: model.isAppleHealth ? .apple : .band,
-                        when: String(localized: "anoche"), theme: theme)
+                        when: String(localized: "last night"), theme: theme)
             // FER-670: when band AND Apple both reported this night, say whether they agree — both
             // totals stay visible, a conflict is flagged, nothing is averaged.
             if let agreement = model.sourceAgreement {

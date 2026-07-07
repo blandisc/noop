@@ -89,7 +89,7 @@ struct StrainDetailScreen: View {
                     blockDivider
                     methodDisclosure
                     // Standardized origin seal (FER-803): strain is a score computed on-device, live today.
-                    OriginStamp(origin: .computed, when: String(localized: "hoy, en curso"), theme: theme)
+                    OriginStamp(origin: .computed, when: String(localized: "today, in progress"), theme: theme)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 2)
                 }

@@ -28,12 +28,13 @@ public extension DataOrigin {
         }
     }
 
-    /// es-MX source label shown before the "· {cuándo}".
-    var label: LocalizedStringKey {
+    /// Source label shown before the "· {cuándo}". English keys resolve against the app bundle
+    /// (es: Banda / Apple Health / Calculado — «Apple Health» stays a brand name in every locale).
+    var label: String {
         switch self {
-        case .band:     return "Banda"
-        case .apple:    return "Apple Salud"
-        case .computed: return "Calculado"
+        case .band:     return String(localized: "Band", bundle: .main)
+        case .apple:    return String(localized: "Apple Health", bundle: .main)
+        case .computed: return String(localized: "Computed", bundle: .main)
         }
     }
 }
@@ -57,7 +58,7 @@ public struct OriginStamp: View {
                 .fill(origin.color(theme))
                 .frame(width: 6, height: 6)
             // «{Fuente} · {cuándo}» — one flat line, tertiary ink, 11pt.
-            (Text(origin.label) + Text(verbatim: " · \(when)"))
+            Text(verbatim: "\(origin.label) · \(when)")
                 .font(.system(size: 11))
                 .foregroundStyle(theme.inkTertiary)
         }

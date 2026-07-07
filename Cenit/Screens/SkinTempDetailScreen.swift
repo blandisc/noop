@@ -62,7 +62,7 @@ struct SkinTempDetailScreen: View {
                     // Standardized origin seal at the foot (FER-804): skin temp is a band sensor, measured
                     // overnight (the model has no Apple-source flag; it's the strap's thermistor).
                     if !model.series.isEmpty {
-                        OriginStamp(origin: .band, when: String(localized: "anoche"), theme: theme)
+                        OriginStamp(origin: .band, when: String(localized: "last night"), theme: theme)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.top, 2)
                     }
