@@ -25,7 +25,15 @@ struct ExerciseThumbView: View {
     }
 
     private func load() async {
-        guard image == nil, mediaCoordinator.isEnabled,
+        guard image == nil else { return }
+        // 1. The baked still (FER-800): offline, always available for ~1324 exercises, no toggle.
+        if let baked = ExerciseCatalog.stillURL(id: exercise.id),
+           let ui = await ExerciseThumbStillCache.shared.still(at: baked, id: exercise.id) {
+            image = Image(uiImage: ui)
+            return
+        }
+        // 2. Fallback: the opt-in GIF's cached still, if it happens to be downloaded (FER-790).
+        guard mediaCoordinator.isEnabled,
               let url = mediaCoordinator.cachedMediaURL(for: exercise) else { return }
         if let ui = await ExerciseThumbStillCache.shared.still(at: url, id: exercise.id) {
             image = Image(uiImage: ui)

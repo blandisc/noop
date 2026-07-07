@@ -86,6 +86,10 @@ struct CenitApp: App {
                 .environmentObject(autoBackup)
                 .environmentObject(tabRouter)
                 .environmentObject(mediaCoordinator)
+                // Reanudar la descarga de media al abrir la app (FER-800): si el toggle opt-in está
+                // ON y quedó a medias (background/kill/red), la retoma sola. Guarda internamente en
+                // `isEnabled` → con el toggle OFF (default) es un no-op sin tocar red ni disco.
+                .task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() }
                 // El color scheme ya NO se fuerza global aquí: lo decide ContentView según la pestaña
                 // activa (Hoy = papel claro → barra de estado en tinta oscura; resto = oscuro), con el
                 // gate de onboarding/terms en oscuro. Ponerlo aquí (lo más cercano a la raíz) ganaba

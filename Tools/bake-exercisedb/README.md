@@ -36,6 +36,11 @@ python3 build_es_overlay.py <dir_de_lotes> [<dir2> ...]
 # 5) Regenerar la tabla de alias del import (FER-794): nombres comunes de gym → id nativo.
 #    Falla en voz alta si un ejercicio referenciado desapareció del catálogo.
 python3 build_aliases.py
+
+# 6) Hornear los stills de fila + podar media muerta (FER-800). Descarga cada gifUrl, extrae el
+#    PRIMER FRAME a Resources/exercise-stills/{id}.jpg (~1324, ~8 MB) y pone gifUrl=null en las
+#    404 del CDN (~176). Idempotente/reanudable: salta los stills que ya existen. Requiere Pillow.
+python3 bake_stills.py
 ```
 
 `./cache/` está gitignored (dataset crudo + artefactos intermedios). Solo se commitean los dos
@@ -50,7 +55,8 @@ python3 build_aliases.py
 - **type** (`ExerciseType`) se **deriva** de `equipments`/`bodyParts`/`name` (`derive_type`); el
   usuario puede corregirlo por ejercicio con el override existente (v24).
 - **instructions**: se les quita el prefijo `Step:N `.
-- **gifUrl**: se guarda como string (la descarga es opt-in, no se hornea el binario).
+- **gifUrl**: se guarda como string; `bake_stills.py` (paso 6) lo pone en `null` si el CDN da 404.
+  El GIF animado se baja opt-in (no se hornea el binario); el **still** de fila SÍ se hornea (FER-800).
 
 ## Notas del endpoint OSS
 
