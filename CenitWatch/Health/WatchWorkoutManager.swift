@@ -315,6 +315,14 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         scheduleRestEnd(at: newEnd)
     }
 
+    /// FER-810: «Ver recibo en iPhone» from the summary → ask the iPhone to open the saved workout's
+    /// history detail. `sessionId` survives session cleanup (only reset on the next `.start`), so it still
+    /// identifies the just-finished session while the summary is up.
+    func openReceiptFromWrist() {
+        guard let sid = sessionId else { return }
+        send(.openReceipt(sessionId: sid))
+    }
+
     // MARK: - Message handling
 
     private func handle(_ message: WorkoutMirrorMessage) {
@@ -352,8 +360,8 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             externalUUID = ext
             Task { await endSession(endedAt: endedAt, save: save) }
         case .watchDidSaveWorkout, .watchWillNotSave,
-             .completeSet, .skipRest, .adjustRest:
-            break   // watch → iPhone only (FER-808)
+             .completeSet, .skipRest, .adjustRest, .openReceipt:
+            break   // watch → iPhone only (FER-808/810)
         }
     }
 

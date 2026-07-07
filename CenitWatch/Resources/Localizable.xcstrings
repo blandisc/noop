@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "See receipt on iPhone" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "See receipt on iPhone" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ver recibo en iPhone" } }
+      }
+    },
     "Plan" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Plan" } },

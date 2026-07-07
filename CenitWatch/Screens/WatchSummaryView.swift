@@ -30,6 +30,18 @@ struct WatchSummaryView: View {
 
                 saveLine
 
+                // FER-810 — handoff to the rich receipt on the phone (volume, PRs, diet). The wrist summary
+                // stays minimal; this opens the saved workout's history detail on the iPhone.
+                Button { manager.openReceiptFromWrist() } label: {
+                    HStack(spacing: NoopMetrics.space1) {
+                        Text("See receipt on iPhone")
+                        Image(systemName: "chevron.right").font(StrandFont.footnote).accessibilityHidden(true)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 40)
+                }
+                .buttonStyle(.bordered)
+                .tint(t.inkSecondary)
+
                 Button { manager.dismissSummary() } label: {
                     Text("Done").frame(maxWidth: .infinity, minHeight: 44)
                 }

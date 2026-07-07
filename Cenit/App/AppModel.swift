@@ -781,6 +781,19 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// FER-810: «Ver recibo en iPhone» on the wrist summary → resolve the persisted session and publish its
+    /// history-detail route; `RootTabView` switches to Entrenar and pushes `WorkoutSessionDetailScreen`. The
+    /// route's `routineName` is a fallback (the detail's own `load()` resolves the real name from the store).
+    @Published var pendingReceiptRoute: WorkoutSessionRoute?
+
+    func openWorkoutReceipt(sessionId: String) async {
+        guard let s = await repo.session(id: sessionId) else { return }
+        var name = String(localized: "Strength workout")
+        if let rid = s.routineId, let r = (await repo.routines()).first(where: { $0.id == rid }) { name = r.name }
+        pendingReceiptRoute = WorkoutSessionRoute(id: s.id, startTs: s.startTs, endTs: s.endTs,
+                                                  strain: s.strain, avgHr: s.avgHr, routineName: name)
+    }
+
     // MARK: - Manual workout tracking
 
     /// Begin a manually-tracked workout. The active card on Live then shows elapsed time, live HR and

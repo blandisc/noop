@@ -59,6 +59,11 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// as the LA's `RestAddThirtyIntent` / `RestRemoveThirtyIntent`. A negative delta is gated by the
     /// sender (the «−30» affordance is hidden once the rest has expired), and `extendRest` floors at «now».
     case adjustRest(sessionId: String, deltaS: Int)
+
+    /// watch → iPhone: «Ver recibo en iPhone» on the wrist summary (FER-810) → the iPhone opens the saved
+    /// workout's history detail (`WorkoutSessionDetailScreen`) for this session. The wrist summary stays
+    /// minimal; the rich receipt lives on the phone.
+    case openReceipt(sessionId: String)
 }
 
 /// The capture-phase context the iPhone mirrors to the wrist between rests (FER-809), so the watch's live
