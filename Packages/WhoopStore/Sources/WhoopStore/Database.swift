@@ -638,19 +638,28 @@ extension WhoopStore {
         // the column was not, so shipped migrations aren't edited). Existing custom rows get the
         // defaults (empty parts, no gif).
         migrator.registerMigration("v27") { db in
-            // Idempotent add: a partial pre-release build could have already grown these columns
-            // without recording v27 (the ALTER then throws "duplicate column" on every launch and
-            // wedges startup). Guard on the live schema so re-running is a no-op, not a crash.
-            let existing = Set(try db.columns(in: "customExercise").map(\.name))
-            try db.alter(table: "customExercise") { t in
-                if !existing.contains("bodyParts") {
-                    t.add(column: "bodyParts", .text).notNull().defaults(to: "[]")   // JSON array
-                }
-                if !existing.contains("gifUrl") {
-                    t.add(column: "gifUrl", .text)                                    // NULL = no media
-                }
+            // Idempotent adds (see `addColumnIfMissing`): a partial pre-release build could have already
+            // grown these columns without recording v27, which would make a plain ALTER throw
+            // "duplicate column" on every launch and wedge startup.
+            try addColumnIfMissing(db, "bodyParts", on: "customExercise") {
+                $0.add(column: "bodyParts", .text).notNull().defaults(to: "[]")   // JSON array
+            }
+            try addColumnIfMissing(db, "gifUrl", on: "customExercise") {
+                $0.add(column: "gifUrl", .text)                                    // NULL = no media
             }
         }
         return migrator
+    }
+
+    /// Idempotent `ADD COLUMN`: runs `body` (which should add `column` to `table`) **only if the live
+    /// schema lacks it**. A migration that re-runs against a DB that already grew the column — e.g. after
+    /// iterating a migration locally and reinstalling over the same on-device DB — becomes a no-op instead
+    /// of a "duplicate column" crash that wedges startup (FER-791). Use this for every migration ADD COLUMN.
+    static func addColumnIfMissing(
+        _ db: Database, _ column: String, on table: String,
+        _ body: (TableAlteration) -> Void
+    ) throws {
+        guard try !db.columns(in: table).contains(where: { $0.name == column }) else { return }
+        try db.alter(table: table, body: body)
     }
 }
