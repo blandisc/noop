@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Entrenar reorganizado: tu plan arriba, las formas al pie / Train reorganized: your plan up top, the ways at the foot.**
+  **ES** — «También en tu plan» sube justo debajo de «Empezar». «Formas de entrenar» deja de ser un botón que se despliega: sus seis accesos —Rápido, En vivo, Intervalo, Movilidad, Respirar y Dieta— quedan siempre a la vista como íconos al pie de la pantalla, debajo de Constancia. Además, tu plan se actualiza al volver de editarlo.
+  **EN** — «También en tu plan» moves right below «Empezar». «Formas de entrenar» is no longer a button you expand: its six shortcuts —Rápido, En vivo, Intervalo, Movilidad, Respirar and Dieta— now stay visible as icons at the foot of the screen, below Consistency. Your plan also refreshes when you return from editing it.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Entrenar con más aire, sin congelarse / More air in Train, no more freeze.**
   **ES** — Las secciones de Entrenar tienen más espacio entre ellas para que la pantalla respire. Se corrigió además un congelamiento que ocurría al agregar varios días al plan.
   **EN** — Train's sections now have more space between them so the screen breathes. Also fixed a freeze that happened when adding several days to the plan.

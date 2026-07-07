@@ -92,10 +92,7 @@ private struct EntrenarLanding: View {
     /// The Daily Brief's «Empezar» arrived (via `TabRouter`) before this view finished loading its
     /// prefetched slots — start today's session as soon as `load()` completes (FER-613).
     @State private var startWhenLoaded = false
-    /// Whether the «Formas de entrenar» button is expanded (FER-783): the six training-door icon chips
-    /// enter staggered; tapping one runs its action and collapses.
-    @State private var moreFormsExpanded = false
-    /// Presents the live-HR workout sheet from the expanded «Más formas» → «En vivo» (same sheet the
+    /// Presents the live-HR workout sheet from the «Formas de entrenar» → «En vivo» chip (same sheet the
     /// rest-day / other-ways screens use).
     @State private var showLive = false
     /// The Constancia day currently popped open (tap-to-reveal what you trained that day).
@@ -120,8 +117,9 @@ private struct EntrenarLanding: View {
                     } else {
                         hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
                         suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
-                        tambienEnTuPlan  // ③ the rest of the plan + «Formas de entrenar» (FER-783)
-                        constanciaCard   // ④ 90-day dot grid above the dock — no streak guilt (mock 1a)
+                        tambienEnTuPlan  // ③ the rest of the plan (rows only — FER-787)
+                        constanciaCard   // ④ 90-day dot grid — no streak guilt (mock 1a)
+                        formasSection    // ⑤ the six training doors, always visible at the foot (FER-787)
                     }
                 }
             }
@@ -161,7 +159,12 @@ private struct EntrenarLanding: View {
         // The Daily Brief's «Hoy en tu plan» → «Empezar» lands here via TabRouter: start today's session
         // reusing the slots this view prefetched on load (FER-613). Consumed once; if we're not loaded yet,
         // defer until `load()` finishes.
-        .onAppear { if tabRouter.startTodaySession { consumeBriefStart() } }
+        .onAppear {
+            if tabRouter.startTodaySession { consumeBriefStart() }
+            // Refresh the plan when returning (e.g. from «Editar» / the weekly plan editor): the initial
+            // `.task` doesn't re-run on a NavigationStack pop, so edits wouldn't reflect otherwise (FER-787).
+            if loaded { Task { await load() } }
+        }
         .onChange(of: tabRouter.startTodaySession) { _, requested in
             if requested { consumeBriefStart() }
         }
@@ -414,16 +417,14 @@ private struct EntrenarLanding: View {
             ForEach(otherPlanRoutines, id: \.routineId) { row in
                 planRoutineRow(row)
             }
-            accessPills.padding(.top, 12)
         }
     }
 
-    // MARK: - «Formas de entrenar» — one expanding button of six training doors (FER-783)
+    // MARK: - «Formas de entrenar» — the six training doors, always visible at the foot (FER-787)
     //
-    // The three utility pills (Rápido · Más formas · Dieta) collapse into ONE full-width outline button.
-    // Tapping it expands a row of six icon chips — the six existing training doors — that enter staggered
-    // under a native spring; tapping a chip runs its action AND collapses the row. Color still lands ONLY on
-    // the datum (each icon's data-token tint over paper), so no raw hex or new tokens.
+    // No longer a collapsible button (FER-783): the six doors sit as a permanent icon row below Constancia,
+    // at the foot of the screen. Color still lands ONLY on the datum (each icon's data-token tint over
+    // paper), so no raw hex or new tokens.
 
     private struct FormOption: Identifiable {
         let icon: String
@@ -446,45 +447,21 @@ private struct EntrenarLanding: View {
         ]
     }
 
-    private var accessPills: some View {
-        VStack(spacing: 10) {
-            Button {
-                moreFormsExpanded.toggle()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "square.grid.2x2").font(.system(size: 13, weight: .semibold))
-                    Text("Formas de entrenar").font(StrandFont.caption.weight(.semibold))
-                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
-                        .rotationEffect(.degrees(moreFormsExpanded ? 180 : 0))
-                }
-                .foregroundStyle(theme.inkSecondary)
-                .frame(maxWidth: .infinity).padding(.vertical, 10)
-                .background(theme.surface, in: Capsule())
-                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                .contentShape(Capsule())
-            }
-            .buttonStyle(.plain)
-
-            if moreFormsExpanded {
-                HStack(alignment: .top, spacing: 6) {
-                    ForEach(Array(formOptions.enumerated()), id: \.element.id) { index, opt in
-                        formChip(opt)
-                            .transition(.scale(scale: 0.9).combined(with: .opacity))
-                            .animation(.spring(response: 0.4, dampingFraction: 0.86)
-                                .delay(Double(index) * 0.04), value: moreFormsExpanded)
-                    }
+    private var formasSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Formas de entrenar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .top, spacing: 6) {
+                ForEach(formOptions) { opt in
+                    formChip(opt)
                 }
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.86), value: moreFormsExpanded)
     }
 
-    /// One icon chip in the expanded «Formas de entrenar» row: a tinted glyph on a paper circle over a small
-    /// label. Runs its door's action AND collapses the row.
+    /// One icon chip in the always-visible «Formas de entrenar» row: a tinted glyph on a paper circle over a
+    /// small label. Runs its door's action.
     private func formChip(_ opt: FormOption) -> some View {
         Button {
-            moreFormsExpanded = false
             opt.action()
         } label: {
             VStack(spacing: 5) {
