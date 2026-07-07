@@ -10,7 +10,7 @@ enum BandSummaryCopy {
     /// HR is measured overnight too, but it's presented as a daily resting value (and the owner-approved
     /// design reads "días" for it), so it's intentionally a day metric here.
     static func isNightly(metricID: String) -> Bool {
-        metricID == "sleep" || metricID == "spo2" || metricID == "resp_rate"
+        metricID == "sleep" || metricID == "spo2" || metricID == "resp_rate" || metricID == "skin_temp"
     }
 
     /// "N days/nights" for a band-row count, with correct singular/plural.

@@ -64,6 +64,24 @@ final class MetricLevelsTests: XCTestCase {
         XCTAssertEqual(lv.map(\.upper), [20, nil])
     }
 
+    func testSkinTempLevelsMatchEngineCuts() {
+        // Deviation from the personal baseline (°C); the ReadinessEngine cut points (+0.4 watch, +0.8 bad),
+        // symmetric −0.4 for "below your base".
+        let lv = MetricLevels.levels(for: .skinTemp)
+        XCTAssertEqual(lv.map(\.key), ["below", "inBase", "warm", "elevated"])
+        XCTAssertEqual(lv.map(\.lower), [nil, -0.4, 0.4, 0.8])
+        XCTAssertEqual(lv.map(\.upper), [-0.4, 0.4, 0.8, nil])
+        // Boundaries are half-open [lower, upper): the edge falls into the UPPER level.
+        XCTAssertEqual(MetricLevels.index(of: -0.4, for: .skinTemp), 1)   // exactly −0.4 → in your base
+        XCTAssertEqual(MetricLevels.index(of: 0.4, for: .skinTemp), 2)    // exactly +0.4 → running warm
+        XCTAssertEqual(MetricLevels.index(of: 0.8, for: .skinTemp), 3)    // exactly +0.8 → well above
+        XCTAssertEqual(MetricLevels.index(of: 0.0, for: .skinTemp), 1)    // at baseline → in your base
+        XCTAssertEqual(MetricLevels.index(of: -0.5, for: .skinTemp), 0)   // below your base
+        // The names the app localises, including the new "warm" key.
+        XCTAssertEqual(lv.map { MetricLevels.name(for: $0.key) },
+                       ["Below your base", "In your base", "Running warm", "Elevated"])
+    }
+
     // MARK: - Half-open boundaries: a value on the edge falls into the UPPER level
 
     func testBoundaryFallsToUpperLevel() {
@@ -113,6 +131,7 @@ final class MetricLevelsTests: XCTestCase {
             .steps: [0, 4999, 5000, 9999, 10000, 30000],
             .stress: [0, 0.9, 1, 1.9, 2, 3],
             .respiration: [8, 12, 19.9, 20, 25],
+            .skinTemp: [-1.0, -0.4, -0.39, 0, 0.39, 0.4, 0.79, 0.8, 1.2],
         ]
         for (metric, values) in samples {
             let c = MetricLevels.classification(for: metric, values: values, today: nil)

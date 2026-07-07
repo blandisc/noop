@@ -314,6 +314,13 @@ private struct EntrenarLanding: View {
         }
     }
 
+    /// «Entrenamiento rápido de fuerza» (mock 1p, FER-762): no routine, no slots — the session starts
+    /// empty and `LiveStrengthSheet` shows its own empty-state (search + freshness suggestions) until the
+    /// first exercise is added.
+    private func startQuickStrength() {
+        model.startStrengthSession(routineId: nil, routineName: String(localized: "Quick strength"), slots: [])
+    }
+
     // MARK: - ② Suggestion (engine is FER-532 — TrainingRegulation.lightAlternative)
     //
     // A CONTEXTUAL lighter/heavier alternative, derived from today's recovery against your personal
@@ -383,6 +390,8 @@ private struct EntrenarLanding: View {
             ForEach(otherPlanRoutines, id: \.routineId) { row in
                 planRoutineRow(row)
             }
+            utilityRow(icon: "bolt",
+                       title: String(localized: "Quick strength workout · starts empty")) { startQuickStrength() }
             utilityRow(icon: "figure.cooldown",
                        title: String(localized: "Mobility · intervals · breathe · live")) { openOtherWays() }
             utilityRow(icon: "fork.knife",
@@ -511,7 +520,9 @@ private struct EntrenarLanding: View {
                 Text(initial).font(StrandFont.title2).foregroundStyle(theme.inkSecondary)
             case .rest:
                 shape.strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3, 3])).foregroundStyle(theme.hairlineStrong)
-                Text("—").font(StrandFont.body).foregroundStyle(theme.inkDim)
+                // A minimal horizontal dash reads as an instrument, not an illustration — no moon/zzz/heart
+                // (design decision, FER-762).
+                Image(systemName: "minus").font(.system(size: 14, weight: .semibold)).foregroundStyle(theme.hairlineStrong)
             }
         }
         .frame(height: 46)

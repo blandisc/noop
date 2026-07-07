@@ -364,4 +364,52 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.runs[0].lastTimeS, 750, "last time's seconds are kept for the PREVIOUS cell")
         XCTAssertEqual(s.runs[0].lastDistanceM, 2400)
     }
+
+    // MARK: Ad-hoc «Rápido de fuerza» (FER-762) — adding exercises mid-session with no routine
+
+    private func emptyAdHoc() -> StrengthSessionModel {
+        StrengthSessionModel(routineId: nil, routineName: "Quick strength", startTs: 100, runs: [])
+    }
+
+    func testAddExerciseWithHistorySeedsLastWeightAndReps() {
+        let s = emptyAdHoc()
+        s.addExercise(ex("bench", "Bench"), lastWeightKg: 80, lastReps: 8)
+        XCTAssertEqual(s.runs.count, 1)
+        XCTAssertEqual(s.runs[0].sets.count, 1, "one starter set")
+        XCTAssertEqual(s.runs[0].sets[0].weightKg, 80, "seeded from last time's weight")
+        XCTAssertEqual(s.runs[0].sets[0].reps, 8)
+        XCTAssertEqual(s.runs[0].lastWeightKg, 80, "kept for the PREVIOUS cell")
+        XCTAssertEqual(s.runs[0].restSeconds, StrengthSessionModel.adHocRestSeconds, "2-minute default rest")
+        XCTAssertEqual(s.runs[0].restMode, .fixed, "fixed countdown — no HR baseline to anchor to")
+    }
+
+    func testAddExerciseWithNoHistoryUsesStarterDefaults() {
+        let s = emptyAdHoc()
+        s.addExercise(ex("squat", "Squat"))
+        XCTAssertEqual(s.runs[0].sets[0].weightKg, 0)
+        XCTAssertEqual(s.runs[0].sets[0].reps, 8, "default reps when there's no history")
+        XCTAssertNil(s.runs[0].lastWeightKg, "no «la última vez» first time")
+    }
+
+    func testAddExerciseOnBodyweightTypeSeedsRepsNotWeight() {
+        let s = emptyAdHoc()
+        s.addExercise(ex("pushup", "Push-up", type: .bodyweight), lastWeightKg: 5, lastReps: 12)
+        XCTAssertEqual(s.runs[0].sets[0].reps, 12)
+        XCTAssertEqual(s.runs[0].sets[0].weightKg, 5, "optional lastre carried through")
+    }
+
+    func testAddExerciseOnTimeTypeSeedsNoReps() {
+        let s = emptyAdHoc()
+        s.addExercise(ex("plank", "Plank", type: .time))
+        XCTAssertEqual(s.runs[0].sets[0].reps, 0, "time-based sets don't seed reps")
+    }
+
+    func testAddingSecondExerciseFocusesItAndKeepsTheFirst() {
+        let s = emptyAdHoc()
+        s.addExercise(ex("bench", "Bench"))
+        s.addExercise(ex("row", "Row"))
+        XCTAssertEqual(s.runs.count, 2)
+        XCTAssertEqual(s.currentIndex, 1, "focus moves to the just-added exercise")
+        XCTAssertEqual(s.runs[0].exerciseId, "bench", "the first exercise is untouched")
+    }
 }
