@@ -2436,7 +2436,7 @@ struct TodayView: View {
                     valueColor: theme.dataStrain,
                     source: skinTempR?.fromApple == true ? .apple : .band,
                     context: tileContext(today: skinTempR?.value, history: history(base) { $0.skinTempDevC },
-                                         betterHigher: nil, deadband: 0.1, positive: positiveDelta) { String(format: "%+.1f °C", $0) }
+                                         betterHigher: nil, deadband: 0.1, positive: positiveDelta) { String(format: "%.1f °C", $0) }
                 )) { metricDetail = .skinTemp(skinTempR?.value) }
                 // Respiración — «en rango» es lo normal; sin valencia simple (Δ en tinta neutra).
                 metricTile(TodayMetricTile(

@@ -1293,6 +1293,9 @@ struct MetricInfoSheet: View {
                 unit: info.unit ?? "",
                 valueFormat: info.id == "sleep"
                     ? { mins in let h = Int(mins) / 60; let m = Int(mins) % 60; return m == 0 ? "\(h)h" : "\(h)h \(m)m" }
+                    // Skin temp is a small °C deviation (±0.4 / +0.8 cut points) — integer rounding collapsed
+                    // 0.4 and 0.8 to «0» / «1» on the axis and in the scrub. One decimal keeps it honest. (FER-763)
+                    : info.id == "skin_temp" ? { String(format: "%.1f", $0) }
                     : { "\(Int($0.rounded()))" },
                 nightly: BandSummaryCopy.isNightly(metricID: info.id),
                 inkThumb: true,

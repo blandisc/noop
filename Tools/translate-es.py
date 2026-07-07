@@ -34,10 +34,10 @@ ES: dict[str, str] = {
         "Tu banda lee la temperatura de tu piel durante la noche; Cénit promedia la parte con la banda puesta y dormido, y la compara con tu propia base reciente, así que lo que ves es la desviación en °C, no una temperatura cruda. Cerca de tu base es normal; una subida sostenida de alrededor de +0.4 °C o más es un marcador clásico de enfermedad temprana, así que Cénit la marca como corriendo caliente (~+0.4 °C) o muy por encima (~+0.8 °C).",
     "Baseline-relative skin temperature as an early illness signal (cf. Oura ~+0.5 °C). A wrist trend, not a clinical thermometer. NOOP is not a medical device.":
         "Temperatura de piel relativa a tu base como señal temprana de enfermedad (cf. Oura ~+0.5 °C). Una tendencia de muñeca, no un termómetro clínico. NOOP no es un dispositivo médico.",
-    "Running warm": "Corriendo caliente",
+    "Running warm": "Ligeramente elevada",
     "Below your base.": "Debajo de tu base.",
     "In your base.": "En tu base.",
-    "Running warm vs your base.": "Corriendo caliente vs tu base.",
+    "Running warm vs your base.": "Ligeramente por encima de tu base.",
     "Well above your base, worth a look.": "Muy por encima de tu base, vale la pena revisar.",
     # Detalle de Vital — rediseño narrativo (Hoy → Tu historia → (Tu patrón) → Método)
     # Hero overlines («{métrica} · hoy»)
