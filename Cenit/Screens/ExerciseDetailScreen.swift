@@ -21,11 +21,10 @@ struct ExerciseDetailScreen: View {
     @EnvironmentObject private var tabRouter: TabRouter
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
-    /// FER-722/778: the cached thumb (if any) and, once fetched, the auto-playing loop for this
-    /// exercise — both consumed by the hero, not a secondary card.
-    @State private var thumbURL: URL?
-    @State private var loopURL: URL?
-    @State private var loadingLoop = false
+    /// FER-722/778/790: the exercise's cached media — a single animated GIF that the hero shows both
+    /// as a still (when paused) and animated (when playing). One asset, not a thumb/loop split.
+    @State private var mediaURL: URL?
+    @State private var loadingMedia = false
     @State private var isLoopPlaying = true
 
     /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
@@ -106,15 +105,15 @@ struct ExerciseDetailScreen: View {
             hasTypeOverride = await ov != nil
             variants = Self.variants(for: exercise)
             loaded = true
-            thumbURL = mediaCoordinator.cachedThumbURL(for: exercise)
-            loopURL = nil
+            mediaURL = nil
             isLoopPlaying = true
-            // Auto-play (1g/1h): fetch the loop as soon as the hero has a thumb to show, no tap
-            // needed. `loopIfNeeded` itself no-ops with zero requests while the toggle is off.
-            if mediaCoordinator.isEnabled, thumbURL != nil {
-                loadingLoop = true
-                loopURL = await mediaCoordinator.loopIfNeeded(for: exercise)
-                loadingLoop = false
+            // Auto-play (1g/1h): fetch (or reuse the cached) GIF as soon as the sheet opens, no tap
+            // needed. `mediaIfNeeded` no-ops with zero requests when the toggle is off and nothing
+            // is cached.
+            if mediaCoordinator.isEnabled {
+                loadingMedia = true
+                mediaURL = await mediaCoordinator.mediaIfNeeded(for: exercise)
+                loadingMedia = false
             }
         }
         .sheet(item: $variant) { ex in
@@ -146,36 +145,36 @@ struct ExerciseDetailScreen: View {
         youtubeRow
     }
 
-    // MARK: - Media hero (FER-751 reserved slot, filled by FER-722/778)
-    // The thumb/loop render INSIDE the same reserved `ExerciseThumbnail` slot — no secondary card,
-    // so there's nothing to duplicate. Toggle off or no cached thumb (default) → plain placeholder,
-    // pixel-identical to before FER-722; a discreet hint appears ONLY when the toggle itself is off.
+    // MARK: - Media hero (FER-751 reserved slot, filled by FER-722/778/790)
+    // The GIF renders INSIDE the same reserved `ExerciseThumbnail` slot — one animated asset, no
+    // secondary card, nothing to duplicate. Toggle off or no cached media (default) → plain
+    // placeholder, pixel-identical to before FER-722; a discreet hint appears ONLY when the toggle
+    // itself is off. `UIImage(contentsOfFile:)` gates on a decodable first frame so a corrupt/partial
+    // download quietly falls back to the placeholder instead of a blank box.
 
     @ViewBuilder private var heroSection: some View {
-        if mediaCoordinator.isEnabled, let thumbURL, let uiImage = UIImage(contentsOfFile: thumbURL.path) {
+        if mediaCoordinator.isEnabled, let mediaURL, UIImage(contentsOfFile: mediaURL.path) != nil {
             ZStack(alignment: .topTrailing) {
-                ExerciseThumbnail(heroHeight: 168, image: Image(uiImage: uiImage))
-                if let loopURL {
-                    LoopingVideoView(url: loopURL, isPlaying: isLoopPlaying)
-                        .frame(maxWidth: .infinity, alignment: .center).frame(height: 168)
-                        .clipShape(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous))
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
-                    Button { isLoopPlaying.toggle() } label: {
-                        Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                            .padding(8).background(.black.opacity(0.35), in: Circle())
-                    }
-                    .buttonStyle(.plain).padding(10)
-                    .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
-                } else if loadingLoop {
-                    ProgressView().tint(.white).padding(10)
-                        .accessibilityLabel(Text("\(exercise.name) preview"))
+                AnimatedGIFView(url: mediaURL, isPlaying: isLoopPlaying)
+                    .aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous))
+                    .accessibilityHidden(true)
+                Button { isLoopPlaying.toggle() } label: {
+                    Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                        .padding(8).background(.black.opacity(0.35), in: Circle())
                 }
+                .buttonStyle(.plain).padding(10)
+                .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text("\(exercise.name) preview"))
         } else {
             VStack(alignment: .leading, spacing: 8) {
-                ExerciseThumbnail(heroHeight: 168)
+                ZStack {
+                    ExerciseThumbnail(hero: nil)
+                    if loadingMedia { ProgressView().tint(theme.inkTertiary) }
+                }
                 if !mediaCoordinator.isEnabled { mediaOffHint }
             }
         }

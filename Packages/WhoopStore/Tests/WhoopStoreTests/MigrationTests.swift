@@ -687,6 +687,35 @@ final class MigrationTests: XCTestCase {
         }
     }
 
+    /// v27 must be idempotent: if a partial pre-release build already grew `bodyParts`/`gifUrl`
+    /// without recording v27, re-running the migration must be a no-op, not a "duplicate column"
+    /// crash that wedges startup on every launch.
+    func testV27IsIdempotentWhenColumnsAlreadyExist() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v26")
+
+        // Simulate the wedged device: the columns exist but v27 was never recorded.
+        try await dbQueue.write { db in
+            try db.alter(table: "customExercise") { t in
+                t.add(column: "bodyParts", .text).notNull().defaults(to: "[]")
+                t.add(column: "gifUrl", .text)
+            }
+        }
+
+        try migrator.migrate(dbQueue)   // → v27; must not throw
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "customExercise").map(\.name)
+            XCTAssertTrue(cols.contains("bodyParts"))
+            XCTAssertTrue(cols.contains("gifUrl"))
+            // The whole point: v27 must now be RECORDED, not just non-throwing — otherwise it would
+            // re-run and wedge on every launch. GRDB records it iff the block didn't throw.
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v27"),
+                          "v27 must be recorded so it never re-runs and re-wedges startup")
+        }
+    }
+
     /// v12 (FER-307) creates the `experiment` table with `id` as the sole primary key.
     func testV12CreatesExperimentTable() async throws {
         let store = try await WhoopStore.inMemory()
