@@ -32,13 +32,20 @@ struct BodyAgeSheet: View {
             VStack(alignment: .leading, spacing: 22) {
                 // Serif title, with a «Partial estimate» flag when a heaviest factor (HRV/RHR) is
                 // missing — mirrors Physical age's `Estimate` chip (FER-643). Same warm-amber role.
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Text("Body age").font(StrandFont.serif(23)).foregroundStyle(theme.ink)   // serif title (FER-581)
+                // §8.7 header (FER-805): metric icon + ALL-CAPS overline instead of serif.
+                HStack(alignment: .center, spacing: 7) {
+                    MetricOverline(.bodyAge, "Body age", theme: theme)
                     if result?.isPartialEstimate == true {
                         InlineFlagChip("Partial estimate", color: theme.warning)
                     }
                 }
-                if let r = result { withData(r) } else { emptyState }
+                if let r = result {
+                    withData(r)
+                    // Standardized origin seal (FER-805): body age is computed on-device.
+                    OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
+                } else { emptyState }
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -99,6 +99,13 @@ struct WorkoutsView: View {
                 bySportSection(groups: groups)
                 sessionsSection(rows: windowRows)
                 healthHint
+                // Standardized origin seal (FER-805): the most recent session's source + when.
+                if let latest = allRows.max(by: { $0.startTs < $1.startTs }) {
+                    OriginStamp(origin: latest.source.lowercased().contains("apple") ? .apple : .computed,
+                                when: relativeAgo(Double(latest.startTs)), theme: theme)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
+                }
             }
             .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -114,7 +121,7 @@ struct WorkoutsView: View {
             // Serif in-screen headline — the «Instrumento» detail-screen identity (FER-598), matching the
             // sibling detail sheets. No ⓘ: this is a log, not a metric to explain. Replaces the old
             // `navigationTitle("Workouts")` in the bar so the title isn't duplicated.
-            InstrumentoScreenTitle("My workouts", theme: theme)
+            InstrumentoScreenTitle("My workouts", theme: theme, glyph: .workouts)
             VStack(alignment: .leading, spacing: 4) {
                 Text(verbatim: effectiveRange.caption).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {

@@ -37,9 +37,8 @@ struct ActivityRecoverySheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                Text("After each sport")
-                    .font(StrandFont.serif(23))   // serif in-screen title (FER-581)
-                    .foregroundStyle(theme.ink)
+                // §8.7 header (FER-805): metric icon + ALL-CAPS overline instead of serif.
+                MetricOverline(.afterSport, "After each sport", theme: theme)
 
                 Text("This is how your Charge tends to look the morning after each sport, compared with your rest days. It's what we observe in your history, not a cause-and-effect link.")
                     .font(StrandFont.subhead)
@@ -57,6 +56,9 @@ struct ActivityRecoverySheet: View {
                         .font(StrandFont.footnote)
                         .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
+                    // Standardized origin seal (FER-805): computed on-device from your history.
+                    OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .padding(20)
