@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El import ahora también entiende plurales y nombres coloquiales / Import now also understands plurals and colloquial names.**
+  **ES** — Afinación del emparejador de ejercicios: "Sentadillas", "Curls de bíceps" o "Pájaros" ya se reconocen igual que su forma exacta, y se sumaron ~40 nombres comunes de gym a la tabla (press militar con mancuernas, face pull, pec fly, curl en polea…). Mismas garantías: todo emparejado automático se marca y se puede cambiar.
+  **EN** — Matcher tuning: plurals and colloquial gym names now resolve like their exact forms, and ~40 common names were added to the table. Same guarantees: every automatic match is marked and changeable.
+  ([WorkoutProgram.swift](Packages/StrandImport/Sources/StrandImport/WorkoutProgram.swift), [build_aliases.py](Tools/bake-exercisedb/build_aliases.py))
+
 - **Importar un plan ya reconoce tus ejercicios / Importing a plan now recognizes your exercises.**
   **ES** — Al importar un plan con IA, la app ahora empareja sola la gran mayoría de los ejercicios: entiende variaciones del nombre ("Press banca" = "Press de banca con barra"), conoce los nombres comunes de gym ("press militar de pie", "prensa 45") y marca cada emparejado automático con ✨ para que lo revises o cambies antes de importar — nada entra sin pasar por ti. Los dudosos siguen pidiendo tu decisión, como antes. El prompt que copias a tu IA también mejoró para que elija la variante correcta del catálogo.
   **EN** — When importing an AI plan, the app now auto-matches the vast majority of exercises: it understands name variations, knows common gym names, and marks every automatic match with ✨ so you can review or change it before importing — nothing gets in without passing through you. Uncertain ones still ask for your decision, as before. The prompt you copy to your AI also improved so it picks the right catalog variant.

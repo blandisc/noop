@@ -286,18 +286,20 @@ public struct WorkoutExerciseReconciler {
             tokens.append((ex, sets))
         }
         // Derived aliases (FER-794) and learned aliases (FER-523): normalize the keys defensively;
-        // keep only those still pointing at a known exercise.
-        func indexed(_ table: [String: String]) -> [String: Exercise] {
+        // keep only those still pointing at a known exercise. Derived aliases index by CONTENT key
+        // (FER-797) so they also hit in plural / different word order; learned aliases keep their
+        // persisted normalized-string key.
+        func indexed(_ table: [String: String], by key: (String) -> String) -> [String: Exercise] {
             table.reduce(into: [:]) { out, entry in
                 guard let ex = ids[entry.value] else { return }
-                out[Self.normalize(entry.key)] = ex
+                out[key(entry.key)] = ex
             }
         }
         byNormalizedName = map
         byId = ids
-        byLearned = indexed(learned)
+        byLearned = indexed(learned, by: Self.normalize)
         byContentKey = content
-        byAlias = indexed(aliases)
+        byAlias = indexed(aliases) { Self.contentTokens(normalized: Self.normalize($0)).sorted().joined(separator: " ") }
         tokenized = tokens
     }
 
@@ -330,7 +332,7 @@ public struct WorkoutExerciseReconciler {
         let query = Self.contentTokens(normalized: normalized)
         let ckey = query.sorted().joined(separator: " ")
         if !ckey.isEmpty, let hit = byContentKey[ckey] { return hit }
-        if let hit = byAlias[normalized] { return hit }
+        if let hit = byAlias[ckey] { return hit }
         guard query.count >= 2 else { return nil }
         let scored = scoredSuggestions(query: query)
         guard let top = scored.first, top.score >= 0.8 else { return nil }
@@ -413,12 +415,26 @@ public struct WorkoutExerciseReconciler {
     ]
 
     /// The name's identity-bearing tokens from an ALREADY-normalized string: split, stopwords
-    /// removed. Falls back to the full token set if everything was a stopword (degenerate input like
-    /// "de la a"). Takes the normalized form so callers that already normalized don't pay it twice.
+    /// removed, singularized (FER-797). Falls back to the full token set if everything was a stopword
+    /// (degenerate input like "de la a"). Takes the normalized form so callers that already
+    /// normalized don't pay it twice.
     static func contentTokens(normalized: String) -> Set<String> {
         let all = normalized.split(separator: " ").map(String.init)
         let content = all.filter { !stopwords.contains($0) }
-        return Set(content.isEmpty ? all : content)
+        return Set((content.isEmpty ? all : content).map(singularize))
+    }
+
+    /// Cheap es/en singularization (FER-797), applied to BOTH sides (catalog index and query), so the
+    /// rule can never misalign them: "sentadillas"/"curls"/"lunges" compare equal to their singular.
+    /// Spanish -es plurals (elevaciones→elevacion) drop "es" only after the consonants that pluralize
+    /// that way (-n/-r/-l/-d), so English "-ges/-ches" words ("lunges") just drop the final "s".
+    /// Tokens of ≤ 3 characters are left alone ("des", "abs", "21s").
+    private static func singularize(_ token: String) -> String {
+        guard token.count > 3, token.hasSuffix("s"), !token.hasSuffix("ss") else { return token }
+        if token.count > 4, ["nes", "res", "les", "des"].contains(where: token.hasSuffix) {
+            return String(token.dropLast(2))
+        }
+        return String(token.dropLast())
     }
 
     /// Strip the formatting noise an LLM (or a user pasting its output) wraps around an exercise name,
