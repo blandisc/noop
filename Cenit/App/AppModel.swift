@@ -104,6 +104,9 @@ final class AppModel: ObservableObject {
     /// Called at launch when there is NO recoverable in-progress strength session (FER-798). FER-806 installs
     /// this to end any orphaned Live Activity; nil here — this issue only leaves the hook.
     var onNoRecoverableStrengthSession: (() -> Void)?
+    /// FER-810: the last plan signature mirrored to the watch, so the rotor is pushed only when its visible
+    /// state changes (a set done / current advanced), not on every HR tick. Reset when the session rebinds.
+    private var lastPlanSignature: String?
     /// Whether the guided-session sheet is currently shown. False while a session runs but the sheet is
     /// dismissed (the hub then offers «Resume»). Set true on start/resume, false on swipe-dismiss/finish.
     @Published var strengthSheetPresented = false
@@ -532,6 +535,7 @@ final class AppModel: ObservableObject {
     /// every durable edit persists the session (debounced), and a phase change (rest start/end) flushes now.
     private func bindRestActivity() {
         lastObservedStrengthPhase = strengthSession?.phase
+        lastPlanSignature = nil   // FER-810: force a fresh plan push for the newly bound session
         restActivityCancellable = strengthSession?.objectWillChange
             .receive(on: DispatchQueue.main)   // read the session AFTER its change lands
             .sink { [weak self] in
@@ -643,6 +647,11 @@ final class AppModel: ObservableObject {
             // FER-809: between rests, mirror the capture context so the wrist shows «qué toca», not a bare pulse.
             if let capture = computeCaptureSnapshot() { mirroringBridge?.pushCapture(capture) }
         }
+        // FER-810: mirror the plan to the wrist's rotor, but only when its visible state changed.
+        if let plan = computePlanSnapshot(), plan.signature != lastPlanSignature {
+            lastPlanSignature = plan.signature
+            mirroringBridge?.pushPlan(plan)
+        }
     }
 
     /// Drop the staged rest thumbnail (App Group file + memo) — called whenever the rest/session ends so
@@ -705,6 +714,21 @@ final class AppModel: ObservableObject {
             sessionId: s.id, routineName: s.routineName,
             setNumber: run.currentSet + 1, setTotal: run.sets.count,
             exerciseName: run.name, returnDetail: detail, bpm: bandBpm)
+    }
+
+    /// The lightweight plan snapshot for the watch rotor (FER-810), or nil with no session. Read-only: each
+    /// exercise's name, sets done / total, and whether it's the current run — never the editable rest fields.
+    private func computePlanSnapshot() -> WorkoutPlanSnapshot? {
+        guard let s = strengthSession, s.summary == nil, !s.runs.isEmpty else { return nil }
+        let currentId = s.current?.id
+        let exercises = s.runs.map { run in
+            WorkoutPlanSnapshot.Exercise(
+                name: run.name,
+                setsDone: run.sets.filter(\.done).count,
+                setsTotal: run.sets.count,
+                isCurrent: run.id == currentId)
+        }
+        return WorkoutPlanSnapshot(sessionId: s.id, routineName: s.routineName, exercises: exercises)
     }
 
     /// The App Group thumbnail file name for the focused exercise, copying the JPG only when the exercise
