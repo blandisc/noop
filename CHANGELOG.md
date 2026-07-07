@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los ejercicios ya se ven, sin descargar nada / Exercises now show an image, with no download.**
+  **ES** — Cada ejercicio trae su miniatura horneada en la app: en la Biblioteca y al armar rutinas se ven al instante, sin red y sin activar la descarga de media. La descarga opcional del video animado (para la ficha del ejercicio) ahora se **reanuda sola** al abrir la app si quedó a medias, con progreso claro en Ajustes. Los pocos ejercicios sin imagen disponible muestran un marcador y ofrecen el video de YouTube.
+  **EN** — Every exercise ships a baked thumbnail: in the Library and when building routines they show instantly, with no network and without turning on media downloads. The optional animated-video download (for the exercise detail) now **resumes on its own** when you reopen the app if it was interrupted, with clear progress in Settings. The few exercises with no available image show a placeholder and offer the YouTube video.
+  ([bake_stills.py](Tools/bake-exercisedb/bake_stills.py), [ExerciseThumbView.swift](Cenit/Media/ExerciseThumbView.swift), [MediaDownloadCoordinator.swift](Cenit/Media/MediaDownloadCoordinator.swift))
+
 - **El import ahora también entiende plurales y nombres coloquiales / Import now also understands plurals and colloquial names.**
   **ES** — Afinación del emparejador de ejercicios: "Sentadillas", "Curls de bíceps" o "Pájaros" ya se reconocen igual que su forma exacta, y se sumaron ~40 nombres comunes de gym a la tabla (press militar con mancuernas, face pull, pec fly, curl en polea…). Mismas garantías: todo emparejado automático se marca y se puede cambiar.
   **EN** — Matcher tuning: plurals and colloquial gym names now resolve like their exact forms, and ~40 common names were added to the table. Same guarantees: every automatic match is marked and changeable.

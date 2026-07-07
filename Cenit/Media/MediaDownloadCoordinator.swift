@@ -40,6 +40,10 @@ final class MediaDownloadCoordinator: ObservableObject {
 
     @Published private(set) var downloadState: DownloadState = .idle
 
+    /// Guards against a second bulk pass running concurrently — the launch resume (FER-800) and the
+    /// Ajustes toggle can both call `bulkDownloadThumbsIfNeeded()`; the first to start owns the run.
+    private var isBulkDownloading = false
+
     init(userDefaults: UserDefaults = .standard, session: URLSession = .shared) {
         self.userDefaults = userDefaults
         self.session = session
@@ -57,7 +61,9 @@ final class MediaDownloadCoordinator: ObservableObject {
     /// Bulk-download every catalog exercise's thumb, skipping ones already cached or already known
     /// to miss. Bounded concurrency (6 in flight) so a fresh opt-in doesn't fire every request at once.
     func bulkDownloadThumbsIfNeeded() async {
-        guard isEnabled, let cache else { return }
+        guard isEnabled, let cache, !isBulkDownloading else { return }
+        isBulkDownloading = true
+        defer { isBulkDownloading = false }
 
         let missed = missedIds
         let toDownload = ExerciseCatalog.all.filter { !cache.hasThumb(for: $0.id) && !missed.contains($0.id) }
