@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Constancia más compacta en Entrenar / Tighter Consistency card in Train.**
+  **ES** — Se quitó la línea de ayuda «Toca un día para ver qué entrenaste» que dejaba un hueco bajo el calendario. La tarjeta termina justo en los puntos, con menos ruido; tocar un día entrenado sigue mostrando la rutina y la fecha.
+  **EN** — Removed the «Tap a day to see what you trained» helper line that left a gap under the calendar. The card now ends right at the dots, with less clutter; tapping a trained day still shows the routine and date.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Toca un día de Constancia para ver qué entrenaste / Tap a Consistency day to see what you trained.**
   **ES** — La leyenda de texto bajo el grid de Constancia amontonaba los 4 nombres de rutina en una sola fila, partiendo palabras a la mitad. Se quita por completo: ahora tocas cualquier día entrenado y un popover ligero muestra la rutina y la fecha, sin salir de Entrenar.
   **EN** — The text legend below the Consistency grid crammed all 4 routine names into a single row, breaking words mid-way. It's gone: tap any trained day and a lightweight popover shows the routine and date, without leaving Train.
