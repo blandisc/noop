@@ -27,6 +27,8 @@ python3 transform.py
 #    (dedupe: ~6k de ~10k). En esta base se hizo con un workflow de agentes Sonnet que
 #    escriben lotes {en: es} a un directorio; cualquier traductor sirve mientras produzca
 #    archivos batch-*.json con ese formato.
+#    Los NOMBRES siguen la guía de estilo STYLE-ES.md (FER-795) — pégala en el prompt
+#    del traductor; las verificaciones de salida también viven ahí.
 
 # 4) Ensamblar el overlay es-MX desde los lotes traducidos.
 python3 build_es_overlay.py <dir_de_lotes> [<dir2> ...]

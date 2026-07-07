@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los ejercicios en español ya suenan a gimnasio / Exercise names in Spanish now sound like the gym.**
+  **ES** — Se retradujeron los 1,500 nombres de la biblioteca de ejercicios con una guía de estilo: capitalización uniforme, terminología real de gym mexicano (press, remo, jalón, peso muerto, sentadilla búlgara…), equipo consistente al final ("con barra", "con mancuernas", "en máquina Smith") y sin traducciones literales raras. Se nota en la Biblioteca, al armar rutinas y en las sugerencias al importar un plan.
+  **EN** — All 1,500 exercise-library names were retranslated with a style guide: uniform capitalization, real Mexican-gym terminology, consistent equipment phrasing, and no odd literal translations. Visible in the Library, when building routines, and in the suggestions when importing a plan.
+  ([exercises.es.json](Packages/StrandTraining/Sources/StrandTraining/Resources/exercises.es.json), [STYLE-ES.md](Tools/bake-exercisedb/STYLE-ES.md))
+
 - **La app ya no se queda atorada al abrir tras actualizar / The app no longer gets stuck on open after an update.**
   **ES** — Se corrige un caso en que, al actualizar sobre una instalación previa, la app se quedaba trabada en el arranque (la base de datos intentaba crear una columna que ya existía y fallaba en cada intento). Ahora la actualización de la base de datos revisa lo que ya está antes de tocarlo, así que abre normal.
   **EN** — Fixes a case where, updating over a previous install, the app got stuck on launch (its database tried to create a column that already existed and failed on every attempt). The database update now checks what's already there before touching it, so it opens normally.
