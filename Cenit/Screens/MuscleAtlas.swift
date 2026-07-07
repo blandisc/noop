@@ -17,50 +17,6 @@ enum MuscleAtlas {
 
     enum Side { case front, back }
 
-    struct Region: Identifiable {
-        let id: String
-        let muscle: String
-        let side: Side
-        let x, y, w, h: CGFloat
-        let ellipse: Bool
-        init(_ muscle: String, _ side: Side, _ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, ellipse: Bool = false) {
-            self.id = "\(muscle)-\(side == .front ? "f" : "b")-\(x)-\(y)"
-            self.muscle = muscle; self.side = side
-            self.x = x; self.y = y; self.w = w; self.h = h; self.ellipse = ellipse
-        }
-    }
-
-    static let regions: [Region] = [
-        // Front
-        .init("neck", .front, 0.45, 0.123, 0.10, 0.034),
-        .init("shoulders", .front, 0.17, 0.168, 0.22, 0.082, ellipse: true),
-        .init("shoulders", .front, 0.61, 0.168, 0.22, 0.082, ellipse: true),
-        .init("chest", .front, 0.34, 0.227, 0.32, 0.118),
-        .init("biceps", .front, 0.12, 0.227, 0.14, 0.127, ellipse: true),
-        .init("biceps", .front, 0.74, 0.227, 0.14, 0.127, ellipse: true),
-        .init("abdominals", .front, 0.39, 0.360, 0.22, 0.120),
-        .init("forearms", .front, 0.10, 0.366, 0.12, 0.118, ellipse: true),
-        .init("forearms", .front, 0.78, 0.366, 0.12, 0.118, ellipse: true),
-        .init("adductors", .front, 0.47, 0.520, 0.06, 0.150),
-        .init("quadriceps", .front, 0.37, 0.515, 0.09, 0.175),
-        .init("quadriceps", .front, 0.54, 0.515, 0.09, 0.175),
-        // Back
-        .init("traps", .back, 0.36, 0.150, 0.28, 0.058),
-        .init("middle back", .back, 0.41, 0.210, 0.18, 0.070),
-        .init("triceps", .back, 0.12, 0.232, 0.14, 0.136, ellipse: true),
-        .init("triceps", .back, 0.74, 0.232, 0.14, 0.136, ellipse: true),
-        .init("lats", .back, 0.30, 0.282, 0.16, 0.110),
-        .init("lats", .back, 0.54, 0.282, 0.16, 0.110),
-        .init("lower back", .back, 0.40, 0.395, 0.20, 0.085),
-        .init("abductors", .back, 0.31, 0.505, 0.06, 0.090),
-        .init("abductors", .back, 0.63, 0.505, 0.06, 0.090),
-        .init("glutes", .back, 0.39, 0.500, 0.22, 0.095),
-        .init("hamstrings", .back, 0.38, 0.610, 0.09, 0.150),
-        .init("hamstrings", .back, 0.53, 0.610, 0.09, 0.150),
-        .init("calves", .back, 0.40, 0.795, 0.07, 0.115),
-        .init("calves", .back, 0.53, 0.795, 0.07, 0.115),
-    ]
-
     /// Spanish-by-catalog display name (English source key, es lives in Localizable.xcstrings).
     static func name(_ muscle: String) -> LocalizedStringKey {
         switch muscle {
@@ -86,30 +42,9 @@ enum MuscleAtlas {
     }
 }
 
-// MARK: - Shapes
-
-/// One muscle region (ellipse or rounded rect) drawn in its normalized slot of the figure box.
-struct RegionShape: Shape {
-    let region: MuscleAtlas.Region
-    func path(in rect: CGRect) -> Path {
-        let f = CGRect(x: rect.minX + region.x * rect.width,
-                       y: rect.minY + region.y * rect.height,
-                       width: region.w * rect.width,
-                       height: region.h * rect.height)
-        var p = Path()
-        if region.ellipse {
-            p.addEllipse(in: f)
-        } else {
-            p.addRoundedRect(in: f, cornerSize: CGSize(width: f.width * 0.4, height: f.width * 0.4))
-        }
-        return p
-    }
-}
-
 // MARK: - Anatomical figure (FER-350 redesign · #7 · body FER-781)
 //
-// The redesigned muscle map (`MuscleMapScreen`) draws DETAILED anatomical silhouettes instead of the
-// schematic `RegionShape` ellipses/rects (now unused — kept for reference, pre-existing dead code). The
+// The muscle map (`MuscleMapScreen`) draws DETAILED anatomical silhouettes. The
 // shapes are authored as SVG path data over a fixed 200×430 viewBox — front and back, plus a shared base body
 // (torso / arms / legs / head) drawn in hairline behind the tinted muscle groups. Each muscle path keeps
 // the catalog muscle key (`MuscleFatigueMap` / `MuscleAtlas.name`) so the same load tint and tap target
