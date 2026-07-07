@@ -669,17 +669,22 @@ private struct EntrenarLanding: View {
     /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
     private var todayRingTint: Color { todayRoutine.map { routineTint($0.name) } ?? theme.hairlineStrong }
 
-    /// Legend: one swatch per routine family present in the plan, plus the «hoy» ring.
+    /// Legend: one swatch per routine family present in the plan, in a 2-column grid so the full
+    /// routine name (e.g. "Día B — Cadena posterior y jalón") gets enough width to wrap cleanly
+    /// instead of cramming 4 long labels into a single row. «hoy» sits on its own line below.
     private var legend: some View {
-        HStack(spacing: 13) {
-            ForEach(legendItems, id: \.name) { item in
-                HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                        .fill(routineFill(item.name)).frame(width: 7, height: 7)
-                    Text(item.label).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+        VStack(alignment: .leading, spacing: 8) {
+            LazyVGrid(columns: [GridItem(.flexible(), alignment: .top), GridItem(.flexible(), alignment: .top)],
+                      alignment: .leading, spacing: 8) {
+                ForEach(legendItems, id: \.name) { item in
+                    HStack(alignment: .top, spacing: 5) {
+                        RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                            .fill(routineFill(item.name)).frame(width: 7, height: 7)
+                            .padding(.top, 3)
+                        Text(item.label).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    }
                 }
             }
-            Spacer(minLength: 8)
             HStack(spacing: 5) {
                 Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1.5).frame(width: 8, height: 8)
                 Text("hoy").font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
