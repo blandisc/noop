@@ -648,6 +648,19 @@ extension WhoopStore {
                 $0.add(column: "gifUrl", .text)                                    // NULL = no media
             }
         }
+        // v28 (FER-798): durable snapshot of the strength session IN PROGRESS, so a crash/kill of the
+        // iPhone doesn't lose the workout — at relaunch the app rebuilds the live session (and the Apple
+        // Watch's queued `.end` then finds it and saves the receipt). A singleton control table (0 or 1
+        // row) holding a Codable JSON blob, written on start and on each durable edit, restored at launch,
+        // deleted on save/discard. It is prunable control state, NOT a biometric stream — outside the
+        // WITHOUT-ROWID rebuild and the sync bookkeeping.
+        migrator.registerMigration("v28") { db in
+            try db.create(table: "inProgressStrengthSession") { t in
+                t.column("id", .text).primaryKey()
+                t.column("snapshot", .text).notNull()   // JSON of StrengthSessionSnapshot
+                t.column("updatedTs", .integer).notNull()
+            }
+        }
         return migrator
     }
 

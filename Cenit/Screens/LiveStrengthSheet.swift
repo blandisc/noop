@@ -557,6 +557,61 @@ final class StrengthSessionModel: ObservableObject {
         return (session, entries)
     }
 
+    // MARK: Crash-recovery snapshot (FER-798)
+
+    /// Capture the session's durable state so it survives a crash/kill. Symmetric to `restore(from:)`.
+    /// Omits `hrSamples` (memory-only by design) and the receipt; `phase` is re-derived on restore.
+    func snapshot(now: Int = Int(Date().timeIntervalSince1970)) -> StrengthSessionSnapshot {
+        StrengthSessionSnapshot(
+            id: id, routineId: routineId, routineName: routineName, startTs: startTs,
+            runs: runs.map { run in
+                StrengthSessionSnapshot.RunSnapshot(
+                    id: run.id, exerciseId: run.exerciseId, name: run.name, type: run.type,
+                    restSeconds: run.restSeconds, restMode: run.restMode,
+                    hrRestReference: run.hrRestReference, hrRestValue: run.hrRestValue,
+                    lastWeightKg: run.lastWeightKg, lastReps: run.lastReps,
+                    lastTimeS: run.lastTimeS, lastDistanceM: run.lastDistanceM,
+                    sets: run.sets.map { s in
+                        StrengthSessionSnapshot.SetSnapshot(
+                            id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
+                            distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
+                            rest: s.rest, kind: s.kind)
+                    },
+                    currentSet: run.currentSet, skipped: run.skipped)
+            },
+            currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
+            currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
+            timerStart: timerStart, updatedTs: now)
+    }
+
+    /// Rebuild a live session from a persisted snapshot (FER-798). Re-derives `phase` from the rest state;
+    /// the id is preserved so `WorkoutMirrorKey.externalUUID(for:)` re-pairs with the watch's `.end`.
+    static func restore(from snap: StrengthSessionSnapshot) -> StrengthSessionModel {
+        let runs: [ExerciseRun] = snap.runs.map { r in
+            ExerciseRun(id: r.id, exerciseId: r.exerciseId, name: r.name, type: r.type,
+                        restSeconds: r.restSeconds, restMode: r.restMode,
+                        hrRestReference: r.hrRestReference, hrRestValue: r.hrRestValue,
+                        lastWeightKg: r.lastWeightKg, lastReps: r.lastReps,
+                        lastTimeS: r.lastTimeS, lastDistanceM: r.lastDistanceM,
+                        sets: r.sets.map { s in
+                            WorkingSet(id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
+                                       distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
+                                       rest: s.rest, kind: s.kind)
+                        },
+                        currentSet: r.currentSet, skipped: r.skipped)
+        }
+        let model = StrengthSessionModel(id: snap.id, routineId: snap.routineId,
+                                         routineName: snap.routineName, startTs: snap.startTs, runs: runs)
+        model.currentIndex = snap.currentIndex
+        model.restEndsAt = snap.restEndsAt
+        model.restStartedAt = snap.restStartedAt
+        model.currentRestTarget = snap.currentRestTarget
+        model.currentRestMode = snap.currentRestMode
+        model.timerStart = snap.timerStart
+        model.phase = snap.restEndsAt != nil ? .resting : .capturing
+        return model
+    }
+
     // MARK: Building from a routine plan
 
     /// One resolved plan slot handed in from «Rutina de hoy»: the routine exercise, its resolved exercise,

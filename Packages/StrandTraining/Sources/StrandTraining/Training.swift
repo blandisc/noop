@@ -265,6 +265,92 @@ public struct SetEntry: Codable, Sendable, Identifiable, Equatable {
     }
 }
 
+/// A durable snapshot of a strength session **in progress** (FER-798) — everything the app needs to
+/// rebuild the live session after a crash/kill so the Apple Watch's `.end` still finds it and the
+/// receipt is saved. Pure/`Codable` (lives here, not in the app) so `WhoopStore` can persist it without
+/// importing the UI model. Captures only what can't be recomputed: the plan, the logged sets, the focus,
+/// and the in-flight rest/stopwatch. Deliberately omits `hrSamples` (memory-only by design), the receipt
+/// (once there's a summary the session is already saved), and the phase (derivable from `restEndsAt`).
+public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
+    /// One logged/planned set, mirroring the app model's working set.
+    public struct SetSnapshot: Codable, Sendable, Equatable {
+        public var id: String
+        public var weightKg: Double
+        public var reps: Int
+        public var timeS: Int?
+        public var distanceM: Double?
+        public var done: Bool
+        public var doneTs: Int?
+        public var rest: RestConfig?
+        public var kind: SetKind
+
+        public init(id: String, weightKg: Double, reps: Int, timeS: Int? = nil,
+                    distanceM: Double? = nil, done: Bool = false, doneTs: Int? = nil,
+                    rest: RestConfig? = nil, kind: SetKind = .work) {
+            self.id = id; self.weightKg = weightKg; self.reps = reps; self.timeS = timeS
+            self.distanceM = distanceM; self.done = done; self.doneTs = doneTs
+            self.rest = rest; self.kind = kind
+        }
+    }
+    /// One exercise's run within the session.
+    public struct RunSnapshot: Codable, Sendable, Equatable {
+        public var id: String
+        public var exerciseId: String
+        public var name: String
+        public var type: ExerciseType
+        public var restSeconds: Int
+        public var restMode: RestMode
+        public var hrRestReference: HRRestReference
+        public var hrRestValue: Double
+        public var lastWeightKg: Double?
+        public var lastReps: Int?
+        public var lastTimeS: Int?
+        public var lastDistanceM: Double?
+        public var sets: [SetSnapshot]
+        public var currentSet: Int
+        public var skipped: Bool
+
+        public init(id: String, exerciseId: String, name: String, type: ExerciseType,
+                    restSeconds: Int, restMode: RestMode, hrRestReference: HRRestReference,
+                    hrRestValue: Double, lastWeightKg: Double? = nil, lastReps: Int? = nil,
+                    lastTimeS: Int? = nil, lastDistanceM: Double? = nil, sets: [SetSnapshot],
+                    currentSet: Int, skipped: Bool) {
+            self.id = id; self.exerciseId = exerciseId; self.name = name; self.type = type
+            self.restSeconds = restSeconds; self.restMode = restMode
+            self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
+            self.lastWeightKg = lastWeightKg; self.lastReps = lastReps
+            self.lastTimeS = lastTimeS; self.lastDistanceM = lastDistanceM
+            self.sets = sets; self.currentSet = currentSet; self.skipped = skipped
+        }
+    }
+    public var id: String
+    public var routineId: String?
+    public var routineName: String
+    public var startTs: Int
+    public var runs: [RunSnapshot]
+    public var currentIndex: Int
+    /// The in-flight rest, preserved so a crash mid-rest doesn't drop the countdown/target.
+    public var restEndsAt: Date?
+    public var restStartedAt: Date?
+    public var currentRestTarget: Int?
+    public var currentRestMode: RestMode
+    /// The running stopwatch anchor for time/distance sets; nil when not running.
+    public var timerStart: Date?
+    /// When this snapshot was taken — for debugging / picking the newest if two ever exist.
+    public var updatedTs: Int
+
+    public init(id: String, routineId: String?, routineName: String, startTs: Int,
+                runs: [RunSnapshot], currentIndex: Int, restEndsAt: Date? = nil,
+                restStartedAt: Date? = nil, currentRestTarget: Int? = nil,
+                currentRestMode: RestMode = .fixed, timerStart: Date? = nil, updatedTs: Int) {
+        self.id = id; self.routineId = routineId; self.routineName = routineName
+        self.startTs = startTs; self.runs = runs; self.currentIndex = currentIndex
+        self.restEndsAt = restEndsAt; self.restStartedAt = restStartedAt
+        self.currentRestTarget = currentRestTarget; self.currentRestMode = currentRestMode
+        self.timerStart = timerStart; self.updatedTs = updatedTs
+    }
+}
+
 /// Which kind of personal record. (The estimated-1RM record is FER-349's analytics, not here.)
 public enum PRMetric: String, Codable, Sendable {
     case maxWeight   // heaviest work set
