@@ -250,7 +250,12 @@ struct ExerciseLibraryScreen: View {
 
     private var addBar: some View {
         Button { onAdd?(exercises.filter { selected.contains($0.id) }); dismiss() } label: {
-            Text(selected.isEmpty ? "Select exercises" : "Add \(selected.count) exercise\(selected.count == 1 ? "" : "s")")
+            // A ternary with an interpolated branch resolves to plain `String`, not `LocalizedStringKey` —
+            // wrap each branch in `String(localized:)` so both localize (and the count uses the catalog's
+            // es-MX plural template) instead of silently falling back to English.
+            Text(selected.isEmpty
+                 ? String(localized: "Select exercises")
+                 : String(localized: "Add \(selected.count) exercise(s)"))
                 .font(StrandFont.headline).foregroundStyle(selected.isEmpty ? theme.inkTertiary : theme.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 14)
                 .background(theme.surface, in: Capsule(style: .continuous))
