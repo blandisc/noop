@@ -323,6 +323,30 @@ final class StrengthSessionModel: ObservableObject {
         timerStart = nil
     }
 
+    /// The rest default for exercises added on the fly in an ad-hoc session (FER-762): a plain 2-minute
+    /// fixed countdown — no HR baseline to anchor a heart-rate target to, and the mock's copy promises
+    /// «2 min» explicitly. Editable per set via the existing rest editor, same as any routine exercise.
+    static let adHocRestSeconds = 120
+
+    /// Append an exercise mid-session (FER-762): used by the «Rápido de fuerza» empty state (no routine)
+    /// when the user adds a suggested or searched exercise. Seeds one working set from the exercise's last
+    /// recorded weight/reps when there is history, else a starter default — same convention as `make(slots:)`.
+    func addExercise(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
+        let weight = lastWeightKg ?? 0
+        let reps = usesReps ? (lastReps ?? 8) : 0
+        let set = WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
+        let run = ExerciseRun(id: UUID().uuidString, exerciseId: exercise.id,
+                              name: StrengthDisplay.name(exercise), type: exercise.type,
+                              restSeconds: Self.adHocRestSeconds, restMode: .fixed,
+                              hrRestReference: .restingMargin, hrRestValue: 0,
+                              lastWeightKg: lastWeightKg, lastReps: lastReps,
+                              lastTimeS: nil, lastDistanceM: nil,
+                              sets: [set], currentSet: 0, skipped: false)
+        runs.append(run)
+        currentIndex = runs.count - 1
+    }
+
     /// Skip the current (pending) set: drop it from the plan. A done set is left untouched.
     func skipCurrentSet() {
         guard runs.indices.contains(currentIndex) else { return }
@@ -600,6 +624,22 @@ struct LiveStrengthSheet: View {
     /// The share-receipt screen (FER-720 · 3c), opened from the 1l receipt. nil = closed.
     @State private var shareReceipt: ShareRef?
 
+    /// The empty «Rápido de fuerza» state (FER-762): no routine, no exercises added yet. Its search field
+    /// opens `ExerciseLibraryScreen` in ADD mode; the freshness suggestions load once when this state appears.
+    @State private var showLibraryPicker = false
+    @State private var freshSuggestions: [QuickSuggestion] = []
+    @State private var loadedMuscle: String?
+    @State private var quickSuggestionsLoaded = false
+
+    /// One «Sugeridos · músculos frescos hoy» row: an exercise for a fresh muscle, with its last logged set.
+    struct QuickSuggestion: Identifiable {
+        let exercise: Exercise
+        let muscle: String
+        let lastWeightKg: Double?
+        let lastReps: Int?
+        var id: String { exercise.id }
+    }
+
     /// Identifies which exercise's rest is being edited (FER-716); `setIndex` non-nil = a per-set edit
     /// (from the rest card), nil = exercise-scope (from the rest chip). The editor seeds from `runs[id]`.
     struct RestEdit: Identifiable { let id: Int; var setIndex: Int? = nil }
@@ -629,6 +669,11 @@ struct LiveStrengthSheet: View {
     /// At large accessibility sizes the cardio two-up reflows to a single column so nothing clips.
     private var reflow: Bool { typeSize >= .accessibility1 }
 
+    /// The «Rápido de fuerza» empty state (FER-762): an ad-hoc session (no routine) with nothing logged
+    /// yet — the search + freshness-suggestions state, before the first exercise turns this into a normal
+    /// guided session.
+    private var isEmptyAdHoc: Bool { session.routineId == nil && session.runs.isEmpty }
+
     var body: some View {
         Group {
             if let summary = session.summary {
@@ -641,6 +686,8 @@ struct LiveStrengthSheet: View {
                     .padding(.bottom, NoopMetrics.screenPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
+            } else if isEmptyAdHoc {
+                emptyAdHocSession
             } else {
                 inlineSession
             }
@@ -824,14 +871,14 @@ struct LiveStrengthSheet: View {
                 Text(session.routineName).font(StrandFont.title2).foregroundStyle(theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 8)
-                Button { finishTapped() } label: {
-                    Text("Finish").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Button { isEmptyAdHoc ? discardEmptySession() : finishTapped() } label: {
+                    Text(isEmptyAdHoc ? "Discard" : "Finish").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .padding(.horizontal, 12).padding(.vertical, 6)
                         .background(theme.surface, in: Capsule())
                         .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text("Finish workout"))
+                .accessibilityLabel(Text(isEmptyAdHoc ? "Discard workout" : "Finish workout"))
             }
             .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
 
@@ -1579,6 +1626,147 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .padding(.top, 2)
+    }
+
+    // MARK: Empty ad-hoc state (mock 1p, FER-762)
+
+    private var emptyAdHocSession: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Text("No routine: add exercises as you go. Rest defaults to 2 min, change it set by set.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button { showLibraryPicker = true } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                        Text("Search the library…").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 13).padding(.vertical, 11)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                        .strokeBorder(theme.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+
+                Text("Suggested · muscles fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    .padding(.top, 10)
+                ForEach(freshSuggestions) { s in suggestionRow(s) }
+
+                if let muscle = loadedMuscle {
+                    (Text(MuscleAtlas.name(muscle)) + Text(verbatim: " ") + Text("still carries load · suggestions avoid it."))
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 13).padding(.vertical, 11)
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                            .strokeBorder(theme.hairline, lineWidth: 1))
+                        .padding(.top, 3)
+                }
+
+                Divider().overlay(theme.hairline).padding(.top, 10)
+                Text("You'll be able to save this as a routine when you finish · it doesn't touch your plan.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 10)
+            }
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.top, 16)
+            .padding(.bottom, NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper)
+        .safeAreaInset(edge: .top, spacing: 0) { sessionHeader }
+        .task {
+            guard !quickSuggestionsLoaded else { return }
+            quickSuggestionsLoaded = true
+            await loadFreshSuggestions()
+        }
+        .sheet(isPresented: $showLibraryPicker) {
+            ExerciseLibraryScreen { picks in
+                showLibraryPicker = false
+                Task { await addExercises(picks) }
+            }
+            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+        }
+    }
+
+    private func suggestionRow(_ s: QuickSuggestion) -> some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(theme.surface).frame(width: 48, height: 48)
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(StrengthDisplay.name(s.exercise)).font(StrandFont.body).foregroundStyle(theme.ink)
+                (Text(MuscleAtlas.name(s.muscle)) + Text(verbatim: " · ") + Text("fresh")
+                    + (lastTimeText(s).map { Text(verbatim: " · ") + Text("last time \($0)") } ?? Text(verbatim: "")))
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer(minLength: 8)
+            Button { Task { await addExercises([s.exercise]) } } label: {
+                Text("Add").font(StrandFont.caption).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 8)
+        .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
+    }
+
+    /// «82,5 kg × 8» — the last logged weight/reps for a suggestion, plain data (not a localized phrase,
+    /// same convention as `previousText`).
+    private func lastTimeText(_ s: QuickSuggestion) -> String? {
+        guard let w = s.lastWeightKg, let r = s.lastReps else { return nil }
+        return "\(massText(w)) × \(r)"
+    }
+
+    /// Freshness suggestions (FER-762): the same fetch-and-expand `MuscleFatigueMap` recipe as the muscle
+    /// map, over the trailing 84 days — the top 3 fresh muscles, one exercise each (preferring one the
+    /// user has history for), plus a note naming the single most-loaded muscle the picks are avoiding.
+    private func loadFreshSuggestions() async {
+        let cal = Calendar.current
+        guard let since = cal.date(byAdding: .day, value: -84, to: cal.startOfDay(for: Date())) else { return }
+        let sinceTs = Int(since.timeIntervalSince1970)
+        async let eventsTask = model.repo.muscleSetEvents(sinceTs: sinceTs)
+        async let exercisesTask = model.repo.allExercises()
+        async let historyTask = model.repo.recentWorkSets(sinceTs: sinceTs)
+        let (events, exercises, history) = await (eventsTask, exercisesTask, historyTask)
+        let loads = MuscleFatigueMap.loads(events: events)
+        let historyIds = Set(history.map(\.exerciseId))
+
+        let freshMuscles = loads.filter { $0.state == .fresh }.sorted { $0.relative < $1.relative }.map(\.muscle)
+        var picked: [QuickSuggestion] = []
+        var usedExerciseIds: Set<String> = []
+        for muscle in freshMuscles {
+            guard picked.count < 3 else { break }
+            let candidates = exercises.filter { $0.primaryMuscles.contains(muscle) && !usedExerciseIds.contains($0.id) }
+            guard let ex = candidates.first(where: { historyIds.contains($0.id) }) ?? candidates.first else { continue }
+            usedExerciseIds.insert(ex.id)
+            let last = await model.repo.exerciseHistory(exerciseId: ex.id).last
+            picked.append(QuickSuggestion(exercise: ex, muscle: muscle, lastWeightKg: last?.weightKg, lastReps: last?.reps))
+        }
+        freshSuggestions = picked
+        loadedMuscle = loads.filter { $0.state == .loaded }.max { $0.load < $1.load }?.muscle
+    }
+
+    /// Add one or more exercises to the ad-hoc session (from a suggestion or the library picker), seeding
+    /// each from its last logged set when there's history. The empty state falls away on its own once
+    /// `session.runs` isn't empty.
+    private func addExercises(_ picks: [Exercise]) async {
+        for ex in picks {
+            let last = await model.repo.exerciseHistory(exerciseId: ex.id).last
+            session.addExercise(ex, lastWeightKg: last?.weightKg, lastReps: last?.reps)
+        }
+    }
+
+    /// Discard the empty ad-hoc session (its «Descartar» pill, FER-762) — nothing logged yet, so no
+    /// confirmation is needed (unlike `discardFooter`, which guards a session with real data).
+    private func discardEmptySession() {
+        model.endStrengthSession(save: false)
     }
 
     // MARK: Complete + discard footers

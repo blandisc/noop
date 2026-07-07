@@ -51259,6 +51259,142 @@
           }
         }
       }
+    },
+    "Quick strength workout · starts empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick strength workout · starts empty"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrenamiento rápido de fuerza · empieza vacío"
+          }
+        }
+      }
+    },
+    "Quick strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick strength"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rápido de fuerza"
+          }
+        }
+      }
+    },
+    "No routine: add exercises as you go. Rest defaults to 2 min, change it set by set.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No routine: add exercises as you go. Rest defaults to 2 min, change it set by set."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin rutina: añade ejercicios sobre la marcha. Descanso por defecto 2 min, cámbialo serie a serie."
+          }
+        }
+      }
+    },
+    "Search the library…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search the library…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscar en la biblioteca…"
+          }
+        }
+      }
+    },
+    "Suggested · muscles fresh today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggested · muscles fresh today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugeridos · músculos frescos hoy"
+          }
+        }
+      }
+    },
+    "still carries load · suggestions avoid it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "still carries load · suggestions avoid it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sigue cargando · las sugerencias la evitan."
+          }
+        }
+      }
+    },
+    "last time %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last time %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "última vez %@"
+          }
+        }
+      }
+    },
+    "You'll be able to save this as a routine when you finish · it doesn't touch your plan.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You'll be able to save this as a routine when you finish · it doesn't touch your plan."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al terminar podrás guardarla como rutina · no toca tu plan."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
