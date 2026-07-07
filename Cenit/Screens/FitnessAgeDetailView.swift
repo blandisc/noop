@@ -68,11 +68,16 @@ struct FitnessAgeDetailView: View {
         leversSection
         usingSection
         methodFootnote
+        // Standardized origin seal (FER-805): fitness age is computed on-device.
+        OriginStamp(origin: .computed, when: String(localized: "hoy"), theme: theme)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 2)
     }
 
     private func overline(estimate: Bool) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
-            Text("Physical age").font(StrandFont.serif(23)).foregroundStyle(theme.ink)   // serif title (FER-581)
+        // §8.7 header (FER-805): metric icon + ALL-CAPS overline instead of serif.
+        HStack(alignment: .center, spacing: 7) {
+            MetricOverline(.fitnessAge, "Physical age", theme: theme)
             if estimate { InlineFlagChip("Estimate", color: theme.warning) }
         }
     }

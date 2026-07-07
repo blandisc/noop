@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Actividad y longevidad cierran la estandarización / Activity and longevity finish the standardization.**
+  **ES** — Entrenamientos, Edad física, Edad corporal y «Tras cada deporte» adoptan el título con icono de la métrica (sin serif) y el *sello de origen* al pie. (Pasos y VO₂max ya lo habían adoptado con los vitales.) Con esto, las 17 pantallas de detalle de Tendencias/Cuerpo comparten el mismo estándar visual.
+  **EN** — Workouts, Physical age, Body age and «After each sport» adopt the metric-icon title (no serif) and the *origin seal* at the foot. (Steps and VO₂max already adopted it with the vitals.) All 17 Trends/Body detail screens now share the same visual standard.
+  ([WorkoutsView.swift](Cenit/Screens/WorkoutsView.swift), [FitnessAgeDetailView.swift](Cenit/Screens/FitnessAgeDetailView.swift), [BodyAgeSheet.swift](Cenit/Screens/BodyAgeSheet.swift), [ActivityRecoverySheet.swift](Cenit/Screens/ActivityRecoverySheet.swift))
+
 - **Los vitales y la frecuencia cardíaca adoptan el mismo estándar / Vitals and heart rate adopt the same standard.**
   **ES** — Las pantallas de VFC, FC en reposo, respiración, oxígeno en sangre, temperatura de piel y frecuencia cardíaca ahora llevan el título con icono de la métrica (sin serif) y el *sello de origen* al pie (banda, Apple Salud o calculado). Donde aplica (FC en reposo, respiración, pasos) el toggle Media/Rangos pasó a la versión compacta.
   **EN** — The HRV, resting HR, respiration, blood oxygen, skin temperature and heart-rate screens now use the metric-icon title (no serif) and the *origin seal* at the foot (band, Apple Health or computed). Where it applies (resting HR, respiration, steps) the Average/Ranges toggle became the compact one.
