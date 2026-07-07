@@ -1,0 +1,47 @@
+import XCTest
+@testable import StrandTraining
+
+/// FER-798: the in-progress-session snapshot must survive a JSON round-trip bit-for-bit, since it's the
+/// only thing that rebuilds a live session after a crash. If a field is dropped in encode/decode, the
+/// recovered session would silently lose it (a logged set, the in-flight rest, the focus).
+final class StrengthSessionSnapshotTests: XCTestCase {
+
+    private func sample() -> StrengthSessionSnapshot {
+        let set1 = StrengthSessionSnapshot.SetSnapshot(
+            id: "s1", weightKg: 60, reps: 8, done: true, doneTs: 1000,
+            rest: RestConfig(mode: .fixed, seconds: 90, hrReference: .restingMargin, hrValue: 0),
+            kind: .work)
+        let set2 = StrengthSessionSnapshot.SetSnapshot(
+            id: "s2", weightKg: 60, reps: 8, done: false, kind: .warmup)
+        let run = StrengthSessionSnapshot.RunSnapshot(
+            id: "r1", exerciseId: "bench", name: "Press de banca", type: .weightReps,
+            restSeconds: 90, restMode: .heartRate, hrRestReference: .restingMargin, hrRestValue: 12,
+            lastWeightKg: 57.5, lastReps: 8, lastTimeS: nil, lastDistanceM: nil,
+            sets: [set1, set2], currentSet: 1, skipped: false)
+        return StrengthSessionSnapshot(
+            id: "sess-1", routineId: "push-a", routineName: "Push A", startTs: 900,
+            runs: [run], currentIndex: 0,
+            restEndsAt: Date(timeIntervalSince1970: 1090),
+            restStartedAt: Date(timeIntervalSince1970: 1000),
+            currentRestTarget: 110, currentRestMode: .heartRate,
+            timerStart: nil, updatedTs: 1005)
+    }
+
+    func testRoundTripPreservesEverything() throws {
+        let original = sample()
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertEqual(decoded, original, "snapshot changed across a JSON round-trip")
+    }
+
+    func testPreservesLoggedSetsAndRestState() throws {
+        let decoded = try JSONDecoder().decode(
+            StrengthSessionSnapshot.self, from: try JSONEncoder().encode(sample()))
+        XCTAssertEqual(decoded.runs.first?.sets.first?.done, true)
+        XCTAssertEqual(decoded.runs.first?.sets.first?.doneTs, 1000)
+        XCTAssertEqual(decoded.runs.first?.sets.last?.kind, .warmup)
+        XCTAssertEqual(decoded.currentRestTarget, 110)
+        XCTAssertEqual(decoded.currentRestMode, .heartRate)
+        XCTAssertEqual(decoded.restEndsAt, Date(timeIntervalSince1970: 1090))
+    }
+}

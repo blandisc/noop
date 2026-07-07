@@ -96,6 +96,14 @@ final class AppModel: ObservableObject {
     @Published var strengthSession: StrengthSessionModel? { didSet { bindRestActivity() } }
     /// Subscription to the active session's changes — drives the rest Live Activity's reconcile loop.
     private var restActivityCancellable: AnyCancellable?
+    /// Debounces the in-progress-session snapshot writes (FER-798): a burst of keypad edits collapses to
+    /// one store write; a phase change (rest start/end) forces an immediate flush.
+    private var persistSessionTask: Task<Void, Never>?
+    /// The session phase last seen by the persist observer — a change vs. this triggers an immediate flush.
+    private var lastObservedStrengthPhase: StrengthSessionModel.Phase?
+    /// Called at launch when there is NO recoverable in-progress strength session (FER-798). FER-806 installs
+    /// this to end any orphaned Live Activity; nil here — this issue only leaves the hook.
+    var onNoRecoverableStrengthSession: (() -> Void)?
     /// Whether the guided-session sheet is currently shown. False while a session runs but the sheet is
     /// dismissed (the hub then offers «Resume»). Set true on start/resume, false on swipe-dismiss/finish.
     @Published var strengthSheetPresented = false
@@ -294,6 +302,7 @@ final class AppModel: ObservableObject {
         analysisTask = Task { [weak self] in
             guard let self else { return }
             await self.repo.refresh()                          // surface any imported data at once
+            await self.restoreInProgressStrengthSessionIfNeeded()  // FER-798: recover a session left by a crash
             await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
             await self.compactDatabaseAfterSpo2PurgeIfNeeded() // FER-511: one-time VACUUM after the spo2 purge (flag-gated)
             await self.compactDatabaseAfterRebuildIfNeeded()   // FER-513: one-time VACUUM after the v21 rebuild (flag-gated)
@@ -519,12 +528,86 @@ final class AppModel: ObservableObject {
     // MARK: - Rest Live Activity (FER-721)
 
     /// Re-subscribe the rest Live Activity to whichever session is now active. Fires on every session
-    /// start/end (via `strengthSession`'s `didSet`).
+    /// start/end (via `strengthSession`'s `didSet`). Also drives the crash-recovery snapshot (FER-798):
+    /// every durable edit persists the session (debounced), and a phase change (rest start/end) flushes now.
     private func bindRestActivity() {
+        lastObservedStrengthPhase = strengthSession?.phase
         restActivityCancellable = strengthSession?.objectWillChange
             .receive(on: DispatchQueue.main)   // read the session AFTER its change lands
-            .sink { [weak self] in self?.reconcileRestActivity() }
+            .sink { [weak self] in
+                guard let self else { return }
+                self.reconcileRestActivity()
+                let phase = self.strengthSession?.phase
+                let phaseChanged = phase != self.lastObservedStrengthPhase
+                self.lastObservedStrengthPhase = phase
+                self.scheduleInProgressPersist(immediate: phaseChanged)
+            }
         reconcileRestActivity()
+    }
+
+    // MARK: - Crash-recovery persistence of the in-progress session (FER-798)
+
+    /// Persist the live session's durable snapshot so it survives a crash/kill. Debounced by default (a
+    /// burst of keypad edits → one write); `immediate` flushes now (session start, rest start/end — the
+    /// moments most costly to lose). A no-op once the session has a receipt (it's already saved).
+    func scheduleInProgressPersist(immediate: Bool = false) {
+        guard let session = strengthSession, session.summary == nil else { return }
+        persistSessionTask?.cancel()
+        guard !immediate else {
+            persistSessionTask = nil
+            let snapshot = session.snapshot()   // immediate = a phase change (rare); capture the state now
+            Task { [weak self] in await self?.writeInProgressSnapshot(snapshot) }
+            return
+        }
+        // Debounced path: build the snapshot only when the delay fires, NOT on every coalesced keystroke —
+        // a burst of edits would otherwise build (and throw away) a full deep copy each time.
+        persistSessionTask = Self.debounced(after: 1_000_000_000) { [weak self] in
+            await self?.persistCurrentSnapshot()
+        }
+    }
+
+    /// Snapshot the live session on the main actor and persist it — the debounced write body, so the deep
+    /// copy happens once at fire time rather than per edit. A no-op once the session has a receipt.
+    @MainActor
+    private func persistCurrentSnapshot() async {
+        guard let session = strengthSession, session.summary == nil else { return }
+        await writeInProgressSnapshot(session.snapshot())
+    }
+
+    private func writeInProgressSnapshot(_ snapshot: StrengthSessionSnapshot) async {
+        guard let store = await repo.storeHandle() else { return }
+        try? await store.saveInProgressSession(snapshot)
+    }
+
+    /// Drop the persisted in-progress snapshot (session saved, discarded, or receipt dismissed). Idempotent.
+    func clearInProgressSession() {
+        persistSessionTask?.cancel(); persistSessionTask = nil
+        Task { [weak self] in
+            guard let self, let store = await self.repo.storeHandle() else { return }
+            try? await store.clearInProgressSession()
+        }
+    }
+
+    /// Restore an in-progress strength session left by a crash/kill (FER-798): rebuild the live session so
+    /// the Apple Watch's queued `.end` finds it and the receipt is saved. Runs once at launch. If the
+    /// snapshot belongs to an already-saved session (a clear that failed after a save), discard it without
+    /// restoring — no double receipt. No recoverable session → fire `onNoRecoverableStrengthSession`
+    /// (FER-806's hook to close any orphaned Live Activity).
+    func restoreInProgressStrengthSessionIfNeeded() async {
+        guard strengthSession == nil else { return }                 // never clobber a live session
+        guard let store = await repo.storeHandle() else { return }   // no store yet → retry next launch
+        guard let snap = (try? await store.inProgressSession()) ?? nil else {
+            onNoRecoverableStrengthSession?()
+            return
+        }
+        if let saved = try? await store.session(id: snap.id), saved != nil {
+            try? await store.clearInProgressSession()
+            onNoRecoverableStrengthSession?()
+            return
+        }
+        strengthSession = StrengthSessionModel.restore(from: snap)   // didSet binds the Live Activity
+        strengthSheetPresented = false                               // the hub offers «Resume»; no auto-present
+        acquireRealtimeHR("strength")                                // re-arm the HR stream as at start
     }
 
     /// Hand the controller the current rest snapshot (or nil when not resting) — it starts/updates/ends
@@ -687,6 +770,7 @@ final class AppModel: ObservableObject {
             mirroringBridge?.beginMirroredSessionIfEnabled(sessionId: s.id, routineName: routineName,
                                                            startedAt: Date())
         }
+        scheduleInProgressPersist(immediate: true)   // FER-798: persist from the first moment (crash-safe)
         buzz(loops: 1)   // confirm the session started, same single buzz as the manual live workout (FER-498)
     }
 
@@ -736,6 +820,9 @@ final class AppModel: ObservableObject {
 
     private func endStrengthSession(save: Bool, notifyWatch: Bool) {
         guard let session = strengthSession else { strengthSheetPresented = false; return }
+        // FER-798: idempotent against a duplicate `.end` (the watch has been seen to ack twice) — once the
+        // session has a receipt it's already saved, so a second end is a no-op (no re-save/re-mirror/re-Health).
+        guard session.summary == nil else { return }
         let endTs = Int(Date().timeIntervalSince1970)
         // FER-740: was the watch actively mirroring this session? Capture before we tear it down — it
         // decides whether the iPhone waits for the watch's save decision below.
@@ -747,6 +834,7 @@ final class AppModel: ObservableObject {
             strengthSession = nil
             strengthSheetPresented = false
             releaseRealtimeHR("strength")
+            clearInProgressSession()   // FER-798: nothing to recover once discarded
             return
         }
         // Order the watch to end + save its real recording. Its `watchDidSaveWorkout` ack (awaited below)
@@ -783,6 +871,8 @@ final class AppModel: ObservableObject {
             // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
             let prior = await self.priorStrengthPRs(store: store, ids: Set(sets.map(\.exerciseId)))
             try? await store.saveSession(record, sets: sets)
+            self.persistSessionTask?.cancel()            // FER-798: the session is saved — stop persisting
+            try? await store.clearInProgressSession()    // and drop the snapshot so it never re-restores
             // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
             session.summary = await self.buildStrengthSummary(session: session, record: record,
                                                               sets: sets, prior: prior, store: store)
@@ -823,6 +913,7 @@ final class AppModel: ObservableObject {
         strengthSession = nil
         strengthSheetPresented = false
         releaseRealtimeHR("strength")   // last consumer leaves → stream stops (unless Live still holds it)
+        clearInProgressSession()        // FER-798: belt-and-suspenders — the snapshot was cleared at save
     }
 
     /// Prior best-per-metric PRs per exercise, BEFORE this session's save — the baseline new records beat.

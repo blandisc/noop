@@ -355,6 +355,16 @@ watch is regression-free. Heart rate for the iPhone's own strain still comes fro
 **on the iPhone** — the watch is a control + display surface in F1.1, and adopting its physiology into the
 recovery/strain engine is Phase 2.
 
+The in-progress session is **durable across a crash/kill of the iPhone** (FER-798): a Codable
+`StrengthSessionSnapshot` (defined in `StrandTraining`) is written to `WhoopStore`'s singleton
+`inProgressStrengthSession` table on start and on each durable edit (debounced; immediate on rest
+start/end), and restored in the launch `analysisTask` — so the Apple Watch's queued `.end` finds a live
+session and saves the receipt instead of dropping the workout. The snapshot is deleted on save/discard.
+The `HKWorkout` mirror is **not** rebuilt from the snapshot — HealthKit re-delivers the `mirroredSession`
+when the process relaunches; the one-`HKWorkout` invariant is resolved at end time (`WorkoutSaveGate` +
+the deterministic `externalUUID`), never from persisted state. When no session is recoverable, a hook
+(`onNoRecoverableStrengthSession`) lets a caller close any orphaned Live Activity (FER-806).
+
 ### Rest Live Activity + the app→widget media channel (FER-721 / FER-789)
 
 The same `RestActivitySnapshot` (`CenitShared`) drives the **rest Live Activity** on the lock screen /
@@ -416,7 +426,7 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `27`). The schema groups into four
+GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `28`). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
@@ -455,6 +465,11 @@ concerns:
   `opciones` index was eaten — registro only, it does not change the apego %. WhoopStore never decodes
   the plan (that's `StrandImport.DietPlan`); the apego % (FER-372) is computed from `dietAdherence`
   against the active plan's meal count. Mirrors `journal`.
+- `inProgressStrengthSession` (v28, FER-798) — a singleton control table (0 or 1 row, PK `id`) holding a
+  Codable `StrengthSessionSnapshot` as an opaque JSON blob: the guided strength session in progress, so a
+  crash/kill of the iPhone doesn't lose the workout (written on start + each durable edit, restored at
+  launch, deleted on save/discard). Ephemeral control state — prunable, outside the `WITHOUT ROWID`
+  rebuild and the sync bookkeeping.
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for
