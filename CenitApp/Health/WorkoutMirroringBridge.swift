@@ -182,6 +182,13 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         sendOverHealthKit(.rest(snapshot))
     }
 
+    /// Push the current capture context to the watch (FER-809) — which set is up and its load, so the wrist
+    /// shows «qué toca» between rests. Best-effort HealthKit channel, same as `pushRest`.
+    func pushCapture(_ snapshot: WorkoutCaptureSnapshot) {
+        guard mirroredSession != nil else { return }
+        sendOverHealthKit(.capture(snapshot))
+    }
+
     /// Tell the watch a rest window ended without ending the session. `recovered == true` (FER-758) means
     /// the pulse recovered to target → the watch buzzes «ready»; the default `false` is a silent cancel.
     func pushRestEnded(sessionId: String, recovered: Bool = false) {
@@ -254,7 +261,7 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
             onWatchAction?(sessionId, .skipRest)
         case let .adjustRest(sessionId, deltaS):
             onWatchAction?(sessionId, .adjustRest(deltaS: deltaS))
-        case .start, .rest, .restEnded:
+        case .start, .rest, .restEnded, .capture:
             break   // iPhone → watch only
         }
     }

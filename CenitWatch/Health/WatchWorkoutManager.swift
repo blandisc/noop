@@ -37,6 +37,9 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     @Published var startDate: Date?
     @Published var heartRate: Int = 0
     @Published var rest: RestActivitySnapshot?
+    /// FER-809: the capture context between rests — which set is up (N/M), exercise and «weight × reps» —
+    /// so the live face shows «qué toca», not a bare pulse. nil until the first `.capture` arrives.
+    @Published var capture: WorkoutCaptureSnapshot?
     @Published var sessionActive = false
     /// The routine's display name, adopted from the rest snapshots the iPhone sends.
     @Published var routineName: String = ""
@@ -246,6 +249,7 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         builder = nil
         sessionActive = false
         rest = nil
+        capture = nil
         startDate = nil
         restEndTask?.cancel()
         restEndTask = nil
@@ -322,6 +326,14 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             rest = snapshot
             heartRate = snapshot.bpm ?? heartRate
             scheduleRestEnd(at: snapshot.restEndsAt)
+        case let .capture(snapshot):
+            // FER-809: we're working a set, not resting → adopt the «qué toca» context and drop any rest.
+            adoptIdentity(snapshot.sessionId)
+            if !snapshot.routineName.isEmpty { routineName = snapshot.routineName }
+            capture = snapshot
+            rest = nil
+            restEndTask?.cancel()
+            heartRate = snapshot.bpm ?? heartRate
         case let .restEnded(_, recovered):
             // Cancel the local clock timer either way, then decide the signal:
             //  • recovered (FER-758): the pulse dropped to target → fire the «ready» buzz + banner now.

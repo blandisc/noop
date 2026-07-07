@@ -553,7 +553,11 @@ final class AppModel: ObservableObject {
         if snapshot == nil { clearRestThumb() }   // FER-789: no stale App Group image once the rest ends
         restActivity.reconcile(snapshot)
         if let snapshot { mirroringBridge?.pushRest(snapshot) }
-        else if let sid = strengthSession?.id { mirroringBridge?.pushRestEnded(sessionId: sid) }
+        else if let sid = strengthSession?.id {
+            mirroringBridge?.pushRestEnded(sessionId: sid)
+            // FER-809: between rests, mirror the capture context so the wrist shows «qué toca», not a bare pulse.
+            if let capture = computeCaptureSnapshot() { mirroringBridge?.pushCapture(capture) }
+        }
     }
 
     /// Drop the staged rest thumbnail (App Group file + memo) — called whenever the rest/session ends so
@@ -597,6 +601,23 @@ final class AppModel: ObservableObject {
             isHRMode: s.currentRestMode == .heartRate, hrTarget: s.currentRestTarget, bpm: bandBpm,
             phaseRaw: phase.rawValue, nextExerciseName: nextName,
             thumbnailName: restThumbName(for: run.exerciseId))
+    }
+
+    /// The display-ready capture snapshot (FER-809), or nil when not capturing (no session, resting, or the
+    /// focused set is gone). Same field derivation as `computeRestSnapshot` so the wrist's «qué toca» reads
+    /// identically to the rest card's «al volver» — set N/M, exercise and its «weight × reps».
+    private func computeCaptureSnapshot() -> WorkoutCaptureSnapshot? {
+        guard let s = strengthSession, s.summary == nil, s.phase == .capturing,
+              let run = s.current, let set = s.currentSet else { return nil }
+        let unit = UnitSystem(rawValue: UserDefaults.standard.string(forKey: UnitPrefs.systemKey) ?? "")
+            ?? .metric
+        let usesWeightReps = run.type == .weightReps || run.type == .bodyweight
+        let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
+        let bandBpm: Int? = (live.connected && live.worn) ? bpm : nil
+        return WorkoutCaptureSnapshot(
+            sessionId: s.id, routineName: s.routineName,
+            setNumber: run.currentSet + 1, setTotal: run.sets.count,
+            exerciseName: run.name, returnDetail: detail, bpm: bandBpm)
     }
 
     /// The App Group thumbnail file name for the focused exercise, copying the JPG only when the exercise

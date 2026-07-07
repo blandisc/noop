@@ -51,9 +51,29 @@ private struct WatchFaceMetrics: View {
             Spacer(minLength: NoopMetrics.space2)
             elapsed
             if manager.healthAccessDenied { permissionWarning }
+            else if let cap = manager.capture { captureContext(cap) }
             else { Text(routineTitle).font(StrandFont.caption).foregroundStyle(t.inkSecondary).lineLimit(2) }
             registerCTA
         }
+    }
+
+    // FER-809 — «qué toca» between rests: which set is up (N/M) + a chrome progress bar + the exercise and
+    // its «weight × reps». Chrome tint (this bar isn't a physiological datum). Omitted detail line when a
+    // time/distance set carries no load.
+    private func captureContext(_ cap: WorkoutCaptureSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+            Text("Set \(cap.setNumber) / \(cap.setTotal)")
+                .font(StrandFont.caption).foregroundStyle(t.ink)
+            ProgressView(value: Double(cap.setNumber), total: Double(max(cap.setTotal, 1)))
+                .tint(t.inkSecondary)
+                .accessibilityHidden(true)
+            Text(captureDetail(cap))
+                .font(StrandFont.footnote).foregroundStyle(t.inkSecondary).lineLimit(2)
+        }
+    }
+
+    private func captureDetail(_ cap: WorkoutCaptureSnapshot) -> String {
+        cap.returnDetail.isEmpty ? cap.exerciseName : "\(cap.exerciseName) · \(cap.returnDetail)"
     }
 
     // FER-808 — «Registrar serie» from the wrist: a solid CTA (chrome ink, never a data hue). A soft
@@ -195,8 +215,11 @@ private struct WatchFaceMetrics: View {
     }
 }
 
-// MARK: - Control page (swipe) — «Terminar» with a one-step confirmation
+// MARK: - Control page (swipe) — the real session actions (FER-809)
 
+// The primary action follows the phase so no control is ever a dead button (handoff rule 5): «Registrar
+// serie» while working a set, «Saltar descanso» while resting. «Terminar» is always available, behind a
+// one-step confirmation aligned with the iPhone / Live Activity copy.
 private struct WatchControlPage: View {
     @EnvironmentObject var manager: WatchWorkoutManager
     @State private var confirming = false
@@ -206,10 +229,21 @@ private struct WatchControlPage: View {
         VStack(spacing: NoopMetrics.space2) {
             Spacer()
             Text("Session").instrumentoOverline().foregroundStyle(t.inkTertiary)
-            Button(role: .destructive) { confirming = true } label: {
-                Text("End").frame(maxWidth: .infinity, minHeight: 44)
+            if manager.rest != nil {
+                Button { WatchHaptic.actionTapped.play(); manager.skipRestFromWrist() } label: {
+                    Text("Skip rest").frame(maxWidth: .infinity, minHeight: 40)
+                }
+                .buttonStyle(.bordered).tint(t.inkSecondary)
+            } else {
+                Button { WatchHaptic.actionTapped.play(); manager.completeSetFromWrist() } label: {
+                    Text("Log set").frame(maxWidth: .infinity, minHeight: 40)
+                }
+                .buttonStyle(.borderedProminent).tint(t.ink)
             }
-            .tint(t.critical)
+            Button(role: .destructive) { confirming = true } label: {
+                Text("End").frame(maxWidth: .infinity, minHeight: 40)
+            }
+            .buttonStyle(.bordered).tint(t.critical)
             Spacer()
         }
         .padding(.horizontal, NoopMetrics.gap)

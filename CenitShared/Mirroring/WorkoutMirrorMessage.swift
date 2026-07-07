@@ -20,6 +20,12 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// iPhone → watch: a rest window opened / changed. Reuses the existing `RestActivitySnapshot`.
     case rest(RestActivitySnapshot)
 
+    /// iPhone → watch: the capture context between rests (FER-809) — which set is up (N/M), the exercise
+    /// and its «weight × reps», so the wrist face shows «qué toca» while the user is working the set (not
+    /// only during a rest). Additive: a pre-FER-809 watch simply can't decode this case and drops it
+    /// (`decode` is `try?`), so it degrades to the plain pulse face.
+    case capture(WorkoutCaptureSnapshot)
+
     /// iPhone → watch: the rest window ended without ending the session. `recovered == true` means the
     /// pulse dropped back to target (FER-758) → the watch fires the «ready» buzz + banner; `false` means
     /// the user simply returned to the set → the watch cancels its local timer silently, no buzz.
@@ -49,6 +55,35 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// as the LA's `RestAddThirtyIntent` / `RestRemoveThirtyIntent`. A negative delta is gated by the
     /// sender (the «−30» affordance is hidden once the rest has expired), and `extendRest` floors at «now».
     case adjustRest(sessionId: String, deltaS: Int)
+}
+
+/// The capture-phase context the iPhone mirrors to the wrist between rests (FER-809), so the watch's live
+/// face shows «qué toca» — which set is up and its load — not only a bare pulse. Sibling of
+/// `RestActivitySnapshot` (which covers the rest window); all display-ready, derived on the iPhone (the
+/// source of truth) with the same formatting the Live Activity / rest snapshot use. `bpm` is nil with no
+/// band → the wrist shows «--», never 0.
+public struct WorkoutCaptureSnapshot: Equatable, Codable {
+    public var sessionId: String
+    public var routineName: String
+    /// 1-based index of the set that is up, and the count of sets in the current exercise.
+    public var setNumber: Int
+    public var setTotal: Int
+    public var exerciseName: String
+    /// «60 kg × 8» for weight/reps work; empty for time/distance sets (no such datum), matching the rest
+    /// snapshot's `returnDetail` rule.
+    public var returnDetail: String
+    public var bpm: Int?
+
+    public init(sessionId: String, routineName: String, setNumber: Int, setTotal: Int,
+                exerciseName: String, returnDetail: String, bpm: Int?) {
+        self.sessionId = sessionId
+        self.routineName = routineName
+        self.setNumber = setNumber
+        self.setTotal = setTotal
+        self.exerciseName = exerciseName
+        self.returnDetail = returnDetail
+        self.bpm = bpm
+    }
 }
 
 /// A wrist-initiated action on the live strength session (FER-808), decoded from the three watch→iPhone
