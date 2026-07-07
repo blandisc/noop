@@ -23,6 +23,22 @@ ES: dict[str, str] = {
     "%lld day": "%lld día",
     "%lld night": "%lld noche",
     "%lld nights": "%lld noches",
+    # FER-763 — Temperatura de piel reemplaza a Oxígeno en sangre en la retícula de SEÑALES + su hoja.
+    "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness.":
+        "La temperatura de tu piel, medida en la muñeca mientras duermes. Cambia con tu ritmo circadiano y tu recuperación. Lo que importa no es el número en sí, sino qué tan lejos queda de tu propia base. Una subida sostenida puede ser una señal temprana de inflamación o de que te estás enfermando.",
+    "No skin temperature last night. That can happen if you didn't wear the strap, or it hasn't gathered enough nights to set your baseline yet.":
+        "Sin temperatura de piel anoche. Puede pasar si no traías la banda, o si aún no ha juntado suficientes noches para fijar tu base.",
+    "Measured at your wrist; the deviation from your personal baseline matters more than the absolute value. An isolated reading is usually noise, like a cold room or how the sensor sat. A sustained run is what's worth a look.":
+        "Medida en tu muñeca; importa la desviación de tu base personal, no el valor absoluto. Una lectura aislada suele ser ruido, como un cuarto frío o cómo quedó el sensor. Una racha sostenida es lo que vale la pena mirar.",
+    "Your strap reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C).":
+        "Tu banda lee la temperatura de tu piel durante la noche; Cénit promedia la parte con la banda puesta y dormido, y la compara con tu propia base reciente, así que lo que ves es la desviación en °C, no una temperatura cruda. Cerca de tu base es normal; una subida sostenida de alrededor de +0.4 °C o más es un marcador clásico de enfermedad temprana, así que Cénit la marca como corriendo caliente (~+0.4 °C) o muy por encima (~+0.8 °C).",
+    "Baseline-relative skin temperature as an early illness signal (cf. Oura ~+0.5 °C). A wrist trend, not a clinical thermometer. NOOP is not a medical device.":
+        "Temperatura de piel relativa a tu base como señal temprana de enfermedad (cf. Oura ~+0.5 °C). Una tendencia de muñeca, no un termómetro clínico. NOOP no es un dispositivo médico.",
+    "Running warm": "Corriendo caliente",
+    "Below your base.": "Debajo de tu base.",
+    "In your base.": "En tu base.",
+    "Running warm vs your base.": "Corriendo caliente vs tu base.",
+    "Well above your base, worth a look.": "Muy por encima de tu base, vale la pena revisar.",
     # Detalle de Vital — rediseño narrativo (Hoy → Tu historia → (Tu patrón) → Método)
     # Hero overlines («{métrica} · hoy»)
     "HRV · today": "HRV · hoy",

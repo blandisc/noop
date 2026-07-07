@@ -160,6 +160,7 @@ struct TodayView: View {
     @State private var sleepDetail: SleepDetailItem? = nil
     @State private var strainDetail: StrainDetailItem? = nil
     @State private var stressDetail: StressDetailItem? = nil
+    @State private var skinTempDetail: SkinTempDetailItem? = nil
     /// The «mapa del día» driver (EventKit + intraday curve), built fresh when the Detalle de Estrés opens
     /// from Today — so it shows the SAME chart + moments + patterns as Cuerpo (FER-452).
     @State private var stressDayMap: CalendarDayMap? = nil
@@ -425,6 +426,9 @@ struct TodayView: View {
                 StrainDetailScreen(theme: theme, model: item.model,
                                    curveLoader: { await loadStrainCurve() })
             }
+            .sheet(item: $skinTempDetail) { item in
+                SkinTempDetailScreen(theme: theme, model: item.model)
+            }
             .sheet(item: $stressDetail) { item in
                 // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns,
                 // wired through the shared `StressDayMapPresenter` (FER-452). The cross-day pattern line
@@ -578,6 +582,17 @@ struct TodayView: View {
             present = { metricSpec = .steps(freshSteps) }
         case "spo2":
             present = { metricSpec = .spo2(resolveMeasured { $0.spo2Pct }?.value) }
+        case "skin_temp":
+            // Skin temp has its own rich Detalle (`SkinTempDetailScreen`, the SAME Cuerpo opens), not the
+            // generic `MetricDetailScreen`, so «Ver más» presents its dedicated item. (FER-763)
+            present = {
+                let r = resolveMeasured { $0.skinTempDevC }
+                skinTempDetail = SkinTempDetailItem(model: SkinTempDetailModel.build(
+                    latest: r?.value,
+                    series: repo.displayDays.compactMap { row in row.skinTempDevC.map { (row.day, $0) } }
+                        .sorted { $0.day < $1.day },
+                    loaded: repo.loaded))
+            }
         default:
             present = nil
         }
@@ -1207,10 +1222,10 @@ struct TodayView: View {
                     HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
                         Text(stateLabel(lvl))
                             .font(InstrumentoType.groteskVerdict)
-                            .foregroundStyle(verdictDataColor(lvl))
+                            .foregroundStyle(theme.ink)
                             .overlay(alignment: .bottom) {
                                 Line()
-                                    .stroke(verdictDataColor(lvl).opacity(0.5),
+                                    .stroke(theme.ink.opacity(0.4),
                                             style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
                                     .frame(height: 1)
                                     .offset(y: 2)
@@ -1230,7 +1245,7 @@ struct TodayView: View {
             if let delta = recoveryVsAverage {
                 Text(delta >= 0 ? "+\(delta) vs your average" : "−\(abs(delta)) vs your average")
                     .font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(delta >= 0 ? theme.positiveText : theme.inkSecondary)
+                    .foregroundStyle(theme.inkSecondary)
             }
         case .calibrating(let nights):
             Text("Calibrating")
@@ -2321,7 +2336,10 @@ struct TodayView: View {
         let hrvR    = latestFromDisplay { $0.avgHrv }
         let rhrR    = latestFromDisplay { $0.restingHr.map(Double.init) }
         let sleepR  = resolveMeasured(todayOnly: true) { $0.totalSleepMin }
-        let spo2R   = latestFromDisplay { $0.spo2Pct }
+        // Temperatura de piel — la desviación nocturna (°C) vs tu base, tal como la reporta la banda. FER-763:
+        // reemplaza a SpO₂ en la retícula (SpO₂ sólo venía de Apple Salud; la temperatura de piel es señal
+        // real de la banda en reposo, así que gana el tile). Sigue accesible el Detalle desde Cuerpo.
+        let skinTempR = latestFromDisplay { $0.skinTempDevC }
         // Esfuerzo del día en curso: el valor VIVO (fin de la curva intradía), no el score asentado —
         // así el tile, el héroe del Detalle y la curva muestran UN solo número (FER-650). Cae al asentado
         // mientras el vivo aún no se computa. Los días pasados no lo tocan.
@@ -2407,16 +2425,17 @@ struct TodayView: View {
                     context: tileContext(today: stepsT, history: stepsTileHistory,
                                          betterHigher: true, deadband: 100, positive: positiveDelta) { intString($0) }
                 )) { metricDetail = .steps(stepsFresh ?? stepsEstFresh) }
-                // Oxígeno en sangre — más alto es mejor.
+                // Temperatura de piel — desviación (°C) vs tu base; sin valencia simple (lo sano es estar
+                // cerca de tu base, no «más = mejor»), así que Δ en tinta neutra. Valor con signo (+0.3).
                 metricTile(TodayMetricTile(
-                    label: "Blood Oxygen",
-                    icon: "drop.fill",
-                    value: spo2R.map { String(format: "%.0f", $0.value) } ?? "—", unit: "%",
-                    valueColor: theme.dataSpO2,
-                    source: spo2R?.fromApple == true ? .apple : .band,
-                    context: tileContext(today: spo2R?.value, history: history(base) { $0.spo2Pct },
-                                         betterHigher: true, deadband: 0.5, positive: positiveDelta) { "\(Int($0.rounded())) %" }
-                )) { metricDetail = .spo2(spo2R?.value) }
+                    label: "Skin temp",
+                    icon: "thermometer.medium",
+                    value: skinTempR.map { String(format: "%+.1f", $0.value) } ?? "—", unit: "°C",
+                    valueColor: theme.dataStrain,
+                    source: skinTempR?.fromApple == true ? .apple : .band,
+                    context: tileContext(today: skinTempR?.value, history: history(base) { $0.skinTempDevC },
+                                         betterHigher: nil, deadband: 0.1, positive: positiveDelta) { String(format: "%+.1f °C", $0) }
+                )) { metricDetail = .skinTemp(skinTempR?.value) }
                 // Respiración — «en rango» es lo normal; sin valencia simple (Δ en tinta neutra).
                 metricTile(TodayMetricTile(
                     label: "Respiration",
@@ -2834,11 +2853,12 @@ struct TodayView: View {
         switch id {
         case "recovery": pick = { $0.recovery }
         case "sleep":    pick = { $0.totalSleepMin }
-        case "hrv":      pick = { $0.avgHrv }
-        case "rhr":      pick = { $0.restingHr.map(Double.init) }
-        case "spo2":     pick = { $0.spo2Pct }
-        case "steps":    pick = { $0.steps.map(Double.init) }
-        default:         return nil   // strain (own intraday curve) and anything else: no 14-day trend
+        case "hrv":       pick = { $0.avgHrv }
+        case "rhr":       pick = { $0.restingHr.map(Double.init) }
+        case "spo2":      pick = { $0.spo2Pct }
+        case "skin_temp": pick = { $0.skinTempDevC }
+        case "steps":     pick = { $0.steps.map(Double.init) }
+        default:          return nil   // strain (own intraday curve) and anything else: no 14-day trend
         }
         return { await self.loadTrend(pick: pick) }
     }
@@ -2861,6 +2881,7 @@ struct TodayView: View {
         case "rhr":       pick = { $0.restingHr.map(Double.init) }
         case "hrv":       pick = { $0.avgHrv }
         case "spo2":      pick = { $0.spo2Pct }
+        case "skin_temp": pick = { $0.skinTempDevC }
         case "resp_rate": pick = { $0.respRateBpm }
         case "sleep":     pick = { $0.totalSleepMin }
         case "steps":     pick = { $0.steps.map(Double.init) }

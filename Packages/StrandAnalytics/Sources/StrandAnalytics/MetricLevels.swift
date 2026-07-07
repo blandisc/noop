@@ -81,6 +81,7 @@ public enum MetricLevels {
         case steps         // daily steps
         case stress        // 0–3 stress score
         case respiration   // breaths/min
+        case skinTemp      // skin temperature deviation from the personal baseline, °C
     }
 
     /// The ordered levels (low→high) for a fixed metric — the EXACT thresholds finalized for F6.
@@ -100,6 +101,9 @@ public enum MetricLevels {
     ///   healthy resting range (ATS). A pulse-ox screening level, never a diagnosis.
     /// - **respiration** `>20 elevada` — the conventional adult tachypnea boundary (normal resting
     ///   12–20 breaths/min). A descriptive band, not a clinical claim.
+    /// - **skinTemp** `+0.4 / +0.8 °C` above baseline — the early-illness cut points Cénit already uses
+    ///   in `ReadinessEngine` (a sustained rise is a classic early illness marker; Oura uses ~+0.5 °C).
+    ///   Symmetric −0.4 °C marks "below your base". A relative deviation, never an absolute temperature.
     /// - **recovery / strain / stress** — product-calibration scales (0–100 / 0–21 / 0–3), not
     ///   peer-reviewed norms; the band edges are Cénit's own, tunable, and documented as such.
     public static func levels(for metric: FixedMetric) -> [Level] {
@@ -166,6 +170,15 @@ public enum MetricLevels {
                 Level(key: "normal",   lower: nil, upper: 20),
                 Level(key: "elevated", lower: 20,  upper: nil),
             ]
+        case .skinTemp:
+            // Bajo tu base <−0.4 · En tu base −0.4–+0.4 · Corriendo caliente +0.4–+0.8 · Muy por
+            // encima ≥+0.8 (°C of deviation from the personal baseline; ReadinessEngine's cut points).
+            return [
+                Level(key: "below",    lower: nil,  upper: -0.4),
+                Level(key: "inBase",   lower: -0.4, upper: 0.4),
+                Level(key: "warm",     lower: 0.4,  upper: 0.8),
+                Level(key: "elevated", lower: 0.8,  upper: nil),
+            ]
         }
     }
 
@@ -224,7 +237,9 @@ public enum MetricLevels {
         case "sedentary":  return "Sedentary"
         case "active":     return "Active"
         case "veryActive": return "Very active"
-        // Relative-to-base (HRV, Recovery personal view)
+        // Skin temperature (deviation from your own baseline)
+        case "warm":       return "Running warm"
+        // Relative-to-base (HRV, Recovery personal view; also skin temp's below/in-base)
         case "below":      return "Below your base"
         case "inBase":     return "In your base"
         case "above":      return "Above your base"
