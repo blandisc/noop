@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Recupera el "¿por qué?" del veredicto en el héroe / Restores the verdict's "why?" in the hero.**
+  **ES** — El rediseño de julio (FER-709) fusionó, sin querer, los dos toques del héroe en uno solo: tanto el numeral como la palabra del veredicto ("Equilibrado", "A punto", etc.) abrían el mismo resumen de Recuperación. Se pierde la tarjeta que explicaba por qué el veredicto se leía así. Ahora el numeral sigue abriendo Recuperación y la palabra del veredicto abre de nuevo esa explicación (`WhyVerdictSheet`), como antes del rediseño.
+  **EN** — July's redesign (FER-709) accidentally merged the hero's two taps into one: both the numeral and the verdict word ("Balanced", "Primed", etc.) opened the same Recovery summary. The card explaining why the verdict read that way was lost. The numeral still opens Recovery, and the verdict word again opens that explanation (`WhyVerdictSheet`), as it did before the redesign.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Un solo semáforo en el héroe de Hoy / A single traffic light in Today's hero.**
   **ES** — En un día conflictivo (recuperación en banda ámbar, veredicto verde, carga en rojo) el héroe de "Hoy" mostraba tres colores independientes compitiendo. Ahora solo el numeral de recuperación lleva el color del veredicto; la palabra del veredicto ("Equilibrado", etc.), su subrayado punteado y el delta "+N vs tu promedio" pasan a tinta neutra. La franja de CARGA no cambia — conserva su propio semáforo. (FER-764)
   **EN** — On a conflicting day (recovery in the amber band, a green verdict, red load) Today's hero showed three independent colors competing. Now only the recovery numeral carries the verdict color; the verdict word ("Balanced", etc.), its dotted underline, and the "+N vs your average" delta move to neutral ink. The LOAD strip is unchanged — it keeps its own traffic light. (FER-764)
