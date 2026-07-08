@@ -161,6 +161,49 @@ final class RecoveryScorerTests: XCTestCase {
         XCTAssertNil(RecoveryScorer.restingHR([], start: 0, end: 1000))
     }
 
+    // MARK: - Resting-HR anti-artefact hardening (FER-674)
+
+    func testRestingHRSparseBinCannotWinFloor() {
+        // A dense, physiological bin at 55 bpm, then a SPARSE dropout bin (3 samples) that
+        // averages a lower 40 bpm. The sparse bin has < restingHRMinBinSamples samples, so
+        // it cannot win the floor: the resting HR stays 55, not the unreliable 40.
+        var hr: [HRSample] = []
+        let start = 1000
+        for i in 0..<300 { hr.append(HRSample(ts: start + i, bpm: 55)) }             // dense bin → 55
+        for i in 0..<3   { hr.append(HRSample(ts: start + 300 + i, bpm: 40)) }        // sparse bin (3) → ignored
+        let r = RecoveryScorer.restingHR(hr, start: start, end: start + 600)
+        XCTAssertEqual(r, 55)
+    }
+
+    func testRestingHRSubPhysiologicalBinCannotWinFloor() {
+        // A dense bin at 58 bpm, then a dense but SUB-PHYSIOLOGICAL bin averaging 15 bpm
+        // (below restingHRMinBpm). The impossible bin must not win the floor → stays 58.
+        var hr: [HRSample] = []
+        let start = 2000
+        for i in 0..<300 { hr.append(HRSample(ts: start + i, bpm: 58)) }
+        for i in 0..<300 { hr.append(HRSample(ts: start + 300 + i, bpm: 15)) }
+        let r = RecoveryScorer.restingHR(hr, start: start, end: start + 600)
+        XCTAssertEqual(r, 58)
+    }
+
+    func testRestingHRDropoutNightReturnsNilNotImpossibleValue() {
+        // A whole night of nothing but a sparse dropout (3 samples): no bin qualifies, so
+        // the estimate is nil (honest) rather than a fabricated RHR from a handful of beats.
+        let start = 3000
+        let hr = (0..<3).map { HRSample(ts: start + $0, bpm: 42) }
+        XCTAssertNil(RecoveryScorer.restingHR(hr, start: start, end: start + 600))
+    }
+
+    func testRestingHRNormalNightUnchanged() {
+        // A normal night (two dense physiological bins) scores exactly as before the
+        // hardening: the lowest sustained bin mean.
+        var hr: [HRSample] = []
+        let start = 4000
+        for i in 0..<300 { hr.append(HRSample(ts: start + i, bpm: 62)) }
+        for i in 0..<300 { hr.append(HRSample(ts: start + 300 + i, bpm: 51)) }
+        XCTAssertEqual(RecoveryScorer.restingHR(hr, start: start, end: start + 600), 51)
+    }
+
     // MARK: - Confidence shrinkage (FER-13)
 
     /// Same night, identical baseline mean/σ — only the number of valid nights differs.
