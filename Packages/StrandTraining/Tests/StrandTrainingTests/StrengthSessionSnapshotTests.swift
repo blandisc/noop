@@ -24,7 +24,9 @@ final class StrengthSessionSnapshotTests: XCTestCase {
             restEndsAt: Date(timeIntervalSince1970: 1090),
             restStartedAt: Date(timeIntervalSince1970: 1000),
             currentRestTarget: 110, currentRestMode: .heartRate,
-            timerStart: nil, updatedTs: 1005)
+            timerStart: nil,
+            paused: true, pausedAccumulatedS: 45, pausedAt: Date(timeIntervalSince1970: 1002),
+            updatedTs: 1005)
     }
 
     func testRoundTripPreservesEverything() throws {
@@ -43,5 +45,8 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertEqual(decoded.currentRestTarget, 110)
         XCTAssertEqual(decoded.currentRestMode, .heartRate)
         XCTAssertEqual(decoded.restEndsAt, Date(timeIntervalSince1970: 1090))
+        XCTAssertEqual(decoded.paused, true)                                   // FER-823
+        XCTAssertEqual(decoded.pausedAccumulatedS, 45)
+        XCTAssertEqual(decoded.pausedAt, Date(timeIntervalSince1970: 1002))
     }
 }

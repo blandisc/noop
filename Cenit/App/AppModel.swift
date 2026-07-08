@@ -617,7 +617,9 @@ final class AppModel: ObservableObject {
         // FER-758: an HR-guided rest ends the instant the pulse has recovered to target (past the 20s
         // floor), not only when the fallback clock runs out — and the watch buzzes «ready» to say so.
         // Only the honest HR-recovery path ends early here; the clock ceiling stays the watch's own timer.
-        if let s = strengthSession, s.summary == nil, s.phase == .resting,
+        // FER-823: never end the rest while paused — the band keeps streaming, so an HR that recovers to
+        // target during a pause must NOT skip the (frozen) rest. Same `!s.paused` gate as computeRestSnapshot.
+        if let s = strengthSession, s.summary == nil, !s.paused, s.phase == .resting,
            s.currentRestMode == .heartRate, let started = s.restStartedAt {
             let elapsed = max(0, Int(Date().timeIntervalSince(started)))
             let hr = (live.connected && live.worn) ? bpm : nil
@@ -657,7 +659,9 @@ final class AppModel: ObservableObject {
     /// The display-ready rest snapshot, or nil when there's nothing to show (no session, showing the
     /// receipt, not resting, or the focused set is gone).
     private func computeRestSnapshot() -> RestActivitySnapshot? {
-        guard let s = strengthSession, s.summary == nil, s.phase == .resting,
+        // FER-823: while paused, produce no rest card — a ticking countdown would be wrong (the full-session
+        // «En pausa» card is FER-806). The rest resumes when the session does.
+        guard let s = strengthSession, s.summary == nil, !s.paused, s.phase == .resting,
               let startedAt = s.restStartedAt, let endsAt = s.restEndsAt,
               let run = s.current, let set = s.currentSet else { return nil }
         let unit = UnitSystem(rawValue: UserDefaults.standard.string(forKey: UnitPrefs.systemKey) ?? "")
@@ -790,6 +794,25 @@ final class AppModel: ObservableObject {
     /// Re-show the sheet for the in-progress session (the hub's «Resume»).
     func resumeStrengthSession() { if strengthSession != nil { strengthSheetPresented = true } }
 
+    /// Pause the guided session (FER-823): freezes the clock and any rest, persists the paused state, and
+    /// updates the Live Activity (the rest card ends while paused; the full-session card is FER-806).
+    func pauseStrengthSession() {
+        guard let s = strengthSession else { return }
+        s.pause()
+        reconcileRestActivity()
+        scheduleInProgressPersist(immediate: true)
+    }
+
+    /// Resume the paused session (FER-823): shifts the rest/stopwatch anchors forward so they continue
+    /// exactly where they were, then re-arms the Live Activity and persists. Named distinctly from
+    /// `resumeStrengthSession()` (which only re-opens the sheet) so the two intents can't be confused.
+    func resumeStrengthSessionFromPause() {
+        guard let s = strengthSession else { return }
+        s.resume()
+        reconcileRestActivity()
+        scheduleInProgressPersist(immediate: true)
+    }
+
     /// Finish the guided session. With ≥1 logged set: persist it, mirror to Apple Health (opt-in), and
     /// compute the post-session receipt (FER-409) — keeping the session ALIVE so the sheet renders its
     /// `summaryPhase`. With nothing logged: discard and close. The receipt is ended by `closeStrengthSummary`
@@ -823,7 +846,9 @@ final class AppModel: ObservableObject {
         // FER-798: idempotent against a duplicate `.end` (the watch has been seen to ack twice) — once the
         // session has a receipt it's already saved, so a second end is a no-op (no re-save/re-mirror/re-Health).
         guard session.summary == nil else { return }
-        let endTs = Int(Date().timeIntervalSince1970)
+        // FER-823: the saved duration excludes time spent paused, so the receipt, the calorie estimate and
+        // the Apple Health workout all reflect active time. `endTs` is the active end (wall clock minus pauses).
+        let endTs = session.startTs + session.elapsedSeconds()
         // FER-740: was the watch actively mirroring this session? Capture before we tear it down — it
         // decides whether the iPhone waits for the watch's save decision below.
         let wasMirroring = mirroringBridge?.isMirroringActive ?? false
@@ -1052,7 +1077,9 @@ final class AppModel: ObservableObject {
     /// is running, the receipt is already shown, or there's no fresh HR. Same main-actor cadence as
     /// `captureWorkoutSample` — never touches the BLE drain.
     private func captureStrengthSample() {
-        guard let s = strengthSession, s.summary == nil, let hr = bpm else { return }
+        // FER-823: drop HR captured while paused from the session's scoring set — the band keeps streaming
+        // for the live readout (`bpm`), but paused beats must not inflate strain/energy.
+        guard let s = strengthSession, s.summary == nil, !s.paused, let hr = bpm else { return }
         s.hrSamples.append(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr))
     }
 

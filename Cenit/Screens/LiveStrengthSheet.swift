@@ -198,6 +198,15 @@ final class StrengthSessionModel: ObservableObject {
     /// setting it never re-renders): the receipt view sets it after animating, so the numerals count up only
     /// the first time the summary appears (at save), never when the session is re-opened. Dies with the session.
     var receiptCountUpPlayed = false
+    /// Whether the session is paused (FER-823). The session clock and any running rest/stopwatch freeze;
+    /// paused time is excluded from the saved duration and HR captured while paused is dropped from scoring.
+    @Published var paused = false
+    /// Total seconds already spent paused across all prior pauses this session. `pausedSeconds(at:)` adds
+    /// the current open pause on top.
+    private(set) var pausedAccumulatedS = 0
+    /// When the current pause began; nil when not paused. The open pause is folded into `pausedAccumulatedS`
+    /// on resume.
+    private(set) var pausedAt: Date?
 
     init(id: String = UUID().uuidString, routineId: String?, routineName: String,
          startTs: Int, runs: [ExerciseRun]) {
@@ -286,6 +295,42 @@ final class StrengthSessionModel: ObservableObject {
         runs[exerciseIndex].currentSet = setIndex
         phase = .capturing
         timerStart = nil
+    }
+
+    // MARK: Pause / resume (FER-823)
+
+    /// Total seconds this session has spent paused up to `now` — the accumulated closed pauses plus the
+    /// current open one (if paused). Subtracted from the wall-clock span to get the active duration.
+    func pausedSeconds(at now: Date = Date()) -> Int {
+        pausedAccumulatedS + (pausedAt.map { max(0, Int(now.timeIntervalSince($0))) } ?? 0)
+    }
+
+    /// The active elapsed seconds of the session (wall-clock span minus paused time). Drives the header
+    /// clock and the saved duration, so both exclude time on pause.
+    func elapsedSeconds(now: Date = Date()) -> Int {
+        max(0, Int(now.timeIntervalSince1970) - startTs - pausedSeconds(at: now))
+    }
+
+    /// Pause the session: freeze the clock, the rest countdown and any running stopwatch. Idempotent, and a
+    /// no-op once the receipt is up. FC keeps streaming for display but is dropped from scoring while paused.
+    func pause(now: Date = Date()) {
+        guard !paused, summary == nil else { return }
+        pausedAt = now
+        paused = true
+    }
+
+    /// Resume: fold the open pause into the accumulator and shift every absolute-time anchor forward by the
+    /// paused delta, so the remaining rest, the stopwatch, and the rest floor all resume exactly where they
+    /// were. Idempotent.
+    func resume(now: Date = Date()) {
+        guard paused, let start = pausedAt else { paused = false; pausedAt = nil; return }
+        let delta = max(0, now.timeIntervalSince(start))
+        pausedAccumulatedS += Int(delta)
+        if let r = restEndsAt { restEndsAt = r.addingTimeInterval(delta) }
+        if let r = restStartedAt { restStartedAt = r.addingTimeInterval(delta) }
+        if let t = timerStart { timerStart = t.addingTimeInterval(delta) }
+        pausedAt = nil
+        paused = false
     }
 
     // MARK: Set actions
@@ -581,7 +626,9 @@ final class StrengthSessionModel: ObservableObject {
             },
             currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
-            timerStart: timerStart, updatedTs: now)
+            timerStart: timerStart,
+            paused: paused, pausedAccumulatedS: pausedAccumulatedS, pausedAt: pausedAt,
+            updatedTs: now)
     }
 
     /// Rebuild a live session from a persisted snapshot (FER-798). Re-derives `phase` from the rest state;
@@ -609,6 +656,9 @@ final class StrengthSessionModel: ObservableObject {
         model.currentRestMode = snap.currentRestMode
         model.timerStart = snap.timerStart
         model.phase = snap.restEndsAt != nil ? .resting : .capturing
+        model.paused = snap.paused
+        model.pausedAccumulatedS = snap.pausedAccumulatedS
+        model.pausedAt = snap.pausedAt
         return model
     }
 
@@ -944,29 +994,71 @@ struct LiveStrengthSheet: View {
                 Text(session.routineName).font(StrandFont.title2).foregroundStyle(theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 8)
-                Button { isEmptyAdHoc ? discardEmptySession() : finishTapped() } label: {
-                    Text(isEmptyAdHoc ? "Discard" : "Finish").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(theme.surface, in: Capsule())
-                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                // FER-823: paused → «Resume» is the primary action (finish after resuming); running with
+                // sets → a pause toggle sits left of Finish; the empty ad-hoc session only offers Discard.
+                if session.paused {
+                    Button { model.resumeStrengthSessionFromPause() } label: {
+                        Label("Resume", systemImage: "play.fill").labelStyle(.titleAndIcon)
+                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            .padding(.horizontal, 14).padding(.vertical, 6)
+                            .background(theme.surface, in: Capsule())
+                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Resume session"))
+                } else if !isEmptyAdHoc {
+                    Button { model.pauseStrengthSession() } label: {
+                        Image(systemName: "pause.fill")
+                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.ink)
+                            .frame(width: 38, height: 38)
+                            .background(theme.surface, in: Circle())
+                            .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Pause session"))
+                    Button { finishTapped() } label: {
+                        Text("Finish").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(theme.surface, in: Capsule())
+                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Finish workout"))
+                } else {
+                    Button { discardEmptySession() } label: {
+                        Text("Discard").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(theme.surface, in: Capsule())
+                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Discard workout"))
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text(isEmptyAdHoc ? "Discard workout" : "Finish workout"))
             }
             .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
 
             // Row 2: per-exercise progress, filled by how done each exercise is.
-            SessionProgressBar(segments: progressSegments, hue: theme.dataStrain, track: theme.hairline)
+            SessionProgressBar(segments: progressSegments,
+                               hue: session.paused ? theme.inkDim : theme.dataStrain,   // FER-823: no hue while paused
+                               track: theme.hairline)
                 .accessibilityLabel(Text("Session progress"))
                 .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
 
-            // Row 3: the big running clock (the session's dominant datum in the header).
+            // Row 3: the big running clock (the session's dominant datum in the header). FER-823: it counts
+            // ACTIVE time (excludes pauses), so it naturally freezes while paused and dims to `inkDim`.
             TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                Text(Self.clock(max(0, Int(ctx.date.timeIntervalSince1970) - session.startTs)))
+                let elapsed = session.elapsedSeconds(now: ctx.date)
+                Text(Self.clock(elapsed))
                     .font(InstrumentoType.groteskSessionClock)
                     .tracking(InstrumentoType.groteskSessionClockTracking)
-                    .foregroundStyle(theme.ink)
-                    .accessibilityLabel(Text("Elapsed \(Self.clock(max(0, Int(ctx.date.timeIntervalSince1970) - session.startTs)))"))
+                    .foregroundStyle(session.paused ? theme.inkDim : theme.ink)
+                    .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
+                                                             : "Elapsed \(Self.clock(elapsed))"))
+            }
+            if session.paused {
+                Text("Paused").font(StrandFont.caption).textCase(.uppercase).tracking(0.8)
+                    .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)   // the clock already announces the paused state
             }
 
             // Row 4: quiet counters — volume · sets · (kcal only when the strap is streaming, no dashes).
