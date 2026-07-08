@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El prompt del import ahora sí pasa en cualquier IA / The import prompt now gets through any AI.**
+  **ES** — Se quitaron las 1,500 líneas de catálogo del texto que copias para tu IA: ahora son ~30 líneas que se pegan como mensaje normal (no como archivo adjunto), así que Claude/ChatGPT ya no lo rechazan por parecer una inyección de instrucciones. La app reconoce los ejercicios por nombre con su emparejador propio — el catálogo en el prompt ya no aportaba nada.
+  **EN** — The 1,500 catalog lines were removed from the text you copy for your AI: it's now ~30 lines that paste as a normal message (not a file attachment), so Claude/ChatGPT no longer refuse it as prompt injection. The app recognizes exercises by name with its own matcher — the in-prompt catalog no longer added anything.
+  ([WorkoutPrompt.swift](Cenit/Data/WorkoutPrompt.swift))
+
 - **La pantalla de Tendencias adopta el estilo estandarizado / The Trends screen adopts the standardized style.**
   **ES** — El landing de Tendencias migra a §8.7: los títulos de sección pasan de serif a overline en mayúsculas (Space Grotesk), cada stat lleva su punto de origen (banda / Apple Salud / calculado) con la etiqueta en su color, se añade la micro-leyenda «Valores de hoy · tendencias del último mes» bajo el selector de periodo, y una leyenda de orígenes al pie. Sin cambios de navegación ni datos.
   **EN** — The Trends landing migrates to §8.7: section titles go from serif to ALL-CAPS overlines (Space Grotesk), each stat carries its origin dot (band / Apple Health / computed) with its label tinted, a «Today's values · last month's trends» micro-legend sits under the period selector, and an origin legend at the foot. No navigation or data changes.
