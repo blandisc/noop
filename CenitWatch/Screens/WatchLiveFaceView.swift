@@ -170,9 +170,36 @@ private struct WatchFaceMetrics: View {
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
             Text("bpm").font(StrandFont.unit).foregroundStyle(t.inkSecondary).accessibilityHidden(true)
+            zoneTag
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(pulseLabel)
+    }
+
+    // FER-811 — a discreet effort-zone tag (Z2/Z3…) beside the pulse, from the profile's mirrored max HR.
+    // Muted ink with a hairline border — chrome, never a data hue, so it never competes with the number.
+    // Omitted with no pulse reading or no reliable max HR (honest degradation, never «Z0»).
+    private var effortZone: Int? {
+        guard !pulseDashed, let hrMax = manager.hrMax, hrMax > 0, manager.heartRate > 0 else { return nil }
+        switch Double(manager.heartRate) / Double(hrMax) {
+        case ..<0.6: return 1
+        case ..<0.7: return 2
+        case ..<0.8: return 3
+        case ..<0.9: return 4
+        default:     return 5
+        }
+    }
+
+    @ViewBuilder private var zoneTag: some View {
+        if let z = effortZone {
+            Text(verbatim: "Z\(z)")
+                .font(StrandFont.footnote)
+                .foregroundStyle(t.inkSecondary)
+                .padding(.horizontal, NoopMetrics.space1)
+                .padding(.vertical, 1)
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(t.inkTertiary, lineWidth: 1))
+                .accessibilityLabel(Text("Effort zone \(z)"))
+        }
     }
 
     // State 4 — heart rate demoted during a rest: small, still the datum's hue (or «--»).

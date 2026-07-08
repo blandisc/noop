@@ -99,6 +99,11 @@ approximate; Cénit is built from source — see the [README](README.md).
   **ES** — Reconciliación con el handoff: el calendario de 90 días de Recuperación queda visible (ya no colapsado), «Qué la mueve» de Edad física pasa a dos tiles, y «Tras cada deporte» muestra el impacto como un dato prominente «−N pts» en ámbar.
   **EN** — Design reconciliation: Recovery's 90-day calendar is now visible (no longer collapsed), Fitness age's «What moves it» becomes two tiles, and «After each sport» shows the impact as a prominent «−N pts» amber datum.
   ([RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift), [FitnessAgeDetailView.swift](Cenit/Screens/FitnessAgeDetailView.swift), [ActivityRecoverySheet.swift](Cenit/Screens/ActivityRecoverySheet.swift))
+- **El reloj marca tu zona de esfuerzo / The watch shows your effort zone.**
+  **ES** — Junto al pulso, en la sesión, aparece una etiqueta discreta de zona (Z2/Z3…) calculada desde tu frecuencia máxima. Es tinta apagada con borde, nunca color: no compite con el número. Si no hay una máxima fiable, simplemente no aparece.
+  **EN** — Next to the pulse during a session, a discreet zone tag (Z2/Z3…) appears, computed from your max heart rate. Muted ink with a border, never color: it doesn't compete with the number. With no reliable max, it simply doesn't show.
+  ([WatchLiveFaceView.swift](CenitWatch/Screens/WatchLiveFaceView.swift), [WorkoutMirrorMessage.swift](CenitShared/Mirroring/WorkoutMirrorMessage.swift))
+
 - **Del resumen del reloj al recibo completo en el iPhone / From the watch summary to the full receipt on iPhone.**
   **ES** — El resumen del reloj al terminar suma **«Ver recibo en iPhone ›»**: abre en el teléfono el detalle guardado de ese entreno (volumen, récords, etc.), sin dejar de ser mínimo en la muñeca. El iPhone salta a Entrenar y muestra la sesión directo.
   **EN** — The watch's end-of-session summary gains **«See receipt on iPhone ›»**: it opens that workout's saved detail on the phone (volume, records, etc.) while staying minimal on the wrist. The iPhone jumps to Entrenar and shows the session directly.

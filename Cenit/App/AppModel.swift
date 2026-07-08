@@ -713,7 +713,8 @@ final class AppModel: ObservableObject {
         return WorkoutCaptureSnapshot(
             sessionId: s.id, routineName: s.routineName,
             setNumber: run.currentSet + 1, setTotal: run.sets.count,
-            exerciseName: run.name, returnDetail: detail, bpm: bandBpm)
+            exerciseName: run.name, returnDetail: detail, bpm: bandBpm,
+            hrMax: profile.hrMax > 0 ? profile.hrMax : nil)   // FER-811: wrist effort-zone label; nil → omit
     }
 
     /// The lightweight plan snapshot for the watch rotor (FER-810), or nil with no session. Read-only: each

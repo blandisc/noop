@@ -82,9 +82,12 @@ public struct WorkoutCaptureSnapshot: Equatable, Codable {
     /// snapshot's `returnDetail` rule.
     public var returnDetail: String
     public var bpm: Int?
+    /// FER-810→811: the profile's max heart rate, so the wrist can label the effort zone (Z2/Z3…) next to
+    /// the pulse. Optional — nil when there's no reliable max (the wrist then omits the zone, never guesses).
+    public var hrMax: Int?
 
     public init(sessionId: String, routineName: String, setNumber: Int, setTotal: Int,
-                exerciseName: String, returnDetail: String, bpm: Int?) {
+                exerciseName: String, returnDetail: String, bpm: Int?, hrMax: Int? = nil) {
         self.sessionId = sessionId
         self.routineName = routineName
         self.setNumber = setNumber
@@ -92,6 +95,7 @@ public struct WorkoutCaptureSnapshot: Equatable, Codable {
         self.exerciseName = exerciseName
         self.returnDetail = returnDetail
         self.bpm = bpm
+        self.hrMax = hrMax
     }
 }
 

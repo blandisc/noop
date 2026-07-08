@@ -42,6 +42,9 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     @Published var capture: WorkoutCaptureSnapshot?
     /// FER-810: the routine plan for the read-only rotor page (done / current / pending + N/M per exercise).
     @Published var plan: WorkoutPlanSnapshot?
+    /// FER-811: the profile's max heart rate (mirrored from the iPhone), for the effort-zone label next to
+    /// the pulse. nil until known / when unreliable → the zone is omitted, never guessed.
+    @Published var hrMax: Int?
     @Published var sessionActive = false
     /// The routine's display name, adopted from the rest snapshots the iPhone sends.
     @Published var routineName: String = ""
@@ -253,6 +256,7 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         rest = nil
         capture = nil
         plan = nil
+        hrMax = nil
         startDate = nil
         restEndTask?.cancel()
         restEndTask = nil
@@ -345,6 +349,7 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             rest = nil
             restEndTask?.cancel()
             heartRate = snapshot.bpm ?? heartRate
+            if let hm = snapshot.hrMax { hrMax = hm }   // FER-811: adopt the mirrored max HR for the zone label
         case let .plan(snapshot):
             adoptIdentity(snapshot.sessionId)
             if !snapshot.routineName.isEmpty { routineName = snapshot.routineName }

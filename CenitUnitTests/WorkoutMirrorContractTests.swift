@@ -31,9 +31,10 @@ final class WorkoutMirrorContractTests: XCTestCase {
             .adjustRest(sessionId: "s1", deltaS: -30),
             // FER-809 — capture context (iPhone → watch), with and without a load.
             .capture(WorkoutCaptureSnapshot(sessionId: "s1", routineName: "Empuje", setNumber: 3, setTotal: 4,
-                                            exerciseName: "Press banca", returnDetail: "60 kg × 8", bpm: 118)),
+                                            exerciseName: "Press banca", returnDetail: "60 kg × 8", bpm: 118,
+                                            hrMax: 185)),   // FER-811 — with a max HR for the zone label
             .capture(WorkoutCaptureSnapshot(sessionId: "s1", routineName: "Empuje", setNumber: 1, setTotal: 3,
-                                            exerciseName: "Plancha", returnDetail: "", bpm: nil)),
+                                            exerciseName: "Plancha", returnDetail: "", bpm: nil, hrMax: nil)),
             // FER-810 — plan rotor snapshot (iPhone → watch).
             .plan(WorkoutPlanSnapshot(sessionId: "s1", routineName: "Empuje", exercises: [
                 .init(name: "Press banca", setsDone: 2, setsTotal: 4, isCurrent: true),
