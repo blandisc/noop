@@ -104,6 +104,9 @@ final class AppModel: ObservableObject {
     /// Called at launch when there is NO recoverable in-progress strength session (FER-798). FER-806 installs
     /// this to end any orphaned Live Activity; nil here — this issue only leaves the hook.
     var onNoRecoverableStrengthSession: (() -> Void)?
+    /// FER-810: the last plan signature mirrored to the watch, so the rotor is pushed only when its visible
+    /// state changes (a set done / current advanced), not on every HR tick. Reset when the session rebinds.
+    private var lastPlanSignature: String?
     /// Whether the guided-session sheet is currently shown. False while a session runs but the sheet is
     /// dismissed (the hub then offers «Resume»). Set true on start/resume, false on swipe-dismiss/finish.
     @Published var strengthSheetPresented = false
@@ -532,6 +535,7 @@ final class AppModel: ObservableObject {
     /// every durable edit persists the session (debounced), and a phase change (rest start/end) flushes now.
     private func bindRestActivity() {
         lastObservedStrengthPhase = strengthSession?.phase
+        lastPlanSignature = nil   // FER-810: force a fresh plan push for the newly bound session
         restActivityCancellable = strengthSession?.objectWillChange
             .receive(on: DispatchQueue.main)   // read the session AFTER its change lands
             .sink { [weak self] in
@@ -638,7 +642,16 @@ final class AppModel: ObservableObject {
         if snapshot == nil { clearRestThumb() }   // FER-789: no stale App Group image once the rest ends
         restActivity.reconcile(snapshot)
         if let snapshot { mirroringBridge?.pushRest(snapshot) }
-        else if let sid = strengthSession?.id { mirroringBridge?.pushRestEnded(sessionId: sid) }
+        else if let sid = strengthSession?.id {
+            mirroringBridge?.pushRestEnded(sessionId: sid)
+            // FER-809: between rests, mirror the capture context so the wrist shows «qué toca», not a bare pulse.
+            if let capture = computeCaptureSnapshot() { mirroringBridge?.pushCapture(capture) }
+        }
+        // FER-810: mirror the plan to the wrist's rotor, but only when its visible state changed.
+        if let plan = computePlanSnapshot(), plan.signature != lastPlanSignature {
+            lastPlanSignature = plan.signature
+            mirroringBridge?.pushPlan(plan)
+        }
     }
 
     /// Drop the staged rest thumbnail (App Group file + memo) — called whenever the rest/session ends so
@@ -686,6 +699,39 @@ final class AppModel: ObservableObject {
             thumbnailName: restThumbName(for: run.exerciseId))
     }
 
+    /// The display-ready capture snapshot (FER-809), or nil when not capturing (no session, resting, or the
+    /// focused set is gone). Same field derivation as `computeRestSnapshot` so the wrist's «qué toca» reads
+    /// identically to the rest card's «al volver» — set N/M, exercise and its «weight × reps».
+    private func computeCaptureSnapshot() -> WorkoutCaptureSnapshot? {
+        guard let s = strengthSession, s.summary == nil, s.phase == .capturing,
+              let run = s.current, let set = s.currentSet else { return nil }
+        let unit = UnitSystem(rawValue: UserDefaults.standard.string(forKey: UnitPrefs.systemKey) ?? "")
+            ?? .metric
+        let usesWeightReps = run.type == .weightReps || run.type == .bodyweight
+        let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
+        let bandBpm: Int? = (live.connected && live.worn) ? bpm : nil
+        return WorkoutCaptureSnapshot(
+            sessionId: s.id, routineName: s.routineName,
+            setNumber: run.currentSet + 1, setTotal: run.sets.count,
+            exerciseName: run.name, returnDetail: detail, bpm: bandBpm,
+            hrMax: profile.hrMax > 0 ? profile.hrMax : nil)   // FER-811: wrist effort-zone label; nil → omit
+    }
+
+    /// The lightweight plan snapshot for the watch rotor (FER-810), or nil with no session. Read-only: each
+    /// exercise's name, sets done / total, and whether it's the current run — never the editable rest fields.
+    private func computePlanSnapshot() -> WorkoutPlanSnapshot? {
+        guard let s = strengthSession, s.summary == nil, !s.runs.isEmpty else { return nil }
+        let currentId = s.current?.id
+        let exercises = s.runs.map { run in
+            WorkoutPlanSnapshot.Exercise(
+                name: run.name,
+                setsDone: run.sets.filter(\.done).count,
+                setsTotal: run.sets.count,
+                isCurrent: run.id == currentId)
+        }
+        return WorkoutPlanSnapshot(sessionId: s.id, routineName: s.routineName, exercises: exercises)
+    }
+
     /// The App Group thumbnail file name for the focused exercise, copying the JPG only when the exercise
     /// changes (memoized). nil when media is off or the exercise has no cached image → the card omits it.
     private func restThumbName(for exerciseId: String) -> String? {
@@ -713,6 +759,40 @@ final class AppModel: ObservableObject {
             s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
             endStrengthSession(save: true)
         }
+    }
+
+    /// Apply a wrist-initiated action (FER-808) to the live session. Routes to the SAME session mutators
+    /// the lock-screen rest actions use (`registerCurrentSet` / `skipRest` / `extendRest`) — one path, no
+    /// duplicated logic — and the `objectWillChange` reconcile that follows re-emits the fresh snapshot to
+    /// both the wrist and the Live Activity. Each case is gated to the phase its wrist affordance lives in:
+    /// `completeSet` fires from the capture face (guarded to `.capturing` so a late/queued message can't
+    /// double-advance a set mid-rest); skip/adjust apply only while resting, mirroring `applyRestAction`.
+    func applyWatchWorkoutAction(_ action: WatchWorkoutAction, sessionId: String) {
+        guard let s = strengthSession, s.id == sessionId else { return }
+        switch action {
+        case .completeSet:
+            guard s.phase == .capturing else { return }
+            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
+        case .skipRest:
+            guard s.phase == .resting else { return }
+            s.skipRest()
+        case let .adjustRest(deltaS):
+            guard s.phase == .resting else { return }
+            s.extendRest(byseconds: deltaS)   // floored at «now» by extendRest — never negative
+        }
+    }
+
+    /// FER-810: «Ver recibo en iPhone» on the wrist summary → resolve the persisted session and publish its
+    /// history-detail route; `RootTabView` switches to Entrenar and pushes `WorkoutSessionDetailScreen`. The
+    /// route's `routineName` is a fallback (the detail's own `load()` resolves the real name from the store).
+    @Published var pendingReceiptRoute: WorkoutSessionRoute?
+
+    func openWorkoutReceipt(sessionId: String) async {
+        guard let s = await repo.session(id: sessionId) else { return }
+        var name = String(localized: "Strength workout")
+        if let rid = s.routineId, let r = (await repo.routines()).first(where: { $0.id == rid }) { name = r.name }
+        pendingReceiptRoute = WorkoutSessionRoute(id: s.id, startTs: s.startTs, endTs: s.endTs,
+                                                  strain: s.strain, avgHr: s.avgHr, routineName: name)
     }
 
     // MARK: - Manual workout tracking

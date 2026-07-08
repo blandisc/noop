@@ -24,6 +24,25 @@ final class WorkoutMirrorContractTests: XCTestCase {
                  externalUUID: "noop:strength:s1"),
             .watchDidSaveWorkout(sessionId: "s1", externalUUID: "noop:strength:s1"),
             .watchWillNotSave(sessionId: "s1", reason: .noPermission),
+            // FER-808 — wrist-initiated actions (watch → iPhone).
+            .completeSet(sessionId: "s1"),
+            .skipRest(sessionId: "s1"),
+            .adjustRest(sessionId: "s1", deltaS: 30),
+            .adjustRest(sessionId: "s1", deltaS: -30),
+            // FER-809 — capture context (iPhone → watch), with and without a load.
+            .capture(WorkoutCaptureSnapshot(sessionId: "s1", routineName: "Empuje", setNumber: 3, setTotal: 4,
+                                            exerciseName: "Press banca", returnDetail: "60 kg × 8", bpm: 118,
+                                            hrMax: 185)),   // FER-811 — with a max HR for the zone label
+            .capture(WorkoutCaptureSnapshot(sessionId: "s1", routineName: "Empuje", setNumber: 1, setTotal: 3,
+                                            exerciseName: "Plancha", returnDetail: "", bpm: nil, hrMax: nil)),
+            // FER-810 — plan rotor snapshot (iPhone → watch).
+            .plan(WorkoutPlanSnapshot(sessionId: "s1", routineName: "Empuje", exercises: [
+                .init(name: "Press banca", setsDone: 2, setsTotal: 4, isCurrent: true),
+                .init(name: "Aperturas", setsDone: 0, setsTotal: 3, isCurrent: false),
+            ])),
+            .plan(WorkoutPlanSnapshot(sessionId: "s1", routineName: "Empuje", exercises: [])),
+            // FER-810 — «Ver recibo en iPhone» (watch → iPhone).
+            .openReceipt(sessionId: "s1"),
         ]
 
         for message in messages {
@@ -44,6 +63,15 @@ final class WorkoutMirrorContractTests: XCTestCase {
         let data = try JSONEncoder().encode(snapshot)
         let decoded = try JSONDecoder().decode(RestActivitySnapshot.self, from: data)
         XCTAssertEqual(decoded, snapshot)
+    }
+
+    // MARK: FER-808 — the wrist-action cases map to the shared WatchWorkoutAction and degrade gracefully
+
+    /// A garbage / unknown payload decodes to nil (not a crash) — the additive cases never wedge a peer
+    /// that can't understand them; `decode` is `try?`, so an out-of-contract message is simply dropped.
+    func testUnknownPayloadDecodesToNilNotCrash() {
+        XCTAssertNil(WorkoutMirrorMessage.decode(Data("{\"bogus\":1}".utf8)))
+        XCTAssertNil(WorkoutMirrorMessage.decode(Data("not json".utf8)))
     }
 
     // MARK: INV-3 — the shared idempotency key matches HealthKitBridge's format exactly

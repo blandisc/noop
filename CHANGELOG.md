@@ -104,6 +104,30 @@ approximate; Cénit is built from source — see the [README](README.md).
   **ES** — Reconciliación con el handoff: el calendario de 90 días de Recuperación queda visible (ya no colapsado), «Qué la mueve» de Edad física pasa a dos tiles, y «Tras cada deporte» muestra el impacto como un dato prominente «−N pts» en ámbar.
   **EN** — Design reconciliation: Recovery's 90-day calendar is now visible (no longer collapsed), Fitness age's «What moves it» becomes two tiles, and «After each sport» shows the impact as a prominent «−N pts» amber datum.
   ([RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift), [FitnessAgeDetailView.swift](Cenit/Screens/FitnessAgeDetailView.swift), [ActivityRecoverySheet.swift](Cenit/Screens/ActivityRecoverySheet.swift))
+- **El reloj marca tu zona de esfuerzo / The watch shows your effort zone.**
+  **ES** — Junto al pulso, en la sesión, aparece una etiqueta discreta de zona (Z2/Z3…) calculada desde tu frecuencia máxima. Es tinta apagada con borde, nunca color: no compite con el número. Si no hay una máxima fiable, simplemente no aparece.
+  **EN** — Next to the pulse during a session, a discreet zone tag (Z2/Z3…) appears, computed from your max heart rate. Muted ink with a border, never color: it doesn't compete with the number. With no reliable max, it simply doesn't show.
+  ([WatchLiveFaceView.swift](CenitWatch/Screens/WatchLiveFaceView.swift), [WorkoutMirrorMessage.swift](CenitShared/Mirroring/WorkoutMirrorMessage.swift))
+
+- **Del resumen del reloj al recibo completo en el iPhone / From the watch summary to the full receipt on iPhone.**
+  **ES** — El resumen del reloj al terminar suma **«Ver recibo en iPhone ›»**: abre en el teléfono el detalle guardado de ese entreno (volumen, récords, etc.), sin dejar de ser mínimo en la muñeca. El iPhone salta a Entrenar y muestra la sesión directo.
+  **EN** — The watch's end-of-session summary gains **«See receipt on iPhone ›»**: it opens that workout's saved detail on the phone (volume, records, etc.) while staying minimal on the wrist. The iPhone jumps to Entrenar and shows the session directly.
+  ([WatchSummaryView.swift](CenitWatch/Screens/WatchSummaryView.swift), [RootTabView.swift](CenitApp/App/RootTabView.swift), [AppModel.swift](Cenit/App/AppModel.swift))
+
+- **El reloj gana una página de plan / The watch gains a plan page.**
+  **ES** — Una tercera página (deslizando) muestra el plan de la rutina de un vistazo: cada ejercicio con hecho ✓ / actual • / pendiente ○ y su «N/M» de series, reflejado desde el iPhone. Es solo lectura: tocar un ejercicio no hace nada (el reloj no edita el plan). El color aterriza solo en el ✓ de lo hecho.
+  **EN** — A third page (swipe) shows the routine plan at a glance: each exercise with done ✓ / current • / pending ○ and its «N/M» sets, mirrored from the iPhone. Read-only: tapping an exercise does nothing (the watch doesn't edit the plan). Color lands only on the done ✓.
+  ([WorkoutMirrorMessage.swift](CenitShared/Mirroring/WorkoutMirrorMessage.swift), [WatchLiveFaceView.swift](CenitWatch/Screens/WatchLiveFaceView.swift), [AppModel.swift](Cenit/App/AppModel.swift))
+
+- **El reloj muestra qué serie toca y suma una página de control / The watch shows which set is up and adds a control page.**
+  **ES** — Entre descansos, la cara del reloj ya no es solo el pulso: muestra **«Serie N / M»** con una barra de progreso y **qué toca** (ejercicio · peso × reps), reflejado desde el iPhone. Y al deslizar, la página de control ofrece la acción real según el momento (**Registrar serie** mientras trabajas, **Saltar descanso** mientras descansas) más **Terminar** con confirmación de un paso. Sin banda, el pulso muestra «--», nunca un cero inventado.
+  **EN** — Between rests the watch face is no longer just the pulse: it shows **«Set N / M»** with a progress bar and **what's up** (exercise · weight × reps), mirrored from the iPhone. And on swipe, the control page offers the action that fits the moment (**Log set** while you work, **Skip rest** while you rest) plus **End** behind a one-step confirmation. With no band the pulse shows «--», never a made-up zero.
+  ([WorkoutMirrorMessage.swift](CenitShared/Mirroring/WorkoutMirrorMessage.swift), [WatchLiveFaceView.swift](CenitWatch/Screens/WatchLiveFaceView.swift), [AppModel.swift](Cenit/App/AppModel.swift))
+
+- **Registra series y controla el descanso desde el Apple Watch / Log sets and control rest from the Apple Watch.**
+  **ES** — Durante una sesión de fuerza, el reloj deja de solo mirar: aparece un botón grande **Registrar serie** en la cara de pulso, y en el descanso salen las pastillas **+30 s**, **−30** y **Saltar** junto a una barra de progreso y la línea «Sigue: serie N». El iPhone sigue siendo la fuente de verdad: la muñeca solo manda la intención y el teléfono aplica y reenvía, igual que los botones de la pantalla de bloqueo. Funciona aunque el iPhone no esté cerca: la acción se encola y se aplica al reconectar.
+  **EN** — During a strength session the watch stops just watching: a big **Log set** button appears on the pulse face, and during rest you get **+30 s**, **−30** and **Skip** pills next to a progress bar and a «Next: set N» line. The iPhone stays the source of truth: the wrist only sends intent and the phone applies and re-emits, exactly like the lock-screen buttons. It works even when the iPhone is away: the action queues and applies on reconnect.
+  ([WorkoutMirrorMessage.swift](CenitShared/Mirroring/WorkoutMirrorMessage.swift), [WatchLiveFaceView.swift](CenitWatch/Screens/WatchLiveFaceView.swift), [WatchWorkoutManager.swift](CenitWatch/Health/WatchWorkoutManager.swift))
 
 - **Actividad y longevidad cierran la estandarización / Activity and longevity finish the standardization.**
   **ES** — Entrenamientos, Edad física, Edad corporal y «Tras cada deporte» adoptan el título con icono de la métrica (sin serif) y el *sello de origen* al pie. (Pasos y VO₂max ya lo habían adoptado con los vitales.) Con esto, las 17 pantallas de detalle de Tendencias/Cuerpo comparten el mismo estándar visual.
