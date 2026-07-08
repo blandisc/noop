@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El recibo aparece al terminar desde el Apple Watch / The receipt shows when you finish from the Apple Watch.**
+  **ES** — Si terminas un entrenamiento de fuerza desde el reloj con el teléfono bloqueado o en segundo plano, al volver a la app el recibo de la sesión aparece solo, en vez de quedar escondido hasta que reabras el entrenamiento a mano.
+  **EN** — If you end a strength workout from the watch with the phone locked or backgrounded, the session receipt now surfaces on its own when you return to the app, instead of staying hidden until you reopen the workout by hand.
+  ([AppModel.swift](Cenit/App/AppModel.swift))
+
 - **Una lectura de respiración ruidosa ya no arruina tu veredicto / A noisy breathing reading no longer wrecks your verdict.**
   **ES** — La respiración nocturna se estima con una señal que a veces sale ruidosa. Antes, un valor imposible (muy alto o muy bajo) podía marcar tu respiración como «mala» y voltear tu lectura de disposición a «agotado» sin razón. Ahora sólo cuentan las lecturas dentro de un rango fisiológico plausible (8–25 respiraciones por minuto); fuera de ahí, no se genera ninguna señal.
   **EN** — Nightly breathing rate is estimated from a signal that's sometimes noisy. Before, an impossible value (far too high or low) could flag your breathing as «bad» and flip your readiness read to «run down» for no reason. Now only readings inside a plausible physiological range (8–25 breaths per minute) count; outside that, no signal is raised.
