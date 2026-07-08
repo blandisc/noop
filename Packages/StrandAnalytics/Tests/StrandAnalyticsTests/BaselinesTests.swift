@@ -42,9 +42,12 @@ final class BaselinesTests: XCTestCase {
     }
 
     func testHardOutlierRejected() {
-        // Establish a stable baseline, then feed a huge outlier (>5σ).
-        var values = Array(repeating: 50.0, count: 10)
+        // Establish a TRUSTED baseline (≥ minNightsTrust), then feed a huge outlier (>5σ).
+        // The hard-outlier gate is mature-only (FER-673), so the baseline must be trusted
+        // for the rejection to apply.
+        var values = Array(repeating: 50.0, count: 16)
         let stable = Baselines.foldHistory(values, cfg: Baselines.hrvCfg)
+        XCTAssertEqual(stable.status, .trusted)
         values.append(200.0)  // way out (within physiological max 250, but >5*spread)
         let after = Baselines.foldHistory(values, cfg: Baselines.hrvCfg)
         // Baseline should barely move (outlier was rejected, not folded).
@@ -136,10 +139,44 @@ final class BaselinesTests: XCTestCase {
         // abs-dev space as foldHistory/update (scoring baseline), so they agree near the floor. Before
         // the fix rollingMeanSD floored σ at floorSpread (0.08) while the EWMA path floored it at
         // floorSpread·1.253 (0.10) — a 1.253× mismatch.
-        let rolling = Baselines.rollingMeanSD(Array(repeating: 50.0, count: 14), cfg: Baselines.hrvCfg)
-        let ewma = Baselines.foldHistory(Array(repeating: 50.0, count: 14), cfg: Baselines.hrvCfg)
+        // Uses a long, settled MATURE series: while the baseline is young the EWMA path
+        // inflates the spread floor (FER-673 anti-anchoring), so the two paths only meet at
+        // the bare floor once the baseline is fully trusted and settled.
+        let rolling = Baselines.rollingMeanSD(Array(repeating: 50.0, count: 50), cfg: Baselines.hrvCfg)
+        let ewma = Baselines.foldHistory(Array(repeating: 50.0, count: 50), cfg: Baselines.hrvCfg)
         XCTAssertEqual(rolling.spread, ewma.spread, accuracy: 1e-9)
         XCTAssertEqual(rolling.spread, Baselines.hrvCfg.floorSpread, accuracy: 1e-9)   // 0.08, not 0.0638
+    }
+
+    // MARK: - Cold-start anti-anchoring (FER-673)
+
+    /// Repro of the cold-start anchoring bug (documents that the log domain alone does
+    /// NOT fix it). The first nights read artificially high; the seed fixes the center
+    /// high; then the genuine (lower) nights arrive. In ln-space the z is symmetric, but
+    /// that does nothing for the two mechanisms that actually anchor the baseline: the
+    /// slow 14-night half-life and the hard-outlier gate rejecting the low nights the
+    /// instant nValid ≥ seed. After the fix (fast early half-life + gate suspended while
+    /// young) the center converges toward the true low within a week.
+    func testColdStartConvergesToTrueCenterWithinAWeek() {
+        // 4 artificially-high seed nights (~65 ms) then genuine nights at ~40 ms.
+        let seedHigh: [Double?] = Array(repeating: 65.0, count: 4)
+        let trueLow: [Double?] = Array(repeating: 40.0, count: 7)
+        let s = Baselines.foldHistory(seedHigh + trueLow, cfg: Baselines.hrvCfg)
+        // Within a week of genuine nights the center must have converged near 40, not
+        // stayed anchored near 65 (the pre-fix behavior would sit >55 ms).
+        XCTAssertLessThan(s.baseline, 45.0, "baseline should converge toward the true 40 ms, not stay anchored high")
+        XCTAssertGreaterThan(s.baseline, 38.0)
+    }
+
+    /// The genuine low nights must actually FOLD during cold-start — the hard-outlier
+    /// gate is suspended while the baseline is young, so a lower-but-real night after a
+    /// high seed is not rejected as an outlier.
+    func testColdStartOutlierGateSuspendedWhileYoung() {
+        // Seed high, then one genuine low night that WOULD trip the mature 5σ gate.
+        var s = Baselines.foldHistory(Array(repeating: 65.0, count: 4), cfg: Baselines.hrvCfg)
+        let before = s.baseline
+        s = Baselines.update(s, value: 40.0, cfg: Baselines.hrvCfg)
+        XCTAssertLessThan(s.baseline, before, "young baseline must fold the genuine low night, not reject it")
     }
 
     // MARK: - Confidence shrinkage (FER-13)

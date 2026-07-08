@@ -116,6 +116,37 @@ public enum Baselines {
     /// Missing-night count after which a baseline is marked stale.
     public static let staleDays: Int = 14
 
+    // MARK: - Cold-start anti-anchoring (FER-673)
+
+    /// Center half-life (nights) used while the baseline is still YOUNG (nValid <
+    /// minNightsTrust). Much faster than the mature `cfg.halfLifeB` (~14) so a baseline
+    /// seeded from artificially-high early nights converges to the true center in days,
+    /// not weeks. Without this, a high seed anchors the center and crushes Charge for
+    /// ~2-3 weeks. Reverts to `cfg.halfLifeB` once trusted, so mature users are unchanged.
+    public static let earlyHalfLifeB: Double = 3.0
+
+    /// Spread-floor multiplier at seed, ramping linearly back to 1.0 at trust. While the
+    /// baseline is young the dispersion estimate is unreliable and a too-tight spread both
+    /// (a) makes the z extreme (crushing Charge) and (b) narrows the Winsor clamp. Inflating
+    /// the floor early keeps the normal-range band honestly wide until enough nights accrue.
+    /// At/after trust the multiplier is exactly 1.0, so mature baselines are byte-identical.
+    public static let earlySpreadInflation: Double = 1.5
+
+    /// Whether the baseline is still young (has not yet earned full trust). While young the
+    /// cold-start anti-anchoring applies: fast center half-life, suspended hard-outlier gate,
+    /// inflated spread floor. At/after `minNightsTrust` everything reverts to mature behavior.
+    static func isYoung(nValid: Int) -> Bool { nValid < minNightsTrust }
+
+    /// Spread-floor inflation factor for a baseline with `nValid` nights: `earlySpreadInflation`
+    /// at (or below) seed, ramping linearly to 1.0 at trust, and exactly 1.0 once trusted.
+    /// Mirrors the `confidence` ramp so the two cold-start softenings move together.
+    static func spreadInflation(nValid: Int) -> Double {
+        if nValid >= minNightsTrust { return 1.0 }
+        if nValid <= minNightsSeed { return earlySpreadInflation }
+        let frac = Double(nValid - minNightsSeed) / Double(minNightsTrust - minNightsSeed)
+        return earlySpreadInflation + (1.0 - earlySpreadInflation) * frac
+    }
+
     /// Default per-metric configurations (HRV, resting HR, respiration, skin temp).
     public static let metricCfg: [String: MetricCfg] = [
         // HRV is baselined in ln(RMSSD): nightly RMSSD is ~log-normal (Plews 2013).
@@ -192,7 +223,6 @@ public enum Baselines {
     /// - hard outlier (> HARD_OUTLIER_K × spread): seen but not folded.
     /// - otherwise: Winsorized EWMA center + EWMA-abs-dev spread update.
     public static func update(_ state: BaselineState?, value: Double?, cfg: MetricCfg) -> BaselineState {
-        let lb = lambda(halfLife: cfg.halfLifeB)
         let ls = lambda(halfLife: cfg.halfLifeS)
 
         // First night ever.
@@ -232,8 +262,12 @@ public enum Baselines {
         let center = toCenter(value, logDomain: cfg.logDomain)
         let baseCenter = toCenter(state.baseline, logDomain: cfg.logDomain)
 
-        // Hard outlier rejection (only once seeded): seen, but not folded.
-        if state.nValid >= minNightsSeed {
+        // Hard outlier rejection — MATURE baselines only (FER-673). While the baseline is
+        // still young the gate is SUSPENDED: a high early seed would otherwise reject the
+        // genuine lower nights that should pull the center down, anchoring it (and crushing
+        // Charge) for ~2-3 weeks. Physiological bounds (minVal/maxVal, checked above) still
+        // reject the truly impossible; the Winsor clamp below still bounds a spike's pull.
+        if !isYoung(nValid: state.nValid) {
             let dev = abs(center - baseCenter)
             if dev > hardOutlierK * state.spread {
                 return BaselineState(baseline: state.baseline, spread: state.spread,
@@ -250,15 +284,20 @@ public enum Baselines {
                                  logDomain: cfg.logDomain)
         }
 
-        // Step 1: Winsorized EWMA update (in center space).
+        // Step 1: Winsorized EWMA update (in center space). While young, use the fast
+        // early half-life so a mis-seeded center converges in days, not weeks (FER-673).
+        let lb = lambda(halfLife: isYoung(nValid: state.nValid) ? earlyHalfLifeB : cfg.halfLifeB)
         let lo = baseCenter - winsorK * state.spread
         let hi = baseCenter + winsorK * state.spread
         let clamped = max(lo, min(hi, center))
         let newCenter = lb * clamped + (1.0 - lb) * baseCenter
 
-        // Spread uses the UNCLAMPED value so true deviations are tracked.
+        // Spread uses the UNCLAMPED value so true deviations are tracked. While young the
+        // floor is inflated (ramping to 1.0 at trust) so the early band isn't spuriously
+        // tight; at/after trust the multiplier is 1.0, so mature spreads are unchanged.
         let absDev = abs(center - newCenter)
-        let newSpread = max(cfg.floorSpread, ls * absDev + (1.0 - ls) * state.spread)
+        let floor = cfg.floorSpread * spreadInflation(nValid: state.nValid)
+        let newSpread = max(floor, ls * absDev + (1.0 - ls) * state.spread)
         let newN = state.nValid + 1
 
         return BaselineState(baseline: fromCenter(newCenter, logDomain: cfg.logDomain), spread: newSpread, nValid: newN,
