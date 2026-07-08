@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Cerrar el editor de descanso, una sola salida / Closing the rest editor, one exit.**
+  **ES** — El editor de descanso ya no muestra a la vez la flecha de atrás y un «Cancelar» redundante: queda solo la flecha. Una acción, una forma de salir.
+  **EN** — The rest editor no longer shows both a back arrow and a redundant «Cancel»: just the arrow remains. One action, one way out.
+  ([RestEditorScreen.swift](Cenit/Screens/RestEditorScreen.swift))
+
 - **Pausa tu entrenamiento de fuerza / Pause your strength workout.**
   **ES** — En una sesión de fuerza guiada puedes pausar y reanudar: el reloj de la sesión y el descanso se congelan, y al reanudar retomas justo donde ibas. El tiempo en pausa no cuenta para la duración ni infla tu esfuerzo. La pausa sobrevive incluso si la app se cierra.
   **EN** — In a guided strength session you can pause and resume: the session clock and the rest freeze, and resuming picks up exactly where you were. Paused time doesn't count toward the duration or inflate your effort. The pause even survives the app closing.

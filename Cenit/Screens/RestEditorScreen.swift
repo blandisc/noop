@@ -97,6 +97,8 @@ struct RestEditorScreen: View {
 
     private var header: some View {
         HStack {
+            // EST-6 (FER-814): a single close affordance — the back chevron. The redundant right-side
+            // «Cancel» is gone (push = chevron only; never two affordances for the same exit).
             Button(action: onCancel) {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(theme.ink)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
@@ -104,8 +106,6 @@ struct RestEditorScreen: View {
             .buttonStyle(.plain).accessibilityLabel(Text("Back"))
             .padding(.leading, -12)
             Spacer()
-            Button(action: onCancel) { Text("Cancel").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary) }
-                .buttonStyle(.plain)
         }
     }
 
