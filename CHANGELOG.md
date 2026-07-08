@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los detalles de Tendencias abren a pantalla completa / Trends details open full-screen.**
+  **ES** — Tocar una métrica en Tendencias ahora abre su detalle a pantalla completa, con una cabecera «‹ Tendencias · fecha» para regresar, como el diseño de referencia (antes era una hoja con asa).
+  **EN** — Tapping a metric in Trends now opens its detail full-screen, with a «‹ Trends · date» back header, matching the reference design (it was a drag-to-dismiss sheet before).
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **El prompt del import ahora sí pasa en cualquier IA / The import prompt now gets through any AI.**
   **ES** — Se quitaron las 1,500 líneas de catálogo del texto que copias para tu IA: ahora son ~30 líneas que se pegan como mensaje normal (no como archivo adjunto), así que Claude/ChatGPT ya no lo rechazan por parecer una inyección de instrucciones. La app reconoce los ejercicios por nombre con su emparejador propio — el catálogo en el prompt ya no aportaba nada.
   **EN** — The 1,500 catalog lines were removed from the text you copy for your AI: it's now ~30 lines that paste as a normal message (not a file attachment), so Claude/ChatGPT no longer refuse it as prompt injection. The app recognizes exercises by name with its own matcher — the in-prompt catalog no longer added anything.
