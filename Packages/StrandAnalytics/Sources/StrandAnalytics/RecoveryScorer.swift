@@ -72,13 +72,28 @@ public enum RecoveryScorer {
     /// Rolling-mean HR window (seconds) for the resting-HR estimate.
     public static let restingHRWindowS: Int = 5 * 60
 
+    /// A 5-minute bin must hold at least this many HR samples before it can win the
+    /// nightly resting-HR floor (FER-674). A bin with a handful of stray samples during
+    /// a sensor dropout is not a sustained reading — without this gate the minimum can
+    /// latch onto a sparse, unreliable bin and fabricate a sub-physiological RHR.
+    public static let restingHRMinBinSamples: Int = 5
+    /// A bin's mean must be at least this many bpm to win the floor (FER-674). Nightly
+    /// resting HR below ~25 bpm is non-physiological (bradycardia floors well above it);
+    /// a bin averaging under this is a dropout/artifact, not a true resting floor, and
+    /// must not contaminate the HRV→RHR→Charge chain.
+    public static let restingHRMinBpm: Double = 25.0
+
     // MARK: - Resting HR
 
     /// Lowest sustained HR during the in-bed window (bpm, rounded), or nil.
     ///
-    /// "Sustained" = the minimum of 5-minute non-overlapping bin means of the HR
-    /// samples whose ts ∈ [start, end]. Rejects single-beat dips while capturing
-    /// the night's true floor. Returns nil when there are no HR samples in window.
+    /// "Sustained" = the minimum over the 5-minute non-overlapping bin means of the HR
+    /// samples whose ts ∈ [start, end], counting only bins with at least
+    /// `restingHRMinBinSamples` samples AND a mean ≥ `restingHRMinBpm` (FER-674). This
+    /// rejects single-beat dips and sparse dropout bins that would otherwise fabricate a
+    /// sub-physiological floor. Returns nil when no bin qualifies (no samples in window,
+    /// or only sparse/artefactual bins) — an honest "no reliable resting HR" rather than
+    /// an impossible number.
     public static func restingHR(_ hr: [HRSample], start: Int, end: Int) -> Int? {
         let seg = hr.filter { $0.ts >= start && $0.ts <= end }
         guard !seg.isEmpty else { return nil }
@@ -87,17 +102,14 @@ public enum RecoveryScorer {
         var t = start
         while t < end {
             let win = seg.filter { $0.ts >= t && $0.ts < t + restingHRWindowS }
-            if !win.isEmpty {
-                means.append(Double(win.reduce(0) { $0 + $1.bpm }) / Double(win.count))
+            if win.count >= restingHRMinBinSamples {
+                let mean = Double(win.reduce(0) { $0 + $1.bpm }) / Double(win.count)
+                if mean >= restingHRMinBpm { means.append(mean) }
             }
             t += restingHRWindowS
         }
-        let floor: Double
-        if let m = means.min() {
-            floor = m
-        } else {
-            floor = Double(seg.reduce(0) { $0 + $1.bpm }) / Double(seg.count)
-        }
+        // No qualifying bin → no reliable floor (a dropout must not fabricate an RHR).
+        guard let floor = means.min() else { return nil }
         return Int(floor.rounded())
     }
 
