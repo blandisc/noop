@@ -474,22 +474,10 @@ struct WorkoutSessionDetailScreen: View {
 
     private var actions: some View {
         VStack(spacing: 10) {
-            Button { repeatToday() } label: {
-                Text("Repeat today").font(StrandFont.headline).foregroundStyle(theme.paperHi)
-                    .frame(maxWidth: .infinity).padding(.vertical, 14)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(groups.isEmpty)
-            Button { showDuplicate = true } label: {
-                Text("Duplicate as routine").font(StrandFont.headline).foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity).padding(.vertical, 14)
-                    .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(groups.isEmpty)
+            StrandCTAButton("Repeat today") { repeatToday() }
+                .disabled(groups.isEmpty)
+            StrandCTAButton("Duplicate as routine", kind: .outline) { showDuplicate = true }
+                .disabled(groups.isEmpty)
         }
     }
 

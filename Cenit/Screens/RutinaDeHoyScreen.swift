@@ -171,15 +171,9 @@ private struct RutinaDeHoyContent: View {
     // MARK: - Start the guided session (FER-347)
 
     private var startButton: some View {
-        Button { start() } label: {
-            Label(model.strengthSession != nil ? "Resume workout" : "Start workout",
-                  systemImage: model.strengthSession != nil ? "play.fill" : "figure.strengthtraining.functional")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .padding(.top, 4)
+        StrandCTAButton(model.strengthSession != nil ? "Resume workout" : "Start workout",
+                        systemImage: model.strengthSession != nil ? "play.fill" : "figure.strengthtraining.functional") { start() }
+            .padding(.top, 4)
     }
 
     private func start() {
