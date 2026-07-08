@@ -901,6 +901,10 @@ final class AppModel: ObservableObject {
             // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
             session.summary = await self.buildStrengthSummary(session: session, record: record,
                                                               sets: sets, prior: prior, store: store)
+            // FER-799: a watch-initiated end has no open sheet (the phone may be locked/backgrounded), so the
+            // receipt would be stranded until the user re-opens the session. Present it — the flag re-evaluates
+            // on the next foreground if the app is backgrounded. An iPhone-initiated finish already has it open.
+            if !notifyWatch { self.strengthSheetPresented = true }
             // FER-740 — one-HKWorkout invariant. If a watch was mirroring, wait briefly for its save
             // decision: it saved the real FC/kcal workout → the iPhone omits its estimate; it declined
             // or never answered → the iPhone saves as before. Without a watch, save immediately (no wait).

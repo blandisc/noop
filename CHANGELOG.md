@@ -23,6 +23,14 @@ approximate; Cénit is built from source — see the [README](README.md).
   **ES** — El landing de Tendencias migra a §8.7: los títulos de sección pasan de serif a overline en mayúsculas (Space Grotesk), cada stat lleva su punto de origen (banda / Apple Salud / calculado) con la etiqueta en su color, se añade la micro-leyenda «Valores de hoy · tendencias del último mes» bajo el selector de periodo, y una leyenda de orígenes al pie. Sin cambios de navegación ni datos.
   **EN** — The Trends landing migrates to §8.7: section titles go from serif to ALL-CAPS overlines (Space Grotesk), each stat carries its origin dot (band / Apple Health / computed) with its label tinted, a «Today's values · last month's trends» micro-legend sits under the period selector, and an origin legend at the foot. No navigation or data changes.
   ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+- **El recibo aparece al terminar desde el Apple Watch / The receipt shows when you finish from the Apple Watch.**
+  **ES** — Si terminas un entrenamiento de fuerza desde el reloj con el teléfono bloqueado o en segundo plano, al volver a la app el recibo de la sesión aparece solo, en vez de quedar escondido hasta que reabras el entrenamiento a mano.
+  **EN** — If you end a strength workout from the watch with the phone locked or backgrounded, the session receipt now surfaces on its own when you return to the app, instead of staying hidden until you reopen the workout by hand.
+  ([AppModel.swift](Cenit/App/AppModel.swift))
+- **Pulido de detalles en Entrenar / Detail polish in Entrenar.**
+  **ES** — Las flechas de «abre» de las filas, el radio de la tarjeta del recibo y el ritmo del detalle de una sesión se alinean a los mismos valores del sistema de diseño. Cambios pequeños, más coherencia.
+  **EN** — The row «open» chevrons, the receipt card's corner radius and the session-detail rhythm now line up to the same design-system values. Small changes, more coherence.
+  ([WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift), [ShareReceiptScreen.swift](Cenit/Screens/ShareReceiptScreen.swift))
 
 - **Una lectura de respiración ruidosa ya no arruina tu veredicto / A noisy breathing reading no longer wrecks your verdict.**
   **ES** — La respiración nocturna se estima con una señal que a veces sale ruidosa. Antes, un valor imposible (muy alto o muy bajo) podía marcar tu respiración como «mala» y voltear tu lectura de disposición a «agotado» sin razón. Ahora sólo cuentan las lecturas dentro de un rango fisiológico plausible (8–25 respiraciones por minuto); fuera de ahí, no se genera ninguna señal.
