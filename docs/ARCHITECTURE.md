@@ -365,9 +365,26 @@ when the process relaunches; the one-`HKWorkout` invariant is resolved at end ti
 the deterministic `externalUUID`), never from persisted state. When no session is recoverable, a hook
 (`onNoRecoverableStrengthSession`) lets a caller close any orphaned Live Activity (FER-806).
 
-### Rest Live Activity + the app→widget media channel (FER-721 / FER-789)
+### Session Live Activity + the app→widget media channel (FER-721 / FER-789 / FER-806)
 
-The same `RestActivitySnapshot` (`CenitShared`) drives the **rest Live Activity** on the lock screen /
+FER-806 generalizes this from a **rest-only** Activity to one that lives the **whole session**: it is born
+when the strength session starts (the `strengthSession` `didSet` → reconcile already produces a snapshot)
+and persists through the active set, rest and pause until the receipt is up, then ends. `computeRestSnapshot`
+became `computeSessionSnapshot`, gated on a pure `AppModel.sessionPhase(for:)` (`paused` → `.paused`;
+`resting` → `.resting`; else `.active`) that returns `nil` (no session / receipt up) so the Activity ends.
+The contract grew four Optional/defaulted fields (`sessionPhase`, `sessionStartedAt` = the effective active
+anchor excluding paused time, `setsDone`/`setsTotal`); a pre-FER-806 Activity decodes them `nil` and the view
+falls back to the rest layout. The lock-screen actions gained `resume` (leave «En pausa»), and `completeSet`
+now applies in the active phase too (the «Completar» button). Crucially, the launch-time `endOrphans()` is no
+longer unconditional — it would kill a legitimate card before crash-recovery restores its session; instead
+FER-798's `onNoRecoverableStrengthSession` hook ends the orphan **only** when no session is recoverable (a
+recoverable one is restored first and its reconcile adopts the running Activity). `staleDate` is
+`restEndsAt + margin` in a rest but a rolling 1 h window in the active/paused phases (renewed per update; on
+app death it expires → the card paints its `context.isStale` «Abre Cénit para continuar» state). The Apple
+Watch mirror keeps FER-721's **rest-only** semantics (it only receives `pushRest` while genuinely resting),
+so the wrist never shows a phantom countdown mid-set.
+
+The same `RestActivitySnapshot` (`CenitShared`) drives the **session Live Activity** on the lock screen /
 Dynamic Island (`RestActivityController`, `Cenit/LiveActivity/`) → `RestActivityAttributes.ContentState`
 (`CenitWidgets/Shared/`, ActivityKit-gated). Lock-screen buttons fire `LiveActivityIntent`s
 (`RestActivityIntents`) that don't apply anything inline — they **enqueue** onto a durable inbox in the

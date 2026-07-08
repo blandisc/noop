@@ -16,8 +16,9 @@ enum RestActivityBridge {
 
     /// The lock-screen actions the Live Activity can request. FER-789 adds `removeThirty` (−30 s),
     /// `completeSet` (register the upcoming set and rest again) and `finishWorkout` (register the last
-    /// set and end the session). New raw values decode as-is; older payloads never carry them.
-    enum Action: String, Codable { case addThirty, removeThirty, skip, completeSet, finishWorkout }
+    /// set and end the session). FER-806 adds `resume` (leave the «En pausa» state). New raw values
+    /// decode as-is; older payloads never carry them.
+    enum Action: String, Codable { case addThirty, removeThirty, skip, completeSet, finishWorkout, resume }
 
     /// Darwin notification the extension posts and the app observes (cross-process, unlike
     /// `NotificationCenter`). Named, not payload-carrying — the payload is the App Group inbox.

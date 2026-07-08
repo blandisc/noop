@@ -23,6 +23,17 @@ enum RestPhase: String, Codable, Hashable, Sendable {
     case lastSetOfRoutine    // the next set is the whole workout's last → primary action = «Terminar entreno»
 }
 
+/// FER-806 — which phase of the WHOLE session the Live Activity paints. FER-721 only ever showed the
+/// rest; FER-806 makes the Activity live from session start to finish, so it now needs to know whether
+/// the lifter is mid-set (`active`), between sets (`resting`), or paused (`paused`). String-backed and
+/// Optional on `ContentState`, so an Activity started under the FER-721 contract decodes `nil` and the
+/// view falls back to the rest layout (= the old behaviour).
+enum SessionPhase: String, Codable, Hashable, Sendable {
+    case active    // mid-set: the hero is «Serie X de Y», the bar shows per-set segments
+    case resting   // between sets: the hero is the countdown (or the pulse in HR mode)
+    case paused    // frozen: the hero is «En pausa», the bar is inert (inkDim)
+}
+
 struct RestActivityAttributes: ActivityAttributes {
     /// The dynamic slice ActivityKit diff-updates. Kept small and preformatted so the widget never
     /// needs the app's unit prefs or catalogs — the app builds the display strings before pushing.
@@ -65,6 +76,18 @@ struct RestActivityAttributes: ActivityAttributes {
         var phase: RestPhase? = nil
         /// The exercise that comes next when `phase == .lastSetOfExercise` — the card's «Sigue: …» line.
         var nextExerciseName: String? = nil
+
+        // MARK: FER-806 — full-session Live Activity (all Optional for back-compat)
+
+        /// Which phase of the whole session to paint. **nil = pre-FER-806 contract** → the view falls
+        /// back to the rest layout (an Activity started before the update decodes this as absent).
+        var sessionPhase: SessionPhase? = nil
+        /// The EFFECTIVE start of the session's stopwatch (`now − activeElapsed`, so it already excludes
+        /// paused time, FER-823). The active-phase card counts up from here locally. nil in rest phase.
+        var sessionStartedAt: Date? = nil
+        /// Global session progress «N/M series» in the overline — sets logged so far / total planned.
+        var setsDone: Int? = nil
+        var setsTotal: Int? = nil
     }
 
     /// Stable for the life of the session — lets the app find and end its own Activity unambiguously.

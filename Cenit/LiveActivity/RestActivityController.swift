@@ -29,6 +29,10 @@ final class RestActivityController {
     private var lastStructural: RestActivityAttributes.ContentState?
     private var lastHRPush: Date?
     private let hrPushInterval: TimeInterval = 8   // seconds between HR-only pushes
+    /// FER-806 — how long past the countdown a rest card stays fresh, and the rolling freshness window for
+    /// the active/paused phases (renewed on every update while the app lives; on death it expires → stale).
+    private let restStaleMargin: TimeInterval = 5
+    private let activeStaleWindow: TimeInterval = 60 * 60   // 1 h — comfortably longer than any rest
 
     /// Installed by `AppModel`: applies a lock-screen action (+30 s / Saltar) to the live session.
     var onAction: ((RestActivityBridge.Action) -> Void)?
@@ -55,7 +59,7 @@ final class RestActivityController {
         if !structuralChanged, let last = lastHRPush, now.timeIntervalSince(last) < hrPushInterval {
             return   // HR-only change within the throttle window — skip the push
         }
-        Task { await activity.update(ActivityContent(state: state, staleDate: snapshot.restEndsAt)) }
+        Task { await activity.update(ActivityContent(state: state, staleDate: staleDate(for: snapshot, now: now))) }
         lastStructural = structural
         if !structuralChanged { lastHRPush = now } else { lastHRPush = nil }
     }
@@ -86,12 +90,12 @@ final class RestActivityController {
         // Never run two at once: adopt an existing one (survived a quick relaunch) or make a fresh one.
         if let existing = Activity<RestActivityAttributes>.activities.first {
             activity = existing
-            Task { await existing.update(ActivityContent(state: state, staleDate: snapshot.restEndsAt)) }
+            Task { await existing.update(ActivityContent(state: state, staleDate: staleDate(for: snapshot, now: now))) }
         } else {
             let attributes = RestActivityAttributes(sessionId: snapshot.sessionId)
             activity = try? Activity.request(
                 attributes: attributes,
-                content: ActivityContent(state: state, staleDate: snapshot.restEndsAt),
+                content: ActivityContent(state: state, staleDate: staleDate(for: snapshot, now: now)),
                 pushType: nil)
         }
         lastStructural = withoutHR(state)
@@ -132,7 +136,21 @@ final class RestActivityController {
             isHRMode: s.isHRMode, hrTarget: s.hrTarget, bpm: s.bpm,
             thumbnailName: s.thumbnailName,
             phase: s.phaseRaw.flatMap(RestPhase.init(rawValue:)),
-            nextExerciseName: s.nextExerciseName)
+            nextExerciseName: s.nextExerciseName,
+            sessionPhase: s.sessionPhaseRaw.flatMap(SessionPhase.init(rawValue:)),
+            sessionStartedAt: s.sessionStartedAt,
+            setsDone: s.setsDone, setsTotal: s.setsTotal)
+    }
+
+    /// FER-806 — when the system should mark the card «stale» (the app has gone quiet). In a rest, that's
+    /// the moment the countdown runs out plus a small margin, so a killed app's card dims right after the
+    /// rest should have ended. In the active/paused phases there's no countdown, so we grant a long window
+    /// (renewed on every update while the app lives); if the app dies, it expires and the card goes stale.
+    private func staleDate(for s: RestActivitySnapshot, now: Date) -> Date {
+        let restPhase = SessionPhase(rawValue: s.sessionPhaseRaw ?? "") == SessionPhase.resting
+            || s.sessionPhaseRaw == nil   // pre-FER-806 Activity ⇒ rest-only contract
+        return restPhase ? s.restEndsAt.addingTimeInterval(restStaleMargin)
+                         : now.addingTimeInterval(activeStaleWindow)
     }
 
     /// The state with heart rate zeroed out — the structural fingerprint used to tell an HR-only

@@ -14,7 +14,11 @@ final class WorkoutMirrorContractTests: XCTestCase {
             exerciseName: "Press banca", returnDetail: "60 kg × 8",
             restStartedAt: Date(timeIntervalSince1970: 1_000),
             restEndsAt: Date(timeIntervalSince1970: 1_090),
-            isHRMode: false, hrTarget: nil, bpm: 118)
+            isHRMode: false, hrTarget: nil, bpm: 118,
+            // FER-806 — the mirror payload now carries the session-phase fields too; the watch decodes and
+            // ignores what it doesn't render, but they must survive the round-trip unchanged.
+            sessionPhaseRaw: "resting", sessionStartedAt: Date(timeIntervalSince1970: 900),
+            setsDone: 8, setsTotal: 18)
 
         let messages: [WorkoutMirrorMessage] = [
             .start(sessionId: "s1", routineName: "Empuje", startedAt: Date(timeIntervalSince1970: 900)),
