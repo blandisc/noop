@@ -28,6 +28,10 @@ approximate; Cénit is built from source — see the [README](README.md).
   **ES** — Al importar un plan, el texto que copias para tu IA (Claude/ChatGPT) ahora está redactado como una petición tuya en primera persona. Antes sonaba a instrucciones de sistema y, al pegarse como archivo adjunto, algunos modelos lo rechazaban por parecer una inyección de instrucciones. Mismo formato y catálogo; solo cambió la voz.
   **EN** — The text you copy for your AI when importing a plan is now phrased as your own first-person request. It used to read like system instructions and, pasted as an attachment, some models refused it as prompt injection. Same format and catalog; only the voice changed.
   ([WorkoutPrompt.swift](Cenit/Data/WorkoutPrompt.swift))
+- **Entrenar sin idioma mezclado / Entrenar without mixed language.**
+  **ES** — En inglés ya no aparecían palabras sueltas en español: «Formas de entrenar» y las seis puertas («Rápido», «En vivo», «Intervalo», «Movilidad», «Respirar», «Dieta»), más «Constancia» y el resumen de sesiones, ahora se traducen bien. Y el número con decimal del recibo usa la coma o el punto según tu idioma.
+  **EN** — In English, stray Spanish words are gone: «Ways to train» and the six doors (Quick, Live, Interval, Mobility, Breathe, Diet), plus «Consistency» and the sessions summary, now translate properly. And the receipt's one-decimal number uses a comma or a dot depending on your language.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift), [ShareReceiptScreen.swift](Cenit/Screens/ShareReceiptScreen.swift))
 
 - **Tu Recuperación se calibra más rápido en las primeras semanas / Your Recovery calibrates faster in the first weeks.**
   **ES** — Cuando apenas empiezas, si tus primeras noches leían altas, tu línea base quedaba anclada arriba y aplastaba tu Charge/Recuperación a valores muy bajos durante 2-3 semanas. Ahora, mientras la línea base es joven, aprende más rápido de tus noches reales y ya no descarta como «atípica» una noche genuinamente distinta — así tu número se asienta en tu normal real en días, no semanas. Los usuarios ya establecidos no cambian en nada.

@@ -427,18 +427,18 @@ private struct EntrenarLanding: View {
     /// data tokens (strain for «Rápido», hrv for the live/timed forms, recovery for «Dieta»).
     private var formOptions: [FormOption] {
         [
-            FormOption(icon: "bolt.fill", label: "Rápido", tint: theme.dataStrain) { startQuickStrength() },
-            FormOption(icon: "dot.radiowaves.left.and.right", label: "En vivo", tint: theme.dataHrv) { startLive() },
-            FormOption(icon: "timer", label: "Intervalo", tint: theme.dataHrv) { openIntervals() },
-            FormOption(icon: "figure.flexibility", label: "Movilidad", tint: theme.dataHrv) { model.startMobilityOneOff() },
-            FormOption(icon: "wind", label: "Respirar", tint: theme.dataHrv) { openBreathe() },
-            FormOption(icon: "fork.knife", label: "Dieta", tint: theme.dataRecovery) { openDiet() },
+            FormOption(icon: "bolt.fill", label: "Quick", tint: theme.dataStrain) { startQuickStrength() },
+            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live", tint: theme.dataHrv) { startLive() },
+            FormOption(icon: "timer", label: "Interval", tint: theme.dataHrv) { openIntervals() },
+            FormOption(icon: "figure.flexibility", label: "Mobility", tint: theme.dataHrv) { model.startMobilityOneOff() },
+            FormOption(icon: "wind", label: "Breathe", tint: theme.dataHrv) { openBreathe() },
+            FormOption(icon: "fork.knife", label: "Diet", tint: theme.dataRecovery) { openDiet() },
         ]
     }
 
     private var formasSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Formas de entrenar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Ways to train").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(alignment: .top, spacing: 6) {
                 ForEach(formOptions) { opt in
                     formChip(opt)
@@ -520,9 +520,9 @@ private struct EntrenarLanding: View {
         return card {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Constancia").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Consistency").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 8)
-                    Text("\(total) sesiones · 90 días")
+                    Text("\(total) sessions · 90 days")
                         .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
                 }
                 HStack(alignment: .top, spacing: 0) {

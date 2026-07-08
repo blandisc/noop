@@ -192,6 +192,8 @@ struct ShareCardView: View {
         f.groupingSeparator = " "
         return f.string(from: NSNumber(value: v)) ?? "\(Int(v.rounded()))"
     }
-    private func decimal1(_ v: Double) -> String { String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",") }
+    // COPY-3 (FER-816): one fraction digit in the user's locale (comma in es, dot in en) — not a manual
+    // «.»→«,» swap that breaks outside Spanish.
+    private func decimal1(_ v: Double) -> String { v.formatted(.number.precision(.fractionLength(1))) }
 }
 #endif
