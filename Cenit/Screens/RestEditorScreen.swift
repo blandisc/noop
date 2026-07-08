@@ -70,13 +70,9 @@ struct RestEditorScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName)
-                        .groteskOverline().foregroundStyle(theme.inkTertiary)
-                    Text("Rest when you finish")
-                        .font(InstrumentoType.groteskScreenTitle)
-                        .tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
-                }
+                InstrumentoFlowTitle(
+                    overline: Text(setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName),
+                    Text("Rest when you finish"))
                 SegmentedPillControl([RestMode.fixed, .heartRate], selection: $mode, theme: theme, inkThumb: true) {
                     $0 == .fixed ? String(localized: "By time") : String(localized: "By heart rate")
                 }
@@ -101,6 +97,8 @@ struct RestEditorScreen: View {
 
     private var header: some View {
         HStack {
+            // EST-6 (FER-814): a single close affordance — the back chevron. The redundant right-side
+            // «Cancel» is gone (push = chevron only; never two affordances for the same exit).
             Button(action: onCancel) {
                 Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(theme.ink)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
@@ -108,8 +106,6 @@ struct RestEditorScreen: View {
             .buttonStyle(.plain).accessibilityLabel(Text("Back"))
             .padding(.leading, -12)
             Spacer()
-            Button(action: onCancel) { Text("Cancel").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary) }
-                .buttonStyle(.plain)
         }
     }
 
@@ -230,7 +226,7 @@ struct RestEditorScreen: View {
 
     private var scopeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Apply to").groteskOverline().foregroundStyle(theme.inkTertiary)
+            Text("Apply to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             SegmentedPillControl([false, true], selection: $applyToAll, theme: theme, inkThumb: true) {
                 $0 ? String(localized: "All sets") : String(localized: "This set only")
             }

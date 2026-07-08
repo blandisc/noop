@@ -19,15 +19,26 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+<<<<<<< HEAD
 - **Tu Recuperación se calibra más rápido en las primeras semanas / Your Recovery calibrates faster in the first weeks.**
   **ES** — Cuando apenas empiezas, si tus primeras noches leían altas, tu línea base quedaba anclada arriba y aplastaba tu Charge/Recuperación a valores muy bajos durante 2-3 semanas. Ahora, mientras la línea base es joven, aprende más rápido de tus noches reales y ya no descarta como «atípica» una noche genuinamente distinta — así tu número se asienta en tu normal real en días, no semanas. Los usuarios ya establecidos no cambian en nada.
   **EN** — When you're just starting out, if your first nights read high, your baseline got anchored high and crushed your Charge/Recovery to very low values for 2-3 weeks. Now, while the baseline is young, it learns faster from your real nights and no longer rejects a genuinely different night as an «outlier» — so your number settles on your true normal in days, not weeks. Already-established users are unaffected.
   ([Baselines.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/Baselines.swift))
 
+- **Cerrar el editor de descanso, una sola salida / Closing the rest editor, one exit.**
+  **ES** — El editor de descanso ya no muestra a la vez la flecha de atrás y un «Cancelar» redundante: queda solo la flecha. Una acción, una forma de salir.
+  **EN** — The rest editor no longer shows both a back arrow and a redundant «Cancel»: just the arrow remains. One action, one way out.
+  ([RestEditorScreen.swift](Cenit/Screens/RestEditorScreen.swift))
+
 - **Pausa tu entrenamiento de fuerza / Pause your strength workout.**
   **ES** — En una sesión de fuerza guiada puedes pausar y reanudar: el reloj de la sesión y el descanso se congelan, y al reanudar retomas justo donde ibas. El tiempo en pausa no cuenta para la duración ni infla tu esfuerzo. La pausa sobrevive incluso si la app se cierra.
   **EN** — In a guided strength session you can pause and resume: the session clock and the rest freeze, and resuming picks up exactly where you were. Paused time doesn't count toward the duration or inflate your effort. The pause even survives the app closing.
   ([AppModel.swift](Cenit/App/AppModel.swift), [LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
+- **Cabeceras de Entrenar consistentes / Consistent Entrenar headers.**
+  **ES** — Historial, Rutina de hoy, el detalle de una sesión y el editor de descanso titulan igual: una etiqueta de sección arriba y el título en la tipografía de sesión debajo. Antes cada pantalla lo resolvía a su manera.
+  **EN** — History, Today's routine, the session detail and the rest editor now title the same way: a section label on top and the title in the session typeface below. Each screen used to do it differently.
+  ([InstrumentoFlowTitle.swift](Packages/StrandDesign/Sources/StrandDesign/InstrumentoFlowTitle.swift))
 
 - **Un solo botón de acción en toda la app / One action button across the whole app.**
   **ES** — Los botones principales («Empezar», «Guardar», «Aplicar»…) dejan de variar de una pantalla a otra: mismo radio, mismo alto, misma tipografía (la voz Space Grotesk de sesión) y el mismo tratamiento de tinta. Onboarding, Entrenar, el recibo y los editores comparten ahora un único componente.
