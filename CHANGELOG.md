@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La pantalla de Tendencias adopta el estilo estandarizado / The Trends screen adopts the standardized style.**
+  **ES** — El landing de Tendencias migra a §8.7: los títulos de sección pasan de serif a overline en mayúsculas (Space Grotesk), cada stat lleva su punto de origen (banda / Apple Salud / calculado) con la etiqueta en su color, se añade la micro-leyenda «Valores de hoy · tendencias del último mes» bajo el selector de periodo, y una leyenda de orígenes al pie. Sin cambios de navegación ni datos.
+  **EN** — The Trends landing migrates to §8.7: section titles go from serif to ALL-CAPS overlines (Space Grotesk), each stat carries its origin dot (band / Apple Health / computed) with its label tinted, a «Today's values · last month's trends» micro-legend sits under the period selector, and an origin legend at the foot. No navigation or data changes.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **Una lectura de respiración ruidosa ya no arruina tu veredicto / A noisy breathing reading no longer wrecks your verdict.**
   **ES** — La respiración nocturna se estima con una señal que a veces sale ruidosa. Antes, un valor imposible (muy alto o muy bajo) podía marcar tu respiración como «mala» y voltear tu lectura de disposición a «agotado» sin razón. Ahora sólo cuentan las lecturas dentro de un rango fisiológico plausible (8–25 respiraciones por minuto); fuera de ahí, no se genera ninguna señal.
   **EN** — Nightly breathing rate is estimated from a signal that's sometimes noisy. Before, an impossible value (far too high or low) could flag your breathing as «bad» and flip your readiness read to «run down» for no reason. Now only readings inside a plausible physiological range (8–25 breaths per minute) count; outside that, no signal is raised.
