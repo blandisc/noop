@@ -18,6 +18,10 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-826 — Landing de Tendencias §8.7: micro-leyenda + leyenda de orígenes.
+    "Today's values · last month's trends": "Valores de hoy · tendencias del último mes",
+    "band": "banda",
+    "computed": "calculado",
     # FER-824 — Pasos: 3 tiles + «Qué mueve tus pasos».
     "TODAY": "HOY",
     "7-DAY AVG": "MEDIA 7 D",

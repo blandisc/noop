@@ -175,6 +175,10 @@ private struct CuerpoLanding: View {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 titleBlock
                 periodSelector
+                // §8.7 landing micro-legend (handoff v2, FER-826): frames what the numbers vs the sparklines are.
+                Text("Today's values · last month's trends")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 recoveryHero
                 restLoadCard
                 trainingLoadCard
@@ -184,6 +188,7 @@ private struct CuerpoLanding: View {
                 longevityCard
                 connectNudge
                 footerActions
+                originLegend
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
@@ -415,8 +420,10 @@ private struct CuerpoLanding: View {
     private func domainCard<Content: View>(_ title: LocalizedStringKey,
                                            @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Serif group header (FER-581 — the handoff titles the landing's domain groups in serif 27).
-            Text(title).font(StrandFont.serif(27)).foregroundStyle(theme.ink)
+            // §8.7 group header (handoff v2 landing, FER-826): ALL-CAPS Space Grotesk overline, not serif.
+            Text(title)
+                .font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase)
+                .foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
             content()
         }
@@ -435,10 +442,15 @@ private struct CuerpoLanding: View {
                             fromApple: Bool = false, spark: [Double] = [], tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
             VStack(alignment: .leading, spacing: 3) {
+                // §8.7 landing (FER-826): a 5px origin dot (band/Apple/computed) + the label ALL-CAPS in its
+                // hue — the dot replaces the old Apple/Estimate chips (its color IS the origin).
                 HStack(spacing: 5) {
-                    Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    if fromApple { InlineFlagChip("Apple", color: theme.inkTertiary) }
-                    if estimate { InlineFlagChip("Estimate", color: theme.warning) }
+                    Circle()
+                        .fill(estimate ? theme.originComputed : (fromApple ? theme.originApple : theme.originBand))
+                        .frame(width: 5, height: 5)
+                    Text(label)
+                        .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
+                        .foregroundStyle(color)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value ?? "—")
@@ -505,7 +517,7 @@ private struct CuerpoLanding: View {
         } label: {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Training load").font(StrandFont.serif(27)).foregroundStyle(theme.ink)
+                    Text("Training load").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)
                     Text(band?.shortLabel ?? "—")
                         .font(StrandFont.number(24, weight: .semibold))
                         .foregroundStyle(band.map { $0.flag.color(theme) } ?? theme.inkTertiary)
@@ -551,7 +563,7 @@ private struct CuerpoLanding: View {
         Button { showMuscleMap = true } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
-                    Text("Muscle map").font(StrandFont.serif(27)).foregroundStyle(theme.ink)   // serif group (FER-581)
+                    Text("Muscle map").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // serif group (FER-581)
                     // Provisional placement here, pending a product decision on its permanent home (likely
                     // Entrenar / Patrones) — flagged, not final. (FER-566 / handoff «DE MOMENTO»)
                     InlineFlagChip("For now", color: theme.warning)
@@ -627,7 +639,7 @@ private struct CuerpoLanding: View {
         } label: {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Recovery").font(StrandFont.serif(27)).foregroundStyle(theme.ink)   // serif group (FER-581)
+                    Text("Recovery").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // serif group (FER-581)
                     recoveryHeroNumeral(score: score, calibrating: cal, color: color)
                     Text(recoverySubtitle(score: score, calibrating: cal))
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -928,6 +940,24 @@ private struct CuerpoLanding: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(ControlPressStyle())
+        }
+    }
+
+    /// §8.7 landing origin legend (handoff v2, FER-826): what the per-stat dots mean, at the foot.
+    private var originLegend: some View {
+        HStack(spacing: 16) {
+            legendDot(theme.originBand, "band")
+            legendDot(theme.originApple, "Apple Health")
+            legendDot(theme.originComputed, "computed")
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 2)
+    }
+
+    private func legendDot(_ color: Color, _ label: LocalizedStringKey) -> some View {
+        HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 5, height: 5)
+            Text(label).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
     }
 
