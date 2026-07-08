@@ -699,9 +699,11 @@ final class AppModel: ObservableObject {
         let now = Date()
         let restStart = s.restStartedAt ?? now
         let restEnd = s.restEndsAt ?? now
-        // FER-823 — the active-phase count-up anchors to the EFFECTIVE start (now − active elapsed), so it
-        // already excludes paused time. Only meaningful in the active phase; nil elsewhere.
-        let effectiveStart = now.addingTimeInterval(-Double(s.elapsedSeconds(now: now)))
+        // FER-823 — the active-phase count-up anchors to the EFFECTIVE start in WALL-CLOCK terms
+        // (`startTs + pausedSeconds`), so `now − anchor == active elapsed` while excluding paused time. Anchored
+        // to the clock (not `now − elapsed`) so it stays STABLE tick-to-tick — a jittering anchor would flip
+        // the controller's structural fingerprint every second and defeat its HR-update throttle. Active only.
+        let effectiveStart = Date(timeIntervalSince1970: Double(s.startTs + s.pausedSeconds(at: now)))
         return RestActivitySnapshot(
             sessionId: s.id, routineName: s.routineName,
             setNumber: run.currentSet + 1, setTotal: run.sets.count,
