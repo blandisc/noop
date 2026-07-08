@@ -4,6 +4,9 @@
 // the effort hue), color only in the datum, hierarchy by space. Custom fonts aren't registered inside
 // the widget extension, so this uses the system rounded face for the numerals (a deliberate,
 // widget-safe substitute for the app's numeric type) while every color is a StrandDesign token.
+// FER-817: SF Rounded here is the FIRM decision — we do not register Space Grotesk in the widget
+// target (extra bundle weight + embedding risk for a glanceable surface); the rounded face reads
+// cleanly at LA sizes and the app keeps its grotesk numerals.
 
 #if canImport(ActivityKit)
 import ActivityKit

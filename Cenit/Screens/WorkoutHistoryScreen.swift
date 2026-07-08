@@ -403,7 +403,7 @@ struct WorkoutSessionDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 heading
                 hero
                 Divider().overlay(theme.hairline)
@@ -669,7 +669,7 @@ struct WorkoutSessionDetailScreen: View {
                 HStack(spacing: 6) {
                     Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())

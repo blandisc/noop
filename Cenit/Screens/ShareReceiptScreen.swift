@@ -147,8 +147,8 @@ struct ShareCardView: View {
             }
         }
         .padding(20)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
     }
 
     private struct Metric { let label: LocalizedStringKey; let value: String; let unit: String?; let accent: Color? }
