@@ -33,11 +33,16 @@ public struct RestActivitySnapshot: Equatable, Codable {
     public var nextExerciseName: String?
     /// File name of the exercise thumbnail in the shared App Group; nil = no image (the card omits it).
     public var thumbnailName: String?
+    /// Whether the session is paused (FER-823). Exposed so the full-session Live Activity (FER-806) can
+    /// paint the «En pausa» state; the current rest Live Activity simply isn't produced while paused.
+    /// Defaulted, so existing construction sites (incl. the watch) are unchanged.
+    public var paused: Bool
 
     public init(sessionId: String, routineName: String, setNumber: Int, setTotal: Int,
                 exerciseName: String, returnDetail: String, restStartedAt: Date, restEndsAt: Date,
                 isHRMode: Bool, hrTarget: Int?, bpm: Int?,
-                phaseRaw: String? = nil, nextExerciseName: String? = nil, thumbnailName: String? = nil) {
+                phaseRaw: String? = nil, nextExerciseName: String? = nil, thumbnailName: String? = nil,
+                paused: Bool = false) {
         self.sessionId = sessionId
         self.routineName = routineName
         self.setNumber = setNumber
@@ -52,5 +57,6 @@ public struct RestActivitySnapshot: Equatable, Codable {
         self.phaseRaw = phaseRaw
         self.nextExerciseName = nextExerciseName
         self.thumbnailName = thumbnailName
+        self.paused = paused
     }
 }

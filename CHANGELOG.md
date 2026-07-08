@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Pausa tu entrenamiento de fuerza / Pause your strength workout.**
+  **ES** — En una sesión de fuerza guiada puedes pausar y reanudar: el reloj de la sesión y el descanso se congelan, y al reanudar retomas justo donde ibas. El tiempo en pausa no cuenta para la duración ni infla tu esfuerzo. La pausa sobrevive incluso si la app se cierra.
+  **EN** — In a guided strength session you can pause and resume: the session clock and the rest freeze, and resuming picks up exactly where you were. Paused time doesn't count toward the duration or inflate your effort. The pause even survives the app closing.
+  ([AppModel.swift](Cenit/App/AppModel.swift), [LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
 - **Un solo botón de acción en toda la app / One action button across the whole app.**
   **ES** — Los botones principales («Empezar», «Guardar», «Aplicar»…) dejan de variar de una pantalla a otra: mismo radio, mismo alto, misma tipografía (la voz Space Grotesk de sesión) y el mismo tratamiento de tinta. Onboarding, Entrenar, el recibo y los editores comparten ahora un único componente.
   **EN** — The primary buttons («Empezar», «Save», «Apply»…) stop varying screen to screen: one radius, one height, one typeface (the session's Space Grotesk voice) and one ink treatment. Onboarding, Entrenar, the receipt and the editors now share a single component.

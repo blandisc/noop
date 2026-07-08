@@ -26996,6 +26996,22 @@
         }
       }
     },
+    "Pause session": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause session"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar sesión"
+          }
+        }
+      }
+    },
     "Paused": {
       "localizations": {
         "en": {
@@ -27008,6 +27024,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "En pausa"
+          }
+        }
+      }
+    },
+    "Paused at %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused at %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pausa en %@"
           }
         }
       }
@@ -30544,6 +30576,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reanudar"
+          }
+        }
+      }
+    },
+    "Resume session": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume session"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar sesión"
           }
         }
       }

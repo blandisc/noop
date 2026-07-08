@@ -336,18 +336,26 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
     public var currentRestMode: RestMode
     /// The running stopwatch anchor for time/distance sets; nil when not running.
     public var timerStart: Date?
+    /// Pause state (FER-823), so a crash mid-pause restores paused with the right accumulated pause time.
+    public var paused: Bool
+    public var pausedAccumulatedS: Int
+    public var pausedAt: Date?
     /// When this snapshot was taken — for debugging / picking the newest if two ever exist.
     public var updatedTs: Int
 
     public init(id: String, routineId: String?, routineName: String, startTs: Int,
                 runs: [RunSnapshot], currentIndex: Int, restEndsAt: Date? = nil,
                 restStartedAt: Date? = nil, currentRestTarget: Int? = nil,
-                currentRestMode: RestMode = .fixed, timerStart: Date? = nil, updatedTs: Int) {
+                currentRestMode: RestMode = .fixed, timerStart: Date? = nil,
+                paused: Bool = false, pausedAccumulatedS: Int = 0, pausedAt: Date? = nil,
+                updatedTs: Int) {
         self.id = id; self.routineId = routineId; self.routineName = routineName
         self.startTs = startTs; self.runs = runs; self.currentIndex = currentIndex
         self.restEndsAt = restEndsAt; self.restStartedAt = restStartedAt
         self.currentRestTarget = currentRestTarget; self.currentRestMode = currentRestMode
-        self.timerStart = timerStart; self.updatedTs = updatedTs
+        self.timerStart = timerStart
+        self.paused = paused; self.pausedAccumulatedS = pausedAccumulatedS; self.pausedAt = pausedAt
+        self.updatedTs = updatedTs
     }
 }
 

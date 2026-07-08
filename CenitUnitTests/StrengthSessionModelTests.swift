@@ -412,4 +412,68 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.currentIndex, 1, "focus moves to the just-added exercise")
         XCTAssertEqual(s.runs[0].exerciseId, "bench", "the first exercise is untouched")
     }
+
+    // MARK: Pause / resume (FER-823)
+
+    private func oneSlot() -> StrengthSessionModel {
+        make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                            exercise: ex("bench", "Bench"), lastSets: [])])
+    }
+
+    func testElapsedFreezesWhilePaused() {
+        let s = oneSlot()   // startTs = 100
+        XCTAssertEqual(s.elapsedSeconds(now: Date(timeIntervalSince1970: 200)), 100)
+        s.pause(now: Date(timeIntervalSince1970: 200))
+        XCTAssertTrue(s.paused)
+        // Time keeps passing, but active elapsed stays put.
+        XCTAssertEqual(s.elapsedSeconds(now: Date(timeIntervalSince1970: 260)), 100, "clock frozen while paused")
+        XCTAssertEqual(s.elapsedSeconds(now: Date(timeIntervalSince1970: 500)), 100)
+    }
+
+    func testResumeExcludesPausedTimeFromElapsed() {
+        let s = oneSlot()
+        s.pause(now: Date(timeIntervalSince1970: 200))
+        s.resume(now: Date(timeIntervalSince1970: 260))   // 60 s paused
+        XCTAssertFalse(s.paused)
+        XCTAssertEqual(s.pausedSeconds(at: Date(timeIntervalSince1970: 300)), 60)
+        XCTAssertEqual(s.elapsedSeconds(now: Date(timeIntervalSince1970: 300)), 140, "300-100-60")
+    }
+
+    func testResumeShiftsRestAndStopwatchByPausedDelta() {
+        let s = oneSlot()
+        s.restStartedAt = Date(timeIntervalSince1970: 190)
+        s.restEndsAt = Date(timeIntervalSince1970: 280)
+        s.timerStart = Date(timeIntervalSince1970: 195)
+        s.pause(now: Date(timeIntervalSince1970: 200))
+        s.resume(now: Date(timeIntervalSince1970: 260))   // delta 60
+        XCTAssertEqual(s.restEndsAt, Date(timeIntervalSince1970: 340), "remaining rest preserved")
+        XCTAssertEqual(s.restStartedAt, Date(timeIntervalSince1970: 250))
+        XCTAssertEqual(s.timerStart, Date(timeIntervalSince1970: 255))
+    }
+
+    func testPauseAndResumeAreIdempotent() {
+        let s = oneSlot()
+        s.pause(now: Date(timeIntervalSince1970: 200))
+        s.pause(now: Date(timeIntervalSince1970: 220))   // second pause is a no-op
+        s.resume(now: Date(timeIntervalSince1970: 260))
+        XCTAssertEqual(s.pausedSeconds(at: Date(timeIntervalSince1970: 300)), 60, "only the first pause counts")
+        s.resume(now: Date(timeIntervalSince1970: 300))  // resume when not paused is a no-op
+        XCTAssertEqual(s.pausedSeconds(at: Date(timeIntervalSince1970: 300)), 60)
+    }
+
+    func testCannotPauseOnceReceiptShown() {
+        let s = oneSlot()
+        s.summary = StrengthSummary(routineName: "Push", endTs: 0, durationS: 0, volumeKg: 0,
+                                    setCount: 0, prs: [], muscles: [], isFirstTime: false, exercises: [])
+        s.pause()
+        XCTAssertFalse(s.paused, "a finished session (receipt up) can't be paused")
+    }
+
+    func testAccumulatesAcrossMultiplePauses() {
+        let s = oneSlot()
+        s.pause(now: Date(timeIntervalSince1970: 200)); s.resume(now: Date(timeIntervalSince1970: 230))  // 30
+        s.pause(now: Date(timeIntervalSince1970: 300)); s.resume(now: Date(timeIntervalSince1970: 320))  // 20
+        XCTAssertEqual(s.pausedSeconds(at: Date(timeIntervalSince1970: 400)), 50)
+        XCTAssertEqual(s.elapsedSeconds(now: Date(timeIntervalSince1970: 400)), 250, "400-100-50")
+    }
 }
