@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El prompt del import ahora sí pasa en cualquier IA / The import prompt now gets through any AI.**
+  **ES** — Se quitaron las 1,500 líneas de catálogo del texto que copias para tu IA: ahora son ~30 líneas que se pegan como mensaje normal (no como archivo adjunto), así que Claude/ChatGPT ya no lo rechazan por parecer una inyección de instrucciones. La app reconoce los ejercicios por nombre con su emparejador propio — el catálogo en el prompt ya no aportaba nada.
+  **EN** — The 1,500 catalog lines were removed from the text you copy for your AI: it's now ~30 lines that paste as a normal message (not a file attachment), so Claude/ChatGPT no longer refuse it as prompt injection. The app recognizes exercises by name with its own matcher — the in-prompt catalog no longer added anything.
+  ([WorkoutPrompt.swift](Cenit/Data/WorkoutPrompt.swift))
+
 - **El recibo aparece al terminar desde el Apple Watch / The receipt shows when you finish from the Apple Watch.**
   **ES** — Si terminas un entrenamiento de fuerza desde el reloj con el teléfono bloqueado o en segundo plano, al volver a la app el recibo de la sesión aparece solo, en vez de quedar escondido hasta que reabras el entrenamiento a mano.
   **EN** — If you end a strength workout from the watch with the phone locked or backgrounded, the session receipt now surfaces on its own when you return to the app, instead of staying hidden until you reopen the workout by hand.
