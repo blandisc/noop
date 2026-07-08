@@ -93,10 +93,8 @@ private struct RutinaDeHoyContent: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Today's routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(routine?.name ?? "Routine")
-                .font(StrandFont.title1).foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
+            InstrumentoFlowTitle(overline: Text("Today's routine"),
+                                 Text(routine?.name ?? "Routine"))
         }
     }
 
