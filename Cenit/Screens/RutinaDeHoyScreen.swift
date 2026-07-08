@@ -149,7 +149,7 @@ private struct RutinaDeHoyContent: View {
             }
             if tappable {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
         }
         .padding(.vertical, 11)
