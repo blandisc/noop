@@ -174,6 +174,17 @@ public enum ReadinessEngine {
     /// suppresses HRV and inflates resting HR independent of true recovery). 6 hours.
     private static let shortNightMinutes: Double = 360
 
+    // Respiratory-rate plausibility + thresholds (FER-675). The nightly RR is RSA-derived and
+    // noisy; an implausible estimate scored against a tight baseline SD would fabricate a spurious
+    // `.bad` and flip the verdict to RUNDOWN. Both today's value and the baseline samples are gated
+    // to this plausible sleeping-RR band before any z is computed. The z cutoffs are deliberately
+    // SEPARATE from — and wider than — the HRV/RHR 0.5σ `Flag(orientedZ:)` cutoffs: an illness RR
+    // drift is a larger, later move, so a `.watch`/`.bad` needs a full 1σ/1.5σ rise.
+    private static let respPlausibleMin: Double = 8
+    private static let respPlausibleMax: Double = 25
+    private static let respWatchZ: Double = 1.0
+    private static let respBadZ: Double = 1.5
+
     // MARK: Entry point
 
     /// Evaluate readiness from daily metrics. `days` may be in any order; the most recent day is
@@ -222,15 +233,19 @@ public enum ReadinessEngine {
         if let s = rhrSignal { signals.append(s) }
 
         // Respiratory-rate drift (illness early signal) ----------------------
-        if let rr = latest.respRateBpm {
-            let base = history.suffix(baselineWindow).compactMap { $0.respRateBpm }
-            if base.count >= minBaseline, let sd = sampleSD(base), sd > 0 {
-                let z = (rr - mean(base)!) / sd
-                if z >= 1.5 {
+        // Plausibility gate (8–25 bpm): a noisy RSA-derived RR outside the physiological sleeping
+        // band must produce NO signal, so it can't fabricate a spurious `.bad` and flip the verdict
+        // to RUNDOWN (FER-675). Today's value and the baseline samples are both gated.
+        let respBand = respPlausibleMin...respPlausibleMax
+        if let rr = latest.respRateBpm, respBand.contains(rr) {
+            let base = history.suffix(baselineWindow).compactMap { $0.respRateBpm }.filter(respBand.contains)
+            if base.count >= minBaseline, let m = mean(base), let sd = sampleSD(base), sd > 0 {
+                let z = (rr - m) / sd
+                if z >= respBadZ {
                     signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
                         detail: String(localized: "up vs baseline — sometimes an early sign of getting sick", bundle: .main),
                         flag: .bad, value: String(format: "%+.1fσ", z), z: z))
-                } else if z >= 1.0 {
+                } else if z >= respWatchZ {
                     signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
                         detail: String(localized: "slightly raised vs baseline", bundle: .main),
                         flag: .watch, value: String(format: "%+.1fσ", z), z: z))

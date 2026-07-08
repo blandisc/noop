@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Una lectura de respiración ruidosa ya no arruina tu veredicto / A noisy breathing reading no longer wrecks your verdict.**
+  **ES** — La respiración nocturna se estima con una señal que a veces sale ruidosa. Antes, un valor imposible (muy alto o muy bajo) podía marcar tu respiración como «mala» y voltear tu lectura de disposición a «agotado» sin razón. Ahora sólo cuentan las lecturas dentro de un rango fisiológico plausible (8–25 respiraciones por minuto); fuera de ahí, no se genera ninguna señal.
+  **EN** — Nightly breathing rate is estimated from a signal that's sometimes noisy. Before, an impossible value (far too high or low) could flag your breathing as «bad» and flip your readiness read to «run down» for no reason. Now only readings inside a plausible physiological range (8–25 breaths per minute) count; outside that, no signal is raised.
+  ([ReadinessEngine.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/ReadinessEngine.swift))
+
 - **El prompt para tu IA ya no se confunde con un ataque / The AI prompt no longer reads like an attack.**
   **ES** — Al importar un plan, el texto que copias para tu IA (Claude/ChatGPT) ahora está redactado como una petición tuya en primera persona. Antes sonaba a instrucciones de sistema y, al pegarse como archivo adjunto, algunos modelos lo rechazaban por parecer una inyección de instrucciones. Mismo formato y catálogo; solo cambió la voz.
   **EN** — The text you copy for your AI when importing a plan is now phrased as your own first-person request. It used to read like system instructions and, pasted as an attachment, some models refused it as prompt injection. Same format and catalog; only the voice changed.

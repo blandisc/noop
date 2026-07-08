@@ -61,6 +61,26 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertTrue(r.signals.contains { $0.key == "respRate" })
     }
 
+    func testImplausibleRespRateProducesNoSignal() {
+        // A noisy RSA estimate of 40 bpm (outside the 8–25 plausible band) must produce NO resp
+        // signal, no matter how far it sits from the ~14 baseline (FER-675).
+        let r = ReadinessEngine.evaluate(days: baseline(todayHrv: 60, todayRhr: 52, todayStrain: 10, todayResp: 40))
+        XCTAssertFalse(r.signals.contains { $0.key == "respRate" })
+        // A sub-physiological 3 bpm is gated the same way.
+        let low = ReadinessEngine.evaluate(days: baseline(todayHrv: 60, todayRhr: 52, todayStrain: 10, todayResp: 3))
+        XCTAssertFalse(low.signals.contains { $0.key == "respRate" })
+    }
+
+    func testNoisyRespRateDoesNotFlipVerdict() {
+        // Everything else is aligned (primed). A spurious out-of-band resp (40 bpm) must NOT inject a
+        // `.bad` and drag the verdict down — with the gate, the verdict is unchanged from the no-resp read.
+        let clean = ReadinessEngine.evaluate(days: baseline(todayHrv: 72, todayRhr: 46, todayStrain: 10))
+        let noisy = ReadinessEngine.evaluate(days: baseline(todayHrv: 72, todayRhr: 46, todayStrain: 10, todayResp: 40))
+        XCTAssertEqual(clean.level, .primed)
+        XCTAssertEqual(noisy.level, clean.level)
+        XCTAssertFalse(noisy.signals.contains { $0.key == "respRate" })
+    }
+
     func testExplicitTodayWithoutMatchingRowIsInsufficient() {
         // Stale historical import: newest row is 2024-03-29, but the device's real calendar day is later.
         // An explicit `today` with no matching row must read INSUFFICIENT — NOT synthesize off the newest
