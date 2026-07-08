@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Un solo botón de acción en toda la app / One action button across the whole app.**
+  **ES** — Los botones principales («Empezar», «Guardar», «Aplicar»…) dejan de variar de una pantalla a otra: mismo radio, mismo alto, misma tipografía (la voz Space Grotesk de sesión) y el mismo tratamiento de tinta. Onboarding, Entrenar, el recibo y los editores comparten ahora un único componente.
+  **EN** — The primary buttons («Empezar», «Save», «Apply»…) stop varying screen to screen: one radius, one height, one typeface (the session's Space Grotesk voice) and one ink treatment. Onboarding, Entrenar, the receipt and the editors now share a single component.
+  ([StrandCTAButton.swift](Packages/StrandDesign/Sources/StrandDesign/StrandCTAButton.swift))
+
 - **Pasos: tres tiles y «Qué mueve tus pasos» / Steps: three tiles and «What moves your steps».**
   **ES** — El detalle de Pasos ahora muestra, bajo la gráfica, tres tiles (HOY · MEDIA 7 D · RACHA) y un bloque «Qué mueve tus pasos» que compara tus fines de semana con tus días entre semana. La racha se mide contra tu propia media (no hay meta), y el patrón sólo aparece cuando hay suficientes días. Los rangos y el toggle no cambian.
   **EN** — The Steps detail now shows, under the chart, three tiles (TODAY · 7-DAY AVG · STREAK) and a «What moves your steps» block comparing weekends with weekdays. The streak is measured against your own average (there's no goal), and the pattern only shows with enough days. The ranges and toggle are unchanged.

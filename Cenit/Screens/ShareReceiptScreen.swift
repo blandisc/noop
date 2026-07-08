@@ -87,22 +87,8 @@ struct ShareReceiptScreen: View {
 
     private var actions: some View {
         HStack(spacing: 12) {
-            Button { if let img = render() { FileExport.saveImageToPhotos(img) } } label: {
-                Text("Save").font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity).padding(.vertical, 14)
-                    .background(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous)
-                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-
-            Button { if let img = render() { FileExport.exportImage(img) } } label: {
-                Text("Share…").font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                    .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, 14)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
-            }
-            .buttonStyle(.plain)
+            StrandCTAButton("Save", kind: .outline) { if let img = render() { FileExport.saveImageToPhotos(img) } }
+            StrandCTAButton("Share…") { if let img = render() { FileExport.exportImage(img) } }
         }
     }
 

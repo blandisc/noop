@@ -250,7 +250,7 @@ struct RestEditorScreen: View {
     }
 
     private var cta: some View {
-        Button {
+        StrandCTAButton("Apply") {
             let config: RestConfig
             if mode == .heartRate {
                 config = hrRef == .karvonenReserve
@@ -260,12 +260,7 @@ struct RestEditorScreen: View {
                 config = RestConfig(mode: .fixed, seconds: seconds, hrReference: .restingMargin, hrValue: 0)
             }
             onApply(config, applyToAll, saveToRoutine && persistsToRoutine)
-        } label: {
-            Text("Apply").font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                .foregroundStyle(theme.paper).frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
         }
-        .buttonStyle(.plain)
         .padding(.top, 4)
     }
 

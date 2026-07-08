@@ -318,18 +318,7 @@ private struct EntrenarLanding: View {
     /// The one solid button per screen (F8): a day with a routine fills it («Empezar {rutina}»); a rest
     /// day leaves it open but quiet (outline). Both route through `startToday`.
     private var empezarButton: some View {
-        Button { startToday() } label: {
-            Text("Empezar")
-                .font(StrandFont.headline)
-                .foregroundStyle(todayRoutine != nil ? theme.paperHi : theme.ink)
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background {
-                    let s = RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    if todayRoutine != nil { s.fill(theme.ink) } else { s.strokeBorder(theme.hairlineStrong, lineWidth: 1) }
-                }
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        StrandCTAButton("Empezar", kind: todayRoutine != nil ? .solid : .outline) { startToday() }
     }
 
     /// F1: a day with a routine starts the guided session in one tap (slots prefetched on load); an empty
@@ -639,12 +628,8 @@ private struct EntrenarLanding: View {
             Text("Build your week to see today and your progress.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            Button { openWeeklyPlan() } label: {
-                Text("Build my week").font(StrandFont.headline).foregroundStyle(theme.paperHi)
-                    .frame(maxWidth: .infinity).padding(.vertical, 15)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-            }
-            .buttonStyle(.plain).padding(.top, 4)
+            StrandCTAButton("Build my week") { openWeeklyPlan() }
+                .padding(.top, 4)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 30).padding(.horizontal, 18)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
@@ -966,13 +951,8 @@ struct RestDayScreen: View {
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .padding(.top, 5)
-            Button { if alt == .softer { model.startMobilityOneOff() } else { openIntervals() } } label: {
-                Text("Empezar").font(StrandFont.headline).foregroundStyle(theme.paperHi)
-                    .frame(maxWidth: .infinity).padding(.vertical, 14)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).padding(.top, 14)
+            StrandCTAButton("Empezar") { if alt == .softer { model.startMobilityOneOff() } else { openIntervals() } }
+                .padding(.top, 14)
         }
         .padding(NoopMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
