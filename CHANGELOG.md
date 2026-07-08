@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Teclado de sesión sin botones muertos / Session keypad without dead buttons.**
+  **ES** — Los accesorios «RPE» y «⛓ discos» del teclado de captura solo aparecen cuando de verdad hacen algo (discos en celdas de peso; RPE cuando exista la captura). Se acabaron los botones grises que no responden.
+  **EN** — The «RPE» and «⛓ plates» accessories on the capture keypad now appear only when they actually do something (plates on weight cells; RPE once capture exists). No more greyed-out buttons that do nothing.
+  ([SessionKeypad.swift](Cenit/Screens/SessionKeypad.swift))
+
 - **Cerrar el editor de descanso, una sola salida / Closing the rest editor, one exit.**
   **ES** — El editor de descanso ya no muestra a la vez la flecha de atrás y un «Cancelar» redundante: queda solo la flecha. Una acción, una forma de salir.
   **EN** — The rest editor no longer shows both a back arrow and a redundant «Cancel»: just the arrow remains. One action, one way out.

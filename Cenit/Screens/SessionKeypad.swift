@@ -24,8 +24,9 @@ struct SessionKeypad: View {
     let onNext: () -> Void
     let onCopyPrevious: () -> Void
     let onStep: () -> Void
-    /// Opens the RPE picker (placeholder until RPE capture lands).
-    var onRPE: () -> Void = {}
+    /// Opens the RPE picker. nil until RPE capture lands (FER-815) → the «RPE ▾» accessory is hidden, not
+    /// shown disabled (no dead buttons).
+    var onRPE: (() -> Void)? = nil
     var onPlates: () -> Void = {}
 
     var body: some View {
@@ -45,8 +46,10 @@ struct SessionKeypad: View {
             HStack(spacing: 8) {
                 pill(String(localized: "copy last"), enabled: canCopyPrevious, action: onCopyPrevious)
                 pill(stepLabel, action: onStep)
-                pill("RPE ▾", action: onRPE)
-                pill(String(localized: "⛓ plates"), enabled: platesEnabled, action: onPlates)
+                // FER-815: each accessory appears only when its function exists — never a permanent
+                // disabled placeholder. RPE shows once a handler is wired; plates once the math is on.
+                if let onRPE { pill("RPE ▾", action: onRPE) }
+                if platesEnabled { pill(String(localized: "⛓ plates"), action: onPlates) }
                 Spacer(minLength: 4)
                 Button(action: onNext) {
                     Text("Next").font(StrandFont.subhead).fontWeight(.semibold)
