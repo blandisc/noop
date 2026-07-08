@@ -84,7 +84,7 @@ struct WorkoutHistoryScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("My workouts").font(StrandFont.title1).foregroundStyle(theme.ink)
+            InstrumentoFlowTitle(Text("My workouts"))
             Text("The strength sessions you've finished.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -537,10 +537,8 @@ struct WorkoutSessionDetailScreen: View {
 
     private var heading: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(StrengthHistoryFormat.dateTime(dispStart)).instrumentoOverline()
-                .foregroundStyle(theme.inkTertiary)
-            Text(dispRoutineName).font(StrandFont.title1).foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
+            InstrumentoFlowTitle(overline: Text(StrengthHistoryFormat.dateTime(dispStart)),
+                                 Text(verbatim: dispRoutineName))
         }
     }
 

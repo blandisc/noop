@@ -24,6 +24,11 @@ approximate; Cénit is built from source — see the [README](README.md).
   **EN** — In a guided strength session you can pause and resume: the session clock and the rest freeze, and resuming picks up exactly where you were. Paused time doesn't count toward the duration or inflate your effort. The pause even survives the app closing.
   ([AppModel.swift](Cenit/App/AppModel.swift), [LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
 
+- **Cabeceras de Entrenar consistentes / Consistent Entrenar headers.**
+  **ES** — Historial, Rutina de hoy, el detalle de una sesión y el editor de descanso titulan igual: una etiqueta de sección arriba y el título en la tipografía de sesión debajo. Antes cada pantalla lo resolvía a su manera.
+  **EN** — History, Today's routine, the session detail and the rest editor now title the same way: a section label on top and the title in the session typeface below. Each screen used to do it differently.
+  ([InstrumentoFlowTitle.swift](Packages/StrandDesign/Sources/StrandDesign/InstrumentoFlowTitle.swift))
+
 - **Un solo botón de acción en toda la app / One action button across the whole app.**
   **ES** — Los botones principales («Empezar», «Guardar», «Aplicar»…) dejan de variar de una pantalla a otra: mismo radio, mismo alto, misma tipografía (la voz Space Grotesk de sesión) y el mismo tratamiento de tinta. Onboarding, Entrenar, el recibo y los editores comparten ahora un único componente.
   **EN** — The primary buttons («Empezar», «Save», «Apply»…) stop varying screen to screen: one radius, one height, one typeface (the session's Space Grotesk voice) and one ink treatment. Onboarding, Entrenar, the receipt and the editors now share a single component.
