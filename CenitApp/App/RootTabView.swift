@@ -220,6 +220,13 @@ struct RootTabView: View {
             }
             tabRouter.requested = nil
         }
+        // FER-810: «Ver recibo en iPhone» from the Apple Watch → switch to Entrenar and push the saved
+        // workout's history detail. One-shot: apply + clear.
+        .onReceive(appModel.$pendingReceiptRoute.compactMap { $0 }) { route in
+            selection = .train
+            trainStack.append(route)
+            appModel.pendingReceiptRoute = nil
+        }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: .noopDebugNav)) { note in
             guard let screen = note.object as? String else { return }

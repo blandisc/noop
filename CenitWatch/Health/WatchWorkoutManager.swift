@@ -37,6 +37,14 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     @Published var startDate: Date?
     @Published var heartRate: Int = 0
     @Published var rest: RestActivitySnapshot?
+    /// FER-809: the capture context between rests — which set is up (N/M), exercise and «weight × reps» —
+    /// so the live face shows «qué toca», not a bare pulse. nil until the first `.capture` arrives.
+    @Published var capture: WorkoutCaptureSnapshot?
+    /// FER-810: the routine plan for the read-only rotor page (done / current / pending + N/M per exercise).
+    @Published var plan: WorkoutPlanSnapshot?
+    /// FER-811: the profile's max heart rate (mirrored from the iPhone), for the effort-zone label next to
+    /// the pulse. nil until known / when unreliable → the zone is omitted, never guessed.
+    @Published var hrMax: Int?
     @Published var sessionActive = false
     /// The routine's display name, adopted from the rest snapshots the iPhone sends.
     @Published var routineName: String = ""
@@ -246,6 +254,9 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         builder = nil
         sessionActive = false
         rest = nil
+        capture = nil
+        plan = nil
+        hrMax = nil
         startDate = nil
         restEndTask?.cancel()
         restEndTask = nil
@@ -276,6 +287,46 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         restEndedBanner = false
     }
 
+    // MARK: - Wrist actions (FER-808)
+
+    /// Log the current set from the wrist. Sends `.completeSet`; the iPhone runs `registerCurrentSet` and
+    /// re-emits the snapshot (which flips this face to the rest countdown). The confirmation haptic + the
+    /// 400 ms check are the view's job. Stays available with no permission / no iPhone (the message queues
+    /// over `transferUserInfo` and applies on reconnect) — the CTA is never a dead button.
+    func completeSetFromWrist() {
+        guard let sid = sessionId else { return }
+        send(.completeSet(sessionId: sid))
+    }
+
+    /// Skip the current rest from the wrist. Sends `.skipRest` and clears the local rest immediately so the
+    /// face returns to capture without waiting for the round-trip (honest even if the iPhone is away).
+    func skipRestFromWrist() {
+        guard let sid = sessionId, rest != nil else { return }
+        send(.skipRest(sessionId: sid))
+        restEndTask?.cancel()
+        rest = nil
+    }
+
+    /// Nudge the current rest by `deltaS` (±30) from the wrist. Sends `.adjustRest`, then optimistically
+    /// moves the local ceiling and re-arms `scheduleRestEnd` so the countdown and its buzz stay honest even
+    /// while the iPhone is unreachable; the iPhone's next snapshot is authoritative. Caller hides «−30»
+    /// once the rest has expired, and `extendRest` floors the ceiling at «now».
+    func adjustRestFromWrist(by deltaS: Int) {
+        guard let sid = sessionId, let snap = rest else { return }
+        send(.adjustRest(sessionId: sid, deltaS: deltaS))
+        let newEnd = max(Date(), snap.restEndsAt.addingTimeInterval(TimeInterval(deltaS)))
+        rest?.restEndsAt = newEnd
+        scheduleRestEnd(at: newEnd)
+    }
+
+    /// FER-810: «Ver recibo en iPhone» from the summary → ask the iPhone to open the saved workout's
+    /// history detail. `sessionId` survives session cleanup (only reset on the next `.start`), so it still
+    /// identifies the just-finished session while the summary is up.
+    func openReceiptFromWrist() {
+        guard let sid = sessionId else { return }
+        send(.openReceipt(sessionId: sid))
+    }
+
     // MARK: - Message handling
 
     private func handle(_ message: WorkoutMirrorMessage) {
@@ -290,6 +341,19 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             rest = snapshot
             heartRate = snapshot.bpm ?? heartRate
             scheduleRestEnd(at: snapshot.restEndsAt)
+        case let .capture(snapshot):
+            // FER-809: we're working a set, not resting → adopt the «qué toca» context and drop any rest.
+            adoptIdentity(snapshot.sessionId)
+            if !snapshot.routineName.isEmpty { routineName = snapshot.routineName }
+            capture = snapshot
+            rest = nil
+            restEndTask?.cancel()
+            heartRate = snapshot.bpm ?? heartRate
+            if let hm = snapshot.hrMax { hrMax = hm }   // FER-811: adopt the mirrored max HR for the zone label
+        case let .plan(snapshot):
+            adoptIdentity(snapshot.sessionId)
+            if !snapshot.routineName.isEmpty { routineName = snapshot.routineName }
+            plan = snapshot
         case let .restEnded(_, recovered):
             // Cancel the local clock timer either way, then decide the signal:
             //  • recovered (FER-758): the pulse dropped to target → fire the «ready» buzz + banner now.
@@ -300,8 +364,9 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             sessionId = sid
             externalUUID = ext
             Task { await endSession(endedAt: endedAt, save: save) }
-        case .watchDidSaveWorkout, .watchWillNotSave:
-            break   // watch → iPhone only
+        case .watchDidSaveWorkout, .watchWillNotSave,
+             .completeSet, .skipRest, .adjustRest, .openReceipt:
+            break   // watch → iPhone only (FER-808/810)
         }
     }
 

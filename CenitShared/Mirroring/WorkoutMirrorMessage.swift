@@ -20,6 +20,16 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// iPhone → watch: a rest window opened / changed. Reuses the existing `RestActivitySnapshot`.
     case rest(RestActivitySnapshot)
 
+    /// iPhone → watch: the capture context between rests (FER-809) — which set is up (N/M), the exercise
+    /// and its «weight × reps», so the wrist face shows «qué toca» while the user is working the set (not
+    /// only during a rest). Additive: a pre-FER-809 watch simply can't decode this case and drops it
+    /// (`decode` is `try?`), so it degrades to the plain pulse face.
+    case capture(WorkoutCaptureSnapshot)
+
+    /// iPhone → watch: the lightweight routine plan (FER-810) for the read-only rotor page — each exercise's
+    /// name, sets done / total, and which one is current. Additive; sent only when the plan changes.
+    case plan(WorkoutPlanSnapshot)
+
     /// iPhone → watch: the rest window ended without ending the session. `recovered == true` means the
     /// pulse dropped back to target (FER-758) → the watch fires the «ready» buzz + banner; `false` means
     /// the user simply returned to the set → the watch cancels its local timer silently, no buzz.
@@ -36,6 +46,94 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// watch → iPhone: the watch could not / will not save (no permission, error, mirror lost) → the
     /// iPhone takes over and saves its estimated workout as it does today.
     case watchWillNotSave(sessionId: String, reason: WatchSaveFailure)
+
+    /// watch → iPhone: the user logged the current set from the wrist (FER-808). The iPhone runs the
+    /// SAME path as the Live Activity's `RestCompleteSetIntent` (`registerCurrentSet`) and re-emits the
+    /// next snapshot — the wrist and the lock screen share one source of truth, no duplicated logic.
+    case completeSet(sessionId: String)
+
+    /// watch → iPhone: skip the current rest from the wrist (FER-808). Same path as the LA's `RestSkipIntent`.
+    case skipRest(sessionId: String)
+
+    /// watch → iPhone: nudge the current rest ceiling by `deltaS` (±30) from the wrist (FER-808). Same path
+    /// as the LA's `RestAddThirtyIntent` / `RestRemoveThirtyIntent`. A negative delta is gated by the
+    /// sender (the «−30» affordance is hidden once the rest has expired), and `extendRest` floors at «now».
+    case adjustRest(sessionId: String, deltaS: Int)
+
+    /// watch → iPhone: «Ver recibo en iPhone» on the wrist summary (FER-810) → the iPhone opens the saved
+    /// workout's history detail (`WorkoutSessionDetailScreen`) for this session. The wrist summary stays
+    /// minimal; the rich receipt lives on the phone.
+    case openReceipt(sessionId: String)
+}
+
+/// The capture-phase context the iPhone mirrors to the wrist between rests (FER-809), so the watch's live
+/// face shows «qué toca» — which set is up and its load — not only a bare pulse. Sibling of
+/// `RestActivitySnapshot` (which covers the rest window); all display-ready, derived on the iPhone (the
+/// source of truth) with the same formatting the Live Activity / rest snapshot use. `bpm` is nil with no
+/// band → the wrist shows «--», never 0.
+public struct WorkoutCaptureSnapshot: Equatable, Codable {
+    public var sessionId: String
+    public var routineName: String
+    /// 1-based index of the set that is up, and the count of sets in the current exercise.
+    public var setNumber: Int
+    public var setTotal: Int
+    public var exerciseName: String
+    /// «60 kg × 8» for weight/reps work; empty for time/distance sets (no such datum), matching the rest
+    /// snapshot's `returnDetail` rule.
+    public var returnDetail: String
+    public var bpm: Int?
+    /// FER-810→811: the profile's max heart rate, so the wrist can label the effort zone (Z2/Z3…) next to
+    /// the pulse. Optional — nil when there's no reliable max (the wrist then omits the zone, never guesses).
+    public var hrMax: Int?
+
+    public init(sessionId: String, routineName: String, setNumber: Int, setTotal: Int,
+                exerciseName: String, returnDetail: String, bpm: Int?, hrMax: Int? = nil) {
+        self.sessionId = sessionId
+        self.routineName = routineName
+        self.setNumber = setNumber
+        self.setTotal = setTotal
+        self.exerciseName = exerciseName
+        self.returnDetail = returnDetail
+        self.bpm = bpm
+        self.hrMax = hrMax
+    }
+}
+
+/// The lightweight routine plan the iPhone mirrors to the wrist for the read-only rotor page (FER-810):
+/// each exercise's name, its sets done / total, and which one is current. The watch never edits the plan
+/// (it's a glance), so this carries only what the rotor draws — done ✓ / current • / pending ○ + «N/M».
+public struct WorkoutPlanSnapshot: Equatable, Codable {
+    public struct Exercise: Equatable, Codable {
+        public var name: String
+        public var setsDone: Int
+        public var setsTotal: Int
+        public var isCurrent: Bool
+        public init(name: String, setsDone: Int, setsTotal: Int, isCurrent: Bool) {
+            self.name = name; self.setsDone = setsDone; self.setsTotal = setsTotal; self.isCurrent = isCurrent
+        }
+    }
+    public var sessionId: String
+    public var routineName: String
+    public var exercises: [Exercise]
+    public init(sessionId: String, routineName: String, exercises: [Exercise]) {
+        self.sessionId = sessionId; self.routineName = routineName; self.exercises = exercises
+    }
+
+    /// A cheap change key so the iPhone only mirrors the plan when its visible state actually moves
+    /// (a set completed or the current exercise advanced), not on every HR tick.
+    public var signature: String {
+        exercises.map { "\($0.setsDone)/\($0.setsTotal)\($0.isCurrent ? "*" : "")" }.joined(separator: ",")
+    }
+}
+
+/// A wrist-initiated action on the live strength session (FER-808), decoded from the three watch→iPhone
+/// control messages above. The iPhone maps each to the exact same session mutator the Live Activity uses,
+/// so «Registrar serie / Saltar / ±30 s» behave identically whether they come from the lock screen or the
+/// wrist. Defined here (the shared contract) so both the mirroring bridge and `AppModel` see one type.
+public enum WatchWorkoutAction: Equatable {
+    case completeSet
+    case skipRest
+    case adjustRest(deltaS: Int)
 }
 
 /// Why the watch won't be the one to save the `HKWorkout` — the iPhone reads this to decide whether to

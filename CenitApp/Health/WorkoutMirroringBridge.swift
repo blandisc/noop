@@ -45,6 +45,11 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     var onWatchEndedSession: ((_ sessionId: String, _ save: Bool) -> Void)?
     /// The watch declined to save (no permission / error / mirror lost) → the iPhone takes over.
     var onWatchWillNotSave: ((_ sessionId: String) -> Void)?
+    /// FER-808: the user logged a set / skipped or adjusted a rest from the wrist → apply it to the live
+    /// session exactly as the lock-screen actions do (`AppModel` routes to the shared session mutators).
+    var onWatchAction: ((_ sessionId: String, _ action: WatchWorkoutAction) -> Void)?
+    /// FER-810: «Ver recibo en iPhone» from the wrist summary → open the saved workout's history detail.
+    var onOpenReceipt: ((_ sessionId: String) -> Void)?
 
     // FER-742: state the iPhone UI paints, pushed to `AppModel` (which the Settings row + the strength
     // sheet already observe) via these closures — same fire-on-main-actor pattern as the ones above.
@@ -179,6 +184,20 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         sendOverHealthKit(.rest(snapshot))
     }
 
+    /// Push the current capture context to the watch (FER-809) — which set is up and its load, so the wrist
+    /// shows «qué toca» between rests. Best-effort HealthKit channel, same as `pushRest`.
+    func pushCapture(_ snapshot: WorkoutCaptureSnapshot) {
+        guard mirroredSession != nil else { return }
+        sendOverHealthKit(.capture(snapshot))
+    }
+
+    /// Push the routine plan to the watch for its rotor page (FER-810). Best-effort HealthKit channel; the
+    /// caller only sends it when the plan's visible state changes.
+    func pushPlan(_ snapshot: WorkoutPlanSnapshot) {
+        guard mirroredSession != nil else { return }
+        sendOverHealthKit(.plan(snapshot))
+    }
+
     /// Tell the watch a rest window ended without ending the session. `recovered == true` (FER-758) means
     /// the pulse recovered to target → the watch buzzes «ready»; the default `false` is a silent cancel.
     func pushRestEnded(sessionId: String, recovered: Bool = false) {
@@ -245,7 +264,15 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         case let .watchWillNotSave(sessionId, reason):
             log.log("Watch won't save \(sessionId, privacy: .public): \(reason.rawValue, privacy: .public)")
             onWatchWillNotSave?(sessionId)
-        case .start, .rest, .restEnded:
+        case let .completeSet(sessionId):
+            onWatchAction?(sessionId, .completeSet)
+        case let .skipRest(sessionId):
+            onWatchAction?(sessionId, .skipRest)
+        case let .adjustRest(sessionId, deltaS):
+            onWatchAction?(sessionId, .adjustRest(deltaS: deltaS))
+        case let .openReceipt(sessionId):
+            onOpenReceipt?(sessionId)
+        case .start, .rest, .restEnded, .capture, .plan:
             break   // iPhone → watch only
         }
     }
