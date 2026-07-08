@@ -19,6 +19,7 @@ DEFAULT_FILES = [
     "Cenit/Screens/BucleSheets.swift",
     "Cenit/Screens/TodayView.swift",                                  # FER-744
     "Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift",     # FER-744
+    "Cenit/Screens/EntrenarView.swift",                               # FER-816 (Formas/formOptions → catalog)
 ]
 
 # Engine/data values that are intentionally the metric's stored label, and the brand name.
