@@ -52,6 +52,46 @@ struct CuerpoView: View {
 /// A dark, existing screen presented as a self-contained sheet (pinned to `.dark`).
 private enum CuerpoScreen: Hashable { case dataSources }
 
+/// Full-screen detail chrome (handoff v2 Chrome, FER-828): a «‹ Tendencias · {date}» top bar over a
+/// pushed-looking detail. Presented via `fullScreenCover`, so it reads as a full screen with a back
+/// chevron WITHOUT any `NavigationStack` — deliberately avoiding the nested-stack crash (FER-171).
+private enum DetailChromeDate {
+    static let fmt: DateFormatter = {
+        let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE d MMM"; return f
+    }()
+    static var label: String { fmt.string(from: Date()) }
+}
+
+private struct DetailChrome<Content: View>: View {
+    let theme: InstrumentoTheme
+    @ViewBuilder var content: Content
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Button { dismiss() } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left").font(.system(size: 15, weight: .semibold))
+                        Text("Tendencias").font(StrandFont.body)
+                    }
+                    .foregroundStyle(theme.ink)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                Spacer(minLength: 8)
+                Text(DetailChromeDate.label)
+                    .font(StrandFont.number(11, weight: .regular)).textCase(.uppercase)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 4)
+            content
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .instrumentoTheme(theme)
+    }
+}
+
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)`
 /// (the model itself isn't Identifiable). One per presentation. (FER-212)
 private struct SleepDetailItem: Identifiable {
@@ -198,7 +238,8 @@ private struct CuerpoLanding: View {
         .background(PaperBackground())
         .task(id: repo.refreshSeq) { await loadAll() }
         .sheet(item: $metricInfo) { info in metricSheet(for: info) }
-        .sheet(item: $metricSpec) { spec in
+        .fullScreenCover(item: $metricSpec) { spec in
+          DetailChrome(theme: theme) {
             MetricDetailScreen(
                 spec: spec,
                 depth: .full,
@@ -227,11 +268,12 @@ private struct CuerpoLanding: View {
                 // FER-670: today's source-agreement point (steps) — nil for every non-fused metric.
                 fusion: repo.fusionPoint(day: Repository.localDayKey(Date()), metric: spec.descriptor.key)
             )
+          }
         }
-        .sheet(item: $recoveryDetail) { item in
-            // Light «Instrumento» Detalle de Recuperación — theme passed explicitly (it doesn't propagate
-            // through `.sheet`), NO nested NavigationStack (FER-171). (FER-225)
-            RecoveryDetailScreen(theme: theme, model: item.model)
+        // Detalle a PANTALLA COMPLETA (handoff v2 Chrome, FER-828): fullScreenCover con la cabecera
+        // «‹ Tendencias · fecha» — el look de push del handoff SIN tocar NavigationStack (cero riesgo FER-171).
+        .fullScreenCover(item: $recoveryDetail) { item in
+            DetailChrome(theme: theme) { RecoveryDetailScreen(theme: theme, model: item.model) }
         }
         .sheet(isPresented: $showMuscleMap) {
             // Light «Instrumento» Mapa muscular (FER-350) — theme injected at the root (it doesn't cross
@@ -292,56 +334,48 @@ private struct CuerpoLanding: View {
             .environmentObject(model)
             .environmentObject(health)
         }
-        .sheet(item: $strainDetail) { item in
-            // Light «Instrumento» Detalle de Esfuerzo — theme passed explicitly (it doesn't propagate
-            // through `.sheet`), NO nested NavigationStack (FER-171). The intraday curve is loaded the
-            // same way the legacy sheet did (`loadStrainCurve`). (FER-238)
-            StrainDetailScreen(theme: theme, model: item.model,
-                               curveLoader: { await loadStrainCurve() })
+        .fullScreenCover(item: $strainDetail) { item in
+            DetailChrome(theme: theme) {
+                StrainDetailScreen(theme: theme, model: item.model,
+                                   curveLoader: { await loadStrainCurve() })
+            }
         }
-        .sheet(item: $sleepDetail) { item in
-            // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
-            // through `.sheet`), NO nested NavigationStack (FER-171). (FER-212)
-            SleepDetailScreen(theme: theme, model: item.model)
+        .fullScreenCover(item: $sleepDetail) { item in
+            DetailChrome(theme: theme) { SleepDetailScreen(theme: theme, model: item.model) }
         }
-        .sheet(item: $stressDetail) { item in
-            // Light «Instrumento» Detalle de Estrés — theme passed explicitly (it doesn't propagate
-            // through `.sheet`), NO nested NavigationStack (FER-171). (FER-241; unificado con Hoy en FER-452
-            // vía el factory compartido `StressDayMapPresenter`.)
-            // The «mapa del día» driver (EventKit + intraday curve) is built fresh on tap. (FER-377)
-            // The cross-day pattern line (FER-378) is read-only — the Coach handoff was removed (Pase v2 #7).
-            StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
-                               patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
-                                   repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
-                               eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
-                                   repo: repo, map: stressDayMap) })
+        .fullScreenCover(item: $stressDetail) { item in
+            DetailChrome(theme: theme) {
+                StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
+                                   patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
+                                       repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
+                                   eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
+                                       repo: repo, map: stressDayMap) })
+            }
         }
-        .sheet(item: $trainingLoadItem) { item in
-            // Light «Carga de entrenamiento» explainer (FER-705) — theme passed explicitly (it doesn't
-            // propagate through `.sheet`), NO nested NavigationStack (FER-171).
-            TrainingLoadSheet(model: item.model, theme: theme)
+        .fullScreenCover(item: $trainingLoadItem) { item in
+            DetailChrome(theme: theme) { TrainingLoadSheet(model: item.model, theme: theme) }
         }
-        .sheet(item: $skinTempDetail) { item in
-            // Light «Instrumento» Detalle de Temperatura de la piel — theme passed explicitly (it doesn't
-            // propagate through `.sheet`), NO nested NavigationStack (FER-171). (FER-256)
-            SkinTempDetailScreen(theme: theme, model: item.model)
+        .fullScreenCover(item: $skinTempDetail) { item in
+            DetailChrome(theme: theme) { SkinTempDetailScreen(theme: theme, model: item.model) }
         }
-        .sheet(isPresented: $showActivityCost) { activityRecoverySheet }
-        .sheet(isPresented: $showFitnessAge) {
-            // Light «Instrumento» sheet — pass the resolved theme explicitly (it doesn't propagate
-            // through `.sheet`), same as the metric sheet above.
-            FitnessAgeDetailView(snapshot: fitnessAge ?? computeFitnessAge(),
-                                 chronoAge: model.profile.age, sex: model.profile.sex,
-                                 appleVO2max: latestAppleVO2max,
-                                 appleConnectHint: health.auth != .authorized && health.auth != .unavailable
-                                     && latestAppleVO2max == nil,
-                                 theme: theme)
+        .fullScreenCover(isPresented: $showActivityCost) { DetailChrome(theme: theme) { activityRecoverySheet } }
+        .fullScreenCover(isPresented: $showFitnessAge) {
+            DetailChrome(theme: theme) {
+                FitnessAgeDetailView(snapshot: fitnessAge ?? computeFitnessAge(),
+                                     chronoAge: model.profile.age, sex: model.profile.sex,
+                                     appleVO2max: latestAppleVO2max,
+                                     appleConnectHint: health.auth != .authorized && health.auth != .unavailable
+                                         && latestAppleVO2max == nil,
+                                     theme: theme)
+            }
         }
-        .sheet(isPresented: $showBodyAge) {
-            BodyAgeSheet(
-                result: vitalityResult,
-                inputs: vitalityInputs ?? VitalityEngine.Inputs(chronoAge: Double(model.profile.age)),
-                theme: theme)
+        .fullScreenCover(isPresented: $showBodyAge) {
+            DetailChrome(theme: theme) {
+                BodyAgeSheet(
+                    result: vitalityResult,
+                    inputs: vitalityInputs ?? VitalityEngine.Inputs(chronoAge: Double(model.profile.age)),
+                    theme: theme)
+            }
         }
     }
 
