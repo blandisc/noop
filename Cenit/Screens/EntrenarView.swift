@@ -97,6 +97,8 @@ private struct EntrenarLanding: View {
     @State private var showLive = false
     /// The Constancia day currently popped open (tap-to-reveal what you trained that day).
     @State private var constancyPopup: ConstancyPopup? = nil
+    /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
+    @State private var showTemplates = false
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -113,7 +115,10 @@ private struct EntrenarLanding: View {
                 header
                 if loaded {
                     if split.isEmpty {
-                        emptyStateB
+                        emptyStateB          // hero «Empecemos por tu plan» + «Crear mi plan» (mock 5a)
+                        plantillaRow         // «O empieza sin plan» → Rutinas de plantilla (the one kept row)
+                        formasSection        // the same six «Formas de entrenar» doors as the planned state
+                        constanciaCard       // empty Constancia — «tus sesiones aparecerán aquí»
                     } else {
                         hoyCard          // ① hero «Hoy · {día}» — routine tint + recovery bullet (mock 1a)
                         suggestionRow    // ② contextual FER-532 nudge (shown only when the engine fires)
@@ -135,6 +140,13 @@ private struct EntrenarLanding: View {
         .sheet(isPresented: $showMobilityTemplate, onDismiss: startPendingMobility) {
             StarterTemplatesSheet(initialSelection: StarterTemplates.byID("mobility"),
                                   onStart: { name, slots in pendingMobility = (name, slots) }) { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // First-use «Rutinas de plantilla» (mock 5a): the grouped templates list. «Add to my routines»
+        // is the only action here (no `onStart`), so a copy lands in «My routines» and the landing
+        // reloads out of the empty state on dismiss.
+        .sheet(isPresented: $showTemplates) {
+            StarterTemplatesSheet { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
@@ -531,6 +543,11 @@ private struct EntrenarLanding: View {
                         if m.id != months.last?.id { Spacer(minLength: 6) }
                     }
                 }
+                if total == 0 {
+                    Text("Your sessions will appear here, each in its routine's color.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -634,6 +651,36 @@ private struct EntrenarLanding: View {
         .frame(maxWidth: .infinity).padding(.vertical, 30).padding(.horizontal, 18)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    // MARK: - First use · «O empieza sin plan» → Rutinas de plantilla (mock 5a)
+    //
+    // The one door kept from the mock's «empieza sin plan» trio: template routines, ready to edit. The
+    // other two mock rows (Rápido de fuerza · Otra forma de entrenar) are dropped here — the always-visible
+    // «Formas de entrenar» pill row below already carries Rápido and the alternative forms, so we don't
+    // repeat them. A quiet overline, then a single tappable row that opens the templates list.
+
+    private var plantillaRow: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Or start without a plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .padding(.bottom, 4)
+            Button { showTemplates = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "square.stack.3d.up").font(.system(size: 18)).foregroundStyle(theme.inkSecondary)
+                        .frame(width: 26)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Template routines").font(StrandFont.body).foregroundStyle(theme.ink)
+                        Text("push · pull · legs · full body, ready to edit")
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(theme.inkDim)
+                }
+                .padding(.vertical, 11).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     /// Start the mobility session «Empezar» queued from the TRAINING-day template sheet (FER-560).

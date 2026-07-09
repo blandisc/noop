@@ -52507,6 +52507,74 @@
           }
         }
       }
+    },
+    "Or start without a plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Or start without a plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O empieza sin plan"
+          }
+        }
+      }
+    },
+    "Template routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Template routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rutinas de plantilla"
+          }
+        }
+      }
+    },
+    "push · pull · legs · full body, ready to edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "push · pull · legs · full body, ready to edit"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "empuje · tirón · pierna · full body, listas para editar"
+          }
+        }
+      }
+    },
+    "Your sessions will appear here, each in its routine's color.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sessions will appear here, each in its routine's color."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus sesiones aparecerán aquí, en el color de su rutina."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
