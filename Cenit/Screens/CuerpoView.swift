@@ -66,29 +66,65 @@ private struct DetailChrome<Content: View>: View {
     let theme: InstrumentoTheme
     @ViewBuilder var content: Content
     @Environment(\.dismiss) private var dismiss
+    /// Live horizontal offset while the user drags in from the left edge (interactive back-swipe, FER-837).
+    @State private var dragX: CGFloat = 0
+
+    /// The left-edge zone that arms the back-swipe (pt). Narrow so it never steals a normal touch.
+    private static var edgeZone: CGFloat { 24 }
+    /// Past this drag distance (or a flick predicted past `flickThreshold`) the screen dismisses.
+    private static var dismissThreshold: CGFloat { 90 }
+    private static var flickThreshold: CGFloat { 200 }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 6) {
-                Button { dismiss() } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
-                        Text("Tendencias").font(StrandFont.body)
+        ZStack(alignment: .topLeading) {
+            // A stationary full-bleed paper backdrop, so the sliding content reveals paper (never a
+            // black gap) as it's dragged toward the right.
+            theme.paper.ignoresSafeArea()
+            VStack(spacing: 0) {
+                HStack(spacing: 6) {
+                    Button { dismiss() } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
+                            Text("Tendencias").font(StrandFont.body)
+                        }
+                        .foregroundStyle(theme.ink)
+                        .contentShape(Rectangle())
                     }
-                    .foregroundStyle(theme.ink)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    Spacer(minLength: 8)
+                    Text(DetailChromeDate.label)
+                        .font(StrandFont.number(11, weight: .regular)).textCase(.uppercase)
+                        .foregroundStyle(theme.inkTertiary)
                 }
-                .buttonStyle(.plain)
-                Spacer(minLength: 8)
-                Text(DetailChromeDate.label)
-                    .font(StrandFont.number(11, weight: .regular)).textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
+                .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 4)
+                content
             }
-            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 4)
-            content
+            .offset(x: dragX)
         }
-        .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        // Edge-swipe-back (FER-837): a drag that STARTS in the left `edgeZone` and runs horizontally
+        // pulls the whole screen right and, past `dismissThreshold` (or a flick), dismisses — so you
+        // don't have to hit the «‹» chevron exactly. Gated to the left edge + horizontal dominance so
+        // it never competes with vertical scrolling. `.simultaneousGesture` keeps the ScrollView and the
+        // back button fully working. No `NavigationStack` is involved, so there's no FER-171 risk.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12)
+                .onChanged { v in
+                    guard v.startLocation.x < Self.edgeZone,
+                          v.translation.width > 0,
+                          v.translation.width > abs(v.translation.height) else { return }
+                    dragX = v.translation.width
+                }
+                .onEnded { v in
+                    guard v.startLocation.x < Self.edgeZone, dragX > 0 else { return }
+                    if v.translation.width > Self.dismissThreshold
+                        || v.predictedEndTranslation.width > Self.flickThreshold {
+                        dismiss()
+                    } else {
+                        withAnimation(StrandMotion.interactive) { dragX = 0 }
+                    }
+                }
+        )
     }
 }
 

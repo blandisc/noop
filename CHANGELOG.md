@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Vuelve atrás deslizando desde el borde, sin apuntar a la flecha / Swipe from the edge to go back, no need to aim for the arrow.**
+  **ES** — En las pantallas de detalle de Tendencias (Recuperación, Sueño, Esfuerzo, Estrés, vitales, Edad física, Carga…) ahora puedes deslizar desde el borde izquierdo para volver: la pantalla sigue tu dedo y se cierra al pasar el umbral, o regresa si sueltas antes. La flecha «‹» sigue igual; el gesto es un extra. El gesto se limita al borde para no estorbar al scroll.
+  **EN** — On the Trends detail screens (Recovery, Sleep, Strain, Stress, vitals, Physical age, Load…) you can now swipe in from the left edge to go back: the screen follows your finger and dismisses past a threshold, or springs back if you let go early. The «‹» chevron is unchanged; the gesture is a bonus. It's gated to the edge so it never fights vertical scrolling.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **El selector de periodo estrena la píldora de tinta / The period selector gets its ink pill.**
   **ES** — El segmento activo del selector de periodo (S · M · 3M · 6M · 1A) pasa del thumb claro con borde a una píldora de tinta con texto papel, el mismo look que ya usa el toggle Media/Rangos y que pide el handoff v2. Unifica todos los selectores temados de la app a ese look (antes convivían dos); la variante alta de 44pt del landing se conserva.
   **EN** — The period selector's active segment (W · M · 3M · 6M · 1Y) moves from the light bordered thumb to an ink pill with paper text — the same look the Mean/Ranges toggle already uses and the v2 handoff calls for. It unifies every themed selector in the app to that look (two coexisted before); the landing's 44pt tall variant is preserved.
