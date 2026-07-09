@@ -705,7 +705,16 @@ Sleep, Trends, Workouts, Health, Stress, Apple Health, Data Sources, Automations
 The home / lock-screen widgets live in `CenitWidgets/`.
 
 Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on data change, not on the
-~1 Hz stream) and render with `StrandDesign` components — `RecoveryRing`, `StrainGauge`, `Hypnogram`,
+~1 Hz stream). The launch refresh runs in **two passes**: a ~90-day *first-paint* pass that publishes
+immediately (`loaded == true`, `fullyLoaded == false`) so Today renders without waiting for the full
+history, then a full pass whose merge work runs **off the main actor** (`Repository.assembleDashboard`,
+nonisolated) and publishes the identical final dashboard (`fullyLoaded == true`). A monotonic
+generation counter makes the most recently started refresh the only one that may publish, and a
+first-paint pass can never overwrite a fully loaded dashboard (`Repository.shouldPublish`). **Rule:**
+anything that *persists* a value derived from `repo.days` — `IntelligenceEngine.analyzeRecent`
+baselines, `Repository.closeDueExperiment`, the restore offer — must gate on `repo.fullyLoaded`;
+pure display readers may see the short window transiently and self-correct on the full publish.
+Screens render with `StrandDesign` components — `RecoveryRing`, `StrainGauge`, `Hypnogram`,
 `TrendChart`, `TrajectoryChart` (the goal simulator's two-path + confidence-band plot), `Sparkline`,
 `YearHeatStrip` — over the `StrandPalette` tokens. `AppModel` also hosts
 the opt-in, on-device behaviours (HR smoothing, illness/strain early-warning, stress nudges, HR-zone
