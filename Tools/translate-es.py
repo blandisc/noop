@@ -22,6 +22,9 @@ ES: dict[str, str] = {
     "Calendar · 90 nights": "Calendario · 90 noches",
     "Tap a night to see its sleep.": "Toca una noche para ver su sueño.",
     "Tap a day to see its strain.": "Toca un día para ver su esfuerzo.",
+    # FER-833 — VO₂max: 2 tiles compactos (categoría + edad equivalente).
+    "FITNESS CATEGORY": "CATEGORÍA DE FORMA",
+    "EQUIVALENT AGE": "EDAD EQUIVALENTE",
     # FER-826 — Landing de Tendencias §8.7: micro-leyenda + leyenda de orígenes.
     "Today's values · last month's trends": "Valores de hoy · tendencias del último mes",
     "band": "banda",

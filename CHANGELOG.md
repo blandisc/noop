@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **VO₂max resume categoría y edad equivalente en dos fichas / VO₂max sums up category and equivalent age in two tiles.**
+  **ES** — El Detalle de VO₂max cambia la tabla de cuatro bandas y el bloque de «edad cardiorrespiratoria» por dos fichas compactas lado a lado — Categoría de forma y Edad equivalente — como en el handoff v2. Los rangos de las bandas y la aclaración de que es otra base que la Edad física se mueven a «Por qué importa» y al ⓘ. Sin matemática nueva.
+  **EN** — The VO₂max detail swaps the four-band table and the separate «cardiorespiratory age» block for two compact tiles side by side — Fitness category and Equivalent age — as in the v2 handoff. The band ranges and the «different basis from Physical age» note move to «Why it matters» and the ⓘ. No math changes.
+  ([MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **La Dynamic Island deja de estirarse y de comerse la letra / The Dynamic Island stops stretching and eating the text.**
   **ES** — En modo compacto, el contador de descanso reclamaba todo el ancho de la isla (el reloj del sistema es «codicioso» si no lo acotas); ahora se ciñe a su contenido. Y en la vista expandida, la línea «al volver: …» iba pegada al borde inferior; se le dio aire para que los rasgos bajos no se corten.
   **EN** — In compact mode the rest countdown claimed the island's full width (the system timer text is greedy unless capped); it now hugs its content. And in the expanded view the «back to…» line sat flush against the bottom edge; it got breathing room so descenders don't clip.
