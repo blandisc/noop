@@ -88,13 +88,11 @@ struct RecoveryDetailScreen: View {
                         blockDivider
                         changeSinceYesterdayBlock(change)
                     }
-                    // Forward-looking, so it reads high — right after what drives today's score. (FER-277)
-                    blockDivider
-                    forecastBlock
-                    // Level 2 · «Your patterns»: normal range + consistency + load, fused to plain lines.
-                    if hasPatterns {
+                    // Forward-looking, so it reads high — right after what drives today's score. Fuses the
+                    // 1-day forecast with your normal range, steadiness and load into one 2×2 grid. (FER-831)
+                    if hasPanorama {
                         blockDivider
-                        patternsBlock
+                        panoramaBlock
                     }
                     // The screen's SINGLE recovery line: the level instrument (line + tappable levels +
                     // «N de tus últimos M días») over the FIXED recovery levels (Agotado / Bajo / Moderado /
@@ -135,24 +133,17 @@ struct RecoveryDetailScreen: View {
     // MARK: - 1. Hero — el score en color de banda (+ dirección fundida: mini-sparkline 14 d + flecha)
 
     private var hero: some View {
-        let spark = heroSpark
         // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Replaces the InfoAccordion
         // wrapper; the explanation stays behind the ⓘ exactly as before — only the title turns serif.
         return VStack(alignment: .leading, spacing: 10) {
             InstrumentoScreenTitle("Recovery", theme: theme, explanation: heroExplanation, glyph: .recovery)
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(model.score.map { "\($0)" } ?? "—")
-                            .instrumentoHero(46)
-                            .foregroundStyle(model.score == nil ? theme.inkTertiary : bandColor)
-                        if model.score != nil {
-                            Text("/ 100").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                        }
-                    }
-                    Spacer(minLength: 12)
-                    if model.score != nil, spark.count >= 2 {
-                        heroDirectionTrend(spark: spark)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(model.score.map { "\($0)" } ?? "—")
+                        .instrumentoHero(46)
+                        .foregroundStyle(model.score == nil ? theme.inkTertiary : bandColor)
+                    if model.score != nil {
+                        Text("/ 100").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                     }
                 }
                 // FER-153: a band-less Apple night reads «estimado · confianza X» right under the number, so
@@ -220,53 +211,6 @@ struct RecoveryDetailScreen: View {
     static func coverageLabel(_ present: Int?) -> LocalizedStringKey? {
         guard let present else { return nil }
         return "Estimated — \(present) of \(AppleRecoveryEstimator.DayEstimate.totalPrimaryDrivers) signals"
-    }
-
-    /// The fused direction: a 14-day mini-sparkline of recovery + a tendency arrow and «14 d» label. The
-    /// direction prefers the forecast's (the chip that used to live in «Tomorrow»); with no forecast yet it
-    /// reads the sign of the recent slope. Color stays on the data (recovery green); the arrow is ink. (FER-476 #4)
-    private func heroDirectionTrend(spark: [Double]) -> some View {
-        VStack(alignment: .trailing, spacing: 3) {
-            Sparkline(
-                values: spark,
-                gradient: Gradient(colors: [theme.dataRecovery.opacity(0.55), theme.dataRecovery]),
-                lineWidth: 1.6,
-                showsArea: false,
-                showsHead: false,
-                showsScrub: false
-            )
-            .frame(width: 74, height: 24)
-            .accessibilityHidden(true)
-            if let d = heroDirection(spark) {
-                HStack(spacing: 3) {
-                    Image(systemName: heroDirectionSymbol(d))
-                        .font(.system(size: 10, weight: .semibold))
-                        .accessibilityHidden(true)
-                    Text("14 d").font(StrandFont.footnote)
-                }
-                .foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Recovery trend, last 14 days"))
-    }
-
-    /// The last 14 days of recovery values (oldest → newest), for the hero mini-sparkline.
-    private var heroSpark: [Double] { Array(model.series.suffix(14).map(\.value)) }
-
-    /// The hero's tendency: the forecast's direction when there is one (continuity with the old chip),
-    /// otherwise the sign of the 14-day slope (first-half vs second-half mean). nil when there's too little.
-    private func heroDirection(_ spark: [Double]) -> RecoveryForecast.Direction? {
-        if let d = model.forecast?.direction { return d }
-        let v = spark
-        guard v.count >= 4 else { return nil }
-        let half = v.count / 2
-        let early = v.prefix(half)
-        let late = v.suffix(half)
-        let delta = (late.reduce(0, +) / Double(late.count)) - (early.reduce(0, +) / Double(early.count))
-        if delta > 1.5 { return .rising }
-        if delta < -1.5 { return .falling }
-        return .steady
     }
 
     private func heroDirectionSymbol(_ d: RecoveryForecast.Direction) -> String {
@@ -503,93 +447,87 @@ struct RecoveryDetailScreen: View {
         }
     }
 
-    // MARK: - 2.5 Mañana, si descansas igual — pronóstico a 1 día (FER-277, motor FER-188)
+    // MARK: - 2.5 Panorama — pronóstico + rango normal + estabilidad + carga, en un grid 2×2 (handoff v2, FER-831)
+    //
+    // Fuses the former «Tomorrow, if you rest the same» (forecast) and «Your patterns» (normal range +
+    // steadiness + load) blocks into one 2×2 «Panorama» grid, per the Tendencias v2 handoff. No new math:
+    // the forecast is `RecoveryForecast` (presentation-only), the range is `ComparisonEngine.stat` ± σ,
+    // steadiness is the CV word, the load cell is `model.load.bandLabel`. The σ/CV/ACWR jargon that lived in
+    // the «Your patterns» ⓘ is dropped from the face; «See the method» remains its home.
 
-    /// The forecast block: a humble one-day projection of tomorrow's recovery. With a result it shows the
-    /// estimate (the datum, in recovery green), its likely range and the trend direction (in ink — color
-    /// stays on the number); with none it shows the "still calibrating" state in the same slot. The ⓘ
-    /// carries the method + citation; the framing line below keeps the always-visible humility.
-    private var forecastBlock: some View {
-        DetailBlock("Tomorrow, if you rest the same", theme: theme) {
-            if let f = model.forecast {
-                forecastReadout(f)
-            } else {
-                forecastCalibrating
-            }
-        }
+    /// Whether there's anything to show in the Panorama (otherwise the whole block is skipped).
+    private var hasPanorama: Bool {
+        model.forecast != nil || normalRange != nil || consistency != nil || model.load != nil
     }
 
-    /// The populated readout, DIRECTIONAL (FER-642): a trend arrow + a plain sentence — «Trend {steady|
-    /// rising|falling}. Rest the same and you should stay in your mid-range (around N).» — where N is the
-    /// center of your normal range (omitted when there's no range yet). The number+range bar is gone; the
-    /// forecast is presentation-only here (the `RecoveryForecast` engine is untouched). VoiceOver reads the
-    /// combined phrase.
-    private func forecastReadout(_ f: RecoveryForecast.Result) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Image(systemName: heroDirectionSymbol(f.direction))
-                    .font(StrandFont.headline)
-                    .foregroundStyle(theme.dataRecovery)
-                    .accessibilityHidden(true)
-                forecastSentence(f)
-                    .font(StrandFont.body)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Text("A trend projection, not a guarantee. Tomorrow depends most on what you do today.")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// «Trend {steady|rising|falling}. Rest the same and you should stay in your mid-range (around N).»
-    /// The «(around N)» clause is dropped when there's no normal range yet. (FER-642)
-    private func forecastSentence(_ f: RecoveryForecast.Result) -> Text {
-        let trend: LocalizedStringKey
-        switch f.direction {
-        case .rising:  trend = "Trend rising. "
-        case .steady:  trend = "Trend steady. "
-        case .falling: trend = "Trend falling. "
-        }
-        if let r = normalRange {
-            let mid = Int(((Double(r.lo) + Double(r.hi)) / 2).rounded())
-            return Text(trend)
-                + Text("Rest the same and you should stay in your mid-range (around \(mid)).")
-        }
-        return Text(trend)
-            + Text("Rest the same and you should stay in your mid-range.")
-    }
-
-    /// The "still calibrating" sub-state, shown in the forecast slot when there isn't enough base yet.
-    private var forecastCalibrating: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "hourglass")
-                .font(StrandFont.headline)
-                .foregroundStyle(theme.inkTertiary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Still calibrating").font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                Text("We need about two weeks of data to project this.")
+    private var panoramaBlock: some View {
+        DetailBlock("Panorama", theme: theme) {
+            VStack(alignment: .leading, spacing: 16) {
+                LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
+                                    GridItem(.flexible(), alignment: .topLeading)],
+                          alignment: .leading, spacing: 14) {
+                    panoramaTomorrowCell
+                    panoramaCell(label: "Usually",
+                                 value: normalRange.map { "\($0.lo)–\($0.hi)" } ?? "—")
+                    panoramaCell(label: "Steadiness",
+                                 value: consistency.map { consistencyWord($0) } ?? "—")
+                    panoramaCell(label: "Load",
+                                 value: model.load?.bandLabel ?? "—",
+                                 valueColor: model.load.map { flagColor($0.bandFlag) })
+                }
+                Text("A forecast is a projection, not a guarantee.")
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// The «Tomorrow» cell: a trend arrow + word + the center of your normal range («Rising · ~73»); it
+    /// reads «Calibrating» when there isn't enough base to project. The `RecoveryForecast` engine is
+    /// untouched — this is presentation-only. (FER-831)
+    private var panoramaTomorrowCell: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Tomorrow").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if let f = model.forecast {
+                HStack(spacing: 4) {
+                    Image(systemName: heroDirectionSymbol(f.direction))
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(theme.dataRecovery)
+                        .accessibilityHidden(true)
+                    Text(panoramaForecastValue(f)).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
+                }
+            } else {
+                Text("Calibrating").font(StrandFont.bodyNumber).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - Level 2 · «Your patterns» — normal range + consistency + load, fused to plain lines
-    //
-    // The re-sequencing (Detalles escalonados) collapses three former blocks — «Your normal range»,
-    // «Consistency» and «Recent load» — into one condensed «Your patterns» strip of plain-language lines.
-    // The jargon (σ, CV, ACWR) stays inside the block's ⓘ via `InfoAccordion`; the face is plain. No new
-    // math: the normal range is still `ComparisonEngine.stat` ± σ, consistency is still the CV, the load
-    // line is still `model.load.bandLabel`.
+    /// «{Rising|Steady|Falling} · ~N» — the trend word plus the center of the normal range (the «· ~N»
+    /// clause is dropped when there's no range yet).
+    private func panoramaForecastValue(_ f: RecoveryForecast.Result) -> String {
+        let word: String
+        switch f.direction {
+        case .rising:  word = String(localized: "Rising")
+        case .steady:  word = String(localized: "Steady")
+        case .falling: word = String(localized: "Falling")
+        }
+        guard let r = normalRange else { return word }
+        let mid = Int(((Double(r.lo) + Double(r.hi)) / 2).rounded())
+        return "\(word) · ~\(mid)"
+    }
 
-    /// Whether there's any pattern to show (otherwise the whole strip is skipped).
-    private var hasPatterns: Bool {
-        normalRange != nil || consistency != nil || model.load != nil
+    /// One Panorama cell: a quiet overline label above a plain-language value (the datum — coloured when a
+    /// hue is given). Token-only.
+    private func panoramaCell(label: LocalizedStringKey, value: String, valueColor: Color? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(value).font(StrandFont.bodyNumber).foregroundStyle(valueColor ?? theme.ink)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     /// The normal-range pair (lo, hi, n) over the last 30 days, or nil when there aren't enough days.
@@ -602,47 +540,7 @@ struct RecoveryDetailScreen: View {
                 s.n)
     }
 
-    private var patternsBlock: some View {
-        DetailBlock("Your patterns", theme: theme) {
-            VStack(alignment: .leading, spacing: 12) {
-                if let r = normalRange {
-                    patternLine(label: "Usually",
-                                value: "\(r.lo)–\(r.hi)",
-                                note: "where you land when well")
-                }
-                if let pct = consistency {
-                    patternLine(label: "Steadiness",
-                                value: consistencyWord(pct),
-                                note: "week to week")
-                }
-                if let load = model.load {
-                    patternLine(label: "Training load",
-                                value: load.bandLabel,
-                                valueColor: flagColor(load.bandFlag),
-                                note: nil)
-                }
-            }
-        }
-    }
-
-    /// One «Your patterns» line: a quiet overline label, a plain-language value (the datum — coloured),
-    /// and an optional trailing note in tertiary ink. Token-only.
-    private func patternLine(label: LocalizedStringKey, value: String,
-                             valueColor: Color? = nil, note: LocalizedStringKey?) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 8)
-            Text(value)
-                .font(StrandFont.bodyNumber)
-                .foregroundStyle(valueColor ?? theme.ink)
-            if let note {
-                Text(note).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// A plain word for steadiness from the CV percent (the number itself stays in the ⓘ).
+    /// A plain word for steadiness from the CV percent (the number itself stays in «See the method»).
     private func consistencyWord(_ pct: Int) -> String {
         switch pct {
         case ..<8:   return String(localized: "Very steady")

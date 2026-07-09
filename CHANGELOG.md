@@ -23,6 +23,25 @@ approximate; Cénit is built from source — see the [README](README.md).
   **ES** — Siguiendo el handoff v2, el landing quita el puntito de origen de cada dato y la leyenda del pie: la procedencia (banda / Apple Salud / calculado) vive solo al pie de cada pantalla de detalle, no repartida por el resumen. Las cifras quedan más limpias; la procedencia sigue calculándose, solo no se pinta aquí.
   **EN** — Per the v2 handoff, the landing drops the per-stat origin dot and the foot legend: provenance (band / Apple Health / computed) lives only at the foot of each detail screen, not scattered across the summary. The numbers read cleaner; provenance is still tracked, just not shown here.
   ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+- **VO₂max resume categoría y edad equivalente en dos fichas / VO₂max sums up category and equivalent age in two tiles.**
+  **ES** — El Detalle de VO₂max cambia la tabla de cuatro bandas y el bloque de «edad cardiorrespiratoria» por dos fichas compactas lado a lado — Categoría de forma y Edad equivalente — como en el handoff v2. Los rangos de las bandas y la aclaración de que es otra base que la Edad física se mueven a «Por qué importa» y al ⓘ. Sin matemática nueva.
+  **EN** — The VO₂max detail swaps the four-band table and the separate «cardiorespiratory age» block for two compact tiles side by side — Fitness category and Equivalent age — as in the v2 handoff. The band ranges and the «different basis from Physical age» note move to «Why it matters» and the ⓘ. No math changes.
+  ([MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
+- **Estrés estrena su calendario de 90 días / Stress gets its 90-day calendar.**
+  **ES** — El Detalle de Estrés suma el mismo mapa de calor de 90 días que ya llevan Recuperación, Sueño y Esfuerzo, tal como lo pide el handoff v2. Como el estrés es evaluativo, el calor usa el semáforo de banda: verde (bajo), ámbar (moderado), rojo (alto). Toca un día para ver su valor.
+  **EN** — The Stress detail adds the same 90-day heatmap Recovery, Sleep and Strain already carry, per the v2 handoff. Since stress is evaluative, the heat uses the band semaphore: green (low), amber (moderate), red (high). Tap a day to see its value.
+  ([StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift))
+
+- **Recuperación adopta el «Panorama» del handoff y limpia el héroe / Recovery adopts the handoff «Panorama» and cleans up its hero.**
+  **ES** — El Detalle de Recuperación funde los bloques «Mañana, si descansas igual» y «Tus patrones» en un solo grid 2×2 «Panorama» (Mañana · Normalmente · Estabilidad · Carga), fiel al handoff v2 de Tendencias; no cambia la matemática, solo el layout. Y el héroe pierde el mini-sparkline de 14 días que el handoff no contempla: la serie ya vive en el instrumento de niveles de abajo.
+  **EN** — The Recovery detail fuses the «Tomorrow, if you rest the same» and «Your patterns» blocks into one 2×2 «Panorama» grid (Tomorrow · Usually · Steadiness · Load), faithful to the Tendencias v2 handoff; no math changes, only layout. And the hero drops the 14-day mini-sparkline the handoff doesn't call for — the series already lives in the levels instrument below.
+  ([RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift))
+
+- **La franja de Carga se queda en Señales / The Load strip stays on the Signals page.**
+  **ES** — La franja «CARGA» estaba fija bajo las pestañas, así que se veía tanto en Señales como en el Brief. Ahora vive dentro de la página de Señales: queda pegada a las métricas de hoy y, al deslizar al Brief, desaparece.
+  **EN** — The «LOAD» strip was pinned below the tabs, so it showed on both the Signals and the Brief page. It now lives inside the Signals page: it stays with today's metrics and, when you swipe to the Brief, it's gone.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
 
 - **La app abre al instante aunque tu historial sea enorme / The app opens instantly even with a huge history.**
   **ES** — Al arrancar, la app cargaba todo tu historial (hasta ~11 años de días) antes de pintar «Hoy». Ahora pinta primero con tus últimos 90 días —milisegundos— y completa el resto en segundo plano sin congelar la pantalla. Nada cambia en tus números: los cálculos de fondo (líneas base, experimentos) esperan siempre a la historia completa.
