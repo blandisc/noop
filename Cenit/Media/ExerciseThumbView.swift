@@ -41,6 +41,26 @@ struct ExerciseThumbView: View {
     }
 }
 
+/// The session-row variant: loads the baked still by exercise ID alone. The live session model carries
+/// only `exerciseId` (no resolved `Exercise`), and the guided flow can't depend on the opt-in
+/// `MediaDownloadCoordinator` environment — so this takes the offline path only (still catalog → placeholder).
+struct SessionRunThumb: View {
+    let exerciseId: String
+    var side: CGFloat = 44
+
+    @State private var image: Image?
+
+    var body: some View {
+        ExerciseThumbnail(side: side, image: image)
+            .task(id: exerciseId) {
+                guard image == nil,
+                      let url = ExerciseCatalog.stillURL(id: exerciseId),
+                      let ui = await ExerciseThumbStillCache.shared.still(at: url, id: exerciseId) else { return }
+                image = Image(uiImage: ui)
+            }
+    }
+}
+
 /// Bounded in-memory cache of decoded GIF first-frames, keyed by exercise id. `UIImage(contentsOfFile:)`
 /// on a GIF yields its first frame; decoding happens off the main actor. `NSCache` is thread-safe and
 /// evicts under memory pressure, so the still catalog never pins unbounded memory.

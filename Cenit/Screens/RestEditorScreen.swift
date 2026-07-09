@@ -82,9 +82,14 @@ struct RestEditorScreen: View {
                 SegmentedPillControl([RestMode.fixed, .heartRate], selection: $mode, theme: theme, inkThumb: true) {
                     $0 == .fixed ? String(localized: "By time") : String(localized: "By heart rate")
                 }
-                if mode == .heartRate { hrSection } else { timeSection }
-                capNote
-                scopeSection
+                if mode == .heartRate {
+                    hrSection
+                    capNote   // the 5-min cap only exists on an HR rest — by time there's nothing to cap
+                }
+                else { timeSection }
+                // Scope only makes sense when the editor was opened FOR a set (the rest card). From the
+                // exercise chip there's no «this set» to point at — the edit is exercise-wide by definition.
+                if setNumber != nil { scopeSection }
                 if persistsToRoutine {
                     Toggle(isOn: $saveToRoutine) {
                         Text("Save to the routine (next sessions)").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -205,6 +210,7 @@ struct RestEditorScreen: View {
             HStack(spacing: 8) {
                 secondsPreset("1:00", 60); secondsPreset("2:00", 120); secondsPreset("3:00", 180)
             }
+            .frame(maxWidth: .infinity, alignment: .center)   // presets share the stepper's axis
         }
     }
 
