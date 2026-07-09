@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import UIKit
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
@@ -919,7 +920,17 @@ struct LiveStrengthSheet: View {
                     }
                     // The rest card (1k) slots between this exercise's rows and the next, while resting here.
                     if session.phase == .resting, ei == session.currentIndex, session.summary == nil {
-                        restInlineCard.plainRow(top: 4)
+                        restInlineCard
+                            // A fixed rest that runs out dismisses itself — focus lands on the next active
+                            // set with no tap in between (HR rests keep the card up until the buzz/skip).
+                            .task(id: session.restEndsAt) {
+                                guard session.currentRestMode == .fixed, let end = session.restEndsAt else { return }
+                                let delay = end.timeIntervalSinceNow
+                                if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+                                guard !Task.isCancelled, session.phase == .resting, !session.paused else { return }
+                                withAnimation(StrandMotion.gentle) { session.skipRest() }
+                            }
+                            .plainRow(top: 4)
                     }
                     addSetButton(ei).plainRow(top: 4)
                 }
@@ -1019,11 +1030,13 @@ struct LiveStrengthSheet: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("Pause session"))
+                    // Ending the session is the one destructive-ish act in the header — it carries the
+                    // reserved alert hue (label + border, never a fill: primary-by-border, DNA §).
                     Button { finishTapped() } label: {
-                        Text("Finish").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        Text("Finish").font(StrandFont.subhead).foregroundStyle(theme.critical)
                             .padding(.horizontal, 12).padding(.vertical, 6)
                             .background(theme.surface, in: Capsule())
-                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                            .overlay(Capsule().strokeBorder(theme.critical.opacity(0.45), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("Finish workout"))
@@ -1193,7 +1206,7 @@ struct LiveStrengthSheet: View {
     private func exerciseHeader(_ run: StrengthSessionModel.ExerciseRun, ei: Int, first: Bool) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             HStack(spacing: 12) {
-                ExerciseThumbnail(side: 44)   // reserved media slot (FER-751); FER-722 fills it
+                SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
                 VStack(alignment: .leading, spacing: 2) {
                 if run.type != .weightReps {
                     Text(typeWord(run.type)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -1774,7 +1787,8 @@ struct LiveStrengthSheet: View {
         } label: {
             Image(systemName: set.done ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 22))
-                .foregroundStyle(set.done ? theme.dataRecovery : theme.inkDim)
+                .foregroundStyle(set.done ? theme.dataRecovery
+                                 : isActivePending ? theme.dataStrain : theme.inkDim)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
