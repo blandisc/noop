@@ -876,7 +876,9 @@ struct LiveStrengthSheet: View {
                     .presentationBackground(theme.paper)
             }
         }
-        .alert("Finish workout?", isPresented: $confirmFinish) {
+        // S-2 (FER-830): one destructive-confirmation pattern across the flow — confirmationDialog, not a
+        // mix of .alert and .confirmationDialog. The cancel verb is «Keep going» / «Seguir» everywhere.
+        .confirmationDialog("Finish workout?", isPresented: $confirmFinish, titleVisibility: .visible) {
             Button("Save workout") { model.endStrengthSession(save: true) }
             Button("Discard workout", role: .destructive) { model.endStrengthSession(save: false) }
             Button("Keep going", role: .cancel) {}
@@ -887,9 +889,9 @@ struct LiveStrengthSheet: View {
                     ? "\(session.pendingCount) sets aren't logged yet. Save keeps them; discard deletes everything."
                     : "Save keeps this workout. Discard deletes everything you logged."))
         }
-        .alert("Discard workout?", isPresented: $confirmDiscard) {
+        .confirmationDialog("Discard workout?", isPresented: $confirmDiscard, titleVisibility: .visible) {
             Button("Discard", role: .destructive) { model.endStrengthSession(save: false) }
-            Button("Cancel", role: .cancel) {}
+            Button("Keep going", role: .cancel) {}
         } message: {
             Text("Everything you logged in this session will be deleted. This can't be undone.")
         }
