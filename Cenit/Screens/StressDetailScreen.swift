@@ -5,6 +5,12 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
+/// Measured-width key for the 90-day calendar heat grid (handoff v2, FER-832).
+private struct StressCalWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
 // MARK: - StressDetailScreen — el «Detalle de Estrés» en «Instrumento» (FER-241)
 //
 // Hermana de `MetricDetailScreen` (FER-185), igual que `RecoveryDetailScreen` (FER-225) y
@@ -64,6 +70,10 @@ struct StressDetailScreen: View {
     @State private var patterns: [StressTimeOfDayPatterns.Pattern] = []
     /// Detected cross-day «by calendar-event» patterns (loaded in `.task`). Empty → no line. (FER-388)
     @State private var eventPatterns: [StressEventPatterns.Pattern] = []
+    /// Measured available width for the 90-day calendar, so the heat grid sizes its cells to fill it. (FER-832)
+    @State private var calWidth: CGFloat = 0
+    /// The calendar day the user tapped, for the read-out below the grid. (FER-832)
+    @State private var selectedStressDay: RecoveryDay? = nil
 
     var body: some View {
         ScrollView {
@@ -99,6 +109,12 @@ struct StressDetailScreen: View {
                     if model.fullTrend.count >= 2 {
                         blockDivider
                         historySection(model)
+                    }
+                    // Level 3 · the 90-day calendar (handoff v2, FER-832): the same heatmap Recovery /
+                    // Sleep / Strain carry, tinted by the evaluative Low/Mod/High band (green/amber/red).
+                    if parsed.contains(where: { $0.value > 0 }) {
+                        blockDivider
+                        stressCalendarBlock
                     }
                     blockDivider
                     methodDisclosure(model)
@@ -574,6 +590,64 @@ struct StressDetailScreen: View {
     }
 
     // MARK: - Series + format
+
+    // MARK: - Calendario · 90 días (handoff v2, FER-832) — heatmap evaluativo (verde/ámbar/rojo)
+
+    /// The trailing 90 days as `RecoveryDay` (score = daily stress 0–3, nil where there's no reading).
+    private var stressHeat: [RecoveryDay] {
+        var vals: [String: Double] = [:]
+        for r in parsed { vals[r.day] = r.value }
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
+        let today = cal.startOfDay(for: Date())
+        return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
+            guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
+            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: vals[Self.dayParser.string(from: date)])
+        }
+    }
+
+    /// Stress is evaluative, so the heat uses the band semaphore: low → verdict (green), moderate →
+    /// warning (amber), high → critical (red). Same thresholds as the hero band (0–1 / 1–2 / 2–3).
+    private func stressHeatTint(_ v: Double) -> Color {
+        if v >= 2 { return theme.critical }
+        if v >= 1 { return theme.warning }
+        return theme.verdict
+    }
+
+    private var stressCalendarBlock: some View {
+        DetailBlock("Calendar · 90 days", theme: theme) {
+            VStack(alignment: .leading, spacing: 10) {
+                let cols = Swift.max(1, YearHeatStrip.weekColumns(for: stressHeat))
+                let spacing: CGFloat = 4
+                let cell: CGFloat = calWidth > 0
+                    ? Swift.max(8, Swift.min(22, (calWidth - 24 - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
+                    : 14
+                YearHeatStrip(
+                    days: stressHeat, cellSize: cell, spacing: spacing, showsScrub: false,
+                    tint: stressHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
+                    labelColor: theme.inkTertiary, onSelect: { selectedStressDay = $0 }, selectionColor: theme.ink
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(GeometryReader { g in Color.clear
+                    .preference(key: StressCalWidthKey.self, value: g.size.width) })
+                .onPreferenceChange(StressCalWidthKey.self) { calWidth = $0 }
+                if let d = selectedStressDay {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(Self.chipDateFormatter.string(from: d.date)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        Spacer(minLength: 8)
+                        if let v = d.score {
+                            Text(String(format: "%.1f", v)).font(StrandFont.number(20)).foregroundStyle(stressHeatTint(v))
+                        } else {
+                            Text("—").font(StrandFont.number(20)).foregroundStyle(theme.inkTertiary)
+                            Text("no reading").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                } else {
+                    Text("Tap a day to see its stress.").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                }
+            }
+        }
+    }
 
     /// Format a 0–3 stress value at one decimal (the index's precision).
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }

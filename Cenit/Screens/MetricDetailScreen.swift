@@ -1488,9 +1488,7 @@ struct MetricDetailScreen: View {
         }
         if let v = heroValue, let profile = spec.vo2maxProfile {
             blockDivider
-            vo2maxCategoryBlock(value: v, profile: profile)
-            blockDivider
-            vo2maxEquivalentAgeBlock(value: v, profile: profile)
+            vo2maxTilesRow(value: v, profile: profile)
         }
         blockDivider
         vo2maxWhyBlock
@@ -1525,45 +1523,27 @@ struct MetricDetailScreen: View {
         return "About the same across this range."
     }
 
-    /// Where the latest value lands among healthy peers of the same age & sex — a four-band table
-    /// (Low / Average / Good / Excellent) with the active band marked, built from `VO2maxReference`.
-    /// Reuses the shared `bandRow` / `bandTableDivider` (the SpO₂ table) with a "· you" badge. (FER-257)
-    private func vo2maxCategoryBlock(value v: Double, profile: VO2maxProfile) -> some View {
-        let t = VO2maxReference.categoryThresholds(age: profile.age, sex: profile.sex)
+    /// The two compact tiles the handoff pairs under the chart: fitness category + cardiorespiratory
+    /// «equivalent age», side by side. Replaces the former 4-band table + separate age block, per the
+    /// Tendencias v2 handoff. VO₂max is descriptive, so both tiles carry the metric hue (no semaphore).
+    /// The band ranges and the «different basis from Physical age» note move to «Why it matters» / the ⓘ.
+    /// (FER-833)
+    private func vo2maxTilesRow(value v: Double, profile: VO2maxProfile) -> some View {
         let active = VO2maxReference.category(value: v, age: profile.age, sex: profile.sex)
-        let lo = Int(t.low.rounded()), gd = Int(t.good.rounded()), ex = Int(t.excellent.rounded())
-        let bands: [MetricInfo.Band] = [
-            MetricInfo.Band(label: "Low", range: "< \(lo)", isActive: active == .low),
-            MetricInfo.Band(label: "Average", range: "\(lo) – \(gd)", isActive: active == .average),
-            MetricInfo.Band(label: "Good", range: "\(gd) – \(ex)", isActive: active == .good),
-            MetricInfo.Band(label: "Excellent", range: "> \(ex)", isActive: active == .excellent),
-        ]
-        return DetailBlock("Your level for your age", theme: theme) {
-            VStack(spacing: 0) {
-                ForEach(Array(bands.enumerated()), id: \.offset) { i, band in
-                    bandRow(band, badge: "· you")
-                    if i < bands.count - 1 { bandTableDivider }
-                }
-            }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        let eq = VO2maxReference.equivalentAge(value: v, sex: profile.sex)
+        return HStack(spacing: 8) {
+            stepsTile(label: "FITNESS CATEGORY", value: vo2maxCategoryWord(active), hue: metricHue)
+            stepsTile(label: "EQUIVALENT AGE", value: "~\(eq)", hue: metricHue)
         }
     }
 
-    /// The age whose median VO₂max matches the latest measured value — an intuitive "cardiorespiratory
-    /// age". Different basis from the Nes «Edad física», so the copy says so to avoid confusion.
-    private func vo2maxEquivalentAgeBlock(value v: Double, profile: VO2maxProfile) -> some View {
-        let eq = VO2maxReference.equivalentAge(value: v, sex: profile.sex)
-        return DetailBlock("Cardiorespiratory age", theme: theme) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(eq)").instrumentoHero(30).foregroundStyle(metricHue)
-                    Text("years").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                }
-                Text("Your VO₂max matches the median for someone aged \(eq). It's a different basis from your Physical age.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+    /// The category as a display word — the same labels the former four-band table used. (FER-833)
+    private func vo2maxCategoryWord(_ c: VO2maxReference.Category) -> String {
+        switch c {
+        case .low:       return String(localized: "Low")
+        case .average:   return String(localized: "Average")
+        case .good:      return String(localized: "Good")
+        case .excellent: return String(localized: "Excellent")
         }
     }
 

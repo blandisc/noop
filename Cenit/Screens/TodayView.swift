@@ -1149,10 +1149,12 @@ struct TodayView: View {
 
     private var heroState: HeroState {
         if repo.today?.recovery != nil { return .verdict }
-        // Arranque frío: mientras `repo.refresh()` no publica el dashboard, `days` está vacío y TODAS las
-        // señales de abajo mienten (ownNights = 0 → «calibrando», sin base → «esperando»). Un neutro de
-        // carga evita narrar un estado falso que salta al veredicto real segundos después.
-        if !repo.loaded { return .loading }
+        // Arranque frío: mientras el refresh no publica la historia COMPLETA, los conteos de abajo
+        // mienten (con `days` vacío ownNights = 0 → «calibrando»; sobre la ventana corta de la primera
+        // pasada subcuentan igual). El veredicto no espera nada — sale arriba en cuanto hay recovery de
+        // hoy, y la ventana corta siempre trae la fila de hoy; solo los narrativos pre-veredicto
+        // aguardan `fullyLoaded` para no narrar un estado falso.
+        if !repo.fullyLoaded { return .loading }
         // FER-286: mientras la banda drena el historial de la noche y aún no hay recovery, el Hero dice la
         // verdad —«Descargando la noche…»— en vez de «Falta la lectura de hoy»: el dato viene en camino,
         // no falta. Reusa la misma señal que ya hace girar el dial (FER-221), sin agregar otra.
