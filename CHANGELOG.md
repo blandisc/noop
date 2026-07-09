@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El landing de Tendencias se limpia de puntos de origen / The Trends landing sheds its origin dots.**
+  **ES** — Siguiendo el handoff v2, el landing quita el puntito de origen de cada dato y la leyenda del pie: la procedencia (banda / Apple Salud / calculado) vive solo al pie de cada pantalla de detalle, no repartida por el resumen. Las cifras quedan más limpias; la procedencia sigue calculándose, solo no se pinta aquí.
+  **EN** — Per the v2 handoff, the landing drops the per-stat origin dot and the foot legend: provenance (band / Apple Health / computed) lives only at the foot of each detail screen, not scattered across the summary. The numbers read cleaner; provenance is still tracked, just not shown here.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
 - **VO₂max resume categoría y edad equivalente en dos fichas / VO₂max sums up category and equivalent age in two tiles.**
   **ES** — El Detalle de VO₂max cambia la tabla de cuatro bandas y el bloque de «edad cardiorrespiratoria» por dos fichas compactas lado a lado — Categoría de forma y Edad equivalente — como en el handoff v2. Los rangos de las bandas y la aclaración de que es otra base que la Edad física se mueven a «Por qué importa» y al ⓘ. Sin matemática nueva.
   **EN** — The VO₂max detail swaps the four-band table and the separate «cardiorespiratory age» block for two compact tiles side by side — Fitness category and Equivalent age — as in the v2 handoff. The band ranges and the «different basis from Physical age» note move to «Why it matters» and the ⓘ. No math changes.
