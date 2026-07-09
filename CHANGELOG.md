@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Estrés estrena su calendario de 90 días / Stress gets its 90-day calendar.**
+  **ES** — El Detalle de Estrés suma el mismo mapa de calor de 90 días que ya llevan Recuperación, Sueño y Esfuerzo, tal como lo pide el handoff v2. Como el estrés es evaluativo, el calor usa el semáforo de banda: verde (bajo), ámbar (moderado), rojo (alto). Toca un día para ver su valor.
+  **EN** — The Stress detail adds the same 90-day heatmap Recovery, Sleep and Strain already carry, per the v2 handoff. Since stress is evaluative, the heat uses the band semaphore: green (low), amber (moderate), red (high). Tap a day to see its value.
+  ([StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift))
+
 - **La Dynamic Island deja de estirarse y de comerse la letra / The Dynamic Island stops stretching and eating the text.**
   **ES** — En modo compacto, el contador de descanso reclamaba todo el ancho de la isla (el reloj del sistema es «codicioso» si no lo acotas); ahora se ciñe a su contenido. Y en la vista expandida, la línea «al volver: …» iba pegada al borde inferior; se le dio aire para que los rasgos bajos no se corten.
   **EN** — In compact mode the rest countdown claimed the island's full width (the system timer text is greedy unless capped); it now hugs its content. And in the expanded view the «back to…» line sat flush against the bottom edge; it got breathing room so descenders don't clip.
