@@ -45,25 +45,30 @@ struct RestLiveActivity: Widget {
 
 /// The card's own scale — LOCAL to the widget, never `NoopMetrics` (a Live Activity is tighter than an
 /// in-app screen). Numerals use the system-rounded face; colours are all `InstrumentoTheme` tokens.
+///
+/// Height discipline: ActivityKit clips the lock-screen presentation at 160 pt — no scroll, no warning.
+/// The stacked zones + paddings must sum ≤ 160 or the actions row is silently cut off:
+/// 2·12 pad + 34 identity + 8 + 34 hero + 8 + 4 bar + 8 + 44 actions = 156 pt. Touch a metric here,
+/// re-run that sum.
 private enum LiveActivityMetrics {
-    static let cardPadding: CGFloat = 16
-    static let hero: CGFloat = 34            // the sole dominant numeral, every state (owner's decision)
-    static let heroSlot: CGFloat = 44        // fixed hero-zone height → constant card height across states
+    static let cardPadding: CGFloat = 12
+    static let hero: CGFloat = 28            // the sole dominant numeral, every state (owner's decision)
+    static let heroSlot: CGFloat = 34        // fixed hero-zone height → constant card height across states
     static let pulse: CGFloat = 17
     static let name: CGFloat = 15            // ≤ hero, so the hero stays the only dominant numeral
     static let overline: CGFloat = 11        // identity subtitle + «Al volver/Sigue/Tope» labels
     static let overlineTracking: CGFloat = 1.4
     static let returnValue: CGFloat = 15     // the «Serie N · peso × reps» answer to «¿qué sigue?»
-    static let thumb: CGFloat = 40
-    static let control: CGFloat = 46         // ≥44pt touch target (HIG)
+    static let thumb: CGFloat = 34
+    static let control: CGFloat = 44         // ≥44pt touch target (HIG)
     static let glyph: CGFloat = 19
     static let pillLabel: CGFloat = 13
     static let bar: CGFloat = 4
     static let segmentGap: CGFloat = 3
     static let headerGap: CGFloat = 10
-    static let heroTopGap: CGFloat = 14
-    static let barTopGap: CGFloat = 10
-    static let actionsTopGap: CGFloat = 16
+    static let heroTopGap: CGFloat = 8
+    static let barTopGap: CGFloat = 8
+    static let actionsTopGap: CGFloat = 8
     static let pillGap: CGFloat = 8
     static let pillRadius: CGFloat = 11
     static let controlRadius: CGFloat = 13
