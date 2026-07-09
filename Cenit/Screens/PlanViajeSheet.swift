@@ -157,7 +157,7 @@ struct PlanViajeSheet: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                 .frame(width: 52, alignment: .leading)
             HStack(spacing: 6) {
-                Image(systemName: "sun.max").font(.system(size: 14)).foregroundStyle(theme.dataStrain)
+                Image(systemName: "sun.max").font(StrandFont.glyph(.inline)).foregroundStyle(theme.dataStrain)
                     .accessibilityHidden(true)
                 Text(verbatim: "luz \(JetLagPlanStore.clock(day.brightLightStartHour))–\(JetLagPlanStore.clock(day.brightLightEndHour))")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)

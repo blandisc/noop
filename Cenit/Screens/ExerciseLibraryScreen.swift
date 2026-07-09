@@ -94,7 +94,7 @@ struct ExerciseLibraryScreen: View {
 
     private var searchField: some View {
         HStack(spacing: 9) {
-            Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            Image(systemName: "magnifyingglass").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             TextField("Search exercise", text: $search)
                 .font(StrandFont.body).foregroundStyle(theme.ink)
                 .autocorrectionDisabled().textInputAutocapitalization(.never)
@@ -105,7 +105,7 @@ struct ExerciseLibraryScreen: View {
             }
         }
         .padding(.horizontal, 13).padding(.vertical, 9)
-        .background(theme.hairline.opacity(0.6), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Filters
@@ -135,7 +135,7 @@ struct ExerciseLibraryScreen: View {
                 Text(active.map(label) ?? title)
                     .font(StrandFont.subhead)
                     .foregroundStyle(active == nil ? theme.ink : theme.paper)
-                Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
+                Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(active == nil ? theme.inkTertiary : theme.paper)
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
@@ -163,7 +163,7 @@ struct ExerciseLibraryScreen: View {
                     .padding(.top, 4).padding(.bottom, 6)
                 ForEach(mine) { ex in
                     exerciseRow(ex, showsHistory: true)
-                    if ex.id != mine.last?.id { Divider().overlay(theme.hairline.opacity(0.7)) }
+                    if ex.id != mine.last?.id { Divider().overlay(theme.hairline.opacity(StrandOpacity.muted)) }
                 }
             }
             // «De la biblioteca» — the rest of the catalog.
@@ -172,7 +172,7 @@ struct ExerciseLibraryScreen: View {
                     .padding(.top, mine.isEmpty ? 4 : 18).padding(.bottom, 6)
                 ForEach(rest) { ex in
                     exerciseRow(ex, showsHistory: false)
-                    if ex.id != rest.last?.id { Divider().overlay(theme.hairline.opacity(0.7)) }
+                    if ex.id != rest.last?.id { Divider().overlay(theme.hairline.opacity(StrandOpacity.muted)) }
                 }
             }
         }
@@ -221,7 +221,7 @@ struct ExerciseLibraryScreen: View {
                 toggle(ex)
             } label: {
                 if selected.contains(ex.id) {
-                    Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)  // token-exempt: glifo 21pt fuera de banda lead
                 } else {
                     Text("Add").font(StrandFont.subhead).foregroundStyle(theme.ink)
                         .padding(.horizontal, 12).padding(.vertical, 5)
@@ -231,7 +231,7 @@ struct ExerciseLibraryScreen: View {
             .buttonStyle(.plain)
             .contentShape(Rectangle())
         } else {
-            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+            Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
         }
     }
@@ -239,7 +239,7 @@ struct ExerciseLibraryScreen: View {
     private var createRow: some View {
         Button { showCreate = true } label: {
             HStack(spacing: 8) {
-                Image(systemName: "plus").font(.system(size: 14, weight: .semibold))
+                Image(systemName: "plus").font(StrandFont.glyph(.inline, weight: .semibold))
                 Text("Create exercise").font(StrandFont.body)
             }
             .foregroundStyle(theme.inkSecondary).padding(.vertical, 13).contentShape(Rectangle())
@@ -264,7 +264,7 @@ struct ExerciseLibraryScreen: View {
         }
         .buttonStyle(.plain).disabled(selected.isEmpty)
         .padding(.horizontal, NoopMetrics.screenPadding).padding(.bottom, 8)
-        .background(theme.paper.opacity(0.96).ignoresSafeArea(edges: .bottom))
+        .background(theme.paper.opacity(0.96).ignoresSafeArea(edges: .bottom))  // token-exempt: casi-opaco fuera de banda
     }
 
     // MARK: - Data
@@ -347,7 +347,7 @@ private struct CreateExerciseSheet: View {
                     TextField("e.g. Svend press", text: $name)
                         .font(StrandFont.body).foregroundStyle(theme.ink)
                         .padding(.horizontal, 13).padding(.vertical, 11)
-                        .background(theme.hairline.opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -390,7 +390,7 @@ private struct CreateExerciseSheet: View {
                 HStack(spacing: 5) {
                     Text(selection.wrappedValue.isEmpty ? placeholder : label(selection.wrappedValue))
                         .font(StrandFont.body).foregroundStyle(selection.wrappedValue.isEmpty ? theme.inkTertiary : theme.inkSecondary)
-                    Image(systemName: "chevron.down").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
             }
         }
@@ -400,18 +400,18 @@ private struct CreateExerciseSheet: View {
     private func typeOption(_ t: ExerciseType) -> some View {
         Button { type = t } label: {
             HStack(spacing: 11) {
-                Image(systemName: StrengthDisplay.typeIcon(t)).font(.system(size: 17))
+                Image(systemName: StrengthDisplay.typeIcon(t)).font(StrandFont.glyph(.lead))
                     .foregroundStyle(type == t ? theme.ink : theme.inkTertiary).frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(StrengthDisplay.typeLabel(t)).font(StrandFont.body).foregroundStyle(theme.ink)
                     Text(StrengthDisplay.typeDetail(t)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                if type == t { Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(theme.ink) }
+                if type == t { Image(systemName: "checkmark").font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink) }
             }
             .padding(.horizontal, 13).padding(.vertical, 11).contentShape(Rectangle())
-            .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))  // token-exempt: fondo condicional
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                 .strokeBorder(type == t ? theme.ink : theme.hairline, lineWidth: type == t ? 1.5 : 1))
         }
         .buttonStyle(.plain)

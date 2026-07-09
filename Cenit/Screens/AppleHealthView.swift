@@ -399,7 +399,7 @@ struct AppleHealthView: View {
                 .lineLimit(1).minimumScaleFactor(0.6)
             if let sparkline, sparkline.count > 1 {
                 Sparkline(values: sparkline,
-                          gradient: Gradient(colors: [sparkColor.opacity(0.55), sparkColor]),
+                          gradient: ChartWell.fillGradient(sparkColor),
                           showsArea: false, showsHead: false, showsScrub: false)
                     .frame(height: 22).padding(.top, 4)
             }
@@ -522,7 +522,7 @@ struct AppleHealthView: View {
                 if pts.count >= 2 {
                     TrendChart(
                         points: pts,
-                        gradient: Gradient(colors: [hue.opacity(0.55), hue]),
+                        gradient: ChartWell.fillGradient(hue),
                         valueRange: valueRange(pts, fallback: fallback),
                         showsArea: true,
                         height: NoopMetrics.chartHeight,

@@ -256,8 +256,8 @@ struct BreathingView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [theme.dataHrv.opacity(0.18),
-                                     theme.dataHrv.opacity(0.0)],
+                            colors: [theme.dataHrv.opacity(0.18), // token-exempt: rampa decorativa (halo)
+                                     theme.dataHrv.opacity(0.0)], // token-exempt: rampa decorativa (halo)
                             center: .center,
                             startRadius: diameter * 0.20,
                             endRadius: diameter * 0.70
@@ -270,15 +270,15 @@ struct BreathingView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [theme.dataHrv.opacity(0.32),
-                                     theme.dataHrv.opacity(0.14)],
+                            colors: [theme.dataHrv.opacity(0.32), // token-exempt: rampa decorativa (orbe)
+                                     theme.dataHrv.opacity(0.14)], // token-exempt: rampa decorativa (orbe)
                             center: .init(x: 0.4, y: 0.35),
                             startRadius: 2,
                             endRadius: diameter * 0.62
                         )
                     )
                     .overlay(
-                        Circle().strokeBorder(theme.dataHrv.opacity(0.45), lineWidth: 1)
+                        Circle().strokeBorder(theme.dataHrv.opacity(0.45), lineWidth: 1) // token-exempt: anillo decorativo (orbe)
                     )
                     .frame(width: diameter, height: diameter)
 
@@ -464,12 +464,7 @@ struct BreathingView: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(theme.warning.opacity(0.10),
-                    in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.warning.opacity(0.30), lineWidth: 1)
-        )
+        .instrumentoCard(.card, theme: theme, fill: theme.tint(theme.warning), stroke: theme.softStroke(theme.warning))
     }
 
     // MARK: - Session control

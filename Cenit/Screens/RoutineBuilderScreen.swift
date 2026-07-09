@@ -142,7 +142,7 @@ struct RoutineBuilderScreen: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 nameField
                 VStack(spacing: 11) {
-                    Image(systemName: "square.stack.3d.up").font(.system(size: 32)).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "square.stack.3d.up").font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
                     Text("No exercises yet").font(StrandFont.title2).foregroundStyle(theme.ink)
                     Text("Add exercises from the library to build this routine.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -227,7 +227,7 @@ struct RoutineBuilderScreen: View {
                     }
                     Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove", systemImage: "trash") }
                 } label: {
-                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
+                    Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
                 }
             }
@@ -287,7 +287,7 @@ struct RoutineBuilderScreen: View {
             .focused($focusedCell, equals: id)
             .frame(width: 76, height: 34)
             .background(theme.surface)
-            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(theme.hairline))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline))
     }
 
     private func addSetRow(_ idx: Int) -> some View {

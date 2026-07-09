@@ -103,16 +103,14 @@ struct FitnessAgeDetailView: View {
     private var disclaimerStrip: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "info.circle")
-                .font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             Text("It's a comparison of your fitness, not your biological age or a medical diagnosis.")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 0.5))
+        .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: theme.hairline, lineWidth: 0.5)
     }
 
     // MARK: "What moves it" — the two levers (resting HR drives, activity supports)
@@ -138,7 +136,7 @@ struct FitnessAgeDetailView: View {
                            value: String, unit: LocalizedStringKey, hue: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: 12)).foregroundStyle(hue).frame(width: 16)
+                Image(systemName: icon).font(StrandFont.glyph(.chevron)).foregroundStyle(hue).frame(width: 16)
                 Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             HStack(alignment: .firstTextBaseline, spacing: 3) {
@@ -150,7 +148,7 @@ struct FitnessAgeDetailView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .instrumentoCard(.control, theme: theme, fill: theme.surface)
     }
 
     // MARK: "What we're using" — transparency checklist (drivesAge items only; VO₂max is out of scope)
@@ -167,14 +165,14 @@ struct FitnessAgeDetailView: View {
                 usingRow(status: status("activity"), label: "Recent activity",
                          detail: "\(snapshot.activeDays) of 7 days")
             }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .instrumentoCard(.control, theme: theme, fill: theme.surface)
         }
     }
 
     private func usingRow(status: FitnessReadinessStatus, label: LocalizedStringKey,
                           detail: LocalizedStringKey) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: statusIcon(status)).font(.system(size: 15))
+            Image(systemName: statusIcon(status)).font(StrandFont.glyph(.inline))
                 .foregroundStyle(statusColor(status)).frame(width: 20)
             Text(label).font(StrandFont.subhead).foregroundStyle(theme.ink)
             Spacer(minLength: 8)
@@ -197,13 +195,13 @@ struct FitnessAgeDetailView: View {
     @ViewBuilder private var notReadyBody: some View {
         Text("Physical age").instrumentoOverline().foregroundStyle(theme.inkTertiary)
         VStack(spacing: 10) {
-            Image(systemName: "hourglass").font(.system(size: 22)).foregroundStyle(theme.inkTertiary)
+            Image(systemName: "hourglass").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkTertiary)
             Text("We can't calculate your physical age yet.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .instrumentoCard(.control, theme: theme, fill: theme.surface)
 
         VStack(alignment: .leading, spacing: 8) {
             Text("What we need").instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -213,7 +211,7 @@ struct FitnessAgeDetailView: View {
                 usingRow(status: status("rhr"), label: "Resting heart rate",
                          detail: "\(snapshot.rhrNights) of 4 nights needed")
             }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .instrumentoCard(.control, theme: theme, fill: theme.surface)
             Text("Keep wearing your band overnight and this fills in on its own.")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -255,22 +253,20 @@ struct FitnessAgeDetailView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 0.5))
+        .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: theme.hairline, lineWidth: 0.5)
         .accessibilityElement(children: .combine)
     }
 
     /// Tiny "Apple Health" source chip (heart glyph + label), mirroring the fromApple flag elsewhere.
     private var appleSourceBadge: some View {
         HStack(spacing: 3) {
-            Image(systemName: "heart.fill").font(.system(size: 8))
+            Image(systemName: "heart.fill").font(.system(size: 8)) // token-exempt: microtexto <10pt
             Text("Apple Health").textCase(.uppercase)
         }
-        .font(.system(size: 8.5, weight: .semibold)).tracking(0.3)
+        .font(.system(size: 8.5, weight: .semibold)).tracking(0.3) // token-exempt: microtexto <10pt
         .foregroundStyle(theme.dataHeart)
         .padding(.horizontal, 4).padding(.vertical, 1)
-        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(theme.dataHeart.opacity(0.4), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(theme.dataHeart.opacity(0.4), lineWidth: 1)) // token-exempt: geometría de dato (radio 4) + opacidad 0.40 fuera de banda
     }
 
     /// No Apple reading + not connected: a quiet, no-number invite (mirrors MetricInfoSheet's
@@ -279,16 +275,14 @@ struct FitnessAgeDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(verbatim: "VO₂max").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(theme.dataHeart)
+                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataHeart)
                 Text("Connect Apple Health to see your VO₂max.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 0.5))
+            .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: theme.hairline, lineWidth: 0.5)
         }
     }
 

@@ -161,8 +161,8 @@ struct ExerciseDetailScreen: View {
                     .accessibilityHidden(true)
                 Button { isLoopPlaying.toggle() } label: {
                     Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                        .padding(8).background(.black.opacity(0.35), in: Circle())
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(.white)
+                        .padding(8).background(.black.opacity(StrandOpacity.strokeSoft), in: Circle())
                 }
                 .buttonStyle(.plain).padding(10)
                 .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
@@ -188,7 +188,7 @@ struct ExerciseDetailScreen: View {
             dismiss()
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: "play.rectangle").font(.system(size: 12))
+                Image(systemName: "play.rectangle").font(StrandFont.glyph(.chevron))
                 Text("Turn on library downloads in Settings to see video")
                     .font(StrandFont.footnote)
             }
@@ -288,7 +288,7 @@ struct ExerciseDetailScreen: View {
                 } label: {
                     HStack(spacing: 6) {
                         Text(StrengthDisplay.typeLabel(effectiveType)).font(StrandFont.body).foregroundStyle(theme.ink)
-                        Image(systemName: "chevron.down").font(.system(size: 13)).foregroundStyle(theme.inkTertiary)
+                        Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     }
                 }
                 Spacer(minLength: 8)
@@ -478,7 +478,7 @@ struct ExerciseDetailScreen: View {
 
             if values.count >= 2 {
                 Sparkline(values: values,
-                          gradient: Gradient(colors: [theme.dataStrain.opacity(0.55), theme.dataStrain]),
+                          gradient: ChartWell.fillGradient(theme.dataStrain),
                           bandColor: theme.hairlineStrong,
                           showsScrub: true,
                           valueFormat: { latestText($0) })
@@ -589,7 +589,7 @@ struct ExerciseDetailScreen: View {
             Divider().overlay(theme.hairline)
             VStack(spacing: 11) {
                 Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 30, weight: .regular)).foregroundStyle(theme.inkTertiary)
+                    .font(.system(size: 30)).foregroundStyle(theme.inkTertiary) // token-exempt: 30pt, .empty(34) sería +4pt (>±1pt)
                 Text("Not logged yet").font(StrandFont.title2).foregroundStyle(theme.ink)
                 Text("Your best mark, your last session and your estimated 1RM appear here once you complete a work set.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

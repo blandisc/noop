@@ -394,8 +394,7 @@ struct MetricDetailScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 0.5))
+        .instrumentoCard(.cta, theme: theme, lineWidth: 0.5)
         .accessibilityElement(children: .combine)
     }
 
@@ -726,7 +725,7 @@ struct MetricDetailScreen: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
                 } else {
                     ChartWell(theme).empty(text: "No readings in this range.")
                 }
@@ -1011,7 +1010,7 @@ struct MetricDetailScreen: View {
                     if i < spec.info.bands.count - 1 { bandTableDivider }
                 }
             }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
         }
     }
 
@@ -1026,7 +1025,7 @@ struct MetricDetailScreen: View {
     private func bandRow(_ band: MetricInfo.Band, badge: LocalizedStringKey = "· today") -> some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(0.45))
+                .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(StrandOpacity.dim))
                 .frame(width: 8, height: 8)
                 .padding(.leading, 14)
             Text(band.label)
@@ -1047,7 +1046,7 @@ struct MetricDetailScreen: View {
         }
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
-        .background(band.isActive ? metricHue.opacity(0.12) : Color.clear)
+        .background(band.isActive ? metricHue.opacity(StrandOpacity.tintFill) : Color.clear)
     }
 
     // MARK: - Nights below the clinical floor — SpO₂ (FER-252)
@@ -1117,7 +1116,7 @@ struct MetricDetailScreen: View {
                     axisLabelColor: theme.inkTertiary,
                     gridLineColor: theme.hairline,
                     referenceLine: restingHR,
-                    referenceLineColor: theme.inkTertiary.opacity(0.7),
+                    referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
                     markedPoint: peakPoint,
                     tightTrailing: true
                 )
@@ -1263,10 +1262,10 @@ struct MetricDetailScreen: View {
     private func zoneFill(_ i: Int) -> Color {
         switch i {
         case 0:  return theme.hairlineStrong
-        case 1:  return metricHue.opacity(0.35)
-        case 2:  return metricHue.opacity(0.5)
-        case 3:  return metricHue.opacity(0.65)
-        case 4:  return metricHue.opacity(0.82)
+        case 1:  return metricHue.opacity(0.35) // token-exempt: rampa de intensidad de zona (geometría de dato)
+        case 2:  return metricHue.opacity(0.5)  // token-exempt: rampa de intensidad de zona (geometría de dato)
+        case 3:  return metricHue.opacity(0.65) // token-exempt: rampa de intensidad de zona (geometría de dato)
+        case 4:  return metricHue.opacity(0.82) // token-exempt: rampa de intensidad de zona (geometría de dato)
         default: return metricHue
         }
     }
@@ -1440,7 +1439,7 @@ struct MetricDetailScreen: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - VO₂max (Apple Health, measured · FER-257)
@@ -1546,7 +1545,7 @@ struct MetricDetailScreen: View {
                     if i < bands.count - 1 { bandTableDivider }
                 }
             }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
         }
     }
 
@@ -1596,7 +1595,7 @@ struct MetricDetailScreen: View {
                 .fixedSize(horizontal: false, vertical: true)
             if appleConnectHint {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(theme.dataHeart)
+                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataHeart)
                     Text("Connect Apple Health to see your VO₂max.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1606,7 +1605,7 @@ struct MetricDetailScreen: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Calibration (not enough history)
@@ -1644,7 +1643,7 @@ struct MetricDetailScreen: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Detalle de Vital · narrative redesign (Hoy → Tu historia → (Tu patrón) → Método)
@@ -1800,7 +1799,7 @@ struct MetricDetailScreen: View {
                 loLabel: fmt(lo), hiLabel: fmt(hi),
                 loLabelFrac: 0, hiLabelFrac: 1,   // SpO₂ labels are the domain ends (the bar's edges)
                 centerLabel: "healthy zone ≥ 95%",
-                fillColor: theme.verdict.opacity(0.26),
+                fillColor: theme.verdict.opacity(0.26), // token-exempt: relleno de banda (área de dato, fuera de escala)
                 disclosureTitle: "Healthy zone", disclosureText: EX_SPO2_FLOOR)
         }
         guard let s = baselineState, s.nValid >= 1 else { return nil }
@@ -1816,7 +1815,7 @@ struct MetricDetailScreen: View {
             loLabel: fmt(lo), hiLabel: fmt(hi),
             loLabelFrac: bandLoFrac, hiLabelFrac: bandHiFrac,   // labels sit under the band's actual edges
             centerLabel: "your normal range · \(s.nValid) nights",
-            fillColor: metricHue.opacity(0.26),
+            fillColor: metricHue.opacity(0.26), // token-exempt: relleno de banda (área de dato, fuera de escala)
             disclosureTitle: "Your normal range", disclosureText: EX_RANGO)
     }
 
@@ -1977,7 +1976,7 @@ struct MetricDetailScreen: View {
                         if i < d.rows.count - 1 { Divider().overlay(theme.hairline).padding(.leading, 36) }
                     }
                 }
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
             }
         }
     }
@@ -1987,7 +1986,7 @@ struct MetricDetailScreen: View {
     private func detailBandRow(_ band: MetricInfo.Band, count: Int, nightly: Bool, active: Bool) -> some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(active ? metricHue : theme.inkTertiary.opacity(0.45))
+                .fill(active ? metricHue : theme.inkTertiary.opacity(StrandOpacity.dim))
                 .frame(width: 8, height: 8)
                 .padding(.leading, 14)
             Text(band.label)
@@ -1999,13 +1998,13 @@ struct MetricDetailScreen: View {
                 .foregroundStyle(active ? metricHue : theme.inkTertiary)
             Text(BandSummaryCopy.countLabel(count, nightly: nightly))
                 .font(StrandFont.captionNumber)
-                .foregroundStyle(active ? metricHue : theme.inkTertiary.opacity(0.85))
+                .foregroundStyle(active ? metricHue : theme.inkTertiary.opacity(0.85)) // token-exempt: atenuado 0.85 fuera de escala
                 .frame(minWidth: 56, alignment: .trailing)
         }
         .padding(.trailing, 14)
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
-        .background(active ? metricHue.opacity(0.12) : Color.clear)
+        .background(active ? metricHue.opacity(StrandOpacity.tintFill) : Color.clear)
     }
 
     @ViewBuilder private func statStripSection(_ window: MetricWindow) -> some View {
@@ -2129,7 +2128,7 @@ struct MetricDetailScreen: View {
                         .foregroundStyle(theme.inkTertiary).lineLimit(1).minimumScaleFactor(0.8)
                     Spacer(minLength: 2)
                     if tappable {
-                        Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                        Image(systemName: "info.circle").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     }
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
@@ -2144,9 +2143,7 @@ struct MetricDetailScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10).padding(.vertical, 9)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(isOpen ? metricHue : theme.hairline, lineWidth: 1))
+            .instrumentoCard(.inset, theme: theme, stroke: isOpen ? metricHue : theme.hairline)
         }
         .buttonStyle(.plain)
         .disabled(!tappable)
@@ -2162,8 +2159,8 @@ struct MetricDetailScreen: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         // Fade in place (no slide): with the gentle spring this lets the content below settle smoothly
         // instead of the panel flying in from the top and shoving everything down. (Detalle de Vital fix)
         .transition(.opacity)
@@ -2220,7 +2217,7 @@ struct MetricDetailScreen: View {
                 HStack(spacing: 7) {
                     Text("What moves it").font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
                     InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-                    Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "info.circle").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())
@@ -2236,7 +2233,7 @@ struct MetricDetailScreen: View {
             } else {
                 ForEach(whatMovesItFindings) { f in
                     HStack(alignment: .top, spacing: 8) {
-                        Text(Self.whatMovesArrow(f)).font(.system(size: 13, weight: .semibold))
+                        Text(Self.whatMovesArrow(f)).font(StrandFont.subhead).fontWeight(.semibold)
                             .foregroundStyle(whatMovesColor(f))
                         Text(f.phrase).font(StrandFont.caption)
                             .foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
@@ -2259,8 +2256,7 @@ struct MetricDetailScreen: View {
                 Text(narrativeNightLine).font(StrandFont.captionNumber).foregroundStyle(theme.ink)
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+            .instrumentoCard(.inset, theme: theme)
             if let reading = readingCopy(for: .nightVitals) {
                 Text(reading).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2290,7 +2286,7 @@ struct MetricDetailScreen: View {
                     Text("Your HRV by frequency").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 8)
                     Image(systemName: spectralExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())
             }
@@ -2389,7 +2385,7 @@ struct MetricDetailScreen: View {
                     axisLabelColor: theme.inkTertiary,
                     gridLineColor: theme.hairline,
                     referenceLine: restingHR,
-                    referenceLineColor: theme.inkTertiary.opacity(0.7),
+                    referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
                     markedPoint: peakPoint,
                     tightTrailing: true
                 )
@@ -2422,8 +2418,7 @@ struct MetricDetailScreen: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10).padding(.vertical, 9)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .instrumentoCard(.inset, theme: theme)
     }
 
     // MARK: Disclosure copy (verbatim from the old ⓘ accordions, single-sourced here)
@@ -2450,7 +2445,7 @@ struct MetricDetailScreen: View {
         }
     }
 
-    private var chartGradient: Gradient { Gradient(colors: [metricHue.opacity(0.5), metricHue]) }
+    private var chartGradient: Gradient { ChartWell.fillGradient(metricHue) }
 
     /// Format a value with the descriptor's own decimal precision. Integers get locale grouping so a
     /// four-figure step count reads "9,210", not "9210"; the vitals stay under 1,000 so they're

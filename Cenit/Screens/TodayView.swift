@@ -1210,7 +1210,7 @@ struct TodayView: View {
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 if estimated {
                     Text(verbatim: "~").groteskSheetNumeral()
-                        .foregroundStyle(color.opacity(0.55))
+                        .foregroundStyle(color.opacity(StrandOpacity.muted))
                 }
                 Text("\(score)").groteskHero()
                     .foregroundStyle(color)
@@ -1245,12 +1245,12 @@ struct TodayView: View {
                             .foregroundStyle(theme.ink)
                             .overlay(alignment: .bottom) {
                                 Line()
-                                    .stroke(theme.ink.opacity(0.4),
+                                    .stroke(theme.ink.opacity(StrandOpacity.dim),
                                             style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
                                     .frame(height: 1)
                                     .offset(y: 2)
                             }
-                        Image(systemName: "info.circle").font(.system(size: 13))
+                        Image(systemName: "info.circle").font(StrandFont.glyph(.chevron))
                             .foregroundStyle(theme.inkTertiary)
                     }
                     .contentShape(Rectangle())
@@ -1371,7 +1371,7 @@ struct TodayView: View {
         } label: {
             HStack(spacing: NoopMetrics.space2) {
                 Text("See your metrics for today").font(StrandFont.subhead.weight(.semibold))
-                Image(systemName: "arrow.right").font(.system(size: 13, weight: .semibold))
+                Image(systemName: "arrow.right").font(StrandFont.glyph(.chevron, weight: .semibold))
             }
             .foregroundStyle(theme.inkSecondary)
             .padding(.horizontal, NoopMetrics.cardPadding).padding(.vertical, NoopMetrics.gap)
@@ -1441,7 +1441,7 @@ struct TodayView: View {
                         .tracking(-0.4)
                         .foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Image(systemName: "info.circle").font(.system(size: 15))
+                    Image(systemName: "info.circle").font(StrandFont.glyph(.inline))
                         .foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 0)
                 }
@@ -1503,7 +1503,7 @@ struct TodayView: View {
                     Spacer(minLength: NoopMetrics.space2)
                     HStack(spacing: 2) {
                         Text(cta).font(StrandFont.caption)
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .foregroundStyle(theme.verdict)
                     .fixedSize()
@@ -1546,7 +1546,7 @@ struct TodayView: View {
                 }
                 if let copy = tb.paceCopy {
                     HStack(spacing: NoopMetrics.space2) {
-                        Image(systemName: paceGlyph(tb.pace)).font(.system(size: 14, weight: .semibold))
+                        Image(systemName: paceGlyph(tb.pace)).font(StrandFont.glyph(.inline, weight: .semibold))
                             .foregroundStyle(paceColor(tb.pace))
                         Text(copy).font(StrandFont.subhead).foregroundStyle(paceColor(tb.pace))
                             .fixedSize(horizontal: false, vertical: true)
@@ -1567,13 +1567,13 @@ struct TodayView: View {
                                 .font(InstrumentoType.grotesk(11, weight: .semibold))
                                 .tracking(1.2)
                                 .textCase(.uppercase)
-                            Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
+                            Image(systemName: "arrow.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                         }
                         .foregroundStyle(theme.ctaAccent)
                     }
                     .padding(.horizontal, NoopMetrics.cardPadding)
                     .padding(.vertical, 14)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -1581,7 +1581,7 @@ struct TodayView: View {
                 .accessibilityHint(Text("Opens Train and starts today's session"))
             case .rest:
                 HStack(spacing: NoopMetrics.gap) {
-                    Image(systemName: "moon.fill").font(.system(size: 16)).foregroundStyle(theme.inkSecondary)
+                    Image(systemName: "moon.fill").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkSecondary)
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Rest day today").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
                         Text("your split has no routine today").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -1596,7 +1596,7 @@ struct TodayView: View {
         .background {
             RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
                 .fill(theme.surface)
-                .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1)
+                .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1) // token-exempt: sombra sutil <0.10
         }
         .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
@@ -1606,7 +1606,7 @@ struct TodayView: View {
     private func streakChip(_ days: Int) -> some View {
         let unit = days == 1 ? String(localized: "day") : String(localized: "days")
         return HStack(spacing: 4) {
-            Image(systemName: "flame.fill").font(.system(size: 11)).foregroundStyle(theme.warning)
+            Image(systemName: "flame.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.warning)
             Text("streak \(days) \(unit)").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
         }
         .padding(.horizontal, NoopMetrics.space2).padding(.vertical, 2)
@@ -1693,7 +1693,7 @@ struct TodayView: View {
         Button { openBriefBullet(b.kind) } label: {
             HStack(spacing: NoopMetrics.gap) {
                 Image(systemName: briefGlyph(b.kind))
-                    .font(.system(size: 18))
+                    .font(StrandFont.glyph(.lead))
                     .foregroundStyle(flagColor(b.flag))
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
@@ -1710,7 +1710,7 @@ struct TodayView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .padding(.vertical, NoopMetrics.space2)
@@ -1749,7 +1749,7 @@ struct TodayView: View {
     /// en chico junto al encabezado de la viñeta. Token-only, reusa la frase localizada del Detalle.
     private var briefEstimatedBadge: some View {
         HStack(spacing: 3) {
-            Image(systemName: "applewatch").font(.system(size: 9, weight: .semibold))
+            Image(systemName: "applewatch").font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
                 .accessibilityHidden(true)
             Text(RecoveryDetailScreen.confidenceLabel(repo.recoveryConfidence(Repository.localDayKey(Date()))))
                 .font(StrandFont.footnote)
@@ -1985,7 +1985,7 @@ struct TodayView: View {
         let bobbing = learning && !reduceMotion && hintBob
         return VStack(spacing: NoopMetrics.space1) {
             Image(systemName: "chevron.down")
-                .font(.system(size: 11, weight: .semibold))
+                .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
                 .offset(y: bobbing ? 4 : 0)
                 .animation(bobbing ? StrandMotion.bob : nil, value: bobbing)
@@ -2088,7 +2088,7 @@ struct TodayView: View {
                 // vive en WhyVerdictSheet (la «i» de arriba la abre). El `confidenceNote` del engine se
                 // conserva (a11y / otros consumidores), pero el Hero ya no lo muestra entero.
                 HStack(spacing: NoopMetrics.space2) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
+                    Image(systemName: "exclamationmark.triangle.fill").font(StrandFont.glyph(.chevron))
                     Text("Short night — low confidence").font(StrandFont.caption)
                 }
                 .foregroundStyle(theme.warning)
@@ -2114,7 +2114,7 @@ struct TodayView: View {
     private var estimatedTodayMarker: some View {
         let dayKey = Repository.localDayKey(Date())
         return HStack(spacing: NoopMetrics.space2) {
-            Image(systemName: "applewatch").font(.system(size: 10, weight: .semibold))
+            Image(systemName: "applewatch").font(StrandFont.glyph(.chevron, weight: .semibold))
                 .accessibilityHidden(true)
             Text(RecoveryDetailScreen.coverageLabel(repo.recoveryPrimaryDrivers(dayKey))
                  ?? RecoveryDetailScreen.confidenceLabel(repo.recoveryConfidence(dayKey)))
@@ -2173,20 +2173,20 @@ struct TodayView: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
-        .shadow(color: theme.ink.opacity(0.08), radius: 8, y: 3)
+        .shadow(color: theme.ink.opacity(0.08), radius: 8, y: 3) // token-exempt: sombra sutil <0.10
     }
 
     private func sourceRow(icon: String, tint: Color, title: LocalizedStringKey,
                            subtitle: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: NoopMetrics.gap) {
-                Image(systemName: icon).font(.system(size: 15)).foregroundStyle(tint).frame(width: 22)
+                Image(systemName: icon).font(StrandFont.glyph(.inline)).foregroundStyle(tint).frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
                     Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
             .padding(NoopMetrics.cardPadding)
             .contentShape(Rectangle())
@@ -2198,12 +2198,12 @@ struct TodayView: View {
     /// Salud), AA sobre papel.
     private var appleBaseChip: some View {
         HStack(spacing: NoopMetrics.space2) {
-            Image(systemName: "heart.fill").font(.system(size: 12))
+            Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
             Text("Baseline · Apple Health").font(StrandFont.subhead)
         }
         .foregroundStyle(theme.dataSpO2)
         .padding(.horizontal, NoopMetrics.space2).padding(.vertical, NoopMetrics.space1)
-        .background(theme.dataSpO2.opacity(0.12), in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+        .background(theme.dataSpO2.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
     }
 
     /// Night-dots de calibración: llenos en el dato (`dataRecovery`), vacíos en `hairline`.
@@ -2242,7 +2242,7 @@ struct TodayView: View {
             Button(action: onTap) {
                 HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "heart.fill")
-                        .font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
+                        .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Got history in Apple Health? Connect it and your baseline starts ahead.")
                         .font(StrandFont.caption)
                         .foregroundStyle(theme.inkSecondary)
@@ -2250,7 +2250,7 @@ struct TodayView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: NoopMetrics.space2)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())
             }
@@ -2275,7 +2275,7 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
                 HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
-                    Image(systemName: "sparkles").font(.system(size: 10))
+                    Image(systemName: "sparkles").font(StrandFont.glyph(.chevron))
                     // Compacto (FER-202): la procedencia «base Apple Salud» se pliega aquí, en la misma línea
                     // de la etiqueta, en vez de un tercer renglón aparte — recorta alto para que Hoy quepa.
                     Text("Sharpening with your strap")
@@ -2298,7 +2298,7 @@ struct TodayView: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(theme.ink.opacity(0.10)).frame(height: 5)
+                    Capsule().fill(theme.ink.opacity(StrandOpacity.tintFill)).frame(height: 5)
                     Capsule().fill(theme.dataRecovery)
                         .frame(width: max(6, geo.size.width * CGFloat(ownNights) / CGFloat(Baselines.minNightsTrust)),
                                height: 5)
@@ -2632,7 +2632,7 @@ struct TodayView: View {
                 HStack(spacing: NoopMetrics.space1) {
                     if let icon {
                         Image(systemName: icon)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(StrandFont.glyph(.chevron, weight: .medium))
                             .foregroundStyle(isEmpty ? theme.inkDim : valueColor)
                             .accessibilityHidden(true)
                     }
@@ -2665,7 +2665,7 @@ struct TodayView: View {
             .background {
                 RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
                     .fill(theme.surface)
-                    .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1)
+                    .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1) // token-exempt: sombra sutil <0.10
             }
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))

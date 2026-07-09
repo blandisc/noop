@@ -119,6 +119,102 @@ func designTable() -> String {
     return lines.joined(separator: "\n")
 }
 
+// MARK: Palette scale blocks (auditoría jul-2026, H6)
+//
+// Antes, el generador solo emitía `color.instrumento`; las escalas de `StrandPalette`
+// (accent/status/metric/sleep/hrZone/recovery/strain) y `opacity` se mantenían A MANO, y una
+// derivó: `sleep.rem` decía `#5BE0C7` en el JSON pero el código dice `#3E9E8C` desde FER-234. Ahora
+// estas también salen del código (el código gana), con las descripciones curadas embebidas aquí para
+// no perder información. Los arrays de `gradient.*` (que reflejan los mismos stops) siguen a mano —
+// no hay deriva ahí y reflejan estas mismas constantes.
+
+struct PEntry { let name: String; let color: Color; let desc: String? }
+
+/// Un bloque de escala de color de Palette, en el formato de una-entrada-por-línea con clave alineada
+/// (idéntico a los bloques hechos a mano), con un `$description` de bloque opcional al frente.
+func paletteBlock(_ key: String, parentDesc: String?, _ entries: [PEntry]) -> String {
+    let names = entries.map(\.name)
+    let pad = (names.map { $0.count }.max() ?? 0) + 3   // «"name":» + espacios → alinea la llave
+    var lines = ["\"\(key)\": {"]
+    if let parentDesc { lines.append("      \"$description\": \"\(parentDesc)\",") }
+    for (i, e) in entries.enumerated() {
+        let keyField = "\"\(e.name)\":".padding(toLength: pad, withPad: " ", startingAt: 0)
+        let comma = i == entries.count - 1 ? "" : ","
+        let descPart = e.desc.map { ", \"$description\": \"\($0)\"" } ?? ""
+        lines.append("      \(keyField) { \"$value\": \"\(hex(e.color))\"\(descPart) }\(comma)")
+    }
+    lines.append("    }")
+    return lines.joined(separator: "\n")
+}
+
+/// The `opacity` object (numbers, not colors): the shared `disabled` value plus the `StrandOpacity`
+/// scale added by the auditoría (H4).
+func opacityBlock() -> String {
+    let entries: [(String, Double, String)] = [
+        ("disabled",       StrandPalette.disabledOpacity, "dimmed/disabled sections (= StrandOpacity.dim)"),
+        ("tintFill",       StrandOpacity.tintFill,        "chip/badge tint fill (absorbs 0.10–0.12)"),
+        ("tintFillStrong", StrandOpacity.tintFillStrong,  "emphasized tint (absorbs 0.14–0.18)"),
+        ("strokeSoft",     StrandOpacity.strokeSoft,      "soft tinted stroke (absorbs 0.28–0.40)"),
+        ("dim",            StrandOpacity.dim,             "dimmed value (absorbs 0.40–0.52)"),
+        ("muted",          StrandOpacity.muted,           "secondary over color (absorbs 0.55–0.70)"),
+    ]
+    let pad = (entries.map { $0.0.count }.max() ?? 0) + 3
+    var lines = ["\"opacity\": {", "    \"$type\": \"number\","]
+    for (i, e) in entries.enumerated() {
+        let keyField = "\"\(e.0)\":".padding(toLength: pad, withPad: " ", startingAt: 0)
+        let comma = i == entries.count - 1 ? "" : ","
+        let num = e.1 == e.1.rounded() ? String(format: "%.1f", e.1) : String(e.1)
+        lines.append("    \(keyField) { \"$value\": \(num), \"$description\": \"\(e.2)\" }\(comma)")
+    }
+    lines.append("  }")
+    return lines.joined(separator: "\n")
+}
+
+let sp = StrandPalette.self
+let paletteScales: [(String, String?, [PEntry])] = [
+    ("accent", nil, [
+        PEntry(name: "default",   color: sp.accent, desc: "health green — chrome, not data"),
+        PEntry(name: "focusRing", color: sp.accent, desc: nil),
+    ]),
+    ("status", nil, [
+        PEntry(name: "positive", color: sp.statusPositive, desc: nil),
+        PEntry(name: "warning",  color: sp.statusWarning,  desc: nil),
+        PEntry(name: "critical", color: sp.statusCritical, desc: "never reused as a recovery color"),
+    ]),
+    ("metric", nil, [
+        PEntry(name: "cyan",   color: sp.metricCyan,   desc: "Apple Health bars"),
+        PEntry(name: "purple", color: sp.metricPurple, desc: "HRV / strain-style data"),
+        PEntry(name: "amber",  color: sp.metricAmber,  desc: "calories / moderate"),
+        PEntry(name: "rose",   color: sp.metricRose,   desc: "risk / high strain / low recovery"),
+    ]),
+    ("sleep", nil, [
+        PEntry(name: "awake", color: sp.sleepAwake, desc: "rose"),
+        PEntry(name: "light", color: sp.sleepLight, desc: "periwinkle"),
+        PEntry(name: "deep",  color: sp.sleepDeep,  desc: "deep indigo"),
+        PEntry(name: "rem",   color: sp.sleepREM,   desc: "muted teal (calmer than the old #5BE0C7 mint — FER-234)"),
+    ]),
+    ("hrZone", nil, [
+        PEntry(name: "z1", color: sp.zone1, desc: nil),
+        PEntry(name: "z2", color: sp.zone2, desc: nil),
+        PEntry(name: "z3", color: sp.zone3, desc: nil),
+        PEntry(name: "z4", color: sp.zone4, desc: nil),
+        PEntry(name: "z5", color: sp.zone5, desc: nil),
+    ]),
+    ("recovery", "Traffic-light recovery scale, sampled by recoveryColor(score 0...100).", [
+        PEntry(name: "s000", color: sp.recovery000, desc: "0.00 — depleted, pink-red"),
+        PEntry(name: "s030", color: sp.recovery030, desc: "0.30 — low, amber"),
+        PEntry(name: "s055", color: sp.recovery055, desc: "0.55 — moderate, gold"),
+        PEntry(name: "s078", color: sp.recovery078, desc: "0.78 — primed, health green"),
+        PEntry(name: "s100", color: sp.recovery100, desc: "1.00 — peak, bright green"),
+    ]),
+    ("strain", "Strain ramp (output / heat), sampled by strainColor(strain 0...21).", [
+        PEntry(name: "s000", color: sp.strain000, desc: "0.00 — ember / warm gold"),
+        PEntry(name: "s033", color: sp.strain033, desc: "0.33 — orange"),
+        PEntry(name: "s066", color: sp.strain066, desc: "0.66 — rose-red"),
+        PEntry(name: "s100", color: sp.strain100, desc: "1.00 — magenta"),
+    ]),
+]
+
 // MARK: Splicing
 
 /// Replace the brace-balanced JSON object that follows `"<key>":`, preserving the line's leading
@@ -172,9 +268,23 @@ func fail(_ msg: String) -> Never { FileHandle.standardError.write(Data((msg + "
 
 do {
     let json = try String(contentsOf: jsonURL, encoding: .utf8)
-    guard let newJSON = replaceJSONObject(in: json, key: "instrumento", with: jsonBlock()) else {
+    var newJSON = json
+    guard let afterInstrumento = replaceJSONObject(in: newJSON, key: "instrumento", with: jsonBlock()) else {
         fail("✗ could not locate the \"instrumento\" object in \(jsonURL.path)")
     }
+    newJSON = afterInstrumento
+    // Palette scales (H6): each color.* block re-emitted from StrandPalette. `color.recovery`/`color.strain`
+    // precede the `gradient.*` ones, so the first-match splice hits the color block.
+    for (key, parentDesc, entries) in paletteScales {
+        guard let spliced = replaceJSONObject(in: newJSON, key: key, with: paletteBlock(key, parentDesc: parentDesc, entries)) else {
+            fail("✗ could not locate the \"\(key)\" object in \(jsonURL.path)")
+        }
+        newJSON = spliced
+    }
+    guard let afterOpacity = replaceJSONObject(in: newJSON, key: "opacity", with: opacityBlock()) else {
+        fail("✗ could not locate the \"opacity\" object in \(jsonURL.path)")
+    }
+    newJSON = afterOpacity
     if newJSON != json { try newJSON.write(to: jsonURL, atomically: true, encoding: .utf8) }
 
     let design = try String(contentsOf: designURL, encoding: .utf8)

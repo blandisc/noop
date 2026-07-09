@@ -72,7 +72,7 @@ private struct DetailChrome<Content: View>: View {
             HStack(spacing: 6) {
                 Button { dismiss() } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "chevron.left").font(.system(size: 15, weight: .semibold))
+                        Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
                         Text("Tendencias").font(StrandFont.body)
                     }
                     .foregroundStyle(theme.ink)
@@ -500,7 +500,7 @@ private struct CuerpoLanding: View {
                 // ONLY on the datum (Instrumento): the line carries the stat's own data hue, area very faint.
                 if value != nil, spark.count > 1 {
                     Sparkline(values: spark,
-                              gradient: Gradient(colors: [color.opacity(0.5), color]),
+                              gradient: ChartWell.fillGradient(color),
                               lineWidth: 1.6, showsArea: true, showsHead: false, showsScrub: false)
                         .frame(height: 16)
                         .padding(.top, 2)
@@ -518,7 +518,7 @@ private struct CuerpoLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
         .accessibilityElement(children: .combine)
     }
 
@@ -568,7 +568,7 @@ private struct CuerpoLanding: View {
                 if let load, load.series.count > 1, let band {
                     let color = band.flag.color(theme)
                     Sparkline(values: load.series.map(\.value),
-                              gradient: Gradient(colors: [color.opacity(0.55), color]),
+                              gradient: ChartWell.fillGradient(color),
                               referenceBand: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
                               bandColor: theme.hairlineStrong,
                               lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
@@ -577,17 +577,15 @@ private struct CuerpoLanding: View {
                         .accessibilityHidden(true)
                 }
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     .accessibilityHidden(true)
             }
             .padding(.vertical, 16).padding(.horizontal, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
+            .instrumentoCard(.card, theme: theme)
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the training-load explainer.")
     }
@@ -604,7 +602,7 @@ private struct CuerpoLanding: View {
                     InlineFlagChip("For now", color: theme.warning)
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 Text("What to train today")
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
@@ -615,11 +613,9 @@ private struct CuerpoLanding: View {
             .padding(.vertical, 16).padding(.horizontal, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
+            .instrumentoCard(.card, theme: theme)
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
         .accessibilityHint("Opens the muscle map.")
     }
 
@@ -683,20 +679,18 @@ private struct CuerpoLanding: View {
                 recoveryHeroAccessory(score: score, calibrating: cal,
                                       spark: showSpark ? spark : nil, color: color)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     .accessibilityHidden(true)
             }
             .padding(.vertical, 18).padding(.horizontal, 20)
             .frame(maxWidth: .infinity)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
+            .instrumentoCard(.card, theme: theme)
             .contentShape(Rectangle())
         }
         // Press feedback to match the stats: the hero draws its own `surface` background, so a fill
         // BEHIND the label (MetricRowButtonStyle) wouldn't show — `SurfacePressStyle` overlays the tint
         // on top, clipped to the same rounded shape. (FER-186 follow-up)
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
         .accessibilityElement(children: .combine)
     }
 
@@ -728,7 +722,7 @@ private struct CuerpoLanding: View {
             let delta = score - Int(mean.rounded())
             VStack(alignment: .trailing, spacing: 7) {
                 Sparkline(values: spark,
-                          gradient: Gradient(colors: [color.opacity(0.55), color]),
+                          gradient: ChartWell.fillGradient(color),
                           meanLine: mean, meanLineColor: theme.hairlineStrong,
                           lineWidth: 2.4, showsArea: true, showsHead: false, showsScrub: false)
                     .frame(width: 104, height: 46)
@@ -966,11 +960,11 @@ private struct CuerpoLanding: View {
         if notConnected && freshSteps == nil {
             Button { darkSheet = .screen(.dataSources) } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
+                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Connect Apple Health to fill steps and more.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 6)
-                    Image(systemName: "chevron.right").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())
             }
@@ -1002,25 +996,23 @@ private struct CuerpoLanding: View {
             Divider().overlay(theme.hairline).padding(.leading, 46)
             actionRow("See all metrics", icon: "square.grid.2x2") { showExplore = true }
         }
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        .instrumentoCard(.card, theme: theme)
     }
 
     private func actionRow(_ label: LocalizedStringKey, icon: String, open: @escaping () -> Void) -> some View {
         Button(action: open) {
             HStack(spacing: 12) {
-                Image(systemName: icon).font(.system(size: 16, weight: .medium))
+                Image(systemName: icon).font(StrandFont.glyph(.inline, weight: .medium))
                     .foregroundStyle(theme.inkSecondary).frame(width: 22)
                 Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 16).padding(.vertical, 15)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
     }
 
     // MARK: - Activity insight (FER-139) — nested under Activity, NOT a card-in-card (Instrumento rule 3)
@@ -1042,7 +1034,7 @@ private struct CuerpoLanding: View {
                         Text("Gathering data").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 if !activityCosts.isEmpty {
                     VStack(spacing: 8) {
@@ -1055,7 +1047,7 @@ private struct CuerpoLanding: View {
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
         }
-        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05)))
+        .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the per-sport detail.")
     }

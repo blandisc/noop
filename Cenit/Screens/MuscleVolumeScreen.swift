@@ -109,11 +109,11 @@ struct MuscleVolumeScreen: View {
                 let hi = MuscleFatigueMap.weeklyBandHigh / railTop
                 ZStack(alignment: .leading) {
                     // the 10–20 band, the fixed reference
-                    RoundedRectangle(cornerRadius: 3).fill(theme.hairline)
+                    RoundedRectangle(cornerRadius: 3).fill(theme.hairline)  // token-exempt: geometría de dato
                         .frame(width: w * (hi - lo), height: 14)
                         .offset(x: w * lo)
                     // the datum
-                    RoundedRectangle(cornerRadius: 3)
+                    RoundedRectangle(cornerRadius: 3)  // token-exempt: geometría de dato
                         .fill(below ? theme.warning : theme.ink)
                         .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
                 }

@@ -175,7 +175,7 @@ struct WorkoutsView: View {
             ForEach(Array(groups.enumerated()), id: \.element.id) { idx, g in
                 HStack(spacing: 12) {
                     Image(systemName: WorkoutSource.sfSymbol(for: g.sport))
-                        .font(.system(size: 14, weight: .medium)).foregroundStyle(theme.inkSecondary)
+                        .font(StrandFont.glyph(.inline, weight: .medium)).foregroundStyle(theme.inkSecondary)
                         .frame(width: 22)
                     Text(WorkoutSource.displaySport(g.sport)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .lineLimit(1)
@@ -217,7 +217,7 @@ struct WorkoutsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Image(systemName: WorkoutSource.sfSymbol(for: row.sport))
-                        .font(.system(size: 13, weight: .medium)).foregroundStyle(theme.inkSecondary)
+                        .font(StrandFont.glyph(.chevron, weight: .medium)).foregroundStyle(theme.inkSecondary)
                     Text(WorkoutSource.displaySport(row.sport)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .lineLimit(1)
                 }
@@ -259,11 +259,11 @@ struct WorkoutsView: View {
         if notConnected && noAppleSessions {
             Button { showDataSources = true } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
+                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Connect Apple Health to bring in your workouts from there.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 6)
-                    Image(systemName: "chevron.right").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())
             }
@@ -275,7 +275,7 @@ struct WorkoutsView: View {
 
     private var emptyState: some View {
         VStack(spacing: 14) {
-            Image(systemName: "figure.run").font(.system(size: 38, weight: .regular))
+            Image(systemName: "figure.run").font(.system(size: 38, weight: .regular))  // token-exempt: glifo 38pt fuera de banda empty
                 .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
             Text("No workouts yet").font(StrandFont.title2).foregroundStyle(theme.ink)
                 .multilineTextAlignment(.center)

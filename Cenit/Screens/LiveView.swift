@@ -267,7 +267,7 @@ struct LiveView: View {
                 ForEach(Array(recent.enumerated()), id: \.offset) { idx, ms in
                     Capsule()
                         .fill(idx == recent.count - 1 ? theme.dataHeart
-                                                       : theme.dataHeart.opacity(0.40))
+                                                       : theme.dataHeart.opacity(0.40)) // token-exempt: alfa exacto de barra viva RR
                         .frame(maxWidth: .infinity)
                         .frame(height: rrBarHeight(ms))
                 }
@@ -410,7 +410,7 @@ struct LiveView: View {
             Text(label).font(StrandFont.overline).tracking(StrandFont.overlineTracking)
                 .foregroundStyle(theme.inkSecondary)
             Spacer(minLength: 6)
-            Text("records").font(.system(size: 10, weight: .medium)).tracking(0.4)
+            Text("records").font(.system(size: 10, weight: .medium)).tracking(0.4) // token-exempt: sello 10pt peso/tracking propios
                 .textCase(.uppercase).foregroundStyle(theme.inkTertiary).lineLimit(1)
                 .frame(width: Self.statusColW + 9 + Self.countColW, alignment: .trailing)
             Color.clear.frame(width: 7, height: 1)   // aligns with the row's trailing dot
@@ -515,7 +515,7 @@ struct LiveView: View {
             VStack(alignment: .leading, spacing: 7) {
                 HStack(spacing: 3) {
                     ForEach(Array(cov.perDay.enumerated()), id: \.offset) { _, src in
-                        RoundedRectangle(cornerRadius: 2)
+                        RoundedRectangle(cornerRadius: 2) // token-exempt: geometría de dato
                             .fill(src == .strap ? theme.dataRecovery
                                   : src == .apple ? theme.dataSpO2 : theme.hairlineStrong)
                             .frame(maxWidth: .infinity).frame(height: 10)
@@ -535,7 +535,7 @@ struct LiveView: View {
                 legendItem(theme.hairlineStrong, "No data", cov.none)
             } else {
                 HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 2).fill(theme.hairlineStrong).frame(width: 9, height: 9)
+                    RoundedRectangle(cornerRadius: 2).fill(theme.hairlineStrong).frame(width: 9, height: 9) // token-exempt: geometría de dato
                     Text("No gaps").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
             }
@@ -545,7 +545,7 @@ struct LiveView: View {
 
     private func legendItem(_ color: Color, _ label: LocalizedStringKey, _ count: Int) -> some View {
         HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 9, height: 9)
+            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 9, height: 9) // token-exempt: geometría de dato
             Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             Text("\(count)").font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
         }
@@ -731,9 +731,7 @@ struct LiveView: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(theme.warning.opacity(0.5), lineWidth: 1))
+        .instrumentoCard(.control, theme: theme, stroke: theme.warning.opacity(0.5)) // token-exempt: stroke ámbar 0.5 (banner de aviso, alfa propio)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Reconnect help: \(guide)")
     }
@@ -753,9 +751,7 @@ struct LiveView: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(theme.warning.opacity(0.5), lineWidth: 1))
+        .instrumentoCard(.control, theme: theme, stroke: theme.warning.opacity(0.5)) // token-exempt: stroke ámbar 0.5 (banner de aviso, alfa propio)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Pairing help: \(hint)")
     }

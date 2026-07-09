@@ -184,7 +184,7 @@ struct RecoveryDetailScreen: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 6) {
                 Image(systemName: "applewatch")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .accessibilityHidden(true)
                 Text(Self.confidenceLabel(model.confidence))
                     .font(StrandFont.caption)
@@ -229,7 +229,7 @@ struct RecoveryDetailScreen: View {
         VStack(alignment: .trailing, spacing: 3) {
             Sparkline(
                 values: spark,
-                gradient: Gradient(colors: [theme.dataRecovery.opacity(0.55), theme.dataRecovery]),
+                gradient: ChartWell.fillGradient(theme.dataRecovery),
                 lineWidth: 1.6,
                 showsArea: false,
                 showsHead: false,
@@ -240,7 +240,7 @@ struct RecoveryDetailScreen: View {
             if let d = heroDirection(spark) {
                 HStack(spacing: 3) {
                     Image(systemName: heroDirectionSymbol(d))
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(StrandFont.glyph(.chevron, weight: .semibold))
                         .accessibilityHidden(true)
                     Text("14 d").font(StrandFont.footnote)
                 }
@@ -842,7 +842,7 @@ struct RecoveryDetailScreen: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Calibrando (no hay score todavía)
@@ -876,7 +876,7 @@ struct RecoveryDetailScreen: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Source footer

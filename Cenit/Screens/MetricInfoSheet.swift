@@ -672,7 +672,7 @@ struct MetricInfoSheet: View {
     /// Line/area gradient for this metric's charts — the metric hue, from translucent to solid, so the
     /// curve reads clearly on warm paper.
     private var chartGradient: Gradient {
-        Gradient(colors: [metricHue.opacity(0.5), metricHue])
+        ChartWell.fillGradient(metricHue)
     }
 
     var body: some View {
@@ -830,7 +830,7 @@ struct MetricInfoSheet: View {
     @ViewBuilder private var metricGlyph: some View {
         if let name = metricGlyphName {
             Image(systemName: name)
-                .font(.system(size: 13, weight: .semibold))
+                .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(metricHue)
                 .accessibilityHidden(true)
         }
@@ -1034,7 +1034,7 @@ struct MetricInfoSheet: View {
                 Spacer(minLength: 0)
             }
             .background(theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
         }
     }
 
@@ -1107,8 +1107,8 @@ struct MetricInfoSheet: View {
                 }
                 SleepStageBar(stages: [
                     .init(minutes: night.stages.deep,  color: theme.dataSleep,               label: String(localized: "Deep")),
-                    .init(minutes: night.stages.rem,   color: theme.dataSleep.opacity(0.78), label: String(localized: "REM")),
-                    .init(minutes: night.stages.light, color: theme.dataSleep.opacity(0.52), label: String(localized: "Light")),
+                    .init(minutes: night.stages.rem,   color: theme.dataSleep.opacity(0.78), label: String(localized: "REM")), // token-exempt: rampa graduada de etapas
+                    .init(minutes: night.stages.light, color: theme.dataSleep.opacity(0.52), label: String(localized: "Light")), // token-exempt: rampa graduada de etapas
                     .init(minutes: night.stages.awake, color: theme.hairlineStrong,          label: String(localized: "Awake")),
                 ], theme: theme)
             }
@@ -1143,7 +1143,7 @@ struct MetricInfoSheet: View {
             Spacer(minLength: 0)
         }
         .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
     private var sleepTonightText: LocalizedStringKey {
         if let r = sleepDetail?.regularity, r.score >= 80 {
@@ -1214,7 +1214,7 @@ struct MetricInfoSheet: View {
             withAnimation(StrandMotion.interactive) { headlineExpanded.toggle() }
         } label: {
             Image(systemName: "info.circle")
-                .font(.system(size: 15))
+                .font(StrandFont.glyph(.inline))
                 .foregroundStyle(headlineExpanded ? metricHue : theme.inkTertiary)
         }
         .buttonStyle(.plain)
@@ -1232,8 +1232,8 @@ struct MetricInfoSheet: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
             .overlay(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .strokeBorder(tint.opacity(0.4), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 5, style: .continuous) // token-exempt: geometría de dato (chip ≤6)
+                    .strokeBorder(tint.opacity(StrandOpacity.strokeSoft), lineWidth: 0.5)
             )
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(appleSource ? "Source · Apple Health" : "Source · band"))
@@ -1245,7 +1245,7 @@ struct MetricInfoSheet: View {
     private var appleConnectLine: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "heart.fill")
-                .font(.system(size: 12))
+                .font(StrandFont.glyph(.chevron))
                 .foregroundStyle(theme.dataHeart)
             Text("This reading can come from Apple Health. Connect it from Today to see it here.")
                 .font(StrandFont.caption)
@@ -1254,9 +1254,7 @@ struct MetricInfoSheet: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 0.5))
+        .instrumentoCard(.control, theme: theme, lineWidth: 0.5)
     }
 
     /// Quiet provenance line at the foot of the sheet: the displayed reading came from Apple Health (not
@@ -1265,7 +1263,7 @@ struct MetricInfoSheet: View {
     private var appleSourceLine: some View {
         HStack(spacing: 6) {
             Image(systemName: "heart.fill")
-                .font(.system(size: 11))
+                .font(StrandFont.glyph(.chevron))
                 .foregroundStyle(theme.dataHeart)
             Text("Apple Health")
                 .font(StrandFont.caption)
@@ -1338,7 +1336,7 @@ struct MetricInfoSheet: View {
                 }
             }
         }
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     /// One reference-band row. `count` (when the trend has loaded) shows how many of the windowed
@@ -1346,7 +1344,7 @@ struct MetricInfoSheet: View {
     private func bandRow(_ band: MetricInfo.Band, count: Int?) -> some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(0.45))
+                .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(StrandOpacity.dim))
                 .frame(width: 8, height: 8)
                 .padding(.leading, 14)
             Text(band.label)
@@ -1359,14 +1357,14 @@ struct MetricInfoSheet: View {
             if let count {
                 Text(BandSummaryCopy.countLabel(count, nightly: BandSummaryCopy.isNightly(metricID: info.id)))
                     .font(StrandFont.captionNumber)
-                    .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary.opacity(0.85))
+                    .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary.opacity(0.85)) // token-exempt: >0.70 (conteo inactivo tenue)
                     .frame(minWidth: 56, alignment: .trailing)
             }
         }
         .padding(.trailing, 14)
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
-        .background(band.isActive ? metricHue.opacity(0.12) : Color.clear)
+        .background(band.isActive ? metricHue.opacity(StrandOpacity.tintFill) : Color.clear)
     }
 
     // MARK: - Band trend summary (FER-459)
@@ -1760,7 +1758,7 @@ struct MetricInfoSheet: View {
             if dashed {
                 HStack(spacing: 3) {
                     ForEach(0..<3, id: \.self) { _ in
-                        Capsule().fill(theme.dataStrain.opacity(0.75)).frame(width: 3, height: 2.4)
+                        Capsule().fill(theme.dataStrain.opacity(0.75)).frame(width: 3, height: 2.4) // token-exempt: >0.70 (swatch de leyenda)
                     }
                 }
             } else {
@@ -1776,7 +1774,7 @@ struct MetricInfoSheet: View {
         HStack(spacing: 5) {
             HStack(spacing: 3) {
                 ForEach(0..<3, id: \.self) { _ in
-                    Capsule().fill(theme.inkSecondary.opacity(0.55)).frame(width: 3, height: 1.6)
+                    Capsule().fill(theme.inkSecondary.opacity(StrandOpacity.muted)).frame(width: 3, height: 1.6)
                 }
             }
             Text("ceiling").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
@@ -1787,7 +1785,7 @@ struct MetricInfoSheet: View {
     /// Legend entry for the habitual training window: a small amber swatch. (FER-732)
     private var windowLegend: some View {
         HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 2).fill(theme.warning.opacity(0.14)).frame(width: 14, height: 9)
+            RoundedRectangle(cornerRadius: 2).fill(theme.warning.opacity(StrandOpacity.tintFillStrong)).frame(width: 14, height: 9) // token-exempt: geometría de dato (swatch r2)
             Text("your training").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
         }
         .accessibilityElement(children: .combine)
@@ -1808,7 +1806,7 @@ struct MetricInfoSheet: View {
     // MARK: - Shared chart wells (loading / empty), themed for warm paper
 
     private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
+        RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
             .fill(theme.surface)
             .frame(height: height)
             .overlay { ProgressView().tint(theme.inkTertiary) }
@@ -1817,7 +1815,7 @@ struct MetricInfoSheet: View {
     private func emptyWell(icon: String, text: LocalizedStringKey) -> some View {
         VStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 22))
+                .font(StrandFont.glyph(.lead))
                 .foregroundStyle(theme.inkTertiary)
             Text(text)
                 .font(StrandFont.subhead)
@@ -1826,7 +1824,7 @@ struct MetricInfoSheet: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Recovery weight breakdown + method disclosure (FER-108)
@@ -1854,7 +1852,7 @@ struct MetricInfoSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: «Qué la movió hoy» (FER-628)
@@ -1885,7 +1883,7 @@ struct MetricInfoSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     /// The plain-language headline names the signal with the LARGEST contribution to today's score
@@ -2027,7 +2025,7 @@ struct MetricInfoSheet: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     /// Trailing "Ver más" link at the foot of the sheet: drills from this summary into the metric's rich
@@ -2064,12 +2062,12 @@ struct MetricInfoSheet: View {
                         Text("See more")
                             .font(StrandFont.subhead.weight(.medium))
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .foregroundStyle(metricHue)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 9)
-                    .background(metricHue.opacity(0.10), in: Capsule())
+                    .background(metricHue.opacity(StrandOpacity.tintFill), in: Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("See more"))
@@ -2129,7 +2127,7 @@ private struct StrainIntradayCurve: View {
                     if let window {
                         let x0 = CGFloat(min(max(window.start / 24, 0), 1)) * w
                         let x1 = CGFloat(min(max(window.end / 24, 0), 1)) * w
-                        theme.warning.opacity(0.14)
+                        theme.warning.opacity(StrandOpacity.tintFillStrong)
                             .frame(width: max(0, x1 - x0), height: h)
                             .position(x: (x0 + x1) / 2, y: h / 2)
                     }
@@ -2139,12 +2137,12 @@ private struct StrainIntradayCurve: View {
                     if let ceiling {
                         let cy = h - CGFloat(min(ceiling, vMax) / vMax) * h
                         Path { p in p.move(to: CGPoint(x: 0, y: cy)); p.addLine(to: CGPoint(x: w, y: cy)) }
-                            .stroke(theme.inkSecondary.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                            .stroke(theme.inkSecondary.opacity(StrandOpacity.muted), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
                         Text("ceiling")
-                            .font(.system(size: 10))
+                            .font(StrandFont.micro)
                             .foregroundStyle(theme.inkTertiary)
                             .padding(.horizontal, 3)
-                            .background(theme.paper.opacity(0.85))
+                            .background(theme.paper.opacity(0.85)) // token-exempt: >0.70 (fondo de etiqueta casi opaco)
                             .fixedSize()
                             .position(x: 20, y: max(6, cy - 8))
                     }
@@ -2155,7 +2153,7 @@ private struct StrainIntradayCurve: View {
                         for pt in pts { p.addLine(to: pt) }
                         p.addLine(to: CGPoint(x: nowPt.x, y: h))
                         p.closeSubpath()
-                    }.fill(hue.opacity(0.10))
+                    }.fill(hue.opacity(StrandOpacity.tintFill))
                     // Lived line (solid).
                     Path { p in
                         guard let first = pts.first else { return }
@@ -2167,7 +2165,7 @@ private struct StrainIntradayCurve: View {
                         Path { p in
                             p.move(to: nowPt)
                             p.addLine(to: CGPoint(x: w, y: nowPt.y))
-                        }.stroke(hue.opacity(0.75), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [1.5, 4]))
+                        }.stroke(hue.opacity(0.75), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [1.5, 4])) // token-exempt: >0.70 (proyección punteada)
                     }
                     BreathingDot(color: hue, radius: 3.4).position(x: nowPt.x, y: nowPt.y)
 
@@ -2201,7 +2199,7 @@ private struct StrainIntradayCurve: View {
             }
             HStack(spacing: 0) {
                 ForEach(["00", "6", "12", "18", "24"], id: \.self) { label in
-                    Text(verbatim: label).font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
+                    Text(verbatim: label).font(StrandFont.micro).foregroundStyle(theme.inkTertiary)
                     if label != "24" { Spacer(minLength: 0) }
                 }
             }

@@ -58,7 +58,7 @@ struct PlatesScreen: View {
             Text(exerciseName.uppercased()).groteskOverline().foregroundStyle(theme.inkTertiary)
             Spacer()
             Button(action: onClose) {
-                Image(systemName: "xmark").font(.system(size: 15, weight: .semibold))
+                Image(systemName: "xmark").font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkSecondary)
             }
             .accessibilityLabel(Text("Close"))
@@ -98,7 +98,7 @@ struct PlatesScreen: View {
             ForEach(Array(loading.perSide.reversed().enumerated()), id: \.offset) { _, kg in
                 plateBar(kg)
             }
-            RoundedRectangle(cornerRadius: 2).fill(theme.hairlineStrong)
+            RoundedRectangle(cornerRadius: 2).fill(theme.hairlineStrong) // token-exempt: geometría de dato
                 .frame(width: 54, height: 6)
             ForEach(Array(loading.perSide.enumerated()), id: \.offset) { _, kg in
                 plateBar(kg)
@@ -112,11 +112,11 @@ struct PlatesScreen: View {
     private func plateBar(_ kg: Double) -> some View {
         // Height scales with plate mass (25 kg → tall, 1.25 kg → short), clamped to a readable band.
         let h = 30 + min(46, kg * 1.7)
-        return RoundedRectangle(cornerRadius: 3)
+        return RoundedRectangle(cornerRadius: 3) // token-exempt: geometría de dato
             .fill(theme.ink)
             .frame(width: max(8, min(16, 6 + kg * 0.45)), height: h)
             .overlay(
-                Text(plate(kg)).font(.system(size: 9, weight: .medium)).monospacedDigit()
+                Text(plate(kg)).font(.system(size: 9, weight: .medium)).monospacedDigit() // token-exempt: microtexto <10pt
                     .foregroundStyle(theme.paper)
                     .rotationEffect(.degrees(-90)).fixedSize()
             )

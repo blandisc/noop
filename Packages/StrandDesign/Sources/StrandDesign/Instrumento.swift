@@ -259,6 +259,19 @@ public extension InstrumentoTheme {
     /// Warm track behind compact segmented pills (`CompactTrendToggle`) — one step warmer than
     /// `surface` so the active ink chip riding on it reads.
     var trackWarm: Color { Color(hex: "#EFEAE0") }
+
+    // MARK: Tinte por opacidad — helpers de la escala `StrandOpacity` (auditoría jul-2026, H4)
+    //
+    // Azúcar sobre `StrandOpacity` para el patrón más común: modular un color de dato/estado a
+    // opacidad de tinte. Preferir estos en el call site (`theme.tint(theme.warning)`) sobre el
+    // literal (`theme.warning.opacity(0.12)`).
+
+    /// Fondo tintado de chip/badge (`StrandOpacity.tintFill`, 0.10).
+    func tint(_ c: Color) -> Color       { c.opacity(StrandOpacity.tintFill) }
+    /// Tinte enfatizado (`StrandOpacity.tintFillStrong`, 0.14).
+    func tintStrong(_ c: Color) -> Color { c.opacity(StrandOpacity.tintFillStrong) }
+    /// Borde tintado suave (`StrandOpacity.strokeSoft`, 0.30).
+    func softStroke(_ c: Color) -> Color { c.opacity(StrandOpacity.strokeSoft) }
 }
 
 // MARK: - Environment injection

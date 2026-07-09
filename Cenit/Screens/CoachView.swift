@@ -136,9 +136,7 @@ struct CoachView: View {
                         .foregroundStyle(theme.ink)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        .instrumentoCard(.inset, theme: theme, fill: theme.surface, stroke: theme.hairlineStrong)
                         .onSubmit(saveKey)
                         .accessibilityLabel("API key")
                 }
@@ -196,9 +194,7 @@ struct CoachView: View {
                         .foregroundStyle(theme.ink)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        .instrumentoCard(.inset, theme: theme, fill: theme.surface, stroke: theme.hairlineStrong)
                         .onSubmit(applyCustomModel)
                         .accessibilityLabel("Custom model id")
 
@@ -314,9 +310,7 @@ struct CoachView: View {
                     .multilineTextAlignment(.leading)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    .instrumentoCard(.cta, theme: theme, fill: theme.surface, stroke: theme.hairlineStrong)
                     .frame(maxWidth: 520, alignment: .trailing)
             }
             .accessibilityElement(children: .combine)
@@ -401,9 +395,7 @@ struct CoachView: View {
                 .focused($composerFocused)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(composerFocused ? theme.ink.opacity(0.4) : theme.hairlineStrong, lineWidth: 1))
+                .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: composerFocused ? theme.ink.opacity(StrandOpacity.dim) : theme.hairlineStrong)
                 .onSubmit { send(draft) }
                 .accessibilityLabel("Question")
 
@@ -414,13 +406,13 @@ struct CoachView: View {
                     if coach.sending {
                         ProgressView().controlSize(.small).tint(theme.paper)
                     } else {
-                        Image(systemName: "arrow.up").font(.system(size: 15, weight: .semibold))
+                        Image(systemName: "arrow.up").font(StrandFont.glyph(.inline, weight: .semibold))
                     }
                 }
                 .frame(width: 44, height: 36)
                 .foregroundStyle(theme.paper)
                 .background(sendDisabled ? theme.inkTertiary : theme.ink,
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)) // token-exempt: fondo condicional
             }
             .buttonStyle(.plain)
             .disabled(sendDisabled)

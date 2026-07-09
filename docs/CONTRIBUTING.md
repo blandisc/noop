@@ -266,6 +266,25 @@ Spacing and sizing come from `NoopMetrics` (`cardRadius`, `cardPadding`, `gap`, 
 — either it already exists in `StrandDesign`, or it should be added there (with a `#Preview`) and
 then used. Screens stay thin; the system stays canonical.
 
+### No drift — the two rules, enforced by a linter (auditoría jul-2026)
+
+1. **Any visual pattern that appears ≥3 times is promoted to `StrandDesign`** with a snapshot test —
+   never copy-pasted a fourth time. The card surface is `.instrumentoCard(_:)` (never a hand-rolled
+   `.background(surface, in: RoundedRectangle) + .overlay(stroke)`); glyphs use `StrandFont.glyph(_:)`;
+   microtext uses `StrandFont.micro`; opacities use `StrandOpacity` (or the `theme.tint(_:)` helpers).
+2. **No new visual value enters as a literal** — first the token, then the use. A raw hex, a
+   `.font(.system(size:))`, a literal `cornerRadius:`, or a magic `.opacity(0.NN)` in a screen is
+   rejected by `Tools/check-design-drift.py` (run in `design-tokens.yml` CI and the pre-commit hook).
+   Geometry of data that genuinely needs a literal (chart bars, legends, keypad, the Dynamic-Island
+   widget) is silenced per-line with a trailing `// token-exempt: <reason>`.
+
+The linter's rules turn on incrementally as each migration sweep lands. `no-hex` runs on every root;
+the font/radius/opacity rules are now ON for `Cenit/Screens` + `Cenit/Onboarding` (fully migrated).
+`CenitWidgets` (Live Activity) and `CenitWatch` are fixed Dynamic-Island / watch geometry (the
+`WidgetMetrics` category, exempt from Dynamic Type) and are not yet under the three new rules. The token blocks in
+`docs/design-system/tokens/design-tokens.json` and the color tables in `DESIGN.md` are **generated**
+from the Swift by `swift run StrandDesignTokens` — never hand-edit them; run the generator and commit.
+
 ---
 
 ## Coding conventions

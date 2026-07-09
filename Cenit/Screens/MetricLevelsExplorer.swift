@@ -74,7 +74,7 @@ struct MetricLevelsExplorer: View {
         return d.todayIndex
     }
 
-    private var gradient: Gradient { Gradient(colors: [hue.opacity(0.5), hue]) }
+    private var gradient: Gradient { ChartWell.fillGradient(hue) }
 
     // MARK: Body
 
@@ -211,13 +211,13 @@ struct MetricLevelsExplorer: View {
                     .foregroundStyle(isHighlight ? hue : theme.inkTertiary)
                 Text(BandSummaryCopy.countLabel(d.counts[i], nightly: nightly))
                     .font(StrandFont.captionNumber)
-                    .foregroundStyle(isHighlight ? hue : theme.inkTertiary.opacity(0.85))
+                    .foregroundStyle(isHighlight ? hue : theme.inkTertiary.opacity(0.85)) // token-exempt: >0.70
                     .frame(minWidth: 50, alignment: .trailing)
             }
             .padding(.horizontal, 12).padding(.vertical, 11)
             .frame(maxWidth: .infinity)
-            .background(isHighlight ? hue.opacity(0.10) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(isHighlight ? hue.opacity(StrandOpacity.tintFill) : Color.clear,
+                        in: RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -231,7 +231,7 @@ struct MetricLevelsExplorer: View {
         if isToday && !isHighlight {
             Circle().strokeBorder(hue, lineWidth: 2).frame(width: 8, height: 8)
         } else {
-            Circle().fill(isHighlight ? hue : theme.inkTertiary.opacity(0.45)).frame(width: 8, height: 8)
+            Circle().fill(isHighlight ? hue : theme.inkTertiary.opacity(StrandOpacity.dim)).frame(width: 8, height: 8)
         }
     }
 

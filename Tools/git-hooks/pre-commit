@@ -1,19 +1,40 @@
 #!/bin/sh
-# Guard: block commits that introduce reference cycles in String Catalogs.
-# Xcode 26.3 recurses infinitely on a cyclic .xcstrings and OOMs the Mac (FER-395).
-# Logic is versioned in Tools/check-xcstrings-cycles.py; this hook is local.
+# Local pre-commit guards (versioned scripts, this hook is a thin runner).
 # Install / reinstall after a fresh clone:
 #   cp Tools/git-hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit
-changed=$(git diff --cached --name-only --diff-filter=ACM | grep -E 'Localizable\.xcstrings$')
-[ -z "$changed" ] && exit 0
-command -v python3 >/dev/null 2>&1 || { echo "pre-commit: sin python3, salto chequeo de ciclos xcstrings"; exit 0; }
+command -v python3 >/dev/null 2>&1 || { echo "pre-commit: sin python3, salto chequeos"; exit 0; }
 root=$(git rev-parse --show-toplevel)
-script="$root/Tools/check-xcstrings-cycles.py"
-[ -f "$script" ] || exit 0
-if ! python3 "$script"; then
-  echo ""
-  echo "✋ Commit bloqueado: ciclo en un String Catalog (crashea Xcode 26.3 → OOM)."
-  echo "   Rómpelo con el patrón FER-395, o commitea con --no-verify si sabes lo que haces."
-  exit 1
+
+# 1) String Catalog reference cycles — Xcode 26.3 recurses infinitely on a cyclic .xcstrings
+#    and OOMs the Mac (FER-395). Logic in Tools/check-xcstrings-cycles.py.
+xcstrings=$(git diff --cached --name-only --diff-filter=ACM | grep -E 'Localizable\.xcstrings$')
+if [ -n "$xcstrings" ] && [ -f "$root/Tools/check-xcstrings-cycles.py" ]; then
+  if ! python3 "$root/Tools/check-xcstrings-cycles.py"; then
+    echo ""
+    echo "✋ Commit bloqueado: ciclo en un String Catalog (crashea Xcode 26.3 → OOM)."
+    echo "   Rómpelo con el patrón FER-395, o commitea con --no-verify si sabes lo que haces."
+    exit 1
+  fi
 fi
+
+# 2) Design-system drift — no raw hex/font/radius/opacity literals in the screens (auditoría jul-2026).
+#    Runs only on staged .swift files. Keep the rule scoping in sync with .github/workflows/design-tokens.yml:
+#    no-hex on every staged file; the font/radius/opacity rules on staged screens (Cenit/Screens|Onboarding),
+#    which are fully migrated. (CenitWidgets/CenitWatch are fixed Dynamic-Island / watch geometry.)
+swift_staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.swift$')
+if [ -n "$swift_staged" ] && [ -f "$root/Tools/check-design-drift.py" ]; then
+  fail=0
+  python3 "$root/Tools/check-design-drift.py" --rules no-hex $swift_staged || fail=1
+  screens_staged=$(printf '%s\n' $swift_staged | grep -E '^Cenit/(Screens|Onboarding)/')
+  if [ -n "$screens_staged" ]; then
+    python3 "$root/Tools/check-design-drift.py" --rules no-adhoc-font,no-radius-literal,no-opacity-literal $screens_staged || fail=1
+  fi
+  if [ "$fail" -ne 0 ]; then
+    echo ""
+    echo "✋ Commit bloqueado: deriva del sistema de diseño (usa un token de StrandDesign,"
+    echo "   o anota la línea con « // token-exempt: <motivo> »)."
+    exit 1
+  fi
+fi
+
 exit 0

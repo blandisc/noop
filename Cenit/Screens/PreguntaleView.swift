@@ -64,7 +64,7 @@ private struct PreguntaleHeader: View {
                 .font(StrandFont.title2).foregroundStyle(theme.ink)
             Spacer()
             HStack(spacing: 5) {
-                if onDevice { Image(systemName: "cpu").font(.system(size: 11)) }
+                if onDevice { Image(systemName: "cpu").font(StrandFont.glyph(.chevron)) }
                 Text(onDevice ? "On-device" : "Modo esencial")
                     .font(StrandFont.footnote)
             }
@@ -87,16 +87,14 @@ private struct ExternalUpgradeRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(systemName: "sparkles").font(.system(size: 16)).foregroundStyle(theme.inkSecondary)
+                Image(systemName: "sparkles").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkSecondary)
                 Text(hasKey ? "Respuestas más profundas con tu IA" : "Conecta tu IA · opcional")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
             .padding(14)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                .stroke(theme.hairline, lineWidth: 1))
+            .instrumentoCard(.card, theme: theme)
         }
         .buttonStyle(.plain)
     }
@@ -111,7 +109,7 @@ private struct AnswerBubble: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(text).font(StrandFont.body).foregroundStyle(theme.ink)
             HStack(spacing: 5) {
-                Image(systemName: "checkmark.seal").font(.system(size: 11))
+                Image(systemName: "checkmark.seal").font(StrandFont.glyph(.chevron))
                 Text("Solo cifras del motor · sin red").font(StrandFont.footnote)
             }
             .foregroundStyle(theme.inkTertiary)
@@ -265,14 +263,12 @@ private struct OnDeviceChatScreen: View {
 
                     // "Cómo funciona" explainer.
                     HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "lock.shield").font(.system(size: 13)).foregroundStyle(theme.dataRecovery)
+                        Image(systemName: "lock.shield").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataRecovery)
                         Text("Cómo funciona: el modelo de Apple Intelligence de tu iPhone redacta la respuesta apoyándose en tus cifras reales. Nunca inventa números y nada sale del teléfono.")
                             .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                     }
                     .padding(12)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                        .stroke(theme.hairline, lineWidth: 1))
+                    .instrumentoCard(.card, theme: theme)
 
                     // The coach speaks first + dynamic suggestions, until the user starts.
                     if engine.messages.isEmpty {
@@ -307,10 +303,10 @@ private struct OnDeviceChatScreen: View {
                     if !engine.thinking, let insight = whatIfInsight {
                         Button { startItem = StartExperimentItem(insight: insight) } label: {
                             HStack(spacing: 8) {
-                                Image(systemName: "flask").font(.system(size: 14))
+                                Image(systemName: "flask").font(StrandFont.glyph(.inline))
                                 Text("Convertirlo en experimento de 7 días").font(StrandFont.subhead)
                                 Spacer()
-                                Image(systemName: "arrow.right").font(.system(size: 13))
+                                Image(systemName: "arrow.right").font(StrandFont.glyph(.chevron))
                             }
                             .foregroundStyle(theme.ink)
                             .padding(.vertical, 11).padding(.horizontal, 14)
@@ -367,7 +363,7 @@ private struct OnDeviceChatScreen: View {
                 Task { await engine.send(q) }
             } label: {
                 Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.paper)
+                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.paper)
                     .frame(width: 32, height: 32)
                     .background(theme.ink, in: Circle())
             }

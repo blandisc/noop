@@ -253,7 +253,7 @@ private struct AppleHealthStep: View {
                 .padding(.top, NoopMetrics.sectionGap)
             HStack(alignment: .top, spacing: NoopMetrics.space2) {
                 Image(systemName: "lock.fill")
-                    .font(.system(size: 13))
+                    .font(StrandFont.glyph(.chevron))
                     .foregroundStyle(theme.inkTertiary)
                     .accessibilityHidden(true)
                 Text("Everything stays on your iPhone. Cénit doesn't upload anything to any server.")
@@ -340,7 +340,7 @@ private struct CenteredState<Buttons: View>: View {
             Spacer(minLength: NoopMetrics.sectionGap)
             VStack(spacing: NoopMetrics.gap) {
                 Image(systemName: glyph)
-                    .font(.system(size: 48, weight: .regular))
+                    .font(.system(size: 48, weight: .regular)) // token-exempt: glifo hero 48pt fuera de banda
                     .foregroundStyle(glyphColor)
                     .accessibilityHidden(true)
                 Text(title)
@@ -416,7 +416,7 @@ private struct PrepareStep: View {
                 .padding(.top, NoopMetrics.sectionGap)
             HStack(alignment: .top, spacing: NoopMetrics.space2) {
                 Image(systemName: "wave.3.right")
-                    .font(.system(size: 13))
+                    .font(StrandFont.glyph(.chevron))
                     .foregroundStyle(theme.inkTertiary)
                     .accessibilityHidden(true)
                 Text("In a moment your iPhone will ask for Bluetooth permission. Choose Allow so Cénit can find your strap. The connection is direct: nothing goes through the cloud.")
@@ -636,7 +636,7 @@ private struct ProfileStep: View {
 
             if !fromHealth.isEmpty {
                 HStack(spacing: NoopMetrics.space2) {
-                    Image(systemName: "heart.fill").font(.system(size: 11)).foregroundStyle(theme.dataSpO2)
+                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("From Apple Health · editable")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
@@ -804,7 +804,7 @@ private struct Checkline: View {
     var body: some View {
         HStack(alignment: .top, spacing: NoopMetrics.space2) {
             Image(systemName: "checkmark")
-                .font(.system(size: 13, weight: .semibold))
+                .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
                 .padding(.top, 2)
                 .accessibilityHidden(true)
@@ -840,12 +840,12 @@ private struct ImportRow: View {
         Button(action: action) {
             HStack(spacing: NoopMetrics.gap) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(StrandFont.glyph(.inline, weight: .semibold))
                     .frame(width: 18)
                 Text(title).font(StrandFont.subhead.weight(.semibold))
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(StrandFont.glyph(.chevron, weight: .bold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .foregroundStyle(theme.ink)

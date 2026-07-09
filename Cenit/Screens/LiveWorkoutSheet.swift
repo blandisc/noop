@@ -65,7 +65,7 @@ struct LiveWorkoutHubRow: View {
         if let w = model.activeWorkout {
             HStack(spacing: 12) {
                 Image(systemName: "circle.fill").frame(width: 30)
-                    .font(.system(size: 9)).foregroundStyle(theme.dataRecovery)
+                    .font(.system(size: 9)).foregroundStyle(theme.dataRecovery) // token-exempt: microtexto <10pt
                 Text("Recording").font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
                 TimelineView(.periodic(from: w.start, by: 1)) { ctx in
@@ -73,13 +73,13 @@ struct LiveWorkoutHubRow: View {
                         .font(StrandFont.bodyNumber).foregroundStyle(theme.inkSecondary)
                 }
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 48).contentShape(Rectangle())
         } else {
             HStack(spacing: 12) {
                 Image(systemName: "play.fill").frame(width: 30)
-                    .font(.system(size: 17))
+                    .font(StrandFont.glyph(.lead))
                     .foregroundStyle(isLiveHR ? theme.dataRecovery : theme.inkTertiary)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Start live").font(StrandFont.body)
@@ -89,7 +89,7 @@ struct LiveWorkoutHubRow: View {
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 48).contentShape(Rectangle())
         }
@@ -177,9 +177,7 @@ struct LiveWorkoutSheet: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                 }
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.critical.opacity(0.4), lineWidth: 1))
+                .instrumentoCard(.card, theme: theme, fill: theme.surface, stroke: theme.critical.opacity(StrandOpacity.strokeSoft))
                 .padding(.top, 8)
             }
             .padding(.horizontal, NoopMetrics.screenPadding)

@@ -115,6 +115,40 @@ public enum StrandFont {
 
     /// The recommended tracking for overline text.
     public static let overlineTracking: CGFloat = 0.8
+
+    // MARK: Glifos SF Symbol (auditoría jul-2026, H1)
+    //
+    // Antes de esto las pantallas dimensionaban cada glifo con `.font(.system(size:))` ad-hoc
+    // (~200 sitios): el mismo chevron a 10/11/12/13/14pt según el archivo. Estos cuatro escalones
+    // absorben >90% de los usos. Son tamaños FIJOS a propósito: un glifo es chrome pareado a texto
+    // que no escala, o geometría — NO escala con Dynamic Type (mismo criterio que `tabTitle`).
+
+    /// Tamaño de un glifo SF Symbol por rol. Nunca un `CGFloat` literal.
+    public enum GlyphSize: CGFloat {
+        /// Chevrons de navegación, disclosure marks (absorbe 10–14).
+        case chevron = 12
+        /// Icono junto a texto body (absorbe 14–17).
+        case inline  = 15
+        /// Icono protagonista de fila / cabecera (absorbe 17–22).
+        case lead    = 18
+        /// Glifo de estado vacío (absorbe 28–40).
+        case empty   = 34
+    }
+
+    /// Un glifo SF Symbol a un tamaño semántico. FIJO — no escala con Dynamic Type.
+    /// El default es `.regular` a propósito: iguala el default nativo de `.font(.system(size:))`, así que
+    /// migrar un icono de tamaño-desnudo (el caso común) NO cambia su peso. Pasa `weight: .semibold`
+    /// (u otro) solo donde el sitio original lo declaraba.
+    public static func glyph(_ size: GlyphSize, weight: Font.Weight = .regular) -> Font {
+        .system(size: size.rawValue, weight: weight)
+    }
+
+    /// Microtexto 11 / Medium — etiquetas de instrumento pegadas a geometría (ejes de gráfico,
+    /// unidades junto a un numeral, keypad, sellos dentro de dibujos). FIJO a propósito: NO escala
+    /// con Dynamic Type (mismo razonamiento que `display`/`number`/`tabTitle`; ver 05-accesibilidad).
+    /// Para microtexto de LECTURA (etiquetas, hints, subtítulos) usar `footnote`/`caption`/`subhead`,
+    /// que sí escalan.
+    public static let micro = Font.system(size: 11, weight: .medium)
 }
 
 // MARK: - Text helpers

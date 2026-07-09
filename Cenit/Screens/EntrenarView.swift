@@ -188,7 +188,7 @@ private struct EntrenarLanding: View {
         // which `Text` would render verbatim, leaving «Train» in English even in Spanish. (es → «Entrenar».)
         InstrumentoTabHeader(String(localized: "Train")) {
             Image(systemName: "figure.strengthtraining.functional")
-                .font(.system(size: 20)).foregroundStyle(theme.ink)
+                .font(.system(size: 20)).foregroundStyle(theme.ink)  // token-exempt: glifo 20pt fuera de banda lead
         } trailing: {
             if let rec = recovery { recoveryChip(rec) }   // hidden while calibrating (no score)
         }
@@ -224,7 +224,7 @@ private struct EntrenarLanding: View {
                     // their own quieter tier, so identity and context stop competing for one row.
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(alignment: .top, spacing: 9) {
-                            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría de dato
                                 .fill(routineFill(region(name: r.name))).frame(width: 8, height: 8)
                                 .padding(.top, 7)
                             Text(r.name).font(StrandFont.title3).foregroundStyle(theme.ink)
@@ -347,15 +347,15 @@ private struct EntrenarLanding: View {
         if let alt = TrainingRegulation.lightAlternative(recovery: recovery) {
             Button { suggestionAction(alt) } label: {
                 HStack(spacing: 11) {
-                    Image(systemName: suggestionIcon(alt)).font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
+                    Image(systemName: suggestionIcon(alt)).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                     Text(suggestionLabel(alt)).font(StrandFont.subhead).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 .padding(.horizontal, 15).padding(.vertical, 13)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -454,7 +454,7 @@ private struct EntrenarLanding: View {
             opt.action()
         } label: {
             VStack(spacing: 5) {
-                Image(systemName: opt.icon).font(.system(size: 17, weight: .semibold))
+                Image(systemName: opt.icon).font(StrandFont.glyph(.lead, weight: .semibold))
                     .foregroundStyle(opt.tint)
                     .frame(width: 42, height: 42)
                     .background(theme.surface, in: Circle())
@@ -483,7 +483,7 @@ private struct EntrenarLanding: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 7) {
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría de dato
                             .fill(routineFill(region(name: row.name))).frame(width: 8, height: 8)
                         Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
                     }
@@ -491,7 +491,7 @@ private struct EntrenarLanding: View {
                         .padding(.leading, 15)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(routineTint(region(name: row.name)))
             }
             .contentShape(Rectangle())
@@ -623,7 +623,7 @@ private struct EntrenarLanding: View {
     private var emptyStateB: some View {
         VStack(spacing: 14) {
             Image(systemName: "calendar.badge.plus")
-                .font(.system(size: 36, weight: .regular)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
+                .font(.system(size: 36, weight: .regular)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)  // token-exempt: glifo 36pt fuera de banda empty
             Text("No plan yet").font(StrandFont.title2).foregroundStyle(theme.ink).multilineTextAlignment(.center)
             Text("Build your week to see today and your progress.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -963,10 +963,10 @@ struct RestDayScreen: View {
     private func row(_ icon: String, _ title: LocalizedStringKey, last: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: icon).font(.system(size: 18)).foregroundStyle(theme.inkSecondary).frame(width: 26)
+                Image(systemName: icon).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary).frame(width: 26)
                 Text(title).font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkDim)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkDim)
             }
             .padding(.vertical, 14).contentShape(Rectangle())
         }
@@ -1044,13 +1044,13 @@ struct OtherWaysScreen: View {
     private func bigRow(_ icon: String, _ title: LocalizedStringKey, subtitle: String, last: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 15) {
-                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(theme.inkSecondary).frame(width: 30)
+                Image(systemName: icon).font(.system(size: 22)).foregroundStyle(theme.inkSecondary).frame(width: 30)  // token-exempt: glifo 22pt fuera de banda lead
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
                     Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(theme.inkDim)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkDim)
             }
             .padding(.vertical, 18).contentShape(Rectangle())
         }

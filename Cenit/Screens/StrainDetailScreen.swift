@@ -245,7 +245,7 @@ struct StrainDetailScreen: View {
     private func zoneRow(_ band: MetricInfo.Band) -> some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(band.isActive ? theme.dataStrain : theme.inkTertiary.opacity(0.45))
+                .fill(band.isActive ? theme.dataStrain : theme.inkTertiary.opacity(StrandOpacity.dim))
                 .frame(width: 8, height: 8)
             Text(band.label)
                 .font(StrandFont.subhead)
@@ -257,7 +257,7 @@ struct StrainDetailScreen: View {
         }
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity)
-        .background(band.isActive ? theme.dataStrain.opacity(0.10) : Color.clear)
+        .background(band.isActive ? theme.dataStrain.opacity(StrandOpacity.tintFill) : Color.clear)
     }
 
     // MARK: - 4. Tendencia (selector + «Media · periodo · Δ%») — vive en «Ver tu historial»
@@ -399,7 +399,7 @@ struct StrainDetailScreen: View {
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
                     .rotationEffect(.degrees(historyExpanded ? 0 : -90))
             }
@@ -436,8 +436,8 @@ struct StrainDetailScreen: View {
     /// Strain is descriptive (not evaluative), so the heat is one hue at three intensities.
     private func strainHeatTint(_ v: Double) -> Color {
         if v >= 14 { return theme.dataStrain }
-        if v >= 8 { return theme.dataStrain.opacity(0.6) }
-        return theme.dataStrain.opacity(0.32)
+        if v >= 8 { return theme.dataStrain.opacity(0.6) }  // token-exempt: rampa de calor (3 intensidades)
+        return theme.dataStrain.opacity(0.32)  // token-exempt: rampa de calor (3 intensidades)
     }
 
     @ViewBuilder private var strainCalendarBlock: some View {
@@ -502,12 +502,12 @@ struct StrainDetailScreen: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Colour + format
 
-    private var chartGradient: Gradient { Gradient(colors: [theme.dataStrain.opacity(0.5), theme.dataStrain]) }
+    private var chartGradient: Gradient { ChartWell.fillGradient(theme.dataStrain) }
 
     /// The trend chart's Y domain: the smoothed line's own min/max with a little breath, clamped to the
     /// fixed 0–21 strain scale so the axis never runs past the metric's range. (FER-597)

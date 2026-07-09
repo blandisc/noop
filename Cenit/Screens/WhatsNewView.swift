@@ -48,7 +48,7 @@ struct WhatsNewView: View {
             Spacer()
             Button(action: onClose) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 20))
+                    .font(StrandFont.glyph(.lead))
                     .foregroundStyle(theme.inkTertiary)
             }
             .buttonStyle(.plain)
@@ -92,7 +92,7 @@ struct WhatsNewView: View {
                     .foregroundStyle(theme.ink)
                     .padding(.horizontal, 7).padding(.vertical, 1)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        RoundedRectangle(cornerRadius: 6, style: .continuous) // token-exempt: geometría de dato
                             .strokeBorder(theme.hairlineStrong, lineWidth: 0.5)
                     )
                 Text(release.title).font(StrandFont.headline)

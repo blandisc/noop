@@ -152,7 +152,7 @@ struct MisRutinasScreen: View {
     private func folderHeader(_ f: RoutineFolder, count: Int) -> some View {
         let targeted = dropTarget == f.id
         return HStack(spacing: 9) {
-            Image(systemName: "folder").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            Image(systemName: "folder").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             Text(f.name).font(StrandFont.body).foregroundStyle(theme.ink)
             Text("· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 0)
@@ -160,7 +160,7 @@ struct MisRutinasScreen: View {
                 Button { startRename(f) } label: { Label("Rename folder", systemImage: "pencil") }
                 Button(role: .destructive) { deleteFolder(f) } label: { Label("Delete folder", systemImage: "trash") }
             } label: {
-                Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
+                Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 40).contentShape(Rectangle())
             }
         }
@@ -175,7 +175,7 @@ struct MisRutinasScreen: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: symbol).frame(width: 30)
-                    .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                 Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: 0)
             }
@@ -192,10 +192,10 @@ struct MisRutinasScreen: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: symbol).frame(width: 30)
-                    .font(.system(size: 17)).foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                 Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 44).contentShape(Rectangle())
         }
@@ -249,7 +249,7 @@ struct MisRutinasScreen: View {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 7) {
-                                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                RoundedRectangle(cornerRadius: 3, style: .continuous)   // token-exempt: geometría de dato (punto 8pt)
                                     .fill(routineTint(r.name)).frame(width: 8, height: 8)
                                 Text(r.name).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
                             }
@@ -268,7 +268,7 @@ struct MisRutinasScreen: View {
                 .contextMenu { routineActions(r) }
 
                 Menu { routineActions(r) } label: {
-                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
+                    Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 48).contentShape(Rectangle())
                 }
             }
@@ -282,7 +282,7 @@ struct MisRutinasScreen: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "dumbbell")
-                .font(.system(size: 38, weight: .regular)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
             Text("No routines yet")
                 .font(StrandFont.title2).foregroundStyle(theme.ink).multilineTextAlignment(.center)
@@ -312,9 +312,7 @@ struct MisRutinasScreen: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
         .padding(.horizontal, 18)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        .instrumentoCard(.card, theme: theme)
     }
 
     // MARK: - Drag & drop (FER-526)
@@ -564,7 +562,7 @@ private struct SwipeToDeleteRow<Content: View>: View {
         ZStack(alignment: .trailing) {
             Button(action: onDelete) {
                 Image(systemName: "trash")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(StrandFont.glyph(.lead, weight: .semibold))
                     .foregroundStyle(theme.surface)
                     .frame(width: revealWidth)
                     .frame(maxHeight: .infinity)
@@ -612,9 +610,9 @@ private extension View {
     func dropHighlight(_ targeted: Bool, fill: Color, stroke: Color) -> some View {
         self
             .padding(.horizontal, targeted ? 10 : 0)
-            .background(targeted ? fill : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(targeted ? fill : .clear, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))   // token-exempt: fondo condicional
             .overlay { if targeted {
-                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(stroke, lineWidth: 1.5) } }
+                RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous).strokeBorder(stroke, lineWidth: 1.5) } }
             .animation(.snappy, value: targeted)
             .contentShape(Rectangle())
     }

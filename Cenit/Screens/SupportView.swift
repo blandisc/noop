@@ -84,7 +84,7 @@ private struct SupportContent: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             ForEach(ProjectInfo.attributions, id: \.repo) { a in
                 HStack(spacing: 8) {
-                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
                         .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
                     Text(a.repo).font(StrandFont.mono(12)).foregroundStyle(theme.ink)
                     Text("· \(a.note)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -112,27 +112,27 @@ struct SupportModalOverlay: View {
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(Color.black.opacity(0.35))
+                .fill(Color.black.opacity(0.35)) // token-exempt: scrim modal (negro, fuera de banda de tinte)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture { isPresented = false }
 
             SupportView()
                 .frame(width: 540, height: 520)
-                .background(theme.paper, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .background(theme.paper, in: RoundedRectangle(cornerRadius: 18, style: .continuous)) // token-exempt: radio de panel modal 18pt (sin rol)
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous) // token-exempt: radio de panel modal 18pt (sin rol)
                     .strokeBorder(theme.hairline, lineWidth: 1))
                 .overlay(alignment: .topTrailing) {
                     Button { isPresented = false } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
+                            .font(StrandFont.glyph(.lead))
                             .foregroundStyle(theme.inkTertiary)
                             .padding(12)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Close")
                 }
-                .shadow(color: Color.black.opacity(0.25), radius: 30, x: 0, y: 14)
+                .shadow(color: Color.black.opacity(0.25), radius: 30, x: 0, y: 14) // token-exempt: sombra de panel modal (negro, fuera de banda)
         }
         .transition(.opacity)
     }

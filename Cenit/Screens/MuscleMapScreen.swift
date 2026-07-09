@@ -254,10 +254,10 @@ struct MuscleMapScreen: View {
             Circle().fill(theme.muscleStateColor(m.relative))
                 .frame(width: 7, height: 7)
             Text(MuscleAtlas.name(m.muscle)).font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.paper)
-            Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+            Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
         }
         .padding(.horizontal, 11).padding(.vertical, 5)
-        .background(theme.ink, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
@@ -279,18 +279,17 @@ struct MuscleMapScreen: View {
                     }
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 3).fill(theme.hairline)
-                            RoundedRectangle(cornerRadius: 3).fill(theme.muscleStateColor(relative))
+                            RoundedRectangle(cornerRadius: 3).fill(theme.hairline)  // token-exempt: geometría de dato
+                            RoundedRectangle(cornerRadius: 3).fill(theme.muscleStateColor(relative))  // token-exempt: geometría de dato
                                 .frame(width: max(load != nil ? 6 : 0, geo.size.width * relative))
                         }
                     }
                     .frame(height: 6)
                 }
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 11).padding(.vertical, 9)
-            .background(theme.paper, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .instrumentoCard(.inset, theme: theme, fill: theme.paper, stroke: theme.hairlineStrong)
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 4)
@@ -303,7 +302,7 @@ struct MuscleMapScreen: View {
             Spacer()
             Button { withAnimation(StrandMotion.interactive) { peeked = nil } } label: {
                 HStack(spacing: 3) {
-                    Image(systemName: "arrow.uturn.backward").font(.system(size: 11, weight: .semibold))
+                    Image(systemName: "arrow.uturn.backward").font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Deselect").font(StrandFont.caption)
                 }
                 .foregroundStyle(theme.inkSecondary)
@@ -318,12 +317,12 @@ struct MuscleMapScreen: View {
     private var markRecoveredButton: some View {
         Button { showResetConfirm = true } label: {
             HStack(spacing: 6) {
-                Image(systemName: "arrow.counterclockwise").font(.system(size: 12, weight: .semibold))
+                Image(systemName: "arrow.counterclockwise").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Mark all recovered").font(StrandFont.caption)
             }
             .foregroundStyle(theme.inkSecondary)
             .padding(.horizontal, 14).padding(.vertical, 8)
-            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityHint(Text("Marks every muscle as recovered"))
@@ -363,7 +362,7 @@ struct MuscleMapScreen: View {
         VStack(spacing: 6) {
             LinearGradient(colors: theme.muscleLoadRamp, startPoint: .leading, endPoint: .trailing)
                 .frame(height: 8)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .clipShape(RoundedRectangle(cornerRadius: 4))  // token-exempt: geometría de dato
             HStack {
                 Text("Fresh").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 Spacer()
@@ -401,8 +400,8 @@ struct MuscleMapScreen: View {
                         }
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 4).fill(theme.hairline)
-                                RoundedRectangle(cornerRadius: 4)
+                                RoundedRectangle(cornerRadius: 4).fill(theme.hairline)  // token-exempt: geometría de dato
+                                RoundedRectangle(cornerRadius: 4)  // token-exempt: geometría de dato
                                     .fill(theme.muscleStateColor(m.relative))
                                     .frame(width: max(6, geo.size.width * m.relative))
                             }
@@ -559,7 +558,7 @@ private struct BodyFiguresView: View {
                     let isTop = highlight == item.muscle
                     shape
                         .fill(color(for: item.muscle))
-                        .overlay(shape.stroke(isTop ? theme.ink : theme.hairlineStrong.opacity(0.5),
+                        .overlay(shape.stroke(isTop ? theme.ink : theme.hairlineStrong.opacity(StrandOpacity.dim),
                                               lineWidth: isTop ? 2 : 0.6))
                         .contentShape(shape)
                         .onTapGesture { onSelect(item.muscle) }
@@ -656,11 +655,11 @@ private struct MuscleDetailView: View {
             GeometryReader { geo in
                 let w = geo.size.width
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4).fill(theme.hairline).frame(height: 8)
+                    RoundedRectangle(cornerRadius: 4).fill(theme.hairline).frame(height: 8)  // token-exempt: geometría de dato
                     Rectangle().fill(theme.hairlineStrong)
                         .frame(width: w * (hi - lo) / top, height: 8)
                         .offset(x: w * lo / top)
-                    RoundedRectangle(cornerRadius: 1).fill(stateColor)
+                    RoundedRectangle(cornerRadius: 1).fill(stateColor)  // token-exempt: geometría de dato
                         .frame(width: 2, height: 16)
                         .offset(x: min(w - 2, w * min(weeklySets, top) / top))
                 }
@@ -701,8 +700,7 @@ private struct MuscleDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .instrumentoCard(.control, theme: theme)
     }
 
     private var lastText: LocalizedStringKey {

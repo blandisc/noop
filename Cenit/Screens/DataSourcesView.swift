@@ -163,7 +163,7 @@ struct DataSourcesView: View {
                 Spacer(minLength: 8)
                 if isActive {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.verdict)
                         .accessibilityHidden(true)
                 }
@@ -184,7 +184,7 @@ struct DataSourcesView: View {
         .padding(.horizontal, isActive ? 10 : 0)
         .padding(.bottom, isActive ? 4 : 0)
         .background(isActive ? theme.surface : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 9))
+                    in: RoundedRectangle(cornerRadius: 9))  // token-exempt: fondo condicional
         .opacity(disabled ? 0.4 : 1)
     }
 
@@ -375,7 +375,7 @@ struct DataSourcesView: View {
                     Text("View imported data").font(StrandFont.body).foregroundStyle(theme.ink)
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 .frame(minHeight: 40)
                 .contentShape(Rectangle())
@@ -513,7 +513,7 @@ struct DataSourcesView: View {
                     .foregroundStyle(theme.inkTertiary)
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 13)).foregroundStyle(theme.verdict)
+                        .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.verdict)
                     Text(verbatim: Self.coverageSummaryText(cov))
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
@@ -536,7 +536,7 @@ struct DataSourcesView: View {
                 let has = days != nil
                 HStack(spacing: 8) {
                     Image(systemName: has ? "checkmark.circle.fill" : "minus.circle")
-                        .font(.system(size: 13))
+                        .font(StrandFont.glyph(.chevron))
                         .foregroundStyle(has ? theme.verdict : theme.inkTertiary)
                     Text(row.label)
                         .font(StrandFont.subhead)
@@ -690,7 +690,7 @@ struct DataSourcesView: View {
     private var strapRangeRow: some View {
         HStack(spacing: 6) {
             Image(systemName: "externaldrive.fill")
-                .font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             Text("On the band:").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             if let oldest = live.strapHistoryOldest, let newest = live.strapHistoryNewest {
                 Text(verbatim: "\(Self.dayFormatter.string(from: Date(timeIntervalSince1970: oldest))) → \(Self.dayFormatter.string(from: Date(timeIntervalSince1970: newest)))")
@@ -733,7 +733,7 @@ struct DataSourcesView: View {
                 ForEach(Self.syncSensorRows(r), id: \.key) { row in
                     HStack(spacing: 8) {
                         Image(systemName: row.count > 0 ? "checkmark.circle.fill" : "minus.circle")
-                            .font(.system(size: 12))
+                            .font(StrandFont.glyph(.chevron))
                             .foregroundStyle(row.count > 0 ? theme.verdict : theme.inkTertiary)
                         Text(LocalizedStringKey(row.key)).font(StrandFont.subhead)
                             .foregroundStyle(row.count > 0 ? theme.inkSecondary : theme.inkTertiary)
@@ -770,7 +770,7 @@ struct DataSourcesView: View {
             }
         }()
         HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 13)).foregroundStyle(tint)
+            Image(systemName: icon).font(StrandFont.glyph(.chevron)).foregroundStyle(tint)
             Text(text).font(StrandFont.subhead).foregroundStyle(tint)
         }
     }
@@ -835,7 +835,7 @@ struct DataSourcesView: View {
                 ForEach(Array(days30.enumerated()), id: \.offset) { _, day in
                     let isWhoop = strapDays.contains(day)
                     let isApple = appleOnly.contains(day)
-                    RoundedRectangle(cornerRadius: 4)
+                    RoundedRectangle(cornerRadius: 4)  // token-exempt: geometría de dato
                         .fill(isWhoop ? theme.dataRecovery
                               : isApple ? theme.dataSpO2
                               : theme.hairlineStrong)
@@ -879,7 +879,7 @@ struct DataSourcesView: View {
     @ViewBuilder
     private func coverageLegendItem(color: Color, label: LocalizedStringKey, active: Bool) -> some View {
         HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 10, height: 10)
+            RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 10, height: 10)  // token-exempt: geometría de dato
             Text(label).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
         }
         .opacity(active ? 1.0 : 0.3)
@@ -1002,7 +1002,7 @@ struct DataSourcesView: View {
                 }
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "info.circle.fill").foregroundStyle(theme.inkTertiary)
-                        .font(.system(size: 13)).accessibilityHidden(true)
+                        .font(StrandFont.glyph(.chevron)).accessibilityHidden(true)
                     Text("Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit.")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1046,7 +1046,7 @@ struct DataSourcesView: View {
                 if let err = autoBackup.lastError {
                     HStack(alignment: .top, spacing: 10) {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.warning)
-                            .font(.system(size: 13)).accessibilityHidden(true)
+                            .font(StrandFont.glyph(.chevron)).accessibilityHidden(true)
                         Text(verbatim: err).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }

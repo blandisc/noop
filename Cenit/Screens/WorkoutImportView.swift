@@ -136,7 +136,7 @@ struct WorkoutImportView: View {
     private func errorNote(_ error: WorkoutProgramParseError) -> some View {
         HStack(alignment: .top, spacing: NoopMetrics.gap) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 18, weight: .regular)).foregroundStyle(theme.critical)
+                .font(StrandFont.glyph(.lead)).foregroundStyle(theme.critical)
                 .accessibilityHidden(true)
             Text(message(for: error))
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
@@ -298,7 +298,7 @@ struct WorkoutImportView: View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 Image(systemName: "checkmark.circle")
-                    .font(.system(size: 40, weight: .regular)).foregroundStyle(theme.verdict)
+                    .font(.system(size: 40, weight: .regular)).foregroundStyle(theme.verdict)   // token-exempt: glifo de éxito 40pt (empty token es 34)
                     .accessibilityHidden(true)
                 Text(createdRoutinesTitle(createdCount)).font(StrandFont.title2).foregroundStyle(theme.ink)
                 Text("They're in «My routines», ready to train.")

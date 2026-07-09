@@ -134,7 +134,7 @@ private struct CyclePhaseWhatItIs: View {
                     "It doesn't tell you which day your next period starts.",
                 ], id: \.self) { line in
                     HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "xmark").font(.system(size: 12, weight: .semibold))
+                        Image(systemName: "xmark").font(StrandFont.glyph(.chevron, weight: .semibold))
                             .foregroundStyle(theme.inkTertiary).padding(.top, 3)
                         Text(LocalizedStringKey(line)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)

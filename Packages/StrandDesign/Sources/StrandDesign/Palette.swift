@@ -190,6 +190,26 @@ public enum StrandPalette {
     }
 }
 
+// MARK: - Escala de opacidades (auditoría jul-2026, H4)
+//
+// Los ÚNICOS valores sancionados para modular un token de color por opacidad. Antes de esto las
+// pantallas inventaban ~15 opacidades mágicas (0.10/0.12/0.14/0.16/0.18 en tintes,
+// 0.28/0.30/0.4/0.5 en strokes, 0.45/0.55/0.6/0.7 en atenuados). Cada literal se mapea al escalón
+// más cercano; el salto es imperceptible. `dim` coincide con `StrandPalette.disabledOpacity` (0.45),
+// el precedente que ya existía. No inventar otros — si hace falta uno nuevo, entra aquí primero.
+public enum StrandOpacity {
+    /// Fondo tintado de chip/badge (absorbe 0.10–0.12).
+    public static let tintFill: Double       = 0.10
+    /// Tinte enfatizado (absorbe 0.14–0.18).
+    public static let tintFillStrong: Double = 0.14
+    /// Borde tintado suave (absorbe 0.28–0.40).
+    public static let strokeSoft: Double     = 0.30
+    /// Atenuado (absorbe 0.40–0.52) = `StrandPalette.disabledOpacity`.
+    public static let dim: Double            = 0.45
+    /// Secundario sobre color (absorbe 0.55–0.70).
+    public static let muted: Double          = 0.60
+}
+
 // MARK: - Sleep stage enum (shared with Hypnogram)
 
 public enum SleepStage: String, CaseIterable, Sendable {

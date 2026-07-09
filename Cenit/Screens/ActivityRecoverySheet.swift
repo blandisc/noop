@@ -102,9 +102,7 @@ struct ActivityRecoverySheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 0.5))
+        .instrumentoCard(.cta, theme: theme, lineWidth: 0.5)
         .opacity(dimmed ? 0.72 : 1)
         .accessibilityElement(children: .combine)
     }
@@ -115,13 +113,13 @@ struct ActivityRecoverySheet: View {
         let label: LocalizedStringKey = c == .solid ? "Solid" : "Building data"
         let a11y: LocalizedStringKey = c == .solid ? "Confidence: solid" : "Confidence: building data"
         return Text(label)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 11, weight: .semibold))   // token-exempt: sello semibold+tracking (micro es 11/medium)
             .tracking(0.3)
             .textCase(.uppercase)
             .foregroundStyle(c == .solid ? theme.inkSecondary : theme.inkTertiary)
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)   // token-exempt: geometría de dato (sello ≤6pt)
                 .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             .accessibilityLabel(a11y)
     }
@@ -183,7 +181,7 @@ struct ActivityRecoverySheet: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Empty state ("gathering your sessions")
@@ -194,7 +192,7 @@ struct ActivityRecoverySheet: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "hourglass")
-                .font(.system(size: 34, weight: .regular))
+                .font(StrandFont.glyph(.empty))
                 .foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
             Text("Gathering your sessions")

@@ -187,7 +187,7 @@ private struct AjustesLanding: View {
         // chip rides below as a quiet subline (the lockup's trailing slot stays empty).
         VStack(alignment: .leading, spacing: 10) {
             InstrumentoTabHeader("Ajustes") {
-                Image(systemName: "gearshape").font(.system(size: 20)).foregroundStyle(theme.ink)
+                Image(systemName: "gearshape").font(StrandFont.glyph(.lead)).foregroundStyle(theme.ink)
             }
             privacyChip
         }
@@ -200,7 +200,7 @@ private struct AjustesLanding: View {
             .font(StrandFont.caption).foregroundStyle(theme.positiveText)
             .padding(.horizontal, 10).padding(.vertical, 5)
             .background(
-                Capsule(style: .continuous).fill(theme.dataRecovery.opacity(0.12))
+                Capsule(style: .continuous).fill(theme.tint(theme.dataRecovery))
             )
             .accessibilityLabel("Everything stays on this iPhone. No account, no cloud.")
     }
@@ -475,7 +475,7 @@ private struct AjustesLanding: View {
                 Spacer(minLength: 8)
                 Text(value).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 44)
             .contentShape(Rectangle())
@@ -498,7 +498,7 @@ private struct AjustesLanding: View {
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 44)
             .contentShape(Rectangle())
