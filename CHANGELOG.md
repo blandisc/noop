@@ -29,6 +29,20 @@ approximate; Cénit is built from source — see the [README](README.md).
   **EN** — On the Trends detail screens (Recovery, Sleep, Strain, Stress, vitals, Physical age, Load…) you can now swipe in from the left edge to go back: the screen follows your finger and dismisses past a threshold, or springs back if you let go early. The «‹» chevron is unchanged; the gesture is a bonus. It's gated to the edge so it never fights vertical scrolling.
   ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
 
+- **Al deslizar para volver ya se ve la pantalla de atrás / The swipe-back now reveals the screen behind.**
+  **ES** — En cuanto empiezas a deslizar un detalle de Tendencias hacia la derecha, ya se ve Tendencias detrás (antes quedaba un papel en blanco hasta soltar). El panel arrastra su propio papel opaco sobre una cubierta transparente, y al soltar termina de salir hacia la derecha en vez de caer.
+  **EN** — As soon as you start dragging a Trends detail to the right, the Trends screen shows behind it (before it exposed a blank paper until you let go). The panel carries its own opaque paper over a transparent cover, and on release it finishes sliding off to the right instead of dropping down.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
+- **La rutina del día ya muestra los thumbnails de cada ejercicio / Today's routine now shows each exercise's thumbnail.**
+  **ES** — En «Rutina de hoy» cada ejercicio pinta su imagen horneada (offline, por id) en el hueco reservado, en vez del recuadro vacío. Ejercicios sin imagen (personalizados o desconocidos) siguen mostrando el placeholder de papel.
+  **EN** — On «Today's routine» each exercise now fills its reserved slot with its baked still (offline, by id) instead of the empty tile. Exercises with no media (custom or unknown) still show the paper placeholder.
+  ([RutinaDeHoyScreen.swift](Cenit/Screens/RutinaDeHoyScreen.swift))
+
+- **El primer uso de Entrenar arranca sin plan, pero con puertas / Train's first run starts without a plan, but with doors.**
+  **ES** — El landing de Entrenar sin plan (primer uso) deja de ser solo el héroe «Crear mi plan»: debajo suma un renglón «Rutinas de plantilla» (empuje · tirón · pierna · full body, listas para editar) que abre las plantillas, la misma fila de seis «Formas de entrenar» que ya usa el estado con plan, y la Constancia en vacío con la nota «Tus sesiones aparecerán aquí». Del trío de «empieza sin plan» del handoff v4 se conserva solo el renglón de plantillas: Rápido y las otras formas ya viven en los seis pills, así que no se repiten.
+  **EN** — The plan-less Train landing (first run) is no longer just the «Create my plan» hero: below it now sit a «Template routines» row (push · pull · legs · full body, ready to edit) that opens the templates, the same six «Ways to train» doors the planned state already shows, and an empty Consistency card with the note «Your sessions will appear here». From the v4 handoff's «start without a plan» trio only the templates row is kept — Quick and the other forms already live in the six pills, so they aren't repeated.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
 - **El selector de periodo estrena la píldora de tinta / The period selector gets its ink pill.**
   **ES** — El segmento activo del selector de periodo (S · M · 3M · 6M · 1A) pasa del thumb claro con borde a una píldora de tinta con texto papel, el mismo look que ya usa el toggle Media/Rangos y que pide el handoff v2. Unifica todos los selectores temados de la app a ese look (antes convivían dos); la variante alta de 44pt del landing se conserva.
   **EN** — The period selector's active segment (W · M · 3M · 6M · 1Y) moves from the light bordered thumb to an ink pill with paper text — the same look the Mean/Ranges toggle already uses and the v2 handoff calls for. It unifies every themed selector in the app to that look (two coexisted before); the landing's 44pt tall variant is preserved.

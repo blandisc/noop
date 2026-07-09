@@ -29,6 +29,11 @@ ES: dict[str, str] = {
     "No resting HR last night": "Sin FC en reposo anoche",
     "No sleep data last night": "Sin datos de sueño anoche",
     "Not recorded last night": "No se registró anoche",
+    # Flujo Entrenar v4 — primer uso (5a): renglón de plantillas + Constancia vacía.
+    "Or start without a plan": "O empieza sin plan",
+    "Template routines": "Rutinas de plantilla",
+    "push · pull · legs · full body, ready to edit": "empuje · tirón · pierna · full body, listas para editar",
+    "Your sessions will appear here, each in its routine's color.": "Tus sesiones aparecerán aquí, en el color de su rutina.",
     # FER-830 — reconciliación Ola 3: calendarios Sueño/Esfuerzo.
     "Calendar · 90 nights": "Calendario · 90 noches",
     "Tap a night to see its sleep.": "Toca una noche para ver su sueño.",
