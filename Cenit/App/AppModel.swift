@@ -309,8 +309,15 @@ final class AppModel: ObservableObject {
         #endif
         analysisTask = Task { [weak self] in
             guard let self else { return }
-            await self.repo.refresh()                          // surface any imported data at once
+            // Two-pass launch: the ~90-day first-paint pass publishes the dashboard in
+            // milliseconds so «Hoy» renders, then the full pass rebuilds it over the whole history
+            // (its merge work runs off the main actor) and flips `repo.fullyLoaded`. Everything that
+            // persists off `repo.days` (the engine, the day-key migration below) runs AFTER the full
+            // pass — `migrateDayKeysToLocalIfNeeded` recomputes with `force: true`, so running it over
+            // the short window would both skew scores and burn its one-shot flag.
+            await self.repo.refreshFirstPaint()                // ① paint «Hoy» now (~90 days)
             await self.restoreInProgressStrengthSessionIfNeeded()  // FER-798: recover a session left by a crash
+            await self.repo.refresh()                          // ② full history, off-main assembly
             await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
             await self.compactDatabaseAfterSpo2PurgeIfNeeded() // FER-511: one-time VACUUM after the spo2 purge (flag-gated)
             await self.compactDatabaseAfterRebuildIfNeeded()   // FER-513: one-time VACUUM after the v21 rebuild (flag-gated)
@@ -355,6 +362,10 @@ final class AppModel: ObservableObject {
     /// streams / Apple Health, and the prune only ever removes FUTURE-dated rows — a past day that
     /// can't be recomputed (raw already pruned) keeps its row, so there is no data loss.
     func migrateDayKeysToLocalIfNeeded() async {
+        // Two-pass launch: if the full history hasn't published (e.g. a pull-to-refresh made the
+        // launch full pass stale mid-flight), `analyzeRecent(force:)` below would skip silently and
+        // the cursor would burn WITHOUT the re-group having run. Defer to the next foreground/launch.
+        guard repo.fullyLoaded else { return }
         guard let store = await repo.storeHandle() else { return }   // no store yet → retry next launch
         if ((try? await store.cursor(Self.dayKeyMigrationCursor)) ?? nil) == 1 { return }   // already done
 
@@ -459,7 +470,11 @@ final class AppModel: ObservableObject {
 
     private func refreshAfterCompletedBackfill() async {
         live.append(log: "Backfill: refreshing dashboard cache from completed sync")
-        await repo.refresh(days: 120)
+        // Full refresh, not a 120-day window: a windowed publish here used to clobber the dashboard
+        // down to 120 days (truncating Tendencias 1A until the next full pass) and let the recompute
+        // below fold baselines over it. With the off-main assembly the full pass no longer punishes
+        // the main actor, so the shortcut lost its reason to exist.
+        await repo.refresh()
         // The completed sync just landed last night's raw data — but reloading the cache only re-reads
         // it; the on-device scores still need recomputing. The 15-min loop is the only other recompute
         // path and it skips while a backfill is writing (FER-177), so during the morning catch-up the

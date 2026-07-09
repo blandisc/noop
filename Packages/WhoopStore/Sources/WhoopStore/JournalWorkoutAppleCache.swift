@@ -45,7 +45,7 @@ public struct WorkoutRow: Equatable, Hashable, Codable {
 }
 
 /// One Apple-Health daily-aggregate row. Natural key (deviceId, day). All metric columns nullable.
-public struct AppleDaily: Equatable, Codable {
+public struct AppleDaily: Equatable, Codable, Sendable {
     public let day: String           // YYYY-MM-DD
     public let steps: Int?
     public let activeKcal: Double?

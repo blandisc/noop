@@ -24,6 +24,21 @@ approximate; Cénit is built from source — see the [README](README.md).
   **EN** — The Stress detail adds the same 90-day heatmap Recovery, Sleep and Strain already carry, per the v2 handoff. Since stress is evaluative, the heat uses the band semaphore: green (low), amber (moderate), red (high). Tap a day to see its value.
   ([StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift))
 
+- **Recuperación adopta el «Panorama» del handoff y limpia el héroe / Recovery adopts the handoff «Panorama» and cleans up its hero.**
+  **ES** — El Detalle de Recuperación funde los bloques «Mañana, si descansas igual» y «Tus patrones» en un solo grid 2×2 «Panorama» (Mañana · Normalmente · Estabilidad · Carga), fiel al handoff v2 de Tendencias; no cambia la matemática, solo el layout. Y el héroe pierde el mini-sparkline de 14 días que el handoff no contempla: la serie ya vive en el instrumento de niveles de abajo.
+  **EN** — The Recovery detail fuses the «Tomorrow, if you rest the same» and «Your patterns» blocks into one 2×2 «Panorama» grid (Tomorrow · Usually · Steadiness · Load), faithful to the Tendencias v2 handoff; no math changes, only layout. And the hero drops the 14-day mini-sparkline the handoff doesn't call for — the series already lives in the levels instrument below.
+  ([RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift))
+
+- **La franja de Carga se queda en Señales / The Load strip stays on the Signals page.**
+  **ES** — La franja «CARGA» estaba fija bajo las pestañas, así que se veía tanto en Señales como en el Brief. Ahora vive dentro de la página de Señales: queda pegada a las métricas de hoy y, al deslizar al Brief, desaparece.
+  **EN** — The «LOAD» strip was pinned below the tabs, so it showed on both the Signals and the Brief page. It now lives inside the Signals page: it stays with today's metrics and, when you swipe to the Brief, it's gone.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
+- **La app abre al instante aunque tu historial sea enorme / The app opens instantly even with a huge history.**
+  **ES** — Al arrancar, la app cargaba todo tu historial (hasta ~11 años de días) antes de pintar «Hoy». Ahora pinta primero con tus últimos 90 días —milisegundos— y completa el resto en segundo plano sin congelar la pantalla. Nada cambia en tus números: los cálculos de fondo (líneas base, experimentos) esperan siempre a la historia completa.
+  **EN** — On launch the app loaded your whole history (up to ~11 years of days) before painting "Today". Now it paints first with your last 90 days — milliseconds — and completes the rest in the background without freezing the screen. Your numbers don't change: background computations (baselines, experiments) always wait for the full history.
+  ([Repository.swift](Cenit/Data/Repository.swift), [AppModel.swift](Cenit/App/AppModel.swift))
+
 - **La Dynamic Island deja de estirarse y de comerse la letra / The Dynamic Island stops stretching and eating the text.**
   **ES** — En modo compacto, el contador de descanso reclamaba todo el ancho de la isla (el reloj del sistema es «codicioso» si no lo acotas); ahora se ciñe a su contenido. Y en la vista expandida, la línea «al volver: …» iba pegada al borde inferior; se le dio aire para que los rasgos bajos no se corten.
   **EN** — In compact mode the rest countdown claimed the island's full width (the system timer text is greedy unless capped); it now hugs its content. And in the expanded view the «back to…» line sat flush against the bottom edge; it got breathing room so descenders don't clip.

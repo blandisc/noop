@@ -42,6 +42,13 @@ ES: dict[str, str] = {
     "Mean": "Media",
     "today, in progress": "hoy, en curso",
     "Base": "Base",
+    # FER-831 — Recuperación: Panorama 2×2 (pronóstico + rango + estabilidad + carga).
+    "Panorama": "Panorama",
+    "Tomorrow": "Mañana",
+    "Rising": "Al alza",
+    "Falling": "A la baja",
+    "A forecast is a projection, not a guarantee.":
+        "El pronóstico es una proyección, no una garantía.",
     # FER-459/469 — «N días/noches» por banda en la lista de rangos. Las líneas
     # «%lld of the last %lld days/nights in this range» y «%lld days» ya existen en el catálogo.
     "%lld day": "%lld día",
