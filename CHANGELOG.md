@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La franja de Carga se queda en Señales / The Load strip stays on the Signals page.**
+  **ES** — La franja «CARGA» estaba fija bajo las pestañas, así que se veía tanto en Señales como en el Brief. Ahora vive dentro de la página de Señales: queda pegada a las métricas de hoy y, al deslizar al Brief, desaparece.
+  **EN** — The «LOAD» strip was pinned below the tabs, so it showed on both the Signals and the Brief page. It now lives inside the Signals page: it stays with today's metrics and, when you swipe to the Brief, it's gone.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **La Dynamic Island deja de estirarse y de comerse la letra / The Dynamic Island stops stretching and eating the text.**
   **ES** — En modo compacto, el contador de descanso reclamaba todo el ancho de la isla (el reloj del sistema es «codicioso» si no lo acotas); ahora se ciñe a su contenido. Y en la vista expandida, la línea «al volver: …» iba pegada al borde inferior; se le dio aire para que los rasgos bajos no se corten.
   **EN** — In compact mode the rest countdown claimed the island's full width (the system timer text is greedy unless capped); it now hugs its content. And in the expanded view the «back to…» line sat flush against the bottom edge; it got breathing room so descenders don't clip.
