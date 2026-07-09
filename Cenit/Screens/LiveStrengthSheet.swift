@@ -840,6 +840,7 @@ struct LiveStrengthSheet: View {
                     persistsToRoutine: session.routineId != nil,
                     restingHR: restingBaseline, maxHR: profileMaxHR,
                     defaultApplyToAll: si == nil,
+                    closeAsDismiss: true,   // FER-831: presented as a .sheet here → close with ✕, not a back chevron
                     onCancel: { restEdit = nil },
                     onApply: { config, applyToAll, saveToRoutine in
                         applyRestEdit(ei: edit.id, si: si, config: config, applyToAll: applyToAll, saveToRoutine: saveToRoutine)

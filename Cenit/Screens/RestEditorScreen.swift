@@ -24,6 +24,10 @@ struct RestEditorScreen: View {
     let onCancel: () -> Void
     /// (config, applyToAllSets, saveToRoutine).
     let onApply: (RestConfig, Bool, Bool) -> Void
+    /// EST-6 (FER-831): the close affordance follows the presentation. The Builder PUSHES this (chevron
+    /// back, default); the live session presents it as a `.sheet`, so it closes with ✕. One correct
+    /// affordance per context — and NO `NavigationStack` inside the session (FER-171 forbids nesting one).
+    var closeAsDismiss: Bool = false
 
     @State private var mode: RestMode
     @State private var seconds: Int
@@ -39,9 +43,11 @@ struct RestEditorScreen: View {
 
     init(theme: InstrumentoTheme, exerciseName: String, setNumber: Int?, current: RestConfig,
          persistsToRoutine: Bool, restingHR: Double?, maxHR: Double?, defaultApplyToAll: Bool,
+         closeAsDismiss: Bool = false,
          onCancel: @escaping () -> Void, onApply: @escaping (RestConfig, Bool, Bool) -> Void) {
         self.theme = theme; self.exerciseName = exerciseName; self.setNumber = setNumber
         self.persistsToRoutine = persistsToRoutine; self.restingHR = restingHR; self.maxHR = maxHR
+        self.closeAsDismiss = closeAsDismiss
         self.onCancel = onCancel; self.onApply = onApply
         _mode = State(initialValue: current.mode)
         _seconds = State(initialValue: max(15, current.seconds))
@@ -97,13 +103,14 @@ struct RestEditorScreen: View {
 
     private var header: some View {
         HStack {
-            // EST-6 (FER-814): a single close affordance — the back chevron. The redundant right-side
-            // «Cancel» is gone (push = chevron only; never two affordances for the same exit).
+            // EST-6 (FER-814/831): a single close affordance that matches the presentation — the back
+            // chevron when pushed (Builder), the ✕ when presented as a sheet (the live session). Never two.
             Button(action: onCancel) {
-                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold)).foregroundStyle(theme.ink)
+                Image(systemName: closeAsDismiss ? "xmark" : "chevron.left")
+                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(theme.ink)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }
-            .buttonStyle(.plain).accessibilityLabel(Text("Back"))
+            .buttonStyle(.plain).accessibilityLabel(Text(closeAsDismiss ? "Close" : "Back"))
             .padding(.leading, -12)
             Spacer()
         }
