@@ -18,6 +18,16 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # Atribución por cobertura en Recuperación estimada (día Apple-only): el bloque «Hoy, vs tu normal»
+    # ahora siempre presente, mostrando dirección por señal vs tu norma de Apple (sin puntos).
+    "Where each signal Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.":
+        "Dónde quedó cada señal que registró Apple frente a tu normal. El número de hoy es un estimado, así que no hay desglose punto por punto.",
+    "Above your usual": "Por arriba de tu normal",
+    "Below your usual": "Por abajo de tu normal",
+    "Around your usual": "En tu normal",
+    "No resting HR last night": "Sin FC en reposo anoche",
+    "No sleep data last night": "Sin datos de sueño anoche",
+    "Not recorded last night": "No se registró anoche",
     # FER-830 — reconciliación Ola 3: calendarios Sueño/Esfuerzo.
     "Calendar · 90 nights": "Calendario · 90 noches",
     "Tap a night to see its sleep.": "Toca una noche para ver su sueño.",

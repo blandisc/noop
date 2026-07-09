@@ -134,6 +134,12 @@ final class Repository: ObservableObject {
     /// score (FER-700); nil when the day isn't an Apple estimate. Lets the UI say WHY an estimate is
     /// conservative («N de 3 señales») rather than only showing the shrunk number.
     func recoveryPrimaryDrivers(_ day: String) -> Int? { dashboard.recoveryEstimates[day]?.presentPrimaryDrivers }
+    /// The present primary drivers' directions vs the user's own Apple norm for an estimated-recovery day
+    /// (HRV always first) — powers the estimated coverage-attribution block in the recovery Detalle. Empty
+    /// when the day isn't an Apple estimate.
+    func recoveryEstimateDirections(_ day: String) -> [AppleRecoveryEstimator.SignalDirection] {
+        dashboard.recoveryEstimates[day]?.signalDirections ?? []
+    }
 
     init(deviceId: String) { self.deviceId = deviceId }
 

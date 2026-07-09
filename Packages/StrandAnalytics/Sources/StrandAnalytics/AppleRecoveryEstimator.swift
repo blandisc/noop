@@ -50,6 +50,27 @@ public enum AppleRecoveryEstimator {
         }
     }
 
+    /// Where one present primary driver sits relative to the user's OWN Apple norm, for the estimated
+    /// coverage-attribution surface. DELIBERATELY carries no point magnitude / additive share: an estimate
+    /// (SDNN vs your own SDNN) must not imply the band path's precise per-signal decomposition
+    /// (`RecoveryImpact`), which is why that path returns nil for an Apple-only day. Only the honest facts
+    /// an Apple-vs-own-Apple-norm comparison supports: WHERE the raw signal sits, and whether that HELPS or
+    /// HURTS recovery. Same orientation the band decomposition uses (HRV↑ helps · resting HR↓ helps · sleep↑
+    /// helps). `inRange` = within ~1σ of the user's usual (the band path's «in your base» deadband).
+    public struct SignalDirection: Equatable, Sendable, Identifiable {
+        public enum Position: String, Equatable, Sendable { case above, below, inRange }
+        public let key: String          // "hrv" | "rhr" | "sleep"
+        /// Where the RAW signal sits vs its own Apple baseline (+ = above your usual value).
+        public let position: Position
+        /// Whether that position helps recovery (oriented): HRV above helps; resting HR below helps; sleep
+        /// above helps. Carries the valence the row color reads, independent of `position`.
+        public let helps: Bool
+        public var id: String { key }
+        public init(key: String, position: Position, helps: Bool) {
+            self.key = key; self.position = position; self.helps = helps
+        }
+    }
+
     /// The estimate for one night: a 0–100 score plus its honesty grade.
     public struct DayEstimate: Equatable, Sendable {
         public let day: String
@@ -63,12 +84,17 @@ public enum AppleRecoveryEstimator {
         /// grade in `confidence` measures a DIFFERENT thing (how settled the HRV baseline is),
         /// so the two are reported side by side, not merged.
         public let presentPrimaryDrivers: Int
+        /// The present primary drivers' directions vs the user's own Apple norm (HRV always first), for the
+        /// estimated coverage-attribution block. `count == presentPrimaryDrivers`; absent drivers are simply
+        /// not listed (the UI shows them attenuated with a reason). Empty on the fixture/init default.
+        public let signalDirections: [SignalDirection]
         /// The total primary drivers coverage is measured against (always 3: HRV, RHR, sleep).
         public static let totalPrimaryDrivers = 3
         public init(day: String, score: Double, confidence: ScoreConfidence,
-                    presentPrimaryDrivers: Int) {
+                    presentPrimaryDrivers: Int, signalDirections: [SignalDirection] = []) {
             self.day = day; self.score = score; self.confidence = confidence
             self.presentPrimaryDrivers = presentPrimaryDrivers
+            self.signalDirections = signalDirections
         }
     }
 
@@ -134,6 +160,26 @@ public enum AppleRecoveryEstimator {
             let hasRHR = n.restingHr != nil && rhrBase.usable
             let hasSleep = n.sleepPerf != nil
             let primaryDrivers = 1 + (hasRHR ? 1 : 0) + (hasSleep ? 1 : 0)
+            // Per-signal DIRECTION vs the user's own Apple norm (never the band's), for the estimated
+            // coverage-attribution surface. Position uses the RAW deviation z against the SAME Apple
+            // baseline the score reads (SDNN-vs-own-SDNN, RHR-vs-own-RHR), with the band path's ~1σ
+            // «in your base» deadband; `helps` orients it (HRV↑ · resting HR↓ · sleep↑). Sleep, which has
+            // no separate Apple baseline (Apple writes nil today), falls to the scorer's fixed population
+            // center — the same cold-start fallback the sleep term uses. No point magnitude is exposed.
+            func position(_ z: Double) -> SignalDirection.Position {
+                z >= 1 ? .above : z <= -1 ? .below : .inRange
+            }
+            var directions: [SignalDirection] = []
+            let zHrv = Baselines.deviation(sdnn, state: hrvBase).z
+            directions.append(SignalDirection(key: "hrv", position: position(zHrv), helps: zHrv > 0))
+            if hasRHR, let rhr = n.restingHr {
+                let zRhr = Baselines.deviation(rhr, state: rhrBase).z
+                directions.append(SignalDirection(key: "rhr", position: position(zRhr), helps: zRhr < 0))
+            }
+            if hasSleep, let eff = n.sleepPerf {
+                let zSleep = (eff - RecoveryScorer.sleepPerfCenter) / RecoveryScorer.sleepPerfScale
+                directions.append(SignalDirection(key: "sleep", position: position(zSleep), helps: zSleep > 0))
+            }
             let score = RecoveryScorer.recovery(
                 hrv: sdnn,
                 // INVARIANT: `rhr` is read by the scorer ONLY under a present rhrBaseline,
@@ -150,7 +196,8 @@ public enum AppleRecoveryEstimator {
             guard let score else { continue }               // nil = cold-start guard inside the scorer
             out.append(DayEstimate(day: n.day, score: score,
                                    confidence: confidence(hrvBaselineNights: hrvBase.nValid),
-                                   presentPrimaryDrivers: primaryDrivers))
+                                   presentPrimaryDrivers: primaryDrivers,
+                                   signalDirections: directions))
         }
         return out
     }
