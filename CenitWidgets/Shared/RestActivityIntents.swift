@@ -6,6 +6,10 @@
 // intent as safe to invoke from a Live Activity. Each just enqueues the action onto the shared inbox
 // (see `RestActivityBridge`); the running app applies it to the session and the reconcile loop
 // reflects it back onto the Activity.
+//
+// `authenticationPolicy = .alwaysAllowed`: without it App Intents default to requiring an UNLOCKED
+// device, so every tap on the lock-screen card bounced to Face ID. These actions are all benign
+// session controls (log a set, nudge a rest) with no data exposure, so they run with the phone locked.
 
 #if canImport(AppIntents)
 import AppIntents
@@ -13,6 +17,7 @@ import AppIntents
 /// Adds 30 seconds to the current rest — moves the ceiling, never the floor (see `extendRest`).
 struct RestAddThirtyIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Add 30 seconds"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     static var description = IntentDescription("Extends the current rest by 30 seconds.")
 
     init() {}
@@ -26,6 +31,7 @@ struct RestAddThirtyIntent: LiveActivityIntent {
 /// Removes 30 seconds from the current rest — floored at «now», so it never goes negative (see `extendRest`).
 struct RestRemoveThirtyIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Remove 30 seconds"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     static var description = IntentDescription("Shortens the current rest by 30 seconds.")
 
     init() {}
@@ -39,6 +45,7 @@ struct RestRemoveThirtyIntent: LiveActivityIntent {
 /// Ends the current rest immediately and returns focus to the set — does NOT log the set (FER-789).
 struct RestSkipIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Skip rest"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     static var description = IntentDescription("Ends the current rest without logging the set.")
 
     init() {}
@@ -52,6 +59,7 @@ struct RestSkipIntent: LiveActivityIntent {
 /// Registers the upcoming set as done (planned values) and starts its rest — the card's primary action (FER-789).
 struct RestCompleteSetIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Complete set"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     static var description = IntentDescription("Logs the upcoming set and starts the next rest.")
 
     init() {}
@@ -65,6 +73,7 @@ struct RestCompleteSetIntent: LiveActivityIntent {
 /// Resumes a paused session — the primary action on the «En pausa» card (FER-806/823).
 struct RestResumeIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Resume workout"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     static var description = IntentDescription("Resumes the paused workout.")
 
     init() {}
@@ -78,6 +87,7 @@ struct RestResumeIntent: LiveActivityIntent {
 /// Registers the routine's last set and ends the workout — the primary action on the final rest (FER-789).
 struct RestFinishWorkoutIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Finish workout"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     static var description = IntentDescription("Logs the last set and ends the workout.")
 
     init() {}
