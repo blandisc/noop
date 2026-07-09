@@ -318,6 +318,8 @@ struct TodayView: View {
         let state = heroState
         guard state != .verdict else { return nil }
         switch state {
+        case .loading:
+            return nil   // neutro de carga: no hay «i» visible ni nada que explicar todavía
         case .calibrating:
             return "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
         case .downloading:
@@ -1137,6 +1139,7 @@ struct TodayView: View {
     /// Los cuatro modos del héroe, derivados de las MISMAS señales de solo-lectura de antes (sin tocar
     /// el motor). El orden de prioridad replica el árbol previo del `iosBody`.
     private enum HeroState: Equatable {
+        case loading                    // el dashboard aún no publica (repo.loaded == false): neutro, sin narrativa
         case verdict                    // repo.today?.recovery != nil → hay número
         case downloading                // pre-veredicto: la banda está drenando el historial de la noche (FER-286)
         case importedBaseline           // pre-veredicto: base sembrada por Apple Health (FER-106)
@@ -1146,6 +1149,10 @@ struct TodayView: View {
 
     private var heroState: HeroState {
         if repo.today?.recovery != nil { return .verdict }
+        // Arranque frío: mientras `repo.refresh()` no publica el dashboard, `days` está vacío y TODAS las
+        // señales de abajo mienten (ownNights = 0 → «calibrando», sin base → «esperando»). Un neutro de
+        // carga evita narrar un estado falso que salta al veredicto real segundos después.
+        if !repo.loaded { return .loading }
         // FER-286: mientras la banda drena el historial de la noche y aún no hay recovery, el Hero dice la
         // verdad —«Descargando la noche…»— en vez de «Falta la lectura de hoy»: el dato viene en camino,
         // no falta. Reusa la misma señal que ya hace girar el dial (FER-221), sin agregar otra.
@@ -1216,7 +1223,7 @@ struct TodayView: View {
             .accessibilityAddTraits(.isButton)
         case .calibrating:
             Text(verbatim: "··").groteskHero().foregroundStyle(theme.inkTertiary)
-        case .importedBaseline, .waiting, .downloading:
+        case .importedBaseline, .waiting, .downloading, .loading:
             Text(verbatim: "—").groteskHero().foregroundStyle(theme.inkTertiary)
         }
     }
@@ -1276,6 +1283,9 @@ struct TodayView: View {
             Text(strapSeen ? "arrives with the morning sync" : "connect your band or Apple Health")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+        case .loading:
+            // Neutro de carga: nada que narrar — el numeral «—» y la overline bastan mientras la DB publica.
+            EmptyView()
         }
     }
 
@@ -2054,6 +2064,8 @@ struct TodayView: View {
             }
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
+        case .loading:
+            EmptyView()
         }
     }
 
@@ -2118,7 +2130,7 @@ struct TodayView: View {
     /// limpio: número + veredicto. En veredicto / espera-con-strap el pie del héroe no muestra nada.
     @ViewBuilder private func heroFooter(_ s: HeroState) -> some View {
         switch s {
-        case .verdict, .downloading, .waiting:
+        case .verdict, .downloading, .waiting, .loading:
             // En espera sin fuentes el CTA vive en la tarjeta de fuentes (`emptySourcesCard`), no en
             // el pie del héroe. (FER-364)
             EmptyView()
