@@ -169,7 +169,7 @@ private struct RutinaDeHoyContent: View {
     // MARK: - Start the guided session (FER-347)
 
     private var startButton: some View {
-        StrandCTAButton(model.strengthSession != nil ? "Resume workout" : "Start workout",
+        StrandCTAButton(model.strengthSession != nil ? "Resume" : "Empezar",
                         systemImage: model.strengthSession != nil ? "play.fill" : "figure.strengthtraining.functional") { start() }
             .padding(.top, 4)
     }

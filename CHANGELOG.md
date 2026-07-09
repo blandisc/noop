@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Empezar» dice lo mismo en toda la app / «Empezar» reads the same across the app.**
+  **ES** — El botón de iniciar en «Rutina de hoy» decía «Iniciar entrenamiento» mientras el resto decía «Empezar»; ahora todos dicen «Empezar» (y «Reanudar» si hay una sesión en curso), igual que el botón principal.
+  **EN** — The start button on «Today's routine» said «Iniciar entrenamiento» while the rest said «Empezar»; now they all say «Empezar» (and «Reanudar» when a session is in progress), matching the primary button.
+  ([RutinaDeHoyScreen.swift](Cenit/Screens/RutinaDeHoyScreen.swift))
+
 - **Confirmaciones de sesión más consistentes / More consistent session confirmations.**
   **ES** — Al terminar o descartar un entrenamiento, la confirmación usa el mismo tipo de diálogo en todo el flujo (antes «terminar» abría un alerta distinto). El botón para no seguir es siempre «Seguir».
   **EN** — Finishing or discarding a workout now uses the same kind of dialog across the flow (finishing used to pop a different alert). The step-back button is always «Keep going».
