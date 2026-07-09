@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los botones de la tarjeta funcionan con el teléfono bloqueado / The card's buttons work with the phone locked.**
+  **ES** — Tocar Completar, −30/+30 o Saltar en la tarjeta de sesión pedía Face ID y te mandaba a la app. Las acciones ahora se declaran seguras con el teléfono bloqueado (como Hevy): son controles de la sesión, sin datos expuestos, así que responden al toque directo en la pantalla bloqueada.
+  **EN** — Tapping Complete, −30/+30 or Skip on the session card demanded Face ID and bounced you into the app. The actions are now declared safe on a locked phone (like Hevy): they're session controls exposing no data, so they respond to a direct tap on the lock screen.
+  ([RestActivityIntents.swift](CenitWidgets/Shared/RestActivityIntents.swift))
+
 - **Tu veredicto de la mañana ya no espera de más / Your morning verdict no longer waits around.**
   **ES** — Al abrir la app, si el veredicto de hoy aún no existía (típico en la mañana), el primer análisis esperaba 6 segundos fijos aunque tus datos ya estuvieran guardados. Ahora corre de inmediato y el veredicto aparece en cuanto abre la pantalla.
   **EN** — On launch, if today's verdict didn't exist yet (typical in the morning), the first analysis waited a fixed 6 seconds even when your data was already stored. Now it runs right away and the verdict shows as soon as the screen opens.
