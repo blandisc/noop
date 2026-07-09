@@ -1,12 +1,19 @@
-// FER-721 · Entrenar v3 · F6 — the rest Live Activity: lock-screen card + Dynamic Island.
+// FER-721 · FER-806 — the strength session Live Activity: lock-screen card + Dynamic Island.
 //
-// «Instrumento diurno» DNA on a system surface: warm paper, one dominant number (the rest timer, in
-// the effort hue), color only in the datum, hierarchy by space. Custom fonts aren't registered inside
-// the widget extension, so this uses the system rounded face for the numerals (a deliberate,
-// widget-safe substitute for the app's numeric type) while every color is a StrandDesign token.
-// FER-817: SF Rounded here is the FIRM decision — we do not register Space Grotesk in the widget
-// target (extra bundle weight + embedding risk for a glanceable surface); the rounded face reads
-// cleanly at LA sizes and the app keeps its grotesk numerals.
+// FER-721 showed this only during the rest between sets. FER-806 makes it live the WHOLE session — it is
+// born when the session starts and persists through active sets, rests, and pauses until the workout ends.
+// The v2 design is a FIXED SKELETON of three zones (identity / hero / actions) that never re-lays-out
+// between states, so the card doesn't «jump» as the lifter alternates set↔rest for 40+ minutes:
+//   • identity  — thumbnail + exercise name + overline «{context} · N/M series» + (optional) pulse chip
+//   • hero      — one dominant 34pt numeral in a fixed-height slot: «Serie X de Y» / countdown / pulse /
+//                 «En pausa», with a right-hand «Al volver / Sigue» block during rest & pause
+//   • bar slot  — per-set segments (active) ↔ draining bar (rest) ↔ inert bar (pause / stale)
+//   • actions   — «Completar» (active) ↔ −30/+30/Saltar (rest) ↔ «Reanudar» (pause) ↔ open-app (stale)
+//
+// «Instrumento diurno» DNA on a system surface: warm paper, ONE dominant number, color only in the live
+// datum (`dataStrain` countdown, `dataHeart` pulse), hierarchy by space, primary action by border + not
+// by fill. Custom fonts aren't registered in the widget extension, so numerals use the system rounded face
+// (FER-817's firm decision); every color is an `InstrumentoTheme` token — no hex/font/spacing inline.
 
 #if canImport(ActivityKit)
 import ActivityKit
@@ -23,195 +30,166 @@ struct RestLiveActivity: Widget {
 
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: RestActivityAttributes.self) { context in
-            // Lock-screen / banner presentation.
-            RestLockScreenCard(state: context.state, theme: theme)
+            // Lock-screen / banner presentation. `context.isStale` (the app went quiet past `staleDate`)
+            // drives the muted, action-less «Abre Cénit para continuar» rendering.
+            SessionLockScreenCard(state: context.state, theme: theme, stale: context.isStale)
                 .activityBackgroundTint(theme.paper)
                 .activitySystemActionForegroundColor(theme.ink)
         } dynamicIsland: { context in
-            let s = context.state
-            return DynamicIsland {
-                // Expanded — the timer leads, heart rate trails, the return caption sits below.
-                DynamicIslandExpandedRegion(.leading) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "timer").font(.system(size: 13, weight: .semibold))
-                        RestTimerText(state: s, size: 22)
-                    }
-                    .foregroundStyle(theme.dataStrain)
-                }
-                DynamicIslandExpandedRegion(.trailing) {
-                    HeartReadout(state: s, theme: theme, size: 15)
-                }
-                DynamicIslandExpandedRegion(.bottom) {
-                    Text(returnCaption(s))
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(theme.inkSecondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-            } compactLeading: {
-                RestTimerText(state: s, size: 15).foregroundStyle(theme.dataStrain)
-            } compactTrailing: {
-                if let bpm = s.bpm {
-                    HStack(spacing: 2) {
-                        Image(systemName: "heart.fill").font(.system(size: 10))
-                        Text("\(bpm)").font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundStyle(theme.dataHeart)
-                }
-            } minimal: {
-                RestTimerText(state: s, size: 13).foregroundStyle(theme.dataStrain)
-            }
-            .widgetURL(URL(string: "noopdev://rest"))
-            .keylineTint(theme.dataStrain)
+            SessionDynamicIsland.make(state: context.state, theme: theme)
         }
     }
 }
 
-// MARK: - Live Activity metrics (FER-789)
+// MARK: - Live Activity metrics
 
-/// The rest card's own scale — LOCAL to the widget, never `NoopMetrics` (a Live Activity is tighter than
-/// an in-app screen). Numerals use the system-rounded face (custom fonts aren't registered in the widget
-/// extension); colours are all `InstrumentoTheme` tokens. No hex/font/spacing lands inline in the view.
+/// The card's own scale — LOCAL to the widget, never `NoopMetrics` (a Live Activity is tighter than an
+/// in-app screen). Numerals use the system-rounded face; colours are all `InstrumentoTheme` tokens.
 private enum LiveActivityMetrics {
     static let cardPadding: CGFloat = 16
-    static let heroTimer: CGFloat = 52      // the sole dominant numeral
+    static let hero: CGFloat = 34            // the sole dominant numeral, every state (owner's decision)
+    static let heroSlot: CGFloat = 44        // fixed hero-zone height → constant card height across states
     static let pulse: CGFloat = 17
-    static let name: CGFloat = 15           // ≤ hero, so the timer stays the only hero
-    static let subtitle: CGFloat = 13
-    static let thumb: CGFloat = 44
-    static let control: CGFloat = 44        // ≥44pt touch target (HIG)
-    static let check: CGFloat = 46
-    static let checkGlyph: CGFloat = 22
+    static let name: CGFloat = 15            // ≤ hero, so the hero stays the only dominant numeral
+    static let overline: CGFloat = 11        // identity subtitle + «Al volver/Sigue/Tope» labels
+    static let overlineTracking: CGFloat = 1.4
+    static let returnValue: CGFloat = 15     // the «Serie N · peso × reps» answer to «¿qué sigue?»
+    static let thumb: CGFloat = 40
+    static let control: CGFloat = 46         // ≥44pt touch target (HIG)
+    static let glyph: CGFloat = 19
     static let pillLabel: CGFloat = 13
-    static let progressBar: CGFloat = 4
-    static let headerGap: CGFloat = 12
+    static let bar: CGFloat = 4
+    static let segmentGap: CGFloat = 3
+    static let headerGap: CGFloat = 10
     static let heroTopGap: CGFloat = 14
     static let barTopGap: CGFloat = 10
     static let actionsTopGap: CGFloat = 16
     static let pillGap: CGFloat = 8
-    static let skipToCheckGap: CGFloat = 8  // isolates «Saltar» from the primary check (no shared edge)
     static let pillRadius: CGFloat = 11
-    static let checkRadius: CGFloat = 13
+    static let controlRadius: CGFloat = 13
     static let disabledOpacity: CGFloat = 0.4
+}
+
+// MARK: - Phase model (view-side)
+
+/// The session phase to paint, with the pre-FER-806 fallback folded in: an Activity started under the old
+/// (rest-only) contract decodes `sessionPhase == nil` → we render the rest layout, exactly as FER-721 did.
+private extension RestActivityAttributes.ContentState {
+    var resolvedPhase: SessionPhase { sessionPhase ?? .resting }
+    /// HR-guided rest — the pulse is the hero and the top-right carries «Tope m:ss» instead of the chip.
+    var isHRRest: Bool { resolvedPhase == .resting && isHRMode }
+    /// The routine's last pending set is next → the rest card offers the «Terminar entreno» flag.
+    var isFinish: Bool { phase == .lastSetOfRoutine }
+    /// Global session progress «N/M series», or nil (pre-FER-806) → the overline drops the count.
+    var progressText: String? {
+        guard let done = setsDone, let total = setsTotal else { return nil }
+        return String(localized: "\(done)/\(total) series")
+    }
 }
 
 // MARK: - Lock-screen card
 
-private struct RestLockScreenCard: View {
+private struct SessionLockScreenCard: View {
     let state: RestActivityAttributes.ContentState
     let theme: InstrumentoTheme
+    let stale: Bool
 
     private typealias M = LiveActivityMetrics
 
-    /// The routine's last pending set is next → the primary action ends the workout, not just the set.
-    private var isFinish: Bool { state.phase == .lastSetOfRoutine }
-    /// −30 s can't shorten a rest that's already at zero.
-    private var restExhausted: Bool { state.restEndsAt <= Date() }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            header                                              // exercise + thumbnail + context line
-            heroRow.padding(.top, M.heroTopGap)                // the dominant countdown + pulse
-            progressBar.padding(.top, M.barTopGap)
-            actions.padding(.top, M.actionsTopGap)
+            IdentityRow(state: state, theme: theme, stale: stale)
+            HeroZone(state: state, theme: theme, stale: stale)
+                .frame(height: M.heroSlot, alignment: .bottom)
+                .padding(.top, M.heroTopGap)
+            BarSlot(state: state, theme: theme, stale: stale)
+                .padding(.top, M.barTopGap)
+            ActionsRow(state: state, theme: theme, stale: stale)
+                .padding(.top, M.actionsTopGap)
+                .accessibilitySortPriority(1)   // actions read last
         }
         .padding(M.cardPadding)
     }
+}
 
-    // Exercise identity leads (Hevy-style): circular thumbnail (omitted when there's none) + name + context.
-    private var header: some View {
+// MARK: - Zone 1 · identity (always present)
+
+private struct IdentityRow: View {
+    let state: RestActivityAttributes.ContentState
+    let theme: InstrumentoTheme
+    let stale: Bool
+    private typealias M = LiveActivityMetrics
+
+    var body: some View {
         HStack(spacing: M.headerGap) {
-            if let image = thumbImage {
-                image.resizable().scaledToFill()
-                    .frame(width: M.thumb, height: M.thumb)
-                    .clipShape(Circle())
-                    .overlay(Circle().strokeBorder(theme.hairline, lineWidth: 1))
-                    .accessibilityHidden(true)
-            }
-            VStack(alignment: .leading, spacing: 1) {
+            thumb
+            VStack(alignment: .leading, spacing: 3) {
                 Text(state.exerciseName)
                     .font(.system(size: M.name, weight: .semibold))
-                    .foregroundStyle(theme.ink)
-                    .lineLimit(2).minimumScaleFactor(0.8)
-                Text(contextLine)
-                    .font(.system(size: M.subtitle))
-                    .foregroundStyle(theme.inkSecondary)
-                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .foregroundStyle(stale ? theme.inkTertiary : theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)   // name truncates first; height doesn't move
+                Overline(overlineText, theme: theme, stale: stale)
             }
+            Spacer(minLength: M.headerGap)
+            trailing
         }
-        .accessibilitySortPriority(2)   // read after the timer + pulse
+        .accessibilitySortPriority(2)   // read after the hero + pulse
     }
 
-    private var heroRow: some View {
-        HStack(alignment: .firstTextBaseline) {
-            RestTimerText(state: state, size: M.heroTimer)
-                .foregroundStyle(theme.dataStrain)
-                .accessibilitySortPriority(4)   // the datum is read first
-            Spacer()
-            HeartReadout(state: state, theme: theme, size: M.pulse)
-                .accessibilitySortPriority(3)
-        }
-    }
-
-    private var progressBar: some View {
-        ProgressView(timerInterval: state.restStartedAt...state.restEndsAt, countsDown: true) {
-            EmptyView()
-        } currentValueLabel: { EmptyView() }
-            .progressViewStyle(.linear)
-            .tint(theme.dataStrain)
-            .accessibilityHidden(true)
-    }
-
-    // One row: [−30 s][+30 s][Saltar] grouped, a gap, then the primary check/flag — read last.
-    private var actions: some View {
-        HStack(spacing: M.pillGap) {
-            PillButton(title: Text("−30 s"), intent: RestRemoveThirtyIntent(), theme: theme)
-                .frame(maxWidth: .infinity)
-                .disabled(restExhausted)
-                .opacity(restExhausted ? M.disabledOpacity : 1)
-                .accessibilityLabel(Text("Remove 30 seconds"))
-            PillButton(title: Text("+30 s"), intent: RestAddThirtyIntent(), theme: theme)
-                .frame(maxWidth: .infinity)
-                .accessibilityLabel(Text("Add 30 seconds"))
-            PillButton(title: Text("Skip"), intent: RestSkipIntent(), theme: theme)
-                .frame(maxWidth: .infinity)
-                .accessibilityLabel(Text("Skip rest"))
-                .accessibilityHint(Text("Ends the rest without logging the set"))
-            Spacer(minLength: M.skipToCheckGap)
-            primaryAction
-        }
-        .accessibilitySortPriority(1)
-    }
-
-    // The primary action: a check (complete set) or, on the routine's last set, a flag (finish workout).
-    // Ink glyph on `surface` with a `hairlineStrong` border — no fill, no hue, so it never beats the timer.
-    @ViewBuilder private var primaryAction: some View {
-        if isFinish {
-            PrimaryGlyphButton(systemImage: "flag.fill", intent: RestFinishWorkoutIntent(), theme: theme)
-                .accessibilityLabel(Text("Finish workout"))
-                .accessibilityHint(Text("Logs the last set and ends the workout"))
+    // The exercise identity chip: the staged thumbnail, or the exercise's initials on a paper tile.
+    @ViewBuilder private var thumb: some View {
+        if let image = thumbImage {
+            image.resizable().scaledToFill()
+                .frame(width: M.thumb, height: M.thumb)
+                .clipShape(Circle())
+                .overlay(Circle().strokeBorder(theme.hairline, lineWidth: 1))
+                .opacity(stale ? 0.6 : 1)
+                .accessibilityHidden(true)
         } else {
-            PrimaryGlyphButton(systemImage: "checkmark", intent: RestCompleteSetIntent(), theme: theme)
-                .accessibilityLabel(Text("Complete set"))
-                .accessibilityHint(Text("Logs the set and advances"))
+            Text(initials)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(stale ? theme.inkDim : theme.inkSecondary)
+                .frame(width: M.thumb, height: M.thumb)
+                .background(theme.surface)
+                .clipShape(Circle())
+                .overlay(Circle().strokeBorder(theme.hairline, lineWidth: 1))
+                .accessibilityHidden(true)
         }
     }
 
-    // The context line, per phase: normal «Next: set N of M · detail», exercise handoff «Next up: {ex}»,
-    // routine end «last set of the workout». No dangling «·» when there's no weight×reps detail.
-    private var contextLine: String {
-        switch state.phase {
-        case .lastSetOfRoutine?:
-            return String(localized: "last set of the workout")
-        case .lastSetOfExercise? where state.nextExerciseName != nil:
-            return String(localized: "Next up: \(state.nextExerciseName!)")
-        default:
-            let base = String(localized: "Next: set \(state.setNumber) of \(state.setTotal)")
-            return state.returnDetail.isEmpty ? base : "\(base) · \(state.returnDetail)"
+    // Top-right: HR-rest shows «Tope m:ss» (the 5-min cap); every other state shows the pulse chip when
+    // there's band data. No band → nothing (never a «--»), per the design's «esconder el chip».
+    @ViewBuilder private var trailing: some View {
+        if stale {
+            EmptyView()
+        } else if state.isHRRest {
+            VStack(alignment: .trailing, spacing: 2) {
+                Overline(String(localized: "Cap"), theme: theme, stale: false)
+                RestTimerText(state: state, size: M.pillLabel + 1, weight: .semibold)
+                    .foregroundStyle(theme.inkSecondary)
+            }
+        } else {
+            PulseChip(state: state, theme: theme, size: M.pillLabel + 1)
         }
     }
 
-    // The staged App Group thumbnail, or nil → the header omits the circle entirely (no placeholder).
+    private var overlineText: String {
+        let context: String
+        switch state.resolvedPhase {
+        case .active:  context = state.routineName
+        case .resting: context = state.isHRMode ? String(localized: "By HR") : String(localized: "Rest")
+        case .paused:  context = String(localized: "Paused")
+        }
+        guard let progress = state.progressText else { return context }
+        return "\(context) · \(progress)"
+    }
+
+    private var initials: String {
+        let parts = state.exerciseName.split(separator: " ").prefix(2)
+        let letters = parts.compactMap { $0.first }.map(String.init)
+        return letters.joined().uppercased()
+    }
+
     private var thumbImage: Image? {
         #if canImport(UIKit)
         guard let url = RestThumbnailStore.url(for: state.thumbnailName),
@@ -223,9 +201,285 @@ private struct RestLockScreenCard: View {
     }
 }
 
-// MARK: - Action buttons
+// MARK: - Zone 2 · hero (fixed-height slot)
 
-/// A quiet rest control — surface fill, hairline border, ink label. Never carries a data hue (§8.4.2).
+private struct HeroZone: View {
+    let state: RestActivityAttributes.ContentState
+    let theme: InstrumentoTheme
+    let stale: Bool
+    private typealias M = LiveActivityMetrics
+
+    var body: some View {
+        HStack(alignment: .bottom) {
+            heroLeading.accessibilitySortPriority(4)   // the datum reads first
+            Spacer(minLength: M.headerGap)
+            heroTrailing.accessibilitySortPriority(3)
+        }
+    }
+
+    // The dominant datum, per phase.
+    @ViewBuilder private var heroLeading: some View {
+        switch state.resolvedPhase {
+        case .active:
+            // «Serie X de Y» — the «de Y» in a quieter tint/weight so the number leads.
+            (Text("\(state.setNumber) ").font(.system(size: M.hero, weight: .semibold, design: .rounded))
+                .foregroundColor(stale ? theme.inkTertiary : theme.ink)
+                + Text(String(localized: "of \(state.setTotal)"))
+                    .font(.system(size: M.hero * 0.7, weight: .medium, design: .rounded))
+                    .foregroundColor(theme.inkTertiary))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .accessibilityLabel(Text("set \(state.setNumber) of \(state.setTotal)"))
+        case .resting where state.isHRMode:
+            PulseHero(state: state, theme: theme, stale: stale)
+        case .resting:
+            RestTimerText(state: state, size: M.hero, weight: .semibold)
+                .foregroundStyle(stale ? theme.inkDim : theme.dataStrain)
+                .contentTransition(.numericText())
+        case .paused:
+            Text(String(localized: "On pause"))
+                .font(.system(size: M.hero, weight: .semibold, design: .rounded))
+                .foregroundStyle(theme.inkSecondary)
+        }
+    }
+
+    // The right-hand answer to «¿qué sigue?» — present in rest & pause, absent in the active set (where the
+    // hero-right is the plain «peso × reps» load).
+    @ViewBuilder private var heroTrailing: some View {
+        switch state.resolvedPhase {
+        case .active:
+            if !state.returnDetail.isEmpty {
+                Text(state.returnDetail)
+                    .font(.system(size: M.name, weight: .medium))
+                    .foregroundStyle(stale ? theme.inkTertiary : theme.inkSecondary)
+                    .monospacedDigit()
+            }
+        case .resting, .paused:
+            ReturnBlock(state: state, theme: theme, stale: stale)
+        }
+    }
+}
+
+/// The HR-rest hero: the live pulse leads (`dataHeart`) with the «→ target» it's falling toward.
+private struct PulseHero: View {
+    let state: RestActivityAttributes.ContentState
+    let theme: InstrumentoTheme
+    let stale: Bool
+    private typealias M = LiveActivityMetrics
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "heart.fill").font(.system(size: M.hero * 0.45))
+            Text("\(state.bpm ?? 0)")
+                .font(.system(size: M.hero, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+            if let target = state.hrTarget {
+                Text("→ \(target)")
+                    .font(.system(size: M.name + 1, weight: .medium))
+                    .foregroundStyle(theme.inkTertiary)
+                    .monospacedDigit()
+            }
+        }
+        .foregroundStyle(stale ? theme.inkDim : theme.dataHeart)
+        .accessibilityLabel(pulseLabel)
+    }
+
+    private var pulseLabel: Text {
+        if let target = state.hrTarget {
+            return Text("\(state.bpm ?? 0) beats per minute, recovering toward \(target)")
+        }
+        return Text("\(state.bpm ?? 0) beats per minute")
+    }
+}
+
+/// The «Al volver / Sigue» block: overline + the set the lifter returns to, in ink semibold.
+private struct ReturnBlock: View {
+    let state: RestActivityAttributes.ContentState
+    let theme: InstrumentoTheme
+    let stale: Bool
+    private typealias M = LiveActivityMetrics
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Overline(label, theme: theme, stale: stale)
+            Text(value)
+                .font(.system(size: M.returnValue, weight: .semibold))
+                .foregroundStyle(stale ? theme.inkTertiary : theme.ink)
+                .monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    // Mirrors FER-789's context logic, restyled: routine-end «Última serie»; exercise handoff «Sigue: next»;
+    // otherwise «Al volver: Serie N · detail».
+    private var label: String {
+        switch state.phase {
+        case .lastSetOfExercise? where state.nextExerciseName != nil:
+            return String(localized: "Next")
+        default:
+            return String(localized: "Back to")
+        }
+    }
+
+    private var value: String {
+        switch state.phase {
+        case .lastSetOfRoutine?:
+            return String(localized: "Last set")
+        case .lastSetOfExercise? where state.nextExerciseName != nil:
+            return state.nextExerciseName!
+        default:
+            let base = String(localized: "Set \(state.setNumber)")
+            return state.returnDetail.isEmpty ? base : "\(base) · \(state.returnDetail)"
+        }
+    }
+}
+
+// MARK: - Zone 3 · bar slot
+
+private struct BarSlot: View {
+    let state: RestActivityAttributes.ContentState
+    let theme: InstrumentoTheme
+    let stale: Bool
+    private typealias M = LiveActivityMetrics
+
+    var body: some View {
+        Group {
+            if stale {
+                inertBar(theme.inkDim)
+            } else {
+                switch state.resolvedPhase {
+                case .active:  segments
+                case .resting: drainingBar
+                case .paused:  inertBar(theme.inkDim)
+                }
+            }
+        }
+        .frame(height: M.bar)
+        .accessibilityHidden(true)
+    }
+
+    // Per-set progress: one segment per planned set, lit up to the current set.
+    private var segments: some View {
+        HStack(spacing: M.segmentGap) {
+            ForEach(0..<max(state.setTotal, 1), id: \.self) { i in
+                RoundedRectangle(cornerRadius: M.bar / 2)
+                    .fill(i < state.setNumber ? theme.ink : theme.hairline)
+            }
+        }
+    }
+
+    // The rest countdown, drained locally by ActivityKit. `dataStrain` for a clock rest, `dataHeart` in HR
+    // mode (the bar tracks the cap while the pulse leads).
+    private var drainingBar: some View {
+        ProgressView(timerInterval: state.restStartedAt...state.restEndsAt, countsDown: true) {
+            EmptyView()
+        } currentValueLabel: { EmptyView() }
+            .progressViewStyle(.linear)
+            .tint(state.isHRMode ? theme.dataHeart : theme.dataStrain)
+    }
+
+    // Frozen / dead: a full inert track — no hue, since there's no live datum behind it.
+    private func inertBar(_ color: Color) -> some View {
+        RoundedRectangle(cornerRadius: M.bar / 2).fill(color)
+    }
+}
+
+// MARK: - Zone 4 · actions
+
+private struct ActionsRow: View {
+    let state: RestActivityAttributes.ContentState
+    let theme: InstrumentoTheme
+    let stale: Bool
+    private typealias M = LiveActivityMetrics
+
+    var body: some View {
+        if stale {
+            // Dead card: no intents. The whole card taps through to open the app (default LA behaviour),
+            // so this is a styled label, not a button.
+            Text(String(localized: "Open Cénit to continue"))
+                .font(.system(size: M.pillLabel, weight: .semibold))
+                .foregroundStyle(theme.inkSecondary)
+                .frame(maxWidth: .infinity, minHeight: M.control)
+                .background(theme.surface)
+                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(theme.hairline, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: M.controlRadius))
+        } else {
+            switch state.resolvedPhase {
+            case .active:  activeActions
+            case .resting: restActions
+            case .paused:  pausedActions
+            }
+        }
+    }
+
+    // Active set: one primary «Completar» that logs the set and enters the rest.
+    private var activeActions: some View {
+        PrimaryButton(title: Text("Complete"), intent: RestCompleteSetIntent(), theme: theme)
+            .accessibilityLabel(Text("Complete set"))
+            .accessibilityHint(Text("Logs the set and advances"))
+    }
+
+    // Rest: −30 / +30 / Saltar. HR rest omits ±30 (they don't apply to a pulse target) → only «Saltar». The
+    // routine's last set adds the «Terminar entreno» flag.
+    @ViewBuilder private var restActions: some View {
+        if state.isHRMode {
+            PillButton(title: Text("Skip"), intent: RestSkipIntent(), theme: theme)
+                .accessibilityLabel(Text("Skip rest"))
+        } else {
+            HStack(spacing: M.pillGap) {
+                PillButton(title: Text("−30 s"), intent: RestRemoveThirtyIntent(), theme: theme)
+                    .disabled(restExhausted)
+                    .opacity(restExhausted ? M.disabledOpacity : 1)
+                    .accessibilityLabel(Text("Remove 30 seconds"))
+                PillButton(title: Text("+30 s"), intent: RestAddThirtyIntent(), theme: theme)
+                    .accessibilityLabel(Text("Add 30 seconds"))
+                PillButton(title: Text("Skip"), intent: RestSkipIntent(), theme: theme)
+                    .accessibilityLabel(Text("Skip rest"))
+                if state.isFinish {
+                    GlyphButton(systemImage: "flag.fill", intent: RestFinishWorkoutIntent(), theme: theme)
+                        .accessibilityLabel(Text("Finish workout"))
+                        .accessibilityHint(Text("Logs the last set and ends the workout"))
+                }
+            }
+        }
+    }
+
+    // Paused: one primary «Reanudar».
+    private var pausedActions: some View {
+        PrimaryButton(title: Text("Resume"), intent: RestResumeIntent(), theme: theme)
+            .accessibilityLabel(Text("Resume workout"))
+    }
+
+    private var restExhausted: Bool { state.restEndsAt <= Date() }
+}
+
+// MARK: - Reusable controls
+
+/// A full-width primary control — quiet surface, hairline-strong border, ink label. No fill hue, so it
+/// never out-shouts the hero (§8.4).
+private struct PrimaryButton<Title: View, I: AppIntent>: View {
+    let title: Title
+    let intent: I
+    let theme: InstrumentoTheme
+    private typealias M = LiveActivityMetrics
+
+    var body: some View {
+        Button(intent: intent) {
+            title
+                .font(.system(size: M.name, weight: .semibold))
+                .foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, minHeight: M.control)
+                .background(theme.surface)
+                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: M.controlRadius))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// A quiet rest control — surface fill, hairline border, ink-secondary label. Never a data hue (§8.4.2).
 private struct PillButton<Title: View, I: AppIntent>: View {
     let title: Title
     let intent: I
@@ -246,9 +500,8 @@ private struct PillButton<Title: View, I: AppIntent>: View {
     }
 }
 
-/// The primary action — an ink glyph (no fill, no hue) on `surface` with a heavier `hairlineStrong` border,
-/// so it reads as primary by border weight and position, never by colour (FER-789 · §8.4).
-private struct PrimaryGlyphButton<I: AppIntent>: View {
+/// A square glyph control (the «Terminar entreno» flag) — ink glyph, heavier border, no fill.
+private struct GlyphButton<I: AppIntent>: View {
     let systemImage: String
     let intent: I
     let theme: InstrumentoTheme
@@ -257,12 +510,12 @@ private struct PrimaryGlyphButton<I: AppIntent>: View {
     var body: some View {
         Button(intent: intent) {
             Image(systemName: systemImage)
-                .font(.system(size: M.checkGlyph, weight: .semibold))
+                .font(.system(size: M.glyph, weight: .semibold))
                 .foregroundStyle(theme.ink)
-                .frame(width: M.check, height: M.check)
+                .frame(width: M.control, height: M.control)
                 .background(theme.surface)
-                .overlay(RoundedRectangle(cornerRadius: M.checkRadius).strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: M.checkRadius))
+                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: M.controlRadius))
         }
         .buttonStyle(.plain)
     }
@@ -270,43 +523,183 @@ private struct PrimaryGlyphButton<I: AppIntent>: View {
 
 // MARK: - Shared pieces
 
-/// The rest countdown. In HR mode the timer still counts (it's the 5-minute cap) but the pulse is the
-/// story; either way the numerals tick locally from `restEndsAt`.
+/// An uppercase tracking overline — «Descanso · 8/18 series», «Al volver», «Tope».
+private struct Overline: View {
+    let text: String
+    let theme: InstrumentoTheme
+    let stale: Bool
+    private typealias M = LiveActivityMetrics
+
+    init(_ text: String, theme: InstrumentoTheme, stale: Bool) {
+        self.text = text; self.theme = theme; self.stale = stale
+    }
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(.system(size: M.overline, weight: .semibold))
+            .tracking(M.overlineTracking)
+            .foregroundStyle(stale ? theme.inkDim : theme.inkTertiary)
+            .lineLimit(1).minimumScaleFactor(0.7)
+    }
+}
+
+/// The rest countdown — ticks locally from `restEndsAt`, so no push is needed just to advance the clock.
 private struct RestTimerText: View {
     let state: RestActivityAttributes.ContentState
-    let size: CGFloat
+    var size: CGFloat
+    var weight: Font.Weight = .semibold
     var body: some View {
         Text(timerInterval: state.restStartedAt...state.restEndsAt, countsDown: true)
-            .font(.system(size: size, weight: .semibold, design: .rounded))
+            .font(.system(size: size, weight: weight, design: .rounded))
             .monospacedDigit()
     }
 }
 
-/// The heart-rate readout: live pulse (and, in HR mode, the «→ N» ready target). Renders NOTHING when
-/// there's no band data — no dash, no zero (acceptance criterion 4).
-private struct HeartReadout: View {
+/// The identity-row pulse chip: «♥ 128». Renders NOTHING without band data — no dash, no zero.
+private struct PulseChip: View {
     let state: RestActivityAttributes.ContentState
     let theme: InstrumentoTheme
-    var size: CGFloat = 16
+    var size: CGFloat
     var body: some View {
         if let bpm = state.bpm {
-            HStack(spacing: 4) {
-                Image(systemName: "heart.fill").font(.system(size: size * 0.72))
+            HStack(spacing: 3) {
+                Image(systemName: "heart.fill").font(.system(size: size * 0.8))
                 Text("\(bpm)").font(.system(size: size, weight: .semibold, design: .rounded)).monospacedDigit()
-                if state.isHRMode, let target = state.hrTarget {
-                    Text("→ \(target)")
-                        .font(.system(size: size * 0.78, weight: .medium))
-                        .foregroundStyle(theme.inkTertiary)
-                }
             }
             .foregroundStyle(theme.dataHeart)
+            .accessibilityLabel(Text("\(bpm) beats per minute"))
         }
     }
 }
 
-/// «al volver: serie N · {peso} × {reps}» — drops the detail when the exercise has no weight×reps datum.
-private func returnCaption(_ s: RestActivityAttributes.ContentState) -> String {
-    let base = String(localized: "back to set \(s.setNumber) · \(s.exerciseName)")
-    return s.returnDetail.isEmpty ? base : "\(base) · \(s.returnDetail)"
+// MARK: - Dynamic Island
+
+private enum SessionDynamicIsland {
+    static func make(state s: RestActivityAttributes.ContentState, theme: InstrumentoTheme) -> DynamicIsland {
+        DynamicIsland {
+            DynamicIslandExpandedRegion(.leading) { expandedLeading(s, theme) }
+            DynamicIslandExpandedRegion(.trailing) { expandedTrailing(s, theme) }
+            DynamicIslandExpandedRegion(.bottom) { expandedBottom(s, theme) }
+        } compactLeading: {
+            compactLeading(s, theme)
+        } compactTrailing: {
+            compactTrailing(s, theme)
+        } minimal: {
+            minimal(s, theme)
+        }
+        .widgetURL(URL(string: "noopdev://session"))
+        .keylineTint(s.isHRRest ? theme.dataHeart : theme.dataStrain)
+    }
+
+    // Compact leading: the phase's dominant glyph — set count / countdown / pulse.
+    @ViewBuilder private static func compactLeading(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+        switch s.resolvedPhase {
+        case .active:
+            Text("\(s.setNumber)/\(s.setTotal)")
+                .font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(theme.ink)
+        case .paused:
+            Image(systemName: "pause.fill").font(.system(size: 12)).foregroundStyle(theme.inkSecondary)
+        case .resting where s.isHRMode:
+            HStack(spacing: 2) {
+                Image(systemName: "heart.fill").font(.system(size: 10))
+                Text("\(s.bpm ?? 0)").font(.system(size: 13, weight: .semibold)).monospacedDigit()
+            }.foregroundStyle(theme.dataHeart)
+        case .resting:
+            RestTimerText(state: s, size: 15).foregroundStyle(theme.dataStrain)
+        }
+    }
+
+    // Compact trailing: pulse chip (or the «→ target» in HR mode); nothing without band data.
+    @ViewBuilder private static func compactTrailing(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+        if s.isHRRest, let target = s.hrTarget {
+            Text("→ \(target)").font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(theme.inkSecondary)
+        } else if let bpm = s.bpm {
+            HStack(spacing: 2) {
+                Image(systemName: "heart.fill").font(.system(size: 10))
+                Text("\(bpm)").font(.system(size: 13, weight: .semibold)).monospacedDigit()
+            }.foregroundStyle(theme.dataHeart)
+        }
+    }
+
+    @ViewBuilder private static func minimal(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+        switch s.resolvedPhase {
+        case .active:
+            Text("\(s.setNumber)/\(s.setTotal)").font(.system(size: 12, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(theme.ink)
+        case .paused:
+            Image(systemName: "pause.fill").font(.system(size: 11)).foregroundStyle(theme.inkSecondary)
+        case .resting where s.isHRMode:
+            Text("\(s.bpm ?? 0)").font(.system(size: 12, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(theme.dataHeart)
+        case .resting:
+            RestTimerText(state: s, size: 12).foregroundStyle(theme.dataStrain)
+        }
+    }
+
+    // Expanded leading: the hero datum.
+    @ViewBuilder private static func expandedLeading(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+        switch s.resolvedPhase {
+        case .active:
+            (Text("\(s.setNumber)").font(.system(size: 26, weight: .semibold, design: .rounded))
+                .foregroundColor(theme.ink)
+                + Text(" / \(s.setTotal)").font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(theme.inkTertiary))
+                .monospacedDigit()
+        case .paused:
+            Text("On pause").font(.system(size: 20, weight: .semibold, design: .rounded))
+                .foregroundStyle(theme.inkSecondary)
+        case .resting where s.isHRMode:
+            HStack(spacing: 4) {
+                Image(systemName: "heart.fill").font(.system(size: 14))
+                Text("\(s.bpm ?? 0)").font(.system(size: 26, weight: .semibold, design: .rounded)).monospacedDigit()
+                if let target = s.hrTarget {
+                    Text("→ \(target)").font(.system(size: 15, weight: .medium)).foregroundStyle(theme.inkTertiary).monospacedDigit()
+                }
+            }.foregroundStyle(theme.dataHeart)
+        case .resting:
+            HStack(spacing: 6) {
+                Image(systemName: "timer").font(.system(size: 13, weight: .semibold))
+                RestTimerText(state: s, size: 26)
+            }.foregroundStyle(theme.dataStrain)
+        }
+    }
+
+    // Expanded trailing: the pulse (rest/active) or the «Tope» cap (HR).
+    @ViewBuilder private static func expandedTrailing(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+        if s.isHRRest {
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(String(localized: "Cap").uppercased()).font(.system(size: 9, weight: .semibold)).tracking(1).foregroundStyle(theme.inkTertiary)
+                RestTimerText(state: s, size: 14).foregroundStyle(theme.inkSecondary)
+            }
+        } else if let bpm = s.bpm {
+            HStack(spacing: 4) {
+                Image(systemName: "heart.fill").font(.system(size: 13))
+                Text("\(bpm)").font(.system(size: 16, weight: .semibold, design: .rounded)).monospacedDigit()
+            }.foregroundStyle(theme.dataHeart)
+        }
+    }
+
+    // Expanded bottom: the «¿qué sigue?» caption for rest/pause; the exercise name in the active set.
+    @ViewBuilder private static func expandedBottom(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+        Text(bottomCaption(s))
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(theme.inkSecondary)
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private static func bottomCaption(_ s: RestActivityAttributes.ContentState) -> String {
+        switch s.resolvedPhase {
+        case .active:
+            return s.returnDetail.isEmpty ? s.exerciseName : "\(s.exerciseName) · \(s.returnDetail)"
+        case .paused:
+            return String(localized: "back to set \(s.setNumber) · \(s.exerciseName)")
+        case .resting:
+            let base = String(localized: "back to set \(s.setNumber) · \(s.exerciseName)")
+            return s.returnDetail.isEmpty ? base : "\(base) · \(s.returnDetail)"
+        }
+    }
 }
 #endif

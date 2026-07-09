@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Una sola tarjeta te guía toda la sesión de fuerza en la pantalla bloqueada / One card guides your whole strength session on the lock screen.**
+  **ES** — Antes la tarjeta de sesión (Live Activity) solo aparecía durante el descanso entre series. Ahora nace cuando empiezas el entrenamiento y te acompaña de principio a fin: en la serie activa muestra «Serie X de Y» con el peso y tu progreso «N/M series»; en el descanso, la cuenta regresiva y qué te toca al volver, con −30/+30/Saltar; en pausa, «En pausa» y «Reanudar»; y por frecuencia cardiaca, tu pulso bajando hacia el objetivo. Puedes completar la serie, ajustar el descanso o reanudar sin desbloquear el teléfono, y la Dynamic Island refleja el mismo estado. Si cierras la app a mitad, la tarjeta se congela y te invita a «Abre Cénit para continuar». Sin banda, el pulso simplemente no se muestra.
+  **EN** — The session card (Live Activity) used to appear only during the rest between sets. Now it's born when you start the workout and stays with you end to end: the active set shows «Set X of Y» with the weight and your «N/M sets» progress; the rest shows the countdown and what's next, with −30/+30/Skip; a pause shows «On pause» and «Resume»; and heart-rate rests show your pulse falling toward its target. You can complete a set, adjust the rest or resume without unlocking the phone, and the Dynamic Island mirrors the same state. If you close the app mid-session the card freezes and invites you to «Open Cénit to continue». With no band, the pulse simply isn't shown.
+  ([RestLiveActivity.swift](CenitWidgets/RestLiveActivity.swift), [AppModel.swift](Cenit/App/AppModel.swift))
+
 - **Los detalles de Tendencias abren a pantalla completa / Trends details open full-screen.**
   **ES** — Tocar una métrica en Tendencias ahora abre su detalle a pantalla completa, con una cabecera «‹ Tendencias · fecha» para regresar, como el diseño de referencia (antes era una hoja con asa).
   **EN** — Tapping a metric in Trends now opens its detail full-screen, with a «‹ Trends · date» back header, matching the reference design (it was a drag-to-dismiss sheet before).

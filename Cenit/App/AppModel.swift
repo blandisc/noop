@@ -236,11 +236,14 @@ final class AppModel: ObservableObject {
         live.onWristChange = { [weak self] worn in self?.handleWristChange(worn) }
         // HR-zone haptic coaching watches the smoothed bpm.
         live.pulse.$smoothedBpm.sink { [weak self] hr in self?.coachZone(hr) }.store(in: &hrCancellables)
-        // FER-721: the lock-screen «+30 s»/«Saltar» actions come back through the controller; apply them
-        // to the live session. Any rest Activity orphaned by a prior kill (session is memory-only) is
-        // ended at launch so none lingers on the lock screen.
+        // FER-721: the lock-screen actions come back through the controller; apply them to the live session.
         restActivity.onAction = { [weak self] action in self?.applyRestAction(action) }
-        restActivity.endOrphans()
+        // FER-806: the Activity now lives the WHOLE session, so we must NOT kill it unconditionally at
+        // launch — that would blow away a legitimate card before crash-recovery restores its session.
+        // Instead, only when FER-798's recovery finds NO recoverable session do we end any orphan (a card
+        // left by a killed, unrecoverable session). A recoverable session is restored first, and its
+        // `didSet` reconcile adopts the running Activity, so it stays alive.
+        onNoRecoverableStrengthSession = { [weak self] in self?.restActivity.endOrphans() }
         RestThumbnailStore.clear()   // FER-789: sweep any rest thumbnail left by a killed session
         // Illness/strain early-warning recomputes when the daily history changes. `days` is no longer
         // its own @Published (folded into `dashboard` for single-publish refreshes, FER-30), so watch
@@ -622,7 +625,7 @@ final class AppModel: ObservableObject {
         // floor), not only when the fallback clock runs out — and the watch buzzes «ready» to say so.
         // Only the honest HR-recovery path ends early here; the clock ceiling stays the watch's own timer.
         // FER-823: never end the rest while paused — the band keeps streaming, so an HR that recovers to
-        // target during a pause must NOT skip the (frozen) rest. Same `!s.paused` gate as computeRestSnapshot.
+        // target during a pause must NOT skip the (frozen) rest. Same `!s.paused` gate as computeSessionSnapshot.
         if let s = strengthSession, s.summary == nil, !s.paused, s.phase == .resting,
            s.currentRestMode == .heartRate, let started = s.restStartedAt {
             let elapsed = max(0, Int(Date().timeIntervalSince(started)))
@@ -638,11 +641,16 @@ final class AppModel: ObservableObject {
                 return
             }
         }
-        let snapshot = computeRestSnapshot()
-        if snapshot == nil { clearRestThumb() }   // FER-789: no stale App Group image once the rest ends
+        let snapshot = computeSessionSnapshot()
+        if snapshot == nil { clearRestThumb() }   // FER-789: no stale App Group image once the session ends
         restActivity.reconcile(snapshot)
-        if let snapshot { mirroringBridge?.pushRest(snapshot) }
-        else if let sid = strengthSession?.id {
+        // FER-806: the Live Activity now spans the whole session, but the Apple Watch mirror keeps
+        // FER-721's rest-only semantics — only push a rest window to the wrist while genuinely resting, so
+        // the watch never shows a phantom countdown during the active set. Any other phase (active/pause,
+        // or no session) = «rest ended», and FER-809's capture context takes over on the wrist.
+        if let snapshot, snapshot.sessionPhaseRaw == SessionPhase.resting.rawValue {
+            mirroringBridge?.pushRest(snapshot)
+        } else if let sid = strengthSession?.id {
             mirroringBridge?.pushRestEnded(sessionId: sid)
             // FER-809: between rests, mirror the capture context so the wrist shows «qué toca», not a bare pulse.
             if let capture = computeCaptureSnapshot() { mirroringBridge?.pushCapture(capture) }
@@ -669,34 +677,57 @@ final class AppModel: ObservableObject {
     /// so a rest snapshot copies the JPG only when the focused exercise changes, not on every reconcile.
     private var preparedRestThumb: (exerciseId: String, name: String?)?
 
-    /// The display-ready rest snapshot, or nil when there's nothing to show (no session, showing the
-    /// receipt, not resting, or the focused set is gone).
-    private func computeRestSnapshot() -> RestActivitySnapshot? {
-        // FER-823: while paused, produce no rest card — a ticking countdown would be wrong (the full-session
-        // «En pausa» card is FER-806). The rest resumes when the session does.
-        guard let s = strengthSession, s.summary == nil, !s.paused, s.phase == .resting,
-              let startedAt = s.restStartedAt, let endsAt = s.restEndsAt,
-              let run = s.current, let set = s.currentSet else { return nil }
+    /// FER-806 — the whole-session phase the Live Activity paints, or nil when there's nothing to show
+    /// (no session, or the receipt is up ⇒ the Activity ends). Pure + static so it's unit-testable without
+    /// an AppModel or ActivityKit. `.paused` wins; then `.resting` between sets; else the active set.
+    static func sessionPhase(for s: StrengthSessionModel?) -> SessionPhase? {
+        guard let s, s.summary == nil else { return nil }
+        if s.paused { return .paused }
+        if s.phase == .resting { return .resting }
+        return .active
+    }
+
+    /// The display-ready snapshot that drives the full-session Live Activity (FER-806), or nil when there's
+    /// nothing to show (no session, the receipt is up, or the focused set is gone ⇒ the Activity ends).
+    /// Generalizes FER-721's rest-only snapshot: it's produced across the WHOLE session (active set, rest,
+    /// pause) and carries the session phase + global progress so the card keeps its fixed skeleton.
+    private func computeSessionSnapshot() -> RestActivitySnapshot? {
+        guard let phase = Self.sessionPhase(for: strengthSession),
+              let s = strengthSession, let run = s.current, let set = s.currentSet else { return nil }
         let unit = UnitSystem(rawValue: UserDefaults.standard.string(forKey: UnitPrefs.systemKey) ?? "")
             ?? .metric
-        // «al volver» detail: weight×reps exercises show the load; time/distance carry no such datum.
+        // «al volver» / «peso × reps» detail: weight×reps exercises show the load; time/distance carry none.
         let usesWeightReps = run.type == .weightReps || run.type == .bodyweight
         let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
-        // No band (disconnected / off-wrist) → no pulse: the surfaces then show only the timer.
+        // No band (disconnected / off-wrist) → no pulse: the surfaces then show only the timer/hero.
         let bandBpm: Int? = (live.connected && live.worn) ? bpm : nil
-        // FER-789 — phase drives the card's primary action + context line: the routine's last pending set
-        // → «Terminar entreno» (flag); an exercise's last set → «Sigue: {next}»; otherwise the check.
-        let phase: RestPhase = s.pendingCount <= 1 ? .lastSetOfRoutine
+        // FER-789 — rest phase drives the card's primary action + context line: the routine's last pending
+        // set → «Terminar entreno» (flag); an exercise's last set → «Sigue: {next}»; otherwise the check.
+        let restPhase: RestPhase = s.pendingCount <= 1 ? .lastSetOfRoutine
             : (s.pendingInCurrentRun <= 1 ? .lastSetOfExercise : .midExercise)
-        let nextName = phase == .lastSetOfExercise ? s.nextPendingExerciseName : nil
+        let nextName = restPhase == .lastSetOfExercise ? s.nextPendingExerciseName : nil
+        // Rest window: real dates while resting; a zero window «now» otherwise (the active/paused card
+        // never renders the countdown — it keys off `sessionPhase`).
+        let now = Date()
+        let restStart = s.restStartedAt ?? now
+        let restEnd = s.restEndsAt ?? now
+        // FER-823 — the active-phase count-up anchors to the EFFECTIVE start in WALL-CLOCK terms
+        // (`startTs + pausedSeconds`), so `now − anchor == active elapsed` while excluding paused time. Anchored
+        // to the clock (not `now − elapsed`) so it stays STABLE tick-to-tick — a jittering anchor would flip
+        // the controller's structural fingerprint every second and defeat its HR-update throttle. Active only.
+        let effectiveStart = Date(timeIntervalSince1970: Double(s.startTs + s.pausedSeconds(at: now)))
         return RestActivitySnapshot(
             sessionId: s.id, routineName: s.routineName,
             setNumber: run.currentSet + 1, setTotal: run.sets.count,
             exerciseName: run.name, returnDetail: detail,
-            restStartedAt: startedAt, restEndsAt: endsAt,
+            restStartedAt: restStart, restEndsAt: restEnd,
             isHRMode: s.currentRestMode == .heartRate, hrTarget: s.currentRestTarget, bpm: bandBpm,
-            phaseRaw: phase.rawValue, nextExerciseName: nextName,
-            thumbnailName: restThumbName(for: run.exerciseId))
+            phaseRaw: restPhase.rawValue, nextExerciseName: nextName,
+            thumbnailName: restThumbName(for: run.exerciseId),
+            paused: s.paused,
+            sessionPhaseRaw: phase.rawValue,
+            sessionStartedAt: phase == .active ? effectiveStart : nil,
+            setsDone: s.doneCount, setsTotal: s.doneCount + s.pendingCount)
     }
 
     /// The display-ready capture snapshot (FER-809), or nil when not capturing (no session, resting, or the
@@ -747,17 +778,29 @@ final class AppModel: ObservableObject {
     /// adds ±30, complete-set and finish-workout. Completar ≠ Saltar: `completeSet` logs the upcoming set
     /// (`registerCurrentSet`) and rests again; `skip` only cuts the timer and leaves the set pending.
     private func applyRestAction(_ action: RestActivityBridge.Action) {
-        guard let s = strengthSession, s.phase == .resting else { return }
+        // FER-806: actions arrive across the whole session now (the Activity lives the whole session), so
+        // the guard is only «there's a live session without a receipt» — each action gates its own phase.
+        guard let s = strengthSession, s.summary == nil else { return }
         switch action {
-        case .addThirty:    s.extendRest(byseconds: 30)
-        case .removeThirty: s.extendRest(byseconds: -30)   // floored at «now» by extendRest — never negative
-        case .skip:         s.skipRest()
+        case .resume:
+            resumeStrengthSessionFromPause()   // FER-823 — leave «En pausa»; re-arms the reconcile loop
         case .completeSet:
+            // «Completar» — works from the active card (log the set → rest) AND the rest card (log the
+            // upcoming set → rest again). registerCurrentSet advances either way.
             s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
         case .finishWorkout:
             // Last set of the routine: log it, then end the session (which ends the Live Activity).
             s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
             endStrengthSession(save: true)
+        case .addThirty:
+            guard s.phase == .resting, !s.paused else { return }
+            s.extendRest(byseconds: 30)
+        case .removeThirty:
+            guard s.phase == .resting, !s.paused else { return }
+            s.extendRest(byseconds: -30)   // floored at «now» by extendRest — never negative
+        case .skip:
+            guard s.phase == .resting, !s.paused else { return }
+            s.skipRest()
         }
     }
 

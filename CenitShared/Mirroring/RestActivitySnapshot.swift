@@ -38,11 +38,27 @@ public struct RestActivitySnapshot: Equatable, Codable {
     /// Defaulted, so existing construction sites (incl. the watch) are unchanged.
     public var paused: Bool
 
+    // FER-806 — full-session Live Activity. Same shape as the widget's `ContentState` additions, kept as
+    // plain types (a raw String for `sessionPhase`, not the widget-only `SessionPhase` enum) so
+    // `CenitShared` and the watch target compile without the widget contract. All Optional/defaulted, so
+    // existing construction sites (incl. the watch, which ignores what it doesn't understand) are unchanged.
+    /// Raw value of the widget's `SessionPhase` (active / resting / paused); nil = pre-FER-806 → the card
+    /// falls back to the rest layout.
+    public var sessionPhaseRaw: String?
+    /// The effective session-stopwatch anchor (`now − activeElapsed`, excluding paused time) for the
+    /// active-phase count-up; nil in rest phase.
+    public var sessionStartedAt: Date?
+    /// Global session progress «N/M series» — sets logged so far / total planned.
+    public var setsDone: Int?
+    public var setsTotal: Int?
+
     public init(sessionId: String, routineName: String, setNumber: Int, setTotal: Int,
                 exerciseName: String, returnDetail: String, restStartedAt: Date, restEndsAt: Date,
                 isHRMode: Bool, hrTarget: Int?, bpm: Int?,
                 phaseRaw: String? = nil, nextExerciseName: String? = nil, thumbnailName: String? = nil,
-                paused: Bool = false) {
+                paused: Bool = false,
+                sessionPhaseRaw: String? = nil, sessionStartedAt: Date? = nil,
+                setsDone: Int? = nil, setsTotal: Int? = nil) {
         self.sessionId = sessionId
         self.routineName = routineName
         self.setNumber = setNumber
@@ -58,5 +74,9 @@ public struct RestActivitySnapshot: Equatable, Codable {
         self.nextExerciseName = nextExerciseName
         self.thumbnailName = thumbnailName
         self.paused = paused
+        self.sessionPhaseRaw = sessionPhaseRaw
+        self.sessionStartedAt = sessionStartedAt
+        self.setsDone = setsDone
+        self.setsTotal = setsTotal
     }
 }

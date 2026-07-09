@@ -62,6 +62,19 @@ struct RestCompleteSetIntent: LiveActivityIntent {
     }
 }
 
+/// Resumes a paused session — the primary action on the «En pausa» card (FER-806/823).
+struct RestResumeIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Resume workout"
+    static var description = IntentDescription("Resumes the paused workout.")
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        RestActivityBridge.enqueue(.resume)
+        return .result()
+    }
+}
+
 /// Registers the routine's last set and ends the workout — the primary action on the final rest (FER-789).
 struct RestFinishWorkoutIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Finish workout"
