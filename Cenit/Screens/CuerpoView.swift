@@ -414,7 +414,8 @@ private struct CuerpoLanding: View {
     /// The W/M/3M/6M/1Y/ALL pills under the header (same `ExploreRange` the detail screens use). Changing it
     /// re-windows the hero trend + every stat sparkline + the hero's «vs tu media» delta.
     private var periodSelector: some View {
-        SegmentedPillControl(ExploreRange.allCases, selection: $selectedPeriod, theme: theme) { $0.label }
+        // Handoff v2 landing (FER-830): the `tall` (44pt) variant for the landing's top selector.
+        SegmentedPillControl(ExploreRange.allCases, selection: $selectedPeriod, theme: theme, tall: true) { $0.label }
     }
 
     // MARK: - Sparkline windowing (FER-566)

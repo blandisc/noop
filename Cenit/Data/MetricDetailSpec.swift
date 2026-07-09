@@ -155,7 +155,7 @@ struct MetricDetailSpec: Identifiable {
         MetricDetailSpec(
             descriptor: Self.catalog("resp_rate"),
             info: .respiratory(value),
-            blocks: [.periodSelector, .seriesChartBand, .normalRange, .trend, .nightVitals, .method],
+            blocks: [.periodSelector, .seriesChartBand, .normalRange, .trend, .whatMovesIt, .nightVitals, .method],
             hero: .movingAverage7,
             baselineCfg: Baselines.respCfg,
             populationRange: 12...20
