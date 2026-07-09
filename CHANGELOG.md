@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Hoy» ya no narra estados falsos mientras carga / "Today" no longer narrates false states while loading.**
+  **ES** — Al abrir la app en frío, el héroe mostraba por un instante «·· calibrando» o «sin lectura» —señales calculadas sobre una base aún vacía— y luego saltaba al veredicto real. Ahora, mientras tus datos cargan, muestra un neutro «—» sin narrativa, y el primer estado con palabras es el verdadero.
+  **EN** — On a cold launch the hero briefly showed «·· calibrating» or «no reading» — signals computed over a still-empty base — then jumped to the real verdict. Now, while your data loads, it shows a neutral «—» with no narrative, and the first worded state is the true one.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **El editor de descanso cierra como corresponde / The rest editor closes the right way.**
   **ES** — Cuando abres el editor de descanso desde una sesión en curso (una hoja), ahora cierra con ✕; cuando lo abres desde el creador de rutinas (una pila), cierra con la flecha atrás. Una sola forma de salir, coherente con cómo se abrió.
   **EN** — When you open the rest editor from a live session (a sheet), it now closes with ✕; when you open it from the routine builder (a stack), it closes with the back arrow. One way out, matching how it opened.
