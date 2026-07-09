@@ -76,32 +76,37 @@ private struct DetailChrome<Content: View>: View {
     private static var flickThreshold: CGFloat { 200 }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            // A stationary full-bleed paper backdrop, so the sliding content reveals paper (never a
-            // black gap) as it's dragged toward the right.
-            theme.paper.ignoresSafeArea()
-            VStack(spacing: 0) {
-                HStack(spacing: 6) {
-                    Button { dismiss() } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
-                            Text("Tendencias").font(StrandFont.body)
-                        }
-                        .foregroundStyle(theme.ink)
-                        .contentShape(Rectangle())
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Button { dismiss() } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
+                        Text("Tendencias").font(StrandFont.body)
                     }
-                    .buttonStyle(.plain)
-                    Spacer(minLength: 8)
-                    Text(DetailChromeDate.label)
-                        .font(StrandFont.number(11, weight: .regular)).textCase(.uppercase)
-                        .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(theme.ink)
+                    .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 4)
-                content
+                .buttonStyle(.plain)
+                Spacer(minLength: 8)
+                Text(DetailChromeDate.label)
+                    .font(StrandFont.number(11, weight: .regular)).textCase(.uppercase)
+                    .foregroundStyle(theme.inkTertiary)
             }
-            .offset(x: dragX)
+            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 4)
+            content
         }
+        // The whole panel carries its OWN opaque paper and slides as one unit; behind it the cover is
+        // transparent (`.presentationBackground(.clear)` below), so dragging right reveals the REAL
+        // Tendencias screen — not the blank paper backdrop the old stationary-paper ZStack exposed.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(theme.paper.ignoresSafeArea())
+        .offset(x: dragX)
+        // A soft leading-edge shadow so the panel reads as lifted above the screen it reveals.
+        .shadow(color: Color.black.opacity(dragX > 0 ? 0.16 : 0), radius: 16, x: -6, y: 0)
         .instrumentoTheme(theme)
+        // Clear the cover's own platter (iOS 16.4+) so the presenting screen shows THROUGH the gap the
+        // sliding panel opens. At rest the panel fully covers it, so Tendencias stays hidden until you drag.
+        .presentationBackground(.clear)
         // Edge-swipe-back (FER-837): a drag that STARTS in the left `edgeZone` and runs horizontally
         // pulls the whole screen right and, past `dismissThreshold` (or a flick), dismisses — so you
         // don't have to hit the «‹» chevron exactly. Gated to the left edge + horizontal dominance so
@@ -119,7 +124,10 @@ private struct DetailChrome<Content: View>: View {
                     guard v.startLocation.x < Self.edgeZone, dragX > 0 else { return }
                     if v.translation.width > Self.dismissThreshold
                         || v.predictedEndTranslation.width > Self.flickThreshold {
-                        dismiss()
+                        // Finish the slide off to the right (revealing Tendencias underneath), THEN drop
+                        // the now-offscreen cover — so the motion continues under the finger instead of
+                        // snapping vertically. (FER-837 follow-up)
+                        withAnimation(StrandMotion.interactive) { dragX = 1200 } completion: { dismiss() }
                     } else {
                         withAnimation(StrandMotion.interactive) { dragX = 0 }
                     }

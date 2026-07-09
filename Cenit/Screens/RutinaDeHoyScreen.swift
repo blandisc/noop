@@ -134,7 +134,9 @@ private struct RutinaDeHoyContent: View {
 
     private func planRowContent(_ row: PlanRow, tappable: Bool) -> some View {
         HStack(spacing: 12) {
-            ExerciseThumbnail(side: 54)   // reserved media slot (FER-751); FER-722 fills it
+            // Baked still fills the FER-751 slot offline, by exercise id (same path the guided session
+            // uses) — no `MediaDownloadCoordinator` env needed here. Unknown/custom id → paper placeholder.
+            SessionRunThumb(exerciseId: row.re.exerciseId, side: 54)
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.name).font(StrandFont.body).foregroundStyle(theme.ink)
                 if let muscles = row.musclesText {
