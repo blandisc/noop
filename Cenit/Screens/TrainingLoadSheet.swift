@@ -101,7 +101,7 @@ struct TrainingLoadStrip: View {
                     .foregroundStyle(theme.inkMuted)
                     .padding(.leading, 6)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
                     .foregroundStyle(theme.inkMuted)
                     .padding(.leading, 6)
             } else {
@@ -280,8 +280,7 @@ struct TrainingLoadSheet: View {
         }
         .padding(.vertical, 12).padding(.horizontal, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .instrumentoCard(.cta, theme: theme)
         .accessibilityElement(children: .combine)
     }
 
@@ -336,7 +335,7 @@ struct TrainingLoadSheet: View {
                     withAnimation(StrandMotion.interactive) { featured = b }
                 } label: {
                     HStack(spacing: 10) {
-                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
                             .fill(b.flag.color(theme)).frame(width: 8, height: 8)
                         HStack(spacing: 4) {
                             Text(b.shortLabel).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
@@ -348,12 +347,12 @@ struct TrainingLoadSheet: View {
                         Spacer(minLength: 8)
                         Text("\(counts[b, default: 0]) of your last 28 days")
                             .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                             .foregroundStyle(theme.inkMuted)
                     }
                     .padding(.vertical, 10).padding(.horizontal, 10)
-                    .background(activeBand == b ? theme.verdict.opacity(0.07) : .clear,
-                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(activeBand == b ? theme.verdict.opacity(0.07) : .clear, // token-exempt: fondo condicional
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous)) // token-exempt: fondo condicional
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -486,7 +485,7 @@ private struct HillView: View {
                     line.addLine(to: CGPoint(x: W, y: terrainY(W, w: W)))
                     var area = line
                     area.addLine(to: CGPoint(x: W, y: 92)); area.addLine(to: CGPoint(x: 0, y: 92)); area.closeSubpath()
-                    ctx.fill(area, with: .color(theme.ink.opacity(0.05)))
+                    ctx.fill(area, with: .color(theme.ink.opacity(0.05))) // token-exempt: relleno de área de chart <0.10
                     ctx.stroke(line, with: .color(theme.ink), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                     // Franja de bandas bajo el terreno (y 98, alto 4): activa plena, inactivas al 35 %.
                     let segs: [(CGFloat, CGFloat, ReadinessEngine.LoadBand)] = [
@@ -495,7 +494,7 @@ private struct HillView: View {
                         (cutX(1.3, w: W) + 2, cutX(1.5, w: W), .buildingFast),
                         (cutX(1.5, w: W) + 2, W, .spiking)]
                     for (x0, x1, b) in segs where x1 > x0 {
-                        let r = Path(roundedRect: CGRect(x: x0, y: 98, width: x1 - x0, height: 4), cornerRadius: 2)
+                        let r = Path(roundedRect: CGRect(x: x0, y: 98, width: x1 - x0, height: 4), cornerRadius: 2) // token-exempt: geometría de dato
                         ctx.fill(r, with: .color(b.flag.color(theme).opacity(b == band ? 1 : 0.35)))
                     }
                     // Cortes 0.8 / 1.3 / 1.5.
@@ -606,10 +605,10 @@ private struct LoadChartView: View {
                     let W = size.width - head
                     // Franja de la banda destacada.
                     let bandRect = CGRect(x: 0, y: cy(range.hi), width: size.width, height: cy(range.lo) - cy(range.hi))
-                    ctx.fill(Path(roundedRect: bandRect, cornerRadius: 4), with: .color(theme.rangeBand))
+                    ctx.fill(Path(roundedRect: bandRect, cornerRadius: 4), with: .color(theme.rangeBand)) // token-exempt: geometría de dato
                     if isTodayLane {
-                        ctx.fill(Path(roundedRect: bandRect, cornerRadius: 4),
-                                 with: .color(featured.flag.color(theme).opacity(0.07)))
+                        ctx.fill(Path(roundedRect: bandRect, cornerRadius: 4), // token-exempt: geometría de dato
+                                 with: .color(featured.flag.color(theme).opacity(0.07))) // token-exempt: tinte de banda de chart <0.10
                     }
                     // Media punteada en 1.0.
                     var mid = Path(); mid.move(to: CGPoint(x: 0, y: cy(1.0))); mid.addLine(to: CGPoint(x: size.width, y: cy(1.0)))
@@ -624,7 +623,7 @@ private struct LoadChartView: View {
                     var area = line
                     area.addLine(to: CGPoint(x: W, y: 122)); area.addLine(to: CGPoint(x: 0, y: 122)); area.closeSubpath()
                     ctx.fill(area, with: .linearGradient(
-                        Gradient(colors: [theme.dataStrain.opacity(0.14), theme.dataStrain.opacity(0)]),
+                        Gradient(colors: [theme.dataStrain.opacity(0.14), theme.dataStrain.opacity(0)]), // token-exempt: gradiente de área a transparente
                         startPoint: CGPoint(x: 0, y: cy(range.hi)), endPoint: CGPoint(x: 0, y: 122)))
                     ctx.stroke(line, with: .color(theme.dataStrain), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                     // Etiqueta de la franja, dentro.

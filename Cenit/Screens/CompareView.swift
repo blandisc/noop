@@ -426,7 +426,7 @@ struct CompareView: View {
         VStack(spacing: 0) {
             ForEach(Array(series.enumerated()), id: \.element.id) { idx, s in
                 HStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)   // token-exempt: geometría de dato (muestra de leyenda)
                         .fill(s.color)
                         .frame(width: 14, height: 3)
                     Text(s.metric.title)
@@ -657,7 +657,7 @@ private struct FlowChips: View {
                         onRemove(metric)
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))   // token-exempt: microtexto <10pt
                             .foregroundStyle(theme.inkTertiary)
                     }
                     .buttonStyle(.plain)
@@ -669,7 +669,7 @@ private struct FlowChips: View {
                     Capsule(style: .continuous).fill(theme.paper)
                 )
                 .overlay(
-                    Capsule(style: .continuous).stroke(color.opacity(0.4), lineWidth: 1)
+                    Capsule(style: .continuous).stroke(color.opacity(0.4), lineWidth: 1)   // token-exempt: 0.4 en frontera de banda (strokeSoft .30 aclararía el borde)
                 )
             }
         }
@@ -732,7 +732,7 @@ private struct MetricPickerSheet: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: metric.icon)
-                    .font(.system(size: 15))
+                    .font(StrandFont.glyph(.inline))
                     .foregroundStyle(atCap ? theme.inkTertiary : theme.inkSecondary)
                     .frame(width: 24)
                 Text(metric.title)
@@ -741,7 +741,7 @@ private struct MetricPickerSheet: View {
                 Spacer(minLength: 8)
                 if isOn {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.verdict)
                 }
             }
@@ -946,15 +946,8 @@ private struct MultiTooltip: View {
             }
         }
         .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(theme.surface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(theme.hairline, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.12), radius: 10, y: 6)
+        .instrumentoCard(.inset, theme: theme)
+        .shadow(color: .black.opacity(0.12), radius: 10, y: 6)   // token-exempt: opacidad de sombra (fuera de banda)
         .frame(width: tooltipWidth, alignment: .leading)
         .position(x: clampedX, y: tooltipHeight / 2 + 8)
         .allowsHitTesting(false)

@@ -178,7 +178,7 @@ struct WorkoutEditSheet: View {
                 HStack(spacing: 5) {
                     Text(routineLabel).font(StrandFont.body).foregroundStyle(theme.ink)
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
             }
         }
@@ -225,7 +225,7 @@ struct WorkoutEditSheet: View {
             HStack(spacing: 6) {
                 Text(exerciseName(groups[gi].exerciseId)).font(StrandFont.headline).foregroundStyle(theme.ink)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 0)
             }
             .contentShape(Rectangle())
@@ -239,7 +239,7 @@ struct WorkoutEditSheet: View {
     private func addSetRow(_ gi: Int) -> some View {
         Button { addSet(gi) } label: {
             HStack(spacing: 6) {
-                Image(systemName: "plus").font(.system(size: 13, weight: .semibold))
+                Image(systemName: "plus").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Add set").font(StrandFont.subhead)
             }
             .foregroundStyle(theme.inkSecondary)
@@ -311,7 +311,7 @@ struct WorkoutEditSheet: View {
 
     private func validationNote(_ key: LocalizedStringKey) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "exclamationmark.triangle").font(.system(size: 12))
+            Image(systemName: "exclamationmark.triangle").font(StrandFont.glyph(.chevron))
             Text(key).font(StrandFont.caption)
         }
         .foregroundStyle(theme.dataStrain)

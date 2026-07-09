@@ -52,7 +52,7 @@ struct ShareReceiptScreen: View {
             Text("Share").groteskOverline().foregroundStyle(theme.inkTertiary)
             Spacer()
             Button(action: onClose) {
-                Image(systemName: "xmark").font(.system(size: 15, weight: .semibold))
+                Image(systemName: "xmark").font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkSecondary)
             }
             .accessibilityLabel(Text("Close"))

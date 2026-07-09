@@ -36,7 +36,7 @@ struct PalancaDetailSheet: View {
                 // Hero datum.
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     Text(datumText)
-                        .font(.system(size: 40, weight: .semibold))
+                        .font(StrandFont.number(40, weight: .semibold))
                         .monospacedDigit()
                         .lineLimit(1).minimumScaleFactor(0.6)   // FER-394
                         .foregroundStyle(datumColor)
@@ -80,9 +80,9 @@ struct PalancaDetailSheet: View {
                 if canStartExperiment, let onProbar {
                     Button(action: onProbar) {
                         HStack(spacing: 7) {
-                            Image(systemName: "flask").font(.system(size: 17))
+                            Image(systemName: "flask").font(StrandFont.glyph(.inline))
                             Text("Try this idea for a week").font(StrandFont.headline)
-                            Image(systemName: "arrow.right").font(.system(size: 15))
+                            Image(systemName: "arrow.right").font(StrandFont.glyph(.inline))
                         }
                         .foregroundStyle(theme.ink)
                         .frame(maxWidth: .infinity)
@@ -132,7 +132,7 @@ struct PalancaDetailSheet: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(theme.hairline)
-                    Capsule().fill(good ? theme.dataRecovery : theme.inkTertiary.opacity(0.5))
+                    Capsule().fill(good ? theme.dataRecovery : theme.inkTertiary.opacity(StrandOpacity.dim))
                         .frame(width: max(4, geo.size.width * CGFloat(min(1, frac))))
                 }
             }
@@ -235,7 +235,7 @@ struct EfectosExplorerSheet: View {
                             }
                             Spacer()
                             effectBadge(insight)
-                            Image(systemName: "chevron.right").font(.system(size: 15))
+                            Image(systemName: "chevron.right").font(StrandFont.glyph(.inline))
                                 .foregroundStyle(theme.inkTertiary).padding(.leading, 10)
                         }
                         .padding(.vertical, 12)
@@ -262,7 +262,7 @@ struct EfectosExplorerSheet: View {
         let value = insight.datum.value
         let arrow = value > 0 ? "arrow.up" : (value < 0 ? "arrow.down" : "arrow.right")
         return HStack(spacing: 6) {
-            Image(systemName: arrow).font(.system(size: 12, weight: .semibold))
+            Image(systemName: arrow).font(StrandFont.glyph(.chevron, weight: .semibold))
             Text(BucleFormat.effectMagnitude(insight)).font(StrandFont.number(16)).monospacedDigit()
         }
         .foregroundStyle(BucleFormat.isGood(insight) ? theme.positiveText : theme.critical)
@@ -316,7 +316,7 @@ struct AnotaTuDiaSheet: View {
 
                 HStack(spacing: 6) {
                     Image(systemName: isEditable ? "pencil" : "lock")
-                        .font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     Text(isEditable ? "What you don't mark counts as “No”."
                                     : "Only Today and Yesterday can be edited. Older days stay fixed.")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -363,7 +363,7 @@ struct AnotaTuDiaSheet: View {
             Task { await reload(scanHistory: false) }
         } label: {
             VStack(spacing: 2) {
-                Text(dayName(offset, date)).font(.system(size: 11, weight: .medium))
+                Text(dayName(offset, date)).font(StrandFont.micro)
                     .textCase(.uppercase)
                     .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
                 Text(Self.dayNumber.string(from: date)).font(StrandFont.captionNumber).monospacedDigit()
@@ -373,8 +373,8 @@ struct AnotaTuDiaSheet: View {
             }
             .frame(minWidth: 38)
             .padding(.horizontal, 9).padding(.vertical, 7)
-            .background(sel ? theme.ink : Color.clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .background(sel ? theme.ink : Color.clear, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))   // token-exempt: fondo condicional
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                 .stroke(sel ? theme.ink : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -712,7 +712,7 @@ struct BucleInfoSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Image(systemName: info.systemImage)
-                    .font(.system(size: 26)).foregroundStyle(theme.inkTertiary)
+                    .font(.system(size: 26)).foregroundStyle(theme.inkTertiary)   // token-exempt: glifo 26pt fuera de banda (entre lead 22 y empty 28)
                 Text(info.title)
                     .font(StrandFont.title2).foregroundStyle(theme.ink)
                     .padding(.top, 12)
@@ -772,7 +772,7 @@ struct ExperimentDetailSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("On trial").instrumentoOverline().foregroundStyle(theme.dataRecovery)
             Text(BucleFormat.behaviorLabel(row.behavior))
-                .font(.system(size: 28, weight: .semibold)).foregroundStyle(theme.ink)
+                .font(.system(size: 28, weight: .semibold)).foregroundStyle(theme.ink)   // token-exempt: título hero de texto (no numeral)
                 .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
             Text("on trial against your \(row.outcome)")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary).padding(.top, 4)
@@ -782,7 +782,7 @@ struct ExperimentDetailSheet: View {
     private func dayProgress(_ p: ExperimentProgress) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Day \(p.elapsedDay)").font(.system(size: 40, weight: .semibold)).monospacedDigit()
+                Text("Day \(p.elapsedDay)").font(StrandFont.number(40, weight: .semibold)).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.6).foregroundStyle(theme.ink)
                 Text("of \(row.windowDays)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             }
@@ -798,7 +798,7 @@ struct ExperimentDetailSheet: View {
                     Text("Your streak").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     HStack(spacing: 4) {
-                        Image(systemName: "flame").font(.system(size: 11, weight: .medium))
+                        Image(systemName: "flame").font(StrandFont.glyph(.chevron, weight: .medium))
                         Text("Best: \(p.streakBest)").font(StrandFont.captionNumber)
                     }
                     .foregroundStyle(theme.inkTertiary)
@@ -861,8 +861,7 @@ struct ExperimentDetailSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(theme.dataRecovery, lineWidth: 1.5))
+        .instrumentoCard(.cta, theme: theme, stroke: theme.dataRecovery, lineWidth: 1.5)
     }
 
     private func checkInToggle(_ label: LocalizedStringKey, answeredYes: Bool) -> some View {
@@ -885,7 +884,7 @@ struct ExperimentDetailSheet: View {
 
     private var meta: some View {
         HStack(spacing: 8) {
-            Image(systemName: "calendar").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+            Image(systemName: "calendar").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             Text("Verdict on ").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 + Text(progress?.verdictDate ?? "—").font(StrandFont.subhead).foregroundStyle(theme.ink).bold()
         }
@@ -986,7 +985,7 @@ struct DisenaExperimentoSheet: View {
                                     Text(BucleFormat.behaviorLabel(q)).font(StrandFont.body).foregroundStyle(theme.ink)
                                     Spacer()
                                     Image(systemName: behavior == q ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 18))
+                                        .font(StrandFont.glyph(.lead))
                                         .foregroundStyle(behavior == q ? theme.dataRecovery : theme.hairlineStrong)
                                 }
                                 .padding(.vertical, 11)

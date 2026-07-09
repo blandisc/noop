@@ -201,10 +201,10 @@ private struct MetricRow: View {
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous)
                     .fill(theme.surface)
                 Image(systemName: metric.icon)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(StrandFont.glyph(.inline, weight: .medium))
                     .foregroundStyle(metricAccent(metric, theme: theme))
             }
             .frame(width: 34, height: 34)
@@ -229,11 +229,11 @@ private struct MetricRow: View {
             if isEmpty {
                 Text("•")
                     .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary.opacity(0.5))
+                    .foregroundStyle(theme.inkTertiary.opacity(StrandOpacity.dim))
                     .accessibilityLabel("No data")
             }
             Image(systemName: "chevron.right")
-                .font(.system(size: 11, weight: .semibold))
+                .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
         }
         .padding(.horizontal, 2)
@@ -431,7 +431,7 @@ struct MetricDetailView: View {
                 theme: theme,
                 style: .init(
                     smoothing: nil,
-                    gradient: Gradient(colors: [accent.opacity(0.5), accent]),
+                    gradient: ChartWell.fillGradient(accent),
                     valueRange: { valueRange($0) },
                     valueFormat: { fmt($0) },
                     accessibilityLabel: "\(metric.title) trend"
@@ -527,7 +527,7 @@ struct MetricDetailView: View {
         let color = correlationColor(row.r)
         HStack(spacing: 12) {
             Image(systemName: row.metric.icon)
-                .font(.system(size: 14, weight: .medium))
+                .font(StrandFont.glyph(.inline, weight: .medium))
                 .foregroundStyle(theme.inkSecondary)
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: 1) {

@@ -94,7 +94,7 @@ scale with `StrandPalette.strainColor(strain)`.
 | Awake | `#E0476B` (rose) |
 | Light | `#5C6FB1` (periwinkle) |
 | Deep | `#2C3A7A` (deep indigo) |
-| REM | `#5BE0C7` (mint, glows) |
+| REM | `#3E9E8C` (muted teal — calmer than the old `#5BE0C7` mint, FER-234) |
 
 **HR zones** (`StrandPalette.hrZoneColor(1…5)`):
 

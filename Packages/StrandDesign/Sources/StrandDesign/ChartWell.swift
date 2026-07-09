@@ -85,6 +85,16 @@ public struct ChartWell {
             .padding(16)
             .background(theme.surface, in: shape)
     }
+
+    // MARK: - Área bajo una línea de tendencia (auditoría jul-2026, H4)
+
+    /// El relleno vertical bajo una línea de tendencia: del tono a media opacidad (`StrandOpacity.muted`)
+    /// arriba hacia el tono pleno abajo. Fuente ÚNICA — antes cada pantalla escribía
+    /// `Gradient(colors: [hue.opacity(0.5), hue])` con la opacidad variando por archivo (0.5/0.55).
+    /// Estandariza en `muted` (0.60); el salto desde 0.5/0.55 es imperceptible en un relleno de área.
+    public static func fillGradient(_ hue: Color) -> Gradient {
+        Gradient(colors: [hue.opacity(StrandOpacity.muted), hue])
+    }
 }
 
 // MARK: - Preview

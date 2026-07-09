@@ -166,7 +166,7 @@ struct StressDetailScreen: View {
                 // up, quiet, to the right. The saturated hue lives in the word (it's the datum). (Pase v2 #2)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(bandWord(model.band))
-                        .font(.system(size: 30, weight: .semibold))
+                        .font(.system(size: 30, weight: .semibold)) // token-exempt: palabra-banda display 30pt (sin token)
                         .foregroundStyle(bandColor(model.band))
                     Spacer(minLength: 8)
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -261,11 +261,11 @@ struct StressDetailScreen: View {
         return VStack(alignment: .leading, spacing: 7) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(gradient).opacity(0.85).frame(height: 8)
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    Capsule().fill(gradient).opacity(0.85).frame(height: 8) // token-exempt: velo de gradiente >0.70
+                    RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
                         .fill(theme.ink)
                         .frame(width: 3, height: 16)
-                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
                             .strokeBorder(theme.surface, lineWidth: 2))
                         .offset(x: geo.size.width * frac - 1.5)
                 }
@@ -279,7 +279,7 @@ struct StressDetailScreen: View {
                 Spacer(minLength: 6)
                 Text("Activated").foregroundStyle(theme.critical)
             }
-            .font(.system(size: 10, weight: .semibold))
+            .font(.system(size: 10, weight: .semibold)) // token-exempt: leyenda-eje 10pt semibold (micro es medium)
             .textCase(.uppercase)
         }
         .accessibilityHidden(true)
@@ -310,7 +310,7 @@ struct StressDetailScreen: View {
                     window: window,
                     theme: theme,
                     style: .init(
-                        gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
+                        gradient: ChartWell.fillGradient(theme.inkSecondary),
                         showsArea: false,
                         valueRange: { _ in 0...3 },
                         valueFormat: { String(format: "%.1f", $0) },
@@ -345,20 +345,20 @@ struct StressDetailScreen: View {
                     withAnimation(StrandMotion.interactive) { activeStressLane = active ? nil : i }
                 } label: {
                     HStack(spacing: 10) {
-                        RoundedRectangle(cornerRadius: 2).fill(lane.color).frame(width: 9, height: 9)
+                        RoundedRectangle(cornerRadius: 2).fill(lane.color).frame(width: 9, height: 9) // token-exempt: geometría de dato
                         Text(lane.label).font(StrandFont.subhead)
                             .foregroundStyle(active ? theme.ink : theme.inkSecondary)
                         Spacer(minLength: 8)
                         Text(lane.range).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
                         Text(BandSummaryCopy.countLabel(lane.count, nightly: false))
                             .font(StrandFont.captionNumber)
-                            .foregroundStyle(active ? lane.color : theme.inkTertiary.opacity(0.85))
+                            .foregroundStyle(active ? lane.color : theme.inkTertiary.opacity(0.85)) // token-exempt: ink apagado >0.70
                             .frame(minWidth: 50, alignment: .trailing)
                     }
                     .padding(.horizontal, 12).padding(.vertical, 11)
                     .frame(maxWidth: .infinity)
-                    .background(active ? lane.color.opacity(0.10) : Color.clear,
-                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .background(active ? lane.color.opacity(0.10) : Color.clear, // token-exempt: fondo condicional
+                                in: RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -586,7 +586,7 @@ struct StressDetailScreen: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Series + format

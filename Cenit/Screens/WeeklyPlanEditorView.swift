@@ -171,13 +171,13 @@ struct WeeklyPlanEditorView: View {
                 Spacer(minLength: 8)
             }
             Image(systemName: chevron)
-                .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
         }
         .frame(minHeight: 52)
         .padding(.horizontal, wd == today ? 10 : 0)
         .background {
             if wd == today {
-                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.surface)
+                RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous).fill(theme.surface)
             }
         }
         .contentShape(Rectangle())
@@ -221,7 +221,7 @@ struct WeeklyPlanEditorView: View {
                 ForEach(MuscleGroup.allCases, id: \.self) { g in
                     let v = vol[g] ?? 0
                     VStack(spacing: 5) {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt: geometría de dato
                             .fill(v == 0 ? theme.hairlineStrong : g.tint(theme))
                             .frame(height: max(8, CGFloat(v) / CGFloat(max(1, maxV)) * 34))
                             .frame(maxWidth: .infinity)
@@ -245,11 +245,11 @@ struct WeeklyPlanEditorView: View {
             Button(action: openRoutines) {
                 HStack(spacing: 12) {
                     Image(systemName: "list.bullet").frame(width: 30)
-                        .font(.system(size: 18)).foregroundStyle(theme.inkSecondary)
+                        .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                     Text("Manage routines").font(StrandFont.body).foregroundStyle(theme.ink)
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 .frame(minHeight: 48).contentShape(Rectangle())
             }
@@ -262,7 +262,7 @@ struct WeeklyPlanEditorView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "calendar.badge.plus")
-                .font(.system(size: 38, weight: .regular)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
             Text("Create a routine first")
                 .font(StrandFont.title2).foregroundStyle(theme.ink).multilineTextAlignment(.center)
@@ -272,7 +272,7 @@ struct WeeklyPlanEditorView: View {
             Button { openRoutines() } label: {
                 Text("Go to My routines").font(StrandFont.headline).foregroundStyle(theme.paperHi)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, 4)
         }

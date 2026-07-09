@@ -123,7 +123,7 @@ struct SleepDetailScreen: View {
                     withAnimation(StrandMotion.interactive) { heroInfoOpen.toggle() }
                 } label: {
                     Image(systemName: "info.circle")
-                        .font(.system(size: 17))
+                        .font(StrandFont.glyph(.lead))
                         .foregroundStyle(theme.inkTertiary)
                 }
                 .buttonStyle(.plain)
@@ -311,7 +311,7 @@ struct SleepDetailScreen: View {
                     // Apple Health / no per-epoch timeline → proportional stacked bar.
                     stageBar(s)
                     HStack(spacing: 6) {
-                        Image(systemName: "heart.fill").font(.system(size: 10)).foregroundStyle(theme.dataSpO2)
+                        Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                         Text("Apple Health").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }
                 }
@@ -338,7 +338,7 @@ struct SleepDetailScreen: View {
             }
         }
         .frame(height: 30)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Sleep stages: deep \(pct(s.deep, s.total)) percent, light \(pct(s.light, s.total)) percent, REM \(pct(s.rem, s.total)) percent, awake \(pct(s.awake, s.total)) percent"))
     }
@@ -371,7 +371,7 @@ struct SleepDetailScreen: View {
         let delta = stageDelta(pctOfTotal: p, typicalPct: typicalPct)
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 5) {
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato (swatch de leyenda)
                     .fill(StrandPalette.sleepStageColor(stage))
                     .frame(width: 8, height: 8)
                 Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -538,7 +538,7 @@ struct SleepDetailScreen: View {
                 range: $range, window: window, theme: theme, showsSelector: false,
                 style: .init(
                     smoothing: 7,
-                    gradient: Gradient(colors: [theme.dataSleep.opacity(0.5), theme.dataSleep]),
+                    gradient: ChartWell.fillGradient(theme.dataSleep),
                     valueRange: { sleepDurationRange($0) },
                     valueFormat: { String(format: "%.1f", $0) },
                     bands: { _ in [TrendBand(label: "", lower: 7, upper: 9, isActive: true)] },
@@ -580,7 +580,7 @@ struct SleepDetailScreen: View {
                 .font(StrandFont.subhead)
                 TrendChart(
                     points: pts,
-                    gradient: Gradient(colors: [theme.dataSleep.opacity(0.5), theme.dataSleep]),
+                    gradient: ChartWell.fillGradient(theme.dataSleep),
                     valueRange: bt.range,
                     showsArea: false,
                     height: 160,
@@ -742,7 +742,7 @@ struct SleepDetailScreen: View {
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
             .overlay(alignment: .topTrailing) {
                 Image(systemName: "info.circle")
-                    .font(.system(size: 15))
+                    .font(StrandFont.glyph(.inline))
                     .foregroundStyle(theme.inkTertiary)
                     .padding(11)
             }
@@ -789,7 +789,7 @@ struct SleepDetailScreen: View {
                 Button { showStages = true } label: {
                     HStack(spacing: 6) {
                         Text("Sleep stages in detail")
-                        Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.dataSleep)
@@ -1079,7 +1079,7 @@ struct SleepStagesInfoSheet: View {
 
     private func stageRow(_ row: StageRow) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
+            RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: geometría de dato (swatch de leyenda)
                 .fill(StrandPalette.sleepStageColor(row.stage))
                 .frame(width: 10, height: 10)
                 .padding(.top, 4)

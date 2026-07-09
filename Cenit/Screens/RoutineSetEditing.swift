@@ -81,11 +81,11 @@ struct RestChip: View {
             HStack(spacing: 5) {
                 Text(RoutineSetEditing.restChipLabel(cfg)).font(StrandFont.caption).monospacedDigit()
                     .foregroundStyle(isHR ? theme.dataRecovery : timeColor).lineLimit(1)
-                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
                 .strokeBorder(isHR ? theme.dataRecovery : theme.hairline, lineWidth: 1))
             .contentShape(Rectangle())
         }

@@ -103,10 +103,10 @@ struct SessionKeypad: View {
         default:
             Button { if let c = key.first { onDigit(c) } } label: {
                 Text(key)
-                    .font(.system(size: 20)).foregroundStyle(theme.ink)
+                    .font(.system(size: 20)).foregroundStyle(theme.ink) // token-exempt: numeral de tecla del keypad
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(theme.keyCap))
-                    .shadow(color: theme.ink.opacity(0.08), radius: 0, x: 0, y: 1)
+                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(theme.keyCap)) // token-exempt: geometría de dato
+                    .shadow(color: theme.ink.opacity(0.08), radius: 0, x: 0, y: 1) // token-exempt: sombra sutil <0.10
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -116,7 +116,7 @@ struct SessionKeypad: View {
 
     private func flatKey(_ glyph: String, size: CGFloat = 20, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(glyph).font(.system(size: size)).foregroundStyle(theme.inkSecondary)
+            Text(glyph).font(.system(size: size)).foregroundStyle(theme.inkSecondary) // token-exempt: tamaño de tecla derivado (parámetro)
                 .frame(maxWidth: .infinity).frame(height: 46)
                 .contentShape(Rectangle())
         }

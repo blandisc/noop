@@ -112,7 +112,7 @@ struct RestEditorScreen: View {
             // chevron when pushed (Builder), the ✕ when presented as a sheet (the live session). Never two.
             Button(action: onCancel) {
                 Image(systemName: closeAsDismiss ? "xmark" : "chevron.left")
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(theme.ink)
+                    .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain).accessibilityLabel(Text(closeAsDismiss ? "Close" : "Back"))
@@ -216,7 +216,7 @@ struct RestEditorScreen: View {
 
     private func stepper(_ system: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: system).font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+            Image(systemName: system).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                 .frame(width: 44, height: 44)
                 .background(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous).fill(theme.surface))
                 .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)

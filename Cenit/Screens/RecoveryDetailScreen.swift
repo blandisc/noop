@@ -175,7 +175,7 @@ struct RecoveryDetailScreen: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 6) {
                 Image(systemName: "applewatch")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .accessibilityHidden(true)
                 Text(Self.confidenceLabel(model.confidence))
                     .font(StrandFont.caption)
@@ -492,7 +492,7 @@ struct RecoveryDetailScreen: View {
             if let f = model.forecast {
                 HStack(spacing: 4) {
                     Image(systemName: heroDirectionSymbol(f.direction))
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(StrandFont.glyph(.chevron, weight: .semibold))
                         .foregroundStyle(theme.dataRecovery)
                         .accessibilityHidden(true)
                     Text(panoramaForecastValue(f)).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
@@ -740,7 +740,7 @@ struct RecoveryDetailScreen: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Calibrando (no hay score todavía)
@@ -774,7 +774,7 @@ struct RecoveryDetailScreen: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Source footer

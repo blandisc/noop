@@ -140,12 +140,12 @@ struct SkinTempDetailScreen: View {
             }
         }()
         return HStack(spacing: 3) {
-            Image(systemName: s.warmer ? "arrow.up" : "arrow.down").font(.system(size: 9, weight: .semibold))
+            Image(systemName: s.warmer ? "arrow.up" : "arrow.down").font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
             Text(text).font(StrandFont.footnote)
         }
         .foregroundStyle(theme.warning)
         .padding(.horizontal, 7).padding(.vertical, 2)
-        .background(Capsule().fill(theme.warning.opacity(0.12)))
+        .background(Capsule().fill(theme.warning.opacity(StrandOpacity.tintFill)))
     }
 
     // MARK: Inline «typical swing» band (±1 SD around 0 = your baseline), tappable
@@ -187,14 +187,14 @@ struct SkinTempDetailScreen: View {
                 ZStack(alignment: .topLeading) {
                     ZStack(alignment: .leading) {
                         Capsule().fill(theme.hairline)
-                        Capsule().fill(theme.dataStrain.opacity(0.16))
+                        Capsule().fill(theme.dataStrain.opacity(StrandOpacity.tintFillStrong))
                             .frame(width: max(0, w * (bandHi - bandLo)))
                             .offset(x: w * bandLo)
                         Rectangle().fill(theme.hairlineStrong).frame(width: 1, height: 14)
                             .offset(x: w * zero - 0.5)
                         ZStack {
-                            RoundedRectangle(cornerRadius: 2, style: .continuous).fill(theme.paper).frame(width: 7, height: 16)
-                            RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(theme.ink).frame(width: 3, height: 14)
+                            RoundedRectangle(cornerRadius: 2, style: .continuous).fill(theme.paper).frame(width: 7, height: 16) // token-exempt: geometría de dato
+                            RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(theme.ink).frame(width: 3, height: 14) // token-exempt: geometría de dato
                         }
                         .offset(x: w * mark - 3.5)
                     }
@@ -216,12 +216,12 @@ struct SkinTempDetailScreen: View {
             .frame(height: 46)
             HStack(spacing: 5) {
                 Text("typical swing · 0 = your baseline").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "info.circle").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
         }
         .padding(4)
         // Warm paper tint when open, not the near-white `surface`. (Detalle de Vital fix)
-        .background(open ? theme.hairline : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(open ? theme.hairline : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous)) // token-exempt: fondo condicional
         .contentShape(Rectangle())
     }
 
@@ -260,7 +260,7 @@ struct SkinTempDetailScreen: View {
                 theme: theme,
                 showsSelector: false,
                 style: .init(
-                    gradient: Gradient(colors: [theme.inkSecondary.opacity(0.5), theme.inkSecondary]),
+                    gradient: ChartWell.fillGradient(theme.inkSecondary),
                     showsArea: false,
                     height: 156,
                     valueRange: { chartRange($0, typical: typical) },
@@ -274,7 +274,7 @@ struct SkinTempDetailScreen: View {
                     marksLastPoint: true,
                     bandLabelsHidden: true,
                     referenceLine: 0,
-                    referenceLineColor: theme.inkTertiary.opacity(0.6),
+                    referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
                     accessibilityLabel: "Nightly skin-temperature deviation, in degrees Celsius"
                 )
             ) {
@@ -324,7 +324,7 @@ struct SkinTempDetailScreen: View {
                         .foregroundStyle(theme.inkTertiary).lineLimit(1).minimumScaleFactor(0.8)
                     Spacer(minLength: 2)
                     if tappable {
-                        Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+                        Image(systemName: "info.circle").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     }
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
@@ -334,9 +334,7 @@ struct SkinTempDetailScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10).padding(.vertical, 9)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(isOpen ? theme.dataStrain : theme.hairline, lineWidth: 1))
+            .instrumentoCard(.inset, theme: theme, stroke: isOpen ? theme.dataStrain : theme.hairline)
         }
         .buttonStyle(.plain)
         .disabled(!tappable)
@@ -352,8 +350,8 @@ struct SkinTempDetailScreen: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         // Fade in place (no slide) — smoother than flying in from the top. (Detalle de Vital fix)
         .transition(.opacity)
     }
@@ -394,7 +392,7 @@ struct SkinTempDetailScreen: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Format + window math (mirror the sibling screens, scoped to this screen)

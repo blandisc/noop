@@ -48,7 +48,7 @@ struct StressDayMapBlock: View {
     private var invitation: some View {
         VStack(alignment: .leading, spacing: 12) {
             Image(systemName: "calendar.badge.clock")
-                .font(.system(size: 28)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
             Text("Cross today's stress curve with your calendar to see what your most activated moments coincided with. Everything stays on your iPhone.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -345,7 +345,7 @@ private struct StressBarsStrip: View {
             Text("during activity or sleep").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         } else if let title = eventTitle(atHour: h) {
             HStack(spacing: 5) {
-                Image(systemName: "calendar").font(.system(size: 11))
+                Image(systemName: "calendar").font(StrandFont.glyph(.chevron))
                 Text(verbatim: title).lineLimit(1).truncationMode(.tail)
             }
             .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
@@ -365,7 +365,7 @@ private struct StressBarsStrip: View {
                 calmReferenceLine                     // «your usual calm» dashed line, behind the bars (#6)
                 HStack(alignment: .bottom, spacing: 3) {
                     ForEach(Array(0..<n), id: \.self) { h in
-                        RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous) // token-exempt: geometría de dato
                             .fill(hours[h].map { StressBand(score: $0).dataColor(theme) } ?? theme.hairlineStrong)
                             .frame(maxWidth: .infinity)
                             .frame(height: barHeight(hours[h]), alignment: .bottom)
@@ -397,7 +397,7 @@ private struct StressBarsStrip: View {
         let frac = CGFloat(StressMoments.activatedFloor / 3.0)   // 1.0 of 0–3
         return VStack(alignment: .trailing, spacing: 2) {
             Text("your usual calm")
-                .font(.system(size: 9, weight: .medium))
+                .font(.system(size: 9, weight: .medium)) // token-exempt: microtexto <10pt
                 .foregroundStyle(theme.inkTertiary)
             DashedHLine()
                 .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
@@ -410,7 +410,7 @@ private struct StressBarsStrip: View {
 
     @ViewBuilder private func cursor(w: CGFloat, n: Int) -> some View {
         if isDragging, let h = scrubHour, n > 0 {
-            Rectangle().fill(theme.ink.opacity(0.55))
+            Rectangle().fill(theme.ink.opacity(0.55)) // token-exempt: alfa exacto del cursor
                 .frame(width: 1.5, height: Self.barsHeight + 2)
                 .offset(x: (CGFloat(h) + 0.5) / CGFloat(n) * w - 0.75, y: -1)
         }
@@ -470,7 +470,7 @@ private struct CalendarPickerSheet: View {
                             Button { toggle(cal.id) } label: {
                                 HStack(spacing: 10) {
                                     Image(systemName: selected.contains(cal.id) ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 18))
+                                        .font(StrandFont.glyph(.lead))
                                         .foregroundStyle(selected.contains(cal.id) ? theme.verdict : theme.inkTertiary)
                                     Text(verbatim: cal.label).font(StrandFont.subhead).foregroundStyle(theme.ink)
                                     Spacer(minLength: 8)

@@ -19,10 +19,9 @@ struct HealthAlertBanner: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(StrandPalette.statusWarning.opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(StrandPalette.statusWarning.opacity(0.4), lineWidth: 1))
+            .instrumentoCard(.control, theme: InstrumentoTheme.base,
+                             fill: StrandPalette.statusWarning.opacity(StrandOpacity.tintFill),
+                             stroke: StrandPalette.statusWarning.opacity(StrandOpacity.dim))
             .accessibilityElement(children: .combine)
         }
     }

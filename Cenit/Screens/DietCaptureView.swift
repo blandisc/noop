@@ -151,7 +151,7 @@ struct DietCaptureView: View {
     private func errorNote(_ error: DietPlanParseError) -> some View {
         HStack(alignment: .top, spacing: NoopMetrics.gap) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 18, weight: .regular))
+                .font(StrandFont.glyph(.lead))
                 .foregroundStyle(theme.critical)
                 .accessibilityHidden(true)
             Text(message(for: error))
@@ -405,7 +405,7 @@ struct DietCaptureView: View {
                         cellSize: 13,
                         spacing: 3,
                         showsScrub: false,
-                        tint: { theme.dataRecovery.opacity(0.20 + 0.80 * Swift.min(1, Swift.max(0, $0) / 100)) },
+                        tint: { theme.dataRecovery.opacity(0.20 + 0.80 * Swift.min(1, Swift.max(0, $0) / 100)) }, // token-exempt: rampa de intensidad del heatmap
                         emptyFill: theme.hairline,
                         emptyStroke: theme.hairlineStrong,
                         labelColor: theme.inkTertiary,

@@ -29,6 +29,7 @@ public enum NoopMetrics {
     public static let chipRadius: CGFloat = 8          // small inline chips / pills
     public static let tileRadius: CGFloat = 17         // «Hoy» metric tile corner (handoff «Hoy · Estados»)
     public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
+    public static let insetRadius: CGFloat = 10        // sub-tarjeta anidada dentro de otra tarjeta (auditoría jul-2026, H3 — absorbe 9/10/11)
 
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
@@ -39,6 +40,42 @@ public enum NoopMetrics {
     /// Trailing inset on the X-scale so the rightmost date label renders in full instead of being
     /// truncated («jun…»). Sized for a «d MMM» label centered on the last tick. (FER-82 / Detalle de Vital)
     public static let chartXTrailingInset: CGFloat = 38
+}
+
+// MARK: - Live Activity metrics (auditoría jul-2026, H5)
+//
+// La escala de la tarjeta de Live Activity («Descanso»/sesión, `CenitWidgets/RestLiveActivity.swift`).
+// Vive en el paquete —no como enum local del widget— para que sea parte del sistema de diseño y el
+// linter de deriva no la marque. Tamaños FIJOS a propósito: geometría del Dynamic Island / Lock Screen,
+// EXENTA de Dynamic Type (una Live Activity es más apretada que una pantalla y ActivityKit recorta el
+// Lock Screen a 160 pt, sin scroll). Por eso NO reusa `NoopMetrics`.
+//
+// Disciplina de altura: los zones apilados + paddings deben sumar ≤ 160 pt o la fila de acciones se
+// corta en silencio: 2·12 pad + 34 identidad + 8 + 34 hero + 8 + 4 barra + 8 + 44 acciones = 156 pt.
+// Si tocas un valor aquí, re-corre esa suma.
+public enum WidgetMetrics {
+    public static let cardPadding: CGFloat = 12
+    public static let hero: CGFloat = 28            // el único numeral dominante, en cada estado (decisión del dueño)
+    public static let heroSlot: CGFloat = 34        // altura fija del hero-zone → altura de tarjeta constante entre estados
+    public static let pulse: CGFloat = 17
+    public static let name: CGFloat = 15            // ≤ hero, para que el hero siga siendo el único numeral dominante
+    public static let overline: CGFloat = 11        // subtítulo de identidad + etiquetas «Al volver/Sigue/Tope»
+    public static let overlineTracking: CGFloat = 1.4
+    public static let returnValue: CGFloat = 15     // el «Serie N · peso × reps» que responde «¿qué sigue?»
+    public static let thumb: CGFloat = 34
+    public static let control: CGFloat = 44         // ≥44pt touch target (HIG)
+    public static let glyph: CGFloat = 19
+    public static let pillLabel: CGFloat = 13
+    public static let bar: CGFloat = 4
+    public static let segmentGap: CGFloat = 3
+    public static let headerGap: CGFloat = 10
+    public static let heroTopGap: CGFloat = 8
+    public static let barTopGap: CGFloat = 8
+    public static let actionsTopGap: CGFloat = 8
+    public static let pillGap: CGFloat = 8
+    public static let pillRadius: CGFloat = 11
+    public static let controlRadius: CGFloat = 13
+    public static let disabledOpacity: CGFloat = 0.4
 }
 
 // MARK: - Range control (the ONE segmented pill control, used everywhere)

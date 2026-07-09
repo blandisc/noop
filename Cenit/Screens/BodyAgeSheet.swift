@@ -96,7 +96,7 @@ struct BodyAgeSheet: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
         .accessibilityElement(children: .combine)
 
         Divider().overlay(theme.hairline).padding(.vertical, 2)
@@ -110,7 +110,7 @@ struct BodyAgeSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
 
         // Differentiator vs the cardio-only Physical Age (FER-141).
         VStack(alignment: .leading, spacing: 4) {
@@ -121,7 +121,7 @@ struct BodyAgeSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
 
         disclaimers
     }
@@ -146,7 +146,7 @@ struct BodyAgeSheet: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
 
             Text("Keep wearing the band a few nights and it appears on its own — we don't show a half-finished number.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -158,7 +158,7 @@ struct BodyAgeSheet: View {
     private func checklistRow(_ f: Factor, ready: Bool) -> some View {
         HStack(spacing: 10) {
             Image(systemName: ready ? "checkmark" : "circle")
-                .font(.system(size: 15))
+                .font(StrandFont.glyph(.inline))
                 .foregroundStyle(ready ? theme.dataRecovery : theme.inkTertiary)
                 .frame(width: 18)
             Text(f.label).font(StrandFont.body).foregroundStyle(ready ? theme.ink : theme.inkSecondary)

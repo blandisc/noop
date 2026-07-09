@@ -100,7 +100,7 @@ struct StarterTemplatesSheet: View {
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 14).frame(minHeight: 56).contentShape(Rectangle())
         }
@@ -114,7 +114,7 @@ struct StarterTemplatesSheet: View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             Button { withAnimation(.snappy) { selected = nil } } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                    Image(systemName: "chevron.left").font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Templates").font(StrandFont.subhead)
                 }
                 .foregroundStyle(theme.inkSecondary)

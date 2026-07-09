@@ -254,7 +254,7 @@ private struct PatronesLanding: View {
     private func revelationHero(_ insight: Insight) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                Image(systemName: "sparkles").font(.system(size: 13, weight: .semibold))
+                Image(systemName: "sparkles").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("What you didn't know about yourself").instrumentoOverline()
             }
             .foregroundStyle(theme.dataRecovery)
@@ -275,7 +275,7 @@ private struct PatronesLanding: View {
     private func leverHero(_ insight: Insight) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                Image(systemName: "arrow.up").font(.system(size: 12, weight: .semibold))
+                Image(systemName: "arrow.up").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Your strongest lever").instrumentoOverline()
             }
             .foregroundStyle(theme.inkTertiary)
@@ -299,7 +299,7 @@ private struct PatronesLanding: View {
         let arrow = value > 0 ? "arrow.up" : (value < 0 ? "arrow.down" : "arrow.right")
         return HStack(spacing: 9) {
             HStack(spacing: 4) {
-                Image(systemName: arrow).font(.system(size: 13, weight: .heavy))
+                Image(systemName: arrow).font(StrandFont.glyph(.chevron, weight: .heavy))
                 Text(BucleFormat.signedDelta(value, unit: insight.datum.unit))
                     .font(StrandFont.number(21, weight: .semibold))
             }
@@ -317,21 +317,21 @@ private struct PatronesLanding: View {
             if canProbar {
                 Button { startLever = InsightItem(insight: insight) } label: {
                     HStack(spacing: 7) {
-                        Image(systemName: "flask").font(.system(size: 14, weight: .semibold))
+                        Image(systemName: "flask").font(StrandFont.glyph(.inline, weight: .semibold))
                         Text("Try 1 week").font(StrandFont.headline)
                     }
                     .foregroundStyle(theme.paper)
                     .padding(.horizontal, 20).padding(.vertical, 11)
                     .background(theme.dataRecovery,
                                 in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                    .shadow(color: theme.dataRecovery.opacity(0.25), radius: 3, x: 0, y: 1)
+                    .shadow(color: theme.dataRecovery.opacity(0.25), radius: 3, x: 0, y: 1) // token-exempt: sombra decorativa <0.28
                 }
                 .buttonStyle(ControlPressStyle())
             }
             Button { detail = InsightItem(insight: insight) } label: {
                 HStack(spacing: 4) {
                     Text("See why").font(StrandFont.subhead)
-                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                 }
                 .foregroundStyle(theme.inkSecondary)
                 .frame(minHeight: 44)
@@ -345,7 +345,7 @@ private struct PatronesLanding: View {
     private var observingHero: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                Image(systemName: "binoculars").font(.system(size: 12, weight: .semibold))
+                Image(systemName: "binoculars").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Still watching").instrumentoOverline()
             }
             .foregroundStyle(theme.inkTertiary)
@@ -411,13 +411,13 @@ private struct PatronesLanding: View {
                         .foregroundStyle(strong ? theme.positiveText : theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.vertical, 13)
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10)) // token-exempt: tinte pressed <0.10
     }
 
     // MARK: §3 · Pon a prueba algo nuevo (the running experiment + builder)
@@ -543,7 +543,7 @@ private struct PatronesLanding: View {
             Rectangle().fill(theme.hairline).frame(height: 0.5)
             HStack(spacing: 9) {
                 Image(systemName: yes ? "checkmark.circle" : "circle.slash")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(StrandFont.glyph(.lead, weight: .semibold))
                     .foregroundStyle(yes ? theme.dataRecovery : theme.inkTertiary)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(yes ? String(localized: "Kept today · logged") : String(localized: "Missed today · logged"))
@@ -575,14 +575,14 @@ private struct PatronesLanding: View {
             HStack(spacing: 6) {
                 Text(leading).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, 12)
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10)) // token-exempt: tinte pressed <0.10
     }
 
     /// The experiment verdict (State 3): a result card. «Funcionó» graduates to §4 (the engine already
@@ -593,7 +593,7 @@ private struct PatronesLanding: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Image(systemName: worked ? "checkmark.circle" : "minus.circle")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(StrandFont.glyph(.lead, weight: .semibold))
                     .foregroundStyle(worked ? theme.dataRecovery : theme.inkTertiary)
                 Text(worked ? String(localized: "Verdict · it worked") : String(localized: "Verdict · no clear effect"))
                     .instrumentoOverline().foregroundStyle(worked ? theme.dataRecovery : theme.inkTertiary)
@@ -608,7 +608,7 @@ private struct PatronesLanding: View {
                 HStack(spacing: 9) {
                     Button { dismissVerdict(exp) } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold))
+                            Image(systemName: "checkmark").font(StrandFont.glyph(.inline, weight: .semibold))
                             Text("Save to Confirmed").font(StrandFont.headline)
                         }
                         .foregroundStyle(theme.paper)
@@ -645,7 +645,7 @@ private struct PatronesLanding: View {
             }
         }
         .pruebaCard(theme, border: worked ? theme.dataRecovery : theme.hairlineStrong,
-                    fill: worked ? theme.dataRecovery.opacity(0.05) : theme.surface)
+                    fill: worked ? theme.dataRecovery.opacity(0.05) : theme.surface) // token-exempt: fondo condicional <0.10
     }
 
     /// The «funcionó» stat row — effect (colored), days kept, confidence.
@@ -677,7 +677,7 @@ private struct PatronesLanding: View {
             HStack {
                 recChip(String(localized: "Suggested for you"))
                 Spacer()
-                Image(systemName: "sparkles").font(.system(size: 15)).foregroundStyle(theme.dataRecovery)
+                Image(systemName: "sparkles").font(StrandFont.glyph(.inline)).foregroundStyle(theme.dataRecovery)
             }
             Text(BucleFormat.behaviorName(insight))
                 .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 10)
@@ -702,7 +702,7 @@ private struct PatronesLanding: View {
     private var disenaRow: some View {
         Button { showDisena = true } label: {
             HStack(spacing: 11) {
-                Image(systemName: "flask").font(.system(size: 18)).foregroundStyle(theme.inkSecondary).frame(width: 18)
+                Image(systemName: "flask").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary).frame(width: 18)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(running != nil ? String(localized: "Design an experiment") : String(localized: "Design one yourself"))
                         .font(StrandFont.body).foregroundStyle(theme.ink)
@@ -711,14 +711,14 @@ private struct PatronesLanding: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "plus").font(.system(size: 16, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "plus").font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 14).padding(.vertical, 13)
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
                 .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4])))
             .contentShape(Rectangle())
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: NoopMetrics.controlRadius))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: NoopMetrics.controlRadius)) // token-exempt: tinte pressed <0.10
         .padding(.top, 11)
     }
 
@@ -776,7 +776,7 @@ private struct PatronesLanding: View {
         let good = BucleFormat.isGood(insight)
         return Button { detail = InsightItem(insight: insight) } label: {
             HStack(spacing: 12) {
-                Image(systemName: "checkmark").font(.system(size: 14, weight: .bold))
+                Image(systemName: "checkmark").font(StrandFont.glyph(.inline, weight: .bold))
                     .foregroundStyle(theme.dataRecovery).frame(width: 18)
                 Text(heroLeverHeadline(insight)).font(StrandFont.body).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -789,7 +789,7 @@ private struct PatronesLanding: View {
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
             .contentShape(Rectangle())
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: 10)) // token-exempt: tinte pressed <0.10
     }
 
     // MARK: §5 · Aporta lo tuyo (journal + relate-two-metrics)
@@ -804,7 +804,7 @@ private struct PatronesLanding: View {
     private var anotaRow: some View {
         Button { showAnota = true } label: {
             HStack(spacing: 13) {
-                Image(systemName: "square.and.pencil").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+                Image(systemName: "square.and.pencil").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                 VStack(alignment: .leading, spacing: 7) {
                     Text("Log your day").font(StrandFont.headline).foregroundStyle(theme.ink)
                     if journalAnswered > 0 {
@@ -821,17 +821,17 @@ private struct PatronesLanding: View {
                     }
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             }
             .surfaceRow(theme)
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: tinte pressed <0.10
     }
 
     private var relacionaRow: some View {
         Button { showCompare = true } label: {
             HStack(spacing: 13) {
-                Image(systemName: "chart.xyaxis.line").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+                Image(systemName: "chart.xyaxis.line").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Relate two metrics yourself").font(StrandFont.headline).foregroundStyle(theme.ink)
                     Text("Feel like something affects you? Put it to the test")
@@ -839,11 +839,11 @@ private struct PatronesLanding: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             }
             .surfaceRow(theme)
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: tinte pressed <0.10
     }
 
     // MARK: §6 · Tu expediente (the archive)
@@ -854,7 +854,7 @@ private struct PatronesLanding: View {
                 Button { showEfectos = true } label: {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(spacing: 13) {
-                            Image(systemName: "tablecells").font(.system(size: 20)).foregroundStyle(theme.inkSecondary)
+                            Image(systemName: "tablecells").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                                     Text("\(behaviorInsights.count)")
@@ -866,7 +866,7 @@ private struct PatronesLanding: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             Spacer()
-                            Image(systemName: "chevron.right").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                            Image(systemName: "chevron.right").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
                         }
                         .padding(16)
                         Rectangle().fill(theme.hairline).frame(height: 0.5)
@@ -879,11 +879,9 @@ private struct PatronesLanding: View {
                         }
                         .padding(.horizontal, 16).padding(.vertical, 12)
                     }
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
-                        .stroke(theme.hairlineStrong, lineWidth: 1))
+                    .instrumentoCard(.card, stroke: theme.hairlineStrong)
                 }
-                .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05)))
+                .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05))) // token-exempt: tinte pressed <0.10
                 .padding(.top, 11)
             }
         }
@@ -902,7 +900,7 @@ private struct PatronesLanding: View {
         let pct = Int((Double(min(usableNights, Self.calibrationTarget)) / Double(Self.calibrationTarget) * 100).rounded())
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                Image(systemName: "clock").font(.system(size: 13, weight: .semibold))
+                Image(systemName: "clock").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Still watching").instrumentoOverline()
             }
             .foregroundStyle(theme.inkTertiary)
@@ -961,7 +959,7 @@ private struct PatronesLanding: View {
                 Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 if let infoItem {
                     Button { info = infoItem } label: {
-                        Image(systemName: "info.circle").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                        Image(systemName: "info.circle").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
                             .padding(.horizontal, 6)
                             .contentShape(Rectangle())
                     }
@@ -973,7 +971,7 @@ private struct PatronesLanding: View {
                     Button(action: trailingAction) {
                         HStack(spacing: 2) {
                             Text(trailing).font(StrandFont.footnote)
-                            Image(systemName: "chevron.right").font(.system(size: 11))
+                            Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron))
                         }
                         .foregroundStyle(theme.inkTertiary)
                         .padding(.vertical, 6)
@@ -993,7 +991,7 @@ private struct PatronesLanding: View {
 
     private func numberDot(_ n: Int) -> some View {
         Text("\(n)")
-            .font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            .font(StrandFont.number(10, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             .frame(width: 18, height: 18)
             .background(Circle().fill(theme.paperLo))
             .overlay(Circle().stroke(theme.hairlineStrong, lineWidth: 1))
@@ -1004,7 +1002,7 @@ private struct PatronesLanding: View {
             .font(StrandFont.overline).textCase(.uppercase).tracking(0.5)
             .foregroundStyle(theme.dataRecovery)
             .padding(.horizontal, 9).padding(.vertical, 3)
-            .background(theme.dataRecovery.opacity(0.12), in: Capsule())
+            .background(theme.tint(theme.dataRecovery), in: Capsule())
     }
 
     // MARK: «Empezar de cero» (reset what the user contributed)
@@ -1020,7 +1018,7 @@ private struct PatronesLanding: View {
     private var resetFooter: some View {
         Button(role: .destructive) { showResetConfirm = true } label: {
             HStack(spacing: 6) {
-                Image(systemName: "arrow.counterclockwise").font(.system(size: 12, weight: .semibold))
+                Image(systemName: "arrow.counterclockwise").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Start from scratch").font(StrandFont.footnote)
             }
             .foregroundStyle(theme.inkTertiary)

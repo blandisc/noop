@@ -91,9 +91,9 @@ struct WorkoutHistoryScreen: View {
             // «Volumen por músculo» (Entrenar v3 · 3d, FER-719) — the history's stats view.
             NavigationLink(value: MuscleVolumeRoute()) {
                 HStack(spacing: 6) {
-                    Image(systemName: "chart.bar.xaxis").font(.system(size: 12, weight: .semibold))
+                    Image(systemName: "chart.bar.xaxis").font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Volume per muscle").font(StrandFont.caption).fontWeight(.semibold)
-                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                 }
                 .foregroundStyle(theme.inkSecondary)
                 .padding(.horizontal, 12).padding(.vertical, 7)
@@ -137,7 +137,7 @@ struct WorkoutHistoryScreen: View {
                 Text("Volume per week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .bottom, spacing: 6) {
                     ForEach(weeks) { w in
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: geometría de dato
                             .fill(w.isCurrent ? theme.dataRecovery : theme.hairlineStrong)
                             .frame(height: max(3, CGFloat(w.volumeKg / peak) * 54))
                             .frame(maxWidth: .infinity)
@@ -176,7 +176,7 @@ struct WorkoutHistoryScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, 3)
 
@@ -232,7 +232,7 @@ struct WorkoutHistoryScreen: View {
     private var emptyState: some View {
         VStack(spacing: 11) {
             Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 32, weight: .regular)).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
             Text("No workouts yet").font(StrandFont.title2).foregroundStyle(theme.ink)
             Text("When you finish a strength session, it shows up here with its breakdown, volume and effort.")
@@ -617,7 +617,7 @@ struct WorkoutSessionDetailScreen: View {
                     if isPRSet(set, exerciseId: g.exerciseId) {
                         Text("PR").font(StrandFont.captionNumber).foregroundStyle(theme.dataStrain)
                             .padding(.horizontal, 6).padding(.vertical, 1)
-                            .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(0.5), lineWidth: 1))
+                            .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(0.5), lineWidth: 1)) // token-exempt: stroke chip PR 0.5 (alfa propio)
                             .accessibilityLabel(Text("Personal record"))
                     }
                     Spacer(minLength: 8)
@@ -669,7 +669,7 @@ struct WorkoutSessionDetailScreen: View {
                 HStack(spacing: 6) {
                     Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())

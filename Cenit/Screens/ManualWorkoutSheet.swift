@@ -179,7 +179,7 @@ struct ManualWorkoutSheet: View {
 
     // MARK: - Validation / build
 
-    private var inputShape: RoundedRectangle { RoundedRectangle(cornerRadius: 10, style: .continuous) }
+    private var inputShape: RoundedRectangle { RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous) }
 
     private var durationLabel: String {
         let h = durationMin / 60, m = durationMin % 60

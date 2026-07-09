@@ -1000,7 +1000,7 @@ struct LiveStrengthSheet: View {
             HStack(spacing: 10) {
                 Button { model.strengthSheetPresented = false } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 19, weight: .semibold)).foregroundStyle(theme.ink)
+                        .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -1023,7 +1023,7 @@ struct LiveStrengthSheet: View {
                 } else if !isEmptyAdHoc {
                     Button { model.pauseStrengthSession() } label: {
                         Image(systemName: "pause.fill")
-                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.ink)
+                            .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
                             .frame(width: 38, height: 38)
                             .background(theme.surface, in: Circle())
                             .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
@@ -1036,7 +1036,7 @@ struct LiveStrengthSheet: View {
                         Text("Finish").font(StrandFont.subhead).foregroundStyle(theme.critical)
                             .padding(.horizontal, 12).padding(.vertical, 6)
                             .background(theme.surface, in: Capsule())
-                            .overlay(Capsule().strokeBorder(theme.critical.opacity(0.45), lineWidth: 1))
+                            .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("Finish workout"))
@@ -1186,7 +1186,7 @@ struct LiveStrengthSheet: View {
 
     private func watchLine(_ icon: String, _ text: LocalizedStringKey, retry: Bool) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+            Image(systemName: icon).font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
             Text(text).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             if retry {
@@ -1219,7 +1219,7 @@ struct LiveStrengthSheet: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     }
                     .contentShape(Rectangle())
                 }
@@ -1238,9 +1238,9 @@ struct LiveStrengthSheet: View {
     private func restChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         Button { openRestEditor(ei: ei) } label: {
             HStack(spacing: 6) {
-                Image(systemName: "clock").font(.system(size: 12)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "clock").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 Text(restChipLabel(run)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 9).padding(.vertical, 4)
             .background(theme.surface, in: Capsule())
@@ -1445,7 +1445,7 @@ struct LiveStrengthSheet: View {
         let zone = hrZone(hr)
         let hue = theme.hrZoneRamp[max(0, min(theme.hrZoneRamp.count - 1, zone - 1))]
         return HStack(spacing: 5) {
-            Image(systemName: "heart.fill").font(.system(size: 12)).foregroundStyle(hue)
+            Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(hue)
             Text("\(hr)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(hue)
             Text("Z\(zone)").font(StrandFont.caption).foregroundStyle(hue)
                 .padding(.horizontal, 6).padding(.vertical, 2)
@@ -1686,7 +1686,7 @@ struct LiveStrengthSheet: View {
                     .foregroundStyle(done ? theme.inkSecondary : theme.ink)
                 if active {
                     Rectangle().fill(theme.ink).frame(width: 2, height: 18)   // caret
-                        .opacity(0.9)
+                        .opacity(0.9) // token-exempt: opacidad de caret >0.70
                 }
             }
             .frame(width: width ?? (reflow ? 64 : cellWidth(type)), height: 44)
@@ -1762,7 +1762,7 @@ struct LiveStrengthSheet: View {
                 if let text {
                     Text(text).font(StrandFont.number(16, weight: .regular)).monospacedDigit().foregroundStyle(theme.ink)
                 } else {
-                    Image(systemName: "play.circle").font(.system(size: 18)).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "play.circle").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkTertiary)
                 }
             }
             .frame(width: reflow ? nil : cellWidth(run.type))
@@ -1786,7 +1786,7 @@ struct LiveStrengthSheet: View {
             }
         } label: {
             Image(systemName: set.done ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 22))
+                .font(StrandFont.glyph(.lead))
                 .foregroundStyle(set.done ? theme.dataRecovery
                                  : isActivePending ? theme.dataStrain : theme.inkDim)
                 .frame(width: 44, height: 44)
@@ -1821,7 +1821,7 @@ struct LiveStrengthSheet: View {
 
                 Button { showLibraryPicker = true } label: {
                     HStack(spacing: 9) {
-                        Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundStyle(theme.inkTertiary)
+                        Image(systemName: "magnifyingglass").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
                         Text("Search the library…").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
                         Spacer(minLength: 0)
                     }
@@ -1883,9 +1883,9 @@ struct LiveStrengthSheet: View {
 
     private func suggestionRow(_ s: QuickSuggestion) -> some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous)
                 .fill(theme.surface).frame(width: 48, height: 48)
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
             VStack(alignment: .leading, spacing: 1) {
                 Text(StrengthDisplay.name(s.exercise)).font(StrandFont.body).foregroundStyle(theme.ink)
                 (Text(MuscleAtlas.name(s.muscle)) + Text(verbatim: " · ") + Text("fresh")
@@ -2090,7 +2090,7 @@ struct LiveStrengthSheet: View {
 
     private var completePhase: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Image(systemName: "checkmark.seal.fill").font(.system(size: 40))
+            Image(systemName: "checkmark.seal.fill").font(StrandFont.glyph(.empty))
                 .foregroundStyle(theme.dataRecovery).accessibilityHidden(true)
             Text(session.doneCount > 0 ? "All done" : "Nothing left")
                 .font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -2191,7 +2191,7 @@ struct LiveStrengthSheet: View {
     /// workout to Health — shown instead of the iPhone's energy-origin dot.
     private var receiptWatchOrigin: some View {
         HStack(spacing: 5) {
-            Image(systemName: "applewatch").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
+            Image(systemName: "applewatch").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
             Text("Heart rate and calories from Apple Watch, saved to Health")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -2212,7 +2212,7 @@ struct LiveStrengthSheet: View {
             Circle().fill(src == .bandCalculated ? theme.originBand : theme.originComputed)
                 .frame(width: 6, height: 6)
             Text(src == .bandCalculated ? "Band + calculated" : "Estimated")
-                .font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
+                .font(.system(size: 10)).foregroundStyle(theme.inkTertiary) // token-exempt: microtexto <11pt
         }
         .accessibilityElement(children: .combine)
     }
@@ -2301,7 +2301,7 @@ struct LiveStrengthSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 HStack(spacing: 3) {
                     Text("Diet").font(StrandFont.caption).fontWeight(.semibold)
-                    Image(systemName: "arrow.right").font(.system(size: 11, weight: .semibold))
+                    Image(systemName: "arrow.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                 }
                 .foregroundStyle(theme.dataRecovery)
                 .fixedSize()
@@ -2373,7 +2373,7 @@ struct LiveStrengthSheet: View {
     private func receiptRecords(_ prs: [StrengthSummary.PR]) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Image(systemName: "star").font(.system(size: 14, weight: .semibold))
+                Image(systemName: "star").font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.dataRecovery)
                 Text(prs.count == 1 ? String(localized: "A personal record")
                      : String(localized: "\(prs.count) personal records"))
@@ -2440,11 +2440,11 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {
         switch trend {
         case .some(1):
-            Image(systemName: "arrow.up").font(.system(size: 11, weight: .semibold))
+            Image(systemName: "arrow.up").font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.positiveText)
                 .accessibilityLabel(Text("Up vs last time"))
         case .some(-1):
-            Image(systemName: "arrow.down").font(.system(size: 11, weight: .semibold))
+            Image(systemName: "arrow.down").font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
                 .accessibilityLabel(Text("Down vs last time"))
         case .some:
@@ -2581,7 +2581,7 @@ struct LiveStrengthSheet: View {
             Button { withAnimation(.snappy) { session.goToExercise(index) } } label: {
                 HStack(spacing: 10) {
                     Image(systemName: complete ? "checkmark.circle.fill" : (isCurrent ? "circle.fill" : "circle"))
-                        .font(.system(size: 15))
+                        .font(StrandFont.glyph(.inline))
                         .foregroundStyle(complete ? theme.dataRecovery : (isCurrent ? theme.dataStrain : theme.inkTertiary))
                     Text(run.name).font(StrandFont.body)
                         .foregroundStyle(isCurrent ? theme.ink : theme.inkSecondary)
@@ -2597,13 +2597,13 @@ struct LiveStrengthSheet: View {
                 HStack(spacing: 14) {
                     if !isFirst {
                         Button { withAnimation(.snappy) { session.moveExerciseEarlier(index) } } label: {
-                            Image(systemName: "arrow.up").font(.system(size: 14, weight: .semibold))
+                            Image(systemName: "arrow.up").font(StrandFont.glyph(.inline, weight: .semibold))
                                 .foregroundStyle(theme.inkSecondary)
                         }
                         .buttonStyle(.plain).accessibilityLabel(Text("Move \(run.name) earlier"))
                     }
                     Button { withAnimation(.snappy) { session.skipExercise(index) } } label: {
-                        Image(systemName: "forward.end").font(.system(size: 14, weight: .semibold))
+                        Image(systemName: "forward.end").font(StrandFont.glyph(.inline, weight: .semibold))
                             .foregroundStyle(theme.inkSecondary)
                     }
                     .buttonStyle(.plain).accessibilityLabel(Text("Skip \(run.name)"))
@@ -2618,7 +2618,7 @@ struct LiveStrengthSheet: View {
 
     private func stepper(system: String, size: CGFloat = 42, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: system).font(.system(size: size > 38 ? 22 : 18, weight: .regular))
+            Image(systemName: system).font(.system(size: size > 38 ? 22 : 18, weight: .regular)) // token-exempt: tamaño de glifo condicional
                 .foregroundStyle(theme.inkSecondary)
                 .frame(width: size, height: size)
                 .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))

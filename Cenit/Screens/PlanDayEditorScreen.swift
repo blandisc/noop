@@ -105,7 +105,7 @@ struct PlanDayEditorScreen: View {
         HStack(spacing: 8) {
             Button { back() } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "chevron.left").font(.system(size: 15, weight: .semibold))
+                    Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
                     Text("Weekly plan").font(StrandFont.body)
                 }
                 .foregroundStyle(theme.ink).frame(minHeight: 44).contentShape(Rectangle())
@@ -196,7 +196,7 @@ struct PlanDayEditorScreen: View {
             } label: { Label("Change routine", systemImage: "arrow.left.arrow.right") }
             Button(role: .destructive) { markRest() } label: { Label("Mark as rest day", systemImage: "moon.zzz") }
         } label: {
-            Image(systemName: "ellipsis").font(.system(size: 16, weight: .semibold))
+            Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary).frame(width: 40, height: 40).contentShape(Rectangle())
         }
         .accessibilityLabel(Text("Day options"))
@@ -224,7 +224,7 @@ struct PlanDayEditorScreen: View {
                     Button { duplicate(idx) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
                     Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove", systemImage: "trash") }
                 } label: {
-                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
+                    Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
                 }
             }
@@ -234,11 +234,11 @@ struct PlanDayEditorScreen: View {
 
     /// A placeholder thumb (media EDB is a separate issue): a soft paper tile per the mock. Placeholder-first.
     private func thumb(_ exercise: Exercise) -> some View {
-        RoundedRectangle(cornerRadius: 9, style: .continuous)
+        RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous)
             .fill(LinearGradient(colors: [theme.hairline, theme.hairlineStrong],
                                  startPoint: .topLeading, endPoint: .bottomTrailing))
             .frame(width: 40, height: 40)
-            .overlay(Image(systemName: "play.fill").font(.system(size: 12)).foregroundStyle(theme.inkTertiary.opacity(0.5)))
+            .overlay(Image(systemName: "play.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary.opacity(StrandOpacity.dim)))
             .accessibilityHidden(true)
     }
 
@@ -301,13 +301,13 @@ struct PlanDayEditorScreen: View {
             .focused($focusedCell, equals: id)
             .frame(width: width, height: 31)
             .background(theme.surface)
-            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(theme.hairlineStrong))
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 
     private func addSetRow(_ idx: Int) -> some View {
         Button { addSet(idx) } label: {
             HStack(spacing: 7) {
-                Image(systemName: "plus").font(.system(size: 13, weight: .semibold))
+                Image(systemName: "plus").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Add set")
             }
             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -343,7 +343,7 @@ struct PlanDayEditorScreen: View {
 
     private var restFallback: some View {
         VStack(spacing: 10) {
-            Image(systemName: "moon.zzz").font(.system(size: 34)).foregroundStyle(theme.inkTertiary)
+            Image(systemName: "moon.zzz").font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
             Text("Rest day").font(StrandFont.title2).foregroundStyle(theme.ink)
             Text("This day has no routine. Assign one from the weekly plan.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

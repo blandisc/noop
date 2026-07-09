@@ -176,7 +176,7 @@ private struct RhythmReadingView: View {
                 if !expanded {
                     HStack(spacing: 4) {
                         Text(RhythmCopy.tapHint).font(StrandFont.footnote)
-                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                        Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -263,7 +263,7 @@ private struct MessageState: View {
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: glyph)
-                .font(.system(size: 34, weight: .light))
+                .font(StrandFont.glyph(.empty, weight: .light))
                 .foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
             Text(title)

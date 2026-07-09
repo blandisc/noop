@@ -106,8 +106,7 @@ struct WhyVerdictSheet: View {
         }
         .padding(.horizontal, 11).padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(c.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(c.opacity(0.30), lineWidth: 0.5))
+        .instrumentoCard(.inset, theme: theme, fill: theme.tint(c), stroke: theme.softStroke(c), lineWidth: 0.5)
     }
 
     /// FER-545 — el caveat del veredicto ESTIMADO de Apple: el sello «estimado · confianza X» + la
@@ -116,7 +115,7 @@ struct WhyVerdictSheet: View {
     private var estimatedBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                Image(systemName: "applewatch").font(.system(size: 12)).foregroundStyle(theme.dataSpO2)
+                Image(systemName: "applewatch").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                 Text(RecoveryDetailScreen.confidenceLabel(recoveryConfidence))
                     .font(StrandFont.subhead).fontWeight(.semibold)
                     .foregroundStyle(theme.ink)
@@ -129,8 +128,7 @@ struct WhyVerdictSheet: View {
         }
         .padding(.horizontal, 11).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.dataSpO2.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.dataSpO2.opacity(0.28), lineWidth: 0.5))
+        .instrumentoCard(.inset, theme: theme, fill: theme.tint(theme.dataSpO2), stroke: theme.softStroke(theme.dataSpO2), lineWidth: 0.5)
     }
 
     /// FER-285 — the short-night caveat, explained. Surfaces *why* a night under 6 h lowers confidence
@@ -139,7 +137,7 @@ struct WhyVerdictSheet: View {
     private var shortNightBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                Image(systemName: "moon.zzz.fill").font(.system(size: 12)).foregroundStyle(theme.warning)
+                Image(systemName: "moon.zzz.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.warning)
                 Text("Confianza baja — noche corta")
                     .font(StrandFont.subhead).fontWeight(.semibold)
                     .foregroundStyle(theme.ink)
@@ -152,8 +150,7 @@ struct WhyVerdictSheet: View {
         }
         .padding(.horizontal, 11).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.warning.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(theme.warning.opacity(0.28), lineWidth: 0.5))
+        .instrumentoCard(.inset, theme: theme, fill: theme.tint(theme.warning), stroke: theme.softStroke(theme.warning), lineWidth: 0.5)
     }
 
     /// The caveat copy, with last night's real hours when available (else «menos de 6 h»). Built as a
@@ -214,13 +211,13 @@ struct WhyVerdictSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             if here {
-                Text("TODAY").font(.system(size: 9, weight: .semibold)).foregroundStyle(c)
+                Text("TODAY").font(.system(size: 9, weight: .semibold)).foregroundStyle(c) // token-exempt: sello 9pt (geometría <10pt)
                     .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(c.opacity(0.18), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .background(c.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: 5, style: .continuous)) // token-exempt: radio de pill (geometría)
             }
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
-        .background(here ? c.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(here ? c.opacity(StrandOpacity.tintFill) : .clear, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
     }
 
     // MARK: color maps (mirror TodayView.verdictDataColor so the hero and sheet never disagree, FER-167)

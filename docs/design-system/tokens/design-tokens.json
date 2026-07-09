@@ -22,7 +22,7 @@
       "awake": { "$value": "#E0476B", "$description": "rose" },
       "light": { "$value": "#5C6FB1", "$description": "periwinkle" },
       "deep":  { "$value": "#2C3A7A", "$description": "deep indigo" },
-      "rem":   { "$value": "#5BE0C7", "$description": "mint (glows)" }
+      "rem":   { "$value": "#3E9E8C", "$description": "muted teal (calmer than the old #5BE0C7 mint — FER-234)" }
     },
     "hrZone": {
       "z1": { "$value": "#4FA9C9" },
@@ -106,7 +106,12 @@
   },
   "opacity": {
     "$type": "number",
-    "disabled": { "$value": 0.45, "$description": "dimmed/disabled sections" }
+    "disabled":       { "$value": 0.45, "$description": "dimmed/disabled sections (= StrandOpacity.dim)" },
+    "tintFill":       { "$value": 0.1, "$description": "chip/badge tint fill (absorbs 0.10–0.12)" },
+    "tintFillStrong": { "$value": 0.14, "$description": "emphasized tint (absorbs 0.14–0.18)" },
+    "strokeSoft":     { "$value": 0.3, "$description": "soft tinted stroke (absorbs 0.28–0.40)" },
+    "dim":            { "$value": 0.45, "$description": "dimmed value (absorbs 0.40–0.52)" },
+    "muted":          { "$value": 0.6, "$description": "secondary over color (absorbs 0.55–0.70)" }
   },
   "dimension": {
     "$type": "dimension",

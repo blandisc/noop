@@ -178,7 +178,7 @@ struct WorkoutDetailScreen: View {
                 }
             }
             .frame(height: 34)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(zonesA11y(percents))
             HStack(spacing: 0) {
