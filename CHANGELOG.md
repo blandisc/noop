@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El editor de descanso cierra como corresponde / The rest editor closes the right way.**
+  **ES** — Cuando abres el editor de descanso desde una sesión en curso (una hoja), ahora cierra con ✕; cuando lo abres desde el creador de rutinas (una pila), cierra con la flecha atrás. Una sola forma de salir, coherente con cómo se abrió.
+  **EN** — When you open the rest editor from a live session (a sheet), it now closes with ✕; when you open it from the routine builder (a stack), it closes with the back arrow. One way out, matching how it opened.
+  ([RestEditorScreen.swift](Cenit/Screens/RestEditorScreen.swift))
+
 - **«Empezar» dice lo mismo en toda la app / «Empezar» reads the same across the app.**
   **ES** — El botón de iniciar en «Rutina de hoy» decía «Iniciar entrenamiento» mientras el resto decía «Empezar»; ahora todos dicen «Empezar» (y «Reanudar» si hay una sesión en curso), igual que el botón principal.
   **EN** — The start button on «Today's routine» said «Iniciar entrenamiento» while the rest said «Empezar»; now they all say «Empezar» (and «Reanudar» when a session is in progress), matching the primary button.
