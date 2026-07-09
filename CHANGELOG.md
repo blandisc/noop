@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Estrés estrena su calendario de 90 días / Stress gets its 90-day calendar.**
+  **ES** — El Detalle de Estrés suma el mismo mapa de calor de 90 días que ya llevan Recuperación, Sueño y Esfuerzo, tal como lo pide el handoff v2. Como el estrés es evaluativo, el calor usa el semáforo de banda: verde (bajo), ámbar (moderado), rojo (alto). Toca un día para ver su valor.
+  **EN** — The Stress detail adds the same 90-day heatmap Recovery, Sleep and Strain already carry, per the v2 handoff. Since stress is evaluative, the heat uses the band semaphore: green (low), amber (moderate), red (high). Tap a day to see its value.
+  ([StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift))
+
 - **Recuperación adopta el «Panorama» del handoff y limpia el héroe / Recovery adopts the handoff «Panorama» and cleans up its hero.**
   **ES** — El Detalle de Recuperación funde los bloques «Mañana, si descansas igual» y «Tus patrones» en un solo grid 2×2 «Panorama» (Mañana · Normalmente · Estabilidad · Carga), fiel al handoff v2 de Tendencias; no cambia la matemática, solo el layout. Y el héroe pierde el mini-sparkline de 14 días que el handoff no contempla: la serie ya vive en el instrumento de niveles de abajo.
   **EN** — The Recovery detail fuses the «Tomorrow, if you rest the same» and «Your patterns» blocks into one 2×2 «Panorama» grid (Tomorrow · Usually · Steadiness · Load), faithful to the Tendencias v2 handoff; no math changes, only layout. And the hero drops the 14-day mini-sparkline the handoff doesn't call for — the series already lives in the levels instrument below.

@@ -52456,6 +52456,23 @@
           }
         }
       }
+    },
+    "Tap a day to see its stress.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a day to see its stress."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca un día para ver su estrés."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
