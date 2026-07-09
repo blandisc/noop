@@ -292,8 +292,6 @@ final class Repository: ObservableObject {
         // FER-486: Apple Health sleep sessions (real per-epoch stage timeline), gated on the mode. The band
         // wins per night, so the appleSleeps surfaced to the Detalle drop any overlapping a strap session.
         let appleSleepRaw = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: lo, to: hi, limit: 4000)) ?? []) : []
-        let strapSleeps = Self.mergeSleep(imported: impSleep, computed: compSleep)
-        let appleSleeps = Self.appleSleepsNotCoveredByStrap(apple: appleSleepRaw, strap: strapSleeps)
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.

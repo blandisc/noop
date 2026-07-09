@@ -309,7 +309,7 @@ final class AppModel: ObservableObject {
         #endif
         analysisTask = Task { [weak self] in
             guard let self else { return }
-            // Two-pass launch (FER-NN): the ~90-day first-paint pass publishes the dashboard in
+            // Two-pass launch: the ~90-day first-paint pass publishes the dashboard in
             // milliseconds so «Hoy» renders, then the full pass rebuilds it over the whole history
             // (its merge work runs off the main actor) and flips `repo.fullyLoaded`. Everything that
             // persists off `repo.days` (the engine, the day-key migration below) runs AFTER the full
@@ -362,6 +362,10 @@ final class AppModel: ObservableObject {
     /// streams / Apple Health, and the prune only ever removes FUTURE-dated rows — a past day that
     /// can't be recomputed (raw already pruned) keeps its row, so there is no data loss.
     func migrateDayKeysToLocalIfNeeded() async {
+        // Two-pass launch: if the full history hasn't published (e.g. a pull-to-refresh made the
+        // launch full pass stale mid-flight), `analyzeRecent(force:)` below would skip silently and
+        // the cursor would burn WITHOUT the re-group having run. Defer to the next foreground/launch.
+        guard repo.fullyLoaded else { return }
         guard let store = await repo.storeHandle() else { return }   // no store yet → retry next launch
         if ((try? await store.cursor(Self.dayKeyMigrationCursor)) ?? nil) == 1 { return }   // already done
 
