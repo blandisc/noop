@@ -170,7 +170,7 @@ private struct IdentityRow: View {
         } else if state.isHRRest {
             VStack(alignment: .trailing, spacing: 2) {
                 Overline(String(localized: "Cap"), theme: theme, stale: false)
-                RestTimerText(state: state, size: M.pillLabel + 1, weight: .semibold)
+                RestTimerText(state: state, size: M.pillLabel + 1, weight: .semibold, alignment: .trailing)
                     .foregroundStyle(theme.inkSecondary)
             }
         } else {
@@ -549,14 +549,19 @@ private struct Overline: View {
 }
 
 /// The rest countdown — ticks locally from `restEndsAt`, so no push is needed just to advance the clock.
+/// `Text(timerInterval:)` is GREEDY: it claims every point of width it's offered, which stretched the
+/// compact island across the whole cutout. The frame caps it at ~«10:00» wide (3× the point size covers
+/// five monospaced digits/colon at the rounded face) so the pill hugs its content again.
 private struct RestTimerText: View {
     let state: RestActivityAttributes.ContentState
     var size: CGFloat
     var weight: Font.Weight = .semibold
+    var alignment: Alignment = .leading
     var body: some View {
         Text(timerInterval: state.restStartedAt...state.restEndsAt, countsDown: true)
             .font(.system(size: size, weight: weight, design: .rounded))
             .monospacedDigit()
+            .frame(maxWidth: size * 3, alignment: alignment)
     }
 }
 
@@ -676,7 +681,7 @@ private enum SessionDynamicIsland {
         if s.isHRRest {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(String(localized: "Cap").uppercased()).font(.system(size: 9, weight: .semibold)).tracking(1).foregroundStyle(theme.inkTertiary)
-                RestTimerText(state: s, size: 14).foregroundStyle(theme.inkSecondary)
+                RestTimerText(state: s, size: 14, alignment: .trailing).foregroundStyle(theme.inkSecondary)
             }
         } else if let bpm = s.bpm {
             HStack(spacing: 4) {
@@ -693,6 +698,7 @@ private enum SessionDynamicIsland {
             .foregroundStyle(theme.inkSecondary)
             .lineLimit(1).minimumScaleFactor(0.7)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 3)   // air above/below so descenders don't kiss the island's bottom edge
     }
 
     private static func bottomCaption(_ s: RestActivityAttributes.ContentState) -> String {
