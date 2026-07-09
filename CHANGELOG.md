@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El landing de Tendencias se limpia de puntos de origen / The Trends landing sheds its origin dots.**
+  **ES** — Siguiendo el handoff v2, el landing quita el puntito de origen de cada dato y la leyenda del pie: la procedencia (banda / Apple Salud / calculado) vive solo al pie de cada pantalla de detalle, no repartida por el resumen. Las cifras quedan más limpias; la procedencia sigue calculándose, solo no se pinta aquí.
+  **EN** — Per the v2 handoff, the landing drops the per-stat origin dot and the foot legend: provenance (band / Apple Health / computed) lives only at the foot of each detail screen, not scattered across the summary. The numbers read cleaner; provenance is still tracked, just not shown here.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **La app abre al instante aunque tu historial sea enorme / The app opens instantly even with a huge history.**
   **ES** — Al arrancar, la app cargaba todo tu historial (hasta ~11 años de días) antes de pintar «Hoy». Ahora pinta primero con tus últimos 90 días —milisegundos— y completa el resto en segundo plano sin congelar la pantalla. Nada cambia en tus números: los cálculos de fondo (líneas base, experimentos) esperan siempre a la historia completa.
   **EN** — On launch the app loaded your whole history (up to ~11 years of days) before painting "Today". Now it paints first with your last 90 days — milliseconds — and completes the rest in the background without freezing the screen. Your numbers don't change: background computations (baselines, experiments) always wait for the full history.

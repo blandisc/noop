@@ -228,7 +228,6 @@ private struct CuerpoLanding: View {
                 longevityCard
                 connectNudge
                 footerActions
-                originLegend
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
@@ -477,16 +476,12 @@ private struct CuerpoLanding: View {
                             fromApple: Bool = false, spark: [Double] = [], tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
             VStack(alignment: .leading, spacing: 3) {
-                // §8.7 landing (FER-826): a 5px origin dot (band/Apple/computed) + the label ALL-CAPS in its
-                // hue — the dot replaces the old Apple/Estimate chips (its color IS the origin).
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(estimate ? theme.originComputed : (fromApple ? theme.originApple : theme.originBand))
-                        .frame(width: 5, height: 5)
-                    Text(label)
-                        .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
-                        .foregroundStyle(color)
-                }
+                // §8.7 landing: the label ALL-CAPS in its hue. Per the v2 handoff the landing carries NO
+                // per-stat origin dot and NO legend — provenance lives only at the foot of each detail
+                // screen (the `estimate`/`fromApple` provenance is still tracked, just not shown). (FER-834)
+                Text(label)
+                    .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
+                    .foregroundStyle(color)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value ?? "—")
                         .font(StrandFont.number(21))
@@ -975,24 +970,6 @@ private struct CuerpoLanding: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(ControlPressStyle())
-        }
-    }
-
-    /// §8.7 landing origin legend (handoff v2, FER-826): what the per-stat dots mean, at the foot.
-    private var originLegend: some View {
-        HStack(spacing: 16) {
-            legendDot(theme.originBand, "band")
-            legendDot(theme.originApple, "Apple Health")
-            legendDot(theme.originComputed, "computed")
-            Spacer(minLength: 0)
-        }
-        .padding(.top, 2)
-    }
-
-    private func legendDot(_ color: Color, _ label: LocalizedStringKey) -> some View {
-        HStack(spacing: 5) {
-            Circle().fill(color).frame(width: 5, height: 5)
-            Text(label).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
     }
 
