@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Recuperación adopta el «Panorama» del handoff y limpia el héroe / Recovery adopts the handoff «Panorama» and cleans up its hero.**
+  **ES** — El Detalle de Recuperación funde los bloques «Mañana, si descansas igual» y «Tus patrones» en un solo grid 2×2 «Panorama» (Mañana · Normalmente · Estabilidad · Carga), fiel al handoff v2 de Tendencias; no cambia la matemática, solo el layout. Y el héroe pierde el mini-sparkline de 14 días que el handoff no contempla: la serie ya vive en el instrumento de niveles de abajo.
+  **EN** — The Recovery detail fuses the «Tomorrow, if you rest the same» and «Your patterns» blocks into one 2×2 «Panorama» grid (Tomorrow · Usually · Steadiness · Load), faithful to the Tendencias v2 handoff; no math changes, only layout. And the hero drops the 14-day mini-sparkline the handoff doesn't call for — the series already lives in the levels instrument below.
+  ([RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift))
+
 - **La Dynamic Island deja de estirarse y de comerse la letra / The Dynamic Island stops stretching and eating the text.**
   **ES** — En modo compacto, el contador de descanso reclamaba todo el ancho de la isla (el reloj del sistema es «codicioso» si no lo acotas); ahora se ciñe a su contenido. Y en la vista expandida, la línea «al volver: …» iba pegada al borde inferior; se le dio aire para que los rasgos bajos no se corten.
   **EN** — In compact mode the rest countdown claimed the island's full width (the system timer text is greedy unless capped); it now hugs its content. And in the expanded view the «back to…» line sat flush against the bottom edge; it got breathing room so descenders don't clip.
