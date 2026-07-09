@@ -410,7 +410,7 @@ struct RecoveryDetailScreen: View {
         let byKey = Dictionary(model.estimatedDirections.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
         return DetailBlock("Today, vs your normal", theme: theme) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Where each signal Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.")
+                Text("Where the signals Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.")
                     .font(StrandFont.body)
                     .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -431,17 +431,26 @@ struct RecoveryDetailScreen: View {
     /// is the RAW direction (arrow + word); the color reads `helps`, so a resting HR «Above your usual» reads
     /// amber even though it points up — matching the band block's word/valence split. No σ, no points.
     private func estimatedSignalRow(_ dir: AppleRecoveryEstimator.SignalDirection) -> some View {
+        // Sleep has no personal Apple norm (its position is vs a fixed population center), so it shows as
+        // PRESENCE-ONLY — «Recorded», no above/below — and the «vs your usual» claim is never overstated for
+        // it. HRV / resting HR are measured against your own Apple baseline, so they carry a direction. (CSO)
         let color: Color = dir.position == .inRange ? theme.inkSecondary : (dir.helps ? theme.verdict : theme.warning)
         return HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(Self.driverLabel(dir.key)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 8)
-            Text(Self.estimatedPositionWord(dir.position))
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(color)
-            Image(systemName: Self.estimatedPositionSymbol(dir.position))
-                .font(StrandFont.footnote)
-                .foregroundStyle(color)
-                .accessibilityHidden(true)
+            if dir.hasPersonalNorm {
+                Text(Self.estimatedPositionWord(dir.position))
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(color)
+                Image(systemName: Self.estimatedPositionSymbol(dir.position))
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(color)
+                    .accessibilityHidden(true)
+            } else {
+                Text("Recorded")
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(theme.inkSecondary)
+            }
         }
         .accessibilityElement(children: .combine)
     }

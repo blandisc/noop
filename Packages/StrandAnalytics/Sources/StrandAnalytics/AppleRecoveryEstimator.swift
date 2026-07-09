@@ -65,9 +65,16 @@ public enum AppleRecoveryEstimator {
         /// Whether that position helps recovery (oriented): HRV above helps; resting HR below helps; sleep
         /// above helps. Carries the valence the row color reads, independent of `position`.
         public let helps: Bool
+        /// True only when `position` is measured against the user's OWN Apple baseline (HRV, resting HR).
+        /// Sleep has no personal Apple sleep baseline (Apple writes no efficiency today), so its position is
+        /// taken against a FIXED population center — that's «vs typical», not «vs your usual». The UI reads
+        /// this to show sleep as PRESENCE-ONLY (no above/below word), so the «vs your normal» copy is never
+        /// overstated for a signal that wasn't compared to the user's own norm. (CSO finding, gate 9542ba19)
+        public let hasPersonalNorm: Bool
         public var id: String { key }
-        public init(key: String, position: Position, helps: Bool) {
+        public init(key: String, position: Position, helps: Bool, hasPersonalNorm: Bool = true) {
             self.key = key; self.position = position; self.helps = helps
+            self.hasPersonalNorm = hasPersonalNorm
         }
     }
 
@@ -177,8 +184,14 @@ public enum AppleRecoveryEstimator {
                 directions.append(SignalDirection(key: "rhr", position: position(zRhr), helps: zRhr < 0))
             }
             if hasSleep, let eff = n.sleepPerf {
+                // Sleep has no personal Apple baseline — its position is vs a FIXED population center, so it is
+                // flagged `hasPersonalNorm: false` and the UI shows it as presence-only (no «vs your usual»
+                // word). `helps: zSleep > 0` also assumes efficiency is monotonic (higher = better), a coarse
+                // approximation without the band: very high efficiency can mean a short time-in-bed, not more
+                // recovery. Both are why sleep does not claim a personal-norm direction. (CSO gate 9542ba19)
                 let zSleep = (eff - RecoveryScorer.sleepPerfCenter) / RecoveryScorer.sleepPerfScale
-                directions.append(SignalDirection(key: "sleep", position: position(zSleep), helps: zSleep > 0))
+                directions.append(SignalDirection(key: "sleep", position: position(zSleep),
+                                                  helps: zSleep > 0, hasPersonalNorm: false))
             }
             let score = RecoveryScorer.recovery(
                 hrv: sdnn,

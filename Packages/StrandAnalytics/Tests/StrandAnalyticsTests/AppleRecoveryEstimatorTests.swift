@@ -164,6 +164,20 @@ final class AppleRecoveryEstimatorTests: XCTestCase {
         XCTAssertEqual(Set(last.signalDirections.map(\.key)), ["hrv", "rhr", "sleep"])
     }
 
+    /// HRV and resting HR are measured against the user's OWN Apple baseline (personal norm); sleep is not
+    /// (it falls to a fixed population center), so it must be flagged presence-only. (CSO gate 9542ba19)
+    func testSleepHasNoPersonalNormButHrvAndRhrDo() {
+        let ns = (0..<16).map { i in
+            AppleRecoveryEstimator.Night(day: day(i), hrvSDNN: 50, restingHr: 55, resp: nil,
+                                         sleepPerf: 0.9, sleepMinutes: 420)
+        }
+        let byKey = Dictionary(AppleRecoveryEstimator.estimate(nights: ns).last!.signalDirections
+                                   .map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
+        XCTAssertEqual(byKey["hrv"]?.hasPersonalNorm, true)
+        XCTAssertEqual(byKey["rhr"]?.hasPersonalNorm, true)
+        XCTAssertEqual(byKey["sleep"]?.hasPersonalNorm, false, "sleep has no personal Apple baseline")
+    }
+
     /// HRV above the user's own SDNN norm reads as `above` and HELPS (higher HRV is better); below flips both.
     func testHrvDirectionOrientation() {
         var highs = Array(repeating: 50.0, count: 15); highs.append(80)   // last night well above norm
