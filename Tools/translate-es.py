@@ -22,6 +22,8 @@ ES: dict[str, str] = {
     "Calendar · 90 nights": "Calendario · 90 noches",
     "Tap a night to see its sleep.": "Toca una noche para ver su sueño.",
     "Tap a day to see its strain.": "Toca un día para ver su esfuerzo.",
+    # FER-832 — Estrés: calendario de 90 días.
+    "Tap a day to see its stress.": "Toca un día para ver su estrés.",
     # FER-833 — VO₂max: 2 tiles compactos (categoría + edad equivalente).
     "FITNESS CATEGORY": "CATEGORÍA DE FORMA",
     "EQUIVALENT AGE": "EDAD EQUIVALENTE",
@@ -43,6 +45,13 @@ ES: dict[str, str] = {
     "Mean": "Media",
     "today, in progress": "hoy, en curso",
     "Base": "Base",
+    # FER-831 — Recuperación: Panorama 2×2 (pronóstico + rango + estabilidad + carga).
+    "Panorama": "Panorama",
+    "Tomorrow": "Mañana",
+    "Rising": "Al alza",
+    "Falling": "A la baja",
+    "A forecast is a projection, not a guarantee.":
+        "El pronóstico es una proyección, no una garantía.",
     # FER-459/469 — «N días/noches» por banda en la lista de rangos. Las líneas
     # «%lld of the last %lld days/nights in this range» y «%lld days» ya existen en el catálogo.
     "%lld day": "%lld día",

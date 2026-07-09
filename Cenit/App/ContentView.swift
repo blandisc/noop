@@ -99,7 +99,9 @@ struct ContentView: View {
     @MainActor private func maybeOfferRestore() async {
         guard onboarded, !didOfferRestore else { return }
         try? await Task.sleep(nanoseconds: 2_500_000_000)   // let the launch refresh populate first
-        guard !didOfferRestore, repo.days.isEmpty else { return }   // re-check after the await
+        // `fullyLoaded` too (two-pass launch): a user whose stored data is all older than the
+        // first-paint window would look empty after pass ① — and `didOfferRestore` is sticky.
+        guard !didOfferRestore, repo.fullyLoaded, repo.days.isEmpty else { return }   // re-check after the await
         didOfferRestore = true
         showRestoreOffer = true
     }
