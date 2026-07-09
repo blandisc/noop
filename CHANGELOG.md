@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La franja de Carga se queda en Señales / The Load strip stays on the Signals page.**
+  **ES** — La franja «CARGA» estaba fija bajo las pestañas, así que se veía tanto en Señales como en el Brief. Ahora vive dentro de la página de Señales: queda pegada a las métricas de hoy y, al deslizar al Brief, desaparece.
+  **EN** — The «LOAD» strip was pinned below the tabs, so it showed on both the Signals and the Brief page. It now lives inside the Signals page: it stays with today's metrics and, when you swipe to the Brief, it's gone.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **La app abre al instante aunque tu historial sea enorme / The app opens instantly even with a huge history.**
   **ES** — Al arrancar, la app cargaba todo tu historial (hasta ~11 años de días) antes de pintar «Hoy». Ahora pinta primero con tus últimos 90 días —milisegundos— y completa el resto en segundo plano sin congelar la pantalla. Nada cambia en tus números: los cálculos de fondo (líneas base, experimentos) esperan siempre a la historia completa.
   **EN** — On launch the app loaded your whole history (up to ~11 years of days) before painting "Today". Now it paints first with your last 90 days — milliseconds — and completes the rest in the background without freezing the screen. Your numbers don't change: background computations (baselines, experiments) always wait for the full history.
