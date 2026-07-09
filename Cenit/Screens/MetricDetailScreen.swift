@@ -404,7 +404,11 @@ struct MetricDetailScreen: View {
         if let m = stepsMovers {
             let pctStr = "\(m.pct)%"
             VStack(alignment: .leading, spacing: 8) {
-                Text("What moves your steps").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("What moves your steps").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 8)
+                    InlineFlagChip("trend, not cause", color: theme.inkTertiary)   // handoff chip (FER-830)
+                }
                 Text(m.weekendHigher
                      ? "Your weekends average about \(fmt(m.weekendAvg)) steps — roughly \(pctStr) more than your weekdays."
                      : "Your weekends average about \(fmt(m.weekendAvg)) steps — roughly \(pctStr) fewer than your weekdays.")
@@ -2129,7 +2133,7 @@ struct MetricDetailScreen: View {
                     }
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(cell.value).font(StrandFont.number(14)).foregroundStyle(cell.color)
+                    Text(cell.value).font(StrandFont.number(17)).foregroundStyle(cell.color)   // handoff tile 17px (FER-830)
                     if let u = cell.unitSuffix {
                         Text(u).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }

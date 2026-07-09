@@ -52320,6 +52320,57 @@
           }
         }
       }
+    },
+    "Calendar · 90 nights": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar · 90 nights"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendario · 90 noches"
+          }
+        }
+      }
+    },
+    "Tap a night to see its sleep.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a night to see its sleep."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca una noche para ver su sueño."
+          }
+        }
+      }
+    },
+    "Tap a day to see its strain.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a day to see its strain."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca un día para ver su esfuerzo."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

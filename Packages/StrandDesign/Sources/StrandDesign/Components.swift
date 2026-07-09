@@ -57,10 +57,14 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// capsule and `paper` Grotesk label — the bolder segmented look the session's editor uses. Only
     /// meaningful with a `theme`; the default (`false`) keeps the quiet surface-thumb look.
     var inkThumb: Bool = false
+    /// «Tall» variant (handoff v2 landing, FER-830): the themed segment grows to a 44pt touch height
+    /// (iOS HIG minimum) instead of the compact 28pt — used for the Tendencias landing selector. Only
+    /// meaningful with a `theme`; default keeps the compact height.
+    var tall: Bool = false
     public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme? = nil,
-                inkThumb: Bool = false, label: @escaping (T) -> String) {
+                inkThumb: Bool = false, tall: Bool = false, label: @escaping (T) -> String) {
         self.items = items; self._selection = selection; self.theme = theme
-        self.inkThumb = inkThumb; self.label = label
+        self.inkThumb = inkThumb; self.tall = tall; self.label = label
     }
     public var body: some View {
         HStack(spacing: theme == nil ? 4 : 2) {
@@ -104,7 +108,7 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 .lineLimit(1).minimumScaleFactor(0.85)
                 .foregroundStyle(sel ? theme.ink : theme.inkSecondary)
                 .padding(.horizontal, 12)
-                .frame(height: 28)
+                .frame(height: tall ? 44 : 28)
                 .background {
                     if sel {
                         Capsule(style: .continuous).fill(theme.surface)

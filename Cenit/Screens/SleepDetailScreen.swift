@@ -5,6 +5,12 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
+/// Measured-width key for the 90-night calendar heat grid (FER-830).
+private struct SleepCalWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
 // MARK: - SleepDetailScreen — el «Detalle de Sueño» en lenguaje «Instrumento» (FER-212)
 //
 // Hermana de `MetricDetailScreen` (FER-185): REUSA su lenguaje visual (el scaffold `DetailBlock`, el
@@ -46,6 +52,9 @@ struct SleepDetailScreen: View {
     @State private var range: ExploreRange = .month
     @State private var chartMode: MetricDetailScreen.ChartMode = .movingAverage
     @State private var durationParsed: [(day: String, date: Date?, value: Double)] = []
+    /// Measured width so the 90-night heat grid fills it; the tapped night for the read-out. (FER-830)
+    @State private var calWidth: CGFloat = 0
+    @State private var selectedSleepNight: RecoveryDay? = nil
 
     var body: some View {
         ScrollView {
@@ -64,6 +73,7 @@ struct SleepDetailScreen: View {
                     nightMetricsBlock(night)
                     durationTrendBlock
                     weeklyDebtBlock
+                    sleepCalendarBlock
                     methodDisclosure
                     sourceFooter
                 } else {
@@ -796,6 +806,77 @@ struct SleepDetailScreen: View {
         .tint(theme.inkTertiary)
         .padding(NoopMetrics.cardPadding)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+    }
+
+    // MARK: - 7b. Calendario · 90 noches (handoff v2, FER-830) — heatmap teñido por horas de sueño
+
+    private static let calDayFmt: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")!; f.dateFormat = "yyyy-MM-dd"; return f
+    }()
+    private static let calReadoutFmt: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "EEE d MMM"; return f
+    }()
+
+    /// The trailing 90 nights as `RecoveryDay` (score = minutes slept, nil where there's no reading), so the
+    /// grid is contiguous. Dates stamped at noon UTC so the weekday never crosses a boundary.
+    private var sleepHeat: [RecoveryDay] {
+        var mins: [String: Double] = [:]
+        for r in durationParsed { mins[r.day] = r.value }
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
+        let today = cal.startOfDay(for: Date())
+        return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
+            guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
+            let key = Self.calDayFmt.string(from: date)
+            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: mins[key])
+        }
+    }
+
+    /// Tint a night by hours slept: enough (≥7h) deep periwinkle, ok (6–7h) light, short (<6h) amber.
+    private func sleepHeatTint(_ minutes: Double) -> Color {
+        let h = minutes / 60
+        if h >= 7 { return theme.dataSleep }
+        if h >= 6 { return theme.dataSleepLight }
+        return theme.warning
+    }
+
+    @ViewBuilder private var sleepCalendarBlock: some View {
+        if durationParsed.contains(where: { $0.value > 0 }) {
+            DetailBlock("Calendar · 90 nights", theme: theme) {
+                VStack(alignment: .leading, spacing: 10) {
+                    let cols = Swift.max(1, YearHeatStrip.weekColumns(for: sleepHeat))
+                    let spacing: CGFloat = 4
+                    let cell: CGFloat = calWidth > 0
+                        ? Swift.max(8, Swift.min(22, (calWidth - 24 - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
+                        : 14
+                    YearHeatStrip(
+                        days: sleepHeat, cellSize: cell, spacing: spacing, showsScrub: false,
+                        tint: sleepHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
+                        labelColor: theme.inkTertiary, onSelect: { selectedSleepNight = $0 }, selectionColor: theme.ink
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(GeometryReader { g in Color.clear
+                        .preference(key: SleepCalWidthKey.self, value: g.size.width) })
+                    .onPreferenceChange(SleepCalWidthKey.self) { calWidth = $0 }
+                    if let n = selectedSleepNight {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(Self.calReadoutFmt.string(from: n.date)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            Spacer(minLength: 8)
+                            if let m = n.score {
+                                Text(String(format: "%d:%02d", Int(m) / 60, Int(m) % 60))
+                                    .font(StrandFont.number(20)).foregroundStyle(sleepHeatTint(m))
+                            } else {
+                                Text("—").font(StrandFont.number(20)).foregroundStyle(theme.inkTertiary)
+                                Text("no reading").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                            }
+                        }
+                        .accessibilityElement(children: .combine)
+                    } else {
+                        Text("Tap a night to see its sleep.").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - 8. Footer — fuente del dato (la fuente migró aquí desde el contexto del héroe)

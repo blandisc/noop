@@ -5,6 +5,12 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
+/// Measured-width key for the 90-day calendar heat grid (FER-830).
+private struct StrainCalWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
 // MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en «Instrumento» (FER-238)
 //
 // Hermana de `MetricDetailScreen` (FER-185), `RecoveryDetailScreen` (FER-225) y `SleepDetailScreen`
@@ -47,6 +53,9 @@ struct StrainDetailScreen: View {
     /// The strain series with each `day` string parsed to a `Date` exactly ONCE (not per slice / per
     /// render) — the window math reads `date` straight from here. Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
+    /// Measured width so the 90-day heat grid fills it; the tapped day for the read-out. (FER-830)
+    @State private var calWidth: CGFloat = 0
+    @State private var selectedStrainDay: RecoveryDay? = nil
     /// Today's intraday curve, loaded in `.task` (loading well until then).
     @State private var curve: [TrendPoint] = []
     @State private var curveLoaded = false
@@ -85,6 +94,10 @@ struct StrainDetailScreen: View {
                     if model.hasData {
                         blockDivider
                         historySection
+                    }
+                    if model.hasData {
+                        blockDivider
+                        strainCalendarBlock
                     }
                     blockDivider
                     methodDisclosure
@@ -396,6 +409,73 @@ struct StrainDetailScreen: View {
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
         .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
+    }
+
+    // MARK: - Calendario · 90 días (handoff v2, FER-830) — heatmap en el hue de esfuerzo por nivel
+
+    private static let calDayFmt: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")!; f.dateFormat = "yyyy-MM-dd"; return f
+    }()
+    private static let calReadoutFmt: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "EEE d MMM"; return f
+    }()
+
+    /// The trailing 90 days as `RecoveryDay` (score = strain 0–21, nil where there's no reading).
+    private var strainHeat: [RecoveryDay] {
+        var vals: [String: Double] = [:]
+        for r in parsed { vals[r.day] = r.value }
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
+        let today = cal.startOfDay(for: Date())
+        return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
+            guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
+            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: vals[Self.calDayFmt.string(from: date)])
+        }
+    }
+
+    /// Strain is descriptive (not evaluative), so the heat is one hue at three intensities.
+    private func strainHeatTint(_ v: Double) -> Color {
+        if v >= 14 { return theme.dataStrain }
+        if v >= 8 { return theme.dataStrain.opacity(0.6) }
+        return theme.dataStrain.opacity(0.32)
+    }
+
+    @ViewBuilder private var strainCalendarBlock: some View {
+        if parsed.contains(where: { $0.value > 0 }) {
+            DetailBlock("Calendar · 90 days", theme: theme) {
+                VStack(alignment: .leading, spacing: 10) {
+                    let cols = Swift.max(1, YearHeatStrip.weekColumns(for: strainHeat))
+                    let spacing: CGFloat = 4
+                    let cell: CGFloat = calWidth > 0
+                        ? Swift.max(8, Swift.min(22, (calWidth - 24 - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
+                        : 14
+                    YearHeatStrip(
+                        days: strainHeat, cellSize: cell, spacing: spacing, showsScrub: false,
+                        tint: strainHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
+                        labelColor: theme.inkTertiary, onSelect: { selectedStrainDay = $0 }, selectionColor: theme.ink
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(GeometryReader { g in Color.clear
+                        .preference(key: StrainCalWidthKey.self, value: g.size.width) })
+                    .onPreferenceChange(StrainCalWidthKey.self) { calWidth = $0 }
+                    if let d = selectedStrainDay {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(Self.calReadoutFmt.string(from: d.date)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            Spacer(minLength: 8)
+                            if let v = d.score {
+                                Text(String(format: "%.1f", v)).font(StrandFont.number(20)).foregroundStyle(theme.dataStrain)
+                            } else {
+                                Text("—").font(StrandFont.number(20)).foregroundStyle(theme.inkTertiary)
+                                Text("no reading").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                            }
+                        }
+                        .accessibilityElement(children: .combine)
+                    } else {
+                        Text("Tap a day to see its strain.").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Ver el método (DisclosureGroup, patrón de las otras pantallas)

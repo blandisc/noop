@@ -18,6 +18,10 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-830 — reconciliación Ola 3: calendarios Sueño/Esfuerzo.
+    "Calendar · 90 nights": "Calendario · 90 noches",
+    "Tap a night to see its sleep.": "Toca una noche para ver su sueño.",
+    "Tap a day to see its strain.": "Toca un día para ver su esfuerzo.",
     # FER-826 — Landing de Tendencias §8.7: micro-leyenda + leyenda de orígenes.
     "Today's values · last month's trends": "Valores de hoy · tendencias del último mes",
     "band": "banda",
