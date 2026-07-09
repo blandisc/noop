@@ -621,9 +621,9 @@ private struct CuerpoLanding: View {
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
-                Image(systemName: "chevron.right")
-                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    .accessibilityHidden(true)
+                // Sin chevron (FER-837 follow-up): el renglón «Toca cualquier dato para ver su detalle»
+                // ya comunica que la tarjeta es tocable; el chevron se reserva a las que abren una
+                // pantalla/herramienta distinta (Mapa muscular, «tras cada deporte», Comparar, Ver todas).
             }
             .padding(.vertical, 16).padding(.horizontal, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -723,9 +723,8 @@ private struct CuerpoLanding: View {
                 Spacer(minLength: 8)
                 recoveryHeroAccessory(score: score, calibrating: cal,
                                       spark: showSpark ? spark : nil, color: color)
-                Image(systemName: "chevron.right")
-                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    .accessibilityHidden(true)
+                // Sin chevron (FER-837 follow-up): el renglón «Toca cualquier dato…» ya comunica el toque;
+                // el chevron queda solo en las tarjetas que abren pantalla/herramienta distinta.
             }
             .padding(.vertical, 18).padding(.horizontal, 20)
             .frame(maxWidth: .infinity)
