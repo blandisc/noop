@@ -74,6 +74,13 @@ final class Repository: ObservableObject {
         /// governs those, FER-629).
         var fusion: [String: [String: FusedMetricPoint]] = [:]
         var loaded = false
+        /// True once a FULL refresh pass (whole stored history) has published. The launch first-paint
+        /// pass (~90 days) publishes `loaded == true` with this still false. RULE: anything that
+        /// PERSISTS a value derived from `days` — the engine's baselines (`analyzeRecent`), the
+        /// experiment verdict (`closeDueExperiment`), the restore offer — must gate on this flag;
+        /// pure display readers may see the short window transiently and self-correct on the full
+        /// publish. Monotonic within a session: nothing resets it to false.
+        var fullyLoaded = false
         var seq = 0
     }
     @Published private(set) var dashboard = DashboardData()
@@ -95,6 +102,8 @@ final class Repository: ObservableObject {
     /// Imported (export-verbatim) sleep figures by day. Empty until a WHOOP import lands.
     var importedSleep: [String: ImportedSleepFigures] { dashboard.importedSleep }
     var loaded: Bool { dashboard.loaded }
+    /// True once the FULL history is published (see `DashboardData.fullyLoaded` for the rule).
+    var fullyLoaded: Bool { dashboard.fullyLoaded }
     /// Monotonic counter bumped on every successful `refresh()`. Intraday-updating views key their
     /// data load on this so they reload when fresh strap data lands — `today?.day` alone is a stable
     /// date string within a day and would freeze e.g. the Today HR trend until the date rolls over.
@@ -225,10 +234,42 @@ final class Repository: ObservableObject {
         do { try await store.checkpointWAL(); return true } catch { return false }
     }
 
-    /// Reload the dashboard caches over the last `nDays`, merging imported history with the
-    /// on-device computed scores so a strap-only user still gets a populated dashboard.
-    func refresh(days nDays: Int = 4000) async {
+    /// First-paint pass of the launch refresh: reload only the trailing `firstPaintWindowDays` so
+    /// «Hoy» renders in milliseconds instead of waiting for the full history (the window always
+    /// contains today's row and every UI baseline ≤ 90 days). Publishes `loaded == true` but
+    /// `fullyLoaded == false` — anything that PERSISTS a value derived from `days` (the engine's
+    /// baselines, `closeDueExperiment`, the restore offer) must keep waiting for `fullyLoaded`.
+    /// Never overwrites an already-full dashboard (`shouldPublish`).
+    func refreshFirstPaint() async {
+        await performRefresh(windowDays: Self.firstPaintWindowDays, full: false)
+    }
+
+    /// Reload the dashboard caches over the full stored history, merging imported history with the
+    /// on-device computed scores so a strap-only user still gets a populated dashboard. Publishes
+    /// `fullyLoaded == true`; the heavy merge work runs OFF the main actor (`assembleDashboard`).
+    func refresh() async {
+        await performRefresh(windowDays: 4000, full: true)
+    }
+
+    static let firstPaintWindowDays = 90
+
+    /// Generation counter for in-flight refreshes: only the most recently STARTED refresh may
+    /// publish, so a slow old pass (e.g. the launch full pass finishing after a pull-to-refresh)
+    /// can never clobber a newer dashboard. @MainActor-confined, so no races.
+    private var refreshGen = 0
+
+    /// Whether a finished refresh pass may publish its dashboard. Pure so a unit test can pin the
+    /// matrix: a stale generation never publishes; a first-paint pass never overwrites a dashboard
+    /// that is already fully loaded (`fullyLoaded` is monotonic within a session).
+    nonisolated static func shouldPublish(gen: Int, latestGen: Int,
+                                          isFirstPaint: Bool, alreadyFull: Bool) -> Bool {
+        gen == latestGen && !(isFirstPaint && alreadyFull)
+    }
+
+    private func performRefresh(windowDays nDays: Int, full: Bool) async {
         guard let store = await ensureStore() else { return }
+        refreshGen += 1
+        let gen = refreshGen
         let now = Date()
         let (fromDay, toDay) = Self.dayWindow(days: nDays, now: now)
         let nowTs = Int(now.timeIntervalSince1970)
@@ -251,8 +292,6 @@ final class Repository: ObservableObject {
         // FER-486: Apple Health sleep sessions (real per-epoch stage timeline), gated on the mode. The band
         // wins per night, so the appleSleeps surfaced to the Detalle drop any overlapping a strap session.
         let appleSleepRaw = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: lo, to: hi, limit: 4000)) ?? []) : []
-        let strapSleeps = Self.mergeSleep(imported: impSleep, computed: compSleep)
-        let appleSleeps = Self.appleSleepsNotCoveredByStrap(apple: appleSleepRaw, strap: strapSleeps)
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
@@ -266,14 +305,63 @@ final class Repository: ObservableObject {
         let cons = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_consistency", from: fromDay, to: toDay)) ?? []) : []
         let need = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_need_min", from: fromDay, to: toDay)) ?? []) : []
         let debt = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_debt_min", from: fromDay, to: toDay)) ?? []) : []
-        var fig: [String: ImportedSleepFigures] = [:]
-        for p in perf { fig[p.day, default: ImportedSleepFigures()].performancePct = p.value }
-        for p in cons { fig[p.day, default: ImportedSleepFigures()].consistencyPct = p.value }
-        for p in need { fig[p.day, default: ImportedSleepFigures()].needMin = p.value }
-        for p in debt { fig[p.day, default: ImportedSleepFigures()].debtMin = p.value }
 
+        // The O(n) merge/fusion work over every row read runs OFF the main actor (`assembleDashboard`
+        // is nonisolated) — on a years-deep DB the full pass builds the dashboard without stealing
+        // frames from the UI the first-paint pass already put up.
+        let assembled = await Self.assembleDashboard(RefreshInputs(
+            importedRaw: importedRaw, computedRaw: computedRaw, appleRaw: appleRaw,
+            imported: imported, computed: computed, apple: apple,
+            impSleepRaw: impSleepRaw, compSleepRaw: compSleepRaw,
+            impSleep: impSleep, compSleep: compSleep, appleSleepRaw: appleSleepRaw,
+            appleAggRaw: appleAggRaw, stepsEstRaw: stepsEstRaw,
+            perf: perf, cons: cons, need: need, debt: debt))
+
+        // Back on the main actor: publish only if this is still the newest refresh, and never let a
+        // first-paint pass overwrite a fully loaded dashboard.
+        guard Self.shouldPublish(gen: gen, latestGen: refreshGen,
+                                 isFirstPaint: !full, alreadyFull: dashboard.fullyLoaded) else { return }
+        var next = assembled
+        next.loaded = true
+        next.fullyLoaded = full
+        next.seq = dashboard.seq + 1
         // One assignment → one objectWillChange for the whole refresh (was four).
-        let merged = Self.mergeDaily(imported: imported, computed: computed, apple: apple)
+        self.dashboard = next
+        #if DEBUG
+        let ms = Int(Date().timeIntervalSince(now) * 1000)
+        print("[refresh] \(full ? "full" : "firstPaint") publicado en \(ms) ms · \(next.days.count) días")
+        #endif
+    }
+
+    /// Every raw query result a refresh pass read, plus the already-mode-filtered variants (the
+    /// gating happens at query time, exactly as before). Value types only, so the bundle can cross
+    /// off the main actor into `assembleDashboard`.
+    struct RefreshInputs {
+        var importedRaw: [DailyMetric]; var computedRaw: [DailyMetric]; var appleRaw: [DailyMetric]
+        var imported: [DailyMetric]; var computed: [DailyMetric]; var apple: [DailyMetric]
+        var impSleepRaw: [CachedSleepSession]; var compSleepRaw: [CachedSleepSession]
+        var impSleep: [CachedSleepSession]; var compSleep: [CachedSleepSession]
+        var appleSleepRaw: [CachedSleepSession]
+        var appleAggRaw: [AppleDaily]; var stepsEstRaw: [MetricPoint]
+        var perf: [MetricPoint]; var cons: [MetricPoint]; var need: [MetricPoint]; var debt: [MetricPoint]
+    }
+
+    /// Pure assembly of the dashboard from rows already read — the EXACT merge pipeline `refresh()`
+    /// ran inline before the two-pass split, extracted verbatim so the merge/fusion tests keep
+    /// pinning it. `nonisolated async` ⇒ runs on the global executor, not the main actor. Returns
+    /// the dashboard with `loaded`/`fullyLoaded`/`seq` left at defaults — publication (and whether
+    /// it happens at all) is the caller's @MainActor decision.
+    nonisolated static func assembleDashboard(_ inputs: RefreshInputs) async -> DashboardData {
+        let strapSleeps = Self.mergeSleep(imported: inputs.impSleep, computed: inputs.compSleep)
+        let appleSleeps = Self.appleSleepsNotCoveredByStrap(apple: inputs.appleSleepRaw, strap: strapSleeps)
+
+        var fig: [String: ImportedSleepFigures] = [:]
+        for p in inputs.perf { fig[p.day, default: ImportedSleepFigures()].performancePct = p.value }
+        for p in inputs.cons { fig[p.day, default: ImportedSleepFigures()].consistencyPct = p.value }
+        for p in inputs.need { fig[p.day, default: ImportedSleepFigures()].needMin = p.value }
+        for p in inputs.debt { fig[p.day, default: ImportedSleepFigures()].debtMin = p.value }
+
+        let merged = Self.mergeDaily(imported: inputs.imported, computed: inputs.computed, apple: inputs.apple)
         // FER-153 (Capa 2) + FER-529 (F4b): the ESTIMATED recovery for any day whose MEASURED recovery is
         // nil — a band-less Apple night (FER-153) OR a cold-start night where the band is worn but its RMSSD
         // baseline isn't seeded yet (FER-529). Computed read-time (no migration/persistence). Eligibility
@@ -283,19 +371,19 @@ final class Repository: ObservableObject {
         // history can mix in an estimate; it surfaces only via `repo.today` (single day). `whoopOnly` →
         // `apple == []` → empty. `mergeDaily` is the unchanged band/Apple merge.
         let daysNeedingEstimate = Set(merged.days.filter { $0.recovery == nil }.map(\.day))
-        let estimates = Self.appleRecoveryEstimates(apple: apple, eligibleDays: daysNeedingEstimate)
+        let estimates = Self.appleRecoveryEstimates(apple: inputs.apple, eligibleDays: daysNeedingEstimate)
         // FER-485: stored per-source coverage from the UNFILTERED raws (the always-Combined truth), so the
         // diagnostic coverage shows what's stored even when the mode hides a source from the dashboard.
-        let storedStrap = Set(importedRaw.map(\.day)).union(computedRaw.map(\.day))
-        let storedAppleOnly = Set(appleRaw.map(\.day)).subtracting(storedStrap)
-        let storedSleeps = Self.mergeSleep(imported: impSleepRaw, computed: compSleepRaw).count
+        let storedStrap = Set(inputs.importedRaw.map(\.day)).union(inputs.computedRaw.map(\.day))
+        let storedAppleOnly = Set(inputs.appleRaw.map(\.day)).subtracting(storedStrap)
+        let storedSleeps = Self.mergeSleep(imported: inputs.impSleepRaw, computed: inputs.compSleepRaw).count
         // FER-670: per-day single-construct fusion (steps / sleep total / active kcal) from the
         // mode-filtered arrays — display transparency only, never a baseline input.
         var stepsEstByDay: [String: Double] = [:]
-        for p in stepsEstRaw { stepsEstByDay[p.day] = p.value }
-        let fusion = Self.fusionByDay(imported: imported, computed: computed, apple: apple,
-                                      appleAgg: appleAggRaw, stepsEst: stepsEstByDay)
-        self.dashboard = DashboardData(
+        for p in inputs.stepsEstRaw { stepsEstByDay[p.day] = p.value }
+        let fusion = Self.fusionByDay(imported: inputs.imported, computed: inputs.computed, apple: inputs.apple,
+                                      appleAgg: inputs.appleAggRaw, stepsEst: stepsEstByDay)
+        return DashboardData(
             days: merged.days,
             displayDays: merged.displayDays,
             sleeps: strapSleeps,
@@ -306,9 +394,7 @@ final class Repository: ObservableObject {
             storedAppleOnlyDays: storedAppleOnly,
             storedSleepsCount: storedSleeps,
             recoveryEstimates: estimates,
-            fusion: fusion,
-            loaded: true,
-            seq: dashboard.seq + 1
+            fusion: fusion
         )
     }
 
@@ -318,9 +404,11 @@ final class Repository: ObservableObject {
                       sleeps: [CachedSleepSession] = [],
                       importedSleep: [String: ImportedSleepFigures] = [:],
                       appleHealthDays: Set<String> = [],
-                      loaded: Bool = true) {
+                      loaded: Bool = true,
+                      fullyLoaded: Bool = true) {
         dashboard = DashboardData(days: days, displayDays: days, sleeps: sleeps, importedSleep: importedSleep,
-                                  appleHealthDays: appleHealthDays, loaded: loaded, seq: dashboard.seq + 1)
+                                  appleHealthDays: appleHealthDays, loaded: loaded, fullyLoaded: fullyLoaded,
+                                  seq: dashboard.seq + 1)
     }
 
     /// Layered precedence (FER-62): Apple Health rows are the base, on-device computed rows fill the
@@ -337,7 +425,7 @@ final class Repository: ObservableObject {
     /// strap-covered day whose measured fields are nil (a partial-connection day) back-fills those nils
     /// from the Apple Health row this merge overwrote, so the HRV sparkline/trend shows Apple's value
     /// instead of a gap. The strap value always wins when present — only genuine gaps fill.
-    static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric],
+    nonisolated static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric],
                            apple: [DailyMetric]) -> (days: [DailyMetric], appleDays: Set<String>,
                                                      displayDays: [DailyMetric]) {
         var byDay: [String: DailyMetric] = [:]
@@ -364,7 +452,7 @@ final class Repository: ObservableObject {
     /// `isRecoveryEstimated` honest: an estimate exists only where it would actually be shown, so the band
     /// wins the instant it can compute. Pure + static so `RepositoryMergeTests` can pin it. `apple == []`
     /// (whoopOnly) → empty.
-    static func appleRecoveryEstimates(apple: [DailyMetric], eligibleDays: Set<String>)
+    nonisolated static func appleRecoveryEstimates(apple: [DailyMetric], eligibleDays: Set<String>)
         -> [String: AppleRecoveryEstimator.DayEstimate] {
         guard !apple.isEmpty else { return [:] }
         let nights = apple.map {
@@ -391,7 +479,7 @@ final class Repository: ObservableObject {
     ///                         estimate (`activeKcalEst`).
     /// Only days where ≥2 sources reported a metric produce an entry — a `.single` day has nothing to
     /// cross-check and nothing to show. Pure + static so a unit test can pin it.
-    static func fusionByDay(imported: [DailyMetric], computed: [DailyMetric], apple: [DailyMetric],
+    nonisolated static func fusionByDay(imported: [DailyMetric], computed: [DailyMetric], apple: [DailyMetric],
                             appleAgg: [AppleDaily], stepsEst: [String: Double])
         -> [String: [String: FusedMetricPoint]] {
         var impByDay: [String: DailyMetric] = [:]
@@ -435,9 +523,9 @@ final class Repository: ObservableObject {
     }
 
     /// Same precedence for sleep sessions, keyed by the day the night ends on.
-    private static func mergeSleep(imported: [CachedSleepSession], computed: [CachedSleepSession]) -> [CachedSleepSession] {
+    nonisolated private static func mergeSleep(imported: [CachedSleepSession], computed: [CachedSleepSession]) -> [CachedSleepSession] {
         func endDay(_ s: CachedSleepSession) -> String {
-            dayString(Date(timeIntervalSince1970: TimeInterval(s.endTs)))
+            DayKey.local(Date(timeIntervalSince1970: TimeInterval(s.endTs)))
         }
         var byDay: [String: CachedSleepSession] = [:]
         for s in computed { byDay[endDay(s)] = s }
@@ -526,7 +614,7 @@ final class Repository: ObservableObject {
     /// Apple Health sleep sessions to surface in the Detalle when the band didn't cover that night — the
     /// band wins per night, so an Apple session overlapping ANY strap session's span is dropped (FER-486).
     /// (Strap and Apple have different startTs for the same sleep, so this is interval-overlap, not startTs.)
-    static func appleSleepsNotCoveredByStrap(apple: [CachedSleepSession], strap: [CachedSleepSession]) -> [CachedSleepSession] {
+    nonisolated static func appleSleepsNotCoveredByStrap(apple: [CachedSleepSession], strap: [CachedSleepSession]) -> [CachedSleepSession] {
         apple.filter { a in !strap.contains { $0.startTs <= a.endTs && $0.endTs >= a.startTs } }
              .sorted { $0.startTs < $1.startTs }
     }
@@ -847,6 +935,10 @@ final class Repository: ObservableObject {
     /// verdict and persist it (`completed`). Idempotent: a `running` experiment whose window isn't up
     /// yet, or no experiment at all, is left untouched. Call before reading the experiment for display.
     func closeDueExperiment(today: String) async {
+        // The verdict's "without" side reads the FULL history (`days` below) and the completed row is
+        // persisted — never close over the first-paint window (~90 days) or the verdict could differ.
+        // Idempotent: it simply closes on the next visit/refresh once the full pass has published.
+        guard dashboard.fullyLoaded else { return }
         guard let store = await ensureStore(),
               let exp = (try? await store.activeExperiment(deviceId: Self.journalDeviceId)) ?? nil,
               let endKey = Self.experimentEndDay(exp) else { return }

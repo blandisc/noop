@@ -65,6 +65,12 @@ final class IntelligenceEngine: ObservableObject {
     @discardableResult
     func analyzeRecent(maxDays: Int = 21, force: Bool = false) async -> Set<String> {
         guard !computing else { return [] }
+        // Two-pass launch refresh: `repo.days` below is the baseline input, and until the FULL pass
+        // publishes it may hold only the ~90-day first-paint window — folding baselines over that
+        // truncated history would skew every score. Skip silently: every caller has a backstop (the
+        // 15-min loop, the debounced post-backfill recompute, the immediate morning pass — all run
+        // after `refresh()` completes).
+        guard repo.fullyLoaded else { return [] }
         guard let store = await repo.storeHandle() else { note = String(localized: "No on-device store yet."); return [] }
         guard let hrvCfg = Baselines.metricCfg["hrv"],
               let rhrCfg = Baselines.metricCfg["resting_hr"],
