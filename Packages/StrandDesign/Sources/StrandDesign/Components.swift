@@ -67,7 +67,7 @@ public struct SegmentedPillControl<T: Hashable>: View {
         self.inkThumb = inkThumb; self.tall = tall; self.label = label
     }
     public var body: some View {
-        HStack(spacing: theme == nil ? 4 : 2) {
+        HStack(spacing: 4) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 let sel = item == selection
                 Button { withAnimation(StrandMotion.interactive) { selection = item } } label: {
@@ -88,32 +88,19 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// 44pt min (the full segment width stays the tap target). Legacy (theme == nil) keeps the exact
     /// dark-palette look — UNCHANGED. (FER-439 / Detalle de Vital fix)
     @ViewBuilder private func segment(_ item: T, _ sel: Bool) -> some View {
-        if let theme, inkThumb {
-            // Ink-thumb: bolder handoff look — Grotesk label, ink capsule / paper text when active.
+        if let theme {
+            // Handoff v2 PeriodSelector: the active thumb is an INK capsule with PAPER text (Grotesk),
+            // not the old quiet surface thumb — the bolder look the CompactTrendToggle already uses. The
+            // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
+            // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
             Text(label(item))
                 .font(InstrumentoType.grotesk(12, weight: sel ? .bold : .medium))
                 .lineLimit(1).minimumScaleFactor(0.85)
                 .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
                 .padding(.horizontal, 12)
-                .frame(height: 34)
+                .frame(height: tall ? 44 : 34)
                 .background {
                     if sel { Capsule(style: .continuous).fill(theme.ink) }
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-        } else if let theme {
-            Text(label(item))
-                .font(StrandFont.subhead)
-                .fontWeight(sel ? .semibold : .regular)
-                .lineLimit(1).minimumScaleFactor(0.85)
-                .foregroundStyle(sel ? theme.ink : theme.inkSecondary)
-                .padding(.horizontal, 12)
-                .frame(height: tall ? 44 : 28)
-                .background {
-                    if sel {
-                        Capsule(style: .continuous).fill(theme.surface)
-                            .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
                 }
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
@@ -133,12 +120,11 @@ public struct SegmentedPillControl<T: Hashable>: View {
     // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); legacy
     // keeps its original fill. The border stays for both.
     private var trackFill: Color {
-        if inkThumb, let theme { return theme.patternBlock }
-        return theme?.hairline ?? InstrumentoTheme.base.hairline
+        guard let theme else { return InstrumentoTheme.base.hairline }
+        return theme.patternBlock
     }
     private var trackStroke: Color {
-        if inkThumb { return .clear }
-        return theme?.hairlineStrong ?? InstrumentoTheme.base.hairline
+        theme == nil ? InstrumentoTheme.base.hairline : .clear
     }
 }
 
