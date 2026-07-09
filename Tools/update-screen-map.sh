@@ -16,6 +16,10 @@ SIM="${1:-iPhone 17 Pro Max}"
 DEST="$ROOT/docs/fixtures"
 LOG="$(mktemp -t noop-screenmap-XXXXXX).log"
 
+# El simulador que bootea xcodebuild se queda prendido headless (~8 GB de RAM)
+# hasta el siguiente reinicio; apágalo al salir, pase lo que pase.
+trap 'xcrun simctl shutdown all >/dev/null 2>&1 || true' EXIT
+
 echo "▶︎ Corriendo UI test de screenshots en '$SIM'…"
 # GIT_CONFIG=/dev/null evita que un override local de git rompa la resolución de SwiftPM.
 GIT_CONFIG=/dev/null xcodebuild test \
