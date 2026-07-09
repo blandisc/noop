@@ -295,7 +295,9 @@ final class AppModel: ObservableObject {
 
     /// Start (or resume) the periodic on-device analysis loop. Idempotent — a call while the loop is
     /// already running is a no-op, so the launch path and the scene-phase `.active` hook don't
-    /// double-start it. The loop refreshes the dashboard once, waits for the first offload, then every
+    /// double-start it. The loop refreshes the dashboard once; if today still has no verdict it runs
+    /// `analyzeRecent()` right away (the stored raw streams may already produce it — no reason to make
+    /// the morning verdict wait for the offload grace); then waits for the first offload and every
     /// 15 min runs `analyzeRecent()` UNLESS a backfill or import is writing (it would compete with BLE
     /// on the main actor and could score fresh raw rows against a stale baseline). Cancelled in
     /// `stopAnalysisLoop()` when the app backgrounds (FER-177).
@@ -312,6 +314,14 @@ final class AppModel: ObservableObject {
             await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
             await self.compactDatabaseAfterSpo2PurgeIfNeeded() // FER-511: one-time VACUUM after the spo2 purge (flag-gated)
             await self.compactDatabaseAfterRebuildIfNeeded()   // FER-513: one-time VACUUM after the v21 rebuild (flag-gated)
+            // Si hoy aún no tiene veredicto (mañana post-medianoche: la fila no existe o su recovery es
+            // nil), no hagas esperar el primer análisis los 6 s del offload: los crudos YA almacenados
+            // pueden producirlo ahora. El sleep de abajo queda solo como cortesía al primer offload BLE.
+            if self.repo.today?.recovery == nil,
+               Self.mayRecomputeAfterBackfill(backfilling: self.live.backfilling,
+                                              hasActiveImport: self.hasActiveImport) {
+                await self.intelligence.analyzeRecent()
+            }
             try? await Task.sleep(nanoseconds: 6_000_000_000)  // give the first offload a moment
             while !Task.isCancelled {
                 if Self.mayRecomputeAfterBackfill(backfilling: self.live.backfilling,

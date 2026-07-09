@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tu veredicto de la mañana ya no espera de más / Your morning verdict no longer waits around.**
+  **ES** — Al abrir la app, si el veredicto de hoy aún no existía (típico en la mañana), el primer análisis esperaba 6 segundos fijos aunque tus datos ya estuvieran guardados. Ahora corre de inmediato y el veredicto aparece en cuanto abre la pantalla.
+  **EN** — On launch, if today's verdict didn't exist yet (typical in the morning), the first analysis waited a fixed 6 seconds even when your data was already stored. Now it runs right away and the verdict shows as soon as the screen opens.
+  ([AppModel.swift](Cenit/App/AppModel.swift))
+
 - **«Hoy» ya no narra estados falsos mientras carga / "Today" no longer narrates false states while loading.**
   **ES** — Al abrir la app en frío, el héroe mostraba por un instante «·· calibrando» o «sin lectura» —señales calculadas sobre una base aún vacía— y luego saltaba al veredicto real. Ahora, mientras tus datos cargan, muestra un neutro «—» sin narrativa, y el primer estado con palabras es el verdadero.
   **EN** — On a cold launch the hero briefly showed «·· calibrating» or «no reading» — signals computed over a still-empty base — then jumped to the real verdict. Now, while your data loads, it shows a neutral «—» with no narrative, and the first worded state is the true one.
