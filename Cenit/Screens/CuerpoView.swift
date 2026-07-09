@@ -251,8 +251,10 @@ private struct CuerpoLanding: View {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 titleBlock
                 periodSelector
-                // §8.7 landing micro-legend (handoff v2, FER-826): frames what the numbers vs the sparklines are.
-                Text("Today's values · last month's trends")
+                // §8.7 landing micro-legend (FER-837): un solo renglón que enseña que todo el landing es
+                // tocable — reemplaza al viejo «Valores de hoy · tendencias del último mes» y evita un ícono
+                // por métrica (se veía burdo). La afordancia la carga esta línea, no un glifo repetido.
+                Text("Tap any value to see its detail.")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 recoveryHero
@@ -511,13 +513,18 @@ private struct CuerpoLanding: View {
                             color: Color, legend: LocalizedStringKey? = nil, estimate: Bool = false,
                             fromApple: Bool = false, spark: [Double] = [], tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            VStack(alignment: .leading, spacing: 3) {
+            // FER-837: las rejillas de métricas (Descanso y carga · Vitales) centran su contenido sobre su
+            // propio eje — cada celda lee como una carátula de instrumento, no como un dato flotando a la
+            // izquierda con un charco de vacío. Los HERO y los títulos de sección se quedan editorial-izquierda.
+            VStack(alignment: .center, spacing: 3) {
                 // §8.7 landing: the label ALL-CAPS in its hue. Per the v2 handoff the landing carries NO
                 // per-stat origin dot and NO legend — provenance lives only at the foot of each detail
                 // screen (the `estimate`/`fromApple` provenance is still tracked, just not shown). (FER-834)
                 Text(label)
                     .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
                     .foregroundStyle(color)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.9)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value ?? "—")
                         .font(StrandFont.number(21))
@@ -543,10 +550,11 @@ private struct CuerpoLanding: View {
                 }
                 if let legend {
                     Text(legend).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .contentShape(Rectangle())
         }
         .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
@@ -600,8 +608,6 @@ private struct CuerpoLanding: View {
                     let color = band.flag.color(theme)
                     Sparkline(values: load.series.map(\.value),
                               gradient: ChartWell.fillGradient(color),
-                              referenceBand: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
-                              bandColor: theme.hairlineStrong,
                               lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
                         .frame(width: 104, height: 40)
                         .allowsHitTesting(false)
@@ -653,8 +659,8 @@ private struct CuerpoLanding: View {
     /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`.
     private var vitalsCard: some View {
         domainCard("Vitals") {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .leading), count: 3),
-                      alignment: .leading, spacing: 18) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .center), count: 3),
+                      alignment: .center, spacing: 18) {
                 hrvStat; rhrStat; spo2Stat; heartStat; respStat; skinTempStat
             }
         }

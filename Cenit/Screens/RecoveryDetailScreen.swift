@@ -323,19 +323,32 @@ struct RecoveryDetailScreen: View {
             let half = geo.size.width / 2
             let maxC: CGFloat = 1.5
             let mag = Swift.max(4, Swift.min(abs(CGFloat(contribution)) / maxC, 1.0) * half)
+            // FER-836 «pista + zona base»: the capsule now rides a full-width track with a shaded
+            // central «tu base» zone, so today's value reads against the WHOLE range, not floating
+            // next to a lone tick. Colors stay token-only; the math is unchanged (position = sign of
+            // the real oriented-z, length ∝ |contribution|) — no additive claim.
+            let trackH: CGFloat = 12
+            let baseZoneW = geo.size.width * 0.24
             ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(theme.trackWarm)
+                    .frame(width: geo.size.width, height: trackH)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(theme.hairline)
+                    .frame(width: baseZoneW, height: trackH)
+                    .offset(x: half - baseZoneW / 2)
                 Capsule()
                     .fill(color)
                     .frame(width: mag, height: 6)
                     .offset(x: contribution >= 0 ? half : half - mag)
                 Rectangle()
                     .fill(theme.hairlineStrong)
-                    .frame(width: 1, height: 9)
-                    .offset(x: half - 0.5)
+                    .frame(width: 1.5, height: 16)
+                    .offset(x: half - 0.75)
             }
             .frame(maxHeight: .infinity, alignment: .center)
         }
-        .frame(height: 9)
+        .frame(height: 16)
     }
 
     /// The unified axis legend: «◀ la frena · tu base · la sostiene ▶» — decorative, hidden from VoiceOver.
@@ -614,7 +627,6 @@ struct RecoveryDetailScreen: View {
     // Handoff v2 (reconciliación): el calendario 90d va VISIBLE, no colapsado bajo «Ver tu historial».
     @ViewBuilder private var historySection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("90-day calendar").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             calendarBlock
         }
     }

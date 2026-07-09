@@ -818,7 +818,7 @@ struct SleepDetailScreen: View {
         let f = DateFormatter(); f.dateFormat = "EEE d MMM"; return f
     }()
 
-    /// The trailing 90 nights as `RecoveryDay` (score = minutes slept, nil where there's no reading), so the
+    /// The trailing 90 nights as `RecoveryDay` (score = hours slept, nil where there's no reading), so the
     /// grid is contiguous. Dates stamped at noon UTC so the weekday never crosses a boundary.
     private var sleepHeat: [RecoveryDay] {
         var mins: [String: Double] = [:]
@@ -833,10 +833,11 @@ struct SleepDetailScreen: View {
     }
 
     /// Tint a night by hours slept: enough (≥7h) deep periwinkle, ok (6–7h) light, short (<6h) amber.
-    private func sleepHeatTint(_ minutes: Double) -> Color {
-        let h = minutes / 60
-        if h >= 7 { return theme.dataSleep }
-        if h >= 6 { return theme.dataSleepLight }
+    /// `hours` comes straight from `durationSeries` (already in hours) — FER-836: the old `/60` treated it
+    /// as minutes, so every night fell under 6h and the whole calendar rendered a flat amber block.
+    private func sleepHeatTint(_ hours: Double) -> Color {
+        if hours >= 7 { return theme.dataSleep }
+        if hours >= 6 { return theme.dataSleepLight }
         return theme.warning
     }
 
@@ -863,7 +864,7 @@ struct SleepDetailScreen: View {
                             Text(Self.calReadoutFmt.string(from: n.date)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                             Spacer(minLength: 8)
                             if let m = n.score {
-                                Text(String(format: "%d:%02d", Int(m) / 60, Int(m) % 60))
+                                Text(String(format: "%d:%02d", Int(m), Int((m - Double(Int(m))) * 60)))
                                     .font(StrandFont.number(20)).foregroundStyle(sleepHeatTint(m))
                             } else {
                                 Text("—").font(StrandFont.number(20)).foregroundStyle(theme.inkTertiary)
