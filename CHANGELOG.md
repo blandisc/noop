@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El selector de periodo estrena la píldora de tinta / The period selector gets its ink pill.**
+  **ES** — El segmento activo del selector de periodo (S · M · 3M · 6M · 1A) pasa del thumb claro con borde a una píldora de tinta con texto papel, el mismo look que ya usa el toggle Media/Rangos y que pide el handoff v2. Unifica todos los selectores temados de la app a ese look (antes convivían dos); la variante alta de 44pt del landing se conserva.
+  **EN** — The period selector's active segment (W · M · 3M · 6M · 1Y) moves from the light bordered thumb to an ink pill with paper text — the same look the Mean/Ranges toggle already uses and the v2 handoff calls for. It unifies every themed selector in the app to that look (two coexisted before); the landing's 44pt tall variant is preserved.
+  ([Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift))
 - **El landing de Tendencias se limpia de puntos de origen / The Trends landing sheds its origin dots.**
   **ES** — Siguiendo el handoff v2, el landing quita el puntito de origen de cada dato y la leyenda del pie: la procedencia (banda / Apple Salud / calculado) vive solo al pie de cada pantalla de detalle, no repartida por el resumen. Las cifras quedan más limpias; la procedencia sigue calculándose, solo no se pinta aquí.
   **EN** — Per the v2 handoff, the landing drops the per-stat origin dot and the foot legend: provenance (band / Apple Health / computed) lives only at the foot of each detail screen, not scattered across the summary. The numbers read cleaner; provenance is still tracked, just not shown here.
