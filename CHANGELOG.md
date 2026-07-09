@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La recuperación estimada ya no esconde «Hoy, vs tu normal» / Estimated recovery no longer hides «Today, vs your normal».**
+  **ES** — En el Detalle de Recuperación, cuando el puntaje de hoy es un estimado de Apple (noche sin banda), el bloque «Hoy, vs tu normal» ya no desaparece: ahora muestra, por cobertura, dónde quedó cada señal que Apple registró frente a tu norma de Apple (arriba/abajo/en tu normal) y su color según si ayuda o no — sin puntos exactos, porque el número es un estimado. Las señales que faltaron aparecen atenuadas con el motivo (p. ej. «Sin datos de sueño anoche»), el mismo relato que «N de 3 señales». Con banda no cambia nada.
+  **EN** — In the Recovery detail, when today's score is an Apple estimate (a band-less night), the «Today, vs your normal» block no longer disappears: it now shows, by coverage, where each signal Apple recorded sat vs your own Apple norm (above/below/around) colored by whether it helps — with no point magnitudes, since the number is an estimate. Missing signals show attenuated with the reason (e.g. «No sleep data last night»), the same story as «N of 3 signals». Band days are unchanged.
+  ([AppleRecoveryEstimator.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/AppleRecoveryEstimator.swift), [RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift))
+
 - **Vuelve atrás deslizando desde el borde, sin apuntar a la flecha / Swipe from the edge to go back, no need to aim for the arrow.**
   **ES** — En las pantallas de detalle de Tendencias (Recuperación, Sueño, Esfuerzo, Estrés, vitales, Edad física, Carga…) ahora puedes deslizar desde el borde izquierdo para volver: la pantalla sigue tu dedo y se cierra al pasar el umbral, o regresa si sueltas antes. La flecha «‹» sigue igual; el gesto es un extra. El gesto se limita al borde para no estorbar al scroll.
   **EN** — On the Trends detail screens (Recovery, Sleep, Strain, Stress, vitals, Physical age, Load…) you can now swipe in from the left edge to go back: the screen follows your finger and dismisses past a threshold, or springs back if you let go early. The «‹» chevron is unchanged; the gesture is a bonus. It's gated to the edge so it never fights vertical scrolling.

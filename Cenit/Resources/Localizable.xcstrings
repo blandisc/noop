@@ -52575,6 +52575,142 @@
           }
         }
       }
+    },
+    "Where the signals Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where the signals Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dónde quedaron las señales que registró Apple frente a tu normal. El número de hoy es un estimado, así que no hay desglose punto por punto."
+          }
+        }
+      }
+    },
+    "Above your usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above your usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por arriba de tu normal"
+          }
+        }
+      }
+    },
+    "Below your usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below your usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por abajo de tu normal"
+          }
+        }
+      }
+    },
+    "Around your usual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Around your usual"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tu normal"
+          }
+        }
+      }
+    },
+    "Recorded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registrado"
+          }
+        }
+      }
+    },
+    "No resting HR last night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No resting HR last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin FC en reposo anoche"
+          }
+        }
+      }
+    },
+    "No sleep data last night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sleep data last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin datos de sueño anoche"
+          }
+        }
+      }
+    },
+    "Not recorded last night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not recorded last night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se registró anoche"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
