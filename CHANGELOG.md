@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **VO₂max resume categoría y edad equivalente en dos fichas / VO₂max sums up category and equivalent age in two tiles.**
+  **ES** — El Detalle de VO₂max cambia la tabla de cuatro bandas y el bloque de «edad cardiorrespiratoria» por dos fichas compactas lado a lado — Categoría de forma y Edad equivalente — como en el handoff v2. Los rangos de las bandas y la aclaración de que es otra base que la Edad física se mueven a «Por qué importa» y al ⓘ. Sin matemática nueva.
+  **EN** — The VO₂max detail swaps the four-band table and the separate «cardiorespiratory age» block for two compact tiles side by side — Fitness category and Equivalent age — as in the v2 handoff. The band ranges and the «different basis from Physical age» note move to «Why it matters» and the ⓘ. No math changes.
+  ([MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
+
 - **Estrés estrena su calendario de 90 días / Stress gets its 90-day calendar.**
   **ES** — El Detalle de Estrés suma el mismo mapa de calor de 90 días que ya llevan Recuperación, Sueño y Esfuerzo, tal como lo pide el handoff v2. Como el estrés es evaluativo, el calor usa el semáforo de banda: verde (bajo), ámbar (moderado), rojo (alto). Toca un día para ver su valor.
   **EN** — The Stress detail adds the same 90-day heatmap Recovery, Sleep and Strain already carry, per the v2 handoff. Since stress is evaluative, the heat uses the band semaphore: green (low), amber (moderate), red (high). Tap a day to see its value.

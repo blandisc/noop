@@ -24,6 +24,9 @@ ES: dict[str, str] = {
     "Tap a day to see its strain.": "Toca un día para ver su esfuerzo.",
     # FER-832 — Estrés: calendario de 90 días.
     "Tap a day to see its stress.": "Toca un día para ver su estrés.",
+    # FER-833 — VO₂max: 2 tiles compactos (categoría + edad equivalente).
+    "FITNESS CATEGORY": "CATEGORÍA DE FORMA",
+    "EQUIVALENT AGE": "EDAD EQUIVALENTE",
     # FER-826 — Landing de Tendencias §8.7: micro-leyenda + leyenda de orígenes.
     "Today's values · last month's trends": "Valores de hoy · tendencias del último mes",
     "band": "banda",

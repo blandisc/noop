@@ -52473,6 +52473,40 @@
           }
         }
       }
+    },
+    "FITNESS CATEGORY": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FITNESS CATEGORY"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CATEGORÍA DE FORMA"
+          }
+        }
+      }
+    },
+    "EQUIVALENT AGE": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EQUIVALENT AGE"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EDAD EQUIVALENTE"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
