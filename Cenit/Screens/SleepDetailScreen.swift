@@ -96,6 +96,9 @@ struct SleepDetailScreen: View {
                     if WhitespaceMetricsExperiment.isEnabled, let dc = nightDC {
                         nightDCBlock(dc)
                     }
+                    if let resp = respirationRead {
+                        respirationBlock(resp)
+                    }
                     stagesVsTypicalBlock(night)
                     nightMetricsBlock(night)
                     durationTrendBlock
@@ -358,6 +361,76 @@ struct SleepDetailScreen: View {
         case .around: return "Your resting braking reserve was in your usual range tonight. A personal pattern — follow it over time."
         case .none:   return "Your resting braking reserve tonight. It reads best as a personal trend — follow it over time."
         }
+    }
+
+    // MARK: - Respiración nocturna (FER-851) — 2º signo vital, tras el toggle experimental
+
+    /// The respiration-trend read, derived purely from the model's nightly respiration series. `nil` — so
+    /// the block hides — when the toggle is off or there's no respiration history at all. (FER-851)
+    private var respirationRead: RespirationTrendWatch.Result? {
+        guard WhitespaceMetricsExperiment.isEnabled,
+              model.respNightly.contains(where: { $0 != nil }) else { return nil }
+        return RespirationTrendWatch.evaluate(nightly: model.respNightly)
+    }
+
+    /// The «Night breathing» block: your normal nightly rate as the datum, and — only when a sustained
+    /// deviation is flagged — how far and how many nights it has run off your normal. A pattern to cross
+    /// with HRV/RHR, never a diagnosis. Only shown with the experimental toggle on. (FER-851)
+    @ViewBuilder private func respirationBlock(_ r: RespirationTrendWatch.Result) -> some View {
+        DetailBlock("Night breathing", theme: theme) {
+            if !r.baselineTrusted {
+                Text("Still learning your normal breathing rate — keeping an eye on it.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(verbatim: String(format: "%.1f", r.baselineRpm))
+                            .instrumentoHero(52)
+                            .foregroundStyle(respTone(r))
+                        Text(verbatim: "/min").font(StrandFont.unit).foregroundStyle(respTone(r))
+                        Text("your normal").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    }
+                    if r.flagged {
+                        HStack(alignment: .top, spacing: 26) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("this run").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                                Text(verbatim: String(format: "%+.1f/min", r.deltaRpm))
+                                    .font(StrandFont.number(21, weight: .semibold))
+                                    .foregroundStyle(respTone(r))
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("sustained").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                                Text(verbatim: "\(r.sustainedNights) nights")
+                                    .font(StrandFont.number(21, weight: .semibold))
+                                    .foregroundStyle(theme.ink)
+                            }
+                        }
+                    }
+                    Text(respCopy(r))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// A calm tone for the breathing datum — a flagged elevated run gets a gentle amber, everything else
+    /// stays in the resp hue / neutral ink. Never a risk red. (FER-851)
+    private func respTone(_ r: RespirationTrendWatch.Result) -> Color {
+        guard r.flagged else { return theme.dataSpO2 }
+        return r.direction == .elevated ? theme.warning : theme.ink
+    }
+
+    /// Honest, localized one-liner — composed in the UI (not the engine's English `copy`) so it localizes
+    /// with the app catalog. Only names a deviation when `flagged`; a pattern, not a diagnosis. (FER-851)
+    private func respCopy(_ r: RespirationTrendWatch.Result) -> LocalizedStringKey {
+        guard r.flagged else { return "Your breathing looks like your normal range." }
+        return r.direction == .elevated
+            ? "Your breathing has run faster than your normal these nights. A pattern, not a diagnosis — worth crossing with your HRV and resting heart rate."
+            : "Your breathing has run slower than your normal these nights. A pattern, not a diagnosis — worth crossing with your HRV and resting heart rate."
     }
 
     /// The honest, localized one-liner for the fall — a pattern, never a diagnosis. Composed in the UI
@@ -1491,6 +1564,9 @@ struct SleepDetailModel {
     let restorativeTrend: [TrendPoint]
     let respirationTrend: [TrendPoint]
     let awakeningsTrend: [TrendPoint]
+    /// The full nightly respiratory-rate series (oldest → newest, `nil` = missing night) for the
+    /// respiration-trend watch (FER-851). The engine derives its own baseline + deviation from it.
+    let respNightly: [Double?]
 
     // MARK: - Build
 
@@ -1641,6 +1717,8 @@ struct SleepDetailModel {
         }
         let respirationTrend = metricTrend(days) { $0.respRateBpm }
         let awakeningsTrend = metricTrend(days) { $0.disturbances.map(Double.init) }
+        // Full nightly respiration series (oldest → newest) for the respiration-trend watch (FER-851).
+        let respNightly: [Double?] = days.map { $0.respRateBpm }
 
         return SleepDetailModel(
             night: night,
@@ -1672,7 +1750,8 @@ struct SleepDetailModel {
             efficiencyTrend: efficiencyTrend,
             restorativeTrend: restorativeTrend,
             respirationTrend: respirationTrend,
-            awakeningsTrend: awakeningsTrend)
+            awakeningsTrend: awakeningsTrend,
+            respNightly: respNightly)
     }
 
     /// Trailing 14 nights of a metric, in whatever unit `pick` returns, as `TrendPoint`s. Skips nights
