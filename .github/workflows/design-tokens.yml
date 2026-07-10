@@ -5,6 +5,12 @@
 # (docs/design-system/DESIGN.md token table + tokens/design-tokens.json) differ from what the code
 # produces — i.e. someone changed a token without regenerating, or hand-edited the generated blocks.
 # Self-contained: plain SwiftPM on macOS, no Xcode, no signing, no secrets.
+#
+# Billing note (jul-2026): macOS minutes bill at 10× and every run rounds up to ≥1 min, so this
+# workflow was burning ~150 billable min/day. Mitigations, same coverage:
+#   - The Python screen linter moved to design-lint.yml (ubuntu, 1×) with the broad Cenit/** paths;
+#     this macOS job only fires when the token source or its generated artifacts can actually drift.
+#   - `pull_request` only — the push to iOS is the squash of an already-checked PR.
 name: Design Tokens
 
 on:
@@ -12,21 +18,6 @@ on:
     branches: [iOS, main]
     paths:
       - 'Packages/StrandDesign/**'
-      - 'Cenit/**'
-      - 'CenitWidgets/**'
-      - 'CenitWatch/**'
-      - 'Tools/check-design-drift.py'
-      - 'docs/design-system/DESIGN.md'
-      - 'docs/design-system/tokens/design-tokens.json'
-      - '.github/workflows/design-tokens.yml'
-  push:
-    branches: [iOS, main]
-    paths:
-      - 'Packages/StrandDesign/**'
-      - 'Cenit/**'
-      - 'CenitWidgets/**'
-      - 'CenitWatch/**'
-      - 'Tools/check-design-drift.py'
       - 'docs/design-system/DESIGN.md'
       - 'docs/design-system/tokens/design-tokens.json'
       - '.github/workflows/design-tokens.yml'
@@ -42,17 +33,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # Screen-level drift linter (auditoría jul-2026). Rules activate incrementally as each
-      # migration lands. `no-hex` runs on every root (all hex lives in StrandDesign). The
-      # font/radius/opacity rules are now ON for the migrated surfaces — `Cenit/Screens` +
-      # `Cenit/Onboarding` are fully token-clean (tasks 01/02/03). CenitWidgets (Live Activity)
-      # and CenitWatch are fixed Dynamic-Island / watch geometry (the WidgetMetrics category,
-      # exempt from Dynamic Type) and are intentionally not yet under the 3 new rules.
-      - name: Design-drift linter — no raw hex (all roots)
-        run: python3 Tools/check-design-drift.py --rules no-hex
-      - name: Design-drift linter — no ad-hoc font/radius/opacity (migrated screens)
-        run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal Cenit/Screens Cenit/Onboarding
 
       - name: StrandDesign tests (snapshots + contrast + token anchors)
         run: swift test
