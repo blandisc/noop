@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La conexión con la banda ya no puede atorarse por un dato corrupto / A corrupt byte can no longer stall the strap connection.**
+  **ES** — Si un fragmento de datos Bluetooth llega dañado y declara un tamaño imposible, Cénit ahora lo descarta y se realinea con el siguiente dato válido, en vez de quedarse esperando bytes que nunca llegarán (lo que congelaba el stream hasta reconectar). Aplica a WHOOP 4.0 y 5/MG.
+  **EN** — If a Bluetooth data fragment arrives corrupted declaring an impossible size, Cénit now discards it and re-aligns with the next valid data instead of waiting forever for bytes that will never arrive (which froze the stream until a reconnect). Applies to both WHOOP 4.0 and 5/MG.
+  ([Framing.swift](Packages/WhoopProtocol/Sources/WhoopProtocol/Framing.swift))
+
 - **Menos chevrons en Tendencias: solo los que abren otra pantalla / Fewer chevrons in Trends: only where one opens another screen.**
   **ES** — Recuperación y Carga de entrenamiento pierden su chevron «›»: como el renglón «Toca cualquier dato para ver su detalle» ya avisa que la tarjeta es tocable, el chevron sobraba. Se reserva para lo que abre una pantalla o herramienta distinta: Mapa muscular, «Cómo amaneces tras cada deporte», Comparar y Ver todas las métricas. Ambas tarjetas se quedan igual de alineadas; solo desaparece la flecha.
   **EN** — Recovery and Training load drop their «›» chevron: since the «Tap any value to see its detail» line already signals the card is tappable, the chevron was redundant. It's now reserved for what opens a distinct screen or tool: Muscle map, «How you wake after each sport», Compare and See all metrics. Both cards keep their alignment; only the arrow goes.
