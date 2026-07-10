@@ -2697,23 +2697,6 @@
         }
       }
     },
-    "%lld registros": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld registros"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld registros"
-          }
-        }
-      }
-    },
     "%lld reps": {
       "extractionState": "manual",
       "localizations": {
@@ -2909,7 +2892,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld días de entreno"
+            "value": "%lld días de entrenamiento"
           }
         }
       }
@@ -3824,7 +3807,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "1 día de entreno"
+            "value": "1 día de entrenamiento"
           }
         }
       }
@@ -4542,7 +4525,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un export de WHOOP rellena recuperación, esfuerzo, sueño y entrenamientos. Un export de Apple Salud agrega FC, HRV, sueño, oxígeno, pasos y peso."
+            "value": "Una exportación de WHOOP rellena recuperación, esfuerzo, sueño y entrenamientos. Una exportación de Apple Salud agrega FC, HRV, sueño, oxígeno, pasos y peso."
           }
         }
       }
@@ -6196,23 +6179,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Edad, %lld años"
-          }
-        }
-      }
-    },
-    "Ahora no": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ahora no"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ahora no"
           }
         }
       }
@@ -12608,7 +12574,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Borrar este entrenamiento?"
+            "value": "¿Eliminar este entrenamiento?"
           }
         }
       }
@@ -12618,7 +12584,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Borrar lo que anoté"
+            "value": "Eliminar lo que anoté"
           }
         }
       }
@@ -12634,7 +12600,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Borrar entrenamiento"
+            "value": "Eliminar entrenamiento"
           }
         }
       }
@@ -14402,7 +14368,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suficiente, cerca de tu meta."
+            "value": "Suficiente, cerca de tu objetivo."
           }
         }
       }
@@ -15565,7 +15531,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Terminar el entreno"
+            "value": "Terminar el entrenamiento"
           }
         }
       }
@@ -15581,7 +15547,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Terminar el entreno?"
+            "value": "¿Terminar el entrenamiento?"
           }
         }
       }
@@ -15883,7 +15849,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Por ahora, sin tu banda el recovery y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud."
+            "value": "Por ahora, sin tu banda la recuperación y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud."
           }
         }
       }
@@ -16335,7 +16301,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comenzar"
+            "value": "Empezar"
           }
         }
       }
@@ -18643,7 +18609,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Importar export de Apple Salud"
+            "value": "Importar exportación de Apple Salud"
           }
         }
       }
@@ -18660,7 +18626,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Importar export de WHOOP"
+            "value": "Importar exportación de WHOOP"
           }
         }
       }
@@ -18742,7 +18708,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Importar sobrescribe todo lo que hay en Cénit. Tus datos viejos se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que el import surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, sueños, entrenamientos y diario que se re-importa a Cénit."
+            "value": "Importar sobrescribe todo lo que hay en Cénit. Tus datos viejos se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que la importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, sueños, entrenamientos y diario que se re-importa a Cénit."
           }
         }
       }
@@ -24665,7 +24631,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no registras series, terminar va a descartar este entreno."
+            "value": "Aún no registras series, terminar va a descartar este entrenamiento."
           }
         }
       }
@@ -24815,7 +24781,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sin días de entreno · asigna una rutina a un día."
+            "value": "Sin días de entrenamiento · asigna una rutina a un día."
           }
         }
       }
@@ -25959,7 +25925,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El texto libre on-device requiere iOS 26 o posterior. Mientras, te respondo con preguntas prearmadas y las cifras de tu motor."
+            "value": "El texto libre en el dispositivo requiere iOS 26 o posterior. Mientras, te respondo con preguntas prearmadas y las cifras de tu motor."
           }
         }
       }
@@ -28669,7 +28635,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recibido en este sync"
+            "value": "Recibido en esta sincronización"
           }
         }
       }
@@ -30961,7 +30927,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Justo en tu rango meta."
+            "value": "Justo en tu rango objetivo."
           }
         }
       }
@@ -31403,7 +31369,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Guardar este entreno?"
+            "value": "¿Guardar este entrenamiento?"
           }
         }
       }
@@ -32644,7 +32610,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Corto para tu meta anoche."
+            "value": "Corto para tu objetivo anoche."
           }
         }
       }
@@ -33956,7 +33922,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Comenzar sesión"
+            "value": "Empezar sesión"
           }
         }
       }
@@ -34989,7 +34955,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sugerido por tu recovery"
+            "value": "Sugerido por tu recuperación"
           }
         }
       }
@@ -35260,7 +35226,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de export de arriba.)"
+            "value": "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de exportación de arriba.)"
           }
         }
       }
@@ -36251,7 +36217,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El mapa vuelve a fresco. No se borra tu historial de entrenamientos: al registrar un nuevo entreno, ese músculo se vuelve a cargar."
+            "value": "El mapa vuelve a fresco. No se borra tu historial de entrenamientos: al registrar un nuevo entrenamiento, ese músculo se vuelve a cargar."
           }
         }
       }
@@ -37047,7 +37013,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Este recovery es ESTIMADO a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. No es un diagnóstico."
+            "value": "Esta recuperación es ESTIMADA a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. No es un diagnóstico."
           }
         }
       }
@@ -37064,7 +37030,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Este recovery es ESTIMADO a partir del HRV (SDNN) y el sueño de tu Apple Watch mientras tu banda aún calibra su propia base, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. Cambia a tu banda automáticamente en cuanto calibra. No es un diagnóstico."
+            "value": "Esta recuperación es ESTIMADA a partir del HRV (SDNN) y el sueño de tu Apple Watch mientras tu banda aún calibra su propia base, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. Cambia a tu banda automáticamente en cuanto calibra. No es un diagnóstico."
           }
         }
       }
@@ -41316,7 +41282,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entreno"
+            "value": "Entrenamiento"
           }
         }
       }
@@ -41332,7 +41298,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entreno completo"
+            "value": "Entrenamiento completo"
           }
         }
       }
@@ -41663,7 +41629,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Registraste %lld series. Toca Terminar para guardar el entreno."
+            "value": "Registraste %lld series. Toca Terminar para guardar el entrenamiento."
           }
         }
       }
@@ -43727,7 +43693,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu hilo comienza aquí."
+            "value": "Tu hilo empieza aquí."
           }
         }
       }
@@ -49910,7 +49876,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "tu entreno"
+            "value": "tu entrenamiento"
           }
         }
       }
@@ -49961,7 +49927,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu techo es un punto de referencia según tu carga reciente y qué tan recuperado amaneciste. Es contexto, no una meta, y puedes pasarlo."
+            "value": "Tu techo es un punto de referencia según tu carga reciente y qué tan recuperado amaneciste. Es contexto, no un objetivo, y puedes pasarlo."
           }
         }
       }
@@ -50950,7 +50916,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "llega con el sync de la mañana"
+            "value": "llega con la sincronización de la mañana"
           }
         }
       }
@@ -51120,7 +51086,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu veredicto llega con el primer sync de la mañana, cuando sincronices la noche."
+            "value": "Tu veredicto llega con la primera sincronización de la mañana, cuando sincronices la noche."
           }
         }
       }
@@ -51273,7 +51239,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estamos descargando tu noche. En cuanto termine el sync, calculamos tu veredicto del día y aparece aquí."
+            "value": "Estamos descargando tu noche. En cuanto termine la sincronización, calculamos tu veredicto del día y aparece aquí."
           }
         }
       }
@@ -51467,7 +51433,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Guardar conserva este entreno. Descartar borra todo lo que registraste."
+            "value": "Guardar conserva este entrenamiento. Descartar borra todo lo que registraste."
           }
         }
       }
@@ -52690,7 +52656,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "empuje · tirón · pierna · full body, listas para editar"
+            "value": "empuje · tirón · pierna · cuerpo completo, listas para editar"
           }
         }
       }
@@ -54021,7 +53987,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Borrar la media"
+            "value": "Eliminar la media"
           }
         }
       }

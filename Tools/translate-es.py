@@ -32,7 +32,7 @@ ES: dict[str, str] = {
     # Flujo Entrenar v4 — primer uso (5a): renglón de plantillas + Constancia vacía.
     "Or start without a plan": "O empieza sin plan",
     "Template routines": "Rutinas de plantilla",
-    "push · pull · legs · full body, ready to edit": "empuje · tirón · pierna · full body, listas para editar",
+    "push · pull · legs · full body, ready to edit": "empuje · tirón · pierna · cuerpo completo, listas para editar",
     "Your sessions will appear here, each in its routine's color.": "Tus sesiones aparecerán aquí, en el color de su rutina.",
     # FER-830 — reconciliación Ola 3: calendarios Sueño/Esfuerzo.
     "Calendar · 90 nights": "Calendario · 90 noches",
@@ -467,7 +467,7 @@ ES: dict[str, str] = {
     "Your strap's connection trail. Attach it to a bug report if something looks off.": 'El rastro de conexión de tu banda. Adjúntalo a un reporte de error si algo se ve raro.',
     'View imported data': 'Ver datos importados',
     "Everything stays on this iPhone. Bring your history in once, then it's yours.": 'Todo se queda en este iPhone. Trae tu historial una vez y es tuyo.',
-    "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit.": 'Importar sobrescribe todo lo que hay en Cénit. Tus datos viejos se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que el import surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, sueños, entrenamientos y diario que se re-importa a Cénit.',
+    "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit.": 'Importar sobrescribe todo lo que hay en Cénit. Tus datos viejos se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que la importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, sueños, entrenamientos y diario que se re-importa a Cénit.',
     '%@ — all your data, none of the cloud. Free and always will be; chipping in is optional.': "%@, todos tus datos, nada en la nube. Es gratis y siempre lo será; aportar es opcional.",
     'Automations': 'Automatizaciones',
     # FER-338 — Reskin «Datos y fuentes» + visor Apple Health a «Instrumento»: cadenas nuevas/visibles
@@ -476,7 +476,7 @@ ES: dict[str, str] = {
     'Backup': 'Respaldo',
     'WHOOP Strap': 'Banda WHOOP',
     'Pairs directly with your strap over Bluetooth — no WHOOP app, no cloud.': "Se vincula directo con tu banda por Bluetooth, sin app de WHOOP, sin nube.",
-    'Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)': "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de export de arriba.)",
+    'Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)': "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de exportación de arriba.)",
     'Nothing imported yet': 'Aún no importas nada',
     'On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources.': 'En un iPhone: app Salud, toca tu foto, Exportar todos los datos de salud, y luego importa el .zip aquí en Datos y fuentes.',
     'Steps, heart, sleep, body composition and VO₂ max — read locally on this iPhone.': "Pasos, corazón, sueño, composición corporal y VO₂ máx, leídos localmente en este iPhone.",
@@ -914,7 +914,7 @@ ES: dict[str, str] = {
     "Every signal, one tap deep.": "Cada señal, a un toque de distancia.",
     "Everything stays on this Mac. Bring your history in once, then it's yours.": "Todo se queda en esta Mac. Importa tu historial una vez y es tuyo para siempre.",
     "The thread of you over time.": "El hilo de ti a través del tiempo.",
-    "Your thread starts here.": "Tu hilo comienza aquí.",
+    "Your thread starts here.": "Tu hilo empieza aquí.",
     "Coming together": "Tomando forma",
     "Slow threads": "Hilos lentos",
     "Last night, read in two seconds.": "Anoche, leída en dos segundos.",
@@ -1046,7 +1046,7 @@ ES: dict[str, str] = {
     "Visual only": "Solo visual",
     "Coherence estimate": "Estimación de coherencia",
     "Estimate only — a higher RMSSD while paced usually means your parasympathetic \"rest\" branch is engaging. It is not a clinical reading; trends over a session matter more than any single number.": "Solo es una estimación: un RMSSD más alto durante la respiración guiada suele indicar que tu rama parasimpática de \"descanso\" se está activando. No es una lectura clínica; las tendencias de la sesión importan más que cualquier número aislado.",
-    "Start session": "Comenzar sesión",
+    "Start session": "Empezar sesión",
     "Stop session": "Detener sesión",
     "SESSION DONE": "SESIÓN TERMINADA",
 
@@ -1756,7 +1756,7 @@ ES: dict[str, str] = {
     "Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set.": "Primero completa el emparejamiento seguro, la banda no descargará su historial hasta que se establezca el vínculo cifrado.",
     "On the band:": "En la banda:",
     "%lld pieces": "%lld piezas",
-    "Received this sync": "Recibido en este sync",
+    "Received this sync": "Recibido en esta sincronización",
     "R-R": "R-R",
     "The band has nothing new.": "La banda no tiene nada nuevo.",
     "Data arrives but doesn’t decode — please report.": "Llegan datos pero no se decodifican, repórtalo.",
@@ -2018,7 +2018,7 @@ ES: dict[str, str] = {
     "%@ sets per week": "%@ series por semana",
     # FER-744 — deuda i18n del rediseño de «Hoy» (F1): re-key de TodayView.swift
     "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here.": 'Tu base aún se afina: con un par de noches más de sueño sincronizado con la banda, tu veredicto del día empieza a aparecer aquí.',
-    "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here.": 'Estamos descargando tu noche. En cuanto termine el sync, calculamos tu veredicto del día y aparece aquí.',
+    "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here.": 'Estamos descargando tu noche. En cuanto termine la sincronización, calculamos tu veredicto del día y aparece aquí.',
     "Your day's reading comes from how you slept. There's no data for last night yet — sleep with your band and sync in the morning, and your verdict shows here.": 'Tu lectura del día sale de cómo dormiste. Aún no hay datos de esta noche — cuando duermas con tu banda y sincronices en la mañana, tu veredicto aparece aquí.',
     "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here.": 'Conecta tu banda o Apple Salud y, con tu sueño de la noche, tu veredicto del día empieza a leerse aquí.',
     'Sync': 'Sincronizar',
@@ -2033,9 +2033,9 @@ ES: dict[str, str] = {
     '−%lld vs your average': '−%lld vs tu promedio',
     'Downloading': 'Descargando',
     'your night is on its way': 'tu noche viene en camino',
-    'arrives with the morning sync': 'llega con el sync de la mañana',
+    'arrives with the morning sync': 'llega con la sincronización de la mañana',
     'connect your band or Apple Health': 'conecta tu banda o Apple Salud',
-    'Your verdict arrives with the first morning sync, once you sync the night.': 'Tu veredicto llega con el primer sync de la mañana, cuando sincronices la noche.',
+    'Your verdict arrives with the first morning sync, once you sync the night.': 'Tu veredicto llega con la primera sincronización de la mañana, cuando sincronices la noche.',
     'Connect your band or Apple Health and your verdict will read every morning.': 'Conecta tu banda o Apple Salud y tu veredicto empezará a leerse cada mañana.',
     'See your metrics for today': 'Ver tus métricas de hoy',
     "Opens today's metrics page": 'Abre la página de métricas de hoy',
@@ -2107,6 +2107,54 @@ ES: dict[str, str] = {
     'Steady': 'Estable',
     'We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.':
         'Te enseñamos la dirección, no un número exacto — el estimado brinca de día a día, la tendencia es más honesta.',
+
+    # FER-842 — peinado i18n
+    # A — préstamos (keys that had drifted out of the dict)
+    "For now, without your band the recovery and sleep detail come estimated or later. The day's numbers do read from Apple Health.":
+        "Por ahora, sin tu banda la recuperación y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud.",
+    "Suggested by your recovery": "Sugerido por tu recuperación",
+    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. Not a diagnosis.":
+        "Esta recuperación es ESTIMADA a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. No es un diagnóstico.",
+    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep while your band is still calibrating its own baseline, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. It switches to your band automatically once it's calibrated. Not a diagnosis.":
+        "Esta recuperación es ESTIMADA a partir del HRV (SDNN) y el sueño de tu Apple Watch mientras tu banda aún calibra su propia base, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. Cambia a tu banda automáticamente en cuanto calibra. No es un diagnóstico.",
+    "Import WHOOP export": "Importar exportación de WHOOP",
+    "Import Apple Health export": "Importar exportación de Apple Salud",
+    "A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight.":
+        "Una exportación de WHOOP rellena recuperación, esfuerzo, sueño y entrenamientos. Una exportación de Apple Salud agrega FC, HRV, sueño, oxígeno, pasos y peso.",
+    "On-device free text needs iOS 26 or later. Meanwhile, I answer with pre-built questions and your engine's numbers.":
+        "El texto libre en el dispositivo requiere iOS 26 o posterior. Mientras, te respondo con preguntas prearmadas y las cifras de tu motor.",
+    # C1 — comenzar → empezar
+    "Get started": "Empezar",
+    # C2 — meta → objetivo (whole word)
+    "Enough, close to your target.": "Suficiente, cerca de tu objetivo.",
+    "Right in your target range.": "Justo en tu rango objetivo.",
+    "Short of your target last night.": "Corto para tu objetivo anoche.",
+    "Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it.":
+        "Tu techo es un punto de referencia según tu carga reciente y qué tan recuperado amaneciste. Es contexto, no un objetivo, y puedes pasarlo.",
+    # C3 — entreno → entrenamiento (whole word noun)
+    "%lld training days": "%lld días de entrenamiento",
+    "1 training day": "1 día de entrenamiento",
+    "Finish workout": "Terminar el entrenamiento",
+    "Finish workout?": "¿Terminar el entrenamiento?",
+    "No sets logged yet — finishing will discard this workout.":
+        "Aún no registras series, terminar va a descartar este entrenamiento.",
+    "No training days yet · assign a routine to a day.":
+        "Sin días de entrenamiento · asigna una rutina a un día.",
+    "Save this workout?": "¿Guardar este entrenamiento?",
+    "The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again.":
+        "El mapa vuelve a fresco. No se borra tu historial de entrenamientos: al registrar un nuevo entrenamiento, ese músculo se vuelve a cargar.",
+    "Workout": "Entrenamiento",
+    "Workout complete": "Entrenamiento completo",
+    "You logged %lld sets. Finish to save this workout.":
+        "Registraste %lld series. Toca Terminar para guardar el entrenamiento.",
+    "your training": "tu entrenamiento",
+    "Save keeps this workout. Discard deletes everything you logged.":
+        "Guardar conserva este entrenamiento. Descartar borra todo lo que registraste.",
+    # C4 — borrar → eliminar (whole word; conjugations left alone)
+    "Delete this workout?": "¿Eliminar este entrenamiento?",
+    "Delete what I logged": "Eliminar lo que anoté",
+    "Delete workout": "Eliminar entrenamiento",
+    "Borrar la media": "Eliminar la media",
 }
 
 
