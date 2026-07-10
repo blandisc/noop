@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El editor de rutina se ve limpio: título completo y celdas sin bordes fantasma / The routine editor looks clean: full title and cells with no ghost edges.**
+  **ES** — En la pantalla de rutina de Entrenar, los títulos largos se salían por el borde de la pantalla; ahora saltan de línea y se leen completos. Además, las celdas de KG y REPS mostraban una esquina rectangular asomándose detrás del contorno redondeado; ahora el relleno respeta la forma redondeada.
+  **EN** — On the Entrenar routine screen, long titles ran off the edge of the screen; they now wrap and read in full. Also, the KG and REPS cells showed a rectangular corner leaking behind the rounded outline; the fill now respects the rounded shape.
+  ([RoutineEditorScreen.swift](Cenit/Screens/RoutineEditorScreen.swift), [RoutineBuilderScreen.swift](Cenit/Screens/RoutineBuilderScreen.swift))
+
 - **Tu sueño vuelve en las WHOOP 4.0 con el firmware más nuevo / Your sleep comes back on WHOOP 4.0s with the newest firmware.**
   **ES** — Algunas WHOOP 4.0 con firmware reciente guardan su historial en un formato («v25») que Cénit interpretaba mal: leía la señal de movimiento en el lugar equivocado, la descartaba por no cuadrar, y sin movimiento el análisis de sueño no podía calcular tus etapas — las noches salían en blanco. Ahora Cénit lee ese formato correctamente y recupera el movimiento (el corazón por segundo no viene en v25, es normal), así que tu sueño y tu descanso vuelven a calcularse. Las bandas con firmware anterior no cambian en nada.
   **EN** — Some WHOOP 4.0s on recent firmware store their history in a format («v25») Cénit misread: it looked for the motion signal in the wrong place, discarded it as not fitting, and without motion the sleep analysis couldn't compute your stages — nights came up blank. Cénit now reads that format correctly and recovers the motion (per-second heart rate isn't stored in v25, which is normal), so your sleep and rest compute again. Straps on earlier firmware are unchanged.
