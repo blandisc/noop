@@ -264,10 +264,13 @@ final class Backfiller {
             // `Streams` are Sendable, so the ~50-record chunk decode can't jank the UI. The result
             // is AWAITED here — the insert below and the ack after it still run strictly after the
             // decode, on the main actor, so the safe-trim ordering (insert durable → ack) holds.
+            // FER-695: run at `.utility` QoS — a big morning offload from a WHOOP 4.0 decodes ~54K
+            // parseless extracts; a background-priority thread keeps that CPU work from contending with
+            // the UI's user-interactive work, so the app stays smooth mid-sync.
             let extract = self.extract
             let devRef = ref.device, wallRef = ref.wall
             let oldest = sessionOldestUnix, newest = sessionNewestUnix
-            let decoded = await Task.detached {
+            let decoded = await Task.detached(priority: .utility) {
                 extract(parsed, devRef, wallRef, oldest, newest)
             }.value
             // #547: surface a bad-clock strap. extractHistoricalStreams DROPPED any record whose own unix
