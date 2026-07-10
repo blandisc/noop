@@ -16,7 +16,10 @@ import WhoopProtocol
 // METHOD (independent implementation of a published, mechanistic finding — not a novel claim):
 //   Heart rate falls across the night as parasympathetic tone rises and sympathetic tone withdraws,
 //   deepest in slow-wave (NREM) sleep — Trinder J, Kleiman J, Carrington M, et al., "Autonomic activity
-//   during human sleep as a function of time and sleep stage", J Sleep Res 2001;10(4):253–264. The nadir
+//   during human sleep as a function of time and sleep stage", J Sleep Res 2001;10(4):253–264. That same
+//   paper reports HR ALSO carries a circadian time-of-night effect on top of the sleep-stage effect, so
+//   the fall we measure is not attributable to parasympathetic tone alone — one more reason to surface it
+//   as a descriptive shape, never a clean autonomic read-out. The nadir
 //   is the minimum of a 5-minute rolling mean (same primitive SleepStager uses for `restingHR`), which
 //   suppresses single-beat noise from wrist PPG. This uses ONLY mean HR — no beat-to-beat R-R — so
 //   sensor risk is essentially nil (the epic's "best value-per-risk").
