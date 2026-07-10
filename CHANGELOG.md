@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La historia con fecha imposible ya no ensucia tus promedios / History with an impossible date no longer pollutes your averages.**
+  **ES** — Una WHOOP 4.0 con el reloj dañado (por descarga total) a veces entrega registros fechados años en el pasado o en el futuro. Antes Cénit los creía tal cual: un bloque contaminado se repartía sobre cada día y un registro «del futuro» aparecía como «anoche», torciendo tus bases de recuperación. Ahora Cénit descarta cualquier registro cuya fecha no sea creíble —ni antes de nov-2023, ni más de un día en el futuro, ni meses fuera de la ventana de historia que la propia banda reporta— y te avisa en el registro de diagnóstico si tu banda trae el reloj mal (para que la cargues y reconectes). Una banda sana no cambia en nada.
+  **EN** — A WHOOP 4.0 with a broken clock (after a full drain) sometimes hands over records dated years in the past or future. Cénit used to trust them verbatim: a polluted block got smeared across every day and a «future» record showed up as «last night», skewing your recovery baselines. Cénit now drops any record whose date isn't credible —not before Nov 2023, not more than a day into the future, and not months outside the history window the strap itself reports— and notes in the diagnostic log when your strap's clock is wrong (so you charge and reconnect it). A healthy strap is unchanged.
+  ([HistoricalStreams.swift](Packages/WhoopProtocol/Sources/WhoopProtocol/HistoricalStreams.swift), [Backfiller.swift](Cenit/Collect/Backfiller.swift))
+
 - **La conexión con la banda ya no puede atorarse por un dato corrupto / A corrupt byte can no longer stall the strap connection.**
   **ES** — Si un fragmento de datos Bluetooth llega dañado y declara un tamaño imposible, Cénit ahora lo descarta y se realinea con el siguiente dato válido, en vez de quedarse esperando bytes que nunca llegarán (lo que congelaba el stream hasta reconectar). Aplica a WHOOP 4.0 y 5/MG.
   **EN** — If a Bluetooth data fragment arrives corrupted declaring an impossible size, Cénit now discards it and re-aligns with the next valid data instead of waiting forever for bytes that will never arrive (which froze the stream until a reconnect). Applies to both WHOOP 4.0 and 5/MG.
