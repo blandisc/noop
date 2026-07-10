@@ -119,6 +119,8 @@ public enum ProgressionMath {
                 metRun += 1
             }
             if metRun >= n {
+                // A non-positive increment can't propose a raise (QA D2): stay honestly in-cycle.
+                guard input.incrementKg > 0 else { return .inCycle(done: metRun, of: n) }
                 let newKg = currentKg + input.incrementKg
                 // Recovery gate: a low-recovery day defers the earned raise, preserving progress.
                 if input.recoveryReason == .recoveryLow { return .deferred(newKg: newKg) }

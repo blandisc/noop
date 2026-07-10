@@ -695,7 +695,7 @@ final class StrengthSessionModel: ObservableObject {
             let sets: [WorkingSet] = slot.re.plannedSets.filter { $0.kind == .work }.map { p in
                 // FER-E: an earned raise changes the SEED, not the table — every work cell arrives at
                 // the proposed weight (double progression trains all work sets at one load).
-                let weight = slot.raise?.toKg ?? p.weightKg ?? lastWeight ?? 0
+                let weight = (type == .weightReps ? slot.raise?.toKg : nil) ?? p.weightKg ?? lastWeight ?? 0
                 let reps = usesReps ? (p.reps ?? lastReps ?? 8) : 0
                 // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
                 // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).
