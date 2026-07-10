@@ -13316,6 +13316,23 @@
         }
       }
     },
+    "Done reordering": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done reordering"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo"
+          }
+        }
+      }
+    },
     "Done. You're connected.": {
       "extractionState": "manual",
       "localizations": {
@@ -13457,6 +13474,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bajar a"
+          }
+        }
+      }
+    },
+    "Drop to place. The sets come back when you let go.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop to place. The sets come back when you let go."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suelta para colocar · las series vuelven al soltar"
           }
         }
       }
@@ -29738,6 +29772,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Renombrar carpeta"
+          }
+        }
+      }
+    },
+    "Reorder exercises": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reorder exercises"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reordenar ejercicios"
           }
         }
       }

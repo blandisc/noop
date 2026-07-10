@@ -63,6 +63,9 @@ struct RoutineEditorScreen: View {
     @State private var detailExercise: Exercise? = nil
     /// The plate inventory: progression evaluation + the 2c increment hint.
     @StateObject private var plates = PlatesStore()
+    /// Drag-reorder mode (6a, FER-841): every row compacts to thumb + name + summary and the set tables
+    /// fold away; dropping reopens them. Entered by long-pressing an exercise header.
+    @State private var reordering = false
     @FocusState private var focusedCell: String?
 
     /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
@@ -219,7 +222,19 @@ struct RoutineEditorScreen: View {
     private var editor: some View {
         List {
             titleBlock.plainRow(top: 6, bottom: 6)
-            ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
+            if reordering { reorderList } else { fullList }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(theme.paper)
+        .environment(\.defaultMinListRowHeight, 1)
+        .environment(\.editMode, .constant(reordering ? .active : .inactive))
+        .safeAreaInset(edge: .bottom) { ctaBar }
+    }
+
+    @ViewBuilder
+    private var fullList: some View {
+        ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 if firstOfGroup(idx) {
                     Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .plainRow(top: NoopMetrics.sectionGap, bottom: 2)
@@ -244,19 +259,109 @@ struct RoutineEditorScreen: View {
                 }
                 if !locked { addSetRow(idx).plainRow(top: 4) }
             }
-            if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: 4) }
-            if startsSession {
-                Text("Changes are saved to the routine when you leave or start.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .plainRow(top: 8, bottom: NoopMetrics.screenPadding)
+        if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: 4) }
+        if startsSession {
+            Text("Changes are saved to the routine when you leave or start.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .plainRow(top: 8, bottom: NoopMetrics.screenPadding)
+        }
+    }
+
+    // MARK: - Drag reorder (6a, FER-841)
+    //
+    // A block = one exercise, or a whole superset (consecutive exercises sharing `supersetGroup`) —
+    // a superset always travels as ONE unit; breaking it stays a «···» action, never a drag side effect.
+    // `List.onMove` does the dragging (the lifted preview mirrors the compact card row); dropping
+    // flattens the blocks back into `items`, marks the prescription dirty (order persists in `position`
+    // through the screen's normal save flow) and leaves the mode so the tables reopen.
+
+    private struct ReorderBlock: Identifiable {
+        let items: [EditorItem]
+        var id: String { items[0].id }
+        var isSuperset: Bool { items.count > 1 }
+    }
+
+    private var reorderBlocks: [ReorderBlock] {
+        var blocks: [ReorderBlock] = []
+        var i = 0
+        while i < items.count {
+            var run = [items[i]]
+            if let g = items[i].re.supersetGroup {
+                while i + 1 < items.count, items[i + 1].re.supersetGroup == g {
+                    i += 1; run.append(items[i])
+                }
+            }
+            blocks.append(ReorderBlock(items: run))
+            i += 1
+        }
+        return blocks
+    }
+
+    @ViewBuilder
+    private var reorderList: some View {
+        ForEach(reorderBlocks) { block in
+            compactBlock(block).plainRow(top: 5, bottom: 5)
+        }
+        .onMove(perform: moveBlocks)
+        Button { withAnimation(.snappy) { reordering = false } } label: {
+            Text("Done reordering").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, alignment: .center).frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .plainRow(top: NoopMetrics.gap, bottom: 2)
+        Text("Drop to place. The sets come back when you let go.")
+            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .plainRow(top: 0, bottom: NoopMetrics.screenPadding)
+    }
+
+    /// The compact card the drag lifts: thumb + name + «N sets · top kg» per exercise; a superset adds
+    /// its teal left bar + «superset» overline and moves as one card.
+    private func compactBlock(_ block: ReorderBlock) -> some View {
+        HStack(spacing: 10) {
+            if block.isSuperset {
+                Capsule().fill(theme.dataHrv).frame(width: 2.5)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                if block.isSuperset {
+                    Text("Superset").instrumentoOverline().foregroundStyle(theme.dataHrv)
+                }
+                ForEach(block.items) { item in
+                    HStack(spacing: 10) {
+                        ExerciseThumbView(exercise: item.exercise, side: 28)
+                        Text(StrengthDisplay.name(item.exercise))
+                            .font(StrandFont.subhead).foregroundStyle(theme.ink).lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(compactSummary(item.re))
+                            .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    }
+                }
             }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(theme.paper)
-        .environment(\.defaultMinListRowHeight, 1)
-        .safeAreaInset(edge: .bottom) { ctaBar }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+    }
+
+    /// «3 sets · 90 kg» — work sets + the top work weight (weight omitted when none is set).
+    private func compactSummary(_ re: RoutineExercise) -> String {
+        let work = re.sets.filter { $0.kind == .work }
+        var s = String(localized: "\(work.count) sets")
+        if let top = work.compactMap(\.weightKg).max(), top > 0 {
+            s += " · \(StrengthDisplay.weightNumber(top, system: system)) \(StrengthDisplay.weightUnit(system).lowercased())"
+        }
+        return s
+    }
+
+    private func moveBlocks(from source: IndexSet, to destination: Int) {
+        var blocks = reorderBlocks
+        blocks.move(fromOffsets: source, toOffset: destination)
+        withAnimation(.snappy) {
+            items = blocks.flatMap(\.items)
+            reordering = false        // dropping reopens the tables (6a)
+        }
+        dirty = true
     }
 
     /// Overline per origin, the routine title underlined 2 px ink, and the dotted meta line.
@@ -335,6 +440,17 @@ struct RoutineEditorScreen: View {
                 if !locked { exerciseMenu(idx) }
             }
             columnHeader(item.exercise.type)
+        }
+        // Long-press enters reorder mode (6a): rows compact, ≡ handles appear, one drop reorders and
+        // leaves the mode. The handle-driven List drag never conflicts with the delete swipe.
+        .onLongPressGesture(minimumDuration: 0.4) {
+            guard !locked else { return }
+            focusedCell = nil
+            withAnimation(.snappy) { reordering = true }
+        }
+        .accessibilityAction(named: Text("Reorder exercises")) {
+            guard !locked else { return }
+            withAnimation(.snappy) { reordering = true }
         }
     }
 
