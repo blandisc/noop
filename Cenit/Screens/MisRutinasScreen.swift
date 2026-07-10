@@ -29,7 +29,10 @@ struct MisRutinasScreen: View {
     @State private var schedule: [Int: String] = [:]
     /// Days since each routine was last trained (`routineId → whole days`), for the «hace N d» column.
     @State private var lastTrainedDays: [String: Int] = [:]
-    @State private var builderTarget: BuilderTarget? = nil
+    @State private var showBuilder = false
+    /// The routine the builder just created; pushed onto «Rutina» when its sheet finishes dismissing
+    /// (pushing mid-dismiss stacks transitions, FER-171 lesson).
+    @State private var savedRoutineId: String? = nil
     @State private var showTemplates = false
     @State private var showImport = false
     @State private var swipedRoutineId: String? = nil
@@ -41,6 +44,10 @@ struct MisRutinasScreen: View {
     @State private var renameFolder: RoutineFolder? = nil
     @State private var renameText = ""
     @State private var dropTarget: String? = nil
+    // FER-837: which «···» paper menu is open (folder id / routine id / the tools row).
+    @State private var menuFolderId: String? = nil
+    @State private var menuRoutineId: String? = nil
+    @State private var showToolsMenu = false
     private static let unfiledDropID = "__unfiled__"
 
     var body: some View {
@@ -59,9 +66,16 @@ struct MisRutinasScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .overlay(alignment: .bottom) { if let d = pendingUndo { undoBanner(d) } }
         .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
-        .sheet(item: $builderTarget) { target in
-            RoutineBuilderScreen(routine: target.routine) { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        // Create-only builder (FER-840): saving hands back the new routine's id, and the dismissed sheet
+        // opens it straight on the unified «Rutina» editor.
+        .sheet(isPresented: $showBuilder, onDismiss: {
+            if let id = savedRoutineId { savedRoutineId = nil; openRoutine(id) }
+        }) {
+            RoutineBuilderScreen { id in
+                savedRoutineId = id
+                await load()
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
@@ -71,17 +85,24 @@ struct MisRutinasScreen: View {
             WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        .alert("New folder", isPresented: $showNewFolder) {
-            TextField("Folder name", text: $newFolderName)
-            Button("Cancel", role: .cancel) { newFolderName = ""; pendingMove = nil }
-            Button("Create") { createFolder() }
-        }
-        .alert("Rename folder", isPresented: Binding(get: { renameFolder != nil },
-                                                     set: { if !$0 { renameFolder = nil } })) {
-            TextField("Folder name", text: $renameText)
-            Button("Cancel", role: .cancel) { renameFolder = nil }
-            Button("Save") { commitRename() }
-        }
+        .instrumentoInput(
+            isPresented: Binding(get: { showNewFolder },
+                                 set: { if !$0 { showNewFolder = false; newFolderName = ""; pendingMove = nil } }),
+            text: $newFolderName,
+            title: String(localized: "New folder"),
+            context: String(localized: "MY ROUTINES"),
+            placeholder: String(localized: "Folder name"),
+            cta: String(localized: "Create")
+        ) { _ in createFolder() }
+        .instrumentoInput(
+            isPresented: Binding(get: { renameFolder != nil },
+                                 set: { if !$0 { renameFolder = nil } }),
+            text: $renameText,
+            title: String(localized: "Rename folder"),
+            context: String(localized: "MY ROUTINES"),
+            placeholder: String(localized: "Folder name"),
+            cta: String(localized: "Rename")
+        ) { _ in commitRename() }
         .task { await load() }
     }
 
@@ -126,15 +147,15 @@ struct MisRutinasScreen: View {
                 routineList(unfiled)
 
                 divider
-                actionRow("plus", "New routine") { builderTarget = .new }
+                actionRow("plus", "New routine") { showBuilder = true }
                 divider
                 // The mock folds templates / import / folders into one row; the menu keeps all three
                 // functions (choque 9: conserve plantillas, import, carpetas).
-                actionMenuRow("rectangle.stack", "Templates · Import · Folders") {
-                    Button { showTemplates = true } label: { Label("Start from a template", systemImage: "square.stack.3d.up") }
-                    Button { showImport = true } label: { Label("Import plan", systemImage: "square.and.arrow.down") }
-                    Button { startNewFolder(moving: nil) } label: { Label("New folder", systemImage: "folder.badge.plus") }
-                }
+                actionMenuRow("rectangle.stack", "Templates · Import · Folders", isPresented: $showToolsMenu, items: [
+                    .init(String(localized: "Start from a template"), systemImage: "square.stack.3d.up") { showTemplates = true },
+                    .init(String(localized: "Import plan"), systemImage: "square.and.arrow.down") { showImport = true },
+                    .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
+                ])
                 divider
                 actionRow("book", "Exercise library", action: openLibrary)
             }
@@ -156,13 +177,19 @@ struct MisRutinasScreen: View {
             Text(f.name).font(StrandFont.body).foregroundStyle(theme.ink)
             Text("· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 0)
-            Menu {
-                Button { startRename(f) } label: { Label("Rename folder", systemImage: "pencil") }
-                Button(role: .destructive) { deleteFolder(f) } label: { Label("Delete folder", systemImage: "trash") }
-            } label: {
+            Button { menuFolderId = f.id } label: {
                 Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 40).contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .paperMenu(
+                isPresented: Binding(get: { menuFolderId == f.id },
+                                     set: { if !$0 { menuFolderId = nil } }),
+                items: [
+                    .init(String(localized: "Rename folder"), systemImage: "pencil") { startRename(f) },
+                    .init(String(localized: "Delete folder"), systemImage: "trash", isDestructive: true) { deleteFolder(f) }
+                ]
+            )
         }
         .padding(.top, 12).padding(.bottom, 2)
         .dropHighlight(targeted, fill: theme.surface, stroke: theme.ink)
@@ -184,12 +211,10 @@ struct MisRutinasScreen: View {
         .buttonStyle(.plain)
     }
 
-    /// Like `actionRow` but reveals a menu (mock 1c's «Plantillas · Importar · Carpetas»), with a chevron.
-    private func actionMenuRow<Menu: View>(_ symbol: String, _ title: LocalizedStringKey,
-                                           @ViewBuilder menu: () -> Menu) -> some View {
-        SwiftUI.Menu {
-            menu()
-        } label: {
+    /// Like `actionRow` but reveals a paper menu (mock 1c's «Plantillas · Importar · Carpetas»), with a chevron.
+    private func actionMenuRow(_ symbol: String, _ title: LocalizedStringKey,
+                               isPresented: Binding<Bool>, items: [PaperMenuItem]) -> some View {
+        Button { isPresented.wrappedValue = true } label: {
             HStack(spacing: 12) {
                 Image(systemName: symbol).frame(width: 30)
                     .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
@@ -199,6 +224,8 @@ struct MisRutinasScreen: View {
             }
             .frame(minHeight: 44).contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .paperMenu(isPresented: isPresented, items: items)
     }
 
     /// The one-line metadata under a routine name (mock 1c): exercise count, then its top primary muscles.
@@ -221,7 +248,8 @@ struct MisRutinasScreen: View {
 
     @ViewBuilder
     private func routineActions(_ r: Routine) -> some View {
-        Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
+        // Editing lives on the unified «Rutina» editor now (FER-840) — same push as tapping the row.
+        Button { openRoutine(r.id) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
         Button { duplicate(r) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
         Menu {
             ForEach(folders) { f in
@@ -236,6 +264,24 @@ struct MisRutinasScreen: View {
             Button { startNewFolder(moving: r) } label: { Label("New folder…", systemImage: "folder.badge.plus") }
         } label: { Label("Move to…", systemImage: "folder") }
         Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
+    }
+
+    /// The same actions as `routineActions`, as the «···» paper menu (FER-837). The long-press
+    /// `contextMenu` keeps the native ViewBuilder version above.
+    private func routinePaperItems(_ r: Routine) -> [PaperMenuItem] {
+        var move: [PaperMenuItem] = folders.map { f in
+            PaperMenuItem(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder") { self.move(r, to: f.id) }
+        }
+        if r.folderId != nil {
+            move.append(.init(String(localized: "Remove from folder"), systemImage: "folder.badge.minus") { self.move(r, to: nil) })
+        }
+        move.append(.init(String(localized: "New folder…"), systemImage: "folder.badge.plus") { startNewFolder(moving: r) })
+        return [
+            .init(String(localized: "Edit routine"), systemImage: "slider.horizontal.3") { openRoutine(r.id) },
+            .init(String(localized: "Duplicate"), systemImage: "plus.square.on.square") { duplicate(r) },
+            .init(String(localized: "Move to…"), systemImage: "folder", children: move),
+            .init(String(localized: "Delete routine"), systemImage: "trash", isDestructive: true) { delete(r) }
+        ]
     }
 
     private func routineRow(_ r: Routine) -> some View {
@@ -267,10 +313,16 @@ struct MisRutinasScreen: View {
                 .buttonStyle(.plain)
                 .contextMenu { routineActions(r) }
 
-                Menu { routineActions(r) } label: {
+                Button { menuRoutineId = r.id } label: {
                     Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 48).contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .paperMenu(
+                    isPresented: Binding(get: { menuRoutineId == r.id },
+                                         set: { if !$0 { menuRoutineId = nil } }),
+                    items: routinePaperItems(r)
+                )
             }
         }
         .draggable("r:\(r.id)")
@@ -290,7 +342,7 @@ struct MisRutinasScreen: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             VStack(spacing: 8) {
-                QuietButton("New routine") { builderTarget = .new }
+                QuietButton("New routine") { showBuilder = true }
                 Button { showTemplates = true } label: {
                     Text("Start from a template")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

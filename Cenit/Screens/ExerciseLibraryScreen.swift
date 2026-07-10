@@ -33,6 +33,8 @@ struct ExerciseLibraryScreen: View {
     @State private var search = ""
     @State private var muscle: String? = nil
     @State private var equipment: String? = nil
+    @State private var showMuscleFilter = false
+    @State private var showEquipmentFilter = false
     @State private var selected: Set<String> = []
     @State private var detail: Exercise? = nil
     @State private var showCreate = false
@@ -112,25 +114,28 @@ struct ExerciseLibraryScreen: View {
 
     private var filterChips: some View {
         HStack(spacing: 8) {
-            filterMenu(title: String(localized: "Muscle"), selection: $muscle, options: muscleOptions, label: StrengthDisplay.muscle)
-            filterMenu(title: String(localized: "Equipment"), selection: $equipment, options: equipmentOptions, label: StrengthDisplay.equipment)
+            filterMenu(title: String(localized: "Muscle"), isPresented: $showMuscleFilter,
+                       selection: $muscle, options: muscleOptions, label: StrengthDisplay.muscle)
+            filterMenu(title: String(localized: "Equipment"), isPresented: $showEquipmentFilter,
+                       selection: $equipment, options: equipmentOptions, label: StrengthDisplay.equipment)
             Spacer(minLength: 0)
         }
     }
 
-    private func filterMenu(title: String, selection: Binding<String?>, options: [String],
-                            label: @escaping (String) -> String) -> some View {
+    private func filterMenu(title: String, isPresented: Binding<Bool>, selection: Binding<String?>,
+                            options: [String], label: @escaping (String) -> String) -> some View {
         let active = selection.wrappedValue
-        return Menu {
-            Button { selection.wrappedValue = nil } label: {
-                Label("All", systemImage: active == nil ? "checkmark" : "")
+        var rows: [PaperMenuItem] = [
+            PaperMenuItem(String(localized: "All"), systemImage: active == nil ? "checkmark" : nil) {
+                selection.wrappedValue = nil
             }
-            ForEach(options, id: \.self) { opt in
-                Button { selection.wrappedValue = opt } label: {
-                    Label(label(opt), systemImage: active == opt ? "checkmark" : "")
-                }
+        ]
+        rows += options.map { opt in
+            PaperMenuItem(label(opt), systemImage: active == opt ? "checkmark" : nil) {
+                selection.wrappedValue = opt
             }
-        } label: {
+        }
+        return Button { isPresented.wrappedValue = true } label: {
             HStack(spacing: 5) {
                 Text(active.map(label) ?? title)
                     .font(StrandFont.subhead)
@@ -143,6 +148,8 @@ struct ExerciseLibraryScreen: View {
                         in: Capsule(style: .continuous))
             .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: active == nil ? 1 : 0))
         }
+        .buttonStyle(.plain)
+        .paperMenu(isPresented: isPresented, items: rows)
     }
 
     // MARK: - List
@@ -333,6 +340,8 @@ private struct CreateExerciseSheet: View {
     @State private var muscle: String = ""
     @State private var equip: String = ""
     @State private var type: ExerciseType = .weightReps
+    @State private var showMusclePicker = false
+    @State private var showEquipPicker = false
 
     var body: some View {
         ScrollView {
@@ -351,9 +360,9 @@ private struct CreateExerciseSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    pickerRow("Primary muscle", selection: $muscle, options: muscles, placeholder: String(localized: "Pick a muscle"), label: StrengthDisplay.muscle)
+                    pickerRow("Primary muscle", isPresented: $showMusclePicker, selection: $muscle, options: muscles, placeholder: String(localized: "Pick a muscle"), label: StrengthDisplay.muscle)
                     Divider().overlay(theme.hairline)
-                    pickerRow("Equipment", selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"), label: StrengthDisplay.equipment)
+                    pickerRow("Equipment", isPresented: $showEquipPicker, selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"), label: StrengthDisplay.equipment)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -376,23 +385,24 @@ private struct CreateExerciseSheet: View {
         .background(theme.paper.ignoresSafeArea())
     }
 
-    private func pickerRow(_ title: LocalizedStringKey, selection: Binding<String>, options: [String], placeholder: String,
+    private func pickerRow(_ title: LocalizedStringKey, isPresented: Binding<Bool>, selection: Binding<String>,
+                           options: [String], placeholder: String,
                            label: @escaping (String) -> String) -> some View {
         HStack(spacing: 12) {
             Text(title).font(StrandFont.body).foregroundStyle(theme.ink).frame(maxWidth: .infinity, alignment: .leading)
-            Menu {
-                ForEach(options, id: \.self) { opt in
-                    Button { selection.wrappedValue = opt } label: {
-                        Label(label(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : "")
-                    }
-                }
-            } label: {
+            Button { isPresented.wrappedValue = true } label: {
                 HStack(spacing: 5) {
                     Text(selection.wrappedValue.isEmpty ? placeholder : label(selection.wrappedValue))
                         .font(StrandFont.body).foregroundStyle(selection.wrappedValue.isEmpty ? theme.inkTertiary : theme.inkSecondary)
                     Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
             }
+            .buttonStyle(.plain)
+            .paperMenu(isPresented: isPresented, items: options.map { opt in
+                PaperMenuItem(label(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : nil) {
+                    selection.wrappedValue = opt
+                }
+            })
         }
         .frame(minHeight: 40)
     }

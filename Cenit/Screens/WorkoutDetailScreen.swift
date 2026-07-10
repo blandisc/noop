@@ -37,6 +37,7 @@ struct WorkoutDetailScreen: View {
 
     /// The add/edit sheet target (edit this manual row, or a manual copy of an imported one). nil = closed.
     @State private var editTarget: EditTarget?
+    @State private var showActionMenu = false
     private struct EditTarget: Identifiable { let row: WorkoutRow; let id = UUID() }
 
     var body: some View {
@@ -277,28 +278,42 @@ struct WorkoutDetailScreen: View {
     // MARK: - Acciones (menú ••• según fuente)
 
     @ViewBuilder private var actionMenu: some View {
-        Menu {
-            switch WorkoutSource.classify(row.source) {
-            case .detected:
-                Menu("Re-label as") {
-                    ForEach(WorkoutSource.relabelSports, id: \.self) { sport in
-                        Button(sport) { mutate { await repo.relabelDetected(row, sport: sport) } }
-                    }
-                }
-                Button("Edit details…") { editTarget = EditTarget(row: row) }
-                Divider()
-                Button("Dismiss (not a workout)", role: .destructive) { mutate { await repo.dismissDetected(row) } }
-            case .manual:
-                Button("Edit…") { editTarget = EditTarget(row: row) }
-                Divider()
-                Button("Delete", role: .destructive) { mutate { await repo.deleteWorkout(row) } }
-            case .whoop, .apple:
-                Button("Duplicate as manual…") { editTarget = EditTarget(row: asManualCopy(row)) }
-            }
-        } label: {
+        Button { showActionMenu = true } label: {
             Image(systemName: "ellipsis.circle").foregroundStyle(theme.ink)
         }
+        .buttonStyle(.plain)
         .accessibilityLabel("Session actions")
+        .paperMenu(isPresented: $showActionMenu, items: actionMenuItems)
+    }
+
+    /// The «···» actions as paper-menu rows, per source (FER-837).
+    private var actionMenuItems: [PaperMenuItem] {
+        switch WorkoutSource.classify(row.source) {
+        case .detected:
+            return [
+                .init(String(localized: "Re-label as"), systemImage: "tag",
+                      children: WorkoutSource.relabelSports.map { sport in
+                          PaperMenuItem(sport) { mutate { await repo.relabelDetected(row, sport: sport) } }
+                      }),
+                .init(String(localized: "Edit details…"), systemImage: "pencil") { editTarget = EditTarget(row: row) },
+                .init(String(localized: "Dismiss (not a workout)"), systemImage: "xmark.circle", isDestructive: true) {
+                    mutate { await repo.dismissDetected(row) }
+                }
+            ]
+        case .manual:
+            return [
+                .init(String(localized: "Edit…"), systemImage: "pencil") { editTarget = EditTarget(row: row) },
+                .init(String(localized: "Delete"), systemImage: "trash", isDestructive: true) {
+                    mutate { await repo.deleteWorkout(row) }
+                }
+            ]
+        case .whoop, .apple:
+            return [
+                .init(String(localized: "Duplicate as manual…"), systemImage: "plus.square.on.square") {
+                    editTarget = EditTarget(row: asManualCopy(row))
+                }
+            ]
+        }
     }
 
     /// Run a mutation, reload the list, then pop back to it — the detail's `row` is a value copy, so the

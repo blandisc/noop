@@ -253,8 +253,10 @@ struct TodayView: View {
     /// (vía `loadAll()`), antes de cualquier `await`, así que el body deja de recalcular en cada frame.
     private func recomputeDerived() {
         // FER-623: el veredicto mide la HRV solo contra la base de BANDA (RMSSD), vía `bandDays`. Solo-banda → no-op.
+        // FER-547: en un día ESTIMADO (solo-Apple) esa ruta deja hoy sin señales (.insufficient); el
+        // veredicto se evalúa entonces sobre la historia Apple-masked — la misma base del estimado del dial.
         let band = bandDays
-        memoReadiness = ReadinessEngine.evaluate(days: band, today: Repository.localDayKey(Date()))
+        memoReadiness = ReadinessEngine.evaluate(days: verdictDays(band: band), today: Repository.localDayKey(Date()))
         memoCounts = computeHrvCounts()
         // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera». Una vez
         // por refresh (no por frame), junto al de hoy.
@@ -299,6 +301,21 @@ struct TodayView: View {
     /// fuente de verdad: `recomputeDerived` y el fallback en frío de `readiness` la comparten (deben coincidir).
     private var bandDays: [DailyMetric] {
         SourceLens.maskHrv(repo.days, keep: .band, appleDays: repo.appleHealthDays)
+    }
+
+    /// FER-547: la historia sobre la que se evalúa el veredicto de HOY. Un día de banda usa `bandDays`
+    /// (idéntico a siempre); un día ESTIMADO (solo-Apple, `repo.isRecoveryEstimated`) usa la historia
+    /// enmascarada a Apple, porque en `bandDays` la fila de hoy queda sin señales y el nivel moriría en
+    /// `.insufficient`. Va por `maskForBaseline` (todas las columnas cross-source, no solo HRV): el RHR y
+    /// la respiración de Apple corren con offset de instrumento vs banda (FER-629/641), así que medir el
+    /// z de hoy contra una base dominada por banda pintaría un «Desgastado» falso — cada señal se mide
+    /// solo contra la norma de SU fuente, igual que la base RHR de `AppleRecoveryEstimator`.
+    /// Solo alimenta el veredicto/brief de hoy: la analítica multi-día sigue band-only.
+    /// Recibe el `bandDays` ya calculado para no repetir la pasada de máscara en el caso común (día de banda).
+    private func verdictDays(band: [DailyMetric]) -> [DailyMetric] {
+        repo.isRecoveryEstimated(Repository.localDayKey(Date()))
+            ? SourceLens.maskForBaseline(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
+            : band
     }
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
@@ -1335,7 +1352,8 @@ struct TodayView: View {
         switch state {
         case .waiting, .importedBaseline:
             waitingBrief(state)
-        default:   // downloading / calibrating (y .verdict no llega aquí)
+        default:   // downloading / calibrating — y .verdict SÍ llega aquí cuando `dailyBrief == nil`
+                   // (nivel .insufficient o < 2 viñetas): cae al copy honesto de heroBody/heroFooter (FER-547)
             VStack(spacing: NoopMetrics.gap) {
                 heroBody(state)
                 heroFooter(state)
@@ -2717,8 +2735,8 @@ struct TodayView: View {
     /// Memoizado en `memoReadiness` (FER-172): cae a un cálculo en línea solo si el memo aún es nil
     /// (el primer body antes de que `.task` lo siembre), nunca en el camino caliente de cada render.
     private var readiness: ReadinessEngine.Readiness {
-        // FER-623: mismo `bandDays` que `recomputeDerived`, para que el fallback en frío coincida con el memo.
-        memoReadiness ?? ReadinessEngine.evaluate(days: bandDays, today: Repository.localDayKey(Date()))
+        // FER-623/547: mismo `verdictDays` que `recomputeDerived`, para que el fallback en frío coincida con el memo.
+        memoReadiness ?? ReadinessEngine.evaluate(days: verdictDays(band: bandDays), today: Repository.localDayKey(Date()))
     }
 
     /// True only when the strap is worn AND streaming live HR — gates the beating animation so a

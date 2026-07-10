@@ -23,22 +23,25 @@ enum ProgressionPlanner {
     /// Group raw work-set rows (oldest→newest) into per-session facts for the classifier. A session's
     /// working weight is its TOP work-set weight; the reps counted toward the goal are the reps done AT
     /// that weight (back-off sets at lighter loads don't gate the raise).
-    static func pastSessions(from rows: [(startTs: Int, weightKg: Double, reps: Int)])
+    static func pastSessions(from rows: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)])
         -> [(startTs: Int, session: ProgressionMath.PastSession)] {
-        var grouped: [Int: [(weightKg: Double, reps: Int)]] = [:]
-        for r in rows { grouped[r.startTs, default: []].append((r.weightKg, r.reps)) }
+        var grouped: [Int: [(weightKg: Double, reps: Int, optedOut: Bool)]] = [:]
+        for r in rows { grouped[r.startTs, default: []].append((r.weightKg, r.reps, r.optedOut)) }
         return grouped.keys.sorted().map { ts in
             let sets = grouped[ts]!
             let top = sets.map(\.weightKg).max() ?? 0
             let repsAtTop = sets.filter { abs($0.weightKg - top) < 0.0001 }.map(\.reps)
-            return (ts, ProgressionMath.PastSession(workingKg: top, workSetReps: repsAtTop))
+            // FER-835: the «Volver a X» mark is per (session, exercise), so every row of the session
+            // carries it — any true means the whole session is invisible to the cycle.
+            return (ts, ProgressionMath.PastSession(workingKg: top, workSetReps: repsAtTop,
+                                                    optedOut: sets.contains { $0.optedOut }))
         }
     }
 
     /// Classify one exercise and, when the raise is earned today, build the seed + phrase.
     /// Returns (state, raise): `raise` is non-nil only for `.readyToAdvance`.
     static func evaluate(re: RoutineExercise,
-                         history: [(startTs: Int, weightKg: Double, reps: Int)],
+                         history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)],
                          inventory: [PlateMath.PlateStock],
                          equipment: String?,
                          recovery: Double?, recoveryZ: Double? = nil)

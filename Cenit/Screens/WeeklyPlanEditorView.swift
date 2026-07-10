@@ -30,6 +30,8 @@ struct WeeklyPlanEditorView: View {
     @State private var folders: [RoutineFolder] = []
     /// The split as `weekday → routineId` (Calendar weekday convention, 1 = Sun … 7 = Sat).
     @State private var schedule: [Int: String] = [:]
+    // FER-837: which weekday's assign paper menu is open.
+    @State private var assignMenuDay: Int? = nil
     /// Planned work-set volume per routine, split into the four coarse groups (mock 1b's mini-bars +
     /// weekly footer). Built from each routine's exercises' primary muscles. `[routineId: [group: sets]]`.
     @State private var routineVolume: [String: [MuscleGroup: Int]] = [:]
@@ -121,28 +123,38 @@ struct WeeklyPlanEditorView: View {
             Button { openDay(wd) } label: { rowLabel(wd, chevron: "chevron.right") }
                 .buttonStyle(.plain)
         } else {
-            Menu { assignMenu(wd) } label: { rowLabel(wd, chevron: "chevron.down") }
+            Button { assignMenuDay = wd } label: { rowLabel(wd, chevron: "chevron.down") }
+                .buttonStyle(.plain)
+                .paperMenu(
+                    isPresented: Binding(get: { assignMenuDay == wd },
+                                         set: { if !$0 { assignMenuDay = nil } }),
+                    items: assignMenuItems(wd)
+                )
         }
     }
 
-    /// The assign menu content (empty days): pick a routine (grouped by folder) or keep it as rest.
-    @ViewBuilder
-    private func assignMenu(_ wd: Int) -> some View {
-        Button { clear(wd) } label: {
-            Label("Rest", systemImage: schedule[wd] == nil ? "checkmark" : "moon.zzz")
-        }
-        ForEach(folders) { folder in
+    /// The assign menu rows (empty days): pick a routine — folders become submenus — or keep it as
+    /// rest (FER-837, mock 4b).
+    private func assignMenuItems(_ wd: Int) -> [PaperMenuItem] {
+        var rows: [PaperMenuItem] = [
+            .init(String(localized: "Rest"),
+                  systemImage: schedule[wd] == nil ? "checkmark" : "moon.zzz") { clear(wd) }
+        ]
+        for folder in folders {
             let rs = routines.filter { $0.folderId == folder.id }
             if !rs.isEmpty {
-                Section(folder.name) { ForEach(rs) { routinePick(wd, $0) } }
+                rows.append(.init(folder.name, systemImage: "folder",
+                                  children: rs.map { routinePickItem(wd, $0) }))
             }
         }
         // Everything not in a listed folder (including a routine whose folder was deleted) so no
         // routine is ever un-pickable.
-        let unfiled = unfiledRoutines
-        if !unfiled.isEmpty {
-            Section { ForEach(unfiled) { routinePick(wd, $0) } }
-        }
+        rows += unfiledRoutines.map { routinePickItem(wd, $0) }
+        return rows
+    }
+
+    private func routinePickItem(_ wd: Int, _ r: Routine) -> PaperMenuItem {
+        PaperMenuItem(r.name, systemImage: schedule[wd] == r.id ? "checkmark" : nil) { assign(wd, r.id) }
     }
 
     private func rowLabel(_ wd: Int, chevron: String) -> some View {
@@ -203,13 +215,6 @@ struct WeeklyPlanEditorView: View {
 
     /// A routine in the picker — a checkmark marks the one currently assigned to this day. `r.name` is
     /// user data → verbatim.
-    private func routinePick(_ wd: Int, _ r: Routine) -> some View {
-        Button { assign(wd, r.id) } label: {
-            if schedule[wd] == r.id { Label(r.name, systemImage: "checkmark") }
-            else { Text(r.name) }
-        }
-    }
-
     // MARK: - Weekly volume footer (mock 1b) — planned sets bucketed into the four groups
 
     private var volumeFooter: some View {
