@@ -55,4 +55,51 @@ final class ReassemblerTests: XCTestCase {
         XCTAssertTrue(r.feed(Array(a[0..<5])).isEmpty)        // header + part
         XCTAssertEqual(r.feed(Array(a[5..<a.count])), [a])    // remainder completes it
     }
+
+    // MARK: - maxFrameBytes guard (FER-694, reimpl. of PR #374)
+
+    func testImpossibleLengthResyncsToNextFrame() {
+        // A garbage SOF declaring 0xFFFF bytes must be dropped, not waited on forever.
+        let junk: [UInt8] = [0xAA, 0xFF, 0xFF, 0x00]
+        let a = frameFromPayload([0x05, 0x06], type: 40)
+        let r = Reassembler()
+        XCTAssertEqual(r.feed(junk + a), [a])
+    }
+
+    func testImpossibleLengthWhoop5Resyncs() {
+        let junk: [UInt8] = [0xAA, 0x01, 0xFF, 0xFF]
+        let f = puffinCommandFrame(cmd: 0x10, seq: 1)
+        let r = Reassembler(family: .whoop5)
+        XCTAssertEqual(r.feed(junk + f), [f])
+    }
+
+    func testImpossibleLengthAloneLeavesStreamAlive() {
+        let r = Reassembler()
+        XCTAssertTrue(r.feed([0xAA, 0xFF, 0xFF, 0x00]).isEmpty)
+        // Stream keeps working afterwards.
+        let a = frameFromPayload([0x01], type: 40)
+        XCTAssertEqual(r.feed(a), [a])
+    }
+
+    func testMaxSizedFrameStillPasses() {
+        // A frame exactly at the cap must still assemble (guard is strictly greater-than).
+        let payload = (0..<(Reassembler.maxFrameBytes - 11)).map { UInt8($0 & 0xFF) }
+        let f = frameFromPayload(payload, type: 43)
+        XCTAssertEqual(f.count, Reassembler.maxFrameBytes)
+        let r = Reassembler()
+        XCTAssertEqual(r.feed(f), [f])
+    }
+
+    func testValidFramesByteIdenticalWithGuardInPlace() {
+        // Golden: same fragment-fed big frame as testReassembleFromFragments, unchanged.
+        let frame = bigFrame()
+        let r = Reassembler()
+        var assembled: [[UInt8]] = []
+        var i = 0
+        while i < frame.count {
+            assembled.append(contentsOf: r.feed(Array(frame[i..<min(i + 244, frame.count)])))
+            i += 244
+        }
+        XCTAssertEqual(assembled, [frame])
+    }
 }

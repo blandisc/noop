@@ -52712,6 +52712,23 @@
         }
       }
     },
+    "Tap any value to see its detail.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap any value to see its detail."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca cualquier dato para ver su detalle."
+          }
+        }
+      }
+    },
     "Progression": {
       "localizations": {
         "en": {

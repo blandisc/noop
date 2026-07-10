@@ -1952,19 +1952,30 @@ struct MetricInfoSheet: View {
             let half = geo.size.width / 2
             let maxC: CGFloat = 1.5
             let mag = Swift.max(4, Swift.min(abs(CGFloat(contribution)) / maxC, 1.0) * half)
+            // FER-836 «pista + zona base» — same polish as the Detalle's `impactBar`, kept identical so
+            // Resumen and Detalle never diverge (FER-642). Math unchanged; only the track is new.
+            let trackH: CGFloat = 12
+            let baseZoneW = geo.size.width * 0.24
             ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(theme.trackWarm)
+                    .frame(width: geo.size.width, height: trackH)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de dato
+                    .fill(theme.hairline)
+                    .frame(width: baseZoneW, height: trackH)
+                    .offset(x: half - baseZoneW / 2)
                 Capsule()
                     .fill(color)
                     .frame(width: mag, height: 6)
                     .offset(x: contribution >= 0 ? half : half - mag)
                 Rectangle()
                     .fill(theme.hairlineStrong)
-                    .frame(width: 1, height: 9)
-                    .offset(x: half - 0.5)
+                    .frame(width: 1.5, height: 16)
+                    .offset(x: half - 0.75)
             }
             .frame(maxHeight: .infinity, alignment: .center)
         }
-        .frame(height: 9)
+        .frame(height: 16)
     }
 
     /// The axis legend: «◀ te la bajó · tu base · te la subió ▶» — decorative, hidden from VoiceOver.

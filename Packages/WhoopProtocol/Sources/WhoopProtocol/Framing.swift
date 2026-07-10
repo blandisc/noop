@@ -217,6 +217,12 @@ public final class Reassembler {
     private var buf: [UInt8] = []
     private let family: DeviceFamily
 
+    /// ~4× the largest real WHOOP frame (~1920 B raw/historical). A declared total beyond this is a
+    /// corrupt or misaligned length (a bit-flip, or a spurious 0xAA injected mid-frame), not a real
+    /// frame — so drop that SOF and resync rather than wait forever for bytes that can't arrive.
+    /// (Reimplemented from @vulnix0x4's PR #374.)
+    static let maxFrameBytes = 8192
+
     /// `family` selects the frame-length convention:
     /// - WHOOP 4.0 reads a u16 length at `buf[1..3]`, total = `length + 4`.
     /// - WHOOP 5.0 ("puffin") reads a u16 declared length at `buf[2..4]` (after the `0xAA` SOF and
@@ -249,6 +255,12 @@ public final class Reassembler {
                 total = (Int(buf[1]) | (Int(buf[2]) << 8)) + 4
             case .whoop5:
                 total = (Int(buf[2]) | (Int(buf[3]) << 8)) + 8
+            }
+            if total > Reassembler.maxFrameBytes {
+                // Impossibly large declared length → this 0xAA is garbage. Drop it and resync to the
+                // next SOF instead of stalling the live stream until a reconnect.
+                buf.removeFirst(1)
+                continue
             }
             if buf.count < total {
                 break
