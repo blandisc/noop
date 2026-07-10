@@ -109,6 +109,10 @@ public final class BLEManager: NSObject, ObservableObject {
 
     // MARK: Backfill
     private var backfiller: Backfiller?
+    /// FER-693 (#77 / #91): the durable archive of undecodable HISTORICAL_DATA frames. Written before the
+    /// trim ack (the strap frees its copy on ack) and re-decoded once per app version by the replay gate in
+    /// `bootstrapStore`, so banked history can backfill after a newly-mapped layout (e.g. WHOOP 4.0 v25).
+    private let rejectedHistoryArchive = RawHistoryArchive()
     /// True while a historical offload session is in progress (frames route to Backfiller).
     private var backfilling = false
     /// FER-287: decides whether to auto-fire the next offload session immediately when one closes with a
@@ -369,8 +373,32 @@ public final class BLEManager: NSObject, ObservableObject {
                                     },
                                     enableRawCapture: enableRawCapture,
                                     log: { [weak self] s in self?.log(s) },
-                                    onReceipt: { [weak self] r in self?.accumulateSyncReceipt(r) })
+                                    onReceipt: { [weak self] r in self?.accumulateSyncReceipt(r) },
+                                    rejectedSink: { [weak self] frames, trim, family in
+                                        // Archive undecodable history BEFORE ack. If self is gone treat as
+                                        // durable (true) so a teardown mid-chunk doesn't wedge the offload.
+                                        self?.archiveRejectedFrames(frames, trim: trim, family: family) ?? true
+                                    })
             // Strand: no server uploader/sync — all data stays on-device.
+
+            // FER-693 retro-decode: when the decoder gains a historical layout (e.g. WHOOP 4.0 v25),
+            // re-run every archived undecodable frame through it and insert whatever now decodes — the only
+            // path by which already-acked banked history backfills after an update. Run ONCE per app
+            // version (no manual decoder-version constant to forget to bump); idempotent if it re-runs
+            // (rows dedupe by ts) and the archive is small, so the once-per-update cost is negligible.
+            // (#152) The archive carries no deviceId, so replayed rows attribute to the current strap.
+            let replayKey = "rejectArchiveReplayedAppVersion"
+            if UserDefaults.standard.string(forKey: replayKey) != AppChangelog.currentVersion {
+                do {
+                    let rows = try await rejectedHistoryArchive.replay(into: store, deviceId: deviceId)
+                    if rows > 0 { log("Backfill: retro-decoded \(rows) record(s) from the reject archive after an update.") }
+                    // Advance the gate ONLY on success — a failed insert must retry next launch, because
+                    // the archive holds the only surviving copy of these records. (#152)
+                    UserDefaults.standard.set(AppChangelog.currentVersion, forKey: replayKey)
+                } catch {
+                    log("Backfill: reject-archive retro-decode deferred (store insert failed) — will retry next launch.")
+                }
+            }
             return true
         }
         bootstrapTask = task          // published synchronously (still on @MainActor) before the await below
@@ -642,6 +670,22 @@ public final class BLEManager: NSObject, ObservableObject {
         // the other state mutations (e.g. lastSyncedAt in exitBackfilling). NOT historicalAckLogCounter
         // — that's a puffin-write log throttle that never increments on WHOOP 4.
         state.syncChunksThisSession += 1
+    }
+
+    /// FER-693 (#77 / #91): durably archive undecodable HISTORICAL_DATA frames BEFORE the trim ack. The
+    /// Backfiller calls this from its `rejectedSink`; a `false` return holds the ack so the strap re-sends
+    /// the chunk (no data loss). `.capReached` counts as durable-enough (true) — the archive is full but
+    /// there's already ample sample material, so we still let the offload advance rather than wedge it.
+    private func archiveRejectedFrames(_ frames: [[UInt8]], trim: UInt32, family: DeviceFamily) -> Bool {
+        switch rejectedHistoryArchive.archive(frames, trim: trim, family: family) {
+        case .written:
+            return true
+        case .capReached(let count):
+            log("Backfill: reject archive full — \(count) undecodable record(s) not preserved this chunk (trim=\(trim)).")
+            return true
+        case .failed:
+            return false
+        }
     }
 
     // MARK: Backfill helpers
