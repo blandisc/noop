@@ -126,7 +126,7 @@ public enum CyclePhaseEngine {
 
         // Gate 1 — a readable rhythm. A flat/blunted temp series (e.g. suppressed thermal shift) has no
         // phase to read.
-        let sigmaTemp = IllnessWatch.robustSigma(usableTemp)
+        let sigmaTemp = IllnessWatch.robustSigmaAboutMedian(usableTemp)
         guard sigmaTemp > tempNoiseFloorC else { return .noClearPattern }
         let zTemp = (tTemp - HRVAnalyzer.median(usableTemp)) / sigmaTemp
 
@@ -160,11 +160,12 @@ public enum CyclePhaseEngine {
 
     // MARK: - Helpers
 
-    /// Robust z of `value` against `series`: (value − median) / robustσ. Nil when the series is too
-    /// small or too flat to estimate dispersion. Reuses the repo's robust-σ convention (IllnessWatch).
+    /// Robust z of `value` against `series`: (value − median) / robustσ, both centered on the median so
+    /// numerator and scale share one anchor (see `IllnessWatch.robustSigmaAboutMedian`). Nil when the
+    /// series is too small or too flat to estimate dispersion.
     static func robustZ(_ value: Double, _ series: [Double]) -> Double? {
         guard series.count >= minAuxSamples else { return nil }
-        let sigma = IllnessWatch.robustSigma(series)
+        let sigma = IllnessWatch.robustSigmaAboutMedian(series)
         guard sigma > auxNoiseFloor else { return nil }
         return (value - HRVAnalyzer.median(series)) / sigma
     }

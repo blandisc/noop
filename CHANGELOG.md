@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La lectura de fase del ciclo mide su dispersión con más cuidado / The cycle-phase read measures its spread more carefully.**
+  **ES** — La estimación de fase del ciclo compara la temperatura de piel de la noche contra tu patrón típico. Ese contraste ya se centraba en tu mediana (resistente a una noche atípica), pero medía la dispersión anclada en el promedio, que sí se deja arrastrar por esa misma noche atípica — dos varas distintas. Ahora ambas se anclan en la mediana, así que en series asimétricas (la subida lútea lo es) la lectura queda mejor calibrada. En noches típicas no cambia nada; el resto de las métricas (recuperación, illness) siguen igual.
+  **EN** — The cycle-phase estimate compares tonight's skin temperature against your typical pattern. That contrast already centered on your median (robust to one odd night), but it measured spread anchored on the average, which the same odd night can drag — two different yardsticks. Both now anchor on the median, so on skewed series (the luteal rise is one) the read is better calibrated. On typical nights nothing changes; the rest of the metrics (recovery, illness) are untouched.
+  ([CyclePhaseEngine.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/CyclePhaseEngine.swift), [IllnessWatch.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/IllnessWatch.swift))
+
 - **El sello de confianza de «Tras cada deporte» ahora habla igual que el resto / The confidence stamp in "After each sport" now speaks the same language as the rest.**
   **ES** — En la hoja de Actividad, el sello de confianza de cada deporte decía «Solid» / «Building data»; ahora dice «Confianza alta» / «Confianza media», el mismo vocabulario que ya usan Esfuerzo y Sueño. Es solo un cambio de palabras: el estilo del sello no cambia. Por dentro, los tres detalles comparten un único origen para esa etiqueta, así que a futuro no se desincronizan.
   **EN** — In the Activity sheet, each sport's confidence stamp read "Solid" / "Building data"; it now reads "High confidence" / "Medium confidence", the same wording Strain and Sleep already use. It's only a wording change — the stamp's styling is unchanged. Under the hood all three details now share a single source for that label, so they can't drift apart later.
