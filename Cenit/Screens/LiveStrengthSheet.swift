@@ -157,6 +157,9 @@ final class StrengthSessionModel: ObservableObject {
         /// Cleared by «Volver a X» (the per-session opt-out). Not carried by the crash snapshot — after
         /// a restore the seeded weights survive; only the «por qué» affordance is gone.
         var proposedRaise: ProgressionPlanner.Raise? = nil
+        /// «Volver a X» was tapped for this exercise (FER-835). Persisted with the session at save so
+        /// the progression cycle treats it as neither hit nor miss; carried by the crash snapshot.
+        var raiseOptedOut: Bool = false
 
         /// This exercise's rest as the shared `RestConfig` shape (FER-715), from its four flat fields.
         var restConfig: RestConfig {
@@ -588,12 +591,17 @@ final class StrengthSessionModel: ObservableObject {
     /// Build the `StrengthSession` + its done `SetEntry` rows for saving, each carrying its own `kind`
     /// (`.work`/`.warmup`, FER-720). Each set persists only the fields its exercise type measures, so a
     /// time/distance set never carries the model's placeholder reps and the weight×reps path stays as it was.
-    func buildForSave(deviceId: String?, endTs: Int) -> (StrengthSession, [SetEntry]) {
+    func buildForSave(deviceId: String?, endTs: Int)
+        -> (StrengthSession, [SetEntry], progressionOptOuts: Set<String>) {
         let session = StrengthSession(id: id, routineId: routineId, startTs: startTs,
                                       endTs: endTs, deviceId: deviceId)
         var entries: [SetEntry] = []
+        var optedOut: Set<String> = []
         var position = 0
         for run in runs where !run.skipped {
+            // FER-835: the exercise's «Volver a X» mark rides with the save — only if something was
+            // actually logged (no saved sets → no session rows to mark).
+            if run.raiseOptedOut, run.sets.contains(where: \.done) { optedOut.insert(run.exerciseId) }
             for set in run.sets where set.done {
                 let f = SetCapture.fields(type: run.type, weightKg: set.weightKg, reps: set.reps,
                                           timeS: set.timeS, distanceM: set.distanceM)
@@ -604,7 +612,7 @@ final class StrengthSessionModel: ObservableObject {
                 position += 1
             }
         }
-        return (session, entries)
+        return (session, entries, optedOut)
     }
 
     // MARK: Crash-recovery snapshot (FER-798)
@@ -627,7 +635,8 @@ final class StrengthSessionModel: ObservableObject {
                             distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
                             rest: s.rest, kind: s.kind)
                     },
-                    currentSet: run.currentSet, skipped: run.skipped)
+                    currentSet: run.currentSet, skipped: run.skipped,
+                    raiseOptedOut: run.raiseOptedOut ? true : nil)
             },
             currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
@@ -650,7 +659,8 @@ final class StrengthSessionModel: ObservableObject {
                                        distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
                                        rest: s.rest, kind: s.kind)
                         },
-                        currentSet: r.currentSet, skipped: r.skipped)
+                        currentSet: r.currentSet, skipped: r.skipped,
+                        raiseOptedOut: r.raiseOptedOut ?? false)
         }
         let model = StrengthSessionModel(id: snap.id, routineId: snap.routineId,
                                          routineName: snap.routineName, startTs: snap.startTs, runs: runs)
@@ -1315,8 +1325,8 @@ struct LiveStrengthSheet: View {
     }
 
     /// The per-session opt-out («Volver a X»): undone cells go back to the old weight; done sets keep
-    /// whatever was actually lifted. The cycle is untouched — hitting the goal at the old weight simply
-    /// re-earns the raise for the next session.
+    /// whatever was actually lifted. The session is persisted as opted-out (FER-835), so the cycle
+    /// ignores it entirely — neither hit nor miss; the earned raise is proposed again next session.
     private func revertRaise(ei: Int) {
         guard session.runs.indices.contains(ei),
               let raise = session.runs[ei].proposedRaise else { return }
@@ -1325,6 +1335,7 @@ struct LiveStrengthSheet: View {
                 session.runs[ei].sets[si].weightKg = raise.fromKg
             }
             session.runs[ei].proposedRaise = nil
+            session.runs[ei].raiseOptedOut = true
             whyRaiseOpen.remove(session.runs[ei].id)
         }
     }

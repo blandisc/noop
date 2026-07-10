@@ -422,7 +422,8 @@ struct TodayView: View {
                 RecoveryDetailScreen(theme: theme, model: item.model)
             }
             .sheet(item: $sleepDetail) { item in
-                SleepDetailScreen(theme: theme, model: item.model)
+                SleepDetailScreen(theme: theme, model: item.model,
+                                  loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) })
             }
             .sheet(item: $strainDetail) { item in
                 StrainDetailScreen(theme: theme, model: item.model,

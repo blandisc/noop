@@ -52503,7 +52503,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al alza"
+            "value": "Subiendo"
           }
         }
       }
@@ -52520,7 +52520,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "A la baja"
+            "value": "Bajando"
           }
         }
       }
@@ -53546,6 +53546,193 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deload propuesto: %@ → %@, y a reconstruir."
+          }
+        }
+      }
+    },
+    "Night shape": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night shape"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma de la noche"
+          }
+        }
+      }
+    },
+    "your heart eased off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your heart eased off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bajó tu corazón"
+          }
+        }
+      }
+    },
+    "lowest point": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lowest point"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "punto más bajo"
+          }
+        }
+      }
+    },
+    "below your resting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "below your resting"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bajo tu reposo"
+          }
+        }
+      }
+    },
+    "of the night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of the night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de la noche"
+          }
+        }
+      }
+    },
+    "There isn't enough signal tonight to read how your heart eased off.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There isn't enough signal tonight to read how your heart eased off."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay suficiente señal esta noche para leer cómo bajó tu corazón."
+          }
+        }
+      }
+    },
+    "A marked, early drop — a sign you settled into rest. It's a pattern, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A marked, early drop — a sign you settled into rest. It's a pattern, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un descenso marcado y temprano — señal de que descansaste. Es un patrón, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "A moderate drop overnight. It's a pattern, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A moderate drop overnight. It's a pattern, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un descenso moderado durante la noche. Es un patrón, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un descenso más suave del que suele mostrar una noche de descanso profundo. Es un patrón, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "VO₂max · trend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂max · trend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂max · tendencia"
+          }
+        }
+      }
+    },
+    "We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Te enseñamos la dirección, no un número exacto — el estimado brinca de día a día, la tendencia es más honesta."
           }
         }
       }

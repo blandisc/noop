@@ -2084,6 +2084,29 @@ ES: dict[str, str] = {
 
     # FER-744 follow-up — accessibility label de SEÑALES (FiveRules), antes verbatim en español.
     '%1$@: %2$lld of %3$lld points': '%1$@: %2$lld de %3$lld puntos',
+
+    # FER-832 — sección «Forma de la noche» en Detalle de Sueño.
+    'Night shape': 'Forma de la noche',
+    'your heart eased off': 'bajó tu corazón',
+    'lowest point': 'punto más bajo',
+    'below your resting': 'bajo tu reposo',
+    'of the night': 'de la noche',
+    "There isn't enough signal tonight to read how your heart eased off.":
+        'No hay suficiente señal esta noche para leer cómo bajó tu corazón.',
+    "A marked, early drop — a sign you settled into rest. It's a pattern, not a diagnosis.":
+        'Un descenso marcado y temprano — señal de que descansaste. Es un patrón, no un diagnóstico.',
+    "A moderate drop overnight. It's a pattern, not a diagnosis.":
+        'Un descenso moderado durante la noche. Es un patrón, no un diagnóstico.',
+    "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis.":
+        'Un descenso más suave del que suele mostrar una noche de descanso profundo. Es un patrón, no un diagnóstico.',
+
+    # FER-833 — bloque «VO₂max · tendencia» en Detalle de Edad de Fitness.
+    'VO₂max · trend': 'VO₂max · tendencia',
+    'Rising': 'Subiendo',
+    'Falling': 'Bajando',
+    'Steady': 'Estable',
+    'We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.':
+        'Te enseñamos la dirección, no un número exacto — el estimado brinca de día a día, la tendencia es más honesta.',
 }
 
 

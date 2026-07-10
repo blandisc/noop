@@ -408,7 +408,8 @@ private struct CuerpoLanding: View {
         } else if let item = strainDetail {
             StrainDetailScreen(theme: theme, model: item.model, curveLoader: { await loadStrainCurve() })
         } else if let item = sleepDetail {
-            SleepDetailScreen(theme: theme, model: item.model)
+            SleepDetailScreen(theme: theme, model: item.model,
+                              loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) })
         } else if let item = stressDetail {
             StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
                                patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
@@ -427,6 +428,8 @@ private struct CuerpoLanding: View {
                                  appleVO2max: latestAppleVO2max,
                                  appleConnectHint: health.auth != .authorized && health.auth != .unavailable
                                      && latestAppleVO2max == nil,
+                                 vo2Trend: vo2maxTrend,
+                                 vo2Series: vitalSeries(for: "vo2max").map(\.value),
                                  theme: theme)
         } else if showBodyAge {
             BodyAgeSheet(
@@ -1264,6 +1267,18 @@ private struct CuerpoLanding: View {
                   let date = Repository.parseDayKey(row.day) else { return nil }
             return TrendPoint(date: date.addingTimeInterval(12 * 3600), value: value)
         }
+    }
+
+    /// The fitness trajectory (rising / stable / falling) from the measured Apple VO₂max series (FER-833).
+    /// `nil` below the data minimum (< 6 readings or < 21 days) → the trend block hides. Uses days-since-
+    /// epoch as the time index the robust (Theil–Sen) slope needs. Every Apple reading is a real
+    /// measurement, so the raw series feeds the trend directly.
+    private var vo2maxTrend: VO2maxTrend.Result? {
+        let points: [VO2maxTrend.Point] = vitalSeries(for: "vo2max").compactMap { row in
+            guard let date = Repository.parseDayKey(row.day) else { return nil }
+            return VO2maxTrend.Point(day: Int(date.timeIntervalSince1970 / 86_400), value: row.value)
+        }
+        return VO2maxTrend.assess(points)
     }
 
     /// The FULL daily series (oldest → newest) for a vital, from `repo.displayDays` — the unified
