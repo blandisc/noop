@@ -305,12 +305,15 @@ struct TodayView: View {
 
     /// FER-547: la historia sobre la que se evalúa el veredicto de HOY. Un día de banda usa `bandDays`
     /// (idéntico a siempre); un día ESTIMADO (solo-Apple, `repo.isRecoveryEstimated`) usa la historia
-    /// enmascarada a Apple — la MISMA base del estimado del dial (patrón `computeAppleHrvEstimated`) —
-    /// porque en `bandDays` la fila de hoy queda sin señales y el nivel moriría en `.insufficient`.
+    /// enmascarada a Apple, porque en `bandDays` la fila de hoy queda sin señales y el nivel moriría en
+    /// `.insufficient`. Va por `maskForBaseline` (todas las columnas cross-source, no solo HRV): el RHR y
+    /// la respiración de Apple corren con offset de instrumento vs banda (FER-629/641), así que medir el
+    /// z de hoy contra una base dominada por banda pintaría un «Desgastado» falso — cada señal se mide
+    /// solo contra la norma de SU fuente, igual que la base RHR de `AppleRecoveryEstimator`.
     /// Solo alimenta el veredicto/brief de hoy: la analítica multi-día sigue band-only.
     private var verdictDays: [DailyMetric] {
         repo.isRecoveryEstimated(Repository.localDayKey(Date()))
-            ? SourceLens.maskHrv(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
+            ? SourceLens.maskForBaseline(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
             : bandDays
     }
 
