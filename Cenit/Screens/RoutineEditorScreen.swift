@@ -379,10 +379,11 @@ struct RoutineEditorScreen: View {
             Text(routine?.name ?? "")
                 .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                 .foregroundStyle(theme.ink)
-                .overlay(alignment: .bottom) {
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .bottomLeading) {
                     Rectangle().fill(theme.ink).frame(height: 2).offset(y: 5)
                 }
-                .fixedSize(horizontal: true, vertical: false)
             metaLine
         }
     }
@@ -575,7 +576,7 @@ struct RoutineEditorScreen: View {
             .focused($focusedCell, equals: id)
             .disabled(locked)
             .frame(width: width, height: 31)
-            .background(theme.surface)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 

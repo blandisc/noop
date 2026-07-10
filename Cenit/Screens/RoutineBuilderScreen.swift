@@ -295,7 +295,7 @@ struct RoutineBuilderScreen: View {
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
             .frame(width: 76, height: 34)
-            .background(theme.surface)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline))
     }
 
