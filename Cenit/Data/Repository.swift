@@ -842,13 +842,12 @@ final class Repository: ObservableObject {
     func startExperiment(behavior: String, outcome: String, expectedSign: Int,
                          windowDays: Int = 7) async -> ExperimentRow? {
         guard let store = await ensureStore() else { return nil }
-        if let existing = try? await store.activeExperiment(deviceId: Self.journalDeviceId),
-           existing != nil { return nil }   // one at a time
+        if (try? await store.activeExperiment(deviceId: Self.journalDeviceId)) != nil { return nil }   // one at a time
         let now = Int(Date().timeIntervalSince1970)
         let row = ExperimentRow(id: UUID().uuidString, behavior: behavior, outcome: outcome,
                                 expectedSign: expectedSign, startDay: Self.localDayKey(Date()),
                                 windowDays: windowDays, status: .running, createdAt: now)
-        try? await store.upsertExperiment(row, deviceId: Self.journalDeviceId)
+        _ = try? await store.upsertExperiment(row, deviceId: Self.journalDeviceId)
         return row
     }
 
@@ -942,7 +941,7 @@ final class Repository: ObservableObject {
         guard let store = await ensureStore() else { return }
         let canceled = Self.experimentRow(row, status: .canceled,
                                           decidedAt: Int(Date().timeIntervalSince1970))
-        try? await store.upsertExperiment(canceled, deviceId: Self.journalDeviceId)
+        _ = try? await store.upsertExperiment(canceled, deviceId: Self.journalDeviceId)
     }
 
     /// If a running experiment's window has elapsed (today ≥ startDay + windowDays), compute its
@@ -985,7 +984,7 @@ final class Repository: ObservableObject {
                                       effectSize: e?.cohensD, pValue: e?.pApprox, nWith: e?.nWith,
                                       nWithout: e?.nWithout, createdAt: exp.createdAt,
                                       decidedAt: Int(Date().timeIntervalSince1970))
-        try? await store.upsertExperiment(completed, deviceId: Self.journalDeviceId)
+        _ = try? await store.upsertExperiment(completed, deviceId: Self.journalDeviceId)
     }
 
     /// The day key on which an experiment's window closes (startDay + windowDays, exclusive).

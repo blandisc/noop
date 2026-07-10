@@ -659,7 +659,7 @@ final class AppModel: ObservableObject {
             onNoRecoverableStrengthSession?()
             return
         }
-        if let saved = try? await store.session(id: snap.id), saved != nil {
+        if (try? await store.session(id: snap.id)) != nil {
             try? await store.clearInProgressSession()
             onNoRecoverableStrengthSession?()
             return
@@ -1432,15 +1432,17 @@ final class AppModel: ObservableObject {
         let body = minutes > 0
             ? String(localized: "You've been seated about \(minutes) min. Time to move.")
             : String(localized: "Time to move — you've been seated a while.")
-        let center = UNUserNotificationCenter.current()
-        center.getNotificationSettings { settings in
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
             guard settings.authorizationStatus == .authorized else { return }
             let content = UNMutableNotificationContent()
             content.title = String(localized: "Move reminder")
             content.body = body
             content.sound = .default
             // A fixed identifier means a fresh nudge replaces the prior one rather than stacking.
-            center.add(UNNotificationRequest(identifier: "inactivity-nudge", content: content, trigger: nil))
+            // Re-fetch `.current()` inside the @Sendable completion instead of capturing the outer
+            // (non-Sendable) instance — same singleton, no cross-actor capture warning.
+            UNUserNotificationCenter.current().add(
+                UNNotificationRequest(identifier: "inactivity-nudge", content: content, trigger: nil))
         }
         #endif
     }
