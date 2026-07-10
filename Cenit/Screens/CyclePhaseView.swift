@@ -188,12 +188,16 @@ private struct CyclePhaseStateBody: View {
             .background(theme.paper.ignoresSafeArea())
             .instrumentoTheme(theme)
         }
-        .alert("Turn off experiment", isPresented: $confirmOff) {
-            Button("Turn off", role: .destructive, action: onDeactivate)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("I'll stop estimating your phase. Your temperature data and everything else stay the same.")
-        }
+        .instrumentoConfirm(
+            isPresented: $confirmOff,
+            title: String(localized: "Turn off experiment"),
+            context: String(localized: "CYCLE PHASE · EXPERIMENT"),
+            message: String(localized: "I'll stop estimating your phase. Your temperature data and everything else stay the same."),
+            actions: [
+                .init(String(localized: "Keep estimating"), role: .primary),
+                .init(String(localized: "Turn off"), role: .destructive, handler: onDeactivate)
+            ]
+        )
     }
 
     @ViewBuilder private var content: some View {

@@ -386,6 +386,7 @@ struct WorkoutSessionDetailScreen: View {
     @State private var routineNames: [String: String] = [:]
     @State private var showEdit = false
     @State private var showDeleteConfirm = false
+    @State private var showMoreMenu = false
 
     // Display prefers the reloaded `fullSession` (so an edit's new date/routine shows at once), falling
     // back to the immutable route while it loads (FER-556).
@@ -427,23 +428,31 @@ struct WorkoutSessionDetailScreen: View {
         // list's long-press, and editing a saved session is finally possible (FER-556).
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button { showEdit = true } label: { Label("Edit", systemImage: "pencil") }
-                        .disabled(fullSession == nil)
-                    Button(role: .destructive) { showDeleteConfirm = true } label: {
-                        Label("Delete workout", systemImage: "trash")
-                    }
-                    .disabled(fullSession == nil)   // both actions wait for the full row to load
-                } label: {
+                Button { showMoreMenu = true } label: {
                     Image(systemName: "ellipsis.circle").foregroundStyle(theme.ink)
                 }
                 .accessibilityLabel(Text("More options"))
+                .paperMenu(isPresented: $showMoreMenu, items: [
+                    // Both actions wait for the full row to load.
+                    .init(String(localized: "Edit"), systemImage: "pencil") {
+                        if fullSession != nil { showEdit = true }
+                    },
+                    .init(String(localized: "Delete workout"), systemImage: "trash", isDestructive: true) {
+                        if fullSession != nil { showDeleteConfirm = true }
+                    }
+                ])
             }
         }
-        .confirmationDialog("Delete this workout?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-            Button("Delete workout", role: .destructive) { performDelete() }
-            Button("Cancel", role: .cancel) {}
-        } message: { Text("This removes the workout from your history.") }
+        .instrumentoConfirm(
+            isPresented: $showDeleteConfirm,
+            title: String(localized: "Delete this workout?"),
+            context: String(localized: "HISTORY"),
+            message: String(localized: "This removes the workout from your history."),
+            actions: [
+                .init(String(localized: "Keep workout"), role: .primary),
+                .init(String(localized: "Delete workout"), role: .destructive) { performDelete() }
+            ]
+        )
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)

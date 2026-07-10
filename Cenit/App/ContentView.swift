@@ -1,4 +1,5 @@
 import SwiftUI
+import StrandDesign
 
 /// Root — the sidebar shell, with the first-run onboarding/pairing wizard overlaid until complete,
 /// and a "What's New" changelog sheet shown automatically after an update.
@@ -21,6 +22,7 @@ struct ContentView: View {
     @State private var showRestoreOffer = false
     @State private var restoreMessage = ""
     @State private var showRestoreResult = false
+    @State private var restoreSucceeded = true
     #endif
 
     var body: some View {
@@ -77,11 +79,26 @@ struct ContentView: View {
         } message: {
             Text("It looks like there's no data on this device. If you've used Cénit before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.")
         }
-        .alert("Restore", isPresented: $showRestoreResult) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(restoreMessage)
+        // FER-837: the restore RESULT is an inline banner (the offer above stays a native alert — the
+        // honest exception: it fires before the app visually exists).
+        .overlay(alignment: .top) {
+            if showRestoreResult {
+                let theme = InstrumentoTheme.base
+                Text(restoreMessage)
+                    .font(.system(size: 13))
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: restoreSucceeded ? theme.verdict : theme.critical)
+                    .padding(.horizontal, 16)
+                    .onTapGesture { showRestoreResult = false }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(8))
+                        showRestoreResult = false
+                    }
+            }
         }
+        .animation(StrandMotion.fade, value: showRestoreResult)
         #endif
     }
 
@@ -110,9 +127,11 @@ struct ContentView: View {
         switch await DataBackup.runImport() {
         case .imported:
             restoreMessage = String(localized: "Your data has been restored. Reopen Cénit for it to take effect.")
+            restoreSucceeded = true
             showRestoreResult = true
         case .failure(let message):
             restoreMessage = message
+            restoreSucceeded = false
             showRestoreResult = true
         case .cancelled, .exported:
             break

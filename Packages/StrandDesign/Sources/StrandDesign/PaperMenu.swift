@@ -70,22 +70,34 @@ public struct PaperMenuCard: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            if let pushed {
-                row(back: pushed.title)
-                Rectangle().fill(theme.hairline).frame(height: 1)
-                list(pushed.children)
-            } else {
-                list(items)
+        ScrollView {
+            VStack(spacing: 0) {
+                if let pushed {
+                    row(back: pushed.title)
+                    Rectangle().fill(theme.hairline).frame(height: 1)
+                    list(pushed.children)
+                } else {
+                    list(items)
+                }
             }
         }
-        .frame(width: 250)
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(width: 250, height: estimatedHeight)
         .background(theme.surface)
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .shadow(color: theme.ink.opacity(0.16), radius: 16, y: 10)
         .presentationBackground(theme.surface)
         .animation(StrandMotion.fade, value: pushed?.id)
+    }
+
+    /// A popover must know its size up front, so the card estimates from its rows (45pt per row,
+    /// +14 when a subtitle rides along) and caps at 420 — past that the ScrollView takes over.
+    private var estimatedHeight: CGFloat {
+        let rows = pushed.map { $0.children } ?? items
+        let base: CGFloat = pushed != nil ? 41 : 0   // the submenu's back header row
+        let content = rows.reduce(CGFloat(0)) { $0 + 45 + ($1.subtitle != nil ? 14 : 0) }
+        return min(base + content, 420)
     }
 
     private func list(_ items: [PaperMenuItem]) -> some View {
@@ -96,7 +108,9 @@ public struct PaperMenuCard: View {
             Button {
                 if item.children.isEmpty {
                     isPresented = false
-                    item.action()
+                    // Next runloop tick, so an action that presents a sheet doesn't race
+                    // the popover's teardown.
+                    DispatchQueue.main.async { item.action() }
                 } else {
                     pushed = item
                 }

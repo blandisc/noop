@@ -53736,6 +53736,567 @@
           }
         }
       }
+    },
+    "SESSION · IN PROGRESS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SESSION · IN PROGRESS"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SESIÓN · EN CURSO"
+          }
+        }
+      }
+    },
+    "Keep training": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep training"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir entrenando"
+          }
+        }
+      }
+    },
+    "PLAN · UNSAVED CHANGES": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PLAN · UNSAVED CHANGES"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PLAN · CAMBIOS SIN GUARDAR"
+          }
+        }
+      }
+    },
+    "What you edited today goes back to how it was.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What you edited today goes back to how it was."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que editaste hoy vuelve a como estaba."
+          }
+        }
+      }
+    },
+    "WORKOUT · UNSAVED CHANGES": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WORKOUT · UNSAVED CHANGES"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ENTRENAMIENTO · CAMBIOS SIN GUARDAR"
+          }
+        }
+      }
+    },
+    "Your edits to this workout will be lost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your edits to this workout will be lost."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus cambios a este entrenamiento se perderán."
+          }
+        }
+      }
+    },
+    "HISTORY": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HISTORY"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HISTORIAL"
+          }
+        }
+      }
+    },
+    "Keep workout": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep workout"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conservar el entrenamiento"
+          }
+        }
+      }
+    },
+    "STRAP · CONNECTED": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "STRAP · CONNECTED"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BANDA · CONECTADA"
+          }
+        }
+      }
+    },
+    "Keep connected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep connected"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir conectada"
+          }
+        }
+      }
+    },
+    "EXERCISE MEDIA": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EXERCISE MEDIA"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MEDIA DE EJERCICIOS"
+          }
+        }
+      }
+    },
+    "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved animations are deleted from your iPhone. You can re-download them anytime."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."
+          }
+        }
+      }
+    },
+    "Conservar la media": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the media"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conservar la media"
+          }
+        }
+      }
+    },
+    "Borrar la media": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the media"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borrar la media"
+          }
+        }
+      }
+    },
+    "RECOVERY · BASELINE": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RECOVERY · BASELINE"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RECUPERACIÓN · LÍNEA BASE"
+          }
+        }
+      }
+    },
+    "Dejar la base como está": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave the baseline as is"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejar la base como está"
+          }
+        }
+      }
+    },
+    "Recalibrar desde hoy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recalibrate from today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recalibrar desde hoy"
+          }
+        }
+      }
+    },
+    "MUSCLE MAP": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MUSCLE MAP"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MAPA MUSCULAR"
+          }
+        }
+      }
+    },
+    "Leave the map as is": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave the map as is"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejar el mapa como está"
+          }
+        }
+      }
+    },
+    "PATTERNS · YOUR JOURNAL": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PATTERNS · YOUR JOURNAL"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PATRONES · TU BITÁCORA"
+          }
+        }
+      }
+    },
+    "Keep my journal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep my journal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conservar mi bitácora"
+          }
+        }
+      }
+    },
+    "TRAVEL PLAN · ACTIVE": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TRAVEL PLAN · ACTIVE"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PLAN DE VIAJE · ACTIVO"
+          }
+        }
+      }
+    },
+    "¿Terminar tu plan de reajuste?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End your readjustment plan?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Terminar tu plan de reajuste?"
+          }
+        }
+      }
+    },
+    "Perderás el progreso del plan. Tus datos no se tocan.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You'll lose the plan's progress. Your data isn't touched."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perderás el progreso del plan. Tus datos no se tocan."
+          }
+        }
+      }
+    },
+    "Seguir con el plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir con el plan"
+          }
+        }
+      }
+    },
+    "Terminar el plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End the plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminar el plan"
+          }
+        }
+      }
+    },
+    "CYCLE PHASE · EXPERIMENT": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CYCLE PHASE · EXPERIMENT"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FASE DEL CICLO · EXPERIMENTO"
+          }
+        }
+      }
+    },
+    "Keep estimating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep estimating"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir estimando"
+          }
+        }
+      }
+    },
+    "MY ROUTINES": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MY ROUTINES"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MIS RUTINAS"
+          }
+        }
+      }
+    },
+    "Rename": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renombrar"
+          }
+        }
+      }
+    },
+    "on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "on"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "activa"
+          }
+        }
+      }
+    },
+    "ROUTINE · UNSAVED CHANGES": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ROUTINE · UNSAVED CHANGES"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RUTINA · CAMBIOS SIN GUARDAR"
+          }
+        }
+      }
+    },
+    "Your edits to this routine will be lost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your edits to this routine will be lost."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus cambios a esta rutina se perderán."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
