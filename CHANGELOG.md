@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Al reordenar ejercicios la ficha que levantas ya no sale en un cuadro blanco / Dragging to reorder no longer lifts the card on a white box.**
+  **ES** — En el editor de rutina, al arrastrar un ejercicio para reordenar, la ficha flotante salía sobre un recuadro blanco (el «plato» que iOS pone bajo el preview del arrastre). Un intento previo pintó la celda fija de papel, pero el preview flotante solo copia el contenido de la fila, no ese fondo, así que seguía blanco. Ahora el contenido de la fila es papel opaco de borde a borde, así que la ficha levantada se funde con la pantalla. En reposo se ve igual.
+  **EN** — In the routine editor, dragging an exercise to reorder lifted the floating card over a white box (the platter iOS places under the drag preview). An earlier attempt painted the resting cell paper, but the floating preview only snapshots the row's content, not that background, so it stayed white. The row content is now edge-to-edge opaque paper, so the lifted card fuses with the screen. At rest it looks the same.
+  ([RoutineEditorScreen.swift](Cenit/Screens/RoutineEditorScreen.swift))
+
 - **En «Subir con el plan» vuelven a verse las etiquetas de cada ajuste / The "Raise with the plan" screen shows each setting's label again.**
   **ES** — En la pantalla de progresión de carga, cada fila (Objetivo de reps, Subes cuando, Si te estancas, Recuperación baja) tenía su etiqueta a la izquierda y su control a la derecha, pero el control segmentado pedía todo el ancho y aplastaba la etiqueta a 0pt: quedaban solo los pills sueltos, con la sensación de mucho espacio vacío entre ellos. Ahora el control tiene un ancho tope y la etiqueta siempre conserva su lugar, así que la pantalla se lee densa y ordenada. Solo es layout: nada del plan de progresión cambia.
   **EN** — On the load-progression screen each row (Rep goal, You raise when, If you stall, Low recovery) had its label on the left and its control on the right, but the segmented control claimed the full width and starved the label to 0pt: only the loose pills were left, reading as lots of empty space between them. The control is now width-capped and the label always keeps its place, so the screen reads dense and tidy. Layout only — nothing about the progression plan changes.
