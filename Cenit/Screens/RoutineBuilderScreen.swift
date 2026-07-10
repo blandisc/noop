@@ -4,28 +4,19 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 
-// RoutineBuilderScreen.swift — create and edit reusable routines (FER-346, inline rewrite FER-561). The
-// Train hub opens this as a sheet (`.new` / `.edit(routine)`), carrying its own routine id. EVERYTHING is
-// edited on ONE screen (Hevy-style, FER-561): each exercise shows its set table inline — editable cells,
-// a warm-up «C» row, add/delete sets, rest, reorder/superset via its ⋯ menu — matching the live session's
-// logging table (LiveStrengthSheet, FER-497) so editing and training feel the same. «Báscula de papel»:
-// weights in ink, no color; a flat List + hairlines (no card-in-card), native swipe-to-delete on sets.
-
-// MARK: - Builder target
-
-/// What the builder sheet is editing: a fresh routine or an existing one.
-enum BuilderTarget: Identifiable {
-    case new
-    case edit(Routine)
-    var id: String { routine?.id ?? "new" }
-    var routine: Routine? { if case .edit(let r) = self { return r } else { return nil } }
-}
+// RoutineBuilderScreen.swift — CREATE reusable routines (FER-346, inline rewrite FER-561; create-only
+// since FER-840). The Train hub opens this as a sheet to build a NEW routine from scratch or from a
+// session seed; editing an existing routine happens on the unified «Rutina» editor (`RoutineEditorScreen`,
+// FER-839) — `onSaved` hands back the new routine's id so the caller opens it there. EVERYTHING is edited
+// on ONE screen (Hevy-style): each exercise shows its set table inline, matching the live session's
+// logging table (LiveStrengthSheet, FER-497). «Báscula de papel»: weights in ink, no color; a flat List +
+// hairlines (no card-in-card), native swipe-to-delete on sets.
 
 // MARK: - Builder
 
 struct RoutineBuilderScreen: View {
-    let routine: Routine?
-    var onSaved: (() async -> Void)? = nil
+    /// Called after the new routine persists, with its id — the caller opens it on «Rutina» (FER-840).
+    var onSaved: ((String) async -> Void)? = nil
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
@@ -57,18 +48,15 @@ struct RoutineBuilderScreen: View {
     /// store fetch and starts from these. nil = normal new/edit behavior.
     private let seed: [(re: RoutineExercise, exercise: Exercise)]?
 
-    init(routine: Routine?, onSaved: (() async -> Void)? = nil) {
-        self.routine = routine
+    init(onSaved: ((String) async -> Void)? = nil) {
         self.onSaved = onSaved
-        self.routineId = routine?.id ?? UUID().uuidString
+        self.routineId = UUID().uuidString
         self.seed = nil
-        _name = State(initialValue: routine?.name ?? "")
     }
 
     /// «Duplicar como rutina» (2A): a fresh routine pre-filled with a session's exercises. `suggestedName`
     /// seeds the name field; `seed` re-bases each exercise onto the new routine id.
-    init(seedName: String, seed: [(re: RoutineExercise, exercise: Exercise)], onSaved: (() async -> Void)? = nil) {
-        self.routine = nil
+    init(seedName: String, seed: [(re: RoutineExercise, exercise: Exercise)], onSaved: ((String) async -> Void)? = nil) {
         self.onSaved = onSaved
         let newId = UUID().uuidString
         self.routineId = newId
@@ -222,7 +210,7 @@ struct RoutineBuilderScreen: View {
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(routine == nil ? "New routine" : "Editing").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("New routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             TextField("Routine name", text: $name)
                 .font(StrandFont.title1).foregroundStyle(theme.ink)
         }
@@ -467,13 +455,7 @@ struct RoutineBuilderScreen: View {
     private func loadExisting() async {
         if let seed {   // «Duplicar como rutina» (2A): start from the seeded exercises, no store fetch.
             items = seed.map { BuilderItem(re: $0.re, exercise: $0.exercise) }
-            return
         }
-        guard let routine else { return }
-        let res = await repo.routineExercises(routineId: routine.id)
-        let all = await repo.allExercises()
-        let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        items = res.compactMap { re in byId[re.exerciseId].map { BuilderItem(re: re, exercise: $0) } }
     }
 
     private var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty && !items.isEmpty }
@@ -481,14 +463,13 @@ struct RoutineBuilderScreen: View {
     private func save() {
         let now = Int(Date().timeIntervalSince1970)
         let r = Routine(id: routineId, name: name.trimmingCharacters(in: .whitespaces),
-                        tag: routine?.tag, createdTs: routine?.createdTs ?? now, updatedTs: now,
-                        sortOrder: routine?.sortOrder ?? 0)
+                        tag: nil, createdTs: now, updatedTs: now, sortOrder: 0)
         let exercises = items.enumerated().map { idx, item -> RoutineExercise in
             var re = item.re; re.position = idx; re.routineId = routineId; return re
         }
         Task {
             try? await repo.saveRoutine(r, exercises: exercises)
-            await onSaved?()
+            await onSaved?(routineId)
             dismiss()
         }
     }
