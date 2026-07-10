@@ -256,7 +256,7 @@ struct TodayView: View {
         // FER-547: en un día ESTIMADO (solo-Apple) esa ruta deja hoy sin señales (.insufficient); el
         // veredicto se evalúa entonces sobre la historia Apple-masked — la misma base del estimado del dial.
         let band = bandDays
-        memoReadiness = ReadinessEngine.evaluate(days: verdictDays, today: Repository.localDayKey(Date()))
+        memoReadiness = ReadinessEngine.evaluate(days: verdictDays(band: band), today: Repository.localDayKey(Date()))
         memoCounts = computeHrvCounts()
         // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera». Una vez
         // por refresh (no por frame), junto al de hoy.
@@ -311,10 +311,11 @@ struct TodayView: View {
     /// z de hoy contra una base dominada por banda pintaría un «Desgastado» falso — cada señal se mide
     /// solo contra la norma de SU fuente, igual que la base RHR de `AppleRecoveryEstimator`.
     /// Solo alimenta el veredicto/brief de hoy: la analítica multi-día sigue band-only.
-    private var verdictDays: [DailyMetric] {
+    /// Recibe el `bandDays` ya calculado para no repetir la pasada de máscara en el caso común (día de banda).
+    private func verdictDays(band: [DailyMetric]) -> [DailyMetric] {
         repo.isRecoveryEstimated(Repository.localDayKey(Date()))
             ? SourceLens.maskForBaseline(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
-            : bandDays
+            : band
     }
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
@@ -2735,7 +2736,7 @@ struct TodayView: View {
     /// (el primer body antes de que `.task` lo siembre), nunca en el camino caliente de cada render.
     private var readiness: ReadinessEngine.Readiness {
         // FER-623/547: mismo `verdictDays` que `recomputeDerived`, para que el fallback en frío coincida con el memo.
-        memoReadiness ?? ReadinessEngine.evaluate(days: verdictDays, today: Repository.localDayKey(Date()))
+        memoReadiness ?? ReadinessEngine.evaluate(days: verdictDays(band: bandDays), today: Repository.localDayKey(Date()))
     }
 
     /// True only when the strap is worn AND streaming live HR — gates the beating animation so a
