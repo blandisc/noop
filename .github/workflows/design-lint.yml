@@ -1,0 +1,36 @@
+# Screen-level design-drift linter (auditoría jul-2026), split out of design-tokens.yml so it
+# runs on ubuntu (1× billing) instead of macOS (10×) — it's pure Python, no Swift toolchain needed.
+#
+# Rules activate incrementally as each migration lands. `no-hex` runs on every root (all hex
+# lives in StrandDesign). The font/radius/opacity rules are now ON for the migrated surfaces —
+# `Cenit/Screens` + `Cenit/Onboarding` are fully token-clean (tasks 01/02/03). CenitWidgets
+# (Live Activity) and CenitWatch are fixed Dynamic-Island / watch geometry (the WidgetMetrics
+# category, exempt from Dynamic Type) and are intentionally not yet under the 3 new rules.
+name: Design Lint
+
+on:
+  pull_request:
+    branches: [iOS, main]
+    paths:
+      - 'Packages/StrandDesign/**'
+      - 'Cenit/**'
+      - 'CenitWidgets/**'
+      - 'CenitWatch/**'
+      - 'Tools/check-design-drift.py'
+      - '.github/workflows/design-lint.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: design-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Design-drift linter — no raw hex (all roots)
+        run: python3 Tools/check-design-drift.py --rules no-hex
+      - name: Design-drift linter — no ad-hoc font/radius/opacity (migrated screens)
+        run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal Cenit/Screens Cenit/Onboarding
