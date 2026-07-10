@@ -408,7 +408,8 @@ private struct CuerpoLanding: View {
         } else if let item = strainDetail {
             StrainDetailScreen(theme: theme, model: item.model, curveLoader: { await loadStrainCurve() })
         } else if let item = sleepDetail {
-            SleepDetailScreen(theme: theme, model: item.model)
+            SleepDetailScreen(theme: theme, model: item.model,
+                              loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) })
         } else if let item = stressDetail {
             StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
                                patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
