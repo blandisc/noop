@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La estabilidad térmica de tus noches, en Detalle de Temp. de piel / Your nightly thermal stability, in the Skin-temp detail.**
+  **ES** — Con las Métricas experimentales prendidas, el Detalle de Temp. de piel muestra qué tan parejo es tu calentamiento distal al dormir: el calentamiento típico (°C, del inicio del sueño a la meseta) y su consistencia noche a noche (consistente / moderada / variable). Es una asociación, no un reloj circadiano completo de 24 h (solo tenemos la noche); se muestra «aprendiendo» hasta que hay suficientes noches.
+  **EN** — With Experimental metrics on, the Skin-temp detail shows how steady your distal warming into sleep is: the typical warming (°C, from sleep onset to plateau) and its night-to-night consistency (consistent / moderate / variable). It's an association, not a full 24-hour circadian rhythm (we only have the night); it reads "learning" until there are enough nights.
+  ([SkinTempDetailScreen.swift](Cenit/Screens/SkinTempDetailScreen.swift), [Repository.swift](Cenit/Data/Repository.swift))
+
 - **La «reserva para bajar de marcha» de la noche, en Detalle de Sueño / Your nightly "braking reserve", in the Sleep detail.**
   **ES** — Con las Métricas experimentales prendidas, el Detalle de Sueño muestra tu capacidad de desaceleración nocturna (DC): cuánta reserva tuvo tu corazón para bajar de marcha en reposo, en ms, con una lectura «vs tu normal» (por encima / en rango / por debajo) contra tu propia base de noches recientes. Es un patrón personal, no un número de riesgo ni de mortalidad; se oculta sin banda WHOOP o cuando la noche no da señal suficiente.
   **EN** — With Experimental metrics on, the Sleep detail shows your nocturnal deceleration capacity (DC): how much room your heart had to ease off the gas at rest, in ms, with a "vs your normal" read (above / in range / below) against your own recent-nights baseline. It's a personal pattern, not a risk or mortality number; it hides without a WHOOP strap or when the night can't be read.

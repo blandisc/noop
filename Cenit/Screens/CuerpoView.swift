@@ -421,7 +421,8 @@ private struct CuerpoLanding: View {
         } else if let item = trainingLoadItem {
             TrainingLoadSheet(model: item.model, theme: theme)
         } else if let item = skinTempDetail {
-            SkinTempDetailScreen(theme: theme, model: item.model)
+            SkinTempDetailScreen(theme: theme, model: item.model,
+                                 loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
         } else if showActivityCost {
             activityRecoverySheet
         } else if showFitnessAge {
