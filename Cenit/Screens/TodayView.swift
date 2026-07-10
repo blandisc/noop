@@ -440,7 +440,9 @@ struct TodayView: View {
             }
             .sheet(item: $sleepDetail) { item in
                 SleepDetailScreen(theme: theme, model: item.model,
-                                  loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) })
+                                  loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
+                                  loadNightRR: { from, to in await repo.rrIntervals(from: from, to: to) },
+                                  loadDCBaseline: { await repo.nocturnalDCBaseline() })
             }
             .sheet(item: $strainDetail) { item in
                 StrainDetailScreen(theme: theme, model: item.model,

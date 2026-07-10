@@ -661,6 +661,27 @@ final class Repository: ObservableObject {
         (await sleepSessions(from: from, to: to)).compactMap { $0.startTs <= $0.endTs ? $0.startTs...$0.endTs : nil }
     }
 
+    /// Median nocturnal Deceleration Capacity (ms) over the last `nights` strap nights, for the DC-trend
+    /// baseline the «reserva para bajar de marcha» surface reads against (FER-849). One R-R read per night,
+    /// so it's heavy — the caller runs it off the hot path (async loader). Each night's DC is computed over
+    /// its sleep session span (same span the surface uses tonight, so the trend isn't biased by method).
+    /// nil unless at least 3 recent nights read cleanly (an honest "no baseline yet" ⇒ no trend arrow).
+    func nocturnalDCBaseline(nights: Int = 14) async -> Double? {
+        guard dataSourceMode.usesWhoop else { return nil }
+        let now = Int(Date().timeIntervalSince1970)
+        let from = now - (nights + 2) * 86_400
+        let sessions = await sleepSessions(from: from, to: now)
+        var dcs: [Double] = []
+        for s in sessions.suffix(nights) where s.startTs < s.endTs {
+            let rr = (await rrIntervals(from: s.startTs, to: s.endTs)).map { Double($0.rrMs) }
+            let r = NocturnalDC.compute(rawRR: rr)
+            if r.confidence != .unreadable { dcs.append(r.dcMs) }
+        }
+        guard dcs.count >= 3 else { return nil }
+        let sorted = dcs.sorted()
+        return sorted[sorted.count / 2]
+    }
+
     /// Per-day intraday-stress summaries (FER-378), reassembled from `metricSeries`, last `days` days.
     /// Only days with a stored day-mean appear. Read under the on-device computed device id.
     func stressDaySummaries(days: Int = 60) async -> [String: StressDaySummary] {
