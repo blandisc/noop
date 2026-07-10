@@ -858,4 +858,84 @@ final class MigrationTests: XCTestCase {
             XCTAssertTrue(cols.contains(expected), "inProgressStrengthSession missing column \(expected)")
         }
     }
+
+    /// v32 (FER-676) adds the per-score confidence tiers to `dailyMetric`, append-only: a pre-v32 row
+    /// survives with both new columns NULL, and existing columns untouched.
+    func testV32AddsConfidenceColumnsAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v31")
+
+        // A pre-v32 daily row (no confidence columns yet).
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO dailyMetric (deviceId, day, strain, totalSleepMin)
+                VALUES ('dev1', '2026-07-01', 12.5, 420)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v32
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "dailyMetric").map(\.name)
+            XCTAssertTrue(cols.contains("effortConfidence"), "v32 must add dailyMetric.effortConfidence")
+            XCTAssertTrue(cols.contains("restConfidence"), "v32 must add dailyMetric.restConfidence")
+            let row = try Row.fetchOne(db, sql: "SELECT * FROM dailyMetric WHERE day='2026-07-01'")
+            XCTAssertNotNil(row, "the pre-v32 row must survive")
+            XCTAssertNil(row?["effortConfidence"] as String?, "new column defaults to NULL")
+            XCTAssertNil(row?["restConfidence"] as String?, "new column defaults to NULL")
+            XCTAssertEqual(row?["strain"] as Double?, 12.5, "existing columns untouched")
+        }
+    }
+
+    /// v32 must be idempotent (FER-791 discipline): columns already present but v32 unrecorded →
+    /// re-running records it without a "duplicate column" crash.
+    func testV32IsIdempotentWhenColumnsAlreadyExist() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v31")
+
+        try await dbQueue.write { db in
+            try db.alter(table: "dailyMetric") { t in
+                t.add(column: "effortConfidence", .text)
+                t.add(column: "restConfidence", .text)
+            }
+        }
+
+        try migrator.migrate(dbQueue)   // → v32; must not throw
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v32"),
+                          "v32 must be recorded so it never re-runs and wedges startup")
+        }
+    }
+
+    /// The confidence tiers round-trip through upsert → read, and the monotonic COALESCE update
+    /// preserves an existing tier when a later partial upsert carries nil (same FER-407 semantics
+    /// as every other dailyMetric column).
+    func testV32ConfidenceTiersRoundTripAndStayMonotonic() async throws {
+        let store = try await WhoopStore.inMemory()
+        let day = DailyMetric(day: "2026-07-02", totalSleepMin: 420, efficiency: 0.9, deepMin: 70,
+                              remMin: 90, lightMin: 200, disturbances: nil, restingHr: 52,
+                              avgHrv: 65, recovery: 71, strain: 13.1, exerciseCount: 1,
+                              effortConfidence: "solid", restConfidence: "building")
+        _ = try await store.upsertDailyMetrics([day], deviceId: "dev1")
+
+        var rows = try await store.dailyMetrics(deviceId: "dev1", from: "2026-07-02", to: "2026-07-02")
+        XCTAssertEqual(rows.first?.effortConfidence, "solid")
+        XCTAssertEqual(rows.first?.restConfidence, "building")
+
+        // A later partial pass with nil tiers must NOT blank the stored ones.
+        let partial = day.with(effortConfidence: .set(nil), restConfidence: .set(nil))
+        _ = try await store.upsertDailyMetrics([partial], deviceId: "dev1")
+        rows = try await store.dailyMetrics(deviceId: "dev1", from: "2026-07-02", to: "2026-07-02")
+        XCTAssertEqual(rows.first?.effortConfidence, "solid", "nil upsert must preserve, not blank")
+        XCTAssertEqual(rows.first?.restConfidence, "building", "nil upsert must preserve, not blank")
+
+        // A real new value still overwrites (building → solid as the day accumulates coverage).
+        let updated = day.with(restConfidence: .set("solid"))
+        _ = try await store.upsertDailyMetrics([updated], deviceId: "dev1")
+        rows = try await store.dailyMetrics(deviceId: "dev1", from: "2026-07-02", to: "2026-07-02")
+        XCTAssertEqual(rows.first?.restConfidence, "solid", "a non-nil upsert overwrites")
+    }
 }

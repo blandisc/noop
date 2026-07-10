@@ -697,6 +697,20 @@ extension WhoopStore {
                 t.primaryKey(["sessionId", "exerciseId"])
             }
         }
+        // v32 (FER-676): per-score confidence tiers persisted NEXT TO the scores they grade — a score
+        // and its certainty are one fact. Stored as the raw tier string ("calibrating"/"building"/
+        // "solid"; ScoreConfidence lives in StrandAnalytics, which sits ABOVE this package, so the
+        // store keeps plain TEXT). effort's inputs are the day's raw HR stream (up to ~120k rows/day,
+        // eventually prunable) — deriving it read-time for history would become impossible, hence
+        // persisted at write time. Nullable: rows from imports/cloud never carry them.
+        migrator.registerMigration("v32") { db in
+            try addColumnIfMissing(db, "effortConfidence", on: "dailyMetric") {
+                $0.add(column: "effortConfidence", .text)
+            }
+            try addColumnIfMissing(db, "restConfidence", on: "dailyMetric") {
+                $0.add(column: "restConfidence", .text)
+            }
+        }
         return migrator
     }
 

@@ -225,8 +225,8 @@ public enum AppleRecoveryEstimator {
     /// downgraded), so every scored night has already cleared it — the grade tracks only
     /// how settled the baseline is.
     static func confidence(hrvBaselineNights nValid: Int) -> ScoreConfidence {
-        nValid >= solidNights ? .solid
-      : nValid >= buildingNights ? .building
-      : .calibrating
+        ScoreConfidence.charge(hrvBaselineNights: nValid,
+                               solidNights: solidNights,
+                               buildingNights: buildingNights)
     }
 }

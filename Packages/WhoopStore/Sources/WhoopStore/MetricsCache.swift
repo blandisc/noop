@@ -48,17 +48,25 @@ public struct DailyMetric: Equatable, Codable, Sendable {
     // imported/cloud rows that never carry them stay nil and old call sites are unaffected.
     public let steps: Int?             // daily step total from the cumulative @57 counter
     public let activeKcalEst: Double?  // whole-day HR-only calorie estimate (kcal)
+    // Per-score confidence tiers (v32 columns, FER-676): raw ScoreConfidence strings
+    // ("calibrating"/"building"/"solid") persisted next to the scores they grade. Plain TEXT here —
+    // ScoreConfidence lives in StrandAnalytics, above this package; conversion happens at the app layer.
+    // Nullable: imported/cloud rows never carry them.
+    public let effortConfidence: String?  // strain (effort) tier, from the day's HR coverage
+    public let restConfidence: String?    // sleep (rest) tier, from duration + resolved stages (+ H9)
     public init(day: String, totalSleepMin: Double?, efficiency: Double?, deepMin: Double?,
                 remMin: Double?, lightMin: Double?, disturbances: Int?, restingHr: Int?,
                 avgHrv: Double?, recovery: Double?, strain: Double?, exerciseCount: Int?,
                 spo2Pct: Double? = nil, skinTempDevC: Double? = nil, respRateBpm: Double? = nil,
-                steps: Int? = nil, activeKcalEst: Double? = nil) {
+                steps: Int? = nil, activeKcalEst: Double? = nil,
+                effortConfidence: String? = nil, restConfidence: String? = nil) {
         self.day = day; self.totalSleepMin = totalSleepMin; self.efficiency = efficiency
         self.deepMin = deepMin; self.remMin = remMin; self.lightMin = lightMin
         self.disturbances = disturbances; self.restingHr = restingHr; self.avgHrv = avgHrv
         self.recovery = recovery; self.strain = strain; self.exerciseCount = exerciseCount
         self.spo2Pct = spo2Pct; self.skinTempDevC = skinTempDevC; self.respRateBpm = respRateBpm
         self.steps = steps; self.activeKcalEst = activeKcalEst
+        self.effortConfidence = effortConfidence; self.restConfidence = restConfidence
     }
 }
 
@@ -99,7 +107,9 @@ public extension DailyMetric {
         skinTempDevC: FieldUpdate<Double?> = .keep,
         respRateBpm: FieldUpdate<Double?> = .keep,
         steps: FieldUpdate<Int?> = .keep,
-        activeKcalEst: FieldUpdate<Double?> = .keep
+        activeKcalEst: FieldUpdate<Double?> = .keep,
+        effortConfidence: FieldUpdate<String?> = .keep,
+        restConfidence: FieldUpdate<String?> = .keep
     ) -> DailyMetric {
         DailyMetric(
             day: day.resolve(self.day),
@@ -118,7 +128,9 @@ public extension DailyMetric {
             skinTempDevC: skinTempDevC.resolve(self.skinTempDevC),
             respRateBpm: respRateBpm.resolve(self.respRateBpm),
             steps: steps.resolve(self.steps),
-            activeKcalEst: activeKcalEst.resolve(self.activeKcalEst))
+            activeKcalEst: activeKcalEst.resolve(self.activeKcalEst),
+            effortConfidence: effortConfidence.resolve(self.effortConfidence),
+            restConfidence: restConfidence.resolve(self.restConfidence))
     }
 }
 
@@ -161,29 +173,31 @@ extension WhoopStore {
     /// caller relies on a nil-upsert to clear, and rows from different sources never share a key.
     @discardableResult
     public func upsertDailyMetrics(_ days: [DailyMetric], deviceId: String) async throws -> Int {
-        // Batch into multi-row INSERTs rather than one statement per day: 18 bound vars/row,
-        // SQLite's limit is 999, so 50 rows/statement (900 vars) is a safe, large batch. Mirrors
+        // Batch into multi-row INSERTs rather than one statement per day: 20 bound vars/row,
+        // SQLite's limit is 999, so 49 rows/statement (980 vars) is a safe, large batch. Mirrors
         // `upsertMetricSeries`. One-INSERT-per-row meant a statement round-trip per day inside the
         // transaction — needless overhead on a multi-year import that spans thousands of days.
         try syncWrite { db in
             var n = 0
-            let perRow = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"   // 18 cols
-            for chunk in stride(from: 0, to: days.count, by: 50).map({ Array(days[$0..<min($0 + 50, days.count)]) }) {
+            let perRow = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"   // 20 cols
+            for chunk in stride(from: 0, to: days.count, by: 49).map({ Array(days[$0..<min($0 + 49, days.count)]) }) {
                 let values = Array(repeating: perRow, count: chunk.count).joined(separator: ", ")
                 var args: [DatabaseValueConvertible?] = []
-                args.reserveCapacity(chunk.count * 18)
+                args.reserveCapacity(chunk.count * 20)
                 for d in chunk {
                     args.append(contentsOf: [deviceId, d.day, d.totalSleepMin, d.efficiency, d.deepMin,
                                              d.remMin, d.lightMin, d.disturbances, d.restingHr, d.avgHrv,
                                              d.recovery, d.strain, d.exerciseCount,
                                              d.spo2Pct, d.skinTempDevC, d.respRateBpm,
-                                             d.steps, d.activeKcalEst] as [DatabaseValueConvertible?])
+                                             d.steps, d.activeKcalEst,
+                                             d.effortConfidence, d.restConfidence] as [DatabaseValueConvertible?])
                 }
                 try db.execute(sql: """
                     INSERT INTO dailyMetric
                         (deviceId, day, totalSleepMin, efficiency, deepMin, remMin, lightMin,
                          disturbances, restingHr, avgHrv, recovery, strain, exerciseCount,
-                         spo2Pct, skinTempDevC, respRateBpm, steps, activeKcalEst)
+                         spo2Pct, skinTempDevC, respRateBpm, steps, activeKcalEst,
+                         effortConfidence, restConfidence)
                     VALUES \(values)
                     ON CONFLICT(deviceId, day) DO UPDATE SET
                         totalSleepMin = COALESCE(excluded.totalSleepMin, totalSleepMin),
@@ -201,7 +215,9 @@ extension WhoopStore {
                         skinTempDevC = COALESCE(excluded.skinTempDevC, skinTempDevC),
                         respRateBpm = COALESCE(excluded.respRateBpm, respRateBpm),
                         steps = COALESCE(excluded.steps, steps),
-                        activeKcalEst = COALESCE(excluded.activeKcalEst, activeKcalEst)
+                        activeKcalEst = COALESCE(excluded.activeKcalEst, activeKcalEst),
+                        effortConfidence = COALESCE(excluded.effortConfidence, effortConfidence),
+                        restConfidence = COALESCE(excluded.restConfidence, restConfidence)
                     """, arguments: StatementArguments(args))
                 n += db.changesCount
             }
@@ -252,7 +268,8 @@ extension WhoopStore {
             try Row.fetchAll(db, sql: """
                 SELECT day, totalSleepMin, efficiency, deepMin, remMin, lightMin, disturbances,
                        restingHr, avgHrv, recovery, strain, exerciseCount,
-                       spo2Pct, skinTempDevC, respRateBpm, steps, activeKcalEst FROM dailyMetric
+                       spo2Pct, skinTempDevC, respRateBpm, steps, activeKcalEst,
+                       effortConfidence, restConfidence FROM dailyMetric
                 WHERE deviceId = ? AND day >= ? AND day <= ?
                 ORDER BY day ASC
                 """, arguments: [deviceId, from, to])
@@ -265,7 +282,9 @@ extension WhoopStore {
                                 strain: $0["strain"], exerciseCount: $0["exerciseCount"],
                                 spo2Pct: $0["spo2Pct"], skinTempDevC: $0["skinTempDevC"],
                                 respRateBpm: $0["respRateBpm"],
-                                steps: $0["steps"], activeKcalEst: $0["activeKcalEst"])
+                                steps: $0["steps"], activeKcalEst: $0["activeKcalEst"],
+                                effortConfidence: $0["effortConfidence"],
+                                restConfidence: $0["restConfidence"])
                 }
         }
     }
