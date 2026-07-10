@@ -9,12 +9,12 @@ name: Swift Packages CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [iOS, main]
     paths:
       - 'Packages/**'
       - '.github/workflows/swift-packages.yml'
   push:
-    branches: [main]
+    branches: [iOS, main]
     paths:
       - 'Packages/**'
       - '.github/workflows/swift-packages.yml'
@@ -36,6 +36,7 @@ jobs:
           - StrandAnalytics
           - StrandImport
           - StrandDesign
+          - StrandTraining
     steps:
       - name: Checkout
         uses: actions/checkout@v4
