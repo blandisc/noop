@@ -112,7 +112,7 @@ public struct DebtBars: View {
         }
         .chartOverlay { proxy in
             GeometryReader { geo in
-                let plot = geo[proxy.plotAreaFrame]
+                let plot = proxy.plotFrame.map { geo[$0] } ?? .zero
                 ZStack(alignment: .topLeading) {
                     // Full-bleed transparent hit target so the scrub starts on first touch (same fix as
                     // TrendChart, #118).

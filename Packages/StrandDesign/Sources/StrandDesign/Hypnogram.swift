@@ -154,7 +154,7 @@ public struct Hypnogram: View {
                 }
                 .animation(StrandMotion.fade, value: hoverIndex)
                 // Light selection haptic each time the finger snaps onto a new stage band (FER-131 · 10).
-                .onChange(of: hoverIndex) { idx in if idx != nil { ChartHaptics.datumChanged() } }
+                .onChange(of: hoverIndex) { _, idx in if idx != nil { ChartHaptics.datumChanged() } }
                 .contentShape(Rectangle())
                 // Finger-drag scrub on iOS (pointer-hover on macOS). `highPriorityGesture` wins the
                 // touch over the parent sheet's vertical ScrollView while the finger is on the band —

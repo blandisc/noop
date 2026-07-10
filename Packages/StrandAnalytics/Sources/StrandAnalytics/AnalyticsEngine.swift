@@ -269,6 +269,15 @@ public enum AnalyticsEngine {
         let strainHr = strainCivilDayOnly ? dayHrFiltered : hr
         let strain = StrainScorer.strain(strainHr, maxHR: effMaxHR, restingHR: restForStrain,
                                          sex: profile.sex)
+        // Effort confidence (FER-676): graded over the SAME HR series strain scored on, so the tier
+        // describes the number next to it. nil when strain is nil — there is no number to grade, and
+        // a nil tier keeps the monotonic upsert from downgrading a previously-stored one.
+        // `strainHr` is already ascending by ts (the store reads `ORDER BY ts ASC` and the
+        // day filter preserves order), same invariant `StrainScorer.strain` above relies on —
+        // no re-sort needed for the coverage grade.
+        let effortConfidence: ScoreConfidence? = strain == nil ? nil :
+            ScoreConfidence.effort(hasEnoughData: StrainScorer.hasEnoughData(strainHr),
+                                   hrSampleSecondsSorted: strainHr.map(\.ts))
 
         // ── Workouts ──────────────────────────────────────────────────────────
         let workouts = WorkoutDetector.detect(
@@ -334,6 +343,20 @@ public enum AnalyticsEngine {
             return round2(Baselines.deviation(v, state: b).delta)
         }
 
+        // Rest confidence (FER-676): duration + resolved stages, then the H9 guard — a night the
+        // stager scored with high efficiency but deep+REM ≈ 0 is physiologically impossible (deep
+        // ~15-20% + REM ~20-25% of TST in healthy adults), so the tier drops one level instead of
+        // trusting the impossible staging. nil when no night matched (nothing to grade).
+        let restConfidence: ScoreConfidence? = {
+            guard !matched.isEmpty else { return nil }
+            let deep = deepS / 60.0, rem = remS / 60.0
+            var tier = ScoreConfidence.rest(totalSleepMin: tstS / 60.0, deepMin: deep, remMin: rem)
+            if ScoreConfidence.suspiciousStaging(efficiency: efficiency, deepMin: deep, remMin: rem) {
+                tier = tier.lowered
+            }
+            return tier
+        }()
+
         // ── Assemble DailyMetric ──────────────────────────────────────────────
         let daily = DailyMetric(
             day: day,
@@ -352,7 +375,9 @@ public enum AnalyticsEngine {
             skinTempDevC: skinTempDevC,
             respRateBpm: respRateDaily,
             steps: stepsTotal,
-            activeKcalEst: activeKcalEst)
+            activeKcalEst: activeKcalEst,
+            effortConfidence: effortConfidence?.rawValue,
+            restConfidence: restConfidence?.rawValue)
         _ = sleepStart; _ = sleepEnd  // available for callers wiring sleep_start/end columns
 
         // ── Cache rows ────────────────────────────────────────────────────────
