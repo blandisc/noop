@@ -134,7 +134,7 @@ final class BackfillParseOnceTests: XCTestCase {
     func testChunkDecodeRunsOffMainActor() async {
         let store = SpyBackfillStore()
         let sawMainThread = BackfillCountBox()   // reused as a locked flag: >0 = extract ran on main
-        await runChunk(store: store, extract: { _, _, _ in
+        await runChunk(store: store, extract: { _, _, _, _, _ in
             if Thread.isMainThread { sawMainThread.increment() }
             return Streams()
         })

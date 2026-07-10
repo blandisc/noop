@@ -97,6 +97,11 @@ public struct Streams: Equatable, Codable, Sendable {
     public var steps: [StepSample]
     public var events: [WhoopEvent]
     public var battery: [BatterySample]
+    /// #547 diagnostic: how many historical records `extractHistoricalStreams` DROPPED this chunk for an
+    /// implausible own-timestamp (a bad-clock strap: far-past / bogus-2027 / future-dated). NOT persisted
+    /// and NOT round-tripped through Codable (excluded from `CodingKeys`) — it is a transient observability
+    /// count the Backfiller surfaces to the strap log. Defaults to 0 so it never affects golden fixtures.
+    public var droppedImplausible: Int = 0
     public init(hr: [HRSample] = [], rr: [RRInterval] = [],
                 spo2: [SpO2Sample] = [], skinTemp: [SkinTempSample] = [],
                 resp: [RespSample] = [], gravity: [GravitySample] = [],
