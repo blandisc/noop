@@ -449,7 +449,8 @@ struct TodayView: View {
                                    curveLoader: { await loadStrainCurve() })
             }
             .sheet(item: $skinTempDetail) { item in
-                SkinTempDetailScreen(theme: theme, model: item.model)
+                SkinTempDetailScreen(theme: theme, model: item.model,
+                                     loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
             }
             .sheet(item: $stressDetail) { item in
                 // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns,
