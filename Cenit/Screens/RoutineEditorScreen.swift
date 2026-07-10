@@ -1,0 +1,794 @@
+#if os(iOS)
+import SwiftUI
+import StrandDesign
+import StrandTraining
+import StrandAnalytics
+
+// MARK: - «Rutina» — the ONE prescription editor (FER-839, handoff entrenamiento-v4 §2, screens 3a/4a/4b)
+//
+// Seeing, editing and starting a routine are no longer separate modes: this screen IS the routine, and you
+// edit what you see. It generalizes the plan-day editor's table (1o, FER-747) and absorbs the read-only
+// «Rutina de hoy» (FER-343) — both screens died here. Only the chrome changes per origin (mock 4a):
+//
+//   .today    → overline «Rutina de hoy · {día}» + CTA «Empezar»   (landing plan rows, empty-session fallback)
+//   .planDay  → overline «Editando · {día}»      + CTA «Guardar día» (weekly plan 1b)
+//   .routine  → overline «Rutina»                + CTA «Guardar»     (Mis rutinas 1c)
+//
+// The FER-A..G progression wiring survives the merge: the .today origin evaluates `ProgressionPlanner` per
+// opted-in slot (history + plates + today's recovery) and hands `raise` to the session's PlanSlots, exactly
+// like «Rutina de hoy» did. Guards: a `dirty` flag (discard confirmation on back for the save origins; the
+// .today origin keeps the footer promise «se guardan al salir o empezar» and saves silently), and a live
+// session locks every editing surface (cells, menus, swipes) — resuming is the only action then.
+
+/// Pushed onto the Entrenar stack to open «Rutina» with its origin chrome. One route type replaces the old
+/// `RoutineRoute`/`PlanDayRoute` pair (a distinct `Hashable` per FER-171 still holds: this is one type).
+enum RoutineEditorRoute: Hashable {
+    /// Today's routine (nil id = resolve today's pick) — CTA «Empezar».
+    case today(routineId: String?)
+    /// One weekday of the plan (Calendar convention, 1 = Sun … 7 = Sat) — CTA «Guardar día».
+    case planDay(weekday: Int)
+    /// A routine from «Mis rutinas» — CTA «Guardar».
+    case routine(routineId: String)
+}
+
+struct RoutineEditorScreen: View {
+    let origin: RoutineEditorRoute
+
+    @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+
+    @State private var loaded = false
+    @State private var routine: Routine?
+    @State private var items: [EditorItem] = []
+    /// Every routine, for the .planDay header «Change routine» picker.
+    @State private var allRoutines: [Routine] = []
+    /// Whether the prescription changed since load (drives save-on-exit / discard confirmation + CTA).
+    @State private var dirty = false
+    @State private var restTarget: RestEditTarget? = nil
+    /// Which exercise's progression plan is being edited (2c push); nil = none.
+    @State private var progressionTarget: ProgressionTarget? = nil
+    @State private var showDiscardConfirm = false
+    @State private var showLibrary = false
+    /// nil = the library appends; an index = it replaces that exercise (keeping its sets).
+    @State private var replaceIndex: Int? = nil
+    /// The exercise whose detail sheet is open (tap the name, parity with the library).
+    @State private var detailExercise: Exercise? = nil
+    /// The plate inventory: progression evaluation + the 2c increment hint.
+    @StateObject private var plates = PlatesStore()
+    @FocusState private var focusedCell: String?
+
+    /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
+    /// a running session must not shift (handoff guard).
+    private var locked: Bool { model.strengthSession != nil }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            if loaded, routine != nil {
+                editor
+            } else {
+                Spacer()
+                if loaded { emptyFallback }
+                Spacer()
+            }
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedCell = nil }.foregroundStyle(theme.ink)
+            }
+        }
+        // 1e as a push: the shared rest editor edits one set's rest with a «this set / all sets» scope.
+        // Changes land on the routine with the screen's own save flow, so the routine toggle is off.
+        .navigationDestination(item: $restTarget) { t in
+            RestEditorScreen(
+                theme: theme,
+                exerciseName: StrengthDisplay.name(items[t.ei].exercise),
+                setNumber: RoutineSetEditing.workSetNumber(items[t.ei].re, t.si),
+                current: RoutineSetEditing.effectiveRest(items[t.ei].re, t.si),
+                persistsToRoutine: false,
+                restingHR: nil, maxHR: nil,
+                defaultApplyToAll: false,
+                onCancel: { restTarget = nil },
+                onApply: { config, applyToAll, _ in
+                    RoutineSetEditing.applyRest(to: &items[t.ei].re, si: t.si, config: config, applyToAll: applyToAll)
+                    dirty = true
+                    restTarget = nil
+                }
+            )
+            .toolbar(.hidden, for: .navigationBar)
+        }
+        // 2c as a push: the per-exercise progression plan (menu «···» → Progresión, mock 4b).
+        .navigationDestination(item: $progressionTarget) { t in
+            let ex = items[t.ei].exercise
+            ProgressionSetupScreen(
+                theme: theme,
+                exercise: items[t.ei].re,
+                exerciseName: StrengthDisplay.name(ex),
+                currentWeightKg: items[t.ei].re.plannedSets.first { $0.kind == .work }?.weightKg,
+                derivedIncrementKg: PlateMath.minimumIncrement(
+                    for: .from(equipment: ex.equipment), inventory: plates.inventory),
+                onBack: { progressionTarget = nil },
+                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                    items[t.ei].re.progressionEnabled = enabled
+                    items[t.ei].re.progressionSessions = sessions
+                    items[t.ei].re.progressionIncrementKg = incrementKg
+                    items[t.ei].re.progressionDeload = deload
+                    items[t.ei].re.progressionIgnoreRecovery = ignoreRecovery
+                    dirty = true
+                    // The rep goal IS RoutineSet.reps (no ranges): with the plan on, write it onto
+                    // every work set. Off, the prescription stays whatever the user typed.
+                    guard enabled else { return }
+                    for si in items[t.ei].re.sets.indices where items[t.ei].re.sets[si].kind == .work {
+                        items[t.ei].re.sets[si].reps = targetReps
+                    }
+                }
+            )
+            .toolbar(.hidden, for: .navigationBar)
+        }
+        .sheet(isPresented: $showLibrary) {
+            ExerciseLibraryScreen { picks in addOrReplace(with: picks) }
+                .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
+        }
+        // Tap an exercise's name/thumb to read its detail (Progreso + Records) — parity with the library.
+        .sheet(item: $detailExercise) { ex in
+            NavigationStack {
+                ExerciseDetailScreen(exercise: ex)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
+                    } }
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(theme.paper, for: .navigationBar)
+            }
+            .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
+        }
+        .confirmationDialog("Discard changes?", isPresented: $showDiscardConfirm, titleVisibility: .visible) {
+            Button("Discard changes", role: .destructive) { dismiss() }
+            Button("Keep editing", role: .cancel) {}
+        }
+        .task {
+            guard !loaded else { return }
+            await load()
+            loaded = true
+        }
+    }
+
+    // MARK: - Origin chrome (mock 4a)
+
+    private var overline: String {
+        switch origin {
+        case .today:            return String(localized: "Today's routine") + " · " + shortWeekday
+        case .planDay(let wd):  return String(localized: "Editing") + " · " + weekdayName(wd)
+        case .routine:          return String(localized: "Routine")
+        }
+    }
+
+    private var ctaTitle: String {
+        switch origin {
+        case .today:   return locked ? String(localized: "Resume") : String(localized: "Empezar")
+        case .planDay: return String(localized: "Save day")
+        case .routine: return String(localized: "Save")
+        }
+    }
+
+    private var startsSession: Bool { if case .today = origin { return true } else { return false } }
+    private var isPlanDay: Bool { if case .planDay = origin { return true } else { return false } }
+
+    // MARK: - Header (own back + cancel, over the hidden nav bar)
+
+    private var header: some View {
+        HStack(spacing: 8) {
+            Button { back() } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
+                    Text("Back").font(StrandFont.body)
+                }
+                .foregroundStyle(theme.ink).frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).accessibilityLabel(Text("Back"))
+            Spacer()
+            if !startsSession {
+                Button { cancel() } label: {
+                    Text("Cancel").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, NoopMetrics.screenPadding)
+    }
+
+    // MARK: - Editor (title + meta + per-exercise tables + pinned CTA)
+
+    private var editor: some View {
+        List {
+            titleBlock.plainRow(top: 6, bottom: 6)
+            ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
+                if firstOfGroup(idx) {
+                    Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .plainRow(top: NoopMetrics.sectionGap, bottom: 2)
+                }
+                exerciseHeader(idx)
+                    .plainRow(top: firstOfGroup(idx) || idx == 0 ? NoopMetrics.gap : NoopMetrics.sectionGap)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        if !locked {
+                            Button { duplicate(idx) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+                                .tint(theme.inkSecondary)
+                        }
+                    }
+                ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
+                    setRow(idx: idx, si: si).plainRow(top: 0, bottom: 0)
+                        .swipeActions(edge: .trailing) {
+                            if !locked {
+                                Button(role: .destructive) { deleteSet(idx: idx, si: si) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                }
+                if !locked { addSetRow(idx).plainRow(top: 4) }
+            }
+            if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: 4) }
+            if startsSession {
+                Text("Changes are saved to the routine when you leave or start.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .plainRow(top: 8, bottom: NoopMetrics.screenPadding)
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(theme.paper)
+        .environment(\.defaultMinListRowHeight, 1)
+        .safeAreaInset(edge: .bottom) { ctaBar }
+    }
+
+    /// Overline per origin, the routine title underlined 2 px ink, and the dotted meta line.
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(overline).groteskOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                if isPlanDay { dayMenu }
+            }
+            Text(routine?.name ?? "")
+                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                .foregroundStyle(theme.ink)
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(theme.ink).frame(height: 2).offset(y: 5)
+                }
+                .fixedSize(horizontal: true, vertical: false)
+            metaLine
+        }
+    }
+
+    /// The dotted meta: routine hue dot + «{group} · N exercises · M sets · ~T min».
+    private var metaLine: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 6) {
+                Circle().fill(routineTint).frame(width: 8, height: 8)
+                Text(groupTitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            Text(String(localized: "\(items.count) exercises")).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Text(String(localized: "\(totalSets) sets")).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+            Text(String(localized: "~\(estimatedMinutes) min")).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+        }
+        .padding(.top, 2)
+    }
+
+    /// .planDay header «···»: assign/clear the day (choque 9 — «conserva lo callado»).
+    private var dayMenu: some View {
+        Menu {
+            Menu {
+                ForEach(allRoutines) { r in
+                    Button { changeRoutine(to: r) } label: {
+                        if r.id == routine?.id { Label(r.name, systemImage: "checkmark") } else { Text(r.name) }
+                    }
+                }
+            } label: { Label("Change routine", systemImage: "arrow.left.arrow.right") }
+            Button(role: .destructive) { markRest() } label: { Label("Mark as rest day", systemImage: "moon.zzz") }
+        } label: {
+            Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
+                .foregroundStyle(theme.inkTertiary).frame(width: 40, height: 40).contentShape(Rectangle())
+        }
+        .accessibilityLabel(Text("Day options"))
+        .disabled(locked)
+    }
+
+    // MARK: - Exercise header (thumb + tappable name + «···» + column header)
+
+    private func exerciseHeader(_ idx: Int) -> some View {
+        let item = items[idx]
+        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            HStack(spacing: 11) {
+                Button { detailExercise = item.exercise } label: {
+                    HStack(spacing: 11) {
+                        ExerciseThumbView(exercise: item.exercise, side: 40)
+                        VStack(alignment: .leading, spacing: 1) {
+                            if item.exercise.type != .weightReps {
+                                Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            }
+                            Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(theme.ink)
+                                .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
+                        }
+                        Spacer(minLength: 8)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Opens the exercise"))
+                if !locked { exerciseMenu(idx) }
+            }
+            columnHeader(item.exercise.type)
+        }
+    }
+
+    /// The «···» menu, FINAL order (mock 4b). No «move» — reordering is drag-only (FER-841);
+    /// «Duplicate» lives in the swipe.
+    private func exerciseMenu(_ idx: Int) -> some View {
+        let item = items[idx]
+        return Menu {
+            if !hasWarmups(idx) {
+                Button { addWarmupRamp(idx) } label: { Label("Add warm-up", systemImage: "flame") }
+            }
+            if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
+                Button { supersetWithNext(idx) } label: { Label("Superset with next", systemImage: "link") }
+            }
+            if inSuperset(idx) {
+                Button { breakSuperset(idx) } label: { Label("Break superset", systemImage: "link.badge.plus") }
+            }
+            Button { replaceIndex = idx; showLibrary = true } label: {
+                Label("Replace exercise", systemImage: "arrow.triangle.2.circlepath")
+            }
+            if item.exercise.type == .weightReps {
+                Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
+                    if item.re.progressionEnabled {
+                        Label(progressionSummary(item.re), systemImage: "chart.line.uptrend.xyaxis")
+                    } else {
+                        Label("Progression", systemImage: "chart.line.uptrend.xyaxis")
+                    }
+                }
+            }
+            Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove from routine", systemImage: "trash") }
+        } label: {
+            Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
+                .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
+        }
+    }
+
+    /// «+2,5 kg cada 2 ✓» — the active plan named in the menu row (mock 4b). Without an explicit
+    /// increment (auto from plates), the row just marks the plan as on.
+    private func progressionSummary(_ re: RoutineExercise) -> String {
+        guard let inc = re.progressionIncrementKg else {
+            return String(localized: "Progression · on")
+        }
+        let unit = StrengthDisplay.weightUnit(system).lowercased()
+        return "+\(StrengthDisplay.weightNumber(inc, system: system)) \(unit) "
+            + String(localized: "every \(re.progressionSessions)") + " ✓"
+    }
+
+    @ViewBuilder
+    private func columnHeader(_ type: ExerciseType) -> some View {
+        HStack(spacing: 8) {
+            Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.7).frame(width: 40, alignment: .center)
+            if showsWeight(type) {
+                Text(StrengthDisplay.weightUnit(system)).groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 78)
+            }
+            if showsReps(type) {
+                Text("Reps").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 58)
+            }
+            Spacer(minLength: 0)
+            Text("Rest").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+        }
+        .padding(.bottom, 4)
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
+
+    // MARK: - A set row (numeral ring in the routine hue + editable cells + rest chip)
+
+    private func setRow(idx: Int, si: Int) -> some View {
+        let set = items[idx].re.sets[si]
+        let type = items[idx].exercise.type
+        return HStack(spacing: 8) {
+            numeralRing(idx: idx, si: si).frame(width: 40)
+            if showsWeight(type) {
+                cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad, width: 78)
+            }
+            if showsReps(type) {
+                cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad, width: 58)
+            }
+            Spacer(minLength: 6)
+            RestChip(cfg: RoutineSetEditing.effectiveRest(items[idx].re, si), timeColor: theme.inkSecondary) {
+                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
+            }
+            .disabled(locked)
+        }
+        .frame(minHeight: 44)
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
+
+    /// The set numeral in a 23 px ring of the routine hue («C» for a warm-up set, at half opacity).
+    private func numeralRing(idx: Int, si: Int) -> some View {
+        let warmup = items[idx].re.sets[si].kind == .warmup
+        return Text(RoutineSetEditing.setLabel(items[idx].re, si))
+            .font(InstrumentoType.grotesk(11, weight: .semibold)).monospacedDigit()
+            .foregroundStyle(routineTint)
+            .frame(width: 23, height: 23)
+            .overlay(Circle().strokeBorder(routineTint.opacity(warmup ? 0.5 : 1), lineWidth: 1.5))
+    }
+
+    private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType, width: CGFloat) -> some View {
+        TextField("·", text: text)
+            .keyboardType(keyboard)
+            .multilineTextAlignment(.center)
+            .font(StrandFont.bodyNumber)
+            .foregroundStyle(theme.ink)
+            .focused($focusedCell, equals: id)
+            .disabled(locked)
+            .frame(width: width, height: 31)
+            .background(theme.surface)
+            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+    }
+
+    private func addSetRow(_ idx: Int) -> some View {
+        Button { addSet(idx) } label: {
+            HStack(spacing: 7) {
+                Image(systemName: "plus").font(StrandFont.glyph(.chevron, weight: .semibold))
+                Text("Add set")
+            }
+            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading).frame(minHeight: 30).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var addExerciseRow: some View {
+        Button { replaceIndex = nil; showLibrary = true } label: {
+            Label("Add exercise", systemImage: "plus").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading).frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Pinned CTA (per origin)
+
+    private var ctaBar: some View {
+        Button { cta() } label: {
+            Text(ctaTitle).font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
+                .foregroundStyle(theme.paper).frame(maxWidth: .infinity).padding(.vertical, 15)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+        .background(theme.paper)
+    }
+
+    private func cta() {
+        if startsSession { start() } else { saveAndDismiss() }
+    }
+
+    // MARK: - Empty fallback (no routine resolved for this origin)
+
+    private var emptyFallback: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "moon.zzz").font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
+            Text(isPlanDay ? "Rest day" : "No routine").font(StrandFont.title2).foregroundStyle(theme.ink)
+            Text(isPlanDay ? "This day has no routine. Assign one from the weekly plan."
+                           : "This routine could not be found.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 32)
+    }
+
+    // MARK: - Cell bindings
+
+    private func repsText(idx: Int, si: Int) -> Binding<String> {
+        Binding(get: { items[idx].re.sets[si].reps.map(String.init) ?? "" },
+                set: { items[idx].re.sets[si].reps = Int($0.filter(\.isNumber)); dirty = true })
+    }
+
+    private func weightText(idx: Int, si: Int) -> Binding<String> {
+        Binding(
+            get: {
+                guard let kg = items[idx].re.sets[si].weightKg, kg > 0 else { return "" }
+                return StrengthDisplay.weightNumber(kg, system: system)
+            },
+            set: { raw in
+                let norm = raw.replacingOccurrences(of: ",", with: ".")
+                dirty = true
+                guard let v = Double(norm), v > 0 else { items[idx].re.sets[si].weightKg = nil; return }
+                items[idx].re.sets[si].weightKg = system == .imperial ? UnitFormatter.poundsToKg(v) : v
+            })
+    }
+
+    private func showsReps(_ t: ExerciseType) -> Bool { t == .weightReps || t == .bodyweight }
+    private func showsWeight(_ t: ExerciseType) -> Bool { t == .weightReps }
+
+    // MARK: - Set + exercise mutations
+
+    private func addSet(_ idx: Int) {
+        let work = items[idx].re.sets.last { $0.kind == .work }
+        let reps = work?.reps ?? (showsReps(items[idx].exercise.type) ? 8 : nil)
+        items[idx].re.sets.append(RoutineSet(position: items[idx].re.sets.count, kind: .work,
+                                             reps: reps, weightKg: work?.weightKg))
+        dirty = true
+    }
+
+    private func deleteSet(idx: Int, si: Int) {
+        guard items[idx].re.sets.count > 1 else { return }
+        withAnimation(.snappy) { _ = items[idx].re.sets.remove(at: si) }
+        renumber(idx)
+        dirty = true
+    }
+
+    private func renumber(_ idx: Int) {
+        for i in items[idx].re.sets.indices { items[idx].re.sets[i].position = i }
+    }
+
+    private func hasWarmups(_ idx: Int) -> Bool { items[idx].re.sets.contains { $0.kind == .warmup } }
+
+    /// «Agregar calentamiento» (mock 4b): a 40·60·80 % ramp. Writes `warmupPercents` (the model's canonical
+    /// record) AND materializes the three «C» rows the table shows, seeded from the top work weight when known.
+    private func addWarmupRamp(_ idx: Int) {
+        let ramp: [Double] = [0.4, 0.6, 0.8]
+        items[idx].re.warmupPercents = ramp
+        let top = items[idx].re.sets.first { $0.kind == .work }?.weightKg
+        let usesReps = showsReps(items[idx].exercise.type)
+        let rows = ramp.enumerated().map { i, pct in
+            RoutineSet(position: i, kind: .warmup, reps: usesReps ? 10 : nil,
+                       weightKg: top.map { $0 * pct })
+        }
+        withAnimation(.snappy) { items[idx].re.sets.insert(contentsOf: rows, at: 0) }
+        renumber(idx)
+        dirty = true
+    }
+
+    private func deleteExercise(_ idx: Int) {
+        withAnimation(.snappy) { _ = items.remove(at: idx) }
+        dirty = true
+    }
+
+    private func duplicate(_ idx: Int) {
+        let src = items[idx]
+        var copy = src.re
+        copy.id = UUID().uuidString
+        copy.position = idx + 1
+        copy.supersetGroup = nil                                   // a duplicate stands on its own
+        copy.sets = src.re.sets.map { s in var n = s; n.id = UUID().uuidString; return n }
+        withAnimation(.snappy) { items.insert(EditorItem(re: copy, exercise: src.exercise), at: idx + 1) }
+        dirty = true
+    }
+
+    /// Replace an exercise (keeping its sets) or append new ones, from the library (1f).
+    private func addOrReplace(with picks: [Exercise]) {
+        guard let first = picks.first else { return }
+        if let i = replaceIndex, items.indices.contains(i) {
+            items[i].exercise = first
+            items[i].re.exerciseId = first.id
+        } else {
+            for pick in picks {
+                let usesReps = pick.type == .weightReps || pick.type == .bodyweight
+                let reps: Int? = usesReps ? 8 : nil
+                let sets = (0..<3).map { RoutineSet(position: $0, kind: .work, reps: reps, weightKg: nil) }
+                let re = RoutineExercise(routineId: routine?.id ?? "", exerciseId: pick.id, position: items.count,
+                                         targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
+                items.append(EditorItem(re: re, exercise: pick))
+            }
+        }
+        replaceIndex = nil
+        dirty = true
+    }
+
+    // MARK: - Superset helpers (a group = consecutive exercises sharing supersetGroup)
+
+    private func inSuperset(_ i: Int) -> Bool {
+        guard items.indices.contains(i), items[i].re.supersetGroup != nil else { return false }
+        return sameGroup(i, i - 1) || sameGroup(i, i + 1)
+    }
+    private func sameGroup(_ a: Int, _ b: Int) -> Bool {
+        guard items.indices.contains(a), items.indices.contains(b),
+              let ga = items[a].re.supersetGroup, let gb = items[b].re.supersetGroup else { return false }
+        return ga == gb
+    }
+    /// First member of a superset group (shows the «Superset» overline above it).
+    private func firstOfGroup(_ i: Int) -> Bool { inSuperset(i) && !sameGroup(i, i - 1) }
+
+    private func supersetWithNext(_ i: Int) {
+        guard i < items.count - 1 else { return }
+        let group = items[i].re.supersetGroup ?? items[i + 1].re.supersetGroup ?? nextFreeGroup()
+        items[i].re.supersetGroup = group
+        items[i + 1].re.supersetGroup = group
+        dirty = true
+    }
+    private func breakSuperset(_ i: Int) {
+        guard let g = items[i].re.supersetGroup else { return }
+        items[i].re.supersetGroup = nil
+        let remaining = items.indices.filter { items[$0].re.supersetGroup == g }
+        if remaining.count == 1 { items[remaining[0]].re.supersetGroup = nil }
+        dirty = true
+    }
+    private func nextFreeGroup() -> Int { (items.compactMap { $0.re.supersetGroup }.max() ?? 0) + 1 }
+
+    // MARK: - Meta computations
+
+    private var totalSets: Int { items.reduce(0) { $0 + $1.re.sets.filter { $0.kind == .work }.count } }
+
+    /// A transparent time estimate (display only): ~40 s of work per work set plus its resolved rest.
+    private var estimatedMinutes: Int {
+        var seconds = 0
+        for item in items {
+            for si in item.re.sets.indices where item.re.sets[si].kind == .work {
+                seconds += 40 + RoutineSetEditing.effectiveRest(item.re, si).seconds
+            }
+        }
+        return max(1, Int((Double(seconds) / 60).rounded()))
+    }
+
+    /// The routine's dominant coarse group — deterministic tie-break (FER-750).
+    private var dominantGroup: MuscleGroup? {
+        var tally: [MuscleGroup: Int] = [:]
+        for item in items {
+            for m in item.exercise.primaryMuscles { if let g = MuscleGroup.of(m) { tally[g, default: 0] += 1 } }
+        }
+        var best: MuscleGroup?
+        var bestCount = 0
+        for g in MuscleGroup.allCases where (tally[g] ?? 0) > bestCount {
+            best = g; bestCount = tally[g] ?? 0
+        }
+        return best
+    }
+    private var routineTint: Color { dominantGroup?.tint(theme) ?? theme.inkTertiary }
+    private var groupTitle: String { dominantGroup?.title ?? String(localized: "Mixed") }
+
+    private func weekdayName(_ weekday: Int) -> String {
+        Calendar.current.weekdaySymbols[(weekday - 1) % 7]   // index 0 = Sunday … 6 = Saturday
+    }
+    private var shortWeekday: String {
+        let idx = Calendar.current.component(.weekday, from: Date()) - 1
+        return Calendar.current.shortWeekdaySymbols[idx]
+    }
+
+    // MARK: - Day assignment (.planDay «···»)
+
+    private func changeRoutine(to r: Routine) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.setRoutineSchedule(weekday: weekday(of: origin) ?? 0, routineId: r.id)
+            await load()
+        }
+    }
+
+    private func markRest() {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.clearRoutineSchedule(weekday: weekday(of: origin) ?? 0)
+            dismiss()
+        }
+    }
+
+    private func weekday(of origin: RoutineEditorRoute) -> Int? {
+        if case .planDay(let wd) = origin { return wd } else { return nil }
+    }
+
+    // MARK: - Navigation (footer promise: the .today origin saves on leave; save origins confirm discard)
+
+    private func back() {
+        if dirty && startsSession { persist(); dismiss(); return }
+        if dirty { showDiscardConfirm = true } else { dismiss() }
+    }
+
+    private func cancel() {
+        if dirty { showDiscardConfirm = true } else { dismiss() }
+    }
+
+    // MARK: - Start the guided session (progression wiring, FER-E/G parity with «Rutina de hoy»)
+
+    private func start() {
+        // A session already running → just resume it (don't rebuild over logged sets).
+        if model.strengthSession != nil { model.resumeStrengthSession(); return }
+        guard let r = routine else { return }
+        if dirty { persist() }   // «se guardan al salir o empezar»
+        let slots = items.map {
+            StrengthSessionModel.PlanSlot(re: $0.re, exercise: $0.exercise, lastSets: $0.lastSets,
+                                          raise: $0.raise)
+        }
+        model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots)
+    }
+
+    // MARK: - Load + save
+
+    private func load() async {
+        guard let store = await repo.storeHandle() else { routine = nil; items = []; dirty = false; return }
+        allRoutines = (try? await store.routines()) ?? []
+        let target: Routine?
+        switch origin {
+        case .today(let id):
+            // Today's pick: the scheduled routine for today, else the given id, else the most recent.
+            let sched = (try? await store.routineSchedule()) ?? []
+            let todayWd = Calendar.current.component(.weekday, from: Date())
+            let scheduledId = sched.first { $0.weekday == todayWd }?.routineId
+            let rid = id ?? scheduledId
+            target = rid.flatMap { r in allRoutines.first { $0.id == r } } ?? allRoutines.first
+        case .planDay(let wd):
+            let sched = (try? await store.routineSchedule()) ?? []
+            let rid = sched.first { $0.weekday == wd }?.routineId
+            target = rid.flatMap { r in allRoutines.first { $0.id == r } }
+        case .routine(let id):
+            target = allRoutines.first { $0.id == id }
+        }
+        guard let r = target else { routine = nil; items = []; dirty = false; return }
+        routine = r
+        let res = await repo.routineExercises(routineId: r.id)
+        let all = await repo.allExercises()
+        let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        // FER-E: evaluate progression once per plan build — history + plates + today's recovery in, an
+        // earned raise (or nothing) out. Only for slots that opted in. «La última vez» feeds the session
+        // prefill (FER-347). Same wiring «Rutina de hoy» carried; it must survive here (sub-épico 1).
+        let inventory = plates.inventory
+        let recovery = repo.today?.recovery
+        var built: [EditorItem] = []
+        for re in res {
+            guard let ex = byId[re.exerciseId] else { continue }
+            let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
+            var raise: ProgressionPlanner.Raise? = nil
+            if re.progressionEnabled, ex.type == .weightReps {
+                let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
+                raise = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
+                                                    equipment: ex.equipment, recovery: recovery)?.raise
+            }
+            built.append(EditorItem(re: re, exercise: ex, lastSets: last, raise: raise))
+        }
+        items = built
+        dirty = false
+    }
+
+    private func saveAndDismiss() {
+        persist()
+        dismiss()
+    }
+
+    private func persist() {
+        guard let r = routine else { return }
+        let now = Int(Date().timeIntervalSince1970)
+        let updated = Routine(id: r.id, name: r.name, tag: r.tag, folderId: r.folderId,
+                              createdTs: r.createdTs, updatedTs: now, sortOrder: r.sortOrder)
+        let exercises = items.enumerated().map { idx, item -> RoutineExercise in
+            var re = item.re; re.position = idx; re.routineId = r.id; return re
+        }
+        Task { try? await repo.saveRoutine(updated, exercises: exercises) }
+    }
+}
+
+/// One exercise slot in the editor: the routine slot, its resolved exercise, and the session seeds
+/// («la última vez» + an earned progression raise) the .today origin hands to the guided session.
+private struct EditorItem: Identifiable {
+    var re: RoutineExercise
+    var exercise: Exercise
+    var lastSets: [SetEntry] = []
+    var raise: ProgressionPlanner.Raise? = nil
+    var id: String { re.id }
+}
+
+// Shared list-row chrome: clear background, no system separator, standard screen margin with tunable
+// vertical insets — a plain List that reproduces «Instrumento» spacing (same pattern as the builder).
+private extension View {
+    func plainRow(top: CGFloat = 8, bottom: CGFloat = 8) -> some View {
+        self
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: top, leading: NoopMetrics.screenPadding,
+                                      bottom: bottom, trailing: NoopMetrics.screenPadding))
+    }
+}
+#endif
