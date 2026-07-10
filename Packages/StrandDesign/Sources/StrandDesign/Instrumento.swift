@@ -260,6 +260,19 @@ public extension InstrumentoTheme {
     /// `surface` so the active ink chip riding on it reads.
     var trackWarm: Color { Color(hex: "#EFEAE0") }
 
+    // MARK: Handoff «Detalle de Tendencias Final» (FER-856) — chart chrome + deep lanes
+
+    /// The «tu base» mark on a chart: the dashed personal-reference line, the center tick of a
+    /// divergent bar, and the gray point-line in the RANGOS mode. Chart chrome, not text — never
+    /// held to the AA text floor.
+    var baseMark: Color { Color(hex: "#B0A78F") }
+    /// The deepest depleted lane («Agotado», recovery < 25) in a range chart — one step darker
+    /// than `critical` so the two red lanes stay distinguishable. A fill/point hue, not text.
+    var criticalDeep: Color { Color(hex: "#82231E") }
+    /// The deep positive-lane green («Pleno», recovery ≥ 88) — the same deep green
+    /// `positiveText` computes on `.base` paper, as a fixed lane fill.
+    var verdictDeep: Color { Color(hex: "#00774B") }
+
     // MARK: Tinte por opacidad — helpers de la escala `StrandOpacity` (auditoría jul-2026, H4)
     //
     // Azúcar sobre `StrandOpacity` para el patrón más común: modular un color de dato/estado a

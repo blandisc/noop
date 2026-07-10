@@ -57,69 +57,72 @@ struct RecoveryDetailScreen: View {
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
     /// Measured available width for the calendar, so the heat grid can size its cells to fill it. (FER-225)
     @State private var calWidth: CGFloat = 0
-    @State private var methodExpanded = false
-    /// «Media ⇄ Rangos» toggle for the levels block (handoff v2, FER-803): the moving-average line vs the
-    /// population lanes. Starts on «Media» (the line).
-    @State private var levelsMode: TrendMode = .media
     /// The calendar day the user tapped, for the read-out below the grid (touch — FER-235).
     @State private var selectedHeatDay: RecoveryDay? = nil
-    /// Level-3 disclosure: the calendar + trend live under «See your history», collapsed on open. The only
-    /// new state the re-sequencing adds; everything else is unchanged. (Detalles escalonados)
+    /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-857)
+    @State private var infoOpen = false
+
+    // MARK: - Body — el esqueleto estándar del handoff «Detalle de Tendencias Final» (FER-857)
+    //
+    // Héroe invertido → «Hoy, vs tu normal» (instrumento firma) → «Qué cambió desde ayer» →
+    // Panorama → Tendencia (PeriodSelector + GraficaRangos + tiles) → Calendario 90 días →
+    // Método + sello. Cada sección abre con `SeccionFranja` a sangre; ningún caption flota
+    // (todo `BarraAncla`); nada plegado salvo el método.
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                hero
+            VStack(alignment: .leading, spacing: 0) {
                 if !model.loaded {
-                    ChartWell(theme).loading(height: 160)
+                    Group {
+                        heroFlat
+                        ChartWell(theme).loading(height: 160).padding(.top, 22)
+                    }
+                    .padding(NoopMetrics.screenPadding)
                 } else if model.calibration != nil {
-                    blockDivider
-                    calibrationBlock
-                    blockDivider
-                    methodDisclosure
-                    sourceFooter
+                    VStack(alignment: .leading, spacing: 22) {
+                        heroFlat
+                        calibrationBlock
+                        metodoBlock
+                        sourceFooter
+                    }
+                    .padding(NoopMetrics.screenPadding)
                 } else if model.hasData {
+                    if model.score != nil {
+                        heroField
+                    } else {
+                        heroFlat.padding(NoopMetrics.screenPadding)
+                    }
+                    if infoOpen { whatWeMeasureCard }
                     // Level 1 · the answer: what's pushing it, then what changed since yesterday.
                     if let impact = model.impact, !impact.signals.isEmpty {
-                        blockDivider
-                        levelAttributionBlock(impact)
+                        seccion(String(localized: "Today, vs your normal")) { levelAttributionCard(impact) }
                     } else if model.isEstimated {
-                        // Apple-only day: the band-baseline points decomposition is nil (dishonest to fake).
-                        // The coverage attribution stands in — direction per signal vs your own Apple norm,
-                        // never a point magnitude, so the block is always present without overstating precision.
-                        blockDivider
-                        estimatedAttributionBlock
+                        // Apple-only day: the band-baseline points decomposition is nil (dishonest to
+                        // fake). The coverage attribution stands in — direction per signal vs your own
+                        // Apple norm, never a point magnitude.
+                        seccion(String(localized: "Today, vs your normal")) { estimatedAttributionCard }
                     }
                     if let change = model.change {
-                        blockDivider
-                        changeSinceYesterdayBlock(change)
+                        seccion(String(localized: "What changed since yesterday")) { changeSinceYesterdayContent(change) }
                     }
-                    // Forward-looking, so it reads high — right after what drives today's score. Fuses the
-                    // 1-day forecast with your normal range, steadiness and load into one 2×2 grid. (FER-831)
                     if hasPanorama {
-                        blockDivider
-                        panoramaBlock
+                        seccion(String(localized: "Panorama")) { panoramaContent }
                     }
-                    // The screen's SINGLE recovery line: the level instrument (line + tappable levels +
-                    // «N de tus últimos M días») over the FIXED recovery levels (Agotado / Bajo / Moderado /
-                    // Alto / Pico, 0–100), with the period-average caption below it. FER-703 removed the
-                    // separate 7-day-MA «Trend» chart — a second line of the same metric that read as
-                    // redundant and made «average of what?» ambiguous; its «Media …» caption moved here. (FER-572 · FER-703)
                     if model.series.count >= 2 {
-                        blockDivider
-                        levelsBlock
+                        seccion(String(localized: "Trend")) { trendContent }
                     }
-                    // Level 3 · «See your history»: the 90-day calendar, collapsed by default. (FER-594; the
-                    // period-selector trend that used to live here was removed in FER-703)
-                    blockDivider
-                    historySection
-                    blockDivider
-                    methodDisclosure
-                    sourceFooter
+                    seccion(String(localized: "Calendar · 90 days")) { calendarContent }
+                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
+                    VStack(alignment: .leading, spacing: 10) {
+                        metodoBlock
+                        sourceFooter
+                    }
+                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
+                } else {
+                    // Empty (loaded, no calibration, no data): the flat hero's reading says it.
+                    heroFlat.padding(NoopMetrics.screenPadding)
                 }
-                // Empty (loaded, no calibration, no data): the hero's reading already says it.
             }
-            .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
@@ -131,37 +134,165 @@ struct RecoveryDetailScreen: View {
         }
     }
 
-    /// A subtle 1px rule between blocks (token-only). Mirrors MetricDetailScreen's `blockDivider`.
-    private var blockDivider: some View {
-        Rectangle().fill(theme.hairline).frame(height: 1)
+    /// One skeleton section: a full-bleed `SeccionFranja` + its content with the handoff's standard
+    /// padding under a franja (14 · 20 · 22). The title arrives already localized.
+    private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SeccionFranja(title, theme: theme)
+            content()
+                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
+        }
     }
 
-    // MARK: - 1. Hero — el score en color de banda (+ dirección fundida: mini-sparkline 14 d + flecha)
+    // MARK: - 1. Héroe invertido — el estado pinta el campo (FER-857)
 
-    private var hero: some View {
-        // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Replaces the InfoAccordion
-        // wrapper; the explanation stays behind the ⓘ exactly as before — only the title turns serif.
-        return VStack(alignment: .leading, spacing: 10) {
+    /// The inverted hero: the ONE field saturated at 100% of the day's band hue. Overline + ⓘ,
+    /// 60pt Grotesk numeral (recRise), «+N vs tu base» capsule, verdict line. Text is paper on hue.
+    private var heroField: some View {
+        let score = model.score ?? 0
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: MetricGlyph.recovery.sfSymbol)
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.paper)
+                    .frame(width: 14, height: 14)
+                    .accessibilityHidden(true)
+                Text("Recovery")
+                    .font(InstrumentoType.grotesk(12, weight: .bold))
+                    .tracking(2.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.paper)
+                Spacer()
+                Button {
+                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(StrandFont.glyph(.chevron, weight: .regular))
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("What we measure")
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("\(score)")
+                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                    .tracking(-2)
+                    .foregroundStyle(theme.paper)
+                    .recRise()
+                Text(verbatim: "/100")
+                    .font(.system(size: 13))
+                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                if let base = baseValue {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(verbatim: (score - base) >= 0 ? "+\(score - base)" : "\(score - base)")
+                            .font(InstrumentoType.groteskNumber(13, weight: .semibold))
+                            .foregroundStyle(theme.paper)
+                        Text("vs your base")
+                            .font(.system(size: 11))
+                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+                }
+            }
+            (Text(heroVerdictWord)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(theme.paper)
+             + Text(verbatim: " · ")
+                .font(.system(size: 14))
+                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
+             + Text(heroVerdictClause)
+                .font(.system(size: 14))
+                .foregroundColor(theme.paper.opacity(0.78)))
+                .fixedSize(horizontal: false, vertical: true)
+            if model.isEstimated { estimatedNoteOnField }
+        }
+        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(bandColor)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The ⓘ card under the hero: what the score measures, in plain language.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("What we measure")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(theme.ink)
+            Text(heroExplanation)
+                .font(.system(size: 12))
+                .lineSpacing(3)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.control, theme: theme)
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+    }
+
+    /// The flat hero for score-less states (loading / calibrating / empty / offline-with-history):
+    /// the pre-handoff identity — no inverted field for a number we don't have.
+    private var heroFlat: some View {
+        VStack(alignment: .leading, spacing: 10) {
             InstrumentoScreenTitle("Recovery", theme: theme, explanation: heroExplanation, glyph: .recovery)
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(model.score.map { "\($0)" } ?? "—")
-                        .instrumentoHero(46)
-                        .foregroundStyle(model.score == nil ? theme.inkTertiary : bandColor)
-                    if model.score != nil {
-                        Text("/ 100").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                // FER-153: a band-less Apple night reads «estimado · confianza X» right under the number, so
-                // it never looks identical to a band recovery; the line below explains where it comes from.
+                Text(verbatim: "—")
+                    .instrumentoHero(46)
+                    .foregroundStyle(theme.inkTertiary)
                 if model.isEstimated, model.score != nil { estimatedNote }
-                // The reading is the answer, lifted above the «/100» — headline weight, ink. (FER-476 #7)
                 Text(heroReading)
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// The hero verdict word by band (short — the datum already spoke).
+    private var heroVerdictWord: LocalizedStringKey {
+        switch RecoveryScorer.band(Double(model.score ?? 0)) {
+        case "green":  return "Ready to train"
+        case "yellow": return "Recovering"
+        default:       return "Prioritize rest"
+        }
+    }
+
+    /// The verdict's quiet second clause.
+    private var heroVerdictClause: LocalizedStringKey {
+        switch RecoveryScorer.band(Double(model.score ?? 0)) {
+        case "green":  return "above your baseline"
+        case "yellow": return "train, but keep it controlled"
+        default:       return "rest comes first today"
+        }
+    }
+
+    /// Your base: the 30-day mean of the recovery series (the same stat the normal range uses) —
+    /// feeds the hero capsule and the trend's reference line. No new math. (FER-857)
+    private var baseValue: Int? {
+        normalRange.map { Int(((Double($0.lo) + Double($0.hi)) / 2).rounded()) }
+    }
+
+    /// The «estimado» marker restyled for the inverted field (paper inks). Same facts as
+    /// `estimatedNote`; only the surface changed. (FER-153)
+    private var estimatedNoteOnField: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                Image(systemName: "applewatch")
+                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .accessibilityHidden(true)
+                Text(Self.confidenceLabel(model.confidence))
+                    .font(StrandFont.caption)
+            }
+            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+            if let coverage = Self.coverageLabel(model.presentPrimaryDrivers) {
+                Text(coverage)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
     /// The hero ⓘ copy: the standard recovery explanation, plus — for an Apple estimate — the honest
@@ -219,14 +350,6 @@ struct RecoveryDetailScreen: View {
         return "Estimated — \(present) of \(AppleRecoveryEstimator.DayEstimate.totalPrimaryDrivers) signals"
     }
 
-    private func heroDirectionSymbol(_ d: RecoveryForecast.Direction) -> String {
-        switch d {
-        case .rising:  return "arrow.up.right"
-        case .steady:  return "arrow.right"
-        case .falling: return "arrow.down.right"
-        }
-    }
-
     /// The score's band color: green ≥67 → verdict, yellow 34–67 → warning, red <34 → critical. The hero
     /// numeral is the datum, so it's the one element that carries saturated hue.
     private var bandColor: Color {
@@ -265,66 +388,96 @@ struct RecoveryDetailScreen: View {
     /// summary uses, so both surfaces pick the all-near-base fallback on the same days. (FER-628/FER-642)
     private static let impactBarely = 0.12
 
-    /// Level-attribution block, shown only when `RecoveryImpact` is present (band-only; calibrating and
-    /// Apple-only days hide it, keeping the `calibrationBlock` as the stand-in).
-    private func levelAttributionBlock(_ impact: RecoveryImpact.Result) -> some View {
-        DetailBlock("Today, vs your normal", theme: theme) {
-            VStack(alignment: .leading, spacing: 16) {
-                levelHeadline(impact)
-                    .font(StrandFont.body)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(impact.signals) { levelSignalRow($0) }
+    /// Level-attribution card — the screen's instrumento firma on a `surface` card (handoff FER-857):
+    /// a two-line verdict (signal name in its hue + position · weight), one row per signal with the
+    /// divergent bar (recGrow, staggered), and the axis legend. Shown only when `RecoveryImpact` is
+    /// present (band-only; calibrating and Apple-only days hide it).
+    private func levelAttributionCard(_ impact: RecoveryImpact.Result) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            levelHeadline(impact)
+            VStack(alignment: .leading, spacing: 13) {
+                ForEach(Array(impact.signals.enumerated()), id: \.element.id) { i, s in
+                    levelSignalRow(s, index: i)
                 }
-                levelLegend
             }
+            .padding(.top, 10)
+            levelLegend
+                .padding(.top, 4)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.card, theme: theme)
+    }
+
+    /// The two-line verdict opening the card: «**VFC** te sostiene hoy» + «Muy por encima de tu base ·
+    /// pesa 55 % del cálculo». Falls back to the all-near-base line. Same `RecoveryImpact` facts as
+    /// before (FER-642); only the typography changed.
+    @ViewBuilder private func levelHeadline(_ impact: RecoveryImpact.Result) -> some View {
+        if let top = impact.top, abs(top.contribution) >= Self.impactBarely {
+            let flag = ReadinessEngine.Flag(orientedZ: top.orientedZ)
+            VStack(alignment: .leading, spacing: 3) {
+                (Text(Self.driverLabel(top.key))
+                    .foregroundColor(flagColor(flag))
+                 + Text(verbatim: " ")
+                 + Text(top.contribution < 0 ? "holds you back today" : "holds you up today")
+                    .foregroundColor(theme.ink))
+                    .font(.system(size: 16, weight: .semibold))
+                (Text(Self.positionPhraseStandalone(top))
+                 + Text(verbatim: " · ")
+                 + Text(verbatim: String.localizedStringWithFormat(
+                        String(localized: "weighs %d %% of the score"),
+                        Int((top.weight * 100).rounded()))))
+                    .font(.system(size: 13))
+                    .foregroundStyle(theme.inkSecondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        } else {
+            Text("All your signals sat near your base today.")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    /// The plain-language headline naming the LARGEST-contribution signal: «Your HRV, above your base, is
-    /// what holds your recovery up most today.» The metric name carries its flag hue; the rest is ink. Falls
-    /// back to the all-near-base line. Mirrors the summary's `impactHeadline` word-for-word. (FER-642)
-    private func levelHeadline(_ impact: RecoveryImpact.Result) -> Text {
-        guard let top = impact.top, abs(top.contribution) >= Self.impactBarely else {
-            return Text("All your signals sat near your base today.")
-        }
-        let flag = ReadinessEngine.Flag(orientedZ: top.orientedZ)
-        let tail: LocalizedStringKey = top.contribution < 0
-            ? ", is what holds your recovery back most today."
-            : ", is what holds your recovery up most today."
-        return Text("Your ")
-            + Text(Self.driverLabel(top.key)).foregroundColor(flagColor(flag)).fontWeight(.semibold)
-            + Text(Self.positionPhrase(top))
-            + Text(tail)
+    /// The standalone position phrase for the verdict's second line («Well above your base»).
+    private static func positionPhraseStandalone(_ s: RecoveryImpact.Signal) -> LocalizedStringKey {
+        let above = s.z >= 0
+        let strong = abs(s.z) >= 1.0
+        return strong
+            ? (above ? "Well above your base" : "Well below your base")
+            : (above ? "Above your base"      : "Below your base")
     }
 
     /// One signal row: overline label · position-vs-base word (flag hue) · `· N%` weight, and the divergent
-    /// contribution bar below. Identical layout to the summary's `impactRow`. (FER-642)
-    private func levelSignalRow(_ s: RecoveryImpact.Signal) -> some View {
+    /// contribution bar below (recGrow, staggered by row). (FER-642/836/857)
+    private func levelSignalRow(_ s: RecoveryImpact.Signal, index: Int) -> some View {
         let flag = ReadinessEngine.Flag(orientedZ: s.orientedZ)
         let color = flag == .neutral ? theme.inkSecondary : flagColor(flag)
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Self.driverLabel(s.key)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(Self.driverLabel(s.key))
+                    .font(InstrumentoType.grotesk(10, weight: .semibold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 Text(Self.baseBandWord(s: s))
-                    .font(StrandFont.captionNumber)
+                    .font(InstrumentoType.grotesk(12))
                     .foregroundStyle(color)
                 Text(verbatim: "· \(Int((s.weight * 100).rounded()))%")
-                    .font(StrandFont.captionNumber)
-                    .foregroundStyle(theme.inkTertiary)
+                    .font(InstrumentoType.groteskNumber(12, weight: .regular))
+                    .foregroundStyle(theme.inkMuted)
             }
-            impactBar(contribution: s.contribution, color: color)
+            impactBar(contribution: s.contribution, color: color, index: index)
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
     }
 
     /// The divergent «vs your base» bar: a center base tick, capsule extending right (holds recovery up) or
-    /// left (holds it back), length ∝ |contribution| clamped at ~1.5 composite-z units. Family thickness
-    /// (6px). Same construction and clamp as the summary's `impactBar`. (FER-642)
-    private func impactBar(contribution: Double, color: Color) -> some View {
+    /// left (holds it back), length ∝ |contribution| clamped at ~1.5 composite-z units, entering with
+    /// `recGrow` staggered by row. Same construction and clamp as the summary's `impactBar`. (FER-642/836)
+    private func impactBar(contribution: Double, color: Color, index: Int = 0) -> some View {
         GeometryReader { geo in
             let half = geo.size.width / 2
             let maxC: CGFloat = 1.5
@@ -347,8 +500,9 @@ struct RecoveryDetailScreen: View {
                     .fill(color)
                     .frame(width: mag, height: 6)
                     .offset(x: contribution >= 0 ? half : half - mag)
+                    .recGrow(index: index, origin: contribution >= 0 ? .leading : .trailing)
                 Rectangle()
-                    .fill(theme.hairlineStrong)
+                    .fill(theme.baseMark)
                     .frame(width: 1.5, height: 16)
                     .offset(x: half - 0.75)
             }
@@ -371,6 +525,18 @@ struct RecoveryDetailScreen: View {
 
     /// The flag → theme color (shared with the recovery summary's «Hoy, vs tu normal» rows, FER-628/FER-642).
     private func flagColor(_ flag: ReadinessEngine.Flag) -> Color { flag.color(theme) }
+
+    /// `driverLabel` as a plain localized `String`, for components that take strings (tiles). Same keys.
+    static func driverName(_ key: String) -> String {
+        switch key {
+        case "hrv":      return String(localized: "HRV")
+        case "rhr":      return String(localized: "Resting HR")
+        case "sleep":    return String(localized: "Sleep")
+        case "skinTemp": return String(localized: "Skin temp")
+        case "respRate": return String(localized: "Respiration")
+        default:         return key
+        }
+    }
 
     /// The signal's display name — the same catalog keys the summary's rows use. (FER-642)
     private static func driverLabel(_ key: String) -> LocalizedStringKey {
@@ -395,16 +561,6 @@ struct RecoveryDetailScreen: View {
         return "In your base"
     }
 
-    /// The headline's inline position clause, «, above your base, » etc., built from the RAW deviation with
-    /// a «well» qualifier past 1σ. Matches the vocabulary of `baseBandWord`. (FER-642)
-    private static func positionPhrase(_ s: RecoveryImpact.Signal) -> LocalizedStringKey {
-        let above = s.z >= 0
-        let strong = abs(s.z) >= 1.0
-        return strong
-            ? (above ? ", well above your base" : ", well below your base")
-            : (above ? ", above your base"      : ", below your base")
-    }
-
     // MARK: - 2-estimado. Hoy, vs tu normal (por cobertura) — el stand-in cuando el día es un estimado de Apple
     //
     // On an Apple-only day the band-baseline points decomposition (`RecoveryImpact`) is nil ON PURPOSE:
@@ -417,27 +573,29 @@ struct RecoveryDetailScreen: View {
     /// The three primary drivers, in fixed display order (HRV first — it's the required, dominant signal).
     private static let estimatedDriverOrder = ["hrv", "rhr", "sleep"]
 
-    /// The estimated coverage-attribution block, shown in place of `levelAttributionBlock` on an Apple-only
-    /// day. Always present (that's the point) — every primary driver gets a row, present or not.
-    private var estimatedAttributionBlock: some View {
+    /// The estimated coverage-attribution card, shown in place of `levelAttributionCard` on an Apple-only
+    /// day. Always present (that's the point) — every primary driver gets a row, present or not. Same
+    /// facts as before; the franja + surface card replaced the `DetailBlock` scaffold. (FER-857)
+    private var estimatedAttributionCard: some View {
         let byKey = Dictionary(model.estimatedDirections.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
-        return DetailBlock("Today, vs your normal", theme: theme) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Where the signals Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.")
-                    .font(StrandFont.body)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(Self.estimatedDriverOrder, id: \.self) { key in
-                        if let dir = byKey[key] {
-                            estimatedSignalRow(dir)
-                        } else {
-                            estimatedAbsentRow(key)
-                        }
+        return VStack(alignment: .leading, spacing: 16) {
+            Text("Where the signals Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(Self.estimatedDriverOrder, id: \.self) { key in
+                    if let dir = byKey[key] {
+                        estimatedSignalRow(dir)
+                    } else {
+                        estimatedAbsentRow(key)
                     }
                 }
             }
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.card, theme: theme)
     }
 
     /// A present signal: overline label · position-vs-usual word (valence hue) · a direction arrow. Position
@@ -512,62 +670,48 @@ struct RecoveryDetailScreen: View {
 
     // MARK: - 2b. Qué cambió vs ayer — el movimiento día-a-día (FER-642, motor RecoveryChange)
 
-    /// The day-over-day block: a headline «Subiste N puntos / Bajaste N puntos / Igual que ayer» plus the
-    /// 1–2 signals that moved most, each as «label · ayer → hoy · ▲/▼». Hidden when `change` is nil.
-    private func changeSinceYesterdayBlock(_ change: RecoveryChange.Result) -> some View {
-        DetailBlock("What changed since yesterday", theme: theme) {
-            VStack(alignment: .leading, spacing: 14) {
-                changeHeadline(change)
-                    .font(StrandFont.body)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                if !change.movers.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(change.movers) { changeMoverRow($0) }
-                    }
+    /// The day-over-day content — dato primero (handoff FER-857): a `TileSurface` grid («VS AYER ±N
+    /// puntos» + one tile per top mover with its yesterday→today values and signed delta), anchored
+    /// by the mandatory `BarraAncla`. Same `RecoveryChange` facts as before (FER-642).
+    private func changeSinceYesterdayContent(_ change: RecoveryChange.Result) -> some View {
+        let deltaColor = change.deltaScore >= 0 ? theme.positiveText : theme.critical
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                TileSurface(label: String(localized: "VS YESTERDAY"),
+                            value: signed(change.deltaScore),
+                            valueColor: change.deltaScore == 0 ? theme.ink : deltaColor,
+                            caption: String(localized: "Points"),
+                            theme: theme)
+                ForEach(change.movers.prefix(2)) { m in
+                    TileSurface(label: Self.driverName(m.key),
+                                value: "\(Self.moverBare(m.yesterday, m.unit))→\(Self.moverBare(m.today, m.unit))",
+                                caption: Self.moverUnitWord(m.unit),
+                                delta: signed(Int((m.today - m.yesterday).rounded())),
+                                deltaColor: m.improved ? theme.positiveText : theme.warning,
+                                theme: theme)
                 }
             }
+            BarraAncla(String(localized: "The small number is the change vs yesterday."),
+                       color: deltaColor, theme: theme)
         }
     }
 
-    /// The change headline, colored by direction: up → verdict, down → critical, flat → ink.
-    private func changeHeadline(_ change: RecoveryChange.Result) -> Text {
-        let n = abs(change.deltaScore)
-        if change.deltaScore > 0 {
-            return Text("You're up \(n) points.").foregroundColor(theme.verdict)
-        } else if change.deltaScore < 0 {
-            return Text("You're down \(n) points.").foregroundColor(theme.critical)
-        }
-        return Text("Same as yesterday.")
+    /// «+6» / «−3» / «0» with an explicit sign for the positive case.
+    private func signed(_ n: Int) -> String { n > 0 ? "+\(n)" : "\(n)" }
+
+    /// A mover's bare value (no unit — the unit goes to the tile caption). Skin temp keeps its sign.
+    private static func moverBare(_ v: Double, _ unit: RecoveryChange.Unit) -> String {
+        unit == .celsius ? String(format: "%+.1f", v) : "\(Int(v.rounded()))"
     }
 
-    /// One mover: overline label · «ayer → hoy» with its unit · a ▲/▼ glyph colored by whether it moved the
-    /// helpful way. VoiceOver reads the row combined. (FER-642)
-    private func changeMoverRow(_ m: RecoveryChange.Change) -> some View {
-        let color = m.improved ? theme.verdict : theme.critical
-        return HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(Self.driverLabel(m.key)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 8)
-            Text(verbatim: "\(Self.moverValue(m.yesterday, m.unit)) → \(Self.moverValue(m.today, m.unit))")
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(theme.inkSecondary)
-            Text(verbatim: m.improved ? "▲" : "▼")
-                .font(StrandFont.footnote)
-                .foregroundStyle(color)
-                .accessibilityHidden(true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// Format a signal's displayed value with its unit («61 ms», «52 bpm», «91 %», «14 br», «+0.3 °C»). The
-    /// sleep signal shows EFFICIENCY %, the quantity the score reads — not duration. (FER-642)
-    private static func moverValue(_ v: Double, _ unit: RecoveryChange.Unit) -> String {
+    /// The unit word for a mover tile's caption.
+    private static func moverUnitWord(_ unit: RecoveryChange.Unit) -> String {
         switch unit {
-        case .millis:  return "\(Int(v.rounded())) ms"
-        case .bpm:     return "\(Int(v.rounded())) bpm"
-        case .breaths: return "\(Int(v.rounded())) br"
-        case .percent: return "\(Int(v.rounded())) %"
-        case .celsius: return String(format: "%+.1f °C", v)
+        case .millis:  return "ms"
+        case .bpm:     return "bpm"
+        case .breaths: return "rpm"
+        case .percent: return "%"
+        case .celsius: return "°C"
         }
     }
 
@@ -584,74 +728,73 @@ struct RecoveryDetailScreen: View {
         model.forecast != nil || normalRange != nil || consistency != nil || model.load != nil
     }
 
-    private var panoramaBlock: some View {
-        DetailBlock("Panorama", theme: theme) {
-            VStack(alignment: .leading, spacing: 16) {
-                LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
-                                    GridItem(.flexible(), alignment: .topLeading)],
-                          alignment: .leading, spacing: 14) {
-                    panoramaTomorrowCell
-                    panoramaCell(label: "Usually",
-                                 value: normalRange.map { "\($0.lo)–\($0.hi)" } ?? "—")
-                    panoramaCell(label: "Steadiness",
-                                 value: consistency.map { consistencyWord($0) } ?? "—")
-                    panoramaCell(label: "Load",
-                                 value: model.load?.bandLabel ?? "—",
-                                 valueColor: model.load.map { flagColor($0.bandFlag) })
-                }
-                Text("A forecast is a projection, not a guarantee.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    /// The «Tomorrow» cell: a trend arrow + word + the center of your normal range («Rising · ~73»); it
-    /// reads «Calibrating» when there isn't enough base to project. The `RecoveryForecast` engine is
-    /// untouched — this is presentation-only. (FER-831)
-    private var panoramaTomorrowCell: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Tomorrow").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+    private var panoramaContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
             if let f = model.forecast {
-                HStack(spacing: 4) {
-                    Image(systemName: heroDirectionSymbol(f.direction))
-                        .font(StrandFont.glyph(.chevron, weight: .semibold))
-                        .foregroundStyle(theme.dataRecovery)
-                        .accessibilityHidden(true)
-                    Text(panoramaForecastValue(f)).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                }
-            } else {
-                Text("Calibrating").font(StrandFont.bodyNumber).foregroundStyle(theme.inkTertiary)
+                forecastStrip(f)
             }
+            HStack(alignment: .top, spacing: 8) {
+                TileSurface(label: String(localized: "Usually"),
+                            value: normalRange.map { "\($0.lo)–\($0.hi)" } ?? "—",
+                            theme: theme)
+                TileSurface(label: String(localized: "Steadiness"),
+                            value: consistency.map { consistencyWord($0) } ?? "—",
+                            theme: theme)
+                TileSurface(label: String(localized: "Load"),
+                            value: model.load?.bandLabel ?? "—",
+                            valueColor: model.load.map { flagColor($0.bandFlag) },
+                            theme: theme)
+            }
+            BarraAncla(String(localized: "A forecast is a projection, not a guarantee."),
+                       color: theme.verdict, theme: theme)
         }
+    }
+
+    /// The forecast strip — dato primero: «↗ ~73» (22pt Grotesk, verdict hue) + «mañana, al alza» +
+    /// the «proyección» tag, on a verdict-tinted wash. `RecoveryForecast` untouched. (FER-831/857)
+    private func forecastStrip(_ f: RecoveryForecast.Result) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(verbatim: forecastDatum(f))
+                .font(InstrumentoType.groteskNumber(22, weight: .bold))
+                .foregroundStyle(theme.verdict)
+            Text(forecastPhrase(f.direction))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(theme.ink)
+            Spacer(minLength: 8)
+            Text("projection")
+                .font(InstrumentoType.grotesk(10, weight: .medium))
+                .tracking(1)
+                .textCase(.uppercase)
+                .foregroundStyle(theme.inkTertiary)
+        }
+        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
         .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.control, theme: theme,
+                         fill: theme.tint(theme.verdict),
+                         stroke: theme.verdict.opacity(StrandOpacity.tintFillStrong))
         .accessibilityElement(children: .combine)
     }
 
-    /// «{Rising|Steady|Falling} · ~N» — the trend word plus the center of the normal range (the «· ~N»
-    /// clause is dropped when there's no range yet).
-    private func panoramaForecastValue(_ f: RecoveryForecast.Result) -> String {
-        let word: String
+    /// «↗ ~73» — the direction arrow + the center of your normal range (arrow only when no range yet).
+    private func forecastDatum(_ f: RecoveryForecast.Result) -> String {
+        let arrow: String
         switch f.direction {
-        case .rising:  word = String(localized: "Rising")
-        case .steady:  word = String(localized: "Steady")
-        case .falling: word = String(localized: "Falling")
+        case .rising:  arrow = "↗"
+        case .steady:  arrow = "→"
+        case .falling: arrow = "↘"
         }
-        guard let r = normalRange else { return word }
+        guard let r = normalRange else { return arrow }
         let mid = Int(((Double(r.lo) + Double(r.hi)) / 2).rounded())
-        return "\(word) · ~\(mid)"
+        return "\(arrow) ~\(mid)"
     }
 
-    /// One Panorama cell: a quiet overline label above a plain-language value (the datum — coloured when a
-    /// hue is given). Token-only.
-    private func panoramaCell(label: LocalizedStringKey, value: String, valueColor: Color? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.bodyNumber).foregroundStyle(valueColor ?? theme.ink)
+    /// «mañana, al alza / estable / a la baja».
+    private func forecastPhrase(_ d: RecoveryForecast.Direction) -> LocalizedStringKey {
+        switch d {
+        case .rising:  return "tomorrow, rising"
+        case .steady:  return "tomorrow, steady"
+        case .falling: return "tomorrow, falling"
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
     }
 
     /// The normal-range pair (lo, hi, n) over the last 30 days, or nil when there aren't enough days.
@@ -680,46 +823,98 @@ struct RecoveryDetailScreen: View {
     // period-average caption — «average of what?»). This is now the ONLY recovery line; it carries the
     // period-average caption («Media …») that used to sit with the trend. (FER-572 · FER-594 · FER-703)
 
-    /// The level instrument: a recovery line over the period you pick, the active level's band shaded, a
-    /// «{level} · N de tus últimos M días» phrase and a TAPPABLE levels list (Agotado / Bajo / Moderado /
-    /// Alto / Pico, 0–100), with the period-average caption below it. Reuses `MetricLevels.recovery` + the
-    /// shared `MetricLevelsExplorer`; its W/M/3M/6M/1Y/ALL selector is the screen's single period selector.
-    private var levelsBlock: some View {
+    /// The trend block per the handoff (FER-857): the W/M/3M/6M/1Y/ALL `SegmentedPillControl` +
+    /// `GraficaRangos` (Media ⇄ Rangos over the FIXED recovery levels, wash 70–88, «tu base» reference)
+    /// + the MEDIA/RANGO/HOY tiles. Thresholds come from `MetricLevels.levels(for: .recovery)` — the
+    /// same source as everywhere else; the base is the same 30-day mean the hero capsule uses.
+    private var trendContent: some View {
         let window = MetricWindowMath.make(parsed, selected: range)
-        return VStack(alignment: .leading, spacing: 14) {
-            MetricLevelsExplorer(
-                theme: theme,
-                range: $range,
-                window: window,
-                levels: MetricLevels.levels(for: .recovery),
-                todayValue: model.score.map(Double.init),
-                hue: theme.dataRecovery,
-                unit: "",
-                valueFormat: { "\(Int($0.rounded()))" },
-                domain: 0...100,
-                mode: $levelsMode,
-                accessibilityLabel: "Recovery by level"
-            )
-            averageCaption
+        let stat = ComparisonEngine.stat(window.values)
+        let pct = range.periodComparison(of: model.series)?.pctChange
+        return VStack(alignment: .leading, spacing: 8) {
+            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+            GraficaRangos(
+                points: window.values,
+                bands: Self.recoveryBands(theme),
+                ticks: [.init(v: 88, label: "88"), .init(v: 70, label: "70"),
+                        .init(v: 50, label: "50"), .init(v: 25, label: "25")],
+                wash: .init(lo: 70, hi: 88),
+                refLine: baseValue.map { .init(v: Double($0), label: String(localized: "your base · \($0)")) },
+                hue: bandColor, ymin: 20, ymax: 95,
+                startLabel: window.rows.first.flatMap { Repository.parseDayKey($0.day) }
+                    .map { Self.axisDateFmt.string(from: $0) } ?? "",
+                endLabel: window.rows.last.flatMap { Repository.parseDayKey($0.day) }
+                    .map { Self.axisDateFmt.string(from: $0) } ?? "",
+                mediaValue: window.values.count > 1 ? Self.levelWord(stat.mean) : "—",
+                mediaNote: String(localized: "your typical band this \(range.name)"),
+                mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
+                deltaColor: pct.map { $0 >= 0 ? theme.positiveText : theme.warning },
+                countUnit: "d",
+                anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+                theme: theme)
+                .padding(.top, 6)
+                .id(range)  // fresh entrance (recFade) when the period changes
+            HStack(alignment: .top, spacing: 8) {
+                TileSurface(label: String(localized: "Average"),
+                            value: window.values.count > 1 ? "\(Int(stat.mean.rounded()))" : "—",
+                            theme: theme)
+                TileSurface(label: String(localized: "Range"),
+                            value: window.values.count > 1
+                                ? "\(Int(stat.min.rounded()))–\(Int(stat.max.rounded()))" : "—",
+                            theme: theme)
+                TileSurface(label: String(localized: "Today"),
+                            value: model.score.map { "\($0)" } ?? "—",
+                            valueColor: model.score != nil ? bandColor : nil,
+                            theme: theme)
+            }
+            .padding(.top, 4)
         }
     }
 
-    /// The handoff's period-average caption + range, now under the level instrument (moved from the removed
-    /// trend block, FER-703). Recovery rises = good; the score is unitless (/100). Δ vs the previous equal
-    /// window. It's the screen's ONE «promedio», so no other block presents an average. (FER-587, option ii)
-    @ViewBuilder private var averageCaption: some View {
-        let window = MetricWindowMath.make(parsed, selected: range)
-        if window.values.count > 1 {
-            let s = ComparisonEngine.stat(window.values)
-            DynamicAverageCaption(
-                windowName: range.name,
-                average: "\(Int(s.mean.rounded()))",
-                pctChange: range.periodComparison(of: model.series)?.pctChange,
-                polarity: .higherIsBetter,
-                rangeText: "\(Int(s.min.rounded()))–\(Int(s.max.rounded()))",
-                theme: theme)
+    /// The five fixed recovery lanes for `GraficaRangos`, colored low→high with the deep-red /
+    /// red / amber / green / deep-green ladder. Thresholds from `MetricLevels` — never restated.
+    static func recoveryBands(_ theme: InstrumentoTheme) -> [GraficaRangos.Banda] {
+        let colors: [String: Color] = [
+            "depleted": theme.criticalDeep,
+            "low":      theme.critical,
+            "moderate": theme.warning,
+            "primed":   theme.verdict,
+            "peak":     theme.verdictDeep,
+        ]
+        // Lanes list high→low (the chart wash order is value-based, so list order only affects rows).
+        return MetricLevels.levels(for: .recovery).reversed().map { level in
+            GraficaRangos.Banda(
+                label: String(localized: String.LocalizationValue(MetricLevels.name(for: level.key))),
+                lo: level.lower, hi: level.upper,
+                color: colors[level.key] ?? theme.ink,
+                range: Self.rangeText(level))
         }
     }
+
+    /// «≥ 88» / «70–88» / «< 25» from a level's half-open bounds.
+    private static func rangeText(_ level: MetricLevels.Level) -> String {
+        switch (level.lower, level.upper) {
+        case let (lo?, hi?): return "\(Int(lo))–\(Int(hi))"
+        case let (lo?, nil): return "≥ \(Int(lo))"
+        case let (nil, hi?): return "< \(Int(hi))"
+        default:             return ""
+        }
+    }
+
+    /// The band word for a score («A punto» for the period mean in the chart header).
+    private static func levelWord(_ value: Double) -> String {
+        let key = MetricLevels.levels(for: .recovery).first {
+            ($0.lower == nil || value >= $0.lower!) && ($0.upper == nil || value < $0.upper!)
+        }?.key ?? "moderate"
+        return String(localized: String.LocalizationValue(MetricLevels.name(for: key)))
+    }
+
+    /// «jun 6» axis dates for the chart floor.
+    static let axisDateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("dMMM")
+        return f
+    }()
 
     // MARK: - 5. Consistencia (coeficiente de variación)
 
@@ -735,22 +930,16 @@ struct RecoveryDetailScreen: View {
     // copy mirror «See the method». Holds the 90-day calendar. (The period-selector trend that used to sit
     // here alongside it was removed in FER-703.)
 
-    // Handoff v2 (reconciliación): el calendario 90d va VISIBLE, no colapsado bajo «Ver tu historial».
-    @ViewBuilder private var historySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            calendarBlock
-        }
-    }
+    // MARK: - Calendario · 90 días (YearHeatStrip re-tintado + leyenda + read-out) — FER-857
 
-    /// The «See your history» row: a tappable header that toggles the Level-3 disclosure in place. The
-    // MARK: - Calendario · 90 días (YearHeatStrip re-tintado, a todo el ancho) — en «See your history»
-
-    private var calendarBlock: some View {
-        DetailBlock("Calendar · 90 days", theme: theme) {
-            VStack(alignment: .leading, spacing: 10) {
-                heatGrid
-                heatReadout
-            }
+    private var calendarContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            heatGrid
+            heatReadout
+            HeatLegend([(theme.verdict, String(localized: "ready")),
+                        (theme.warning, String(localized: "recovering")),
+                        (theme.critical, String(localized: "Low").lowercased()),
+                        (theme.rangeBand, String(localized: "no data"))], theme: theme)
         }
     }
 
@@ -837,33 +1026,21 @@ struct RecoveryDetailScreen: View {
 
     // MARK: - Ver el método (DisclosureGroup, patrón de las otras pantallas)
 
-    private var methodDisclosure: some View {
-        DisclosureGroup(isExpanded: $methodExpanded) {
-            VStack(alignment: .leading, spacing: 10) {
-                Divider().overlay(theme.hairline)
-                Text("Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're combined with the weights shown and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your normal range is your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR) — context for recovery, never an injury claim.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996; Plews 2013; Buchheit 2014; Impellizzeri 2020).")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Text("How it's calculated")
+    private var metodoBlock: some View {
+        Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+            Text("Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're combined with the weights shown and mapped onto a 0–100 scale through a logistic curve, calibrated so a typical day lands near 58. It's an estimate, not a diagnosis.")
                 .font(StrandFont.subhead)
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your base and normal range are your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR) — context for recovery, never an injury claim.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996; Plews 2013; Buchheit 2014; Impellizzeri 2020).")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .tint(theme.inkTertiary)
-        .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Calibrando (no hay score todavía)
