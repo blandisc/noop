@@ -204,7 +204,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Terminar entreno"
+            "value": "Terminar entrenamiento"
           }
         }
       }
@@ -220,7 +220,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Registra la última serie y termina el entreno"
+            "value": "Registra la última serie y termina el entrenamiento"
           }
         }
       }
@@ -252,7 +252,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Última serie del entreno"
+            "value": "Última serie del entrenamiento"
           }
         }
       }
@@ -348,7 +348,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Registra la última serie y termina el entreno."
+            "value": "Registra la última serie y termina el entrenamiento."
           }
         }
       }
@@ -620,7 +620,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reanudar entreno"
+            "value": "Reanudar entrenamiento"
           }
         }
       }
