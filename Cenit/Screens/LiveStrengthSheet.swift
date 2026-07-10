@@ -1288,7 +1288,7 @@ struct LiveStrengthSheet: View {
                 Text("·").foregroundStyle(theme.inkTertiary)
                 Text("why")
                     .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))
+                    .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))   // token-exempt: subrayado punteado decorativo
             }
             .foregroundStyle(theme.dataRecovery)
             .contentShape(Rectangle())

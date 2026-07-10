@@ -501,7 +501,7 @@ struct ExerciseDetailScreen: View {
                 if metric == .weight {
                     // FER-F · 2d: the working weight moves in JUMPS — a step render is the honest shape.
                     // Green dot = confirmed raise; amber dot = a deload (the drop is the datum too).
-                    StepChart(values: values, line: theme.ink.opacity(0.75),
+                    StepChart(values: values, line: theme.ink.opacity(0.75),   // token-exempt: alfa de línea de dato (StepChart)
                               raiseDot: theme.dataRecovery, deloadDot: theme.warning)
                         .frame(height: 64)
                         .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))

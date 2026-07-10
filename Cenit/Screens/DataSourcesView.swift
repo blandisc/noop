@@ -93,8 +93,8 @@ struct DataSourcesView: View {
         .overlay(alignment: .top) {
             if showBackupAlert {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(backupAlertTitle).font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.ink)
-                    Text(backupAlertMessage).font(.system(size: 13)).foregroundStyle(theme.inkSecondary)
+                    Text(backupAlertTitle).font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.ink)   // token-exempt: título de banner (13pt, igual que ConfirmCard)
+                    Text(backupAlertMessage).font(.system(size: 13)).foregroundStyle(theme.inkSecondary)   // token-exempt: cuerpo de banner (13pt, igual que ConfirmCard)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .patternBlock(theme, bar: backupAlertIsError ? theme.critical : theme.verdict)

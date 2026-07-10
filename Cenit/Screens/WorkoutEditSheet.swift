@@ -104,7 +104,7 @@ struct WorkoutEditSheet: View {
         .overlay(alignment: .top) {
             if saveError {
                 Text("Couldn't save the workout. Try again.")
-                    .font(.system(size: 13))
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
