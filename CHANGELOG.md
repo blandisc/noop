@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Un interruptor «Métricas experimentales» en Ajustes / A "Experimental metrics" toggle in Settings.**
+  **ES** — En Ajustes › Experimental hay un nuevo interruptor, apagado por defecto, que habilita cuatro lecturas nuevas y aproximadas (reserva vagal nocturna, estabilidad térmica, respiración de la noche y recuperación post-sesión). Mientras esté apagado, ninguna de esas superficies aparece; al prenderlo, cada una se muestra en su pantalla de detalle. La preferencia sobrevive el relanzamiento.
+  **EN** — Settings › Experimental now has a new toggle, off by default, that enables four new approximate reads (nightly vagal reserve, thermal stability, night breathing and post-session recovery). While it's off none of those surfaces appear; turning it on shows each in its detail screen. The preference survives a relaunch.
+  ([AjustesView.swift](Cenit/Screens/AjustesView.swift), [WhitespaceMetricsExperiment.swift](Cenit/Screens/WhitespaceMetricsExperiment.swift))
+
 - **En «Subir con el plan» vuelven a verse las etiquetas de cada ajuste / The "Raise with the plan" screen shows each setting's label again.**
   **ES** — En la pantalla de progresión de carga, cada fila (Objetivo de reps, Subes cuando, Si te estancas, Recuperación baja) tenía su etiqueta a la izquierda y su control a la derecha, pero el control segmentado pedía todo el ancho y aplastaba la etiqueta a 0pt: quedaban solo los pills sueltos, con la sensación de mucho espacio vacío entre ellos. Ahora el control tiene un ancho tope y la etiqueta siempre conserva su lugar, así que la pantalla se lee densa y ordenada. Solo es layout: nada del plan de progresión cambia.
   **EN** — On the load-progression screen each row (Rep goal, You raise when, If you stall, Low recovery) had its label on the left and its control on the right, but the segmented control claimed the full width and starved the label to 0pt: only the loose pills were left, reading as lots of empty space between them. The control is now width-capped and the label always keeps its place, so the screen reads dense and tidy. Layout only — nothing about the progression plan changes.
