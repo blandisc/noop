@@ -231,12 +231,16 @@ struct MuscleMapScreen: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
-        .confirmationDialog("Mark all muscles as recovered?", isPresented: $showResetConfirm, titleVisibility: .visible) {
-            Button("Mark recovered") { markAllRecovered() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again.")
-        }
+        .instrumentoConfirm(
+            isPresented: $showResetConfirm,
+            title: String(localized: "Mark all muscles as recovered?"),
+            context: String(localized: "MUSCLE MAP"),
+            message: String(localized: "The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again."),
+            actions: [
+                .init(String(localized: "Mark recovered"), role: .primary) { markAllRecovered() },
+                .init(String(localized: "Leave the map as is"), role: .secondary)
+            ]
+        )
     }
 
     /// First tap on a muscle peeks it (highlight + mini indicator); a second tap on the same muscle

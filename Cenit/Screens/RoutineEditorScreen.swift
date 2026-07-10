@@ -56,6 +56,9 @@ struct RoutineEditorScreen: View {
     @State private var showLibrary = false
     /// nil = the library appends; an index = it replaces that exercise (keeping its sets).
     @State private var replaceIndex: Int? = nil
+    // FER-837: which «···» paper menu is open (the day's, or an exercise index).
+    @State private var showDayMenu = false
+    @State private var menuExerciseIndex: Int? = nil
     /// The exercise whose detail sheet is open (tap the name, parity with the library).
     @State private var detailExercise: Exercise? = nil
     /// The plate inventory: progression evaluation + the 2c increment hint.
@@ -149,10 +152,16 @@ struct RoutineEditorScreen: View {
             }
             .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
-        .confirmationDialog("Discard changes?", isPresented: $showDiscardConfirm, titleVisibility: .visible) {
-            Button("Discard changes", role: .destructive) { dismiss() }
-            Button("Keep editing", role: .cancel) {}
-        }
+        .instrumentoConfirm(
+            isPresented: $showDiscardConfirm,
+            title: String(localized: "Discard changes?"),
+            context: String(localized: "ROUTINE · UNSAVED CHANGES"),
+            message: String(localized: "Your edits to this routine will be lost."),
+            actions: [
+                .init(String(localized: "Keep editing"), role: .primary),
+                .init(String(localized: "Discard changes"), role: .destructive) { dismiss() }
+            ]
+        )
         .task {
             guard !loaded else { return }
             await load()
@@ -285,21 +294,20 @@ struct RoutineEditorScreen: View {
 
     /// .planDay header «···»: assign/clear the day (choque 9 — «conserva lo callado»).
     private var dayMenu: some View {
-        Menu {
-            Menu {
-                ForEach(allRoutines) { r in
-                    Button { changeRoutine(to: r) } label: {
-                        if r.id == routine?.id { Label(r.name, systemImage: "checkmark") } else { Text(r.name) }
-                    }
-                }
-            } label: { Label("Change routine", systemImage: "arrow.left.arrow.right") }
-            Button(role: .destructive) { markRest() } label: { Label("Mark as rest day", systemImage: "moon.zzz") }
-        } label: {
+        Button { showDayMenu = true } label: {
             Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary).frame(width: 40, height: 40).contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(Text("Day options"))
         .disabled(locked)
+        .paperMenu(isPresented: $showDayMenu, items: [
+            .init(String(localized: "Change routine"), systemImage: "arrow.left.arrow.right",
+                  children: allRoutines.map { r in
+                      PaperMenuItem(r.name, systemImage: r.id == routine?.id ? "checkmark" : nil) { changeRoutine(to: r) }
+                  }),
+            .init(String(localized: "Mark as rest day"), systemImage: "moon.zzz", isDestructive: true) { markRest() }
+        ])
     }
 
     // MARK: - Exercise header (thumb + tappable name + «···» + column header)
@@ -333,34 +341,46 @@ struct RoutineEditorScreen: View {
     /// The «···» menu, FINAL order (mock 4b). No «move» — reordering is drag-only (FER-841);
     /// «Duplicate» lives in the swipe.
     private func exerciseMenu(_ idx: Int) -> some View {
-        let item = items[idx]
-        return Menu {
-            if !hasWarmups(idx) {
-                Button { addWarmupRamp(idx) } label: { Label("Add warm-up", systemImage: "flame") }
-            }
-            if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
-                Button { supersetWithNext(idx) } label: { Label("Superset with next", systemImage: "link") }
-            }
-            if inSuperset(idx) {
-                Button { breakSuperset(idx) } label: { Label("Break superset", systemImage: "link.badge.plus") }
-            }
-            Button { replaceIndex = idx; showLibrary = true } label: {
-                Label("Replace exercise", systemImage: "arrow.triangle.2.circlepath")
-            }
-            if item.exercise.type == .weightReps {
-                Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
-                    if item.re.progressionEnabled {
-                        Label(progressionSummary(item.re), systemImage: "chart.line.uptrend.xyaxis")
-                    } else {
-                        Label("Progression", systemImage: "chart.line.uptrend.xyaxis")
-                    }
-                }
-            }
-            Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove from routine", systemImage: "trash") }
-        } label: {
+        Button { menuExerciseIndex = idx } label: {
             Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .paperMenu(
+            isPresented: Binding(get: { menuExerciseIndex == idx },
+                                 set: { if !$0 { menuExerciseIndex = nil } }),
+            items: exerciseMenuItems(idx)
+        )
+    }
+
+    /// The «···» rows, FINAL order (mock 4b). The active progression plan rides as the row's
+    /// subtitle («+2,5 kg cada 2 ✓»).
+    private func exerciseMenuItems(_ idx: Int) -> [PaperMenuItem] {
+        let item = items[idx]
+        var rows: [PaperMenuItem] = []
+        if !hasWarmups(idx) {
+            rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") { addWarmupRamp(idx) })
+        }
+        if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
+            rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
+        }
+        if inSuperset(idx) {
+            rows.append(.init(String(localized: "Break superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
+        }
+        rows.append(.init(String(localized: "Replace exercise"), systemImage: "arrow.triangle.2.circlepath") {
+            replaceIndex = idx; showLibrary = true
+        })
+        if item.exercise.type == .weightReps {
+            rows.append(.init(String(localized: "Progression"),
+                              subtitle: item.re.progressionEnabled ? progressionSummary(item.re) : nil,
+                              systemImage: "chart.line.uptrend.xyaxis") {
+                progressionTarget = ProgressionTarget(ei: idx)
+            })
+        }
+        rows.append(.init(String(localized: "Remove from routine"), systemImage: "trash", isDestructive: true) {
+            deleteExercise(idx)
+        })
+        return rows
     }
 
     /// «+2,5 kg cada 2 ✓» — the active plan named in the menu row (mock 4b). Without an explicit

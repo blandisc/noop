@@ -137,11 +137,16 @@ struct PlanViajeSheet: View {
                     }
                 } else {
                     QuietButton("Terminar plan") { confirmTerminate = true }
-                        .confirmationDialog("¿Terminar tu plan de reajuste? Perderás el progreso.",
-                                            isPresented: $confirmTerminate, titleVisibility: .visible) {
-                            Button("Terminar", role: .destructive) { planJSON = ""; dismiss() }
-                            Button("Cancelar", role: .cancel) {}
-                        }
+                        .instrumentoConfirm(
+                            isPresented: $confirmTerminate,
+                            title: String(localized: "¿Terminar tu plan de reajuste?"),
+                            context: String(localized: "TRAVEL PLAN · ACTIVE"),
+                            message: String(localized: "Perderás el progreso del plan. Tus datos no se tocan."),
+                            actions: [
+                                .init(String(localized: "Seguir con el plan"), role: .primary),
+                                .init(String(localized: "Terminar el plan"), role: .destructive) { planJSON = ""; dismiss() }
+                            ]
+                        )
                 }
 
                 Text(verbatim: Self.methodLine)

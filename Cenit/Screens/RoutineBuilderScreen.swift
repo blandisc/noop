@@ -34,6 +34,8 @@ struct RoutineBuilderScreen: View {
     @State private var restTarget: RestEditTarget? = nil
     /// Which exercise's progression plan is being edited (drives the 2c push, FER-D); nil = none.
     @State private var progressionTarget: ProgressionTarget? = nil
+    // FER-837: which exercise's «···» paper menu is open.
+    @State private var menuExerciseIndex: Int? = nil
     /// The plate inventory, to derive the default increment (FER-C). UserDefaults-backed, cheap.
     @StateObject private var plates = PlatesStore()
     /// Which exercise's info sheet is open (tap the row's name/thumb to open its detail, like the library).
@@ -236,30 +238,16 @@ struct RoutineBuilderScreen: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                Menu {
-                    if idx > 0 { Button { moveUp(idx) } label: { Label("Move up", systemImage: "arrow.up") } }
-                    if idx < items.count - 1 { Button { moveDown(idx) } label: { Label("Move down", systemImage: "arrow.down") } }
-                    Button { addWarmup(idx) } label: { Label("Add warm-up set", systemImage: "flame") }
-                    if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
-                        Button { supersetWithNext(idx) } label: { Label("Superset with next", systemImage: "link") }
-                    }
-                    if inSuperset(idx) {
-                        Button { breakSuperset(idx) } label: { Label("Break superset", systemImage: "link.badge.plus") }
-                    }
-                    // 2c (FER-D): the per-exercise progression plan. Weight-based exercises only —
-                    // bodyweight/time/distance have no load to progress.
-                    if item.exercise.type == .weightReps {
-                        Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
-                            item.re.progressionEnabled
-                                ? Label("Progression · on", systemImage: "chart.line.uptrend.xyaxis")
-                                : Label("Progression", systemImage: "chart.line.uptrend.xyaxis")
-                        }
-                    }
-                    Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove", systemImage: "trash") }
-                } label: {
+                Button { menuExerciseIndex = idx } label: {
                     Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .paperMenu(
+                    isPresented: Binding(get: { menuExerciseIndex == idx },
+                                         set: { if !$0 { menuExerciseIndex = nil } }),
+                    items: exerciseMenuItems(idx, item: item)
+                )
             }
             columnHeader(item.exercise.type)
         }
@@ -370,6 +358,32 @@ struct RoutineBuilderScreen: View {
         let reps = work?.reps ?? (showsReps(items[idx].exercise.type) ? 8 : nil)
         items[idx].re.sets.append(RoutineSet(position: items[idx].re.sets.count, kind: .work,
                                              reps: reps, weightKg: work?.weightKg))
+    }
+
+    /// The exercise «···» actions as paper-menu rows (FER-837). The Progression row carries its
+    /// state as the paper menu's subtitle («+2,5 kg cada 2 ✓» pattern from mock 4b).
+    private func exerciseMenuItems(_ idx: Int, item: BuilderItem) -> [PaperMenuItem] {
+        var rows: [PaperMenuItem] = []
+        if idx > 0 { rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") { moveUp(idx) }) }
+        if idx < items.count - 1 { rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") { moveDown(idx) }) }
+        rows.append(.init(String(localized: "Add warm-up set"), systemImage: "flame") { addWarmup(idx) })
+        if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
+            rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
+        }
+        if inSuperset(idx) {
+            rows.append(.init(String(localized: "Break superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
+        }
+        // 2c (FER-D): the per-exercise progression plan. Weight-based exercises only —
+        // bodyweight/time/distance have no load to progress.
+        if item.exercise.type == .weightReps {
+            rows.append(.init(String(localized: "Progression"),
+                              subtitle: item.re.progressionEnabled ? String(localized: "on") : nil,
+                              systemImage: "chart.line.uptrend.xyaxis") {
+                progressionTarget = ProgressionTarget(ei: idx)
+            })
+        }
+        rows.append(.init(String(localized: "Remove"), systemImage: "trash", isDestructive: true) { deleteExercise(idx) })
+        return rows
     }
 
     private func addWarmup(_ idx: Int) {
