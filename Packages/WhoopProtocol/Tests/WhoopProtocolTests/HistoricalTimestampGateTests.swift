@@ -143,6 +143,42 @@ final class HistoricalTimestampGateTests: XCTestCase {
         XCTAssertEqual(st.droppedImplausible, 0)
     }
 
+    // MARK: - PR #471 future-overshoot guard (FER-692)
+
+    func testStaleOvershootKeepsRawInsteadOfFutureDating() {
+        // A fully-drained strap whose RTC reset to ~epoch reports a near-zero deviceClockRef while its
+        // frames still carry the true-unix rawTs (a plausible recent ts). clockOffset is then ~decades, and
+        // the naive correction would hurl the sample into the far future (the year-2081 field bug). The
+        // guard must keep the already-correct rawTs — and, being plausible, the record is KEPT.
+        let rawTs = Int(Date().timeIntervalSince1970) - 3 * 86_400   // real capture ~3 days ago
+        let wall = rawTs + 2 * 86_400                                // offloaded 2 days later
+        let st = extractHistoricalStreams([histFrame(unix: rawTs, bpm: 66)],
+                                          deviceClockRef: 31_500_000, wallClockRef: wall)  // RTC ~1971
+        XCTAssertEqual(st.hr.count, 1, "the overshoot guard keeps the real raw ts; the record is banked")
+        XCTAssertEqual(st.hr.first?.ts, rawTs, "kept the raw ts, not rawTs + ~55 years")
+        XCTAssertEqual(st.droppedImplausible, 0)
+    }
+
+    func testStaleOvershootThenGatedWhenRawItselfIsGarbage() {
+        // The #471 guard falls back to the RAW ts on overshoot; when that raw ts is ALSO garbage
+        // (a near-epoch value), the #547 gate then drops it rather than banking a 1971 row.
+        let st = extractHistoricalStreams([histFrame(unix: 100_000)],
+                                          deviceClockRef: 50_000, wallClockRef: wallNow)
+        XCTAssertEqual(st.hr.count, 0, "a near-epoch raw ts must be gated out, not banked")
+        XCTAssertEqual(st.droppedImplausible, 1)
+    }
+
+    func testGenuineStaleCorrectionStillAppliesWhenInThePast() {
+        // A genuinely-stale strap (behind real time) whose corrected ts lands in the PAST must still be
+        // corrected forward — the overshoot guard is a no-op there (corrected <= wallClockRef).
+        let device = 1_780_930_000
+        let wall   = device + 60 * 86_400 + 137
+        let out = extractHistoricalStreams([histFrame(unix: 1_780_930_000, bpm: 70)],
+                                           deviceClockRef: device, wallClockRef: wall)
+        let snapped = (wall - device + 150) / 300 * 300
+        XCTAssertEqual(out.hr.first?.ts, 1_780_930_000 + snapped, "genuine stale correction still applies")
+    }
+
     func testIdentityRefTrustsRealRawTimestamp() {
         // The no-correlation path passes an identity ref: the future bound must fall back to the LIVE
         // wall clock, or every real record is rejected. A real recent ts must survive; only the floor

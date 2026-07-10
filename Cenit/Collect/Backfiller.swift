@@ -123,6 +123,10 @@ final class Backfiller {
     private let onReceipt: ((ChunkReceipt) -> Void)?
     /// Versions already reported this session, so the diagnostic logs each once (no spam).
     private var loggedUnmappedVersions: Set<Int> = []
+    /// FER-692 (#150): logged once per session when the strap reports the `trim=0xFFFFFFFF` sentinel —
+    /// its "no valid flash cursor" state: it has no banked history to offload (a clock/charge condition
+    /// on the strap, not a Cénit decode bug). Reset in `begin`.
+    private var loggedNoCursor = false
 
     init(store: BackfillStoreWriting,
          deviceId: String,
@@ -152,6 +156,7 @@ final class Backfiller {
         caughtUpDetector.reset()
         didCatchUp = false
         sessionDroppedImplausible = 0
+        loggedNoCursor = false
     }
 
     /// Feed one raw BLE frame into the state machine. May trigger async store operations.
@@ -200,6 +205,14 @@ final class Backfiller {
     /// `endFrame` carries the 8-byte `end_data` the ack requires.
     private func finishChunk(unix: UInt32, trim: UInt32, endFrame: [UInt8]) async {
         guard let endData = Backfiller.endData(from: endFrame, family: family) else { return }
+
+        // FER-692 (#150): trim=0xFFFFFFFF is the strap's "no valid flash cursor" sentinel — it has no
+        // banked history to hand over. Surface it once so a strap log reads as a clock/charge state on the
+        // strap, not a Cénit decode bug (retro-decode can't help here). The ack still proceeds below.
+        if trim == 0xFFFFFFFF, !loggedNoCursor {
+            loggedNoCursor = true
+            log?("Backfill: la banda reporta que no tiene cursor de historial (trim=0xFFFFFFFF) — no hay historia guardada que descargar. Es un estado de reloj/carga de la banda, no un problema de decodificación; cárgala por completo y reconéctala para que empiece a guardar.")
+        }
 
         let frames = chunk
         chunk.removeAll(keepingCapacity: true)   // next records accumulate into the next chunk
@@ -315,7 +328,12 @@ final class Backfiller {
         // FER-93: a narrating-not-saving END (zero type-47 + CONSOLE_LOGS = the RTC-lost band talking, not
         // the live drip) must not let the offload complete "green". Pass it so the detector resets its run
         // instead of counting it as a small caught-up chunk.
-        let narratingThisEnd = biometricFramesThisEnd == 0 && consoleLogFramesThisEnd > 0
+        // FER-692 (#150): a `trim=0xFFFFFFFF` no-cursor sentinel END also carries zero real banked history —
+        // it must NOT be read as a small "caught-up" chunk (that would complete the sync green while the
+        // strap has nothing banked). Fold it into the same reset signal so caught-up only fires on a
+        // genuine small-but-SAVING tail, never on a sentinel or a narrating END.
+        let narratingThisEnd = (biometricFramesThisEnd == 0 && consoleLogFramesThisEnd > 0)
+            || trim == 0xFFFFFFFF
         if isBackfilling, caughtUpDetector.observe(biometricFrames: biometricFramesThisEnd, narratingNotSaving: narratingThisEnd) {
             isBackfilling = false
             didCatchUp = true
