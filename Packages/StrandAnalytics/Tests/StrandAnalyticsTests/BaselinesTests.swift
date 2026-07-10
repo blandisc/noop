@@ -231,6 +231,54 @@ final class BaselinesTests: XCTestCase {
         XCTAssertLessThan(s.baseline, before, "young baseline must fold the genuine low night, not reject it")
     }
 
+    /// INVARIANT (FER-854): a MATURE baseline (nValid ≥ minNightsTrust) is byte-identical
+    /// to the pre-673 math. The cold-start anti-anchoring (fast early half-life, suspended
+    /// outlier gate, inflated spread floor) must move ONLY young baselines; an established
+    /// user's `update()` output must not depend on any of the young-only knobs. This test
+    /// reimplements the mature EWMA update WITHOUT a single young branch (the pre-673 form)
+    /// and demands `Baselines.update()` reproduce it bit-for-bit over a fixed sequence — so
+    /// if anyone moves the `isYoung` frontier or the ramps (`earlyHalfLifeB`,
+    /// `earlySpreadInflation`) in a way that leaks into the mature path, this fails.
+    func testMatureBaselineByteIdenticalToPre673() {
+        let cfg = Baselines.hrvCfg
+        // Build a solidly-mature baseline: 20 nights (> minNightsTrust) of ~45 ms.
+        var s = Baselines.foldHistory(Array(repeating: 45.0, count: 20), cfg: cfg)
+        XCTAssertGreaterThanOrEqual(s.nValid, Baselines.minNightsTrust)
+
+        // Reference: the mature update with NO young special-casing (pre-673 formula).
+        func maturePre673(_ state: BaselineState, _ value: Double) -> BaselineState {
+            let ls = Baselines.lambda(halfLife: cfg.halfLifeS)
+            let center = Baselines.toCenter(value, logDomain: cfg.logDomain)
+            let baseCenter = Baselines.toCenter(state.baseline, logDomain: cfg.logDomain)
+            // Hard-outlier gate (mature, always active pre-673).
+            if abs(center - baseCenter) > Baselines.hardOutlierK * state.spread {
+                return state
+            }
+            let lb = Baselines.lambda(halfLife: cfg.halfLifeB)          // mature half-life, no early ramp
+            let lo = baseCenter - Baselines.winsorK * state.spread
+            let hi = baseCenter + Baselines.winsorK * state.spread
+            let clamped = max(lo, min(hi, center))
+            let newCenter = lb * clamped + (1.0 - lb) * baseCenter
+            let absDev = abs(center - newCenter)
+            let floor = cfg.floorSpread                                 // inflation == 1.0 when mature
+            let newSpread = max(floor, ls * absDev + (1.0 - ls) * state.spread)
+            return BaselineState(baseline: Baselines.fromCenter(newCenter, logDomain: cfg.logDomain),
+                                 spread: newSpread, nValid: state.nValid + 1,
+                                 nightsSinceUpdate: 0, status: .trusted, logDomain: cfg.logDomain)
+        }
+
+        // A fixed sequence with normal nights and an outlier that must be rejected identically.
+        for value in [44.0, 47.0, 43.0, 120.0 /* outlier → gate holds */, 46.0, 45.5, 48.0] {
+            XCTAssertFalse(Baselines.isYoung(nValid: s.nValid), "sequence must stay mature throughout")
+            let ref = maturePre673(s, value)
+            s = Baselines.update(s, value: value, cfg: cfg)
+            // Byte-identical: exact bit equality, not accuracy-tolerant.
+            XCTAssertEqual(s.baseline, ref.baseline, "mature baseline must be byte-identical to pre-673")
+            XCTAssertEqual(s.spread, ref.spread, "mature spread must be byte-identical to pre-673")
+            XCTAssertEqual(s.nValid, ref.nValid)
+        }
+    }
+
     // MARK: - Confidence shrinkage (FER-13)
 
     func testConfidenceRampEndpoints() {

@@ -1344,13 +1344,22 @@ public enum SleepStager {
             if w < windowCount { sums[w] += s.bpm; counts[w] += 1 }
         }
         var minMean: Double? = nil
-        for i in 0..<windowCount where counts[i] > 0 {
+        // FER-674 hardening, wired to the PRODUCTION resting-HR path (FER-854): a bin may win
+        // the nightly floor only if it holds a sustained reading (≥ restingHRMinBinSamples) AND
+        // its mean is physiologically plausible (≥ restingHRMinBpm). A sparse dropout bin or a
+        // sub-25 bpm artefact must not latch the minimum and fabricate an impossible RHR that
+        // then contaminates the HRV→RHR→Charge chain. Dense healthy nights are unaffected (their
+        // bins hold hundreds of samples well above the floor), so mature scores don't move.
+        for i in 0..<windowCount where counts[i] >= RecoveryScorer.restingHRMinBinSamples {
             let mean = Double(sums[i]) / Double(counts[i])
+            if mean < RecoveryScorer.restingHRMinBpm { continue }
             if minMean == nil || mean < minMean! { minMean = mean }
         }
         if let m = minMean { return Int(m.rounded()) }
+        // No qualifying bin: fall back to the whole-segment mean, but never below the
+        // physiological floor — an off-wrist segment must not fabricate a sub-25 bpm RHR.
         let all = Double(seg.reduce(0) { $0 + $1.bpm }) / Double(seg.count)
-        return Int(all.rounded())
+        return all >= RecoveryScorer.restingHRMinBpm ? Int(all.rounded()) : nil
     }
 
     /// Median RMSSD over 5-min tumbling windows across the session (ms), or nil.
