@@ -53335,6 +53335,118 @@
           }
         }
       }
+    },
+    "Raises": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raises"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subidas"
+          }
+        }
+      }
+    },
+    "Current cycle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current cycle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ciclo actual"
+          }
+        }
+      }
+    },
+    "You're %lld of %lld sessions in with %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're %lld of %lld sessions in with %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vas %lld de %lld sesiones cumplidas con %@."
+          }
+        }
+      }
+    },
+    "Cycle complete: your next session arrives with %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycle complete: your next session arrives with %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ciclo cumplido: tu próxima sesión llega con %@."
+          }
+        }
+      }
+    },
+    "The raise to %@ waits for your next session — recovery ran low.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The raise to %@ waits for your next session — recovery ran low."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La subida a %@ espera a tu próxima sesión: la recuperación amaneció baja."
+          }
+        }
+      }
+    },
+    "%lld sessions without hitting the goal at this weight.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sessions without hitting the goal at this weight."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sesiones sin cumplir el objetivo con este peso."
+          }
+        }
+      }
+    },
+    "Proposed deload: %@ → %@, then rebuild.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proposed deload: %@ → %@, then rebuild."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deload propuesto: %@ → %@, y a reconstruir."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -31,6 +31,8 @@ struct ExerciseDetailScreen: View {
     @State private var history: [(startTs: Int, weightKg: Double, reps: Int)] = []
     /// Stored best-per-metric records for this exercise (FER-504/505). Read-only; derived on save.
     @State private var prs: [PersonalRecord] = []
+    /// Where this exercise's progression cycle stands (FER-F); nil = no slot opted in.
+    @State private var cycleState: ProgressionState? = nil
     /// Which series the progress chart shows (FER-505).
     @State private var metric: ProgressMetric = .weight
     /// The v3 · 1g/1h segmented view: Guide (muscles + how-to) / Progress (trend + records) / History (per-day sets).
@@ -103,6 +105,23 @@ struct ExerciseDetailScreen: View {
             async let ov = repo.exerciseTypeOverride(exercise.id)
             (history, prs) = await (h, p)
             hasTypeOverride = await ov != nil
+            // FER-F: where the progression cycle stands — only if some routine slot opted in for this
+            // exercise (first enabled slot wins; multi-routine overlap is rare and reads the same history).
+            cycleState = nil
+            if exercise.type == .weightReps, let store = await repo.storeHandle() {
+                let rs = (try? await store.routines()) ?? []
+                var slot: RoutineExercise? = nil
+                for r in rs where slot == nil {
+                    let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
+                    slot = exs.first { $0.exerciseId == exercise.id && $0.progressionEnabled }
+                }
+                if let re = slot {
+                    let inventory = PlatesStore().inventory
+                    cycleState = ProgressionPlanner.evaluate(
+                        re: re, history: history, inventory: inventory,
+                        equipment: exercise.equipment, recovery: repo.today?.recovery)?.state
+                }
+            }
             variants = Self.variants(for: exercise)
             loaded = true
             mediaURL = nil
@@ -477,17 +496,90 @@ struct ExerciseDetailScreen: View {
             .padding(.top, 2)
 
             if values.count >= 2 {
-                Sparkline(values: values,
-                          gradient: ChartWell.fillGradient(theme.dataStrain),
-                          bandColor: theme.hairlineStrong,
-                          showsScrub: true,
-                          valueFormat: { latestText($0) })
-                    .frame(height: 64)
-                    .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
+                if metric == .weight {
+                    // FER-F · 2d: the working weight moves in JUMPS — a step render is the honest shape.
+                    // Green dot = confirmed raise; amber dot = a deload (the drop is the datum too).
+                    StepChart(values: values, line: theme.ink.opacity(0.75),
+                              raiseDot: theme.dataRecovery, deloadDot: theme.warning)
+                        .frame(height: 64)
+                        .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
+                    weightStrip(values)
+                } else {
+                    Sparkline(values: values,
+                              gradient: ChartWell.fillGradient(theme.dataStrain),
+                              bandColor: theme.hairlineStrong,
+                              showsScrub: true,
+                              valueFormat: { latestText($0) })
+                        .frame(height: 64)
+                        .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
+                }
             }
+            cycleBlock
             Text(metricNote)
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: Weight strip + current cycle (FER-F · 2d)
+
+    /// Under the step chart: Now (green — it's the datum) · raises («N · X wk») · change (+%).
+    private func weightStrip(_ values: [Double]) -> some View {
+        let raises = zip(values, values.dropFirst()).filter { $1 > $0 + 0.0001 }.count
+        let weeks = historyDays.count >= 2
+            ? max(1, (historyDays.last!.ts - historyDays.first!.ts) / 604_800) : 0
+        let change = (values.first ?? 0) > 0 ? ((values.last! - values.first!) / values.first!) * 100 : 0
+        return HStack(spacing: 14) {
+            stripStat(Text("Now"), Text(verbatim: StrengthDisplay.weight(values.last ?? 0, system: system)),
+                      color: theme.dataRecovery)
+            stripStat(Text("Raises"), Text(verbatim: "\(raises) · \(weeks) wk"), color: theme.ink)
+            stripStat(Text("Change"),
+                      Text(verbatim: (change >= 0 ? "+" : "") + change.formatted(.number.precision(.fractionLength(0...1))) + " %"),
+                      color: change >= 0 ? theme.dataRecovery : theme.warning)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func stripStat(_ label: Text, _ value: Text, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            label.instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            value.font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit().foregroundStyle(color)
+        }
+    }
+
+    /// «CICLO ACTUAL» — where this exercise's progression stands, in one sentence with real numbers.
+    /// Only renders when some routine slot opted into progression for this exercise.
+    @ViewBuilder private var cycleBlock: some View {
+        if let line = cycleLine {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Current cycle").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+                line.font(StrandFont.caption).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 13).padding(.vertical, 11)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface)
+            .overlay(alignment: .leading) { Rectangle().fill(theme.dataRecovery).frame(width: 2.5) }
+            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
+                                              bottomTrailingRadius: 8, topTrailingRadius: 8))
+        }
+    }
+
+    private var cycleLine: Text? {
+        guard let state = cycleState else { return nil }
+        let kg = { (v: Double) in StrengthDisplay.weight(v, system: system) }
+        switch state {
+        case .inCycle(let done, let of):
+            let at = historyDays.last.map { kg($0.weightKg) } ?? ""
+            return Text("You're \(done) of \(of) sessions in with \(at).")
+        case .readyToAdvance(let newKg):
+            return Text("Cycle complete: your next session arrives with \(kg(newKg)).")
+        case .deferred(let newKg):
+            return Text("The raise to \(kg(newKg)) waits for your next session — recovery ran low.")
+        case .stalled(let sessions):
+            return Text("\(sessions) sessions without hitting the goal at this weight.")
+        case .deloading(let fromKg, let toKg):
+            return Text("Proposed deload: \(kg(fromKg)) → \(kg(toKg)), then rebuild.")
         }
     }
 
