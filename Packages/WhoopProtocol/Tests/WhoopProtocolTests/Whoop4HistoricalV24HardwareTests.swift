@@ -73,13 +73,14 @@ final class Whoop4HistoricalV24HardwareTests: XCTestCase {
 
     func testUnmappedVersionFallsBackToV24WhenPhysicallyValid() {
         // The same real record, but with its version byte (frame[5]) relabeled to one the schema does
-        // NOT map (25). Because firmware versions overwhelmingly share the v24 DSP layout, the fallback
-        // should decode it via that layout — and accept it, since the result is physically valid
-        // (|gravity| ≈ 1 g, HR plausible). Without this, the record would yield no gravity → no sleep.
+        // NOT map (99 — 25 now has its own explicit layout, so it's no longer a stand-in for "unmapped").
+        // Because firmware versions overwhelmingly share the v24 DSP layout, the fallback should decode it
+        // via that layout — and accept it, since the result is physically valid (|gravity| ≈ 1 g, HR
+        // plausible). Without this, the record would yield no gravity → no sleep.
         var f = bytes(realV24Hex)
-        f[5] = 25
+        f[5] = 99
         let p = parseFrame(f).parsed
-        XCTAssertEqual(p["hist_version"]?.intValue, 25)
+        XCTAssertEqual(p["hist_version"]?.intValue, 99)
         XCTAssertEqual(p["heart_rate"]?.intValue, 109)            // decoded via the v24 fallback
         XCTAssertEqual(p["rr_intervals"]?.intArrayValue ?? [], [555, 564])
         guard case .double(let gx)? = p["gravity_x"],
@@ -92,11 +93,12 @@ final class Whoop4HistoricalV24HardwareTests: XCTestCase {
         // Unmapped version AND the v24 gravity offsets (40/44/48) wiped → |gravity| = 0, not ~1 g, so the
         // v24 layout clearly doesn't fit this firmware. The fallback must REJECT it (store nothing
         // garbage) while still surfacing the version, so the Backfiller can log it for manual mapping.
+        // (99, not 25 — 25 now has its own explicit layout and is no longer an "unmapped" stand-in.)
         var f = bytes(realV24Hex)
-        f[5] = 25
+        f[5] = 99
         for i in 40..<52 { f[i] = 0 }
         let p = parseFrame(f).parsed
-        XCTAssertEqual(p["hist_version"]?.intValue, 25)          // version still surfaced (diagnostic)
+        XCTAssertEqual(p["hist_version"]?.intValue, 99)          // version still surfaced (diagnostic)
         XCTAssertNil(p["heart_rate"])                            // rejected → nothing decoded
         XCTAssertNil(p["gravity_x"])
     }
