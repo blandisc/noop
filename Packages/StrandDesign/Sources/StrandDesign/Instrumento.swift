@@ -273,6 +273,16 @@ public extension InstrumentoTheme {
     /// `positiveText` computes on `.base` paper, as a fixed lane fill.
     var verdictDeep: Color { Color(hex: "#00774B") }
 
+    // MARK: Handoff «Detalle de Tendencias Final» — Esfuerzo (FER-859)
+
+    /// Esfuerzo mid ramp lane fill («Duro», the second-highest strain lane) — one step lighter than
+    /// `dataStrain`. A fill/point hue, not text.
+    var strainRampMid: Color { Color(hex: "#DC9A72") }
+    /// Esfuerzo low ramp lane fill («Reposo y ligero») — the lightest strain lane.
+    var strainRampLow: Color { Color(hex: "#EBC7AF") }
+    /// Esfuerzo deep lane fill («Extremo», strain ≥18) — one step darker than `dataStrain`.
+    var strainDeep: Color { Color(hex: "#8F4413") }
+
     // MARK: Tinte por opacidad — helpers de la escala `StrandOpacity` (auditoría jul-2026, H4)
     //
     // Azúcar sobre `StrandOpacity` para el patrón más común: modular un color de dato/estado a

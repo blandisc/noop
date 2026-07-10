@@ -85,15 +85,17 @@ struct MetricInfo: Identifiable {
 extension MetricInfo {
 
     static func strain(_ value: Double?) -> MetricInfo {
+        // Bounds filled (FER-859) so the Detalle's history lanes derive from THIS ladder instead of
+        // restating the numbers — hero verdict, Niveles table and history stay one source.
         let bands: [Band] = [
             Band(label: "Rest / Light", range: "0 – 7",
-                 isActive: value.map { $0 < 7 } ?? false),
+                 isActive: value.map { $0 < 7 } ?? false, lower: nil, upper: 7),
             Band(label: "Moderate", range: "7 – 14",
-                 isActive: value.map { $0 >= 7 && $0 < 14 } ?? false),
+                 isActive: value.map { $0 >= 7 && $0 < 14 } ?? false, lower: 7, upper: 14),
             Band(label: "Hard", range: "14 – 18",
-                 isActive: value.map { $0 >= 14 && $0 < 18 } ?? false),
+                 isActive: value.map { $0 >= 14 && $0 < 18 } ?? false, lower: 14, upper: 18),
             Band(label: "Extreme", range: "18 – 21",
-                 isActive: value.map { $0 >= 18 } ?? false),
+                 isActive: value.map { $0 >= 18 } ?? false, lower: 18, upper: nil),
         ]
         return MetricInfo(
             id: "strain",
