@@ -661,6 +661,24 @@ extension WhoopStore {
                 t.column("updatedTs", .integer).notNull()
             }
         }
+        // v29 (FER-A): per-exercise load progression. Four append-only columns on `routineExercise`,
+        // all with defaults chosen so a pre-v29 routine reads back with progression OFF (enabled 0,
+        // sessions 2, increment NULL = derive from plates, deload 'propose'). Idempotent adds so a DB
+        // that already grew the columns locally (iterating this migration) is a no-op, not a crash.
+        migrator.registerMigration("v29") { db in
+            try addColumnIfMissing(db, "progressionEnabled", on: "routineExercise") {
+                $0.add(column: "progressionEnabled", .integer).notNull().defaults(to: 0)
+            }
+            try addColumnIfMissing(db, "progressionSessions", on: "routineExercise") {
+                $0.add(column: "progressionSessions", .integer).notNull().defaults(to: 2)
+            }
+            try addColumnIfMissing(db, "progressionIncrementKg", on: "routineExercise") {
+                $0.add(column: "progressionIncrementKg", .double)   // NULL = derive from inventory
+            }
+            try addColumnIfMissing(db, "progressionDeload", on: "routineExercise") {
+                $0.add(column: "progressionDeload", .text).notNull().defaults(to: "propose")
+            }
+        }
         return migrator
     }
 

@@ -108,4 +108,35 @@ final class PlateMathTests: XCTestCase {
         XCTAssertEqual(Set(weights).count, weights.count) // no duplicates
         for w in weights { XCTAssertLessThan(w, 30) }
     }
+
+    // MARK: - minimumIncrement (FER-C)
+
+    func testMinimumIncrementBarbellIsTwiceSmallestPlate() {
+        // Default inventory's smallest plate is 1.25 → a pair adds 2.5 kg total.
+        XCTAssertEqual(PlateMath.minimumIncrement(for: .barbell), 2.5, accuracy: 0.0001)
+        // A gym whose smallest plate is 2.5 moves by 5 kg.
+        let coarse = [PlateMath.PlateStock(kg: 20, pairs: 4), PlateMath.PlateStock(kg: 2.5, pairs: 4)]
+        XCTAssertEqual(PlateMath.minimumIncrement(for: .barbell, inventory: coarse), 5, accuracy: 0.0001)
+    }
+
+    func testMinimumIncrementBarbellEmptyInventoryFallsBack() {
+        XCTAssertEqual(PlateMath.minimumIncrement(for: .barbell, inventory: [], fixedStepKg: 1),
+                       1, accuracy: 0.0001)
+    }
+
+    func testMinimumIncrementDumbbellAndMachineUseFixedStep() {
+        // Non-barbell moves by its rack's fixed step, NOT derived from plates.
+        XCTAssertEqual(PlateMath.minimumIncrement(for: .dumbbell, fixedStepKg: 2), 2, accuracy: 0.0001)
+        XCTAssertEqual(PlateMath.minimumIncrement(for: .machine, fixedStepKg: 5), 5, accuracy: 0.0001)
+    }
+
+    func testImplementClassificationFromEquipmentLabel() {
+        XCTAssertEqual(PlateMath.Implement.from(equipment: "barbell"), .barbell)
+        XCTAssertEqual(PlateMath.Implement.from(equipment: "Smith machine"), .barbell) // guided bar
+        XCTAssertEqual(PlateMath.Implement.from(equipment: "dumbbell"), .dumbbell)
+        XCTAssertEqual(PlateMath.Implement.from(equipment: "leverage machine"), .machine)
+        XCTAssertEqual(PlateMath.Implement.from(equipment: "cable"), .machine)
+        XCTAssertEqual(PlateMath.Implement.from(equipment: "body weight"), .other)
+        XCTAssertEqual(PlateMath.Implement.from(equipment: nil), .other)
+    }
 }
