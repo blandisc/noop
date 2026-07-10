@@ -53143,6 +53143,166 @@
           }
         }
       }
+    },
+    "You did %lld×%lld with %@ kg on %@ and %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You did %lld×%lld with %@ kg on %@ and %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiciste %lld×%lld con %@ kg el %@ y el %@."
+          }
+        }
+      }
+    },
+    "You did %lld×%lld with %@ kg on %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You did %lld×%lld with %@ kg on %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiciste %lld×%lld con %@ kg el %@."
+          }
+        }
+      }
+    },
+    "today %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "today %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hoy %@"
+          }
+        }
+      }
+    },
+    "why": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "why"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "por qué"
+          }
+        }
+      }
+    },
+    "Today you raise to %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today you raise to %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy subes a %@"
+          }
+        }
+      }
+    },
+    "Shows why, with your real dates": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows why, with your real dates"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muestra el porqué, con tus fechas reales"
+          }
+        }
+      }
+    },
+    "WHY %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WHY %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "POR QUÉ %@"
+          }
+        }
+      }
+    },
+    "Goal today: %lld×%lld with the new weight. Losing a rep or two on a raise is normal; you win them back in 1 or 2 sessions.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal today: %lld×%lld with the new weight. Losing a rep or two on a raise is normal; you win them back in 1 or 2 sessions."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objetivo hoy: %lld×%lld con el peso nuevo. Es normal perder una o dos reps al subir; las recuperas en 1 o 2 sesiones."
+          }
+        }
+      }
+    },
+    "Keep %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir con %@"
+          }
+        }
+      }
+    },
+    "Back to %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volver a %@"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
