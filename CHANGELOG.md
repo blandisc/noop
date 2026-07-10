@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tu VO₂max, como trayectoria y no como un número que brinca / Your VO₂max as a trajectory, not a jumpy number.**
+  **ES** — El Detalle de Edad de Fitness estrena «VO₂max · tendencia»: te dice si tu condición cardiorrespiratoria viene subiendo, estable o bajando en las últimas semanas, con una pendiente robusta que ignora un mal dato suelto y un piso de ruido para no reaccionar al brinco diario del estimador. Te enseñamos la dirección, nunca «años de vida». Aparece cuando hay suficientes lecturas (varias semanas).
+  **EN** — Fitness Age detail gains a «VO₂max · trend» block: it tells you whether your cardiorespiratory fitness is rising, steady, or falling over recent weeks, with a robust slope that shrugs off a single bad reading and a noise floor so it won't chase the estimator's day-to-day jitter. We show you the direction, never «years of life». It appears once there are enough readings (several weeks).
+  ([VO2maxTrend.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/VO2maxTrend.swift), [FitnessAgeDetailView.swift](Cenit/Screens/FitnessAgeDetailView.swift))
+
 - **Mira cómo bajó tu corazón mientras dormías / See how your heart eased off as you slept.**
   **ES** — El Detalle de Sueño estrena la sección «Forma de la noche»: cuánto bajó tu corazón de la vigilia a su punto más bajo (el dip), a qué hora tocó ese valle, y qué parte de la noche pasaste por debajo de tu ritmo en reposo — con la caída dibujada como una curva. Es la forma del descanso, no solo un número. Se presenta como un patrón, nunca un diagnóstico, y solo aparece las noches que tu banda midió con suficiente señal.
   **EN** — Sleep detail gains a «Night shape» section: how far your heart fell from waking to its lowest point (the dip), when it hit that valley, and how much of the night you spent below your resting rate — with the fall drawn as a curve. It's the shape of your rest, not just a number. Shown as a pattern, never a diagnosis, and only on nights your strap measured with enough signal.

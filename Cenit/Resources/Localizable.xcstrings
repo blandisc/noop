@@ -52418,7 +52418,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al alza"
+            "value": "Subiendo"
           }
         }
       }
@@ -52435,7 +52435,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "A la baja"
+            "value": "Bajando"
           }
         }
       }
@@ -53614,6 +53614,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Un descenso más suave del que suele mostrar una noche de descanso profundo. Es un patrón, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "VO₂max · trend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂max · trend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂max · tendencia"
+          }
+        }
+      }
+    },
+    "We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Te enseñamos la dirección, no un número exacto — el estimado brinca de día a día, la tendencia es más honesta."
           }
         }
       }
