@@ -841,16 +841,16 @@ struct RecoveryDetailScreen: View {
                 wash: .init(lo: 70, hi: 88),
                 refLine: baseValue.map { .init(v: Double($0), label: String(localized: "your base · \($0)")) },
                 hue: bandColor, ymin: 20, ymax: 95,
-                startLabel: window.rows.first.flatMap { Repository.parseDayKey($0.day) }
-                    .map { Self.axisDateFmt.string(from: $0) } ?? "",
-                endLabel: window.rows.last.flatMap { Repository.parseDayKey($0.day) }
-                    .map { Self.axisDateFmt.string(from: $0) } ?? "",
+                startLabel: window.rows.first.flatMap { Self.axisLabel($0.day) } ?? "",
+                endLabel: window.rows.last.flatMap { Self.axisLabel($0.day) } ?? "",
                 mediaValue: window.values.count > 1 ? Self.levelWord(stat.mean) : "—",
                 mediaNote: String(localized: "your typical band this \(range.name)"),
                 mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
                 deltaColor: pct.map { $0 >= 0 ? theme.positiveText : theme.warning },
                 countUnit: "d",
                 anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+                scrub: true,
+                labels: window.rows.map { Self.axisLabel($0.day) ?? "" },
                 theme: theme)
                 .padding(.top, 6)
                 .id(range)  // fresh entrance (recFade) when the period changes
@@ -907,6 +907,12 @@ struct RecoveryDetailScreen: View {
             ($0.lower == nil || value >= $0.lower!) && ($0.upper == nil || value < $0.upper!)
         }?.key ?? "moderate"
         return String(localized: String.LocalizationValue(MetricLevels.name(for: key)))
+    }
+
+    /// «jun 6» for a day key, anchored to NOON UTC before formatting so the local-zone label never
+    /// slips to the previous day west of UTC (same fix as `MetricWindowMath.decimatedPoints`, FER-630).
+    static func axisLabel(_ dayKey: String) -> String? {
+        Repository.parseDayKey(dayKey).map { axisDateFmt.string(from: $0.addingTimeInterval(12 * 3600)) }
     }
 
     /// «jun 6» axis dates for the chart floor.
