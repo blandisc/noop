@@ -53303,6 +53303,38 @@
           }
         }
       }
+    },
+    "Today you raise: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today you raise: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy subes: %@"
+          }
+        }
+      }
+    },
+    "The raise for %@ waits for your next session.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The raise for %@ waits for your next session."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La subida de %@ espera a tu próxima sesión."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
