@@ -119,6 +119,7 @@ private struct AjustesLanding: View {
     @AppStorage(MediaDownloadCoordinator.enabledKey) private var exerciseMediaEnabled = false
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var confirmDeleteMedia = false
+    @State private var confirmRecalibrate = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
     @State private var confirmDisconnect = false
@@ -330,6 +331,8 @@ private struct AjustesLanding: View {
             }
             section("Data") {
                 navRow("Data & sources", subtitle: Text("WHOOP · Apple Health · backup")) { darkScreen = .dataSources }
+                divider
+                recalibrateRow
             }
             section("Experimental") {
                 navRow("Ritmo", subtitle: Text("Your rhythm, beat to beat")) { showRitmo = true }
@@ -381,6 +384,60 @@ private struct AjustesLanding: View {
                        subtitle: Text("Version \(appVersion) · help · licenses")) { darkScreen = .support }
             }
         }
+    }
+
+    /// «Recalibrar recuperación» (FER-677): re-anchors every nightly baseline from today. Two states —
+    /// idle (tap → confirmation) and recalibrated (shows the date + a quiet «Deshacer»). The action is
+    /// reversible, so «Deshacer» skips a dialog; recalibrating is what carries the warning.
+    @ViewBuilder
+    private var recalibrateRow: some View {
+        if profile.canUndoRecalibration {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Recalibrar recuperación").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text("Recalibrada el \(recalibratedDateText)")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: 8)
+                Button("Deshacer") { model.undoRecalibrateBaseline() }
+                    .font(StrandFont.subhead).foregroundStyle(theme.critical)
+                    .buttonStyle(.plain)
+            }
+            .frame(minHeight: 44)
+        } else {
+            Button { confirmRecalibrate = true } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Recalibrar recuperación").font(StrandFont.body).foregroundStyle(theme.ink)
+                        Text("Reinicia tu calibración desde hoy si tu base quedó mal (cambio de banda, periodo anómalo).")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Image(systemName: "arrow.clockwise")
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkSecondary)
+                }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .confirmationDialog("¿Recalibrar tu recuperación?", isPresented: $confirmRecalibrate, titleVisibility: .visible) {
+                Button("Recalibrar", role: .destructive) { model.recalibrateBaseline() }
+                Button("Cancelar", role: .cancel) {}
+            } message: {
+                Text("Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran.")
+            }
+        }
+    }
+
+    /// The `baselineEpoch` day-key ("YYYY-MM-DD") shown as a localized medium date, e.g. «10 jul 2026».
+    private var recalibratedDateText: String {
+        let parser = DateFormatter()
+        parser.calendar = Calendar(identifier: .gregorian)
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.dateFormat = "yyyy-MM-dd"
+        guard let date = parser.date(from: profile.baselineEpoch) else { return profile.baselineEpoch }
+        return date.formatted(.dateTime.day().month(.abbreviated).year())
     }
 
     /// Real feedback for the bulk thumb download (FER-778) — replaces the mute toggle-and-hope. Quiet

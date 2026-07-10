@@ -600,6 +600,13 @@ night), which is what the ring, the verdict and the recovery-detail hero read. `
   `Baselines.foldHistory(logDomain:)` + z-score (log-normal HRV powers, Plews 2013) — no new estimator.
 - **`RecoveryScorer`** normalizes nightly HRV/RHR (and a sleep-performance proxy) against baselines
   into a `0–100` score.
+- **Baseline recalibration (FER-677).** `ProfileStore.baselineEpoch` (a `YYYY-MM-DD` local day-key in
+  UserDefaults, with one level of undo via `previousBaselineEpoch`) cuts every nightly baseline fold:
+  `Baselines.foldHistory(_:epoch:cfg:)` drops nights with `day < epoch` before the replay (delegating to
+  the value-only fold, so all its invariants hold). `IntelligenceEngine` applies it to all five baselines
+  (HRV/RHR/resp/temp/efficiency) and pass-1, and `AppleRecoveryEstimator.estimate(nights:epoch:)` applies
+  it to the estimated path — so recovery re-anchors from the epoch on both the strap and Apple sides. It is
+  a user setting, not derived data: **no GRDB schema**. `nil`/`""` epoch = no cut (byte-identical to before).
 - **`AppleRecoveryEstimator`** (FER-153) scores an **estimated** recovery for a night that did not come
   from the band, from Apple Health's **SDNN** against the user's **own** Apple SDNN baseline — SDNN-vs-SDNN,
   **never converted to RMSSD** — reusing the same `RecoveryScorer` model. A separate baseline, never mixed
