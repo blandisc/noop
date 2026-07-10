@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Un interruptor «Métricas experimentales» en Ajustes / A "Experimental metrics" toggle in Settings.**
+  **ES** — En Ajustes › Experimental hay un nuevo interruptor, apagado por defecto, que habilita cuatro lecturas nuevas y aproximadas (reserva vagal nocturna, estabilidad térmica, respiración de la noche y recuperación post-sesión). Mientras esté apagado, ninguna de esas superficies aparece; al prenderlo, cada una se muestra en su pantalla de detalle. La preferencia sobrevive el relanzamiento.
+  **EN** — Settings › Experimental now has a new toggle, off by default, that enables four new approximate reads (nightly vagal reserve, thermal stability, night breathing and post-session recovery). While it's off none of those surfaces appear; turning it on shows each in its detail screen. The preference survives a relaunch.
+  ([AjustesView.swift](Cenit/Screens/AjustesView.swift), [WhitespaceMetricsExperiment.swift](Cenit/Screens/WhitespaceMetricsExperiment.swift))
 - **Al reordenar ejercicios la ficha que levantas ya no sale en un cuadro blanco / Dragging to reorder no longer lifts the card on a white box.**
   **ES** — En el editor de rutina, al arrastrar un ejercicio para reordenar, la ficha flotante salía sobre un recuadro blanco (el «plato» que iOS pone bajo el preview del arrastre). Un intento previo pintó la celda fija de papel, pero el preview flotante solo copia el contenido de la fila, no ese fondo, así que seguía blanco. Ahora el contenido de la fila es papel opaco de borde a borde, así que la ficha levantada se funde con la pantalla. En reposo se ve igual.
   **EN** — In the routine editor, dragging an exercise to reorder lifted the floating card over a white box (the platter iOS places under the drag preview). An earlier attempt painted the resting cell paper, but the floating preview only snapshots the row's content, not that background, so it stayed white. The row content is now edge-to-edge opaque paper, so the lifted card fuses with the screen. At rest it looks the same.
