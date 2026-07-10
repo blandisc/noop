@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La app se mantiene fluida durante un jalón de historial grande / The app stays smooth during a big history sync.**
+  **ES** — Al sincronizar meses de historial de una WHOOP 4.0, Cénit decodifica decenas de miles de registros; ese trabajo ahora corre en segundo plano con menor prioridad, así que la interfaz sigue respondiendo mientras la sincronización avanza. No cambia qué datos bajan ni su orden — solo evita los tirones al desplazarte durante una sincronización pesada.
+  **EN** — Syncing months of history from a WHOOP 4.0 decodes tens of thousands of records; that work now runs in the background at a lower priority, so the interface stays responsive while the sync proceeds. It changes neither what data comes down nor its order — it just avoids the scroll hitches during a heavy sync.
+  ([Backfiller.swift](Cenit/Collect/Backfiller.swift))
+
 - **La historia que hoy no sabemos leer ya no se pierde para siempre / History we can't read yet is no longer lost forever.**
   **ES** — Algunas WHOOP 4.0 guardan su historia en un formato que Cénit todavía no sabe decodificar; como la banda borra esa historia en cuanto Cénit acusa recibo, esos registros se perdían para siempre aunque la app dijera «historial sincronizado». Ahora Cénit guarda una copia cruda de esos registros en tu dispositivo antes de acusar recibo, y cuando una actualización aprende a leer ese formato, los vuelve a procesar solos para rellenar tu historial. Todo sigue en tu dispositivo; no cambia nada para la banda cuya historia sí se lee.
   **EN** — Some WHOOP 4.0 straps store their history in a format Cénit can't decode yet; because the strap erases that history the moment Cénit acknowledges it, those records were lost forever even though the app said «history synced». Cénit now keeps a raw copy of those records on your device before acknowledging them, and when an update learns to read that format, it re-processes them automatically to backfill your history. It all stays on your device; nothing changes for a strap whose history already decodes.
