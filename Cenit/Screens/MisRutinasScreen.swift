@@ -29,7 +29,10 @@ struct MisRutinasScreen: View {
     @State private var schedule: [Int: String] = [:]
     /// Days since each routine was last trained (`routineId → whole days`), for the «hace N d» column.
     @State private var lastTrainedDays: [String: Int] = [:]
-    @State private var builderTarget: BuilderTarget? = nil
+    @State private var showBuilder = false
+    /// The routine the builder just created; pushed onto «Rutina» when its sheet finishes dismissing
+    /// (pushing mid-dismiss stacks transitions, FER-171 lesson).
+    @State private var savedRoutineId: String? = nil
     @State private var showTemplates = false
     @State private var showImport = false
     @State private var swipedRoutineId: String? = nil
@@ -63,9 +66,16 @@ struct MisRutinasScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .overlay(alignment: .bottom) { if let d = pendingUndo { undoBanner(d) } }
         .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
-        .sheet(item: $builderTarget) { target in
-            RoutineBuilderScreen(routine: target.routine) { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        // Create-only builder (FER-840): saving hands back the new routine's id, and the dismissed sheet
+        // opens it straight on the unified «Rutina» editor.
+        .sheet(isPresented: $showBuilder, onDismiss: {
+            if let id = savedRoutineId { savedRoutineId = nil; openRoutine(id) }
+        }) {
+            RoutineBuilderScreen { id in
+                savedRoutineId = id
+                await load()
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
@@ -137,7 +147,7 @@ struct MisRutinasScreen: View {
                 routineList(unfiled)
 
                 divider
-                actionRow("plus", "New routine") { builderTarget = .new }
+                actionRow("plus", "New routine") { showBuilder = true }
                 divider
                 // The mock folds templates / import / folders into one row; the menu keeps all three
                 // functions (choque 9: conserve plantillas, import, carpetas).
@@ -238,7 +248,8 @@ struct MisRutinasScreen: View {
 
     @ViewBuilder
     private func routineActions(_ r: Routine) -> some View {
-        Button { builderTarget = .edit(r) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
+        // Editing lives on the unified «Rutina» editor now (FER-840) — same push as tapping the row.
+        Button { openRoutine(r.id) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
         Button { duplicate(r) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
         Menu {
             ForEach(folders) { f in
@@ -266,7 +277,7 @@ struct MisRutinasScreen: View {
         }
         move.append(.init(String(localized: "New folder…"), systemImage: "folder.badge.plus") { startNewFolder(moving: r) })
         return [
-            .init(String(localized: "Edit routine"), systemImage: "slider.horizontal.3") { builderTarget = .edit(r) },
+            .init(String(localized: "Edit routine"), systemImage: "slider.horizontal.3") { openRoutine(r.id) },
             .init(String(localized: "Duplicate"), systemImage: "plus.square.on.square") { duplicate(r) },
             .init(String(localized: "Move to…"), systemImage: "folder", children: move),
             .init(String(localized: "Delete routine"), systemImage: "trash", isDestructive: true) { delete(r) }
@@ -331,7 +342,7 @@ struct MisRutinasScreen: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             VStack(spacing: 8) {
-                QuietButton("New routine") { builderTarget = .new }
+                QuietButton("New routine") { showBuilder = true }
                 Button { showTemplates = true } label: {
                     Text("Start from a template")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

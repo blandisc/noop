@@ -354,6 +354,9 @@ struct WorkoutHistoryScreen: View {
 
 struct WorkoutSessionDetailScreen: View {
     let route: WorkoutSessionRoute
+    /// Opens a routine on the unified «Rutina» editor — «Duplicar como rutina» lands there after saving
+    /// (FER-840). Injected by RootTabView (it owns the Entrenar stack); nil in contexts with no stack.
+    var openRoutine: ((String) -> Void)? = nil
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
@@ -365,6 +368,9 @@ struct WorkoutSessionDetailScreen: View {
 
     /// Drives «Duplicar como rutina» — a routine builder pre-filled with this session's exercises (2A).
     @State private var showDuplicate = false
+    /// The routine the duplicate-builder just created; pushed onto «Rutina» when its sheet finishes
+    /// dismissing (pushing mid-dismiss stacks transitions, FER-171 lesson).
+    @State private var savedRoutineId: String? = nil
 
     /// Work sets grouped by exercise, in the order they were performed.
     @State private var groups: [(exerciseId: String, name: String, sets: [SetEntry])] = []
@@ -471,9 +477,12 @@ struct WorkoutSessionDetailScreen: View {
             }
         }
         // «Duplicar como rutina» (2A): a routine builder pre-filled with this session's exercises. Saving
-        // creates a NEW routine (never touches this session). Theme/repo passed explicitly across the sheet.
-        .sheet(isPresented: $showDuplicate) {
-            RoutineBuilderScreen(seedName: duplicateName, seed: duplicateSeed)
+        // creates a NEW routine (never touches this session) and opens it on «Rutina» once the sheet is
+        // down (FER-840). Theme/repo passed explicitly across the sheet.
+        .sheet(isPresented: $showDuplicate, onDismiss: {
+            if let id = savedRoutineId { savedRoutineId = nil; openRoutine?(id) }
+        }) {
+            RoutineBuilderScreen(seedName: duplicateName, seed: duplicateSeed) { id in savedRoutineId = id }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .task { await load() }
