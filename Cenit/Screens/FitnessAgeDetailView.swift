@@ -30,6 +30,11 @@ struct FitnessAgeDetailView: View {
     /// When there's no Apple VO₂max AND Apple Health isn't connected → show a quiet connect nudge;
     /// when connected-but-no-reading, the block hides entirely. (FER-215)
     var appleConnectHint: Bool = false
+    /// The fitness TRAJECTORY over weeks (rising / stable / falling) from `VO2maxTrend` (FER-679), plus
+    /// the raw VO₂max series for the context sparkline. `nil` below the data minimum → block hidden. (FER-833)
+    var vo2Trend: VO2maxTrend.Result? = nil
+    /// The raw measured VO₂max series (values only, oldest→newest) behind the trend, for the context line.
+    var vo2Series: [Double] = []
     /// The active «Instrumento» theme, passed explicitly (does NOT propagate through `.sheet`).
     var theme: InstrumentoTheme = .base
 
@@ -229,6 +234,70 @@ struct FitnessAgeDetailView: View {
             vo2maxCard(vo2)
         } else if appleConnectHint {
             vo2maxConnectNudge
+        }
+        if let trend = vo2Trend {
+            vo2TrendBlock(trend)
+        }
+    }
+
+    // MARK: - VO₂max · tendencia (FER-833) — la trayectoria, no el punto
+
+    /// The «VO₂max · tendencia» block: the direction word as the coloured datum (subordinate to the age
+    /// hero), the raw measured series as a quiet context line, and honest copy. Direction, never a
+    /// longevity claim. Rendered only when the trend cleared its data minimum. (FER-833)
+    @ViewBuilder private func vo2TrendBlock(_ trend: VO2maxTrend.Result) -> some View {
+        let color = trendColor(trend.direction)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("VO₂max · trend").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+
+            HStack(spacing: 8) {
+                Image(systemName: trendSymbol(trend.direction))
+                    .font(StrandFont.number(26, weight: .semibold))
+                    .foregroundStyle(color)
+                Text(trendWord(trend.direction))
+                    .font(StrandFont.number(30, weight: .semibold))
+                    .foregroundStyle(color)
+            }
+
+            if vo2Series.count >= 2 {
+                Sparkline(values: vo2Series,
+                          gradient: Gradient(colors: [theme.inkMuted, theme.inkMuted]),
+                          lineWidth: 2, showsArea: false, showsHead: false, showsScrub: false)
+                    .frame(height: 44)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityHidden(true)
+            }
+
+            Text("We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: theme.hairline, lineWidth: 0.5)
+    }
+
+    private func trendColor(_ dir: VO2maxTrend.Direction) -> Color {
+        switch dir {
+        case .rising:  return theme.dataRecovery   // verde — mejora
+        case .falling: return theme.critical        // rojo ladrillo — baja
+        case .stable:  return theme.ink             // sin color — sin cambio distinguible
+        }
+    }
+
+    private func trendSymbol(_ dir: VO2maxTrend.Direction) -> String {
+        switch dir {
+        case .rising:  return "arrow.up.right"
+        case .falling: return "arrow.down.right"
+        case .stable:  return "arrow.right"
+        }
+    }
+
+    private func trendWord(_ dir: VO2maxTrend.Direction) -> LocalizedStringKey {
+        switch dir {
+        case .rising:  return "Rising"
+        case .falling: return "Falling"
+        case .stable:  return "Steady"
         }
     }
 

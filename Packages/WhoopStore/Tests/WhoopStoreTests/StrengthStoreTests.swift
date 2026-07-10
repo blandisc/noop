@@ -724,5 +724,43 @@ final class StrengthStoreTests: XCTestCase {
         let hist = try await store.workSetHistory(exerciseId: "bench")
         XCTAssertEqual(hist.map(\.startTs), [1000, 2000])     // session start, oldest→newest
         XCTAssertEqual(hist.map(\.weightKg), [60, 65])        // warm-up + weightless set dropped
+        XCTAssertEqual(hist.map(\.optedOut), [false, false], "no «Volver a X» → no opt-out marks")
+    }
+
+    /// FER-835: the «Volver a X» opt-out persists per (session, exercise), surfaces only on that
+    /// exercise's history rows, a re-save without it clears it (idempotent, like setEntry), and
+    /// deleting the session leaves no orphan rows.
+    func testProgressionOptOutPersistsPerSessionExercise() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "squat", position: 1, kind: .work,
+                     weightKg: 100, reps: 5, done: true, ts: 1002),
+        ], progressionOptOuts: ["bench"])
+
+        let bench = try await store.workSetHistory(exerciseId: "bench")
+        XCTAssertEqual(bench.map(\.optedOut), [true], "the reverted exercise's session is marked")
+        let squat = try await store.workSetHistory(exerciseId: "squat")
+        XCTAssertEqual(squat.map(\.optedOut), [false], "the mark is per exercise, not per session")
+
+        // Re-save without the opt-out (an edit/duplicate-end path) replaces the session's rows.
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001),
+        ])
+        let cleared = try await store.workSetHistory(exerciseId: "bench")
+        XCTAssertEqual(cleared.map(\.optedOut), [false], "re-save replaces the session's opt-out rows")
+
+        // Delete leaves no orphan opt-out rows.
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [
+            SetEntry(id: "c", sessionId: "s2", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 62.5, reps: 8, done: true, ts: 2001),
+        ], progressionOptOuts: ["bench"])
+        try await store.deleteSession(id: "s2")
+        let orphans = try await store.dbQueue.read { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM progressionOptOut") ?? 0
+        }
+        XCTAssertEqual(orphans, 0, "deleteSession removes the session's opt-out rows")
     }
 }

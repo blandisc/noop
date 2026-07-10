@@ -28,7 +28,7 @@ struct ExerciseDetailScreen: View {
     @State private var isLoopPlaying = true
 
     /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
-    @State private var history: [(startTs: Int, weightKg: Double, reps: Int)] = []
+    @State private var history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] = []
     /// Stored best-per-metric records for this exercise (FER-504/505). Read-only; derived on save.
     @State private var prs: [PersonalRecord] = []
     /// Where this exercise's progression cycle stands (FER-F); nil = no slot opted in.
@@ -60,6 +60,7 @@ struct ExerciseDetailScreen: View {
     @State private var shownType: ExerciseType?
     /// Whether this exercise currently carries a user type override (→ show «revert to default»).
     @State private var hasTypeOverride = false
+    @State private var showTypeMenu = false
     private var effectiveType: ExerciseType { shownType ?? exercise.type }
 
     /// The metric the progress chart plots over time.
@@ -300,16 +301,17 @@ struct ExerciseDetailScreen: View {
             Divider().overlay(theme.hairline).padding(.bottom, 10)
             Text("Measured by").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(spacing: 12) {
-                Menu {
-                    ForEach(ExerciseType.allCases, id: \.self) { t in
-                        Button { setType(t) } label: { Text(StrengthDisplay.typeLabel(t)) }
-                    }
-                } label: {
+                Button { showTypeMenu = true } label: {
                     HStack(spacing: 6) {
                         Text(StrengthDisplay.typeLabel(effectiveType)).font(StrandFont.body).foregroundStyle(theme.ink)
                         Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     }
                 }
+                .buttonStyle(.plain)
+                .paperMenu(isPresented: $showTypeMenu, items: ExerciseType.allCases.map { t in
+                    PaperMenuItem(StrengthDisplay.typeName(t),
+                                  systemImage: t == effectiveType ? "checkmark" : nil) { setType(t) }
+                })
                 Spacer(minLength: 8)
                 if hasTypeOverride {
                     Button { revertType() } label: {
@@ -615,7 +617,7 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    private func byDay(_ combine: (Double, (startTs: Int, weightKg: Double, reps: Int)) -> Double) -> [Double] {
+    private func byDay(_ combine: (Double, (startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)) -> Double) -> [Double] {
         var acc: [String: Double] = [:]
         for s in history { acc[dayKey(s.startTs)] = combine(acc[dayKey(s.startTs)] ?? 0, s) }
         return acc.sorted { $0.key < $1.key }.map(\.value)

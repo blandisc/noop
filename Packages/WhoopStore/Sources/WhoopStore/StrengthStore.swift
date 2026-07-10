@@ -408,7 +408,10 @@ extension WhoopStore {
     // MARK: - Sessions + sets (+ PR derivation, transactional)
 
     /// Save a session and replace its sets in one transaction, then update PRs from the work sets.
-    public func saveSession(_ session: StrengthSession, sets: [SetEntry]) async throws {
+    /// `progressionOptOuts` are the exercise ids whose raise was reverted with «Volver a X» this
+    /// session (FER-835): persisted so the progression cycle treats the session as neither hit nor miss.
+    public func saveSession(_ session: StrengthSession, sets: [SetEntry],
+                            progressionOptOuts: Set<String> = []) async throws {
         try syncWrite { db in
             let sArgs: [DatabaseValueConvertible?] = [
                 session.id, session.routineId, session.startTs, session.endTs,
@@ -436,6 +439,12 @@ extension WhoopStore {
                         (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
+            }
+            // Replace this session's opt-out rows (delete-first keeps a re-save idempotent, like setEntry).
+            try db.execute(sql: "DELETE FROM progressionOptOut WHERE sessionId = ?", arguments: [session.id])
+            for exerciseId in progressionOptOuts.sorted() {
+                try db.execute(sql: "INSERT INTO progressionOptOut (sessionId, exerciseId) VALUES (?, ?)",
+                               arguments: [session.id, exerciseId])
             }
             try Self.updatePersonalRecords(db, sets: sets)
         }
@@ -497,6 +506,7 @@ extension WhoopStore {
             let affected = try String.fetchAll(db, sql:
                 "SELECT DISTINCT exerciseId FROM setEntry WHERE sessionId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [id])
+            try db.execute(sql: "DELETE FROM progressionOptOut WHERE sessionId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM strengthSession WHERE id = ?", arguments: [id])
             for exerciseId in affected { try Self.recomputePR(db, exerciseId: exerciseId) }
         }
@@ -561,18 +571,23 @@ extension WhoopStore {
     /// Completed work sets for an exercise with their session's start time, oldest→newest — one JOIN
     /// (`setEntry` × `strengthSession`), not a query per session. The raw material the detail screen
     /// buckets by day into the estimated-1RM trend; only weight×reps sets count (1RM needs both).
+    /// `optedOut` reports the session's «Volver a X» mark for this exercise (FER-835), via LEFT JOIN
+    /// on `progressionOptOut` — the progression classifier skips those sessions entirely.
     public func workSetHistory(exerciseId: String, limit: Int = 600) async throws
-        -> [(startTs: Int, weightKg: Double, reps: Int)] {
+        -> [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] {
         try syncRead { db in
             try Row.fetchAll(db, sql: """
-                SELECT s.startTs AS startTs, e.weightKg AS weightKg, e.reps AS reps
+                SELECT s.startTs AS startTs, e.weightKg AS weightKg, e.reps AS reps,
+                       (o.exerciseId IS NOT NULL) AS optedOut
                 FROM setEntry e JOIN strengthSession s ON e.sessionId = s.id
+                LEFT JOIN progressionOptOut o ON o.sessionId = e.sessionId AND o.exerciseId = e.exerciseId
                 WHERE e.exerciseId = ? AND e.kind = 'work' AND e.done = 1
                   AND e.weightKg IS NOT NULL AND e.reps IS NOT NULL
                 ORDER BY s.startTs ASC
                 LIMIT ?
                 """, arguments: [exerciseId, limit]).map {
-                    (startTs: $0["startTs"], weightKg: $0["weightKg"], reps: $0["reps"])
+                    (startTs: $0["startTs"], weightKg: $0["weightKg"], reps: $0["reps"],
+                     optedOut: $0["optedOut"])
                 }
         }
     }

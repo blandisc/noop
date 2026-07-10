@@ -2099,6 +2099,14 @@ ES: dict[str, str] = {
         'Un descenso moderado durante la noche. Es un patrón, no un diagnóstico.',
     "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis.":
         'Un descenso más suave del que suele mostrar una noche de descanso profundo. Es un patrón, no un diagnóstico.',
+
+    # FER-833 — bloque «VO₂max · tendencia» en Detalle de Edad de Fitness.
+    'VO₂max · trend': 'VO₂max · tendencia',
+    'Rising': 'Subiendo',
+    'Falling': 'Bajando',
+    'Steady': 'Estable',
+    'We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.':
+        'Te enseñamos la dirección, no un número exacto — el estimado brinca de día a día, la tendencia es más honesta.',
 }
 
 
