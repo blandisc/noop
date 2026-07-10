@@ -34,7 +34,8 @@ extension WhoopStore: BackfillStoreWriting {}
 final class Backfiller {
     /// `@Sendable` so `finishChunk` can run the extract off the main actor (FER-752); the default
     /// (`extractHistoricalStreams`) is a pure function, so this costs test injections nothing.
-    typealias Extractor = @Sendable ([ParsedFrame], Int, Int) -> Streams
+    /// (parsed frames, deviceClockRef, wallClockRef, sessionOldestUnix?, sessionNewestUnix?) → Streams (#547).
+    typealias Extractor = @Sendable ([ParsedFrame], Int, Int, Int?, Int?) -> Streams
 
     /// Per-chunk "data receipt" the Backfiller hands back so BLEManager can accumulate an honest
     /// "what this sync received" tally and derive the sync verdict (FER-83). Per-sensor fields are
@@ -68,6 +69,20 @@ final class Backfiller {
 
     /// The clock reference set by BLEManager when GET_CLOCK confirms (required for decoding).
     var clockRef: ClockRef?
+
+    /// #547 SESSION-RELATIVE gate: the strap's own GET_DATA_RANGE oldest/newest banked-record markers for
+    /// the CURRENT offload, set by BLEManager when the range reply lands. A record dated months outside this
+    /// window is wandering-clock pollution even if it clears the absolute 2023-11 floor, so the ingest gate
+    /// rejects it. nil (both) until the range is known — the gate then falls back to the absolute floor only,
+    /// so behaviour is unchanged on the no-range / replay paths. Owned per-connection by BLEManager
+    /// (`resetConnectionState` clears them; the GET_DATA_RANGE reply re-publishes them) — NOT reset in
+    /// `begin()`, because the range reply lands BEFORE the deferred offload kick and must survive it.
+    var sessionOldestUnix: Int?
+    var sessionNewestUnix: Int?
+
+    /// #547: total records dropped this session for an implausible timestamp (accumulated across chunks),
+    /// so the bad-clock log line fires once instead of per-chunk.
+    private var sessionDroppedImplausible = 0
 
     /// True while a historical offload session is active.
     private(set) var isBackfilling = false
@@ -115,7 +130,8 @@ final class Backfiller {
          enableRawCapture: Bool = false,
          log: ((String) -> Void)? = nil,
          onReceipt: ((ChunkReceipt) -> Void)? = nil,
-         extract: @escaping Extractor = { extractHistoricalStreams($0, deviceClockRef: $1, wallClockRef: $2) }) {
+         extract: @escaping Extractor = { extractHistoricalStreams($0, deviceClockRef: $1, wallClockRef: $2,
+                                                                    sessionOldestUnix: $3, sessionNewestUnix: $4) }) {
         self.store = store
         self.deviceId = deviceId
         self.ackTrim = ackTrim
@@ -135,6 +151,7 @@ final class Backfiller {
         chunkOpen = true
         caughtUpDetector.reset()
         didCatchUp = false
+        sessionDroppedImplausible = 0
     }
 
     /// Feed one raw BLE frame into the state machine. May trigger async store operations.
@@ -229,9 +246,21 @@ final class Backfiller {
             // decode, on the main actor, so the safe-trim ordering (insert durable → ack) holds.
             let extract = self.extract
             let devRef = ref.device, wallRef = ref.wall
+            let oldest = sessionOldestUnix, newest = sessionNewestUnix
             let decoded = await Task.detached {
-                extract(parsed, devRef, wallRef)
+                extract(parsed, devRef, wallRef, oldest, newest)
             }.value
+            // #547: surface a bad-clock strap. extractHistoricalStreams DROPPED any record whose own unix
+            // timestamp was implausible (far-past / bogus-2027 / future-dated) before it could pollute the
+            // DB. Log it once per session so the user's strap log explains why a clock-broken strap banks
+            // fewer rows than expected — this is the strap's clock, not a Cénit decode bug.
+            if decoded.droppedImplausible > 0 {
+                let wasZero = sessionDroppedImplausible == 0
+                sessionDroppedImplausible += decoded.droppedImplausible
+                if wasZero {
+                    log?("Backfill: dropped record(s) with an implausible timestamp (trim=\(trim)) — the strap's clock is wrong (records dated far in the past or future), so those samples were skipped rather than misfiled onto the wrong day. Fully charge and reconnect the strap so its clock re-syncs.")
+                }
+            }
             // Diagnostic (#77): the AGGREGATE silent-loss case — frames arrived but produced no rows at
             // all (CRC fail / unmapped layout / out-of-range timestamp), so this chunk persists nothing
             // yet still acks below and the strap trims past it. The per-version log above only catches
