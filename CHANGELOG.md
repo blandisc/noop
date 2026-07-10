@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El sello de confianza de «Tras cada deporte» ahora habla igual que el resto / The confidence stamp in "After each sport" now speaks the same language as the rest.**
+  **ES** — En la hoja de Actividad, el sello de confianza de cada deporte decía «Solid» / «Building data»; ahora dice «Confianza alta» / «Confianza media», el mismo vocabulario que ya usan Esfuerzo y Sueño. Es solo un cambio de palabras: el estilo del sello no cambia. Por dentro, los tres detalles comparten un único origen para esa etiqueta, así que a futuro no se desincronizan.
+  **EN** — In the Activity sheet, each sport's confidence stamp read "Solid" / "Building data"; it now reads "High confidence" / "Medium confidence", the same wording Strain and Sleep already use. It's only a wording change — the stamp's styling is unchanged. Under the hood all three details now share a single source for that label, so they can't drift apart later.
+  ([ActivityRecoverySheet.swift](Cenit/Screens/ActivityRecoverySheet.swift), [ScoreConfidence+Sello.swift](Cenit/Screens/ScoreConfidence+Sello.swift))
+
 - **Los botones de la tarjeta de entreno ya responden con el teléfono bloqueado / Your workout card's buttons now respond with the phone locked.**
   **ES** — En la pantalla bloqueada, tocar Completar / ±30 s / Saltar / Reanudar seguía pidiendo Face ID en vez de ejecutar la acción. La política de autenticación que las marca como seguras («correr bloqueado») estaba declarada de una forma que el sistema no alcanzaba a leer sin abrir la app, así que caía al comportamiento por defecto (exigir desbloqueo). Ahora se declara en la forma canónica y las acciones corren en sitio, sin Face ID.
   **EN** — On the Lock Screen, tapping Complete / ±30 s / Skip / Resume kept asking for Face ID instead of running the action. The authentication policy that marks them safe to run while locked was declared in a form the system couldn't read without launching the app, so it fell back to the default (require unlock). It's now declared in the canonical form and the actions run in place, no Face ID.
