@@ -94,7 +94,17 @@ public func extractHistoricalStreams(_ parsed: [ParsedFrame],
             let snapped = (clockOffset >= 0
                 ? (clockOffset + snapGranularity / 2)
                 : (clockOffset - snapGranularity / 2)) / snapGranularity * snapGranularity
-            candidate = rawTs + snapped
+            let corrected = rawTs + snapped
+            // FUTURE-OVERSHOOT GUARD (PR #471): a fully-drained strap whose RTC has reset to ~epoch
+            // (year ~1971) reports a near-zero deviceClockRef while its offloaded frames still carry the
+            // true-unix rawTs. clockOffset is then ~decades, and this "correction" hurls every historical
+            // sample into the future (observed in the field: year 2081), which silently breaks sleep &
+            // recovery because the night never lands on the right day. A historical record can never
+            // post-date its own capture, so when corrected overshoots wall time the offset was bogus —
+            // keep the raw ts. The genuine stale case (strap behind real time) has corrected <= wallClockRef,
+            // so this guard is a no-op there. The #547 gate below then still drops the raw ts if it too is
+            // implausible (e.g. a near-epoch raw), so a 1971 row is never banked either way.
+            candidate = corrected <= wallClockRef + snapGranularity ? corrected : rawTs
         }
         // Final ingest gate (#547): drop the record if the resolved ts is implausible — either by the
         // absolute floor OR, when the strap's GET_DATA_RANGE markers are known, by sitting months outside
