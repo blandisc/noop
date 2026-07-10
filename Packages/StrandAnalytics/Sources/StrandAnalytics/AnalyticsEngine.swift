@@ -272,9 +272,12 @@ public enum AnalyticsEngine {
         // Effort confidence (FER-676): graded over the SAME HR series strain scored on, so the tier
         // describes the number next to it. nil when strain is nil — there is no number to grade, and
         // a nil tier keeps the monotonic upsert from downgrading a previously-stored one.
+        // `strainHr` is already ascending by ts (the store reads `ORDER BY ts ASC` and the
+        // day filter preserves order), same invariant `StrainScorer.strain` above relies on —
+        // no re-sort needed for the coverage grade.
         let effortConfidence: ScoreConfidence? = strain == nil ? nil :
             ScoreConfidence.effort(hasEnoughData: StrainScorer.hasEnoughData(strainHr),
-                                   hrSampleSecondsSorted: strainHr.map(\.ts).sorted())
+                                   hrSampleSecondsSorted: strainHr.map(\.ts))
 
         // ── Workouts ──────────────────────────────────────────────────────────
         let workouts = WorkoutDetector.detect(

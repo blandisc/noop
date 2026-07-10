@@ -163,30 +163,10 @@ struct StrainDetailScreen: View {
                 // trust grade, shown only when there IS a score to grade. Calibrating never
                 // reaches here (no score → no sello), so the chip has two states.
                 if v != nil, let tier = model.confidence {
-                    ConfidenceSello(Text(Self.confidenceText(tier)),
-                                    a11yLabel: Text(Self.confidenceA11y(tier)),
-                                    dimmed: tier != .solid, theme: theme)
+                    tier.sello(theme: theme)
                         .padding(.top, 2)
                 }
             }
-        }
-    }
-
-    /// Sello copy per tier (FER-676). English source; es-MX in the String Catalog. `calibrating`
-    /// only shows when a score somehow exists below the data floor — reads as still settling.
-    static func confidenceText(_ c: ScoreConfidence) -> LocalizedStringKey {
-        switch c {
-        case .solid:       return "High confidence"
-        case .building:    return "Medium confidence"
-        case .calibrating: return "Calibrating"
-        }
-    }
-
-    static func confidenceA11y(_ c: ScoreConfidence) -> LocalizedStringKey {
-        switch c {
-        case .solid:       return "Confidence: high"
-        case .building:    return "Confidence: medium"
-        case .calibrating: return "Confidence: calibrating"
         }
     }
 

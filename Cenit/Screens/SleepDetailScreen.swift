@@ -304,9 +304,7 @@ struct SleepDetailScreen: View {
             // sello Esfuerzo wears. Only when the night's row was graded (strap path) — Apple-only
             // rows carry no tier and show nothing.
             if let tier = model.confidence {
-                ConfidenceSello(Text(StrainDetailScreen.confidenceText(tier)),
-                                a11yLabel: Text(StrainDetailScreen.confidenceA11y(tier)),
-                                dimmed: tier != .solid, theme: theme)
+                tier.sello(theme: theme)
             }
             Text(heroVerdict(night))
                 .font(StrandFont.headline)

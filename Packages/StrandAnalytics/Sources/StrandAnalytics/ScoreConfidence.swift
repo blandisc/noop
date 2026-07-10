@@ -72,8 +72,7 @@ public enum ScoreConfidence: String, Equatable, Sendable, Codable {
                               windowSeconds: Int = 1800,
                               minSpanSeconds: Int = 14_400) -> ScoreConfidence {
         guard hasEnoughData else { return .calibrating }
-        guard let first = ts.first, let last = ts.last, last > first else { return .building }
-        guard last - first >= minSpanSeconds else { return .building }
+        guard let first = ts.first, let last = ts.last, last - first >= minSpanSeconds else { return .building }
         let coverage = hrCoverageFraction(secondsSorted: ts, windowSeconds: windowSeconds)
         return coverage >= minCoverageFrac ? .solid : .building
     }
@@ -84,9 +83,14 @@ public enum ScoreConfidence: String, Equatable, Sendable, Codable {
     static func hrCoverageFraction(secondsSorted ts: [Int], windowSeconds: Int) -> Double {
         guard windowSeconds > 0, let first = ts.first, let last = ts.last, last > first else { return 0 }
         let totalWindows = (last - first) / windowSeconds + 1
-        var occupied = Set<Int>()
-        for t in ts { occupied.insert((t - first) / windowSeconds) }
-        return Double(occupied.count) / Double(totalWindows)
+        // `ts` is ascending, so the window index is monotonic non-decreasing — count the
+        // transitions in one pass instead of hashing every sample into a Set.
+        var occupied = 0, lastWindow = -1
+        for t in ts {
+            let w = (t - first) / windowSeconds
+            if w != lastWindow { occupied += 1; lastWindow = w }
+        }
+        return Double(occupied) / Double(totalWindows)
     }
 
     /// Sleep (`rest`) confidence from night duration and whether stages resolved.

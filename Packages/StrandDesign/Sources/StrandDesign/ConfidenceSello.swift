@@ -2,9 +2,10 @@ import SwiftUI
 
 // MARK: - Confidence sello (FER-676)
 //
-// The quiet text+shape chip that grades how much to trust the number next to it —
-// promoted here from the inline chip ActivityRecoverySheet introduced, so Esfuerzo /
-// Sueño / any future score share ONE stamp instead of per-screen copies.
+// The quiet text+shape chip that grades how much to trust the number next to it — the
+// shared stamp Esfuerzo / Sueño (and future scores) wear. Its style mirrors the inline
+// chip ActivityRecoverySheet first introduced; folding that original into this component
+// is a follow-up so every score shares literally ONE stamp.
 //
 // «Instrumento» discipline: confidence is not good/bad, so the sello NEVER takes an
 // alarm colour — only ink emphasis varies (solid reads a step stronger than a thinner
