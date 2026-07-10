@@ -2155,6 +2155,23 @@ ES: dict[str, str] = {
     "Delete what I logged": "Eliminar lo que anoté",
     "Delete workout": "Eliminar entrenamiento",
     "Borrar la media": "Eliminar la media",
+    # FER-852 — HRR-60s (recuperación cardiaca post-esfuerzo, experimental)
+    "Cardiac recovery · 60 s": "Recuperación cardiaca · 60 s",
+    "bpm in 60 s": "bpm en 60 s",
+    "No clean recovery reading for this session.":
+        "No hay una lectura limpia de recuperación para esta sesión.",
+    "vs your normal · ~%lld bpm · %lld sessions":
+        "vs tu normal · ~%lld bpm · %lld sesiones",
+    "Personal trend, not a clinical threshold. Experimental reading.":
+        "Tendencia personal, no un umbral clínico. Lectura experimental.",
+    "Still learning your usual recovery — keep logging sessions.":
+        "Aún estoy aprendiendo tu recuperación habitual — sigue registrando sesiones.",
+    "Your heart came down slower than usual after this one — a sign to watch recovery.":
+        "Tu corazón bajó más lento que de costumbre tras esta — una señal para cuidar la recuperación.",
+    "Your heart came down faster than usual — strong recovery after this session.":
+        "Tu corazón bajó más rápido que de costumbre — buena recuperación tras esta sesión.",
+    "Your recovery after this session looks like your normal.":
+        "Tu recuperación tras esta sesión se ve como tu normal.",
 }
 
 

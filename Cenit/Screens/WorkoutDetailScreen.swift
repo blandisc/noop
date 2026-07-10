@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 import WhoopStore
 import Foundation
 
@@ -40,6 +41,13 @@ struct WorkoutDetailScreen: View {
     @State private var showActionMenu = false
     private struct EditTarget: Identifiable { let row: WorkoutRow; let id = UUID() }
 
+    /// HRR-60s opt-in (FER-848): the block only exists behind the experimental-metrics toggle.
+    @AppStorage(WhitespaceMetricsExperiment.enabledKey) private var experimentalMetrics = false
+    /// Post-session 60-second heart-rate recovery, computed on appear from the stored HR stream (FER-852).
+    @State private var hrr: HRRState = .loading
+    /// How many recent prior sessions back the personal HRR baseline — bounds the on-appear store reads.
+    private let hrrMaxPriorSessions = 20
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -52,6 +60,10 @@ struct WorkoutDetailScreen: View {
                 if row.avgHr != nil || row.maxHr != nil {
                     blockDivider
                     heartBlock
+                }
+                if showsHRRBlock {
+                    blockDivider
+                    hrrBlock
                 }
                 if row.distanceM != nil || row.energyKcal != nil {
                     blockDivider
@@ -68,6 +80,7 @@ struct WorkoutDetailScreen: View {
             .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .task(id: row.startTs) { if experimentalMetrics { await loadHRR() } }
         .background(theme.paper.ignoresSafeArea())
         .navigationTitle(Text(WorkoutSource.displaySport(row.sport)))
         .navigationBarTitleDisplayMode(.inline)
@@ -335,6 +348,106 @@ struct WorkoutDetailScreen: View {
 
     /// Thousands-grouped integer for the energy support (e.g. "1,240").
     private func grouped(_ v: Double) -> String { StrandFormat.groupedInt(v) }
+
+    // MARK: - HRR-60s (recuperación cardiaca post-esfuerzo, experimental — FER-852)
+
+    /// What the block shows, once the on-appear compute settles. `.loading` and `.noData` both draw
+    /// nothing (the block is simply absent); the surface never fabricates a reading it doesn't have.
+    private enum HRRState {
+        case loading
+        case noData                                   // no stored HR for this session (e.g. a manual/Apple row)
+        case noCoverage                               // HR present but the ±60 s anchors weren't both covered
+        case reading(bpm: Int, trend: HeartRateRecovery.Trend)
+    }
+
+    /// True only when there's an actual reading or an honest "no coverage" to show — so the loading and
+    /// no-stored-HR states draw neither the block nor its leading hairline divider.
+    private var showsHRRBlock: Bool {
+        guard experimentalMetrics else { return false }
+        switch hrr {
+        case .loading, .noData: return false
+        case .noCoverage, .reading: return true
+        }
+    }
+
+    /// The HRR block, or nil when there's nothing to show (loading / no stored HR). Placed after the
+    /// heart block because it's a post-effort cardiac read. Color lives only on the bpm datum
+    /// (`dataHeart`), hierarchy by space — the «Instrumento» DNA.
+    @ViewBuilder private var hrrBlock: some View {
+        switch hrr {
+        case .loading, .noData:
+            EmptyView()
+        case .noCoverage:
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Cardiac recovery · 60 s").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("No clean recovery reading for this session.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        case let .reading(bpm, trend):
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Cardiac recovery · 60 s").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("\(bpm)").instrumentoHero(40).foregroundStyle(theme.dataHeart)
+                    Text("bpm in 60 s").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                }
+                Text(hrrNote(trend))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let base = trend.baselineBpm, trend.nPrior >= 2 {
+                    Text("vs your normal · ~\(Int(base.rounded())) bpm · \(trend.nPrior) sessions")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                }
+                Text("Personal trend, not a clinical threshold. Experimental reading.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// es-MX copy mapped from the engine's TREND STATE (not the engine's raw English `note`), so the
+    /// message localizes with the app while staying the engine's intra-user story — never Cole's cutoff.
+    private func hrrNote(_ trend: HeartRateRecovery.Trend) -> LocalizedStringKey {
+        if trend.nPrior < 2 {
+            return "Still learning your usual recovery — keep logging sessions."
+        }
+        if trend.bluntedVsNormal {
+            return "Your heart came down slower than usual after this one — a sign to watch recovery."
+        }
+        if let z = trend.z, z >= HeartRateRecovery.bluntedZThreshold {
+            return "Your heart came down faster than usual — strong recovery after this session."
+        }
+        return "Your recovery after this session looks like your normal."
+    }
+
+    /// Compute HRR-60s for this session from the stored HR stream, and place it against the user's own
+    /// prior sessions. Bounded work: one HR fetch for this session, plus a fetch per recent prior session
+    /// to build the personal baseline. All reads are on-device; failures degrade to `.noData`/`.noCoverage`.
+    private func loadHRR() async {
+        let pad = HeartRateRecovery.horizonS + 2 * HeartRateRecovery.anchorHalfWidthS
+        let hr = await repo.hrSamples(from: row.endTs - 2 * HeartRateRecovery.anchorHalfWidthS,
+                                      to: row.endTs + pad, limit: 4000)
+        guard !hr.isEmpty else { hrr = .noData; return }
+
+        let result = HeartRateRecovery.hrr60s(sessionEnd: row.endTs, hr: hr)
+        guard result.covered, let drop = result.hrrBpm else { hrr = .noCoverage; return }
+
+        // Personal baseline: HRR of the most recent prior sessions that carried a clean reading.
+        let priors = await repo.workoutRows()
+            .filter { $0.endTs < row.endTs && ($0.avgHr != nil) }
+            .sorted { $0.endTs > $1.endTs }
+            .prefix(hrrMaxPriorSessions)
+        var priorHRR: [Double] = []
+        for p in priors {
+            let phr = await repo.hrSamples(from: p.endTs - 2 * HeartRateRecovery.anchorHalfWidthS,
+                                           to: p.endTs + pad, limit: 4000)
+            let pr = HeartRateRecovery.hrr60s(sessionEnd: p.endTs, hr: phr)
+            if pr.covered, let v = pr.hrrBpm { priorHRR.append(v) }
+        }
+        hrr = .reading(bpm: Int(drop.rounded()),
+                       trend: HeartRateRecovery.trend(latest: drop, priorHRR: priorHRR))
+    }
 }
 
 // MARK: - Shared source badge (list + detail)

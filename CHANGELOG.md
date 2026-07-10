@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Qué tan rápido baja tu pulso tras un esfuerzo, en Detalle de entrenamiento / How fast your pulse drops after effort, in the Workout detail.**
+  **ES** — Con las Métricas experimentales prendidas, el Detalle de entrenamiento muestra tu recuperación cardiaca en el primer minuto (HRR-60s): cuántos bpm bajó tu corazón en los 60 s tras terminar, con una lectura «vs tu normal» contra tus propias sesiones recientes. Es una tendencia personal, no el umbral clínico de Cole ni un número de riesgo; se oculta cuando la sesión no trae FC densa.
+  **EN** — With Experimental metrics on, the Workout detail shows your first-minute heart-rate recovery (HRR-60s): how many bpm your heart dropped in the 60 s after you stopped, with a "vs your normal" read against your own recent sessions. It's a personal trend, not Cole's clinical cutoff or a risk number; it hides when the session has no dense heart rate.
+  ([WorkoutDetailScreen.swift](Cenit/Screens/WorkoutDetailScreen.swift))
+
 - **Tu respiración nocturna vs tu normal, en Detalle de Sueño / Your night breathing vs your normal, in the Sleep detail.**
   **ES** — Con las Métricas experimentales prendidas, el Detalle de Sueño muestra tu respiración de la noche contra tu base personal — un segundo signo vital de fondo. Solo marca una desviación cuando ha corrido sostenidamente más rápido (o más lenta) que tu normal por varias noches; si no, dice que se ve en tu rango. Es un patrón, no un diagnóstico: vale cruzarlo con tu HRV y tu FC en reposo. Mientras aprende tu base, lo dice.
   **EN** — With Experimental metrics on, the Sleep detail shows your night breathing against your personal baseline — a second background vital sign. It only flags a deviation when it has run sustainedly faster (or slower) than your normal for several nights; otherwise it says it looks in range. It's a pattern, not a diagnosis — worth crossing with your HRV and resting heart rate. While it's still learning your baseline, it says so.
