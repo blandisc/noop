@@ -82,7 +82,7 @@ struct ActivityRecoverySheet: View {
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
-                confidenceBadge(cost.confidence)
+                cost.confidence.sello(theme: theme)   // shared stamp (ScoreConfidence+Sello); this sheet never shows .calibrating
             }
             // Handoff v2 (reconciliación): el dato numérico prominente en ámbar (una Charge más baja al
             // día siguiente se lee como «−N pts»). Sólo cuando el efecto supera el piso de ruido.
@@ -105,23 +105,6 @@ struct ActivityRecoverySheet: View {
         .instrumentoCard(.cta, theme: theme, lineWidth: 0.5)
         .opacity(dimmed ? 0.72 : 1)
         .accessibilityElement(children: .combine)
-    }
-
-    /// A quiet text+shape chip (no alarm colour — confidence isn't good/bad). The accessibility label
-    /// announces it as "confidence: …" so VoiceOver never reads a bare "Building data".
-    private func confidenceBadge(_ c: ScoreConfidence) -> some View {
-        let label: LocalizedStringKey = c == .solid ? "Solid" : "Building data"
-        let a11y: LocalizedStringKey = c == .solid ? "Confidence: solid" : "Confidence: building data"
-        return Text(label)
-            .font(.system(size: 11, weight: .semibold))   // token-exempt: sello semibold+tracking (micro es 11/medium)
-            .tracking(0.3)
-            .textCase(.uppercase)
-            .foregroundStyle(c == .solid ? theme.inkSecondary : theme.inkTertiary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)   // token-exempt: geometría de dato (sello ≤6pt)
-                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            .accessibilityLabel(a11y)
     }
 
     // MARK: - Sentence (localized; association, never causal)

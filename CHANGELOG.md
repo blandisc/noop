@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El sello de confianza de «Tras cada deporte» ahora habla igual que el resto / The confidence stamp in "After each sport" now speaks the same language as the rest.**
+  **ES** — En la hoja de Actividad, el sello de confianza de cada deporte decía «Solid» / «Building data»; ahora dice «Confianza alta» / «Confianza media», el mismo vocabulario que ya usan Esfuerzo y Sueño. Es solo un cambio de palabras: el estilo del sello no cambia. Por dentro, los tres detalles comparten un único origen para esa etiqueta, así que a futuro no se desincronizan.
+  **EN** — In the Activity sheet, each sport's confidence stamp read "Solid" / "Building data"; it now reads "High confidence" / "Medium confidence", the same wording Strain and Sleep already use. It's only a wording change — the stamp's styling is unchanged. Under the hood all three details now share a single source for that label, so they can't drift apart later.
+  ([ActivityRecoverySheet.swift](Cenit/Screens/ActivityRecoverySheet.swift), [ScoreConfidence+Sello.swift](Cenit/Screens/ScoreConfidence+Sello.swift))
+
 - **El editor de rutina se ve limpio: título completo y celdas sin bordes fantasma / The routine editor looks clean: full title and cells with no ghost edges.**
   **ES** — En la pantalla de rutina de Entrenar, los títulos largos se salían por el borde de la pantalla; ahora saltan de línea y se leen completos. Además, las celdas de KG y REPS mostraban una esquina rectangular asomándose detrás del contorno redondeado; ahora el relleno respeta la forma redondeada.
   **EN** — On the Entrenar routine screen, long titles ran off the edge of the screen; they now wrap and read in full. Also, the KG and REPS cells showed a rectangular corner leaking behind the rounded outline; the fill now respects the rounded shape.
