@@ -252,7 +252,7 @@ struct FitnessAgeDetailView: View {
 
             HStack(spacing: 8) {
                 Image(systemName: trendSymbol(trend.direction))
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(StrandFont.number(26, weight: .semibold))
                     .foregroundStyle(color)
                 Text(trendWord(trend.direction))
                     .font(StrandFont.number(30, weight: .semibold))
