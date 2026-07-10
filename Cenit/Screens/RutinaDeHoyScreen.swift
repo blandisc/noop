@@ -181,7 +181,8 @@ private struct RutinaDeHoyContent: View {
         if model.strengthSession != nil { model.resumeStrengthSession(); return }
         guard let r = routine else { return }
         let slots = rows.map {
-            StrengthSessionModel.PlanSlot(re: $0.re, exercise: $0.exercise, lastSets: $0.lastSets)
+            StrengthSessionModel.PlanSlot(re: $0.re, exercise: $0.exercise, lastSets: $0.lastSets,
+                                          raise: $0.raise)
         }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots)
     }
@@ -235,12 +236,22 @@ private struct RutinaDeHoyContent: View {
         let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
         routine = r
+        // FER-E: evaluate progression once per plan build — history + plates + today's recovery in,
+        // an earned raise (or nothing) out. Only for slots that opted in (progressionEnabled).
+        let inventory = await MainActor.run { PlatesStore().inventory }
+        let recovery = repo.today?.recovery
         var built: [PlanRow] = []
         for re in exs {
             let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
             // Recent work sets power the «la última vez» prefill in the guided session (FER-347).
             let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
-            built.append(PlanRow(re: re, exercise: ex, lastSets: last))
+            var raise: ProgressionPlanner.Raise? = nil
+            if re.progressionEnabled, ex?.type == .weightReps {
+                let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
+                raise = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
+                                                    equipment: ex?.equipment, recovery: recovery)?.raise
+            }
+            built.append(PlanRow(re: re, exercise: ex, lastSets: last, raise: raise))
         }
         rows = built
         loaded = true
@@ -253,6 +264,8 @@ private struct PlanRow: Identifiable {
     let exercise: Exercise?
     /// Recent work sets (newest first) for the guided session's «la última vez» prefill (FER-347).
     var lastSets: [SetEntry] = []
+    /// An earned weight raise (FER-E); seeds the session's Kg cells and the «por qué» card.
+    var raise: ProgressionPlanner.Raise? = nil
     var id: String { re.id }
     var name: String { exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise") }
     /// Up to two primary muscles in the device language (catalog stores them as English keys).

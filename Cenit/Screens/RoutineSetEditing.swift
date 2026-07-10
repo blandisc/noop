@@ -12,6 +12,9 @@ import StrandTraining
 /// Identifies the set whose rest the 1e editor is editing (exercise index + set index).
 struct RestEditTarget: Identifiable, Hashable { let ei: Int; let si: Int; var id: String { "\(ei)-\(si)" } }
 
+/// Identifies the exercise whose progression plan the 2c editor is editing (FER-D).
+struct ProgressionTarget: Identifiable, Hashable { let ei: Int; var id: Int { ei } }
+
 // MARK: - Per-set rest resolution (F0 model)
 
 enum RoutineSetEditing {

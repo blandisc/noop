@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import StrandAnalytics
 
 // RoutineBuilderScreen.swift — create and edit reusable routines (FER-346, inline rewrite FER-561). The
 // Train hub opens this as a sheet (`.new` / `.edit(routine)`), carrying its own routine id. EVERYTHING is
@@ -40,6 +41,10 @@ struct RoutineBuilderScreen: View {
     /// Which set's rest is being edited (drives the 1e push); nil = none. Rest is per-set now (choque 3):
     /// each set carries its own `RestConfig` override, edited in the shared `RestEditorScreen`.
     @State private var restTarget: RestEditTarget? = nil
+    /// Which exercise's progression plan is being edited (drives the 2c push, FER-D); nil = none.
+    @State private var progressionTarget: ProgressionTarget? = nil
+    /// The plate inventory, to derive the default increment (FER-C). UserDefaults-backed, cheap.
+    @StateObject private var plates = PlatesStore()
     /// Which exercise's info sheet is open (tap the row's name/thumb to open its detail, like the library).
     @State private var detail: Exercise? = nil
     @FocusState private var focusedCell: String?
@@ -110,6 +115,34 @@ struct RoutineBuilderScreen: View {
                     }
                 )
                 .toolbar(.hidden, for: .navigationBar)   // RestEditorScreen draws its own back/cancel header
+            }
+            // 2c as a push (FER-D): the per-exercise progression plan. Saves on back (Instrumento editor
+            // convention); like rest, every change lands on the routine at «Save».
+            .navigationDestination(item: $progressionTarget) { t in
+                let ex = items[t.ei].exercise
+                ProgressionSetupScreen(
+                    theme: theme,
+                    exercise: items[t.ei].re,
+                    exerciseName: StrengthDisplay.name(ex),
+                    currentWeightKg: items[t.ei].re.plannedSets.first { $0.kind == .work }?.weightKg,
+                    derivedIncrementKg: PlateMath.minimumIncrement(
+                        for: .from(equipment: ex.equipment), inventory: plates.inventory),
+                    onBack: { progressionTarget = nil },
+                    onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                        items[t.ei].re.progressionEnabled = enabled
+                        items[t.ei].re.progressionSessions = sessions
+                        items[t.ei].re.progressionIncrementKg = incrementKg
+                        items[t.ei].re.progressionDeload = deload
+                        items[t.ei].re.progressionIgnoreRecovery = ignoreRecovery
+                        // The rep goal IS RoutineSet.reps (no ranges): with the plan on, write it onto
+                        // every work set. Off, the prescription stays whatever the user typed.
+                        guard enabled else { return }
+                        for si in items[t.ei].re.sets.indices where items[t.ei].re.sets[si].kind == .work {
+                            items[t.ei].re.sets[si].reps = targetReps
+                        }
+                    }
+                )
+                .toolbar(.hidden, for: .navigationBar)   // ProgressionSetupScreen draws its own back header
             }
         }
         .task {
@@ -224,6 +257,15 @@ struct RoutineBuilderScreen: View {
                     }
                     if inSuperset(idx) {
                         Button { breakSuperset(idx) } label: { Label("Break superset", systemImage: "link.badge.plus") }
+                    }
+                    // 2c (FER-D): the per-exercise progression plan. Weight-based exercises only —
+                    // bodyweight/time/distance have no load to progress.
+                    if item.exercise.type == .weightReps {
+                        Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
+                            item.re.progressionEnabled
+                                ? Label("Progression · on", systemImage: "chart.line.uptrend.xyaxis")
+                                : Label("Progression", systemImage: "chart.line.uptrend.xyaxis")
+                        }
                     }
                     Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove", systemImage: "trash") }
                 } label: {

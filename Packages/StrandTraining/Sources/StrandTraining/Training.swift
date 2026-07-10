@@ -135,6 +135,13 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
     }
 }
 
+/// What to do when an exercise stalls (progression, FER-A). `propose` pre-populates a deload; `warn`
+/// only surfaces the stall and leaves the weight untouched.
+public enum DeloadPolicy: String, Codable, Sendable {
+    case propose
+    case warn
+}
+
 /// One exercise slot inside a routine: its per-set scheme, warm-up ramp, and rest rule.
 public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     public var id: String
@@ -164,19 +171,37 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     /// grouping is by equality, so gaps in the numbering don't matter. The guided session (FER-347)
     /// reads it to cycle a group and skip the between-exercise rest.
     public var supersetGroup: Int?
+    /// Load progression (FER-A). OFF by default — the user turns it on per exercise. When on, hitting
+    /// the rep goal on all work sets for `progressionSessions` consecutive sessions bumps the weight.
+    public var progressionEnabled: Bool
+    /// How many consecutive qualifying sessions before the weight goes up (default 2 = double progression).
+    public var progressionSessions: Int
+    /// Manual per-session increment in kg; `nil` = derive from the plate/dumbbell inventory (FER-C).
+    public var progressionIncrementKg: Double?
+    /// What to do on a stall (3 sessions stuck): propose a deload or only warn.
+    public var progressionDeload: DeloadPolicy
+    /// `true` = raise even on a low-recovery day (skip the TrainingRegulation gate). Default `false`:
+    /// a `recoveryLow` day DEFERS an earned raise to the next session (2c's "Recuperación baja" row).
+    public var progressionIgnoreRecovery: Bool
 
     public init(id: String = UUID().uuidString, routineId: String, exerciseId: String,
                 position: Int, targetSets: Int, targetReps: Int? = nil,
                 targetWeightKg: Double? = nil, warmupPercents: [Double] = [],
                 restMode: RestMode = .heartRate, restSeconds: Int = 90,
                 supersetGroup: Int? = nil, sets: [RoutineSet] = [],
-                hrRestReference: HRRestReference = .restingMargin, hrRestValue: Double = 0) {
+                hrRestReference: HRRestReference = .restingMargin, hrRestValue: Double = 0,
+                progressionEnabled: Bool = false, progressionSessions: Int = 2,
+                progressionIncrementKg: Double? = nil, progressionDeload: DeloadPolicy = .propose,
+                progressionIgnoreRecovery: Bool = false) {
         self.id = id; self.routineId = routineId; self.exerciseId = exerciseId
         self.position = position; self.targetSets = targetSets; self.targetReps = targetReps
         self.targetWeightKg = targetWeightKg; self.warmupPercents = warmupPercents
         self.restMode = restMode; self.restSeconds = restSeconds
         self.supersetGroup = supersetGroup; self.sets = sets
         self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
+        self.progressionEnabled = progressionEnabled; self.progressionSessions = progressionSessions
+        self.progressionIncrementKg = progressionIncrementKg; self.progressionDeload = progressionDeload
+        self.progressionIgnoreRecovery = progressionIgnoreRecovery
     }
 
     /// The per-set plan to act on: the authored `sets` when present, else a 1:1 expansion of the legacy

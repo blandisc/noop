@@ -153,6 +153,10 @@ final class StrengthSessionModel: ObservableObject {
         var sets: [WorkingSet]
         var currentSet: Int
         var skipped: Bool
+        /// An earned weight raise seeded into this run's cells (FER-E · 2b). nil = no proposal today.
+        /// Cleared by «Volver a X» (the per-session opt-out). Not carried by the crash snapshot — after
+        /// a restore the seeded weights survive; only the «por qué» affordance is gone.
+        var proposedRaise: ProgressionPlanner.Raise? = nil
 
         /// This exercise's rest as the shared `RestConfig` shape (FER-715), from its four flat fields.
         var restConfig: RestConfig {
@@ -671,6 +675,9 @@ final class StrengthSessionModel: ObservableObject {
         let re: RoutineExercise
         let exercise: Exercise?
         let lastSets: [SetEntry]
+        /// An earned raise from `ProgressionPlanner` (FER-E): the Kg cells seed with `toKg` instead of
+        /// the plan/last weight. Default nil so plan-less paths (templates, repeats) are untouched.
+        var raise: ProgressionPlanner.Raise? = nil
     }
 
     static func make(routineId: String?, routineName: String, slots: [PlanSlot],
@@ -686,7 +693,9 @@ final class StrengthSessionModel: ObservableObject {
             // to the single target* fanned out, so both paths share one mapping. Reps only seed the
             // rep-based types; time/distance capture their datum live, so 0 there.
             let sets: [WorkingSet] = slot.re.plannedSets.filter { $0.kind == .work }.map { p in
-                let weight = p.weightKg ?? lastWeight ?? 0
+                // FER-E: an earned raise changes the SEED, not the table — every work cell arrives at
+                // the proposed weight (double progression trains all work sets at one load).
+                let weight = (type == .weightReps ? slot.raise?.toKg : nil) ?? p.weightKg ?? lastWeight ?? 0
                 let reps = usesReps ? (p.reps ?? lastReps ?? 8) : 0
                 // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
                 // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).
@@ -701,7 +710,8 @@ final class StrengthSessionModel: ObservableObject {
                                hrRestValue: slot.re.hrRestValue,
                                lastWeightKg: lastWeight, lastReps: lastReps,
                                lastTimeS: last?.timeS.map { Int($0) }, lastDistanceM: last?.distanceM,
-                               sets: sets, currentSet: 0, skipped: false)
+                               sets: sets, currentSet: 0, skipped: false,
+                               proposedRaise: type == .weightReps ? slot.raise : nil)
         }
         return StrengthSessionModel(routineId: routineId, routineName: routineName,
                                     startTs: startTs, runs: runs)
@@ -725,6 +735,8 @@ struct LiveStrengthSheet: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
     @State private var confirmDiscard = false
+    /// Which runs have their «por qué» raise card expanded (FER-E), by run id.
+    @State private var whyRaiseOpen: Set<String> = []
     /// The cell the custom keypad is editing (FER-716) — one at a time, so a single working buffer is
     /// enough. `nil` = no cell active (keypad hidden). Replaces the native keyboard + `@FocusState`.
     @State private var activeCell: CellRef?
@@ -1228,10 +1240,93 @@ struct LiveStrengthSheet: View {
                 .accessibilityHint(Text("View exercise detail"))
                 }
             }
+            // FER-E · 2b: the earned raise, named where you train. «↑ hoy 102,5 · por qué» toggles the
+            // arithmetic card; green because the raise IS the datum.
+            if let raise = run.proposedRaise {
+                raiseLine(raise, ei: ei)
+                if whyRaiseOpen.contains(run.id) { whyRaiseCard(raise, ei: ei) }
+            }
             restChip(run, ei: ei)
             if !reflow { columnHeader(run.type) }
         }
         .padding(.top, first ? NoopMetrics.gap : NoopMetrics.sectionGap)
+    }
+
+    // MARK: Proposed raise (FER-E)
+
+    private func raiseLine(_ raise: ProgressionPlanner.Raise, ei: Int) -> some View {
+        Button {
+            withAnimation(StrandMotion.interactive) {
+                let id = session.runs[ei].id
+                if whyRaiseOpen.contains(id) { whyRaiseOpen.remove(id) } else { whyRaiseOpen.insert(id) }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.up")
+                    .font(StrandFont.glyph(.chevron, weight: .bold))
+                Text("today \(massText(raise.toKg))")
+                    .font(InstrumentoType.grotesk(12, weight: .bold)).monospacedDigit()
+                Text("·").foregroundStyle(theme.inkTertiary)
+                Text("why")
+                    .font(InstrumentoType.grotesk(12, weight: .bold))
+                    .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))
+            }
+            .foregroundStyle(theme.dataRecovery)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Today you raise to \(massText(raise.toKg))"))
+        .accessibilityHint(Text("Shows why, with your real dates"))
+    }
+
+    /// The «por qué» block (WhyRaiseCard, handoff 2b): connection surface, 2.5pt green bar, the arithmetic
+    /// phrase, and the two text actions. «Volver a X» is the per-session opt-out: it reseeds the undone
+    /// cells back to the old weight and drops the proposal — it never counts as a cycle failure.
+    private func whyRaiseCard(_ raise: ProgressionPlanner.Raise, ei: Int) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("WHY \(massText(raise.toKg))")
+                .instrumentoOverline().foregroundStyle(theme.dataRecovery)
+            Text(verbatim: raise.phrase)
+                .font(StrandFont.caption).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Goal today: \(session.runs[ei].sets.count)×\(session.runs[ei].sets.first?.reps ?? 0) with the new weight. Losing a rep or two on a raise is normal; you win them back in 1 or 2 sessions.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 18) {
+                Button { withAnimation(StrandMotion.interactive) { _ = whyRaiseOpen.remove(session.runs[ei].id) } } label: {
+                    Text("Keep \(massText(raise.toKg))")
+                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataRecovery)
+                }
+                .buttonStyle(.plain)
+                Button { revertRaise(ei: ei) } label: {
+                    Text("Back to \(massText(raise.fromKg))")
+                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.inkSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 2)
+        }
+        .padding(.horizontal, 13).padding(.vertical, 11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface)
+        .overlay(alignment: .leading) { Rectangle().fill(theme.dataRecovery).frame(width: 2.5) }
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
+                                          bottomTrailingRadius: 8, topTrailingRadius: 8))
+    }
+
+    /// The per-session opt-out («Volver a X»): undone cells go back to the old weight; done sets keep
+    /// whatever was actually lifted. The cycle is untouched — hitting the goal at the old weight simply
+    /// re-earns the raise for the next session.
+    private func revertRaise(ei: Int) {
+        guard session.runs.indices.contains(ei),
+              let raise = session.runs[ei].proposedRaise else { return }
+        withAnimation(StrandMotion.interactive) {
+            for si in session.runs[ei].sets.indices where !session.runs[ei].sets[si].done {
+                session.runs[ei].sets[si].weightKg = raise.fromKg
+            }
+            session.runs[ei].proposedRaise = nil
+            whyRaiseOpen.remove(session.runs[ei].id)
+        }
     }
 
     /// A quiet, tappable chip showing this exercise's rest — tap to edit it mid-session (FER-540).

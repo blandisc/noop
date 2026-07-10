@@ -159,13 +159,17 @@ extension WhoopStore {
                 let args: [DatabaseValueConvertible?] = [
                     re.id, re.routineId, re.exerciseId, re.position, derivedSets, derivedReps,
                     derivedWeight, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
-                    re.supersetGroup, re.hrRestReference.rawValue, re.hrRestValue
+                    re.supersetGroup, re.hrRestReference.rawValue, re.hrRestValue,
+                    re.progressionEnabled, re.progressionSessions, re.progressionIncrementKg,
+                    re.progressionDeload.rawValue, re.progressionIgnoreRecovery
                 ]
                 try db.execute(sql: """
                     INSERT INTO routineExercise
                         (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
-                         warmupPercents, restMode, restSeconds, supersetGroup, hrRestReference, hrRestValue)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         warmupPercents, restMode, restSeconds, supersetGroup, hrRestReference, hrRestValue,
+                         progressionEnabled, progressionSessions, progressionIncrementKg, progressionDeload,
+                         progressionIgnoreRecovery)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
                 for (idx, s) in planned.enumerated() {
                     // The four rest columns are written together (FER-715): a non-nil override writes
@@ -379,7 +383,12 @@ extension WhoopStore {
                         restMode: RestMode(rawValue: r["restMode"]) ?? .heartRate,
                         restSeconds: r["restSeconds"], supersetGroup: r["supersetGroup"],
                         hrRestReference: HRRestReference(rawValue: r["hrRestReference"]) ?? .restingMargin,
-                        hrRestValue: r["hrRestValue"])
+                        hrRestValue: r["hrRestValue"],
+                        progressionEnabled: r["progressionEnabled"] ?? false,
+                        progressionSessions: r["progressionSessions"] ?? 2,
+                        progressionIncrementKg: r["progressionIncrementKg"],
+                        progressionDeload: DeloadPolicy(rawValue: r["progressionDeload"] ?? "propose") ?? .propose,
+                        progressionIgnoreRecovery: r["progressionIgnoreRecovery"] ?? false)
     }
 
     private static func routineSet(_ r: Row) -> RoutineSet {
