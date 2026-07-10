@@ -30,6 +30,12 @@ The package contains more analytics than the app currently calls. This section i
 | `CorrelationEngine` | `CorrelationEngine.swift` | **Live.** Used by `InsightsView`, `CompareView`, `MetricExplorerView`. |
 | `BehaviorInsights` | `BehaviorInsights.swift` | **Live.** Used by `InsightsView` (`rank` + `sentence`). |
 | `ComparisonEngine` | `ComparisonEngine.swift` | **Live.** Used by `MetricExplorerView`. |
+| `VO2maxTrend` | `VO2maxTrend.swift` | **Live.** Surfaced in `FitnessAgeDetailView` (the VO₂max trajectory / direction). APPROXIMATE. |
+| `NocturnalDC` | `NocturnalDC.swift` | **Library-only** (FER-680). Not yet surfaced in a screen. APPROXIMATE. |
+| `ThermalStabilityEngine` | `ThermalStabilityEngine.swift` | **Library-only** (FER-681). Not yet surfaced; the descriptive bands must be checked against the strap's real skin-temp resolution before it is shown. APPROXIMATE. |
+| `RespirationTrendWatch` | `RespirationTrendWatch.swift` | **Library-only** (FER-682). Feeds the composite `IllnessSignalEngine`; not yet surfaced on its own. APPROXIMATE. |
+| `HeartRateRecovery` | `HeartRateRecovery.swift` | **Library-only / experimental** (FER-683). Behind the experimental-metrics flag; UI in progress (FER-852). APPROXIMATE. |
+| `DFAAlpha1` | `DFAAlpha1.swift` | **Library-only / experimental** (FER-683). Inert unless `experimentalEnabled`; refuses to output on a noisy signal. Not surfaced. APPROXIMATE. |
 
 **In short:** the *interactive data-interrogation* engines (correlation, behavior effects, period comparison) are wired into screens, and the *recompute-from-raw-streams* engines (recovery, strain, sleep staging, workout detection) run live too: `IntelligenceEngine` calls `analyzeDay` for every night the strap offloaded and persists the APPROXIMATE results under the `"-noop"` source, merged under any imported rows — a WHOOP export still wins wherever it covers a day. The live BLE app additionally runs four small inline analytics in `AppModel`: HR smoothing, RMSSD, HR-zone coaching, an illness/strain early-warning, and a resting-stress nudge.
 
@@ -443,6 +449,48 @@ The Nes model was calibrated on HUNT questionnaire inputs; NOOP feeds it wearabl
 ### Readiness & honesty
 
 `assessReadiness` returns `.ready` / `.estimate` / `.notReady` from profile completeness + 7-day coverage. RHR (the validated driver) gates confidence: `.ready` needs a well-covered RHR week; sparse activity never promotes to `.ready`. Body metrics (height/weight/waist) only power the separate VO₂max and never block the headline. References: **Nes 2011** (Med Sci Sports Exerc 43(11):2024-30), **Kurtze 2008** (HUNT1 PA-Q), **Dial 2025** (nocturnal RHR validation).
+
+---
+
+## `VO2maxTrend` — the trajectory of VO₂max, not a point (FER-679)
+
+Source: `VO2maxTrend.swift`. **Live** — surfaced in `FitnessAgeDetailView`. `FitnessAgeEngine` (above) estimates a single VO₂max, but that estimate carries a standard error of ≈5.7 ml·kg⁻¹·min⁻¹ (Nes 2011), so day-to-day jitter swamps real change. This engine reports the **direction over weeks** — subiendo / estable / bajando — with a noise floor that refuses to call a trend the estimator can't resolve.
+
+### Method (independent implementation of standard robust methods)
+
+- **Slope** — the **Theil–Sen estimator**: the median of all pairwise slopes `(yⱼ−yᵢ)/(xⱼ−xᵢ)`, which ignores outlier estimates that would tilt an ordinary least-squares line (Sen, "Estimates of the regression coefficient based on Kendall's tau", *JASA* 1968;63:1379–1389).
+- **Band** — the 25th/75th percentiles of those same pairwise slopes give a robust, distribution-free interval on the slope; projected over the observed span they bound the change.
+- **Gates** — a direction is reported only when BOTH the slope band excludes zero AND the projected change beats the noise floor `~SEE/√n`; otherwise `.stable` (or `nil` below `minPoints`/`minSpanDays` → hide).
+
+### Honesty
+
+The √n noise floor is a **product-calibration knob, NOT a derived standard error** — the weekly estimates are not independent replicates (they share slowly-moving inputs: age, WHR, resting HR), so √n shrinks *too fast* and at large n the floor becomes permissive, not conservative (CDO review, FER-834 — left as-is deliberately). The **primary** guard against a spurious direction is therefore the distribution-free band-excludes-zero gate, not the floor. Fitness is among the strongest mortality predictors (**Mandsager 2018**, *JAMA Netw Open* 1(6):e183605, HR 5.04 low-vs-elite), but the engine shows a DIRECTION only — never a longevity promise, never "years of life". APPROXIMATE, not a clinical measurement.
+
+---
+
+## Experimental & library-only rhythm engines (FER-656)
+
+Five newer engines from the "métricas de valor" epic. All are pure, deterministic, DB-free and **not yet surfaced on their own screen** (HRR-60s / DFA-α1 sit behind the experimental-metrics flag). Each reports the user's OWN trend against their OWN baseline — never a population cut-off, risk category or diagnosis.
+
+### `NocturnalDC` — nocturnal Deceleration Capacity via PRSA (FER-680)
+
+Quantifies how much the heart can "ease off" (decelerate) at rest — the deceleration component RMSSD/SDNN blend together. **Method** (Bauer A, Kantelhardt JW, Barthel P, et al., "Deceleration capacity of heart rate as a predictor of mortality after myocardial infarction", *Lancet* 2006;367(9523):1674–1681): mark every beat longer than the one before (an artifact guard rejects increases beyond 5%), align a short window around each anchor, average over all anchors (Phase-Rectified Signal Averaging), then take Bauer's Haar-wavelet quantifier at scale T=1: `DC = [X̄(0) + X̄(1) − X̄(−1) − X̄(−2)] / 4` ms. PRSA averages over thousands of anchors, so it tolerates residual wrist-PPG noise far better than a per-window nonlinear exponent (DFA-α1) would — which is why DC is **not** flag-gated; signal quality is surfaced through `confidence`. **Hedge:** Bauer's mortality cut-offs (≈DC ≤ 4.5 ms high-risk) were derived from post-infarction ECG at 1000 Hz and are **deliberately NOT imported** — DC is shown only as the user's own trend ("more / about the same / less braking reserve than your normal"), never a mortality score. APPROXIMATE, not a medical device.
+
+### `ThermalStabilityEngine` — nocturnal distal warming + its night-to-night stability (FER-681)
+
+Reports the magnitude of the wrist-skin warming that accompanies sleep onset (skin temp rises as core falls and distal vasodilation dumps heat — **Kräuchi et al.**, "Warm feet promote the rapid onset of sleep", *Nature* 1999;401:36–37) and how consistent it is night-to-night, reusing the shipped `Baselines` EWMA for a robust center/spread and a descriptive 3-band coefficient-of-variation label. **Sensor honesty (load-bearing):** NOOP has skin temp only *while asleep*, so it CANNOT fit a 24 h cosinor and never claims a "24 h circadian amplitude". The UK-Biobank association between a flattened 24 h amplitude and future cardiometabolic risk (**Brooks TG, Skarke C, et al.**, "Diurnal rhythms of wrist temperature are associated with future disease risk in the UK Biobank", *Nat Commun* 2023;14:5172; peer-reviewed; association, never causal) is a population 24 h result — NOT this nocturnal-only signal — so the copy never invokes the disease link. **Hedge:** the CV cutoffs and 0.1 °C floor are product-calibration knobs, NOT validated against the strap's real skin-temp resolution — they must be checked before the band is ever shown. APPROXIMATE.
+
+### `RespirationTrendWatch` — nightly respiratory rate as a personal deviation channel (FER-682)
+
+Sleeping respiratory rate is one of the most stable night-to-night vitals, so a small **sustained** drift against a person's own quiet baseline is informative. Builds the personal baseline with the shipped `Baselines.foldHistory` + the standard `resp` config over the nights *preceding* the recent window (so the deviation can't anchor its own reference), and flags a deviation only when the recent nights clear BOTH an absolute floor (`minAbsoluteDeltaRpm` = 2.0) AND the personal robust-σ gate (2σ), sustained for ≥2 consecutive nights. Feeds the composite `IllnessSignalEngine` via `asIllnessSignal`. **Citation:** Toften et al., "Noncontact Longitudinal Respiratory Rate Measurements in Healthy Adults Using Radar-Based Sleep Monitor (Somnofy): Validation Study", *JMIR Biomed Eng* 2022;7(2):e36618 — consistent nightly means (MAE ~0.18 rpm) and sustained deviations coinciding with self-reported illness; their ~56% personalized-vs-universal variance cut is taken as **motivation** for a personal baseline, not a figure that transfers to a WHOOP strap. **Hedge:** wellness only — the copy is always "your breathing drifted from your normal"; never names a condition, infection or fever. APPROXIMATE, not a diagnosis.
+
+### `HeartRateRecovery` — post-session 60-second HR recovery (HRR-60s) (FER-683)
+
+How many bpm the heart rate falls in the first minute after a hard effort ends — a window dominated by parasympathetic (vagal) reactivation; a faster drop reflects better autonomic recovery, a blunted drop tracks fatigue. Takes the end HR as a median over `[end − 2·halfWidth, end]` (looking back into the effort) and the recovery HR as a median over `[end + 60 ± halfWidth]`, returning an uncovered result when either window is empty so a missing tail never fabricates a drop; compares the drop only to the user's own prior sessions (`bluntedVsNormal` at 2σ). **Hedge — intra-user trend, NOT Cole's cutoff:** the clinical literature (**Cole et al.**, *NEJM* 1999;341:1351, abnormal ≤ 12 bpm at 1 min as a mortality predictor; Qiu et al., *JAHA* 2017 meta-analysis HR ~1.68) derives population cut-offs from graded treadmill tests with a fixed recovery protocol — a wrist strap after an arbitrary workout is not that protocol, so this engine NEVER applies the 12-bpm cut-off or any mortality framing. Wellness / training awareness, APPROXIMATE, not a diagnosis. The **safer half** of FER-683 (the strap is still and PPG is clean once effort stops).
+
+### `DFAAlpha1` — short-scale DFA exponent α1 as an experimental threshold proxy (FER-683)
+
+The short-scale detrended-fluctuation-analysis exponent (α1) of the R-R series as an EXPERIMENTAL proxy for the aerobic/anaerobic thresholds. **Method** (Peng et al., "Mosaic organization of DNA nucleotides", *Phys Rev E* 1994;49:1685 — the origin of DFA): integrate the mean-removed R-R series, least-squares detrend non-overlapping boxes at short scales n ∈ [4, 16] beats, and take α1 = slope of log F(n) vs log n. As intensity rises α1 falls from ~1.0 toward ~0.5; the intensity landmarks used as a proxy — α1 ≈ 0.75 ↔ first ventilatory/aerobic threshold (VT1), α1 ≈ 0.5 ↔ second/anaerobic threshold (VT2) — are from **Rogers B, Giles D, Draper N, Hoos O, Gronwald T**, "A New Detection Method Defining the Aerobic Threshold… Based on Fractal Correlation Properties of Heart Rate Variability", *Front Physiol* 2021;11:596567, and the same group's anaerobic-threshold work. **Hedge — why it is experimental (load-bearing):** DFA-α1 was validated against ECG R-R at ~1000 Hz and is exquisitely sensitive to R-R artifacts, and wrist PPG *during motion* — exactly the exercising window where α1 matters — injects artifacts that can read a false threshold (PPG↔ECG equivalence is unresolved in the literature; **Rogers et al.**, *Sensors* 2021;21(3):821 show even 1/3/6% missed beats materially bias α1). So the engine is inert unless the caller passes `experimentalEnabled = true`, refuses to output unless the cleaned R-R clears a strict ≤5% artifact gate, and carries a standing caveat on every result. Presented as a descriptive proxy, never a measured threshold, VO2max, fitness verdict or prescription. APPROXIMATE.
 
 ---
 
