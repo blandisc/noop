@@ -334,18 +334,22 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         public var sets: [SetSnapshot]
         public var currentSet: Int
         public var skipped: Bool
+        /// «Volver a X» was tapped for this exercise (FER-835). Optional so a pre-FER-835 snapshot
+        /// (key absent) still decodes; nil means false.
+        public var raiseOptedOut: Bool?
 
         public init(id: String, exerciseId: String, name: String, type: ExerciseType,
                     restSeconds: Int, restMode: RestMode, hrRestReference: HRRestReference,
                     hrRestValue: Double, lastWeightKg: Double? = nil, lastReps: Int? = nil,
                     lastTimeS: Int? = nil, lastDistanceM: Double? = nil, sets: [SetSnapshot],
-                    currentSet: Int, skipped: Bool) {
+                    currentSet: Int, skipped: Bool, raiseOptedOut: Bool? = nil) {
             self.id = id; self.exerciseId = exerciseId; self.name = name; self.type = type
             self.restSeconds = restSeconds; self.restMode = restMode
             self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
             self.lastWeightKg = lastWeightKg; self.lastReps = lastReps
             self.lastTimeS = lastTimeS; self.lastDistanceM = lastDistanceM
             self.sets = sets; self.currentSet = currentSet; self.skipped = skipped
+            self.raiseOptedOut = raiseOptedOut
         }
     }
     public var id: String

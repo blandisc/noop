@@ -17,7 +17,7 @@ final class StrengthSessionSnapshotTests: XCTestCase {
             id: "r1", exerciseId: "bench", name: "Press de banca", type: .weightReps,
             restSeconds: 90, restMode: .heartRate, hrRestReference: .restingMargin, hrRestValue: 12,
             lastWeightKg: 57.5, lastReps: 8, lastTimeS: nil, lastDistanceM: nil,
-            sets: [set1, set2], currentSet: 1, skipped: false)
+            sets: [set1, set2], currentSet: 1, skipped: false, raiseOptedOut: true)
         return StrengthSessionSnapshot(
             id: "sess-1", routineId: "push-a", routineName: "Push A", startTs: 900,
             runs: [run], currentIndex: 0,
@@ -48,5 +48,17 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertEqual(decoded.paused, true)                                   // FER-823
         XCTAssertEqual(decoded.pausedAccumulatedS, 45)
         XCTAssertEqual(decoded.pausedAt, Date(timeIntervalSince1970: 1002))
+        XCTAssertEqual(decoded.runs.first?.raiseOptedOut, true)                 // FER-835
+    }
+
+    /// FER-835: a snapshot persisted BEFORE the field existed (no `raiseOptedOut` key) still decodes —
+    /// the mark is optional, absent = no opt-out.
+    func testPreFer835SnapshotDecodesWithoutRaiseOptedOut() throws {
+        var snap = sample()
+        snap.runs[0].raiseOptedOut = nil
+        let data = try JSONEncoder().encode(snap)   // optional nil → key absent, like an old snapshot
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("raiseOptedOut"))
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertNil(decoded.runs.first?.raiseOptedOut)
     }
 }

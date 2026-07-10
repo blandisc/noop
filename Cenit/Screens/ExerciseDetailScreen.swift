@@ -28,7 +28,7 @@ struct ExerciseDetailScreen: View {
     @State private var isLoopPlaying = true
 
     /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
-    @State private var history: [(startTs: Int, weightKg: Double, reps: Int)] = []
+    @State private var history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] = []
     /// Stored best-per-metric records for this exercise (FER-504/505). Read-only; derived on save.
     @State private var prs: [PersonalRecord] = []
     /// Where this exercise's progression cycle stands (FER-F); nil = no slot opted in.
@@ -615,7 +615,7 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    private func byDay(_ combine: (Double, (startTs: Int, weightKg: Double, reps: Int)) -> Double) -> [Double] {
+    private func byDay(_ combine: (Double, (startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)) -> Double) -> [Double] {
         var acc: [String: Double] = [:]
         for s in history { acc[dayKey(s.startTs)] = combine(acc[dayKey(s.startTs)] ?? 0, s) }
         return acc.sorted { $0.key < $1.key }.map(\.value)

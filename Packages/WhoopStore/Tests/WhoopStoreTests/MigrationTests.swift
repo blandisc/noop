@@ -62,7 +62,7 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 30)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 31)
     }
 
     /// v23 (FER-531): the weekly-split table exists with `weekday` as its PRIMARY KEY (one routine per
@@ -124,7 +124,7 @@ final class MigrationTests: XCTestCase {
         }
         let pk = try await store.primaryKeyColumns("circadianPhase")
         XCTAssertEqual(pk, ["deviceId", "day"], "PK is (deviceId, day) → at most one record per day")
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 30)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 31)
     }
 
     /// v29 (FER-A): the four load-progression columns exist on `routineExercise`, and a routine seeded at
@@ -164,6 +164,41 @@ final class MigrationTests: XCTestCase {
             XCTAssertEqual(try Int.fetchOne(db, sql:
                 "SELECT progressionIgnoreRecovery FROM routineExercise WHERE id = 're1'"), 0,
                 "pre-v30 exercise defaults to deferring on low recovery")
+        }
+    }
+
+    /// v31 (FER-835): the progressionOptOut table exists with a (sessionId, exerciseId) composite PK,
+    /// append-only — and re-running the migration against a DB that already grew the table (iterating
+    /// locally, FER-791 pattern) is a no-op, not a crash.
+    func testV31CreatesProgressionOptOutTableAppendOnly() async throws {
+        let store = try await WhoopStore.inMemory()   // migrated to v31
+        let tables = try await store.tableNames()
+        XCTAssertTrue(tables.contains("progressionOptOut"), "v31 must create progressionOptOut")
+        for prior in ["strengthSession", "setEntry", "routineExercise", "inProgressStrengthSession"] {
+            XCTAssertTrue(tables.contains(prior), "v31 is append-only — \(prior) must survive")
+        }
+        let pk = try await store.primaryKeyColumns("progressionOptOut")
+        XCTAssertEqual(pk, ["sessionId", "exerciseId"], "one opt-out row per (session, exercise)")
+    }
+
+    /// v31 re-run safety: a DB where the table already exists (pre-created at v30) migrates cleanly.
+    func testV31IsNoOpWhenTableAlreadyExists() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v30")
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                CREATE TABLE progressionOptOut (
+                    sessionId TEXT NOT NULL, exerciseId TEXT NOT NULL,
+                    PRIMARY KEY (sessionId, exerciseId))
+                """)
+            try db.execute(sql:
+                "INSERT INTO progressionOptOut (sessionId, exerciseId) VALUES ('s1', 'bench')")
+        }
+        try migrator.migrate(dbQueue)   // → v31, must not crash on the existing table
+        try await dbQueue.read { db in
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM progressionOptOut"), 1,
+                           "the pre-existing row survives the no-op migration")
         }
     }
 
