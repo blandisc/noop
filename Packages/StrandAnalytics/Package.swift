@@ -10,7 +10,15 @@ let package = Package(
         .package(path: "../WhoopStore"),
     ],
     targets: [
-        .target(name: "StrandAnalytics", dependencies: ["WhoopProtocol", "WhoopStore"]),
-        .testTarget(name: "StrandAnalyticsTests", dependencies: ["StrandAnalytics"]),
+        .target(
+            name: "StrandAnalytics",
+            dependencies: ["WhoopProtocol", "WhoopStore"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
+        .testTarget(
+            name: "StrandAnalyticsTests",
+            dependencies: ["StrandAnalytics"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
     ]
 )

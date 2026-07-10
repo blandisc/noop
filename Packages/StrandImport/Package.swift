@@ -11,14 +11,24 @@ let package = Package(
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
     ],
     targets: [
-        .target(name: "StrandImport", dependencies: [
-            "WhoopStore", "StrandTraining",
-            .product(name: "ZIPFoundation", package: "ZIPFoundation"),
-        ], resources: [
-            .process("Resources"),
-        ]),
-        .testTarget(name: "StrandImportTests", dependencies: ["StrandImport", "WhoopStore"], resources: [
-            .copy("Resources"),
-        ]),
+        .target(
+            name: "StrandImport",
+            dependencies: [
+                "WhoopStore", "StrandTraining",
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
+            ],
+            resources: [
+                .process("Resources"),
+            ],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
+        .testTarget(
+            name: "StrandImportTests",
+            dependencies: ["StrandImport", "WhoopStore"],
+            resources: [
+                .copy("Resources"),
+            ],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
     ]
 )

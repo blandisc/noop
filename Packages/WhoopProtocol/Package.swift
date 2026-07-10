@@ -11,16 +11,19 @@ let package = Package(
     targets: [
         .target(
             name: "WhoopProtocol",
-            resources: [.process("Resources/whoop_protocol.json")]
+            resources: [.process("Resources/whoop_protocol.json")],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .executableTarget(
             name: "whoop-decode",
-            dependencies: ["WhoopProtocol"]
+            dependencies: ["WhoopProtocol"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(
             name: "WhoopProtocolTests",
             dependencies: ["WhoopProtocol"],
-            resources: [.process("Resources")]
+            resources: [.process("Resources")],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
     ]
 )
