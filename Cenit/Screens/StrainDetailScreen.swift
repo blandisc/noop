@@ -159,7 +159,34 @@ struct StrainDetailScreen: View {
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                // FER-676: how much of the active day the strap actually covered — the score's
+                // trust grade, shown only when there IS a score to grade. Calibrating never
+                // reaches here (no score → no sello), so the chip has two states.
+                if v != nil, let tier = model.confidence {
+                    ConfidenceSello(Text(Self.confidenceText(tier)),
+                                    a11yLabel: Text(Self.confidenceA11y(tier)),
+                                    dimmed: tier != .solid, theme: theme)
+                        .padding(.top, 2)
+                }
             }
+        }
+    }
+
+    /// Sello copy per tier (FER-676). English source; es-MX in the String Catalog. `calibrating`
+    /// only shows when a score somehow exists below the data floor — reads as still settling.
+    static func confidenceText(_ c: ScoreConfidence) -> LocalizedStringKey {
+        switch c {
+        case .solid:       return "High confidence"
+        case .building:    return "Medium confidence"
+        case .calibrating: return "Calibrating"
+        }
+    }
+
+    static func confidenceA11y(_ c: ScoreConfidence) -> LocalizedStringKey {
+        switch c {
+        case .solid:       return "Confidence: high"
+        case .building:    return "Confidence: medium"
+        case .calibrating: return "Confidence: calibrating"
         }
     }
 
@@ -561,6 +588,9 @@ struct StrainDetailModel {
     /// The gated, directional drivers of strain ("Qué mueve tu esfuerzo"), computed from the user's own
     /// history (FER-239). Empty when nothing clears the sufficiency gate → the block stays hidden.
     let drivers: [StrainDriverFinding]
+    /// Today's effort-confidence tier (FER-676), from the persisted `effortConfidence` — how much of the
+    /// active day HR actually covered. nil when today has no score (nothing to grade → no sello).
+    var confidence: ScoreConfidence? = nil
 
     /// True when there's a score today or any stored strain history to draw (the rich path); false → empty.
     var hasData: Bool { today != nil || !series.isEmpty }
@@ -577,7 +607,8 @@ struct StrainDetailModel {
             .compactMap { d in d.recovery.map { (day: d.day, value: $0) } }
             .sorted { $0.day < $1.day }
         let drivers = WhatMovesStrainEngine.drivers(strain: series, recovery: recovery)
-        return StrainDetailModel(today: today?.strain, series: series, loaded: loaded, drivers: drivers)
+        return StrainDetailModel(today: today?.strain, series: series, loaded: loaded, drivers: drivers,
+                                 confidence: today?.effortConfidence.flatMap(ScoreConfidence.init(rawValue:)))
     }
 }
 

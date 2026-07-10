@@ -10696,6 +10696,57 @@
         }
       }
     },
+    "Confidence: calibrating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidence: calibrating"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza: calibrando"
+          }
+        }
+      }
+    },
+    "Confidence: high": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidence: high"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza: alta"
+          }
+        }
+      }
+    },
+    "Confidence: medium": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidence: medium"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza: media"
+          }
+        }
+      }
+    },
     "Confidence: solid": {
       "localizations": {
         "en": {
@@ -17403,6 +17454,23 @@
         }
       }
     },
+    "High confidence": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High confidence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza alta"
+          }
+        }
+      }
+    },
     "Higher HRV usually means better recovery. What matters is your trend, not any single day's number.": {
       "extractionState": "manual",
       "localizations": {
@@ -22598,6 +22666,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Medio"
+          }
+        }
+      }
+    },
+    "Medium confidence": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium confidence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confianza media"
           }
         }
       }
