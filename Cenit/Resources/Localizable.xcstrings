@@ -54400,6 +54400,159 @@
         }
       }
     },
+    "Cardiac recovery · 60 s": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cardiac recovery · 60 s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación cardiaca · 60 s"
+          }
+        }
+      }
+    },
+    "bpm in 60 s": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm in 60 s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bpm en 60 s"
+          }
+        }
+      }
+    },
+    "No clean recovery reading for this session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No clean recovery reading for this session."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay una lectura limpia de recuperación para esta sesión."
+          }
+        }
+      }
+    },
+    "vs your normal · ~%lld bpm · %lld sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs your normal · ~%lld bpm · %lld sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs tu normal · ~%lld bpm · %lld sesiones"
+          }
+        }
+      }
+    },
+    "Personal trend, not a clinical threshold. Experimental reading.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal trend, not a clinical threshold. Experimental reading."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tendencia personal, no un umbral clínico. Lectura experimental."
+          }
+        }
+      }
+    },
+    "Still learning your usual recovery — keep logging sessions.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still learning your usual recovery — keep logging sessions."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún estoy aprendiendo tu recuperación habitual — sigue registrando sesiones."
+          }
+        }
+      }
+    },
+    "Your heart came down slower than usual after this one — a sign to watch recovery.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your heart came down slower than usual after this one — a sign to watch recovery."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu corazón bajó más lento que de costumbre tras esta — una señal para cuidar la recuperación."
+          }
+        }
+      }
+    },
+    "Your heart came down faster than usual — strong recovery after this session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your heart came down faster than usual — strong recovery after this session."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu corazón bajó más rápido que de costumbre — buena recuperación tras esta sesión."
+          }
+        }
+      }
+    },
+    "Your recovery after this session looks like your normal.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your recovery after this session looks like your normal."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu recuperación tras esta sesión se ve como tu normal."
+          }
+        }
+      }
+    },
     "vs your base": {
       "localizations": {
         "en": {

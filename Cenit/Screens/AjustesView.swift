@@ -114,6 +114,7 @@ private struct AjustesLanding: View {
     @State private var showReloj = false
     /// Opt-in experimental body-clock reading (off by default). FER-712.
     @AppStorage("noop.relojCorporalEnabled") private var relojCorporalEnabled = false
+    @AppStorage(WhitespaceMetricsExperiment.enabledKey) private var whitespaceMetrics = false
     /// FER-722: opt-in exercise media download (default off — the first/only exception to offline
     /// for exercise thumbs/loops, gated end-to-end by `MediaDownloadCoordinator`).
     @AppStorage(MediaDownloadCoordinator.enabledKey) private var exerciseMediaEnabled = false
@@ -356,6 +357,15 @@ private struct AjustesLanding: View {
                     divider
                     navRow("Ver tu reloj corporal") { showReloj = true }
                 }
+                divider
+                Toggle(isOn: $whitespaceMetrics) {
+                    Text("Métricas experimentales").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                .frame(minHeight: 44)
+                Text("Lecturas nuevas y aproximadas: reserva vagal nocturna, estabilidad térmica, respiración de la noche y recuperación post-sesión. Necesitan varios días de uso para leerse bien.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
                 divider
                 Toggle(isOn: $exerciseMediaEnabled) {
                     Text("Descargar biblioteca de ejercicios").font(StrandFont.body).foregroundStyle(theme.ink)

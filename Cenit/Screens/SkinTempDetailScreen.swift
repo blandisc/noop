@@ -36,6 +36,9 @@ struct SkinTempDetailScreen: View {
     var theme: InstrumentoTheme = .base
     /// Everything the screen draws from the in-memory dashboard, derived ONCE by the caller (no DB here).
     let model: SkinTempDetailModel
+    /// Loads the recent per-night distal warming magnitudes (°C) for the nocturnal thermal-stability read
+    /// (FER-850), behind the experimental toggle. The heavy multi-night skin-temp read lives in the repo.
+    var loadWarmingMagnitudes: () async -> [Double?] = { [] }
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
     @State private var range: ExploreRange = .month
@@ -45,6 +48,9 @@ struct SkinTempDetailScreen: View {
     @State private var methodExpanded = false
     /// Which inline disclosure is open (one at a time): `"band"` or `"stat:<slot>"`. (Detalle de Vital)
     @State private var openDisclosure: String? = nil
+    /// The nocturnal thermal-stability read (typical warming + night-to-night consistency), loaded async
+    /// behind the experimental toggle; `nil` until loaded or when off. (FER-850)
+    @State private var thermal: ThermalStabilityEngine.Result? = nil
 
     var body: some View {
         ScrollView {
@@ -53,6 +59,10 @@ struct SkinTempDetailScreen: View {
                 if !model.loaded {
                     ChartWell(theme).loading(height: 160)
                 } else {
+                    if WhitespaceMetricsExperiment.isEnabled, let t = thermal {
+                        blockDivider
+                        thermalBlock(t)
+                    }
                     if model.series.count >= 2 {
                         blockDivider
                         historiaSection
@@ -78,9 +88,83 @@ struct SkinTempDetailScreen: View {
             range = .month
             parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
         }
+        // Load the nocturnal thermal-stability read once, only when the experimental toggle is on. The
+        // heavy multi-night skin-temp read lives behind `loadWarmingMagnitudes`. (FER-850)
+        .task {
+            guard WhitespaceMetricsExperiment.isEnabled else { return }
+            let mags = await loadWarmingMagnitudes()
+            thermal = mags.isEmpty ? nil : ThermalStabilityEngine.evaluate(magnitudes: mags)
+        }
     }
 
     private func toggle(_ key: String) { openDisclosure = (openDisclosure == key) ? nil : key }
+
+    // MARK: - Estabilidad térmica nocturna (FER-850) — tras el toggle experimental
+
+    /// The «Nightly thermal stability» block: the typical distal warming (°C) into sleep as the datum, a
+    /// night-to-night consistency word, and an honest one-liner. Framed as an ASSOCIATION — never a full
+    /// 24-hour circadian amplitude (we only have the night). Only shown with the experimental toggle on.
+    @ViewBuilder private func thermalBlock(_ t: ThermalStabilityEngine.Result) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Nightly thermal stability").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if t.stability == .learning {
+                Text("Still learning how consistent your nightly warming is — keep wearing it to bed.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(verbatim: String(format: "%.1f", t.typicalWarmingC))
+                        .instrumentoHero(44)
+                        .foregroundStyle(theme.ink)
+                    Text(verbatim: "°C").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    Text("typical warming into sleep")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("night to night").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(thermalWord(t.stability))
+                        .font(StrandFont.number(21, weight: .semibold))
+                        .foregroundStyle(thermalColor(t.stability))
+                }
+                Text(thermalCopy(t))
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func thermalWord(_ s: ThermalStabilityEngine.Stability) -> LocalizedStringKey {
+        switch s {
+        case .consistent: return "Consistent"
+        case .moderate:   return "Moderate"
+        case .variable:   return "Variable"
+        case .learning:   return "Learning"
+        }
+    }
+
+    private func thermalColor(_ s: ThermalStabilityEngine.Stability) -> Color {
+        switch s {
+        case .consistent: return theme.dataRecovery
+        case .moderate:   return theme.ink
+        case .variable:   return theme.warning
+        case .learning:   return theme.inkTertiary
+        }
+    }
+
+    /// Honest, localized one-liner — composed in the UI (not the engine's English `copy`) so it localizes
+    /// with the app catalog. ASSOCIATION framing, never a 24-hour circadian-amplitude claim. (FER-850)
+    private func thermalCopy(_ t: ThermalStabilityEngine.Result) -> LocalizedStringKey {
+        switch t.stability {
+        case .consistent: return "Your body's warming as you fall asleep is steady night-to-night. A consistent wind-down — an association, not a full 24-hour rhythm."
+        case .moderate:   return "Your nightly warming into sleep varies a moderate amount night-to-night. An association, not a full 24-hour rhythm."
+        case .variable:   return "Your nightly warming into sleep swings a fair amount night-to-night. A steadier wind-down tends to settle it. An association, not a full 24-hour rhythm."
+        case .learning:   return ""
+        }
+    }
 
     /// A subtle 1px rule between blocks (token-only). Mirrors the sibling screens' `blockDivider`.
     private var blockDivider: some View {

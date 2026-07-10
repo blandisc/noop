@@ -440,14 +440,17 @@ struct TodayView: View {
             }
             .sheet(item: $sleepDetail) { item in
                 SleepDetailScreen(theme: theme, model: item.model,
-                                  loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) })
+                                  loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
+                                  loadNightRR: { from, to in await repo.rrIntervals(from: from, to: to) },
+                                  loadDCBaseline: { await repo.nocturnalDCBaseline() })
             }
             .sheet(item: $strainDetail) { item in
                 StrainDetailScreen(theme: theme, model: item.model,
                                    curveLoader: { await loadStrainCurve() })
             }
             .sheet(item: $skinTempDetail) { item in
-                SkinTempDetailScreen(theme: theme, model: item.model)
+                SkinTempDetailScreen(theme: theme, model: item.model,
+                                     loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
             }
             .sheet(item: $stressDetail) { item in
                 // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns,

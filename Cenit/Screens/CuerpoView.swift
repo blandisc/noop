@@ -409,7 +409,9 @@ private struct CuerpoLanding: View {
             StrainDetailScreen(theme: theme, model: item.model, curveLoader: { await loadStrainCurve() })
         } else if let item = sleepDetail {
             SleepDetailScreen(theme: theme, model: item.model,
-                              loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) })
+                              loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
+                              loadNightRR: { from, to in await repo.rrIntervals(from: from, to: to) },
+                              loadDCBaseline: { await repo.nocturnalDCBaseline() })
         } else if let item = stressDetail {
             StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
                                patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
@@ -419,7 +421,8 @@ private struct CuerpoLanding: View {
         } else if let item = trainingLoadItem {
             TrainingLoadSheet(model: item.model, theme: theme)
         } else if let item = skinTempDetail {
-            SkinTempDetailScreen(theme: theme, model: item.model)
+            SkinTempDetailScreen(theme: theme, model: item.model,
+                                 loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
         } else if showActivityCost {
             activityRecoverySheet
         } else if showFitnessAge {

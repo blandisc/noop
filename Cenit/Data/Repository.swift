@@ -568,6 +568,47 @@ final class Repository: ObservableObject {
         return (try? await store.rrIntervals(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
     }
 
+    /// Raw skin-temperature samples (`raw_adc`) for the strap in `[from, to]`. Range-scanned like
+    /// `rrIntervals`. Feeds the nocturnal thermal-stability surface (FER-850). °C = raw/128 + offset.
+    func skinTempSamples(from: Int, to: Int, limit: Int = 200_000) async -> [SkinTempSample] {
+        guard let store = await ensureStore() else { return [] }
+        return (try? await store.skinTempSamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
+    }
+
+    /// Per-night distal warming magnitudes (°C, sleep-onset → nocturnal plateau) over the last `nights`
+    /// strap nights, oldest → newest, for the thermal-stability read (FER-850). `nil` for a night with too
+    /// little temp. A magnitude is a difference, so the raw→°C offset cancels: (plateauRaw − onsetRaw)/128.
+    /// Heavy (one skin-temp read per night) → the caller runs it off the hot path.
+    func nocturnalWarmingMagnitudes(nights: Int = 28) async -> [Double?] {
+        guard dataSourceMode.usesWhoop else { return [] }
+        let now = Int(Date().timeIntervalSince1970)
+        let from = now - (nights + 2) * 86_400
+        let sessions = (await sleepSessions(from: from, to: now)).suffix(nights)
+        var out: [Double?] = []
+        for s in sessions where s.startTs < s.endTs {
+            let samples = (await skinTempSamples(from: s.startTs, to: s.endTs)).sorted { $0.ts < $1.ts }
+            out.append(Self.warmingMagnitudeC(samples))
+        }
+        return out
+    }
+
+    /// Onset → plateau warming (°C) for one night's in-bed skin-temp samples, or nil if too few. Onset =
+    /// mean of the first ~15% of the window (falling asleep), plateau = mean of the 40–90% window (the
+    /// settled night). Difference cancels the raw→°C offset (/128 only).
+    private static func warmingMagnitudeC(_ samples: [SkinTempSample]) -> Double? {
+        let n = samples.count
+        guard n >= 60 else { return nil }
+        let onsetHi = max(1, n * 15 / 100)
+        let plateauLo = n * 40 / 100
+        let plateauHi = max(plateauLo + 1, n * 90 / 100)
+        func meanRaw(_ r: ArraySlice<SkinTempSample>) -> Double {
+            Double(r.reduce(0) { $0 + $1.raw }) / Double(r.count)
+        }
+        let onset = meanRaw(samples[0..<onsetHi])
+        let plateau = meanRaw(samples[plateauLo..<plateauHi])
+        return (plateau - onset) / 128.0
+    }
+
     /// Gravity (accelerometer) samples for the strap in `[from, to]`. Feeds the night-rhythm
     /// motion gate (`NightRhythmAssembler`), which needs per-window stillness to discard
     /// movement-contaminated windows. Range-scanned like `rrIntervals` over `(deviceId, ts)`. (FER-666)
@@ -659,6 +700,27 @@ final class Repository: ObservableObject {
     /// Sleep spans (wall-clock seconds) overlapping `[from, to]`, to exclude from the waking reference.
     private func sleepSpans(from: Int, to: Int) async -> [ClosedRange<Int>] {
         (await sleepSessions(from: from, to: to)).compactMap { $0.startTs <= $0.endTs ? $0.startTs...$0.endTs : nil }
+    }
+
+    /// Median nocturnal Deceleration Capacity (ms) over the last `nights` strap nights, for the DC-trend
+    /// baseline the «reserva para bajar de marcha» surface reads against (FER-849). One R-R read per night,
+    /// so it's heavy — the caller runs it off the hot path (async loader). Each night's DC is computed over
+    /// its sleep session span (same span the surface uses tonight, so the trend isn't biased by method).
+    /// nil unless at least 3 recent nights read cleanly (an honest "no baseline yet" ⇒ no trend arrow).
+    func nocturnalDCBaseline(nights: Int = 14) async -> Double? {
+        guard dataSourceMode.usesWhoop else { return nil }
+        let now = Int(Date().timeIntervalSince1970)
+        let from = now - (nights + 2) * 86_400
+        let sessions = await sleepSessions(from: from, to: now)
+        var dcs: [Double] = []
+        for s in sessions.suffix(nights) where s.startTs < s.endTs {
+            let rr = (await rrIntervals(from: s.startTs, to: s.endTs)).map { Double($0.rrMs) }
+            let r = NocturnalDC.compute(rawRR: rr)
+            if r.confidence != .unreadable { dcs.append(r.dcMs) }
+        }
+        guard dcs.count >= 3 else { return nil }
+        let sorted = dcs.sorted()
+        return sorted[sorted.count / 2]
     }
 
     /// Per-day intraday-stress summaries (FER-378), reassembled from `metricSeries`, last `days` days.

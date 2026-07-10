@@ -520,4 +520,33 @@ final class SleepStagerTests: XCTestCase {
         XCTAssertEqual(SleepStager.stageAt(450, stages), "wake")
         XCTAssertEqual(SleepStager.stageAt(150, stages), "light")
     }
+
+    // MARK: - Resting-HR hardening wired to the production path (FER-674 / FER-854)
+
+    /// The production nightly resting-HR (`sessionRestingHR` → AnalyticsEngine → recovery) must
+    /// reject a sparse dropout bin and a sub-physiological artefact bin, exactly like the shipped
+    /// `RecoveryScorer.restingHR` gate — so an off-wrist minute can't fabricate an impossible RHR
+    /// that then contaminates the HRV→RHR→Charge chain.
+    func testSessionRestingHRRejectsSparseAndSubPhysiologicalBins() {
+        let windowS = 5 * 60
+        // Bin 0: a dense, genuine resting floor at 50 bpm.
+        var hr = (0..<windowS).map { HRSample(ts: $0, bpm: 50) }
+        // Bin 1: a 3-sample dropout at an impossible 10 bpm — must NOT win the floor.
+        hr += [HRSample(ts: windowS + 1, bpm: 10),
+               HRSample(ts: windowS + 2, bpm: 10),
+               HRSample(ts: windowS + 3, bpm: 10)]
+        let rhr = SleepStager.sessionRestingHR(start: 0, end: 2 * windowS, hr: hr)
+        XCTAssertEqual(rhr, 50, "the sparse sub-25 bpm bin must be rejected; the 50 bpm floor wins")
+    }
+
+    /// A dense but genuinely sub-physiological bin (mean < 25 bpm) is still rejected by the floor,
+    /// and with no qualifying bin the whole-segment fallback also stays ≥ the floor or returns nil.
+    func testSessionRestingHRSubPhysiologicalFallbackIsNil() {
+        let windowS = 5 * 60
+        // A full window of an impossible 12 bpm (dense enough to pass the sample gate, but below
+        // the 25 bpm physiological floor) — no bin qualifies, and the fallback mean is also < 25.
+        let hr = (0..<windowS).map { HRSample(ts: $0, bpm: 12) }
+        XCTAssertNil(SleepStager.sessionRestingHR(start: 0, end: windowS, hr: hr),
+                     "a sub-physiological segment must not fabricate an RHR")
+    }
 }

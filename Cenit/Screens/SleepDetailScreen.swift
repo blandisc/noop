@@ -46,6 +46,13 @@ struct SleepDetailScreen: View {
     /// block (FER-832) needs the raw 1 Hz HR the cached session doesn't carry. Defaults to empty so
     /// previews and Apple-only nights render without it. (FER-832)
     var loadNightHR: (_ from: Int, _ to: Int) async -> [HRSample] = { _, _ in [] }
+    /// Loads the night's raw R-R intervals for a `[from, to)` window — injected by the caller for the
+    /// nocturnal DC («reserva para bajar de marcha», FER-849), gated behind the experimental toggle. Empty
+    /// by default so previews and Apple-only nights render without it.
+    var loadNightRR: (_ from: Int, _ to: Int) async -> [RRInterval] = { _, _ in [] }
+    /// Loads the user's recent DC baseline (ms) for the trend read — the heavy multi-night read lives in
+    /// the repo. nil ⇒ the surface shows tonight's DC without a "vs your normal" arrow. (FER-849)
+    var loadDCBaseline: () async -> Double? = { nil }
 
     /// The metric whose info card is open (tap a Tonight's-metrics tile). (FER-227)
     @State private var metricInfo: MetricInfo?
@@ -66,6 +73,9 @@ struct SleepDetailScreen: View {
     @State private var nightShape: NightAutonomicShape.Result? = nil
     /// A small downsampled HR series (asleep window) for the fall curve. Built with the shape. (FER-832)
     @State private var nightShapeCurve: [Double] = []
+    /// The nocturnal Deceleration Capacity read (DC ms + trend vs the user's own baseline), loaded async
+    /// behind the experimental toggle; `nil` until loaded, off, an Apple-only night, or no R-R. (FER-849)
+    @State private var nightDC: NocturnalDC.Result? = nil
 
     var body: some View {
         ScrollView {
@@ -82,6 +92,12 @@ struct SleepDetailScreen: View {
                     lastNightBlock(night)
                     if let shape = nightShape {
                         nightShapeBlock(shape)
+                    }
+                    if WhitespaceMetricsExperiment.isEnabled, let dc = nightDC {
+                        nightDCBlock(dc)
+                    }
+                    if let resp = respirationRead {
+                        respirationBlock(resp)
                     }
                     stagesVsTypicalBlock(night)
                     nightMetricsBlock(night)
@@ -112,6 +128,11 @@ struct SleepDetailScreen: View {
             let (shape, curve) = await loadNightShape()
             nightShape = shape
             nightShapeCurve = curve
+        }
+        // Load the nocturnal DC read once, only when the experimental toggle is on and the night is a band
+        // night (Apple-only nights carry no R-R). The heavy baseline read lives behind `loadDCBaseline`. (FER-849)
+        .task(id: model.night?.startTs) {
+            nightDC = await loadNightDC()
         }
         // Tap a tile → its MetricInfoSheet; tap the ⓘ by "Last night" → the stages explainer. Both are
         // nested sheets themed EXPLICITLY (the theme doesn't propagate through `.sheet`, FER-162) and
@@ -248,6 +269,168 @@ struct SleepDetailScreen: View {
                 }
             }
         }
+    }
+
+    // MARK: - Reserva para bajar de marcha (FER-849) — DC nocturna, tras el toggle experimental
+
+    /// Compute tonight's nocturnal DC from the night's R-R (restricted to the sleep-session span by the
+    /// `[startTs, endTs)` window) plus the user's own recent baseline for the trend. Returns `nil` — so the
+    /// block hides — when the toggle is off, it's an Apple-only night, or there's no R-R at all; an
+    /// unreadable-but-band night returns a Result with `confidence == .unreadable` for the honest line.
+    private func loadNightDC() async -> NocturnalDC.Result? {
+        guard WhitespaceMetricsExperiment.isEnabled,
+              let night = model.night, !model.isAppleHealth else { return nil }
+        let rr = (await loadNightRR(night.startTs, night.endTs)).map { Double($0.rrMs) }
+        guard !rr.isEmpty else { return nil }
+        let baseline = await loadDCBaseline()
+        return NocturnalDC.compute(rawRR: rr, baselineDcMs: baseline)
+    }
+
+    /// The «Reserva para bajar de marcha» block: DC in ms as the dominant numeral (heart hue), the trend
+    /// vs the user's OWN normal as a quiet secondary reading, and an honest one-liner. A personal pattern,
+    /// never a risk class or mortality number. Only shown with the experimental toggle on. (FER-849)
+    @ViewBuilder private func nightDCBlock(_ dc: NocturnalDC.Result) -> some View {
+        DetailBlock("Braking reserve", theme: theme) {
+            if dc.confidence == .unreadable {
+                Text("There isn't enough signal tonight to read how your heart eases off the gas.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(verbatim: String(format: "%.1f", dc.dcMs))
+                            .instrumentoHero(52)
+                            .foregroundStyle(theme.dataHeart)
+                        Text(verbatim: "ms")
+                            .font(StrandFont.unit)
+                            .foregroundStyle(theme.dataHeart)
+                        Text("resting vagal reserve")
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                    }
+                    if let trend = dc.trend {
+                        HStack(alignment: .top, spacing: 26) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("vs your normal").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                                Text(dcTrendWord(trend))
+                                    .font(StrandFont.number(21, weight: .semibold))
+                                    .foregroundStyle(dcTrendColor(trend))
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("read").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                                Text(dc.confidence == .solid ? "Solid" : "Estimate")
+                                    .font(StrandFont.number(21, weight: .semibold))
+                                    .foregroundStyle(theme.ink)
+                            }
+                        }
+                    }
+                    Text(dcCopy(dc.trend))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// Tonight vs the user's OWN baseline, worded and coloured calmly — "above" reads as the good end
+    /// (more reserve), "below" as a gentle amber, never a risk red. (FER-849)
+    private func dcTrendWord(_ t: NocturnalDC.Trend) -> LocalizedStringKey {
+        switch t {
+        case .above:  return "Above"
+        case .around: return "In range"
+        case .below:  return "Below"
+        }
+    }
+
+    private func dcTrendColor(_ t: NocturnalDC.Trend) -> Color {
+        switch t {
+        case .above:  return theme.dataRecovery
+        case .around: return theme.ink
+        case .below:  return theme.warning
+        }
+    }
+
+    /// The honest, localized one-liner for the DC read — a personal pattern, never a diagnosis. Composed
+    /// in the UI (not the engine's Spanish `note`) so it localizes with the app catalog. (FER-849)
+    private func dcCopy(_ trend: NocturnalDC.Trend?) -> LocalizedStringKey {
+        switch trend {
+        case .above:  return "Your heart had more room to ease off the gas than your normal tonight. A personal pattern — follow it over time."
+        case .below:  return "Your heart had less room to ease off the gas than your normal tonight. A personal pattern — follow it over time."
+        case .around: return "Your resting braking reserve was in your usual range tonight. A personal pattern — follow it over time."
+        case .none:   return "Your resting braking reserve tonight. It reads best as a personal trend — follow it over time."
+        }
+    }
+
+    // MARK: - Respiración nocturna (FER-851) — 2º signo vital, tras el toggle experimental
+
+    /// The respiration-trend read, derived purely from the model's nightly respiration series. `nil` — so
+    /// the block hides — when the toggle is off or there's no respiration history at all. (FER-851)
+    private var respirationRead: RespirationTrendWatch.Result? {
+        guard WhitespaceMetricsExperiment.isEnabled,
+              model.respNightly.contains(where: { $0 != nil }) else { return nil }
+        return RespirationTrendWatch.evaluate(nightly: model.respNightly)
+    }
+
+    /// The «Night breathing» block: your normal nightly rate as the datum, and — only when a sustained
+    /// deviation is flagged — how far and how many nights it has run off your normal. A pattern to cross
+    /// with HRV/RHR, never a diagnosis. Only shown with the experimental toggle on. (FER-851)
+    @ViewBuilder private func respirationBlock(_ r: RespirationTrendWatch.Result) -> some View {
+        DetailBlock("Night breathing", theme: theme) {
+            if !r.baselineTrusted {
+                Text("Still learning your normal breathing rate — keeping an eye on it.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(verbatim: String(format: "%.1f", r.baselineRpm))
+                            .instrumentoHero(52)
+                            .foregroundStyle(respTone(r))
+                        Text(verbatim: "/min").font(StrandFont.unit).foregroundStyle(respTone(r))
+                        Text("your normal").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    }
+                    if r.flagged {
+                        HStack(alignment: .top, spacing: 26) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("this run").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                                Text(verbatim: String(format: "%+.1f/min", r.deltaRpm))
+                                    .font(StrandFont.number(21, weight: .semibold))
+                                    .foregroundStyle(respTone(r))
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("sustained").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                                Text(verbatim: "\(r.sustainedNights) nights")
+                                    .font(StrandFont.number(21, weight: .semibold))
+                                    .foregroundStyle(theme.ink)
+                            }
+                        }
+                    }
+                    Text(respCopy(r))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// A calm tone for the breathing datum — a flagged elevated run gets a gentle amber, everything else
+    /// stays in the resp hue / neutral ink. Never a risk red. (FER-851)
+    private func respTone(_ r: RespirationTrendWatch.Result) -> Color {
+        guard r.flagged else { return theme.dataSpO2 }
+        return r.direction == .elevated ? theme.warning : theme.ink
+    }
+
+    /// Honest, localized one-liner — composed in the UI (not the engine's English `copy`) so it localizes
+    /// with the app catalog. Only names a deviation when `flagged`; a pattern, not a diagnosis. (FER-851)
+    private func respCopy(_ r: RespirationTrendWatch.Result) -> LocalizedStringKey {
+        guard r.flagged else { return "Your breathing looks like your normal range." }
+        return r.direction == .elevated
+            ? "Your breathing has run faster than your normal these nights. A pattern, not a diagnosis — worth crossing with your HRV and resting heart rate."
+            : "Your breathing has run slower than your normal these nights. A pattern, not a diagnosis — worth crossing with your HRV and resting heart rate."
     }
 
     /// The honest, localized one-liner for the fall — a pattern, never a diagnosis. Composed in the UI
@@ -1381,6 +1564,9 @@ struct SleepDetailModel {
     let restorativeTrend: [TrendPoint]
     let respirationTrend: [TrendPoint]
     let awakeningsTrend: [TrendPoint]
+    /// The full nightly respiratory-rate series (oldest → newest, `nil` = missing night) for the
+    /// respiration-trend watch (FER-851). The engine derives its own baseline + deviation from it.
+    let respNightly: [Double?]
 
     // MARK: - Build
 
@@ -1531,6 +1717,8 @@ struct SleepDetailModel {
         }
         let respirationTrend = metricTrend(days) { $0.respRateBpm }
         let awakeningsTrend = metricTrend(days) { $0.disturbances.map(Double.init) }
+        // Full nightly respiration series (oldest → newest) for the respiration-trend watch (FER-851).
+        let respNightly: [Double?] = days.map { $0.respRateBpm }
 
         return SleepDetailModel(
             night: night,
@@ -1562,7 +1750,8 @@ struct SleepDetailModel {
             efficiencyTrend: efficiencyTrend,
             restorativeTrend: restorativeTrend,
             respirationTrend: respirationTrend,
-            awakeningsTrend: awakeningsTrend)
+            awakeningsTrend: awakeningsTrend,
+            respNightly: respNightly)
     }
 
     /// Trailing 14 nights of a metric, in whatever unit `pick` returns, as `TrendPoint`s. Skips nights
