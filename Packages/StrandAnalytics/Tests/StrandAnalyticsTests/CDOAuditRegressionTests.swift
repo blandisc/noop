@@ -72,11 +72,11 @@ final class CDOAuditRegressionTests: XCTestCase {
         XCTAssertNil(HRVFreqDomain.freqDomain(rawRR: short))
     }
 
-    // MARK: - CyclePhaseEngine: the luteal-index z mixes median center with MAD-about-MEAN spread.
+    // MARK: - Robust σ: two anchors. `robustSigma` (mean, shared convention) vs `robustSigmaAboutMedian`.
 
-    /// robustSigma uses mean-absolute-deviation (about the MEAN) × 1.253, while the z-score centers
-    /// on the MEDIAN. This documents the (mild) center/spread mismatch: for a skewed temp series the
-    /// two are inconsistent. This test PINS the current behavior so a fix is a deliberate change.
+    /// `robustSigma` is mean-absolute-deviation about the MEAN × 1.253 — the shared convention used by
+    /// RecoveryScorer/Baselines/IllnessWatch. This PINS it so that convention never drifts. (FER-726
+    /// re-centered only CyclePhaseEngine onto `robustSigmaAboutMedian`; `robustSigma` itself is unchanged.)
     func testRobustSigmaIsMADaboutMeanNotMedian() {
         // Skewed series: most values ~0, one large outlier. median != mean.
         let xs = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0]
@@ -84,7 +84,34 @@ final class CDOAuditRegressionTests: XCTestCase {
         let madAboutMean = xs.map { abs($0 - mean) }.reduce(0, +) / Double(xs.count) // (9*1 + 9)/10 = 1.8
         let expected = 1.253 * madAboutMean                     // 2.2554
         XCTAssertEqual(IllnessWatch.robustSigma(xs), expected, accuracy: 1e-9)
-        // The median is 0.0, not the mean 1.0 — center and spread live in different robustness worlds.
+        // The median is 0.0, not the mean 1.0 — mean-anchored spread and a median center disagree.
         XCTAssertEqual(HRVAnalyzer.median(xs), 0.0, accuracy: 1e-9)
+    }
+
+    /// FER-726 — `robustSigmaAboutMedian` re-centers the spread on the median so CyclePhaseEngine's
+    /// median-centered z measures scale against the same anchor. Two guarantees:
+    /// (a) on a symmetric sample (mean = median) it equals `robustSigma` (no drift where anchors agree);
+    /// (b) on a right-skewed sample the median-anchored MAD is smaller (L1 spread is minimized at the
+    ///     median), so the z is correspondingly larger than the legacy mean-anchored one.
+    func testRobustSigmaAboutMedianCalibration() {
+        // (a) Symmetric: mean = median = 0 → both estimators coincide.
+        let sym = [-2.0, -1.0, 0.0, 1.0, 2.0]
+        XCTAssertEqual(IllnessWatch.robustSigmaAboutMedian(sym),
+                       IllnessWatch.robustSigma(sym), accuracy: 1e-9)
+
+        // (b) Right-skewed: mean 2.0, median 1.0.
+        let skew = [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 2.0, 4.0, 10.0]
+        let madMean = 20.0 / 9.0                                 // (2+2+2+2+1+1+0+2+8)/9
+        let madMedian = 17.0 / 9.0                               // (1+1+1+1+0+0+1+3+9)/9
+        XCTAssertEqual(IllnessWatch.robustSigma(skew), 1.253 * madMean, accuracy: 1e-9)          // 2.7844
+        XCTAssertEqual(IllnessWatch.robustSigmaAboutMedian(skew), 1.253 * madMedian, accuracy: 1e-9) // 2.3672
+        XCTAssertLessThan(IllnessWatch.robustSigmaAboutMedian(skew), IllnessWatch.robustSigma(skew))
+
+        // Resulting z of tonight = 4 against `skew`: median-anchored is larger (denominator shrank).
+        let median = HRVAnalyzer.median(skew)                   // 1.0
+        let zLegacy = (4.0 - median) / IllnessWatch.robustSigma(skew)              // 3 / 2.7844 = 1.0774
+        let zFixed  = (4.0 - median) / IllnessWatch.robustSigmaAboutMedian(skew)   // 3 / 2.3672 = 1.2673
+        XCTAssertEqual(zLegacy, 1.0774, accuracy: 1e-3)
+        XCTAssertEqual(zFixed, 1.2673, accuracy: 1e-3)
     }
 }

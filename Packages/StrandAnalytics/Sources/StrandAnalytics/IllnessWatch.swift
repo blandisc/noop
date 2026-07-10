@@ -26,6 +26,20 @@ public enum IllnessWatch {
         return 1.253 * mad
     }
 
+    /// Robust σ anchored on the MEDIAN: 1.253 × mean(|x − median|). Same mean-of-absolute-deviations
+    /// estimator and 1.253 scale as `robustSigma`, only re-centered — so a z-score whose numerator is
+    /// centered on the median measures its spread against the same anchor (consistent robustness),
+    /// instead of anchoring the spread on the mean (which the median-centered numerator ignores). On a
+    /// symmetric sample (mean = median) it equals `robustSigma`. Deliberately NOT the classic MAD
+    /// (median-of-absolute-deviations), which degenerates to 0 on low-variation samples like `[0×9, 10]`.
+    /// Returns 0 when the sample is too small to estimate dispersion.
+    static func robustSigmaAboutMedian(_ sample: [Double]) -> Double {
+        guard sample.count >= 2 else { return 0 }
+        let m = HRVAnalyzer.median(sample)
+        let mad = sample.map { abs($0 - m) }.reduce(0, +) / Double(sample.count)
+        return 1.253 * mad
+    }
+
     /// A recent value's deviation from its baseline: the concern-oriented z-score plus the
     /// baseline mean it was measured against (so callers don't re-walk the sample to label it).
     public struct Deviation {
