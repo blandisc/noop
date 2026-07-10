@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **En «Subir con el plan» vuelven a verse las etiquetas de cada ajuste / The "Raise with the plan" screen shows each setting's label again.**
+  **ES** — En la pantalla de progresión de carga, cada fila (Objetivo de reps, Subes cuando, Si te estancas, Recuperación baja) tenía su etiqueta a la izquierda y su control a la derecha, pero el control segmentado pedía todo el ancho y aplastaba la etiqueta a 0pt: quedaban solo los pills sueltos, con la sensación de mucho espacio vacío entre ellos. Ahora el control tiene un ancho tope y la etiqueta siempre conserva su lugar, así que la pantalla se lee densa y ordenada. Solo es layout: nada del plan de progresión cambia.
+  **EN** — On the load-progression screen each row (Rep goal, You raise when, If you stall, Low recovery) had its label on the left and its control on the right, but the segmented control claimed the full width and starved the label to 0pt: only the loose pills were left, reading as lots of empty space between them. The control is now width-capped and the label always keeps its place, so the screen reads dense and tidy. Layout only — nothing about the progression plan changes.
+  ([ProgressionSetupScreen.swift](Cenit/Screens/ProgressionSetupScreen.swift))
+
 - **El sello de confianza de «Tras cada deporte» ahora habla igual que el resto / The confidence stamp in "After each sport" now speaks the same language as the rest.**
   **ES** — En la hoja de Actividad, el sello de confianza de cada deporte decía «Solid» / «Building data»; ahora dice «Confianza alta» / «Confianza media», el mismo vocabulario que ya usan Esfuerzo y Sueño. Es solo un cambio de palabras: el estilo del sello no cambia. Por dentro, los tres detalles comparten un único origen para esa etiqueta, así que a futuro no se desincronizan.
   **EN** — In the Activity sheet, each sport's confidence stamp read "Solid" / "Building data"; it now reads "High confidence" / "Medium confidence", the same wording Strain and Sleep already use. It's only a wording change — the stamp's styling is unchanged. Under the hood all three details now share a single source for that label, so they can't drift apart later.

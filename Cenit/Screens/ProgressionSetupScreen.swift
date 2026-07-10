@@ -158,7 +158,9 @@ struct ProgressionSetupScreen: View {
                 subtitle.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            control().layoutPriority(1)
+            // The themed pill wants `maxWidth: .infinity` per segment; cap it so it can't starve the
+            // title's width (which collapsed the row labels to 0pt). Title flexes, control is bounded.
+            control().frame(maxWidth: 184, alignment: .trailing)
         }
         .frame(minHeight: 52)
         .overlay(alignment: .bottom) { if !lastRow { Divider().overlay(theme.hairline) } }
