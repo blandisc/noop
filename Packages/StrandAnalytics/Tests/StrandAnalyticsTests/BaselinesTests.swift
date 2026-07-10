@@ -148,6 +148,58 @@ final class BaselinesTests: XCTestCase {
         XCTAssertEqual(rolling.spread, Baselines.hrvCfg.floorSpread, accuracy: 1e-9)   // 0.08, not 0.0638
     }
 
+    // MARK: - Baseline re-anchoring by epoch (FER-677)
+
+    private func dated(_ pairs: [(String, Double?)]) -> [(day: String, value: Double?)] {
+        pairs.map { (day: $0.0, value: $0.1) }
+    }
+
+    func testEpochDropsNightsStrictlyBefore() {
+        // The 06-01 night is < epoch and must be dropped; the epoch day itself and later count.
+        let series = dated([("2026-06-01", 60), ("2026-06-05", 65), ("2026-06-10", 40), ("2026-06-11", 41)])
+        let cut = Baselines.foldHistory(series, epoch: "2026-06-10", cfg: Baselines.hrvCfg)
+        let expected = Baselines.foldHistory([40, 41], cfg: Baselines.hrvCfg)
+        XCTAssertEqual(cut.baseline, expected.baseline, accuracy: 1e-9)
+        XCTAssertEqual(cut.nValid, expected.nValid)
+        XCTAssertEqual(cut.nValid, 2)
+    }
+
+    func testEpochNilIsNoOp() {
+        let series = dated([("2026-06-01", 55), ("2026-06-02", nil), ("2026-06-03", 62), ("2026-06-04", 48)])
+        let noCut = Baselines.foldHistory(series, epoch: nil, cfg: Baselines.hrvCfg)
+        let direct = Baselines.foldHistory([55, nil, 62, 48], cfg: Baselines.hrvCfg)
+        XCTAssertEqual(noCut.baseline, direct.baseline, accuracy: 1e-12)
+        XCTAssertEqual(noCut.spread, direct.spread, accuracy: 1e-12)
+        XCTAssertEqual(noCut.nValid, direct.nValid)
+    }
+
+    func testEpochBeforeAllKeepsEverything() {
+        let series = dated([("2026-06-01", 55), ("2026-06-02", 62), ("2026-06-03", 48)])
+        let cut = Baselines.foldHistory(series, epoch: "2026-01-01", cfg: Baselines.hrvCfg)
+        let all = Baselines.foldHistory([55, 62, 48], cfg: Baselines.hrvCfg)
+        XCTAssertEqual(cut.baseline, all.baseline, accuracy: 1e-12)
+        XCTAssertEqual(cut.nValid, all.nValid)
+    }
+
+    func testEpochAfterAllLeavesCalibratingEmpty() {
+        let series = dated([("2026-06-01", 55), ("2026-06-02", 62), ("2026-06-03", 48)])
+        let cut = Baselines.foldHistory(series, epoch: "2026-07-01", cfg: Baselines.hrvCfg)
+        XCTAssertEqual(cut.nValid, 0)
+        XCTAssertEqual(cut.status, .calibrating)
+    }
+
+    func testEpochPreservesLogDomainGeometricCenter() {
+        // The cut baseline must still be the geometric mean of the KEPT nights (delegation, not
+        // a reimplementation): a log-symmetric set around 50 keeps center 50 after the cut.
+        let series = dated([("2026-06-01", 999),   // dropped
+                            ("2026-06-10", 50 / 1.5), ("2026-06-11", 50 / 1.2),
+                            ("2026-06-12", 50), ("2026-06-13", 50 * 1.2), ("2026-06-14", 50 * 1.5)])
+        let cut = Baselines.foldHistory(series, epoch: "2026-06-10", cfg: Baselines.hrvCfg)
+        let kept = Baselines.foldHistory([50 / 1.5, 50 / 1.2, 50, 50 * 1.2, 50 * 1.5], cfg: Baselines.hrvCfg)
+        XCTAssertEqual(cut.baseline, kept.baseline, accuracy: 1e-9)
+        XCTAssertTrue(cut.logDomain)
+    }
+
     // MARK: - Cold-start anti-anchoring (FER-673)
 
     /// Repro of the cold-start anchoring bug (documents that the log domain alone does

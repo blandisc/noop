@@ -23,6 +23,10 @@ final class Repository: ObservableObject {
     /// from `SourceModeStore`. `combined` (the default) reads every source exactly as before; capture is
     /// untouched — this only filters reads.
     var dataSourceMode: DataSourceMode = .combined
+    /// The baseline cut day-key («Recalibrar recuperación», FER-677): "YYYY-MM-DD" or nil for no cut.
+    /// Set by `AppModel` from `ProfileStore.baselineEpochOrNil`. The estimated-recovery path honors it
+    /// so the Apple estimate re-anchors exactly like the strap baseline in `IntelligenceEngine`.
+    var baselineEpoch: String? = nil
     /// Source id for on-device computed scores (recovery/strain/sleep derived from the raw strap
     /// streams by IntelligenceEngine). Merged UNDER the imported `deviceId` rows at read time, so a
     /// real WHOOP import always wins and the strap-only user still gets a populated dashboard.
@@ -321,7 +325,7 @@ final class Repository: ObservableObject {
             impSleepRaw: impSleepRaw, compSleepRaw: compSleepRaw,
             impSleep: impSleep, compSleep: compSleep, appleSleepRaw: appleSleepRaw,
             appleAggRaw: appleAggRaw, stepsEstRaw: stepsEstRaw,
-            perf: perf, cons: cons, need: need, debt: debt))
+            perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch))
 
         // Back on the main actor: publish only if this is still the newest refresh, and never let a
         // first-paint pass overwrite a fully loaded dashboard.
@@ -350,6 +354,8 @@ final class Repository: ObservableObject {
         var appleSleepRaw: [CachedSleepSession]
         var appleAggRaw: [AppleDaily]; var stepsEstRaw: [MetricPoint]
         var perf: [MetricPoint]; var cons: [MetricPoint]; var need: [MetricPoint]; var debt: [MetricPoint]
+        /// Baseline cut day-key for the estimated-recovery path (FER-677); nil = no cut.
+        var baselineEpoch: String? = nil
     }
 
     /// Pure assembly of the dashboard from rows already read — the EXACT merge pipeline `refresh()`
@@ -377,7 +383,8 @@ final class Repository: ObservableObject {
         // history can mix in an estimate; it surfaces only via `repo.today` (single day). `whoopOnly` →
         // `apple == []` → empty. `mergeDaily` is the unchanged band/Apple merge.
         let daysNeedingEstimate = Set(merged.days.filter { $0.recovery == nil }.map(\.day))
-        let estimates = Self.appleRecoveryEstimates(apple: inputs.apple, eligibleDays: daysNeedingEstimate)
+        let estimates = Self.appleRecoveryEstimates(apple: inputs.apple, eligibleDays: daysNeedingEstimate,
+                                                    epoch: inputs.baselineEpoch)
         // FER-485: stored per-source coverage from the UNFILTERED raws (the always-Combined truth), so the
         // diagnostic coverage shows what's stored even when the mode hides a source from the dashboard.
         let storedStrap = Set(inputs.importedRaw.map(\.day)).union(inputs.computedRaw.map(\.day))
@@ -458,7 +465,8 @@ final class Repository: ObservableObject {
     /// `isRecoveryEstimated` honest: an estimate exists only where it would actually be shown, so the band
     /// wins the instant it can compute. Pure + static so `RepositoryMergeTests` can pin it. `apple == []`
     /// (whoopOnly) → empty.
-    nonisolated static func appleRecoveryEstimates(apple: [DailyMetric], eligibleDays: Set<String>)
+    nonisolated static func appleRecoveryEstimates(apple: [DailyMetric], eligibleDays: Set<String>,
+                                                   epoch: String? = nil)
         -> [String: AppleRecoveryEstimator.DayEstimate] {
         guard !apple.isEmpty else { return [:] }
         let nights = apple.map {
@@ -467,7 +475,7 @@ final class Repository: ObservableObject {
                                          sleepPerf: $0.efficiency, sleepMinutes: $0.totalSleepMin)
         }
         var out: [String: AppleRecoveryEstimator.DayEstimate] = [:]
-        for e in AppleRecoveryEstimator.estimate(nights: nights) where eligibleDays.contains(e.day) {
+        for e in AppleRecoveryEstimator.estimate(nights: nights, epoch: epoch) where eligibleDays.contains(e.day) {
             out[e.day] = e   // surfaced only where the measured recovery is nil (band-less OR cold-start)
         }
         return out

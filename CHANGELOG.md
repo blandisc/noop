@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Recalibra tu recuperación desde hoy / Recalibrate your recovery from today.**
+  **ES** — En Ajustes → Data hay un botón «Recalibrar recuperación». Si tu línea base quedó mal (cambiaste de banda, tuviste un periodo raro), re-ancla tu calibración desde hoy e ignora tus noches anteriores. Tu número de recuperación vuelve a «calibrando» unos días mientras aprende tu nuevo normal, y luego se asienta rápido. No borra ningún dato ni historial, y puedes deshacerlo con un toque.
+  **EN** — Settings → Data now has a «Recalibrate recovery» button. If your baseline drifted (new strap, an unusual stretch), it re-anchors your calibration from today and ignores your earlier nights. Your recovery number goes back to «calibrating» for a few days while it learns your new normal, then settles quickly. It deletes no data or history, and you can undo it with one tap.
+  ([AjustesView.swift](Cenit/Screens/AjustesView.swift), [Profile.swift](Cenit/Data/Profile.swift), [Baselines.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/Baselines.swift))
 - **La conexión con la banda ya no puede atorarse por un dato corrupto / A corrupt byte can no longer stall the strap connection.**
   **ES** — Si un fragmento de datos Bluetooth llega dañado y declara un tamaño imposible, Cénit ahora lo descarta y se realinea con el siguiente dato válido, en vez de quedarse esperando bytes que nunca llegarán (lo que congelaba el stream hasta reconectar). Aplica a WHOOP 4.0 y 5/MG.
   **EN** — If a Bluetooth data fragment arrives corrupted declaring an impossible size, Cénit now discards it and re-aligns with the next valid data instead of waiting forever for bytes that will never arrive (which froze the stream until a reconnect). Applies to both WHOOP 4.0 and 5/MG.
