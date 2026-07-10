@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Qué tan rápido baja tu pulso tras un esfuerzo, en Detalle de entrenamiento / How fast your pulse drops after effort, in the Workout detail.**
+  **ES** — Con las Métricas experimentales prendidas, el Detalle de entrenamiento muestra tu recuperación cardiaca en el primer minuto (HRR-60s): cuántos bpm bajó tu corazón en los 60 s tras terminar, con una lectura «vs tu normal» contra tus propias sesiones recientes. Es una tendencia personal, no el umbral clínico de Cole ni un número de riesgo; se oculta cuando la sesión no trae FC densa.
+  **EN** — With Experimental metrics on, the Workout detail shows your first-minute heart-rate recovery (HRR-60s): how many bpm your heart dropped in the 60 s after you stopped, with a "vs your normal" read against your own recent sessions. It's a personal trend, not Cole's clinical cutoff or a risk number; it hides when the session has no dense heart rate.
+  ([WorkoutDetailScreen.swift](Cenit/Screens/WorkoutDetailScreen.swift))
+
 - **La estabilidad térmica de tus noches, en Detalle de Temp. de piel / Your nightly thermal stability, in the Skin-temp detail.**
   **ES** — Con las Métricas experimentales prendidas, el Detalle de Temp. de piel muestra qué tan parejo es tu calentamiento distal al dormir: el calentamiento típico (°C, del inicio del sueño a la meseta) y su consistencia noche a noche (consistente / moderada / variable). Es una asociación, no un reloj circadiano completo de 24 h (solo tenemos la noche); se muestra «aprendiendo» hasta que hay suficientes noches.
   **EN** — With Experimental metrics on, the Skin-temp detail shows how steady your distal warming into sleep is: the typical warming (°C, from sleep onset to plateau) and its night-to-night consistency (consistent / moderate / variable). It's an association, not a full 24-hour circadian rhythm (we only have the night); it reads "learning" until there are enough nights.
