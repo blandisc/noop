@@ -487,6 +487,11 @@ concerns:
   crash/kill of the iPhone doesn't lose the workout (written on start + each durable edit, restored at
   launch, deleted on save/discard). Ephemeral control state — prunable, outside the `WITHOUT ROWID`
   rebuild and the sync bookkeeping.
+- `progressionOptOut` (v31, FER-835) — one row per `(sessionId, exerciseId)` when the user tapped
+  «Volver a X» in that session: the load-progression classifier treats the session as neither hit nor
+  miss. Written atomically inside `saveSession` (delete-first, so a re-save is idempotent), cleaned by
+  `deleteSession`, surfaced by `workSetHistory` via LEFT JOIN, consumed as
+  `ProgressionMath.PastSession.optedOut`.
 
 **Generic metric series** — `metricSeries(deviceId, day, key, value REAL)`: a tall, long-format
 table so *any* scalar metric from *any* source can be queried/compared uniformly (the substrate for
