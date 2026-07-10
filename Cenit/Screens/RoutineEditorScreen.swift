@@ -447,12 +447,14 @@ struct RoutineEditorScreen: View {
             columnHeader(item.exercise.type)
         }
         // Long-press enters reorder mode (6a): rows compact, ≡ handles appear, one drop reorders and
-        // leaves the mode. The handle-driven List drag never conflicts with the delete swipe.
-        .onLongPressGesture(minimumDuration: 0.4) {
+        // leaves the mode. `simultaneousGesture` — NOT `.onLongPressGesture` — because the row is mostly
+        // Buttons (name → detail, «···» → menu) and a plain gesture never fires over them (FER-846);
+        // simultaneous lets a short tap keep opening those while a ~0.4 s hold enters the mode.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
             guard !locked else { return }
             focusedCell = nil
             withAnimation(.snappy) { reordering = true }
-        }
+        })
         .accessibilityAction(named: Text("Reorder exercises")) {
             guard !locked else { return }
             withAnimation(.snappy) { reordering = true }
