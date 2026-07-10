@@ -277,7 +277,7 @@ struct MisRutinasScreen: View {
         }
         move.append(.init(String(localized: "New folder…"), systemImage: "folder.badge.plus") { startNewFolder(moving: r) })
         return [
-            .init(String(localized: "Edit routine"), systemImage: "slider.horizontal.3") { builderTarget = .edit(r) },
+            .init(String(localized: "Edit routine"), systemImage: "slider.horizontal.3") { openRoutine(r.id) },
             .init(String(localized: "Duplicate"), systemImage: "plus.square.on.square") { duplicate(r) },
             .init(String(localized: "Move to…"), systemImage: "folder", children: move),
             .init(String(localized: "Delete routine"), systemImage: "trash", isDestructive: true) { delete(r) }
