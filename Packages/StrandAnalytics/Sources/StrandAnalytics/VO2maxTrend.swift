@@ -13,9 +13,13 @@ import Foundation
 //     (Sen, "Estimates of the regression coefficient based on Kendall's tau", JASA 1968;63:1379–1389).
 //   • Band: the 25th/75th percentiles of those same pairwise slopes give a robust, distribution-free
 //     interval on the slope; projected over the observed span they bound the change.
-//   • Noise floor: a declared trend must clear ~SEE/√n ml·kg⁻¹·min⁻¹ of change over the window — the
-//     standard error of the fitness LEVEL shrinks as √n, so more weeks of data resolve smaller real
-//     moves, and the floor stops us reacting to the SEE ~5.7 jitter of any one estimate.
+//   • Noise floor: a declared trend must clear ~SEE/√n ml·kg⁻¹·min⁻¹ of change over the window. This is a
+//     product-calibration knob, NOT a derived standard error: the √n shape borrows the intuition that
+//     averaging more estimates resolves smaller real moves, but the weekly VO₂max estimates are NOT
+//     independent replicates (they share slowly-moving inputs — age, WHR, resting HR — so a true SE would
+//     shrink slower than √n). We keep √n as a deliberately simple, conservative-leaning floor and let it
+//     stop us reacting to the SEE ~5.7 jitter of any one estimate; the exact shape is for the CDO
+//     (`/estadistico`) to validate, not a claim of statistical exactness.
 //   A direction is reported only when BOTH gates pass: the slope band excludes zero AND the projected
 //   change beats the floor. Otherwise → `.stable` (or, below the data minimum, `nil` → hide).
 //
@@ -36,8 +40,9 @@ public enum VO2maxTrend {
     /// Points at/above which the trajectory reads as full-confidence.
     public static let solidPoints: Int = 12
 
-    /// The change-over-window floor (ml·kg⁻¹·min⁻¹) below which we won't claim a direction: ~SEE/√n,
-    /// the standard error of the fitness level on `n` estimates. Shrinks with more data.
+    /// The change-over-window floor (ml·kg⁻¹·min⁻¹) below which we won't claim a direction: ~SEE/√n. A
+    /// product-calibration knob (NOT a derived standard error — the estimates aren't independent
+    /// replicates; see the file header). Deliberately simple and conservative-leaning; shrinks with data.
     public static func noiseFloor(pointCount n: Int) -> Double {
         guard n > 0 else { return seeMlKgMin }
         return seeMlKgMin / Double(n).squareRoot()
