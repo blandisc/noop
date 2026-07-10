@@ -186,7 +186,7 @@ extension Repository {
 
     /// Completed work sets for one exercise with their session start time, oldest→newest — the raw
     /// material the detail screen buckets by day into the estimated-1RM trend. One JOIN in the store.
-    func exerciseHistory(exerciseId: String) async -> [(startTs: Int, weightKg: Double, reps: Int)] {
+    func exerciseHistory(exerciseId: String) async -> [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] {
         guard let store = await storeHandle() else { return [] }
         return (try? await store.workSetHistory(exerciseId: exerciseId)) ?? []
     }

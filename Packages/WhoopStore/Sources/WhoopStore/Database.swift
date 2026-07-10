@@ -686,6 +686,17 @@ extension WhoopStore {
                 $0.add(column: "progressionIgnoreRecovery", .integer).notNull().defaults(to: 0)
             }
         }
+        // v31 (FER-835): the per-session «Volver a X» opt-out, persisted so a reverted raise never
+        // counts against the progression cycle (neither hit nor miss — ProgressionMath filters it).
+        // One row per (session, exercise); absence = no opt-out. `ifNotExists` keeps a re-run against
+        // a DB that already grew the table a no-op (same FER-791 discipline as addColumnIfMissing).
+        migrator.registerMigration("v31") { db in
+            try db.create(table: "progressionOptOut", ifNotExists: true) { t in
+                t.column("sessionId", .text).notNull()
+                t.column("exerciseId", .text).notNull()
+                t.primaryKey(["sessionId", "exerciseId"])
+            }
+        }
         return migrator
     }
 
