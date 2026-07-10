@@ -666,7 +666,7 @@ private struct EntrenarLanding: View {
                 .padding(.bottom, 4)
             Button { showTemplates = true } label: {
                 HStack(spacing: 12) {
-                    Image(systemName: "square.stack.3d.up").font(.system(size: 18)).foregroundStyle(theme.inkSecondary)
+                    Image(systemName: "square.stack.3d.up").font(.system(size: 18)).foregroundStyle(theme.inkSecondary)  // token-exempt: glifo 18pt fuera de banda lead
                         .frame(width: 26)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Template routines").font(StrandFont.body).foregroundStyle(theme.ink)
@@ -674,7 +674,7 @@ private struct EntrenarLanding: View {
                             .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))  // token-exempt: chevron de fila fuera de banda
                         .foregroundStyle(theme.inkDim)
                 }
                 .padding(.vertical, 11).contentShape(Rectangle())

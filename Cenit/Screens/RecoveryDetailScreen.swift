@@ -339,7 +339,7 @@ struct RecoveryDetailScreen: View {
                 Capsule()
                     .fill(theme.trackWarm)
                     .frame(width: geo.size.width, height: trackH)
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de dato
                     .fill(theme.hairline)
                     .frame(width: baseZoneW, height: trackH)
                     .offset(x: half - baseZoneW / 2)
@@ -478,7 +478,7 @@ struct RecoveryDetailScreen: View {
                 .font(StrandFont.captionNumber)
                 .foregroundStyle(theme.inkTertiary)
         }
-        .opacity(0.55)
+        .opacity(0.55)  // token-exempt: fila atenuada (señal estimada ausente)
         .accessibilityElement(children: .combine)
     }
 
