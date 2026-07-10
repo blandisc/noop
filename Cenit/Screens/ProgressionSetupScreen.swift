@@ -216,11 +216,11 @@ struct ProgressionSetupScreen: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 13).padding(.vertical, 11)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface.opacity(0.001)) // keep hit-testing sane inside the ScrollView
+            .background(theme.surface.opacity(0.001)) // token-exempt: hit-testing dentro del ScrollView
             .background(
                 UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
                                        bottomTrailingRadius: 8, topTrailingRadius: 8)
-                    .fill(theme.hairline.opacity(0.55)))
+                    .fill(theme.hairline.opacity(0.55)))   // token-exempt: relleno decorativo de hairline
             .overlay(alignment: .leading) {
                 if accented { Rectangle().fill(theme.dataRecovery).frame(width: 2.5) }
             }
