@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los botones de la tarjeta de entreno ya responden con el teléfono bloqueado / Your workout card's buttons now respond with the phone locked.**
+  **ES** — En la pantalla bloqueada, tocar Completar / ±30 s / Saltar / Reanudar seguía pidiendo Face ID en vez de ejecutar la acción. La política de autenticación que las marca como seguras («correr bloqueado») estaba declarada de una forma que el sistema no alcanzaba a leer sin abrir la app, así que caía al comportamiento por defecto (exigir desbloqueo). Ahora se declara en la forma canónica y las acciones corren en sitio, sin Face ID.
+  **EN** — On the Lock Screen, tapping Complete / ±30 s / Skip / Resume kept asking for Face ID instead of running the action. The authentication policy that marks them safe to run while locked was declared in a form the system couldn't read without launching the app, so it fell back to the default (require unlock). It's now declared in the canonical form and the actions run in place, no Face ID.
+  ([RestActivityIntents.swift](CenitWidgets/Shared/RestActivityIntents.swift))
+
 - **Tu sueño vuelve en las WHOOP 4.0 con el firmware más nuevo / Your sleep comes back on WHOOP 4.0s with the newest firmware.**
   **ES** — Algunas WHOOP 4.0 con firmware reciente guardan su historial en un formato («v25») que Cénit interpretaba mal: leía la señal de movimiento en el lugar equivocado, la descartaba por no cuadrar, y sin movimiento el análisis de sueño no podía calcular tus etapas — las noches salían en blanco. Ahora Cénit lee ese formato correctamente y recupera el movimiento (el corazón por segundo no viene en v25, es normal), así que tu sueño y tu descanso vuelven a calcularse. Las bandas con firmware anterior no cambian en nada.
   **EN** — Some WHOOP 4.0s on recent firmware store their history in a format («v25») Cénit misread: it looked for the motion signal in the wrong place, discarded it as not fitting, and without motion the sleep analysis couldn't compute your stages — nights came up blank. Cénit now reads that format correctly and recovers the motion (per-second heart rate isn't stored in v25, which is normal), so your sleep and rest compute again. Straps on earlier firmware are unchanged.
