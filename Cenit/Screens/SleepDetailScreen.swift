@@ -201,7 +201,7 @@ struct SleepDetailScreen: View {
                 VStack(alignment: .leading, spacing: 14) {
                     // Dominant numeral: the dip%, coloured with the heart hue (signal identity).
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("\(Int(shape.dipPct.rounded()))%")
+                        Text(verbatim: "\(Int(shape.dipPct.rounded()))%")
                             .instrumentoHero(52)
                             .foregroundStyle(theme.dataHeart)
                         Text("your heart eased off")
@@ -229,9 +229,14 @@ struct SleepDetailScreen: View {
                         if model.rhrBaseline != nil {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("below your resting").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                                Text("\(Int((shape.fractionBelowRHR * 100).rounded()))% of the night")
-                                    .font(StrandFont.number(21, weight: .semibold))
-                                    .foregroundStyle(theme.ink)
+                                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                                    Text(verbatim: "\(Int((shape.fractionBelowRHR * 100).rounded()))%")
+                                        .font(StrandFont.number(21, weight: .semibold))
+                                        .foregroundStyle(theme.ink)
+                                    Text("of the night")
+                                        .font(StrandFont.footnote)
+                                        .foregroundStyle(theme.inkTertiary)
+                                }
                             }
                         }
                     }
