@@ -561,16 +561,6 @@ struct RecoveryDetailScreen: View {
         return "In your base"
     }
 
-    /// The headline's inline position clause, «, above your base, » etc., built from the RAW deviation with
-    /// a «well» qualifier past 1σ. Matches the vocabulary of `baseBandWord`. (FER-642)
-    private static func positionPhrase(_ s: RecoveryImpact.Signal) -> LocalizedStringKey {
-        let above = s.z >= 0
-        let strong = abs(s.z) >= 1.0
-        return strong
-            ? (above ? ", well above your base" : ", well below your base")
-            : (above ? ", above your base"      : ", below your base")
-    }
-
     // MARK: - 2-estimado. Hoy, vs tu normal (por cobertura) — el stand-in cuando el día es un estimado de Apple
     //
     // On an Apple-only day the band-baseline points decomposition (`RecoveryImpact`) is nil ON PURPOSE:
