@@ -67,6 +67,10 @@ private struct EntrenarLanding: View {
     @State private var loaded = false
     @State private var routines: [Routine] = []
     @State private var exerciseCounts: [String: Int] = [:]
+    /// Exercises whose earned raise seeds today's session (FER-G): names for the hero's «Hoy subes» line.
+    @State private var raisesToday: [String] = []
+    /// Exercises whose earned raise is deferred by low recovery today (gate copy in the hero).
+    @State private var deferredToday: [String] = []
     /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
     /// fetch that feeds `exerciseCounts` — drives the hero muscle line and the «También en tu plan» subtitles.
     @State private var routineMuscles: [String: [String]] = [:]
@@ -268,6 +272,22 @@ private struct EntrenarLanding: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                }
+                // FER-G: the raise lives where you start, not buried in the plan sheet. Green arrow =
+                // the datum; the deferral copy is the recovery gate speaking («aplaza, no cancela»).
+                if !raisesToday.isEmpty {
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        Image(systemName: "arrow.up")
+                            .font(StrandFont.glyph(.chevron, weight: .bold)).foregroundStyle(theme.dataRecovery)
+                        Text("Today you raise: \(raisesToday.joined(separator: ", "))")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else if !deferredToday.isEmpty {
+                    Text("The raise for \(deferredToday.joined(separator: ", ")) waits for your next session.")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 empezarButton
             }
@@ -837,11 +857,29 @@ private struct EntrenarLanding: View {
             let custom = (try? await store.customExercises()) ?? []
             let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
             let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
+            // FER-E/G: evaluate progression for today's slots — the landing's one-tap «Empezar» must
+            // carry the same seed «Rutina de hoy» would, and the hero names what raises (or waits).
+            let inventory = await MainActor.run { PlatesStore().inventory }
+            let recovery = repo.today?.recovery
+            var raising: [String] = []
+            var deferredNames: [String] = []
             for re in exs {
                 let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
                 let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
-                slots.append(.init(re: re, exercise: ex, lastSets: last))
+                var raise: ProgressionPlanner.Raise? = nil
+                if re.progressionEnabled, ex?.type == .weightReps {
+                    let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
+                    let result = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
+                                                             equipment: ex?.equipment, recovery: recovery)
+                    raise = result?.raise
+                    let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
+                    if raise != nil { raising.append(name) }
+                    else if case .deferred = result?.state { deferredNames.append(name) }
+                }
+                slots.append(.init(re: re, exercise: ex, lastSets: last, raise: raise))
             }
+            raisesToday = raising
+            deferredToday = deferredNames
         }
         routines = rs
         exerciseCounts = counts

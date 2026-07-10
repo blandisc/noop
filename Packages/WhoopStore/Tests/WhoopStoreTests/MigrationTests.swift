@@ -62,7 +62,7 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 28)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 30)
     }
 
     /// v23 (FER-531): the weekly-split table exists with `weekday` as its PRIMARY KEY (one routine per
@@ -124,7 +124,47 @@ final class MigrationTests: XCTestCase {
         }
         let pk = try await store.primaryKeyColumns("circadianPhase")
         XCTAssertEqual(pk, ["deviceId", "day"], "PK is (deviceId, day) → at most one record per day")
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 28)
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 30)
+    }
+
+    /// v29 (FER-A): the four load-progression columns exist on `routineExercise`, and a routine seeded at
+    /// v28 (before the columns existed) survives the upgrade with progression OFF by default — no data loss.
+    func testV29AddsProgressionColumnsAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v28")
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO routine (id, name, folderId, createdTs, updatedTs, sortOrder)
+                VALUES ('rt1', 'Torso', NULL, 0, 0, 0)
+                """)
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
+                     warmupPercents, restMode, restSeconds, supersetGroup, hrRestReference, hrRestValue)
+                VALUES ('re1', 'rt1', 'squat', 0, 4, 8, 100.0, '[]', 'heartRate', 90, NULL, 'restingMargin', 0)
+                """)
+        }
+        try migrator.migrate(dbQueue)   // → v29
+        try await dbQueue.read { db in
+            // The prior row survives and reads back with the OFF defaults.
+            XCTAssertEqual(try Int.fetchOne(db, sql:
+                "SELECT progressionEnabled FROM routineExercise WHERE id = 're1'"), 0,
+                "pre-v29 exercise defaults to progression OFF")
+            XCTAssertEqual(try Int.fetchOne(db, sql:
+                "SELECT progressionSessions FROM routineExercise WHERE id = 're1'"), 2)
+            XCTAssertNil(try Double.fetchOne(db, sql:
+                "SELECT progressionIncrementKg FROM routineExercise WHERE id = 're1'"),
+                "NULL increment = derive from inventory")
+            XCTAssertEqual(try String.fetchOne(db, sql:
+                "SELECT progressionDeload FROM routineExercise WHERE id = 're1'"), "propose")
+            XCTAssertEqual(try Double.fetchOne(db, sql:
+                "SELECT targetWeightKg FROM routineExercise WHERE id = 're1'"), 100.0, "no data loss")
+            // v30: the recovery-gate override defaults to 0 (defer on low recovery).
+            XCTAssertEqual(try Int.fetchOne(db, sql:
+                "SELECT progressionIgnoreRecovery FROM routineExercise WHERE id = 're1'"), 0,
+                "pre-v30 exercise defaults to deferring on low recovery")
+        }
     }
 
     /// v25 upsert is idempotent by (deviceId, day): writing the same day twice keeps one row, latest wins.

@@ -306,6 +306,18 @@ public enum Baselines {
                              logDomain: cfg.logDomain)
     }
 
+    /// Like `foldHistory`, but drops the nights with `day < epoch` BEFORE the replay — the
+    /// baseline re-anchoring behind "Recalibrar recuperación" (FER-677). `epoch == nil` means
+    /// no cut (identical to folding the raw values). The cut is a lexicographic comparison on the
+    /// "YYYY-MM-DD" day key, which is order-preserving, so no date parsing is needed. `values` must
+    /// be ordered oldest → newest by `day`. Delegates to the value-only fold, so every invariant of
+    /// the model (log-domain HRV, young-baseline anti-anchoring, spread floor) is preserved unchanged.
+    public static func foldHistory(_ values: [(day: String, value: Double?)],
+                                   epoch: String?, cfg: MetricCfg) -> BaselineState {
+        let kept = epoch.map { e in values.filter { $0.day >= e } } ?? values
+        return foldHistory(kept.map { $0.value }, cfg: cfg)
+    }
+
     /// Replay an ordered sequence of nightly values (oldest first) to build state.
     /// `nil` entries are treated as missing nights (skip-and-hold).
     public static func foldHistory(_ values: [Double?], cfg: MetricCfg) -> BaselineState {

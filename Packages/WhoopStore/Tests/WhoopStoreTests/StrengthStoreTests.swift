@@ -39,6 +39,34 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(back.map(\.hrRestValue), [0.45, 0.30, 0])
     }
 
+    /// FER-A: the four load-progression fields round-trip through save/read; an exercise with progression
+    /// left off reads back with the OFF defaults (enabled false, 2 sessions, nil increment, .propose).
+    func testProgressionFieldsRoundTrip() async throws {
+        let store = try await WhoopStore.inMemory()
+        let r = Routine(id: "rt1", name: "Pierna", createdTs: 0, updatedTs: 0)
+        let exs = [
+            RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 4,
+                            progressionEnabled: true, progressionSessions: 2,
+                            progressionIncrementKg: 2.5, progressionDeload: .warn,
+                            progressionIgnoreRecovery: true),
+            RoutineExercise(id: "b", routineId: "rt1", exerciseId: "ex2", position: 1, targetSets: 3),  // default OFF
+        ]
+        try await store.saveRoutine(r, exercises: exs)
+        let back = try await store.routineExercises(routineId: "rt1")
+        let a = back.first { $0.id == "a" }!
+        XCTAssertTrue(a.progressionEnabled)
+        XCTAssertEqual(a.progressionSessions, 2)
+        XCTAssertEqual(a.progressionIncrementKg, 2.5)
+        XCTAssertEqual(a.progressionDeload, .warn)
+        XCTAssertTrue(a.progressionIgnoreRecovery)
+        let b = back.first { $0.id == "b" }!
+        XCTAssertFalse(b.progressionEnabled)
+        XCTAssertEqual(b.progressionSessions, 2)
+        XCTAssertNil(b.progressionIncrementKg)
+        XCTAssertEqual(b.progressionDeload, .propose)
+        XCTAssertFalse(b.progressionIgnoreRecovery)
+    }
+
     /// FER-540: editing rest mid-session pinpoint-updates one exercise's four rest fields and leaves its
     /// per-set prescription AND the other exercises untouched (unlike a full `saveRoutine` rewrite).
     func testUpdateRoutineExerciseRestPinpoint() async throws {

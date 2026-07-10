@@ -105,6 +105,45 @@ public enum PlateMath {
         (0.0, 10), (0.55, 6), (0.80, 3),
     ]
 
+    /// The kind of load an exercise moves, for deriving its minimum weight step (FER-C). A barbell moves
+    /// in pairs of the smallest plate owned; a dumbbell/machine moves by the fixed step of its own rack.
+    public enum Implement: Sendable, Equatable {
+        case barbell
+        case dumbbell
+        case machine
+        case other
+
+        /// Classify from ExerciseDB's free-form `equipment` label (case-insensitive). Unknown → `.other`.
+        public static func from(equipment: String?) -> Implement {
+            let e = (equipment ?? "").lowercased()
+            if e.contains("barbell") || e.contains("smith") { return .barbell }
+            if e.contains("dumbbell") { return .dumbbell }
+            if e.contains("machine") || e.contains("cable") || e.contains("leverage") ||
+               e.contains("sled") { return .machine }
+            return .other
+        }
+    }
+
+    /// The smallest weight an exercise's load can move by — the default progression increment when the
+    /// user hasn't set one (FER-C). A **barbell** moves by adding the smallest owned plate to EACH side:
+    /// `2 × min(plate)` (e.g. 1.25 kg plates → 2.5 kg). A **dumbbell/machine/other** moves by the fixed
+    /// step of its own rack (`fixedStepKg`, caller-supplied from the user's equipment) — there is no
+    /// derivation from plates. If the barbell inventory is empty, falls back to `fixedStepKg`.
+    ///
+    /// Pure & database-free: the screen supplies the inventory and the fixed step; this only does the math.
+    public static func minimumIncrement(for implement: Implement,
+                                        inventory: [PlateStock] = defaultInventory,
+                                        fixedStepKg: Double = 2.5) -> Double {
+        switch implement {
+        case .barbell:
+            let owned = inventory.filter { $0.kg > 0 && $0.pairs > 0 }.map(\.kg)
+            guard let smallest = owned.min() else { return fixedStepKg }
+            return 2 * smallest
+        case .dumbbell, .machine, .other:
+            return fixedStepKg
+        }
+    }
+
     /// A warm-up ramp UP TO `workKg`: for each scheme step, the target percentage snapped DOWN to a
     /// buildable weight (bar-only for the 0% step). Steps that would snap to the bar or below the prior
     /// step are dropped, so the ramp is strictly increasing and never suggests an unbuildable load.
