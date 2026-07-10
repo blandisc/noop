@@ -153,7 +153,7 @@ struct RecoveryDetailScreen: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: MetricGlyph.recovery.sfSymbol)
-                    .font(.system(size: 12))
+                    .font(StrandFont.glyph(.chevron))
                     .foregroundStyle(theme.paper)
                     .frame(width: 14, height: 14)
                     .accessibilityHidden(true)
@@ -180,7 +180,7 @@ struct RecoveryDetailScreen: View {
                     .foregroundStyle(theme.paper)
                     .recRise()
                 Text(verbatim: "/100")
-                    .font(.system(size: 13))
+                    .font(InstrumentoType.grotesk(13))
                     .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
                 if let base = baseValue {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -188,7 +188,7 @@ struct RecoveryDetailScreen: View {
                             .font(InstrumentoType.groteskNumber(13, weight: .semibold))
                             .foregroundStyle(theme.paper)
                         Text("vs your base")
-                            .font(.system(size: 11))
+                            .font(InstrumentoType.grotesk(11))
                             .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
                     }
                     .padding(.horizontal, 10)
@@ -197,14 +197,14 @@ struct RecoveryDetailScreen: View {
                 }
             }
             (Text(heroVerdictWord)
-                .font(.system(size: 15, weight: .semibold))
+                .font(InstrumentoType.grotesk(15, weight: .semibold))
                 .foregroundColor(theme.paper)
              + Text(verbatim: " · ")
-                .font(.system(size: 14))
+                .font(InstrumentoType.grotesk(14))
                 .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
              + Text(heroVerdictClause)
-                .font(.system(size: 14))
-                .foregroundColor(theme.paper.opacity(0.78)))
+                .font(InstrumentoType.grotesk(14))
+                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary)))
                 .fixedSize(horizontal: false, vertical: true)
             if model.isEstimated { estimatedNoteOnField }
         }
@@ -218,10 +218,10 @@ struct RecoveryDetailScreen: View {
     private var whatWeMeasureCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("What we measure")
-                .font(.system(size: 13, weight: .semibold))
+                .font(InstrumentoType.grotesk(13, weight: .semibold))
                 .foregroundStyle(theme.ink)
             Text(heroExplanation)
-                .font(.system(size: 12))
+                .font(InstrumentoType.grotesk(12))
                 .lineSpacing(3)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -421,19 +421,19 @@ struct RecoveryDetailScreen: View {
                  + Text(verbatim: " ")
                  + Text(top.contribution < 0 ? "holds you back today" : "holds you up today")
                     .foregroundColor(theme.ink))
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(InstrumentoType.grotesk(16, weight: .semibold))
                 (Text(Self.positionPhraseStandalone(top))
                  + Text(verbatim: " · ")
                  + Text(verbatim: String.localizedStringWithFormat(
                         String(localized: "weighs %d %% of the score"),
                         Int((top.weight * 100).rounded()))))
-                    .font(.system(size: 13))
+                    .font(InstrumentoType.grotesk(13))
                     .foregroundStyle(theme.inkSecondary)
             }
             .fixedSize(horizontal: false, vertical: true)
         } else {
             Text("All your signals sat near your base today.")
-                .font(.system(size: 16, weight: .semibold))
+                .font(InstrumentoType.grotesk(16, weight: .semibold))
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -758,7 +758,7 @@ struct RecoveryDetailScreen: View {
                 .font(InstrumentoType.groteskNumber(22, weight: .bold))
                 .foregroundStyle(theme.verdict)
             Text(forecastPhrase(f.direction))
-                .font(.system(size: 14, weight: .semibold))
+                .font(InstrumentoType.grotesk(14, weight: .semibold))
                 .foregroundStyle(theme.ink)
             Spacer(minLength: 8)
             Text("projection")
