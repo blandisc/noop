@@ -27,7 +27,6 @@ struct RoutineBuilderScreen: View {
 
     @State private var name: String = ""
     @State private var items: [BuilderItem] = []
-    @State private var loaded = false
     @State private var showLibrary = false
     /// Which set's rest is being edited (drives the 1e push); nil = none. Rest is per-set now (choque 3):
     /// each set carries its own `RestConfig` override, edited in the shared `RestEditorScreen`.
@@ -43,26 +42,23 @@ struct RoutineBuilderScreen: View {
     @FocusState private var focusedCell: String?
 
     private let routineId: String
-    /// A pre-filled list of exercises to seed a NEW routine with (v3 · 2A «Duplicar como rutina», FER-718):
-    /// the exercises of a finished session, re-based onto a fresh routine id. When set, the builder skips its
-    /// store fetch and starts from these. nil = normal new/edit behavior.
-    private let seed: [(re: RoutineExercise, exercise: Exercise)]?
 
     init(onSaved: ((String) async -> Void)? = nil) {
         self.onSaved = onSaved
         self.routineId = UUID().uuidString
-        self.seed = nil
     }
 
-    /// «Duplicar como rutina» (2A): a fresh routine pre-filled with a session's exercises. `suggestedName`
-    /// seeds the name field; `seed` re-bases each exercise onto the new routine id.
+    /// «Duplicar como rutina» (2A): a fresh routine pre-filled with a session's exercises. `seedName`
+    /// seeds the name field; `seed` re-bases each exercise onto the new routine id. Both are fixed at
+    /// init, so `items` starts seeded — no async load step.
     init(seedName: String, seed: [(re: RoutineExercise, exercise: Exercise)], onSaved: ((String) async -> Void)? = nil) {
         self.onSaved = onSaved
         let newId = UUID().uuidString
         self.routineId = newId
-        self.seed = seed.enumerated().map { idx, item in
-            var re = item.re; re.routineId = newId; re.position = idx; return (re, item.exercise)
-        }
+        _items = State(initialValue: seed.enumerated().map { idx, item in
+            var re = item.re; re.routineId = newId; re.position = idx
+            return BuilderItem(re: re, exercise: item.exercise)
+        })
         _name = State(initialValue: seedName)
     }
 
@@ -134,11 +130,6 @@ struct RoutineBuilderScreen: View {
                 )
                 .toolbar(.hidden, for: .navigationBar)   // ProgressionSetupScreen draws its own back header
             }
-        }
-        .task {
-            guard !loaded else { return }
-            await loadExisting()
-            loaded = true
         }
         .sheet(isPresented: $showLibrary) {
             ExerciseLibraryScreen { picks in append(picks) }
@@ -420,43 +411,25 @@ struct RoutineBuilderScreen: View {
     private func moveDown(_ idx: Int) { guard idx < items.count - 1 else { return }; withAnimation(.snappy) { items.swapAt(idx, idx + 1) } }
     private func deleteExercise(_ idx: Int) { withAnimation(.snappy) { _ = items.remove(at: idx) } }
 
-    // MARK: - Superset helpers (a group = consecutive exercises sharing supersetGroup)
+    // MARK: - Superset helpers (shared grouping logic lives in RoutineSetEditing)
 
-    private func inSuperset(_ i: Int) -> Bool {
-        guard items.indices.contains(i), items[i].re.supersetGroup != nil else { return false }
-        return sameGroup(i, i - 1) || sameGroup(i, i + 1)
-    }
-    private func sameGroup(_ a: Int, _ b: Int) -> Bool {
-        guard items.indices.contains(a), items.indices.contains(b),
-              let ga = items[a].re.supersetGroup, let gb = items[b].re.supersetGroup else { return false }
-        return ga == gb
-    }
+    private func inSuperset(_ i: Int) -> Bool { RoutineSetEditing.inSuperset(items.map(\.re), i) }
+    private func sameGroup(_ a: Int, _ b: Int) -> Bool { RoutineSetEditing.sameGroup(items.map(\.re), a, b) }
     /// First member of a superset group (shows the «Superset» header above it).
-    private func firstOfGroup(_ i: Int) -> Bool { inSuperset(i) && !sameGroup(i, i - 1) }
-    /// Last member of a group (shows the single group rest below it). Ungrouped exercises are their own last.
-    private func lastOfGroup(_ i: Int) -> Bool { !sameGroup(i, i + 1) }
+    private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
 
     private func supersetWithNext(_ i: Int) {
-        guard i < items.count - 1 else { return }
-        let group = items[i].re.supersetGroup ?? items[i + 1].re.supersetGroup ?? nextFreeGroup()
-        items[i].re.supersetGroup = group
-        items[i + 1].re.supersetGroup = group
+        var res = items.map(\.re)
+        RoutineSetEditing.supersetWithNext(&res, i)
+        for (j, re) in res.enumerated() { items[j].re = re }
     }
     private func breakSuperset(_ i: Int) {
-        guard let g = items[i].re.supersetGroup else { return }
-        items[i].re.supersetGroup = nil
-        let remaining = items.indices.filter { items[$0].re.supersetGroup == g }
-        if remaining.count == 1 { items[remaining[0]].re.supersetGroup = nil }
+        var res = items.map(\.re)
+        RoutineSetEditing.breakSuperset(&res, i)
+        for (j, re) in res.enumerated() { items[j].re = re }
     }
-    private func nextFreeGroup() -> Int { (items.compactMap { $0.re.supersetGroup }.max() ?? 0) + 1 }
 
-    // MARK: - Load + save
-
-    private func loadExisting() async {
-        if let seed {   // «Duplicar como rutina» (2A): start from the seeded exercises, no store fetch.
-            items = seed.map { BuilderItem(re: $0.re, exercise: $0.exercise) }
-        }
-    }
+    // MARK: - Save
 
     private var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty && !items.isEmpty }
 
