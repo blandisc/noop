@@ -1,5 +1,50 @@
 import Foundation
 
+/// Shared plausibility bounds for a type-47 record's own unix timestamp (#547). A WHOOP strap with a
+/// bad clock/flash emits records whose decoded unix is scattered garbage — far-past (2024), a bogus
+/// 2027, and even FUTURE dates. Trusted verbatim, one polluted ~12h block gets re-attributed to every
+/// day-window and a future-dated record surfaces as the "last night" carry-over. Reject any record
+/// whose ts isn't near "now".
+///
+/// MIN_PLAUSIBLE_UNIX = 2023-11 — the same 1.7B floor `DataRange.earliestUnix` already uses.
+/// FUTURE_MARGIN = 1 day — a historical record can never post-date its own capture, so anything more
+/// than a day ahead of wall time is a bad-clock artefact.
+public let MIN_PLAUSIBLE_UNIX = 1_700_000_000   // 2023-11
+public let FUTURE_MARGIN = 86_400               // 1 day
+
+/// SESSION-RELATIVE slack (#547): how far OUTSIDE the strap's own GET_DATA_RANGE oldest/newest markers a
+/// record may still be stamped before it's treated as bad-clock pollution. The strap reports its banked
+/// history span [oldest, newest] for THIS sync; a real record cannot predate the oldest banked marker nor
+/// post-date the newest by more than benign skew, so a record dated MONTHS off the strap's OWN window is a
+/// wandering-clock artefact even when it clears the absolute 2023-11 floor. 7 days absorbs marker jitter /
+/// a still-banking newest edge / DST while still catching the months-off garbage.
+public let SESSION_RANGE_MARGIN = 7 * 86_400    // 7 days
+
+/// True when `ts` is a plausible capture time for a historical record given `wallNow` (#547): on or
+/// after the 2023-11 floor and no more than a day ahead of now.
+public func isPlausibleHistoricalUnix(_ ts: Int, wallNow: Int) -> Bool {
+    ts >= MIN_PLAUSIBLE_UNIX && ts <= wallNow + FUTURE_MARGIN
+}
+
+/// SESSION-RELATIVE plausibility (#547): the absolute gate (`isPlausibleHistoricalUnix`) PLUS a check
+/// that `ts` sits within the strap's OWN GET_DATA_RANGE markers for THIS sync, padded by
+/// `SESSION_RANGE_MARGIN`. `sessionOldestUnix`/`sessionNewestUnix` are the markers the BLE client scanned
+/// from the strap's range reply (nil when unknown — the replay/import/no-range paths). When BOTH markers
+/// are present AND well-formed (both clear the absolute floor and oldest <= newest), a record dated far
+/// before the oldest banked marker or far after the newest is rejected as wandering-clock pollution even
+/// though it cleared the absolute floor. When the markers are absent or malformed this is byte-identical
+/// to the absolute-only gate, so every legacy / range-less caller is unchanged. A legitimately-OLD record
+/// that falls WITHIN [oldest, newest] (real history the strap actually banked) is always kept.
+public func isPlausibleHistoricalUnix(_ ts: Int, wallNow: Int,
+                                      sessionOldestUnix: Int?, sessionNewestUnix: Int?) -> Bool {
+    guard isPlausibleHistoricalUnix(ts, wallNow: wallNow) else { return false }
+    // Only apply the session-relative window when both markers are trustworthy: present, themselves above
+    // the absolute floor, and correctly ordered. A wrong-epoch / partial marker must never reject real data.
+    guard let oldest = sessionOldestUnix, let newest = sessionNewestUnix,
+          oldest >= MIN_PLAUSIBLE_UNIX, newest >= oldest else { return true }
+    return ts >= oldest - SESSION_RANGE_MARGIN && ts <= newest + SESSION_RANGE_MARGIN
+}
+
 /// Turn historical (offload) parsed frames into datastore rows. Port of
 /// interpreter.extract_historical_streams.
 ///
@@ -8,7 +53,12 @@ import Foundation
 /// EVENT and COMMAND_RESPONSE handling is identical to extractStreams.
 /// CRC-failed and non-ok frames are skipped.
 public func extractHistoricalStreams(_ parsed: [ParsedFrame],
-                                     deviceClockRef: Int, wallClockRef: Int) -> Streams {
+                                     deviceClockRef: Int, wallClockRef: Int,
+                                     // SESSION-RELATIVE bounds (#547): the strap's own GET_DATA_RANGE
+                                     // oldest/newest markers for THIS sync. nil on the replay/import/no-range
+                                     // paths — the gate then falls back to the absolute-only floor (unchanged).
+                                     sessionOldestUnix: Int? = nil,
+                                     sessionNewestUnix: Int? = nil) -> Streams {
     func wall(_ deviceTs: Int?) -> Int? {
         guard let d = deviceTs else { return nil }
         return wallClockRef + (d - deviceClockRef)
@@ -23,14 +73,43 @@ public func extractHistoricalStreams(_ parsed: [ParsedFrame],
     let staleThreshold = 86_400          // 1 day
     let snapGranularity = 300            // 5 min
     let clockOffset = wallClockRef - deviceClockRef
-    func correctedWall(_ rawTs: Int) -> Int {
-        guard abs(clockOffset) > staleThreshold else { return rawTs }
-        // sign-aware round-half-up snap to the nearest `snapGranularity`
-        let snapped = (clockOffset >= 0
-            ? (clockOffset + snapGranularity / 2)
-            : (clockOffset - snapGranularity / 2)) / snapGranularity * snapGranularity
-        return rawTs + snapped
+    // The wall "now" the plausibility gate's FUTURE bound measures against. A record genuinely can't
+    // post-date its own capture, so the ground truth for "future" is the LIVE wall clock. We take the
+    // LATER of the live clock and `wallClockRef` so neither a synthetic/older ref (identity refs, unit
+    // fixtures, or a session ref a hair behind a just-captured record) nor a paused live clock wrongly
+    // rejects a real record. The MIN_PLAUSIBLE_UNIX floor is unconditional and still catches the
+    // far-past garbage in every caller. Genuine future garbage stays > now + FUTURE_MARGIN → dropped. (#547)
+    let wallNow = max(wallClockRef, Int(Date().timeIntervalSince1970))
+    // PRIMARY FIX (#547): a record's own decoded ts must be near "now". A bad-clock strap emits records
+    // whose unix is scattered garbage (far-past, a bogus 2027, even future dates); trusted verbatim, one
+    // polluted block was re-attributed to every day and a future row surfaced as "last night". Returns
+    // nil for an out-of-bounds ts so EVERY call site can skip the record. Applied to BOTH the raw
+    // pass-through branch and the corrected branch, so a clock-correction can never re-introduce a bad ts.
+    func correctedWall(_ rawTs: Int) -> Int? {
+        let candidate: Int
+        if abs(clockOffset) <= staleThreshold {
+            candidate = rawTs
+        } else {
+            // sign-aware round-half-up snap to the nearest `snapGranularity`
+            let snapped = (clockOffset >= 0
+                ? (clockOffset + snapGranularity / 2)
+                : (clockOffset - snapGranularity / 2)) / snapGranularity * snapGranularity
+            candidate = rawTs + snapped
+        }
+        // Final ingest gate (#547): drop the record if the resolved ts is implausible — either by the
+        // absolute floor OR, when the strap's GET_DATA_RANGE markers are known, by sitting months outside
+        // the strap's OWN banked window (wandering-clock pollution that clears the absolute floor).
+        guard isPlausibleHistoricalUnix(candidate, wallNow: wallNow,
+                                        sessionOldestUnix: sessionOldestUnix,
+                                        sessionNewestUnix: sessionNewestUnix) else {
+            droppedImplausible += 1
+            return nil
+        }
+        return candidate
     }
+    // #547: how many records this chunk dropped for an implausible ts. Surfaced to the Backfiller via
+    // `Streams.droppedImplausible` so the strap log can show a bad-clock strap (observability only).
+    var droppedImplausible = 0
     var out = Streams()
     for r in parsed {
         if !r.ok || r.crcOK == false { continue }
@@ -38,9 +117,10 @@ public func extractHistoricalStreams(_ parsed: [ParsedFrame],
         switch r.typeName {
         case "HISTORICAL_DATA":
             // type-47 carries the strap RTC's real-unix seconds. Correct for a grossly-stale RTC
-            // (FIX #72); a normal strap is unchanged (offset < threshold).
-            guard let rawTs = p["unix"]?.intValue else { continue }
-            let ts = correctedWall(rawTs)
+            // (FIX #72); a normal strap is unchanged (offset < threshold). The #547 ingest gate inside
+            // `correctedWall` returns nil for an implausible ts — skip the whole record so no
+            // garbage-ts row is banked.
+            guard let rawTs = p["unix"]?.intValue, let ts = correctedWall(rawTs) else { continue }
             if let bpm = p["heart_rate"]?.intValue, bpm != 0 {  // skip startup hr=0
                 out.hr.append(HRSample(ts: ts, bpm: bpm))
             }
@@ -66,18 +146,26 @@ public func extractHistoricalStreams(_ parsed: [ParsedFrame],
                     y: p["gravity_y"]?.doubleValue ?? 0, z: p["gravity_z"]?.doubleValue ?? 0))
             }
         case "REALTIME_RAW_DATA":
-            let ts = wall(p["timestamp"]?.intValue)
-            if let ts = ts, let bpm = p["heart_rate"]?.intValue {
+            // #547 gate: the device-epoch→wall mapping can also land out of bounds on a bad clock, so
+            // drop the row unless the resulting wall ts is plausible (mirrors the type-47/EVENT gate).
+            var rtTs: Int?
+            if let w = wall(p["timestamp"]?.intValue) {
+                if isPlausibleHistoricalUnix(w, wallNow: wallNow,
+                                             sessionOldestUnix: sessionOldestUnix,
+                                             sessionNewestUnix: sessionNewestUnix) { rtTs = w }
+                else { droppedImplausible += 1 }
+            }
+            if let ts = rtTs, let bpm = p["heart_rate"]?.intValue {
                 out.hr.append(HRSample(ts: ts, bpm: bpm))
             }
-            if let ts = ts, let rrs = p["rr_intervals"]?.intArrayValue {
+            if let ts = rtTs, let rrs = p["rr_intervals"]?.intArrayValue {
                 for rr in rrs { out.rr.append(RRInterval(ts: ts, rrMs: rr)) }
             }
         case "EVENT":
             // EVENT carries the strap RTC's real-unix seconds. Correct for a grossly-stale RTC
-            // (FIX #72); a normal strap is unchanged (offset < threshold).
-            guard let rawTs = p["event_timestamp"]?.intValue else { continue }
-            let ts = correctedWall(rawTs)
+            // (FIX #72); a normal strap is unchanged (offset < threshold). #547 gate: skip the event
+            // when `correctedWall` rejects an implausible ts so no future/far-past event is banked.
+            guard let rawTs = p["event_timestamp"]?.intValue, let ts = correctedWall(rawTs) else { continue }
             let kind = p["event"]?.stringValue ?? ""
             if kind.hasPrefix("BATTERY_LEVEL") { appendBattery(&out, ts: ts, p: p) }  // "BATTERY_LEVEL(3)"
             var payload = p
@@ -91,5 +179,6 @@ public func extractHistoricalStreams(_ parsed: [ParsedFrame],
             continue
         }
     }
+    out.droppedImplausible = droppedImplausible   // #547 diag count (not persisted, not encoded)
     return out
 }

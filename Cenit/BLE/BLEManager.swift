@@ -475,6 +475,11 @@ public final class BLEManager: NSObject, ObservableObject {
         clockReassertPolicy.reset()   // FER-93: fresh per-connect re-assertion budget
         pendingClockReassert = false
         state.rtcLikelyLost = false
+        // #547: the session-relative plausibility window belongs to a connection's GET_DATA_RANGE reply;
+        // clear it so a fresh connection (possibly a different strap) never gates on a stale window. The
+        // handshake re-sends GET_DATA_RANGE, which re-publishes the markers before the offload begins.
+        backfiller?.sessionOldestUnix = nil
+        backfiller?.sessionNewestUnix = nil
     }
 
     /// Switch which strap we'll connect to next: drop the current strap and clear the **sticky** bond
@@ -1795,6 +1800,12 @@ extension BLEManager: CBPeripheralDelegate {
                         // proof the sensor captured data and the band still holds it.
                         state.strapHistoryNewest = TimeInterval(window.newest)
                         state.strapHistoryOldest = TimeInterval(window.oldest)
+                        // #547 SESSION-RELATIVE gate: publish the strap's banked-record window to the
+                        // Backfiller so the historical ingest gate can reject a record dated months outside
+                        // THIS strap's own [oldest, newest] (wandering-clock pollution that clears the
+                        // absolute 2023-11 floor). The window is already validated by plausibleWindow.
+                        backfiller?.sessionOldestUnix = window.oldest
+                        backfiller?.sessionNewestUnix = window.newest
                         // FER-90 diagnostic: the retained-history window in plain dates, in the strap log.
                         log("La banda dice tener historial de \(BLEManager.logDate(window.oldest)) a \(BLEManager.logDate(window.newest))")
                     } else {
@@ -1803,6 +1814,9 @@ extension BLEManager: CBPeripheralDelegate {
                         // Clear any stale window so the diagnostic falls back to "—" instead of showing junk.
                         state.strapHistoryNewest = nil
                         state.strapHistoryOldest = nil
+                        // #547: no trustworthy window → the ingest gate falls back to the absolute floor only.
+                        backfiller?.sessionOldestUnix = nil
+                        backfiller?.sessionNewestUnix = nil
                         log("La banda no reporta historial plausible (sin timestamps, futuro o rango colapsado)")
                     }
                 }

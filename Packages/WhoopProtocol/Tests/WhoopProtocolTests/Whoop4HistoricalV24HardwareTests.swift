@@ -106,7 +106,9 @@ final class Whoop4HistoricalV24HardwareTests: XCTestCase {
     func testStaleClockShiftsHistoricalTimestampForwardAndSnaps() {
         // Strap RTC reads ~60 days behind real phone time. offset = wall - device must be ADDED to the
         // raw record ts, snapped to a 5-min grid so re-syncs land on the same corrected ts.
-        let device = 1_770_000_000
+        // device >= rawTs keeps the record in the strap's past (corrected <= wall), so the #547
+        // plausibility gate leaves this genuine stale-clock correction unchanged.
+        let device = 1_780_930_000
         let wall   = device + 60 * 86_400 + 137                  // ~60 days ahead, +137s exercises snapping
         let out = parseFrame(bytes(realV24Hex))
         let st = extractHistoricalStreams([out], deviceClockRef: device, wallClockRef: wall)
@@ -122,7 +124,7 @@ final class Whoop4HistoricalV24HardwareTests: XCTestCase {
         // ~1s. The 5-min snap absorbs that jitter, so the same record re-syncs to the SAME corrected ts
         // and the re-offload dedupes by (deviceId, ts). (Records whose offset sits within ~1s of a snap
         // boundary are the only residual edge — accepted; they'd re-insert a few HR samples, not corrupt.)
-        let device = 1_770_000_000
+        let device = 1_780_930_000
         let out = parseFrame(bytes(realV24Hex))
         let a = extractHistoricalStreams([out], deviceClockRef: device, wallClockRef: device + 60*86_400 + 10)
         let b = extractHistoricalStreams([out], deviceClockRef: device, wallClockRef: device + 60*86_400 + 13)
