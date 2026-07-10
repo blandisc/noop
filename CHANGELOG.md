@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Arrastra sobre el historial de Recuperación para leer cada día / Drag across the Recovery history to read each day.**
+  **ES** — La gráfica de historial del Detalle de Recuperación ahora se puede explorar con el dedo: al arrastrar aparece una regla vertical, un anillo del color de la banda de ese día y un chip con el valor y la fecha («78 · 4 jul»). Funciona en las dos vistas (Media y Rangos) y se limpia al soltar. Las demás pantallas de detalle lo heredarán con su rediseño.
+  **EN** — The history chart in the Recovery detail is now explorable by touch: dragging shows a vertical rule, a ring in that day's band color and a chip with the value and date ("78 · Jul 4"). It works in both views (Mean and Ranges) and clears when you lift your finger. The other detail screens will inherit it with their redesign.
+  ([GraficaRangos.swift](Packages/StrandDesign/Sources/StrandDesign/GraficaRangos.swift), [RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift))
+
 - **El Detalle de Recuperación estrena la piel «Final» de Tendencias / The Recovery detail debuts the final Trends skin.**
   **ES** — La pantalla de Recuperación se rediseñó con el esqueleto estándar de los detalles de Tendencias: un héroe que pinta todo su campo con el color de tu banda del día (con tu «+N vs tu base» al lado), secciones con franjas de cabecera, tarjetas de dato para «Qué cambió desde ayer» y «Panorama», un historial nuevo con dos vistas (Media ⇄ Rangos: toca una banda para resaltar sus días en la gráfica), el calendario de 90 días con leyenda, y el sello de origen que ahora dice claro «Medido por tu banda» o «Calculado en tu teléfono». Nada del cálculo cambió: es la misma recuperación, contada mejor.
   **EN** — The Recovery screen was redesigned with the standard Trends-detail skeleton: a hero that paints its whole field in your day's band color (with your "+N vs your base" beside it), section header bands, data tiles for "What changed since yesterday" and "Panorama", a new history with two views (Mean ⇄ Ranges: tap a band to highlight its days on the chart), the 90-day calendar with a legend, and the origin seal that now plainly says "Measured by your band" or "Computed on your phone". None of the math changed — it's the same recovery, told better.

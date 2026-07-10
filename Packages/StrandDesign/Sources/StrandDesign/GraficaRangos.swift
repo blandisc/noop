@@ -82,10 +82,18 @@ public struct GraficaRangos: View {
     private let countUnit: String
     private let anchorMedia: String?
     private let anchorRangos: String?
+    /// Scrub opt-in (rev 2026-07-10b): arrastrar sobre la gráfica lee cada punto con una regla
+    /// vertical + anillo del color de su banda + chip negro «valor · fecha». Al soltar se limpia.
+    private let scrub: Bool
+    /// Fecha legible por punto («10 jun»), paralela a `points`. Solo se usa con `scrub`.
+    private let labels: [String]
+    /// Formato del valor en el chip del scrub (default: entero/2 decimales según magnitud).
+    private let fmt: (Double) -> String
     private let theme: InstrumentoTheme
 
     @State private var mode: TrendMode = .media
     @State private var activeLane: Int? = nil
+    @State private var scrubIndex: Int? = nil
 
     public init(points: [Double], bands: [Banda], ticks: [Tick],
                 wash: Wash? = nil, refLine: RefLine? = nil,
@@ -95,6 +103,8 @@ public struct GraficaRangos: View {
                 mediaDelta: String? = nil, deltaColor: Color? = nil,
                 countUnit: String = "d",
                 anchorMedia: String? = nil, anchorRangos: String? = nil,
+                scrub: Bool = false, labels: [String] = [],
+                fmt: ((Double) -> String)? = nil,
                 theme: InstrumentoTheme) {
         self.points = points; self.bands = bands; self.ticks = ticks
         self.wash = wash; self.refLine = refLine
@@ -104,6 +114,10 @@ public struct GraficaRangos: View {
         self.mediaDelta = mediaDelta; self.deltaColor = deltaColor
         self.countUnit = countUnit
         self.anchorMedia = anchorMedia; self.anchorRangos = anchorRangos
+        self.scrub = scrub; self.labels = labels
+        self.fmt = fmt ?? { v in
+            v == v.rounded() ? "\(Int(v))" : String(format: "%.2f", v)
+        }
         self.theme = theme
     }
 
@@ -180,8 +194,65 @@ public struct GraficaRangos: View {
                     rangosSeries(w)
                 }
                 floorAndDates(w)
+                if let i = scrubIndex, points.indices.contains(i) {
+                    scrubOverlay(i, w)
+                }
             }
+            .contentShape(Rectangle())
+            .gesture(scrub ? scrubGesture(w) : nil)
         }
+    }
+
+    // MARK: Scrub — regla + anillo por banda + chip negro (rev 2026-07-10b)
+
+    /// El overlay del scrub: regla vertical 1px tinta 0.35 (de y=16 al piso), anillo r5 con borde
+    /// 2.5px del color de la banda del punto, y chip negro (radio 8, alto 16) con «valor · fecha»
+    /// en Grotesk 9.5/600 papel, centrado en el punto y clampeado al plot. El chip es SIEMPRE
+    /// negro: la valencia vive solo en el anillo.
+    @ViewBuilder private func scrubOverlay(_ i: Int, _ w: CGFloat) -> some View {
+        let px = x(i, w)
+        let py = y(points[i])
+        let ringColor = bandIndex(points[i]).map { bands[$0].color } ?? hue
+        let text = labels.indices.contains(i) ? "\(fmt(points[i])) · \(labels[i])" : fmt(points[i])
+
+        Rectangle()
+            .fill(theme.ink.opacity(0.35))
+            .frame(width: 1, height: Self.floorY - 16)
+            .offset(x: px - 0.5, y: 16)
+        Circle()
+            .fill(theme.paper)
+            .overlay(Circle().strokeBorder(ringColor, lineWidth: 2.5))
+            .frame(width: 10, height: 10)
+            .offset(x: px - 5, y: py - 5)
+        // Ancho estimado por caracteres (mismo truco del mock) para poder clampear el chip al plot.
+        let chipW = CGFloat(text.count) * 5.6 + 16
+        let chipX = Swift.max(Self.gutter, Swift.min(w - chipW, px - chipW / 2))
+        Text(verbatim: text)
+            .font(InstrumentoType.groteskNumber(9.5, weight: .semibold))
+            .foregroundStyle(theme.paper)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .padding(.horizontal, 6)
+            .frame(width: chipW, height: 16)
+            .background(theme.ink, in: Capsule(style: .continuous))
+            .offset(x: chipX, y: 0)
+            .accessibilityHidden(true)
+    }
+
+    /// El gesto de scrub: drag con `minimumDistance: 0` sobre la gráfica; snap al punto más
+    /// cercano (`ChartScrubMath`), háptica al cambiar de punto, y limpia al soltar.
+    private func scrubGesture(_ w: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { g in
+                let plotW = Swift.max(1, w - Self.gutter)
+                let i = ChartScrubMath.nearestIndex(toX: g.location.x - Self.gutter,
+                                                    count: points.count, width: plotW)
+                if let i, i != scrubIndex {
+                    scrubIndex = i
+                    ChartHaptics.datumChanged()
+                }
+            }
+            .onEnded { _ in scrubIndex = nil }
     }
 
     /// Los washes de banda del modo RANGOS: 8% en reposo; con carril activo, 16% el suyo y 3% el resto.
@@ -402,6 +473,9 @@ private struct Line: Shape {
         mediaValue: "A punto", mediaNote: "tu banda típica del mes", mediaDelta: "+4%",
         deltaColor: t.verdictDeep,
         anchorRangos: "Cuántos días del periodo cayeron en cada banda. Toca una para ver sus días en la gráfica.",
+        scrub: true,
+        labels: ["10 jun", "12 jun", "14 jun", "16 jun", "18 jun", "20 jun", "22 jun", "24 jun",
+                 "26 jun", "28 jun", "30 jun", "2 jul", "4 jul", "6 jul", "8 jul"],
         theme: t)
         .padding(20)
         .background(t.paper)

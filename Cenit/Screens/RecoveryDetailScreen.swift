@@ -851,6 +851,10 @@ struct RecoveryDetailScreen: View {
                 deltaColor: pct.map { $0 >= 0 ? theme.positiveText : theme.warning },
                 countUnit: "d",
                 anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+                scrub: true,
+                labels: window.rows.map { row in
+                    Repository.parseDayKey(row.day).map { Self.axisDateFmt.string(from: $0) } ?? ""
+                },
                 theme: theme)
                 .padding(.top, 6)
                 .id(range)  // fresh entrance (recFade) when the period changes
