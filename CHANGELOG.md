@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La «reserva para bajar de marcha» de la noche, en Detalle de Sueño / Your nightly "braking reserve", in the Sleep detail.**
+  **ES** — Con las Métricas experimentales prendidas, el Detalle de Sueño muestra tu capacidad de desaceleración nocturna (DC): cuánta reserva tuvo tu corazón para bajar de marcha en reposo, en ms, con una lectura «vs tu normal» (por encima / en rango / por debajo) contra tu propia base de noches recientes. Es un patrón personal, no un número de riesgo ni de mortalidad; se oculta sin banda WHOOP o cuando la noche no da señal suficiente.
+  **EN** — With Experimental metrics on, the Sleep detail shows your nocturnal deceleration capacity (DC): how much room your heart had to ease off the gas at rest, in ms, with a "vs your normal" read (above / in range / below) against your own recent-nights baseline. It's a personal pattern, not a risk or mortality number; it hides without a WHOOP strap or when the night can't be read.
+  ([SleepDetailScreen.swift](Cenit/Screens/SleepDetailScreen.swift), [Repository.swift](Cenit/Data/Repository.swift))
+
 - **Un interruptor «Métricas experimentales» en Ajustes / A "Experimental metrics" toggle in Settings.**
   **ES** — En Ajustes › Experimental hay un nuevo interruptor, apagado por defecto, que habilita cuatro lecturas nuevas y aproximadas (reserva vagal nocturna, estabilidad térmica, respiración de la noche y recuperación post-sesión). Mientras esté apagado, ninguna de esas superficies aparece; al prenderlo, cada una se muestra en su pantalla de detalle. La preferencia sobrevive el relanzamiento.
   **EN** — Settings › Experimental now has a new toggle, off by default, that enables four new approximate reads (nightly vagal reserve, thermal stability, night breathing and post-session recovery). While it's off none of those surfaces appear; turning it on shows each in its detail screen. The preference survives a relaunch.
