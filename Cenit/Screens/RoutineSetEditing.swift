@@ -4,7 +4,7 @@ import StrandDesign
 import StrandTraining
 
 // RoutineSetEditing.swift — the per-set rest logic + rest chip shared by the two inline set-table screens:
-// the routine builder (1d, `RoutineBuilderScreen`) and the plan-day editor (1o, `PlanDayEditorScreen`, FER-747).
+// the routine builder (1d, `RoutineBuilderScreen`) and the unified «Rutina» editor (`RoutineEditorScreen`, FER-839).
 // Both edit the SAME model (`RoutineExercise` + its `RoutineSet`s) with the SAME F0 rest model, so the
 // resolution/apply/label helpers live here once. The set TABLE itself (numeral ring vs plain label, thumb,
 // column widths) stays per-screen because those renderings genuinely differ.

@@ -5691,6 +5691,23 @@
         }
       }
     },
+    "Add warm-up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add warm-up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agregar calentamiento"
+          }
+        }
+      }
+    },
     "Add Workout": {
       "localizations": {
         "es": {
@@ -9215,6 +9232,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Calculado · hoy"
+          }
+        }
+      }
+    },
+    "Changes are saved to the routine when you leave or start.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes are saved to the routine when you leave or start."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los cambios se guardan en la rutina al salir o empezar."
           }
         }
       }
@@ -14649,6 +14683,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estimado, %lld de %lld señales"
+          }
+        }
+      }
+    },
+    "every %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cada %lld"
           }
         }
       }
@@ -29658,6 +29709,23 @@
         }
       }
     },
+    "Remove from routine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from routine"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitar de la rutina"
+          }
+        }
+      }
+    },
     "Rename folder": {
       "localizations": {
         "en": {
@@ -36962,6 +37030,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esta acción quita el entrenamiento de tu historial."
+          }
+        }
+      }
+    },
+    "This routine could not be found.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This routine could not be found."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se encontró esta rutina."
           }
         }
       }
@@ -52418,7 +52503,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al alza"
+            "value": "Subiendo"
           }
         }
       }
@@ -52435,7 +52520,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "A la baja"
+            "value": "Bajando"
           }
         }
       }
@@ -53618,6 +53703,40 @@
         }
       }
     },
+    "VO₂max · trend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂max · trend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VO₂max · tendencia"
+          }
+        }
+      }
+    },
+    "We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Te enseñamos la dirección, no un número exacto — el estimado brinca de día a día, la tendencia es más honesta."
+          }
+        }
+      }
+    },
     "SESSION · IN PROGRESS": {
       "extractionState": "manual",
       "localizations": {
@@ -54141,6 +54260,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "activa"
+          }
+        }
+      }
+    },
+    "ROUTINE · UNSAVED CHANGES": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ROUTINE · UNSAVED CHANGES"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RUTINA · CAMBIOS SIN GUARDAR"
+          }
+        }
+      }
+    },
+    "Your edits to this routine will be lost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your edits to this routine will be lost."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus cambios a esta rutina se perderán."
           }
         }
       }
