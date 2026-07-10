@@ -108,6 +108,10 @@ final class IntelligenceEngine: ObservableObject {
                              stepTicksPerStep: profile.stepTicksPerStep)
 
         let maxHR = profile.hrMaxOverride > 0 ? Double(profile.hrMaxOverride) : nil
+        // FER-677: the baseline cut day-key («Recalibrar recuperación»), captured up-front with the
+        // other profile inputs. nil = no cut. Every nightly baseline fold below drops nights < epoch,
+        // so recovery re-anchors from this day; nil leaves an existing user byte-identical.
+        let baselineEpoch = profile.baselineEpochOrNil
         let now = Int(Date().timeIntervalSince1970)
         // Device wall-clock offset (seconds east of UTC) for the sleep detector's daytime
         // false-sleep guard (#90): the stager places each window's center on the LOCAL clock
@@ -125,8 +129,8 @@ final class IntelligenceEngine: ObservableObject {
         // must not enter the HRV/RHR/resp baselines (the capped `foldApplePrior` below is the only Apple
         // path, and — FER-634 — for respiration only). `filter` preserves chronological order.
         let strapHist = Self.strapOnlyHistory(hist, appleHealthDays: appleOnlyDays)
-        let hrvBase1 = Baselines.foldHistory(strapHist.map { $0.avgHrv }, cfg: hrvCfg)
-        let rhrBase1 = Baselines.foldHistory(strapHist.map { $0.restingHr.map(Double.init) }, cfg: rhrCfg)
+        let hrvBase1 = Baselines.foldHistory(strapHist.map { (day: $0.day, value: $0.avgHrv) }, epoch: baselineEpoch, cfg: hrvCfg)
+        let rhrBase1 = Baselines.foldHistory(strapHist.map { (day: $0.day, value: $0.restingHr.map(Double.init)) }, epoch: baselineEpoch, cfg: rhrCfg)
         let baselines1 = AnalyticsEngine.ProfileBaselines(hrv: hrvBase1, restingHR: rhrBase1)
         let skinOffset = skinTempOffsetC  // captured as a value for the detached analyze task
 
@@ -252,27 +256,28 @@ final class IntelligenceEngine: ObservableObject {
         // ~10–13 bpm; RHR takes the honest cold-start. Only respiration keeps the Apple prior.
         histRespByDay = Self.foldApplePrior(into: histRespByDay, apple: appleRespByDay, priorDays: priorDays)
 
-        let hrvSeq = histHrvByDay.keys.sorted().map { histHrvByDay[$0]! }   // chronological [Double?]
-        let rhrSeq = histRhrByDay.keys.sorted().map { histRhrByDay[$0]! }
-        let respSeq = histRespByDay.keys.sorted().map { histRespByDay[$0]! }
-        let effSeq = histEffByDay.keys.sorted().map { histEffByDay[$0]! }
-        // Skin-temp baseline is on-device-only (imported rows carry skinTempDevC, not the raw mean),
-        // so fold purely over the pass-1 nightly means in chronological order.
-        let skinSeq = nightlySkinByDay.keys.sorted().map { nightlySkinByDay[$0]! }
+        // FER-677: fold each nightly baseline over its chronological (day, value) sequence through the
+        // epoch overload, so «Recalibrar recuperación» drops nights < baselineEpoch from ALL of them.
+        // With no epoch this is byte-identical to the previous `.keys.sorted().map { dict[$0]! }` fold.
+        func seq(_ dict: [String: Double?]) -> [(day: String, value: Double?)] {
+            dict.keys.sorted().map { (day: $0, value: dict[$0]!) }
+        }
         // Resp baseline gated on `usable`: RecoveryScorer includes the resp term whenever a
         // baseline object is present — a CALIBRATING (<4-night) baseline would let one noisy
         // RSA night move recovery (mirrors the skin-temp use-site gate; honest cold-start).
-        let respFold = Baselines.foldHistory(respSeq, cfg: respCfg)
+        let respFold = Baselines.foldHistory(seq(histRespByDay), epoch: baselineEpoch, cfg: respCfg)
         // Personal sleep-efficiency baseline (gated on `usable` at the recovery call site, like
         // resp/skin-temp): the recovery sleep term is measured against the user's own normal once
         // enough nights exist, else falls back to the fixed population center (honest cold-start).
         let effCfg = Baselines.metricCfg["efficiency"]!
-        let effFold = Baselines.foldHistory(effSeq, cfg: effCfg)
+        let effFold = Baselines.foldHistory(seq(histEffByDay), epoch: baselineEpoch, cfg: effCfg)
         let baselines2 = AnalyticsEngine.ProfileBaselines(
-            hrv: Baselines.foldHistory(hrvSeq, cfg: hrvCfg),
-            restingHR: Baselines.foldHistory(rhrSeq, cfg: rhrCfg),
+            hrv: Baselines.foldHistory(seq(histHrvByDay), epoch: baselineEpoch, cfg: hrvCfg),
+            restingHR: Baselines.foldHistory(seq(histRhrByDay), epoch: baselineEpoch, cfg: rhrCfg),
             resp: respFold.usable ? respFold : nil,
-            skinTemp: Baselines.foldHistory(skinSeq, cfg: skinCfg))
+            // Skin-temp baseline is on-device-only (imported rows carry skinTempDevC, not the raw mean),
+            // so fold purely over the pass-1 nightly means in chronological order.
+            skinTemp: Baselines.foldHistory(seq(nightlySkinByDay), epoch: baselineEpoch, cfg: skinCfg))
 
         // Real (non-detected) workouts in the scored window, used to de-duplicate detected bouts so a
         // user who BOTH has real sessions AND wears the strap doesn't see the same session twice (the

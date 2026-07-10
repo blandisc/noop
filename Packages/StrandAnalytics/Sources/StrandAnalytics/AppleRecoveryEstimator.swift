@@ -137,7 +137,12 @@ public enum AppleRecoveryEstimator {
     /// (too thin to score — same "—" as cold-start; see FER-697).
     ///
     /// `nights` must be ordered oldest → newest (the baseline replay is chronological).
-    public static func estimate(nights: [Night]) -> [DayEstimate] {
+    ///
+    /// `epoch` (FER-677): when non-nil, nights with `day < epoch` are dropped before the baseline
+    /// is built AND before scoring — the Apple path honors "Recalibrar recuperación" exactly like
+    /// the strap path. `nil` (the default) keeps every night, so existing callers are unchanged.
+    public static func estimate(nights: [Night], epoch: String? = nil) -> [DayEstimate] {
+        let nights = epoch.map { e in nights.filter { $0.day >= e } } ?? nights
         // SEPARATE Apple baselines — SDNN here is never folded into the band's RMSSD
         // histogram. `hrvCfg` is log-domain (SDNN, like RMSSD, is ~log-normal); its
         // 5–250 ms bounds bracket overnight SDNN.

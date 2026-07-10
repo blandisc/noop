@@ -191,6 +191,34 @@ final class AppleRecoveryEstimatorTests: XCTestCase {
         XCTAssertFalse(hLow.helps, "HRV below your norm hurts recovery")
     }
 
+    // MARK: - Baseline re-anchoring by epoch (FER-677)
+
+    /// Passing `epoch` scores exactly as if the caller had sliced the nights themselves — the Apple
+    /// path honors "Recalibrar recuperación" the same way the strap path does.
+    func testEpochEqualsPreFilteredNights() {
+        let all = nights(Array(repeating: 50.0, count: 16))
+        let epoch = day(8)                                   // keep nights day(8)…day(15)
+        let withEpoch = AppleRecoveryEstimator.estimate(nights: all, epoch: epoch)
+        let preFiltered = AppleRecoveryEstimator.estimate(nights: all.filter { $0.day >= epoch })
+        XCTAssertEqual(withEpoch.map(\.day), preFiltered.map(\.day))
+        XCTAssertEqual(withEpoch.map(\.score), preFiltered.map(\.score))
+    }
+
+    /// `epoch: nil` (the default) is a no-op: every existing caller is unaffected.
+    func testEpochNilLeavesEstimateUnchanged() {
+        let all = nights(Array(repeating: 50.0, count: 16))
+        XCTAssertEqual(AppleRecoveryEstimator.estimate(nights: all, epoch: nil).map(\.day),
+                       AppleRecoveryEstimator.estimate(nights: all).map(\.day))
+    }
+
+    /// An epoch that drops below the seed count re-enters cold-start (no estimate) — recalibrating
+    /// really does reset the Apple baseline, not just trim it.
+    func testEpochBackIntoColdStartReturnsNothing() {
+        let all = nights(Array(repeating: 50.0, count: 16))
+        let est = AppleRecoveryEstimator.estimate(nights: all, epoch: day(14))   // only 2 nights kept
+        XCTAssertTrue(est.isEmpty)
+    }
+
     /// Resting HR is oriented the OTHER way: above your norm is a `above` position that does NOT help
     /// (lower resting HR is better) — the row color carries that valence, not the position word.
     func testRestingHrDirectionIsInverted() {

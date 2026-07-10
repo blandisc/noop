@@ -224,6 +224,7 @@ final class AppModel: ObservableObject {
         self.ble = BLEManager(state: live, deviceId: "my-whoop")
         self.repo = Repository(deviceId: "my-whoop")
         self.repo.dataSourceMode = sources.mode      // FER-484: honor the persisted mode from launch
+        self.repo.baselineEpoch = profile.baselineEpochOrNil   // FER-677: honor a persisted recalibration
         self.coach = AICoachEngine(repo: repo)
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
                                                family: WhoopModel.persisted.deviceFamily)
@@ -462,6 +463,32 @@ final class AppModel: ObservableObject {
         guard m != sources.mode else { return }
         sources.mode = m
         repo.dataSourceMode = m
+        Task { @MainActor in
+            await repo.refresh()
+            await intelligence.analyzeRecent(force: true)
+        }
+    }
+
+    // MARK: - Baseline recalibration («Recalibrar recuperación», FER-677)
+
+    /// Re-anchor every nightly baseline from today: persist the epoch, push it to the repo, and
+    /// recompute so recovery/readiness re-score against the user's "new normal" (they drop to
+    /// «calibrando» until enough post-epoch nights accrue — expected, and the confirmation warns of it).
+    func recalibrateBaseline() {
+        let today = AnalyticsEngine.dayString(Int(Date().timeIntervalSince1970),
+                                              tzOffsetSeconds: TimeZone.current.secondsFromGMT())
+        profile.recalibrate(to: today)
+        applyBaselineEpochAndRecompute()
+    }
+
+    /// Undo the last recalibration (one level): restore the previous epoch and recompute.
+    func undoRecalibrateBaseline() {
+        profile.undoRecalibration()
+        applyBaselineEpochAndRecompute()
+    }
+
+    private func applyBaselineEpochAndRecompute() {
+        repo.baselineEpoch = profile.baselineEpochOrNil
         Task { @MainActor in
             await repo.refresh()
             await intelligence.analyzeRecent(force: true)

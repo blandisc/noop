@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Recalibra tu recuperación desde hoy / Recalibrate your recovery from today.**
+  **ES** — En Ajustes → Data hay un botón «Recalibrar recuperación». Si tu línea base quedó mal (cambiaste de banda, tuviste un periodo raro), re-ancla tu calibración desde hoy e ignora tus noches anteriores. Tu número de recuperación vuelve a «calibrando» unos días mientras aprende tu nuevo normal, y luego se asienta rápido. No borra ningún dato ni historial, y puedes deshacerlo con un toque.
+  **EN** — Settings → Data now has a «Recalibrate recovery» button. If your baseline drifted (new strap, an unusual stretch), it re-anchors your calibration from today and ignores your earlier nights. Your recovery number goes back to «calibrating» for a few days while it learns your new normal, then settles quickly. It deletes no data or history, and you can undo it with one tap.
+  ([AjustesView.swift](Cenit/Screens/AjustesView.swift), [Profile.swift](Cenit/Data/Profile.swift), [Baselines.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/Baselines.swift))
+
 - **Menos chevrons en Tendencias: solo los que abren otra pantalla / Fewer chevrons in Trends: only where one opens another screen.**
   **ES** — Recuperación y Carga de entrenamiento pierden su chevron «›»: como el renglón «Toca cualquier dato para ver su detalle» ya avisa que la tarjeta es tocable, el chevron sobraba. Se reserva para lo que abre una pantalla o herramienta distinta: Mapa muscular, «Cómo amaneces tras cada deporte», Comparar y Ver todas las métricas. Ambas tarjetas se quedan igual de alineadas; solo desaparece la flecha.
   **EN** — Recovery and Training load drop their «›» chevron: since the «Tap any value to see its detail» line already signals the card is tappable, the chevron was redundant. It's now reserved for what opens a distinct screen or tool: Muscle map, «How you wake after each sport», Compare and See all metrics. Both cards keep their alignment; only the arrow goes.
