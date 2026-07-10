@@ -113,7 +113,9 @@ struct RootTabView: View {
                         .toolbar(.hidden, for: .navigationBar)
                 }
                 .navigationDestination(for: WorkoutSessionRoute.self) { route in
-                    trainChrome(WorkoutSessionDetailScreen(route: route))
+                    trainChrome(WorkoutSessionDetailScreen(
+                        route: route,
+                        openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) }))
                 }
                 .navigationDestination(for: MuscleVolumeRoute.self) { _ in
                     trainChrome(MuscleVolumeScreen())

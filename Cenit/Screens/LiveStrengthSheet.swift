@@ -900,25 +900,34 @@ struct LiveStrengthSheet: View {
                     .presentationBackground(theme.paper)
             }
         }
-        // S-2 (FER-830): one destructive-confirmation pattern across the flow — confirmationDialog, not a
-        // mix of .alert and .confirmationDialog. The cancel verb is «Keep going» / «Seguir» everywhere.
-        .confirmationDialog("Finish workout?", isPresented: $confirmFinish, titleVisibility: .visible) {
-            Button("Save workout") { model.endStrengthSession(save: true) }
-            Button("Discard workout", role: .destructive) { model.endStrengthSession(save: false) }
-            Button("Keep going", role: .cancel) {}
-        } message: {
-            Text(session.doneCount == 0
-                 ? "You haven't logged any sets yet."
-                 : (session.pendingCount > 0
-                    ? "\(session.pendingCount) sets aren't logged yet. Save keeps them; discard deletes everything."
-                    : "Save keeps this workout. Discard deletes everything you logged."))
-        }
-        .confirmationDialog("Discard workout?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-            Button("Discard", role: .destructive) { model.endStrengthSession(save: false) }
-            Button("Keep going", role: .cancel) {}
-        } message: {
-            Text("Everything you logged in this session will be deleted. This can't be undone.")
-        }
+        // S-2 (FER-830) → FER-837: one destructive-confirmation pattern across the flow, now the
+        // «Instrumento» ConfirmCard. The stay-safe verb names its action («Keep training»), never a
+        // generic cancel; destructive is always the red outline.
+        .instrumentoConfirm(
+            isPresented: $confirmFinish,
+            title: String(localized: "Finish workout?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: session.doneCount == 0
+                ? String(localized: "You haven't logged any sets yet.")
+                : (session.pendingCount > 0
+                   ? String(localized: "\(session.pendingCount) sets aren't logged yet. Save keeps them; discard deletes everything.")
+                   : String(localized: "Save keeps this workout. Discard deletes everything you logged.")),
+            actions: [
+                .init(String(localized: "Save workout"), role: .primary) { model.endStrengthSession(save: true) },
+                .init(String(localized: "Keep training"), role: .secondary),
+                .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
+            ]
+        )
+        .instrumentoConfirm(
+            isPresented: $confirmDiscard,
+            title: String(localized: "Discard workout?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: String(localized: "Everything you logged in this session will be deleted. This can't be undone."),
+            actions: [
+                .init(String(localized: "Keep training"), role: .primary),
+                .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
+            ]
+        )
     }
 
     // MARK: Inline session (the default view — the Hevy-style logging table, FER-497)
@@ -1279,7 +1288,7 @@ struct LiveStrengthSheet: View {
                 Text("·").foregroundStyle(theme.inkTertiary)
                 Text("why")
                     .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))
+                    .underline(pattern: .dot, color: theme.dataRecovery.opacity(0.55))   // token-exempt: subrayado punteado decorativo
             }
             .foregroundStyle(theme.dataRecovery)
             .contentShape(Rectangle())

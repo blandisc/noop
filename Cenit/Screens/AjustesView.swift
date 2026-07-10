@@ -172,12 +172,16 @@ private struct AjustesLanding: View {
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
         }
         .sheet(item: $darkScreen) { screen in darkSheet(screen) }
-        .confirmationDialog("Disconnect strap?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
-            Button("Disconnect", role: .destructive) { model.disconnect() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("It will stop streaming until you re-scan. Your saved data isn't touched.")
-        }
+        .instrumentoConfirm(
+            isPresented: $confirmDisconnect,
+            title: String(localized: "Disconnect strap?"),
+            context: String(localized: "STRAP · CONNECTED"),
+            message: String(localized: "It will stop streaming until you re-scan. Your saved data isn't touched."),
+            actions: [
+                .init(String(localized: "Keep connected"), role: .primary),
+                .init(String(localized: "Disconnect"), role: .destructive) { model.disconnect() }
+            ]
+        )
     }
 
     // MARK: - Header (A6: gear icon + title, privacy chip)
@@ -372,10 +376,16 @@ private struct AjustesLanding: View {
                 }
                 .buttonStyle(.plain)
                 .frame(minHeight: 32)
-                .confirmationDialog("¿Borrar toda la media de ejercicios descargada?", isPresented: $confirmDeleteMedia, titleVisibility: .visible) {
-                    Button("Borrar", role: .destructive) { mediaCoordinator.deleteAllCachedMedia() }
-                    Button("Cancelar", role: .cancel) {}
-                }
+                .instrumentoConfirm(
+                    isPresented: $confirmDeleteMedia,
+                    title: String(localized: "¿Borrar toda la media de ejercicios descargada?"),
+                    context: String(localized: "EXERCISE MEDIA"),
+                    message: String(localized: "Las animaciones guardadas se borran de tu iPhone. Puedes volver a descargarlas cuando quieras."),
+                    actions: [
+                        .init(String(localized: "Conservar la media"), role: .primary),
+                        .init(String(localized: "Borrar la media"), role: .destructive) { mediaCoordinator.deleteAllCachedMedia() }
+                    ]
+                )
             }
             section("More") {
                 navRow("Advanced", subtitle: Text("WHOOP 5/MG probes, frames")) { showAdvanced = true }
@@ -421,12 +431,16 @@ private struct AjustesLanding: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .confirmationDialog("¿Recalibrar tu recuperación?", isPresented: $confirmRecalibrate, titleVisibility: .visible) {
-                Button("Recalibrar", role: .destructive) { model.recalibrateBaseline() }
-                Button("Cancelar", role: .cancel) {}
-            } message: {
-                Text("Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran.")
-            }
+            .instrumentoConfirm(
+                isPresented: $confirmRecalibrate,
+                title: String(localized: "¿Recalibrar tu recuperación?"),
+                context: String(localized: "RECOVERY · BASELINE"),
+                message: String(localized: "Tu línea base se re-anclará desde hoy y se ignorarán tus noches anteriores. Perderás tu número de recuperación unos días mientras se recalibra. Tus datos e historial no se borran."),
+                actions: [
+                    .init(String(localized: "Dejar la base como está"), role: .primary),
+                    .init(String(localized: "Recalibrar desde hoy"), role: .destructive) { model.recalibrateBaseline() }
+                ]
+            )
         }
     }
 

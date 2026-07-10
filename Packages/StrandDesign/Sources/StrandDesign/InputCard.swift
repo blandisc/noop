@@ -147,8 +147,10 @@ public struct InputCard: View {
 
     private func commit() {
         guard !trimmed.isEmpty else { return }
-        isPresented = false
+        // onCommit BEFORE dismissing: item-style `isPresented` bindings often clear the state
+        // the commit handler reads (e.g. the folder being renamed).
         onCommit(trimmed)
+        isPresented = false
     }
 }
 

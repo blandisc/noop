@@ -63,6 +63,43 @@ enum RoutineSetEditing {
         let s = cfg.seconds
         return s % 60 == 0 ? String(localized: "\(s / 60) min") : String(localized: "\(s) s")
     }
+
+    // MARK: - Superset grouping (a group = consecutive slots sharing supersetGroup)
+    //
+    // Pure functions over the slot array, shared by the builder and the «Rutina» editor (FER-838
+    // /simplify — they were duplicated verbatim). Mutations return nothing; callers mark their own
+    // dirty state.
+
+    static func sameGroup(_ res: [RoutineExercise], _ a: Int, _ b: Int) -> Bool {
+        guard res.indices.contains(a), res.indices.contains(b),
+              let ga = res[a].supersetGroup, let gb = res[b].supersetGroup else { return false }
+        return ga == gb
+    }
+
+    static func inSuperset(_ res: [RoutineExercise], _ i: Int) -> Bool {
+        guard res.indices.contains(i), res[i].supersetGroup != nil else { return false }
+        return sameGroup(res, i, i - 1) || sameGroup(res, i, i + 1)
+    }
+
+    /// First member of a superset group (shows the «Superset» overline above it).
+    static func firstOfGroup(_ res: [RoutineExercise], _ i: Int) -> Bool {
+        inSuperset(res, i) && !sameGroup(res, i, i - 1)
+    }
+
+    static func supersetWithNext(_ res: inout [RoutineExercise], _ i: Int) {
+        guard i < res.count - 1 else { return }
+        let group = res[i].supersetGroup ?? res[i + 1].supersetGroup
+            ?? (res.compactMap(\.supersetGroup).max() ?? 0) + 1
+        res[i].supersetGroup = group
+        res[i + 1].supersetGroup = group
+    }
+
+    static func breakSuperset(_ res: inout [RoutineExercise], _ i: Int) {
+        guard let g = res[i].supersetGroup else { return }
+        res[i].supersetGroup = nil
+        let remaining = res.indices.filter { res[$0].supersetGroup == g }
+        if remaining.count == 1 { res[remaining[0]].supersetGroup = nil }
+    }
 }
 
 // MARK: - Per-set rest chip (→ 1e push)

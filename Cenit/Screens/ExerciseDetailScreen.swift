@@ -60,6 +60,7 @@ struct ExerciseDetailScreen: View {
     @State private var shownType: ExerciseType?
     /// Whether this exercise currently carries a user type override (→ show «revert to default»).
     @State private var hasTypeOverride = false
+    @State private var showTypeMenu = false
     private var effectiveType: ExerciseType { shownType ?? exercise.type }
 
     /// The metric the progress chart plots over time.
@@ -300,16 +301,17 @@ struct ExerciseDetailScreen: View {
             Divider().overlay(theme.hairline).padding(.bottom, 10)
             Text("Measured by").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(spacing: 12) {
-                Menu {
-                    ForEach(ExerciseType.allCases, id: \.self) { t in
-                        Button { setType(t) } label: { Text(StrengthDisplay.typeLabel(t)) }
-                    }
-                } label: {
+                Button { showTypeMenu = true } label: {
                     HStack(spacing: 6) {
                         Text(StrengthDisplay.typeLabel(effectiveType)).font(StrandFont.body).foregroundStyle(theme.ink)
                         Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     }
                 }
+                .buttonStyle(.plain)
+                .paperMenu(isPresented: $showTypeMenu, items: ExerciseType.allCases.map { t in
+                    PaperMenuItem(StrengthDisplay.typeName(t),
+                                  systemImage: t == effectiveType ? "checkmark" : nil) { setType(t) }
+                })
                 Spacer(minLength: 8)
                 if hasTypeOverride {
                     Button { revertType() } label: {
@@ -499,7 +501,7 @@ struct ExerciseDetailScreen: View {
                 if metric == .weight {
                     // FER-F · 2d: the working weight moves in JUMPS — a step render is the honest shape.
                     // Green dot = confirmed raise; amber dot = a deload (the drop is the datum too).
-                    StepChart(values: values, line: theme.ink.opacity(0.75),
+                    StepChart(values: values, line: theme.ink.opacity(0.75),   // token-exempt: alfa de línea de dato (StepChart)
                               raiseDot: theme.dataRecovery, deloadDot: theme.warning)
                         .frame(height: 64)
                         .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))

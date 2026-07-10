@@ -4,28 +4,19 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 
-// RoutineBuilderScreen.swift — create and edit reusable routines (FER-346, inline rewrite FER-561). The
-// Train hub opens this as a sheet (`.new` / `.edit(routine)`), carrying its own routine id. EVERYTHING is
-// edited on ONE screen (Hevy-style, FER-561): each exercise shows its set table inline — editable cells,
-// a warm-up «C» row, add/delete sets, rest, reorder/superset via its ⋯ menu — matching the live session's
-// logging table (LiveStrengthSheet, FER-497) so editing and training feel the same. «Báscula de papel»:
-// weights in ink, no color; a flat List + hairlines (no card-in-card), native swipe-to-delete on sets.
-
-// MARK: - Builder target
-
-/// What the builder sheet is editing: a fresh routine or an existing one.
-enum BuilderTarget: Identifiable {
-    case new
-    case edit(Routine)
-    var id: String { routine?.id ?? "new" }
-    var routine: Routine? { if case .edit(let r) = self { return r } else { return nil } }
-}
+// RoutineBuilderScreen.swift — CREATE reusable routines (FER-346, inline rewrite FER-561; create-only
+// since FER-840). The Train hub opens this as a sheet to build a NEW routine from scratch or from a
+// session seed; editing an existing routine happens on the unified «Rutina» editor (`RoutineEditorScreen`,
+// FER-839) — `onSaved` hands back the new routine's id so the caller opens it there. EVERYTHING is edited
+// on ONE screen (Hevy-style): each exercise shows its set table inline, matching the live session's
+// logging table (LiveStrengthSheet, FER-497). «Báscula de papel»: weights in ink, no color; a flat List +
+// hairlines (no card-in-card), native swipe-to-delete on sets.
 
 // MARK: - Builder
 
 struct RoutineBuilderScreen: View {
-    let routine: Routine?
-    var onSaved: (() async -> Void)? = nil
+    /// Called after the new routine persists, with its id — the caller opens it on «Rutina» (FER-840).
+    var onSaved: ((String) async -> Void)? = nil
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
@@ -36,13 +27,14 @@ struct RoutineBuilderScreen: View {
 
     @State private var name: String = ""
     @State private var items: [BuilderItem] = []
-    @State private var loaded = false
     @State private var showLibrary = false
     /// Which set's rest is being edited (drives the 1e push); nil = none. Rest is per-set now (choque 3):
     /// each set carries its own `RestConfig` override, edited in the shared `RestEditorScreen`.
     @State private var restTarget: RestEditTarget? = nil
     /// Which exercise's progression plan is being edited (drives the 2c push, FER-D); nil = none.
     @State private var progressionTarget: ProgressionTarget? = nil
+    // FER-837: which exercise's «···» paper menu is open.
+    @State private var menuExerciseIndex: Int? = nil
     /// The plate inventory, to derive the default increment (FER-C). UserDefaults-backed, cheap.
     @StateObject private var plates = PlatesStore()
     /// Which exercise's info sheet is open (tap the row's name/thumb to open its detail, like the library).
@@ -50,29 +42,23 @@ struct RoutineBuilderScreen: View {
     @FocusState private var focusedCell: String?
 
     private let routineId: String
-    /// A pre-filled list of exercises to seed a NEW routine with (v3 · 2A «Duplicar como rutina», FER-718):
-    /// the exercises of a finished session, re-based onto a fresh routine id. When set, the builder skips its
-    /// store fetch and starts from these. nil = normal new/edit behavior.
-    private let seed: [(re: RoutineExercise, exercise: Exercise)]?
 
-    init(routine: Routine?, onSaved: (() async -> Void)? = nil) {
-        self.routine = routine
+    init(onSaved: ((String) async -> Void)? = nil) {
         self.onSaved = onSaved
-        self.routineId = routine?.id ?? UUID().uuidString
-        self.seed = nil
-        _name = State(initialValue: routine?.name ?? "")
+        self.routineId = UUID().uuidString
     }
 
-    /// «Duplicar como rutina» (2A): a fresh routine pre-filled with a session's exercises. `suggestedName`
-    /// seeds the name field; `seed` re-bases each exercise onto the new routine id.
-    init(seedName: String, seed: [(re: RoutineExercise, exercise: Exercise)], onSaved: (() async -> Void)? = nil) {
-        self.routine = nil
+    /// «Duplicar como rutina» (2A): a fresh routine pre-filled with a session's exercises. `seedName`
+    /// seeds the name field; `seed` re-bases each exercise onto the new routine id. Both are fixed at
+    /// init, so `items` starts seeded — no async load step.
+    init(seedName: String, seed: [(re: RoutineExercise, exercise: Exercise)], onSaved: ((String) async -> Void)? = nil) {
         self.onSaved = onSaved
         let newId = UUID().uuidString
         self.routineId = newId
-        self.seed = seed.enumerated().map { idx, item in
-            var re = item.re; re.routineId = newId; re.position = idx; return (re, item.exercise)
-        }
+        _items = State(initialValue: seed.enumerated().map { idx, item in
+            var re = item.re; re.routineId = newId; re.position = idx
+            return BuilderItem(re: re, exercise: item.exercise)
+        })
         _name = State(initialValue: seedName)
     }
 
@@ -145,11 +131,6 @@ struct RoutineBuilderScreen: View {
                 .toolbar(.hidden, for: .navigationBar)   // ProgressionSetupScreen draws its own back header
             }
         }
-        .task {
-            guard !loaded else { return }
-            await loadExisting()
-            loaded = true
-        }
         .sheet(isPresented: $showLibrary) {
             ExerciseLibraryScreen { picks in append(picks) }
                 .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
@@ -220,7 +201,7 @@ struct RoutineBuilderScreen: View {
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(routine == nil ? "New routine" : "Editing").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("New routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             TextField("Routine name", text: $name)
                 .font(StrandFont.title1).foregroundStyle(theme.ink)
         }
@@ -248,30 +229,16 @@ struct RoutineBuilderScreen: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                Menu {
-                    if idx > 0 { Button { moveUp(idx) } label: { Label("Move up", systemImage: "arrow.up") } }
-                    if idx < items.count - 1 { Button { moveDown(idx) } label: { Label("Move down", systemImage: "arrow.down") } }
-                    Button { addWarmup(idx) } label: { Label("Add warm-up set", systemImage: "flame") }
-                    if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
-                        Button { supersetWithNext(idx) } label: { Label("Superset with next", systemImage: "link") }
-                    }
-                    if inSuperset(idx) {
-                        Button { breakSuperset(idx) } label: { Label("Break superset", systemImage: "link.badge.plus") }
-                    }
-                    // 2c (FER-D): the per-exercise progression plan. Weight-based exercises only —
-                    // bodyweight/time/distance have no load to progress.
-                    if item.exercise.type == .weightReps {
-                        Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
-                            item.re.progressionEnabled
-                                ? Label("Progression · on", systemImage: "chart.line.uptrend.xyaxis")
-                                : Label("Progression", systemImage: "chart.line.uptrend.xyaxis")
-                        }
-                    }
-                    Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove", systemImage: "trash") }
-                } label: {
+                Button { menuExerciseIndex = idx } label: {
                     Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .paperMenu(
+                    isPresented: Binding(get: { menuExerciseIndex == idx },
+                                         set: { if !$0 { menuExerciseIndex = nil } }),
+                    items: exerciseMenuItems(idx, item: item)
+                )
             }
             columnHeader(item.exercise.type)
         }
@@ -384,6 +351,32 @@ struct RoutineBuilderScreen: View {
                                              reps: reps, weightKg: work?.weightKg))
     }
 
+    /// The exercise «···» actions as paper-menu rows (FER-837). The Progression row carries its
+    /// state as the paper menu's subtitle («+2,5 kg cada 2 ✓» pattern from mock 4b).
+    private func exerciseMenuItems(_ idx: Int, item: BuilderItem) -> [PaperMenuItem] {
+        var rows: [PaperMenuItem] = []
+        if idx > 0 { rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") { moveUp(idx) }) }
+        if idx < items.count - 1 { rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") { moveDown(idx) }) }
+        rows.append(.init(String(localized: "Add warm-up set"), systemImage: "flame") { addWarmup(idx) })
+        if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
+            rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
+        }
+        if inSuperset(idx) {
+            rows.append(.init(String(localized: "Break superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
+        }
+        // 2c (FER-D): the per-exercise progression plan. Weight-based exercises only —
+        // bodyweight/time/distance have no load to progress.
+        if item.exercise.type == .weightReps {
+            rows.append(.init(String(localized: "Progression"),
+                              subtitle: item.re.progressionEnabled ? String(localized: "on") : nil,
+                              systemImage: "chart.line.uptrend.xyaxis") {
+                progressionTarget = ProgressionTarget(ei: idx)
+            })
+        }
+        rows.append(.init(String(localized: "Remove"), systemImage: "trash", isDestructive: true) { deleteExercise(idx) })
+        return rows
+    }
+
     private func addWarmup(_ idx: Int) {
         // Warm-up sets sit first; they don't count toward PR/volume and aren't logged in the session.
         items[idx].re.sets.insert(RoutineSet(position: 0, kind: .warmup, reps: showsReps(items[idx].exercise.type) ? 10 : nil,
@@ -418,63 +411,38 @@ struct RoutineBuilderScreen: View {
     private func moveDown(_ idx: Int) { guard idx < items.count - 1 else { return }; withAnimation(.snappy) { items.swapAt(idx, idx + 1) } }
     private func deleteExercise(_ idx: Int) { withAnimation(.snappy) { _ = items.remove(at: idx) } }
 
-    // MARK: - Superset helpers (a group = consecutive exercises sharing supersetGroup)
+    // MARK: - Superset helpers (shared grouping logic lives in RoutineSetEditing)
 
-    private func inSuperset(_ i: Int) -> Bool {
-        guard items.indices.contains(i), items[i].re.supersetGroup != nil else { return false }
-        return sameGroup(i, i - 1) || sameGroup(i, i + 1)
-    }
-    private func sameGroup(_ a: Int, _ b: Int) -> Bool {
-        guard items.indices.contains(a), items.indices.contains(b),
-              let ga = items[a].re.supersetGroup, let gb = items[b].re.supersetGroup else { return false }
-        return ga == gb
-    }
+    private func inSuperset(_ i: Int) -> Bool { RoutineSetEditing.inSuperset(items.map(\.re), i) }
+    private func sameGroup(_ a: Int, _ b: Int) -> Bool { RoutineSetEditing.sameGroup(items.map(\.re), a, b) }
     /// First member of a superset group (shows the «Superset» header above it).
-    private func firstOfGroup(_ i: Int) -> Bool { inSuperset(i) && !sameGroup(i, i - 1) }
-    /// Last member of a group (shows the single group rest below it). Ungrouped exercises are their own last.
-    private func lastOfGroup(_ i: Int) -> Bool { !sameGroup(i, i + 1) }
+    private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
 
     private func supersetWithNext(_ i: Int) {
-        guard i < items.count - 1 else { return }
-        let group = items[i].re.supersetGroup ?? items[i + 1].re.supersetGroup ?? nextFreeGroup()
-        items[i].re.supersetGroup = group
-        items[i + 1].re.supersetGroup = group
+        var res = items.map(\.re)
+        RoutineSetEditing.supersetWithNext(&res, i)
+        for (j, re) in res.enumerated() { items[j].re = re }
     }
     private func breakSuperset(_ i: Int) {
-        guard let g = items[i].re.supersetGroup else { return }
-        items[i].re.supersetGroup = nil
-        let remaining = items.indices.filter { items[$0].re.supersetGroup == g }
-        if remaining.count == 1 { items[remaining[0]].re.supersetGroup = nil }
+        var res = items.map(\.re)
+        RoutineSetEditing.breakSuperset(&res, i)
+        for (j, re) in res.enumerated() { items[j].re = re }
     }
-    private func nextFreeGroup() -> Int { (items.compactMap { $0.re.supersetGroup }.max() ?? 0) + 1 }
 
-    // MARK: - Load + save
-
-    private func loadExisting() async {
-        if let seed {   // «Duplicar como rutina» (2A): start from the seeded exercises, no store fetch.
-            items = seed.map { BuilderItem(re: $0.re, exercise: $0.exercise) }
-            return
-        }
-        guard let routine else { return }
-        let res = await repo.routineExercises(routineId: routine.id)
-        let all = await repo.allExercises()
-        let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        items = res.compactMap { re in byId[re.exerciseId].map { BuilderItem(re: re, exercise: $0) } }
-    }
+    // MARK: - Save
 
     private var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty && !items.isEmpty }
 
     private func save() {
         let now = Int(Date().timeIntervalSince1970)
         let r = Routine(id: routineId, name: name.trimmingCharacters(in: .whitespaces),
-                        tag: routine?.tag, createdTs: routine?.createdTs ?? now, updatedTs: now,
-                        sortOrder: routine?.sortOrder ?? 0)
+                        tag: nil, createdTs: now, updatedTs: now, sortOrder: 0)
         let exercises = items.enumerated().map { idx, item -> RoutineExercise in
             var re = item.re; re.position = idx; re.routineId = routineId; return re
         }
         Task {
             try? await repo.saveRoutine(r, exercises: exercises)
-            await onSaved?()
+            await onSaved?(routineId)
             dismiss()
         }
     }

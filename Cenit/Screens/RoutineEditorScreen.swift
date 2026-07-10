@@ -56,10 +56,20 @@ struct RoutineEditorScreen: View {
     @State private var showLibrary = false
     /// nil = the library appends; an index = it replaces that exercise (keeping its sets).
     @State private var replaceIndex: Int? = nil
+    // FER-837: which «···» paper menu is open (the day's, or an exercise index).
+    @State private var showDayMenu = false
+    @State private var menuExerciseIndex: Int? = nil
     /// The exercise whose detail sheet is open (tap the name, parity with the library).
     @State private var detailExercise: Exercise? = nil
     /// The plate inventory: progression evaluation + the 2c increment hint.
     @StateObject private var plates = PlatesStore()
+    /// Drag-reorder mode (6a, FER-841): every row compacts to thumb + name + summary and the set tables
+    /// fold away; dropping reopens them. Entered by long-pressing an exercise header.
+    @State private var reordering = false
+    /// The routine hue + group label — refreshed by `refreshTint()` only when the exercise set changes,
+    /// never per render (the ring in every set row reads the tint; see `dominantGroup`).
+    @State private var routineTint: Color = .clear
+    @State private var groupTitle: String = ""
     @FocusState private var focusedCell: String?
 
     /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
@@ -149,10 +159,16 @@ struct RoutineEditorScreen: View {
             }
             .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
-        .confirmationDialog("Discard changes?", isPresented: $showDiscardConfirm, titleVisibility: .visible) {
-            Button("Discard changes", role: .destructive) { dismiss() }
-            Button("Keep editing", role: .cancel) {}
-        }
+        .instrumentoConfirm(
+            isPresented: $showDiscardConfirm,
+            title: String(localized: "Discard changes?"),
+            context: String(localized: "ROUTINE · UNSAVED CHANGES"),
+            message: String(localized: "Your edits to this routine will be lost."),
+            actions: [
+                .init(String(localized: "Keep editing"), role: .primary),
+                .init(String(localized: "Discard changes"), role: .destructive) { dismiss() }
+            ]
+        )
         .task {
             guard !loaded else { return }
             await load()
@@ -195,7 +211,7 @@ struct RoutineEditorScreen: View {
             .buttonStyle(.plain).accessibilityLabel(Text("Back"))
             Spacer()
             if !startsSession {
-                Button { cancel() } label: {
+                Button { back() } label: {
                     Text("Cancel").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                         .frame(minHeight: 44).contentShape(Rectangle())
                 }
@@ -210,7 +226,19 @@ struct RoutineEditorScreen: View {
     private var editor: some View {
         List {
             titleBlock.plainRow(top: 6, bottom: 6)
-            ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
+            if reordering { reorderList } else { fullList }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(theme.paper)
+        .environment(\.defaultMinListRowHeight, 1)
+        .environment(\.editMode, .constant(reordering ? .active : .inactive))
+        .safeAreaInset(edge: .bottom) { ctaBar }
+    }
+
+    @ViewBuilder
+    private var fullList: some View {
+        ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 if firstOfGroup(idx) {
                     Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .plainRow(top: NoopMetrics.sectionGap, bottom: 2)
@@ -235,19 +263,109 @@ struct RoutineEditorScreen: View {
                 }
                 if !locked { addSetRow(idx).plainRow(top: 4) }
             }
-            if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: 4) }
-            if startsSession {
-                Text("Changes are saved to the routine when you leave or start.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .plainRow(top: 8, bottom: NoopMetrics.screenPadding)
+        if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: 4) }
+        if startsSession {
+            Text("Changes are saved to the routine when you leave or start.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .plainRow(top: 8, bottom: NoopMetrics.screenPadding)
+        }
+    }
+
+    // MARK: - Drag reorder (6a, FER-841)
+    //
+    // A block = one exercise, or a whole superset (consecutive exercises sharing `supersetGroup`) —
+    // a superset always travels as ONE unit; breaking it stays a «···» action, never a drag side effect.
+    // `List.onMove` does the dragging (the lifted preview mirrors the compact card row); dropping
+    // flattens the blocks back into `items`, marks the prescription dirty (order persists in `position`
+    // through the screen's normal save flow) and leaves the mode so the tables reopen.
+
+    private struct ReorderBlock: Identifiable {
+        let items: [EditorItem]
+        var id: String { items[0].id }
+        var isSuperset: Bool { items.count > 1 }
+    }
+
+    private var reorderBlocks: [ReorderBlock] {
+        var blocks: [ReorderBlock] = []
+        var i = 0
+        while i < items.count {
+            var run = [items[i]]
+            if let g = items[i].re.supersetGroup {
+                while i + 1 < items.count, items[i + 1].re.supersetGroup == g {
+                    i += 1; run.append(items[i])
+                }
+            }
+            blocks.append(ReorderBlock(items: run))
+            i += 1
+        }
+        return blocks
+    }
+
+    @ViewBuilder
+    private var reorderList: some View {
+        ForEach(reorderBlocks) { block in
+            compactBlock(block).plainRow(top: 5, bottom: 5)
+        }
+        .onMove(perform: moveBlocks)
+        Button { withAnimation(.snappy) { reordering = false } } label: {
+            Text("Done reordering").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, alignment: .center).frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .plainRow(top: NoopMetrics.gap, bottom: 2)
+        Text("Drop to place. The sets come back when you let go.")
+            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .plainRow(top: 0, bottom: NoopMetrics.screenPadding)
+    }
+
+    /// The compact card the drag lifts: thumb + name + «N sets · top kg» per exercise; a superset adds
+    /// its teal left bar + «superset» overline and moves as one card.
+    private func compactBlock(_ block: ReorderBlock) -> some View {
+        HStack(spacing: 10) {
+            if block.isSuperset {
+                Capsule().fill(theme.dataHrv).frame(width: 2.5)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                if block.isSuperset {
+                    Text("Superset").instrumentoOverline().foregroundStyle(theme.dataHrv)
+                }
+                ForEach(block.items) { item in
+                    HStack(spacing: 10) {
+                        ExerciseThumbView(exercise: item.exercise, side: 28)
+                        Text(StrengthDisplay.name(item.exercise))
+                            .font(StrandFont.subhead).foregroundStyle(theme.ink).lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(compactSummary(item.re))
+                            .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    }
+                }
             }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(theme.paper)
-        .environment(\.defaultMinListRowHeight, 1)
-        .safeAreaInset(edge: .bottom) { ctaBar }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+    }
+
+    /// «3 sets · 90 kg» — work sets + the top work weight (weight omitted when none is set).
+    private func compactSummary(_ re: RoutineExercise) -> String {
+        let work = re.sets.filter { $0.kind == .work }
+        var s = String(localized: "\(work.count) sets")
+        if let top = work.compactMap(\.weightKg).max(), top > 0 {
+            s += " · \(StrengthDisplay.weightNumber(top, system: system)) \(StrengthDisplay.weightUnit(system).lowercased())"
+        }
+        return s
+    }
+
+    private func moveBlocks(from source: IndexSet, to destination: Int) {
+        var blocks = reorderBlocks
+        blocks.move(fromOffsets: source, toOffset: destination)
+        withAnimation(.snappy) {
+            items = blocks.flatMap(\.items)
+            reordering = false        // dropping reopens the tables (6a)
+        }
+        dirty = true
     }
 
     /// Overline per origin, the routine title underlined 2 px ink, and the dotted meta line.
@@ -285,21 +403,20 @@ struct RoutineEditorScreen: View {
 
     /// .planDay header «···»: assign/clear the day (choque 9 — «conserva lo callado»).
     private var dayMenu: some View {
-        Menu {
-            Menu {
-                ForEach(allRoutines) { r in
-                    Button { changeRoutine(to: r) } label: {
-                        if r.id == routine?.id { Label(r.name, systemImage: "checkmark") } else { Text(r.name) }
-                    }
-                }
-            } label: { Label("Change routine", systemImage: "arrow.left.arrow.right") }
-            Button(role: .destructive) { markRest() } label: { Label("Mark as rest day", systemImage: "moon.zzz") }
-        } label: {
+        Button { showDayMenu = true } label: {
             Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary).frame(width: 40, height: 40).contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(Text("Day options"))
         .disabled(locked)
+        .paperMenu(isPresented: $showDayMenu, items: [
+            .init(String(localized: "Change routine"), systemImage: "arrow.left.arrow.right",
+                  children: allRoutines.map { r in
+                      PaperMenuItem(r.name, systemImage: r.id == routine?.id ? "checkmark" : nil) { changeRoutine(to: r) }
+                  }),
+            .init(String(localized: "Mark as rest day"), systemImage: "moon.zzz", isDestructive: true) { markRest() }
+        ])
     }
 
     // MARK: - Exercise header (thumb + tappable name + «···» + column header)
@@ -328,39 +445,63 @@ struct RoutineEditorScreen: View {
             }
             columnHeader(item.exercise.type)
         }
+        // Long-press enters reorder mode (6a): rows compact, ≡ handles appear, one drop reorders and
+        // leaves the mode. The handle-driven List drag never conflicts with the delete swipe.
+        .onLongPressGesture(minimumDuration: 0.4) {
+            guard !locked else { return }
+            focusedCell = nil
+            withAnimation(.snappy) { reordering = true }
+        }
+        .accessibilityAction(named: Text("Reorder exercises")) {
+            guard !locked else { return }
+            withAnimation(.snappy) { reordering = true }
+        }
     }
 
     /// The «···» menu, FINAL order (mock 4b). No «move» — reordering is drag-only (FER-841);
     /// «Duplicate» lives in the swipe.
     private func exerciseMenu(_ idx: Int) -> some View {
-        let item = items[idx]
-        return Menu {
-            if !hasWarmups(idx) {
-                Button { addWarmupRamp(idx) } label: { Label("Add warm-up", systemImage: "flame") }
-            }
-            if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
-                Button { supersetWithNext(idx) } label: { Label("Superset with next", systemImage: "link") }
-            }
-            if inSuperset(idx) {
-                Button { breakSuperset(idx) } label: { Label("Break superset", systemImage: "link.badge.plus") }
-            }
-            Button { replaceIndex = idx; showLibrary = true } label: {
-                Label("Replace exercise", systemImage: "arrow.triangle.2.circlepath")
-            }
-            if item.exercise.type == .weightReps {
-                Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
-                    if item.re.progressionEnabled {
-                        Label(progressionSummary(item.re), systemImage: "chart.line.uptrend.xyaxis")
-                    } else {
-                        Label("Progression", systemImage: "chart.line.uptrend.xyaxis")
-                    }
-                }
-            }
-            Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove from routine", systemImage: "trash") }
-        } label: {
+        Button { menuExerciseIndex = idx } label: {
             Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .paperMenu(
+            isPresented: Binding(get: { menuExerciseIndex == idx },
+                                 set: { if !$0 { menuExerciseIndex = nil } }),
+            items: exerciseMenuItems(idx)
+        )
+    }
+
+    /// The «···» rows, FINAL order (mock 4b). The active progression plan rides as the row's
+    /// subtitle («+2,5 kg cada 2 ✓»).
+    private func exerciseMenuItems(_ idx: Int) -> [PaperMenuItem] {
+        let item = items[idx]
+        var rows: [PaperMenuItem] = []
+        if !hasWarmups(idx) {
+            rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") { addWarmupRamp(idx) })
+        }
+        let res = items.map(\.re)
+        if idx < items.count - 1 && !RoutineSetEditing.sameGroup(res, idx, idx + 1) {
+            rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
+        }
+        if RoutineSetEditing.inSuperset(res, idx) {
+            rows.append(.init(String(localized: "Break superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
+        }
+        rows.append(.init(String(localized: "Replace exercise"), systemImage: "arrow.triangle.2.circlepath") {
+            replaceIndex = idx; showLibrary = true
+        })
+        if item.exercise.type == .weightReps {
+            rows.append(.init(String(localized: "Progression"),
+                              subtitle: item.re.progressionEnabled ? progressionSummary(item.re) : nil,
+                              systemImage: "chart.line.uptrend.xyaxis") {
+                progressionTarget = ProgressionTarget(ei: idx)
+            })
+        }
+        rows.append(.init(String(localized: "Remove from routine"), systemImage: "trash", isDestructive: true) {
+            deleteExercise(idx)
+        })
+        return rows
     }
 
     /// «+2,5 kg cada 2 ✓» — the active plan named in the menu row (mock 4b). Without an explicit
@@ -556,6 +697,7 @@ struct RoutineEditorScreen: View {
 
     private func deleteExercise(_ idx: Int) {
         withAnimation(.snappy) { _ = items.remove(at: idx) }
+        refreshTint()
         dirty = true
     }
 
@@ -567,6 +709,7 @@ struct RoutineEditorScreen: View {
         copy.supersetGroup = nil                                   // a duplicate stands on its own
         copy.sets = src.re.sets.map { s in var n = s; n.id = UUID().uuidString; return n }
         withAnimation(.snappy) { items.insert(EditorItem(re: copy, exercise: src.exercise), at: idx + 1) }
+        refreshTint()
         dirty = true
     }
 
@@ -587,38 +730,27 @@ struct RoutineEditorScreen: View {
             }
         }
         replaceIndex = nil
+        refreshTint()
         dirty = true
     }
 
-    // MARK: - Superset helpers (a group = consecutive exercises sharing supersetGroup)
+    // MARK: - Superset helpers (shared grouping logic lives in RoutineSetEditing)
 
-    private func inSuperset(_ i: Int) -> Bool {
-        guard items.indices.contains(i), items[i].re.supersetGroup != nil else { return false }
-        return sameGroup(i, i - 1) || sameGroup(i, i + 1)
-    }
-    private func sameGroup(_ a: Int, _ b: Int) -> Bool {
-        guard items.indices.contains(a), items.indices.contains(b),
-              let ga = items[a].re.supersetGroup, let gb = items[b].re.supersetGroup else { return false }
-        return ga == gb
-    }
     /// First member of a superset group (shows the «Superset» overline above it).
-    private func firstOfGroup(_ i: Int) -> Bool { inSuperset(i) && !sameGroup(i, i - 1) }
+    private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
 
     private func supersetWithNext(_ i: Int) {
-        guard i < items.count - 1 else { return }
-        let group = items[i].re.supersetGroup ?? items[i + 1].re.supersetGroup ?? nextFreeGroup()
-        items[i].re.supersetGroup = group
-        items[i + 1].re.supersetGroup = group
+        var res = items.map(\.re)
+        RoutineSetEditing.supersetWithNext(&res, i)
+        for (j, re) in res.enumerated() { items[j].re = re }
         dirty = true
     }
     private func breakSuperset(_ i: Int) {
-        guard let g = items[i].re.supersetGroup else { return }
-        items[i].re.supersetGroup = nil
-        let remaining = items.indices.filter { items[$0].re.supersetGroup == g }
-        if remaining.count == 1 { items[remaining[0]].re.supersetGroup = nil }
+        var res = items.map(\.re)
+        RoutineSetEditing.breakSuperset(&res, i)
+        for (j, re) in res.enumerated() { items[j].re = re }
         dirty = true
     }
-    private func nextFreeGroup() -> Int { (items.compactMap { $0.re.supersetGroup }.max() ?? 0) + 1 }
 
     // MARK: - Meta computations
 
@@ -635,8 +767,10 @@ struct RoutineEditorScreen: View {
         return max(1, Int((Double(seconds) / 60).rounded()))
     }
 
-    /// The routine's dominant coarse group — deterministic tie-break (FER-750).
-    private var dominantGroup: MuscleGroup? {
+    /// The routine's dominant coarse group — deterministic tie-break (FER-750). Recomputed by
+    /// `refreshTint()` only when the exercise set changes (load / add / replace / delete / duplicate):
+    /// the tint colors every set-row ring, and re-tallying on each keystroke was wasted work.
+    private func refreshTint() {
         var tally: [MuscleGroup: Int] = [:]
         for item in items {
             for m in item.exercise.primaryMuscles { if let g = MuscleGroup.of(m) { tally[g, default: 0] += 1 } }
@@ -646,10 +780,9 @@ struct RoutineEditorScreen: View {
         for g in MuscleGroup.allCases where (tally[g] ?? 0) > bestCount {
             best = g; bestCount = tally[g] ?? 0
         }
-        return best
+        routineTint = best?.tint(theme) ?? theme.inkTertiary
+        groupTitle = best?.title ?? String(localized: "Mixed")
     }
-    private var routineTint: Color { dominantGroup?.tint(theme) ?? theme.inkTertiary }
-    private var groupTitle: String { dominantGroup?.title ?? String(localized: "Mixed") }
 
     private func weekdayName(_ weekday: Int) -> String {
         Calendar.current.weekdaySymbols[(weekday - 1) % 7]   // index 0 = Sunday … 6 = Saturday
@@ -661,34 +794,33 @@ struct RoutineEditorScreen: View {
 
     // MARK: - Day assignment (.planDay «···»)
 
+    /// The .planDay weekday; nil for the other origins (whose UI never shows the day menu).
+    private var planWeekday: Int? {
+        if case .planDay(let wd) = origin { return wd } else { return nil }
+    }
+
     private func changeRoutine(to r: Routine) {
+        guard let wd = planWeekday else { return }
         Task {
             guard let store = await repo.storeHandle() else { return }
-            try? await store.setRoutineSchedule(weekday: weekday(of: origin) ?? 0, routineId: r.id)
+            try? await store.setRoutineSchedule(weekday: wd, routineId: r.id)
             await load()
         }
     }
 
     private func markRest() {
+        guard let wd = planWeekday else { return }
         Task {
             guard let store = await repo.storeHandle() else { return }
-            try? await store.clearRoutineSchedule(weekday: weekday(of: origin) ?? 0)
+            try? await store.clearRoutineSchedule(weekday: wd)
             dismiss()
         }
-    }
-
-    private func weekday(of origin: RoutineEditorRoute) -> Int? {
-        if case .planDay(let wd) = origin { return wd } else { return nil }
     }
 
     // MARK: - Navigation (footer promise: the .today origin saves on leave; save origins confirm discard)
 
     private func back() {
         if dirty && startsSession { persist(); dismiss(); return }
-        if dirty { showDiscardConfirm = true } else { dismiss() }
-    }
-
-    private func cancel() {
         if dirty { showDiscardConfirm = true } else { dismiss() }
     }
 
@@ -714,12 +846,13 @@ struct RoutineEditorScreen: View {
         let target: Routine?
         switch origin {
         case .today(let id):
-            // Today's pick: the scheduled routine for today, else the given id, else the most recent.
+            // Today's pick: the given id, else today's SCHEDULED routine via the canonical resolver —
+            // no arbitrary-routine fallback (the FER-531 contract); an unplanned day shows the empty state.
             let sched = (try? await store.routineSchedule()) ?? []
-            let todayWd = Calendar.current.component(.weekday, from: Date())
-            let scheduledId = sched.first { $0.weekday == todayWd }?.routineId
-            let rid = id ?? scheduledId
-            target = rid.flatMap { r in allRoutines.first { $0.id == r } } ?? allRoutines.first
+            let split = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
+            let rid = id ?? WeeklySplit.todayRoutineId(
+                split: split, todayWeekday: Calendar.current.component(.weekday, from: Date()))
+            target = rid.flatMap { r in allRoutines.first { $0.id == r } }
         case .planDay(let wd):
             let sched = (try? await store.routineSchedule()) ?? []
             let rid = sched.first { $0.weekday == wd }?.routineId
@@ -732,24 +865,24 @@ struct RoutineEditorScreen: View {
         let res = await repo.routineExercises(routineId: r.id)
         let all = await repo.allExercises()
         let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        // FER-E: evaluate progression once per plan build — history + plates + today's recovery in, an
-        // earned raise (or nothing) out. Only for slots that opted in. «La última vez» feeds the session
-        // prefill (FER-347). Same wiring «Rutina de hoy» carried; it must survive here (sub-épico 1).
+        // FER-E: «la última vez» + progression, via the ONE `sessionSeed` implementation the landing
+        // prefetch also calls (sub-épico 1 wiring). Only the .today origin can start a session, so the
+        // save-only origins skip that per-exercise history I/O entirely.
         let inventory = plates.inventory
         let recovery = repo.today?.recovery
         var built: [EditorItem] = []
         for re in res {
             guard let ex = byId[re.exerciseId] else { continue }
-            let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
-            var raise: ProgressionPlanner.Raise? = nil
-            if re.progressionEnabled, ex.type == .weightReps {
-                let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
-                raise = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
-                                                    equipment: ex.equipment, recovery: recovery)?.raise
+            if startsSession {
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
+                built.append(EditorItem(re: re, exercise: ex, lastSets: seed.lastSets,
+                                        raise: seed.evaluation?.raise))
+            } else {
+                built.append(EditorItem(re: re, exercise: ex))
             }
-            built.append(EditorItem(re: re, exercise: ex, lastSets: last, raise: raise))
         }
         items = built
+        refreshTint()
         dirty = false
     }
 

@@ -46,6 +46,7 @@ struct WorkoutEditSheet: View {
     @State private var reassignGroup: ReassignTarget?
     @State private var showDiscard = false
     @State private var saveError = false
+    @State private var showRoutineMenu = false
 
     init(session: StrengthSession, sets: [SetEntry], onSaved: @escaping () async -> Void) {
         self.session = session
@@ -89,13 +90,33 @@ struct WorkoutEditSheet: View {
             }
         }
         .interactiveDismissDisabled(isDirty)
-        .confirmationDialog("Discard changes?", isPresented: $showDiscard, titleVisibility: .visible) {
-            Button("Discard changes", role: .destructive) { dismiss() }
-            Button("Keep editing", role: .cancel) {}
+        .instrumentoConfirm(
+            isPresented: $showDiscard,
+            title: String(localized: "Discard changes?"),
+            context: String(localized: "WORKOUT · UNSAVED CHANGES"),
+            message: String(localized: "Your edits to this workout will be lost."),
+            actions: [
+                .init(String(localized: "Keep editing"), role: .primary),
+                .init(String(localized: "Discard changes"), role: .destructive) { dismiss() }
+            ]
+        )
+        // FER-837: save failure is an inline banner (a result must not cover the screen), not an alert.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save the workout. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
         }
-        .alert("Couldn't save the workout. Try again.", isPresented: $saveError) {
-            Button("OK", role: .cancel) {}
-        }
+        .animation(StrandMotion.fade, value: saveError)
         .sheet(item: $reassignGroup) { target in
             NavigationStack {
                 ExerciseLibraryScreen { picks in
@@ -171,16 +192,20 @@ struct WorkoutEditSheet: View {
         HStack {
             Text("Routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 12)
-            Menu {
-                Button("No routine") { routineId = nil }
-                ForEach(routines) { r in Button(r.name) { routineId = r.id } }
-            } label: {
+            Button { showRoutineMenu = true } label: {
                 HStack(spacing: 5) {
                     Text(routineLabel).font(StrandFont.body).foregroundStyle(theme.ink)
                     Image(systemName: "chevron.up.chevron.down")
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
             }
+            .buttonStyle(.plain)
+            .paperMenu(isPresented: $showRoutineMenu, items:
+                [PaperMenuItem(String(localized: "No routine"),
+                               systemImage: routineId == nil ? "checkmark" : nil) { routineId = nil }]
+                + routines.map { r in
+                    PaperMenuItem(r.name, systemImage: routineId == r.id ? "checkmark" : nil) { routineId = r.id }
+                })
         }
     }
 

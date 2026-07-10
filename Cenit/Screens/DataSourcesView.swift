@@ -49,6 +49,7 @@ struct DataSourcesView: View {
     @State private var backupAlertTitle = ""
     @State private var backupAlertMessage = ""
     @State private var showBackupAlert = false
+    @State private var backupAlertIsError = false
     #if os(iOS)
     @EnvironmentObject private var autoBackup: AutoBackup
     #endif
@@ -88,9 +89,25 @@ struct DataSourcesView: View {
                       allowsMultipleSelection: false) { result in
             handleImportResult(result, for: importTarget)
         }
-        .alert(backupAlertTitle, isPresented: $showBackupAlert) {
-            Button("OK", role: .cancel) { }
-        } message: { Text(backupAlertMessage) }
+        // FER-837: a backup/export result is an inline banner — it must not cover the screen.
+        .overlay(alignment: .top) {
+            if showBackupAlert {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(backupAlertTitle).font(.system(size: 13, weight: .semibold)).foregroundStyle(theme.ink)   // token-exempt: título de banner (13pt, igual que ConfirmCard)
+                    Text(backupAlertMessage).font(.system(size: 13)).foregroundStyle(theme.inkSecondary)   // token-exempt: cuerpo de banner (13pt, igual que ConfirmCard)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .patternBlock(theme, bar: backupAlertIsError ? theme.critical : theme.verdict)
+                .padding(.horizontal, NoopMetrics.screenPadding)
+                .onTapGesture { showBackupAlert = false }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .task {
+                    try? await Task.sleep(for: .seconds(8))
+                    showBackupAlert = false
+                }
+            }
+        }
+        .animation(StrandMotion.fade, value: showBackupAlert)
     }
 
     // MARK: - Section scaffolding (overline + content on paper, no card-in-card)
@@ -1086,9 +1103,10 @@ struct DataSourcesView: View {
             case .exported(let url):
                 backupAlertTitle = "CSV exported"
                 backupAlertMessage = "Saved to \(url.lastPathComponent). The zip re-imports into Cénit (Data Sources → WHOOP Export)."
-                showBackupAlert = true
+                backupAlertIsError = false; showBackupAlert = true
             case .failure(let message):
-                backupAlertTitle = "Export problem"; backupAlertMessage = message; showBackupAlert = true
+                backupAlertTitle = "Export problem"; backupAlertMessage = message
+                backupAlertIsError = true; showBackupAlert = true
             }
         }
     }
@@ -1100,13 +1118,14 @@ struct DataSourcesView: View {
         case .exported(let url):
             backupAlertTitle = "Backup exported"
             backupAlertMessage = "Saved to \(url.lastPathComponent). Copy this file to your other device and use Import there to restore everything."
-            showBackupAlert = true
+            backupAlertIsError = false; showBackupAlert = true
         case .imported:
             backupAlertTitle = "Backup imported"
             backupAlertMessage = "Your data has been restored. Quit and reopen Cénit for it to take effect."
-            showBackupAlert = true
+            backupAlertIsError = false; showBackupAlert = true
         case .failure(let message):
-            backupAlertTitle = "Backup problem"; backupAlertMessage = message; showBackupAlert = true
+            backupAlertTitle = "Backup problem"; backupAlertMessage = message
+            backupAlertIsError = true; showBackupAlert = true
         }
     }
 }
