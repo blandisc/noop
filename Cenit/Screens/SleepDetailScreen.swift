@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import WhoopStore
+import WhoopProtocol
 import Foundation
 
 /// Measured-width key for the 90-night calendar heat grid (FER-830).
@@ -40,6 +41,11 @@ struct SleepDetailScreen: View {
     var theme: InstrumentoTheme = .base
     /// Everything the screen draws, derived ONCE by the caller from `repo` (no DB access here).
     let model: SleepDetailModel
+    /// Loads the night's HR samples for a `[from, to)` window — injected by the caller (which owns
+    /// `repo`) so the screen stays DB-free (same philosophy as the pre-built model). The night-shape
+    /// block (FER-832) needs the raw 1 Hz HR the cached session doesn't carry. Defaults to empty so
+    /// previews and Apple-only nights render without it. (FER-832)
+    var loadNightHR: (_ from: Int, _ to: Int) async -> [HRSample] = { _, _ in [] }
 
     /// The metric whose info card is open (tap a Tonight's-metrics tile). (FER-227)
     @State private var metricInfo: MetricInfo?
@@ -55,6 +61,11 @@ struct SleepDetailScreen: View {
     /// Measured width so the 90-night heat grid fills it; the tapped night for the read-out. (FER-830)
     @State private var calWidth: CGFloat = 0
     @State private var selectedSleepNight: RecoveryDay? = nil
+    /// The nocturnal HR-fall shape (dip%, nadir hour, % below RHR) — loaded async in `.task` from the
+    /// night's HR samples; `nil` until loaded or when the night can't be read. (FER-832)
+    @State private var nightShape: NightAutonomicShape.Result? = nil
+    /// A small downsampled HR series (asleep window) for the fall curve. Built with the shape. (FER-832)
+    @State private var nightShapeCurve: [Double] = []
 
     var body: some View {
         ScrollView {
@@ -69,6 +80,9 @@ struct SleepDetailScreen: View {
                     // duration trend → weekly debt → method.
                     hero(night)
                     lastNightBlock(night)
+                    if let shape = nightShape {
+                        nightShapeBlock(shape)
+                    }
                     stagesVsTypicalBlock(night)
                     nightMetricsBlock(night)
                     durationTrendBlock
@@ -92,6 +106,13 @@ struct SleepDetailScreen: View {
                 durationParsed = model.durationSeries.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
             }
         }
+        // Load the nocturnal HR-fall shape once: a band night with a real timeline only (Apple-only
+        // nights carry no per-second HR to shape). The caller injects the DB read. (FER-832)
+        .task(id: model.night?.startTs) {
+            let (shape, curve) = await loadNightShape()
+            nightShape = shape
+            nightShapeCurve = curve
+        }
         // Tap a tile → its MetricInfoSheet; tap the ⓘ by "Last night" → the stages explainer. Both are
         // nested sheets themed EXPLICITLY (the theme doesn't propagate through `.sheet`, FER-162) and
         // with NO nested NavigationStack (FER-171). (FER-227)
@@ -101,6 +122,150 @@ struct SleepDetailScreen: View {
         .sheet(isPresented: $showStages) {
             SleepStagesInfoSheet(theme: theme)
         }
+    }
+
+    // MARK: - Forma de la noche (FER-832) — carga async + bloque
+
+    /// Compute the nocturnal HR-fall shape from the night's HR samples. Returns `nil` for an Apple-only
+    /// night (no per-second HR), when there's no timeline, or when there's no waking reference to
+    /// measure the fall against. The heavy read (HR samples) comes through the injected `loadNightHR`.
+    private func loadNightShape() async -> (shape: NightAutonomicShape.Result?, curve: [Double]) {
+        guard let night = model.night, !model.isAppleHealth, !model.intervals.isEmpty else { return (nil, []) }
+
+        let hr = await loadNightHR(night.startTs, night.endTs)
+        guard hr.count >= 2 else { return (nil, []) }
+
+        // Asleep spans = every non-awake stage segment of the night.
+        let asleep = model.intervals
+            .filter { $0.stage != .awake }
+            .map { NightAutonomicShape.AsleepSpan(start: Int($0.start), end: Int($0.end)) }
+        guard !asleep.isEmpty else { return (nil, []) }
+
+        // Waking reference = mean HR over the night's AWAKE segments (in-bed awake / brief awakenings);
+        // if that's too thin (a night with almost no scored wake), fall back to the 90th-percentile of
+        // the night's HR as an upper-level proxy. The fall is measured from here down to the nadir.
+        // NOTE: which reference to use is an app-layer choice /cso should re-audit when surfacing
+        // (flagged in the FER-678 engine gate). (FER-832)
+        let awakeSpans = model.intervals.filter { $0.stage == .awake }
+        let awakeHR = hr.filter { s in awakeSpans.contains { Int($0.start) <= s.ts && s.ts < Int($0.end) } }
+        let wakingRef: Double? = {
+            if awakeHR.count >= 30 {   // ~≥ a few minutes of scored wake at ~0.1 Hz+
+                return Double(awakeHR.reduce(0) { $0 + $1.bpm }) / Double(awakeHR.count)
+            }
+            let sorted = hr.map { Double($0.bpm) }.sorted()
+            guard !sorted.isEmpty else { return nil }
+            let idx = Int((0.90 * Double(sorted.count - 1)).rounded())
+            return sorted[idx]
+        }()
+
+        let tz = TimeZone.current.secondsFromGMT(for: night.onsetDate)
+        let shape = NightAutonomicShape.compute(hr: hr, asleep: asleep,
+                                                wakingReferenceHR: wakingRef,
+                                                rhrBaseline: model.rhrBaseline,
+                                                tzOffsetSeconds: tz)
+
+        // Downsample the asleep-window HR into ≤48 bucket means for a clean fall curve (drawing aid only,
+        // never the analysis — the shape itself is computed on the full series in the engine).
+        let asleepHR = hr.filter { s in asleep.contains { $0.start <= s.ts && s.ts < $0.end } }
+                         .sorted { $0.ts < $1.ts }
+        let curve = Self.downsampleBpm(asleepHR, maxPoints: 48)
+        return (shape, curve)
+    }
+
+    /// Bucket-average an HR series into at most `maxPoints` points (a pure drawing aid for the curve).
+    private static func downsampleBpm(_ hr: [HRSample], maxPoints: Int) -> [Double] {
+        guard hr.count > maxPoints else { return hr.map { Double($0.bpm) } }
+        var out: [Double] = []
+        out.reserveCapacity(maxPoints)
+        for b in 0..<maxPoints {
+            let lo = b * hr.count / maxPoints
+            let hi = (b + 1) * hr.count / maxPoints
+            guard hi > lo else { continue }
+            let sum = hr[lo..<hi].reduce(0) { $0 + $1.bpm }
+            out.append(Double(sum) / Double(hi - lo))
+        }
+        return out
+    }
+
+    /// The «Forma de la noche» block: the dip% as the dominant numeral (heart hue), the fall drawn as a
+    /// flat curve, and the nadir clock time + %-below-RHR as quiet secondary readings. When the night is
+    /// unreadable, only the honest line shows. Pattern, never a diagnosis. (FER-832)
+    @ViewBuilder private func nightShapeBlock(_ shape: NightAutonomicShape.Result) -> some View {
+        DetailBlock("Night shape", theme: theme) {
+            if shape.confidence == .unreadable {
+                Text("There isn't enough signal tonight to read how your heart eased off.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(alignment: .leading, spacing: 14) {
+                    // Dominant numeral: the dip%, coloured with the heart hue (signal identity).
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("\(Int(shape.dipPct.rounded()))%")
+                            .instrumentoHero(52)
+                            .foregroundStyle(theme.dataHeart)
+                        Text("your heart eased off")
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                    }
+
+                    if nightShapeCurve.count >= 2 {
+                        Sparkline(values: nightShapeCurve,
+                                  gradient: Gradient(colors: [theme.dataHeart, theme.dataHeart]),
+                                  lineWidth: 2.5, showsArea: false, showsHead: false, showsScrub: false)
+                            .frame(height: 56)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityHidden(true)
+                    }
+
+                    // Secondary readings in ink — they don't compete with the dip.
+                    HStack(alignment: .top, spacing: 26) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("lowest point").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            Text(clockLabel(shape.nadirHour))
+                                .font(StrandFont.number(21, weight: .semibold))
+                                .foregroundStyle(theme.ink)
+                        }
+                        if model.rhrBaseline != nil {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("below your resting").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                                Text("\(Int((shape.fractionBelowRHR * 100).rounded()))% of the night")
+                                    .font(StrandFont.number(21, weight: .semibold))
+                                    .foregroundStyle(theme.ink)
+                            }
+                        }
+                    }
+
+                    Text(dipCopy(shape.dipShape))
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// The honest, localized one-liner for the fall — a pattern, never a diagnosis. Composed in the UI
+    /// (not from the engine's Spanish `note`) so it localizes with the app catalog. (FER-832)
+    private func dipCopy(_ shape: NightAutonomicShape.DipShape) -> LocalizedStringKey {
+        switch shape {
+        case .pronounced: return "A marked, early drop — a sign you settled into rest. It's a pattern, not a diagnosis."
+        case .moderate:   return "A moderate drop overnight. It's a pattern, not a diagnosis."
+        case .blunted:    return "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis."
+        }
+    }
+
+    /// A clock hour (0..<24, fractional) as a locale-formatted "h:mm" for the nadir readout.
+    private func clockLabel(_ hour: Double) -> String {
+        var h = Int(hour) % 24
+        var m = Int(((hour - Double(Int(hour))) * 60).rounded())
+        if m == 60 { m = 0; h = (h + 1) % 24 }
+        var comps = DateComponents(); comps.hour = h; comps.minute = m
+        let cal = Calendar.current
+        if let date = cal.date(from: comps) {
+            let f = DateFormatter(); f.timeStyle = .short; return f.string(from: date)
+        }
+        return String(format: "%d:%02d", h, m)
     }
 
     // MARK: - 1. Hero — doble dato (horas + regularidad) + frase-veredicto
@@ -1171,6 +1336,9 @@ struct SleepDetailModel {
     let latencyMin: Double?
     /// Awakenings count (disturbances) for the latest night.
     let awakenings: Int?
+    /// Baseline resting HR (bpm) for the night-shape's "% of the night below your resting HR": median of
+    /// recent nightly resting-HR (the sleep nadir the app treats as RHR). `nil` until enough nights. (FER-832)
+    let rhrBaseline: Double?
 
     // Duration trend + debt
     /// The FULL nightly duration series (oldest → newest) as `(day "yyyy-MM-dd", hours)`, so the duration
@@ -1300,6 +1468,15 @@ struct SleepDetailModel {
         }()
         let awakenings = latestDay?.disturbances
 
+        // RHR baseline for the night-shape (FER-832): median of recent nightly resting-HR (the sleep
+        // nadir the app already treats as RHR). Uses the trailing ~28 nights; nil until any exist.
+        let recentRHR = sleeps.suffix(28).compactMap { $0.restingHr }.map(Double.init).sorted()
+        let rhrBaseline: Double? = {
+            guard !recentRHR.isEmpty else { return nil }
+            let m = recentRHR.count / 2
+            return recentRHR.count % 2 == 1 ? recentRHR[m] : (recentRHR[m - 1] + recentRHR[m]) / 2
+        }()
+
         // --- Duration trend (full nightly series, in hours) + 7-day accumulated debt. ---
         // The FULL nightly duration series (hours), windowed by period in the trend block (FER-573).
         let durationSeries: [(day: String, value: Double)] = days.compactMap { d in
@@ -1360,6 +1537,7 @@ struct SleepDetailModel {
             shortfallMinutes: shortfall,
             latencyMin: nil,
             awakenings: awakenings,
+            rhrBaseline: rhrBaseline,
             durationSeries: durationSeries,
             weeklyDebtMinutes: weeklyDebt,
             weeklyDebtNights: debtNights,
