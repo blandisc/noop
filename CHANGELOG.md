@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El editor de rutina se ve limpio: título completo y celdas sin bordes fantasma / The routine editor looks clean: full title and cells with no ghost edges.**
+  **ES** — En la pantalla de rutina de Entrenar, los títulos largos se salían por el borde de la pantalla; ahora saltan de línea y se leen completos. Además, las celdas de KG y REPS mostraban una esquina rectangular asomándose detrás del contorno redondeado; ahora el relleno respeta la forma redondeada.
+  **EN** — On the Entrenar routine screen, long titles ran off the edge of the screen; they now wrap and read in full. Also, the KG and REPS cells showed a rectangular corner leaking behind the rounded outline; the fill now respects the rounded shape.
+  ([RoutineEditorScreen.swift](Cenit/Screens/RoutineEditorScreen.swift), [RoutineBuilderScreen.swift](Cenit/Screens/RoutineBuilderScreen.swift))
+
 - **Los botones de la tarjeta de entreno ya responden con el teléfono bloqueado / Your workout card's buttons now respond with the phone locked.**
   **ES** — En la pantalla bloqueada, tocar Completar / ±30 s / Saltar / Reanudar seguía pidiendo Face ID en vez de ejecutar la acción. La política de autenticación que las marca como seguras («correr bloqueado») estaba declarada de una forma que el sistema no alcanzaba a leer sin abrir la app, así que caía al comportamiento por defecto (exigir desbloqueo). Ahora se declara en la forma canónica y las acciones corren en sitio, sin Face ID.
   **EN** — On the Lock Screen, tapping Complete / ±30 s / Skip / Resume kept asking for Face ID instead of running the action. The authentication policy that marks them safe to run while locked was declared in a form the system couldn't read without launching the app, so it fell back to the default (require unlock). It's now declared in the canonical form and the actions run in place, no Face ID.
