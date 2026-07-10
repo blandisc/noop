@@ -321,7 +321,7 @@ struct RoutineEditorScreen: View {
     private func compactBlock(_ block: ReorderBlock) -> some View {
         HStack(spacing: 10) {
             if block.isSuperset {
-                RoundedRectangle(cornerRadius: 1.25).fill(theme.dataHrv).frame(width: 2.5)
+                Capsule().fill(theme.dataHrv).frame(width: 2.5)
             }
             VStack(alignment: .leading, spacing: 8) {
                 if block.isSuperset {
@@ -340,8 +340,8 @@ struct RoutineEditorScreen: View {
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(theme.paper, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairlineStrong))
+        .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 
     /// «3 sets · 90 kg» — work sets + the top work weight (weight omitted when none is set).
