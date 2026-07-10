@@ -199,7 +199,7 @@ public enum StrainScorer {
     /// wall-clock — the 5/MG's ~30 s live-HR cadence). Shared by `strain(_:)` and
     /// `cumulativeStrain(_:)` so the intraday curve appears exactly when the score does and its
     /// endpoint keeps matching the score (FER-650 invariant).
-    static func hasEnoughData(_ hr: [HRSample]) -> Bool {
+    public static func hasEnoughData(_ hr: [HRSample]) -> Bool {
         if hr.count >= minReadings { return true }
         guard hr.count >= minSparseReadings else { return false }
         let tss = hr.map(\.ts)

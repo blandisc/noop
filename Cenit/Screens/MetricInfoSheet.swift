@@ -2189,7 +2189,7 @@ private struct StrainIntradayCurve: View {
                     Color.clear
                         .contentShape(Rectangle())
                         .scrubGesture(enabled: pts.count > 1, hoverX: $hoverX)
-                        .onChange(of: snapped) { if $0 != nil { ChartHaptics.datumChanged() } }
+                        .onChange(of: snapped) { _, now in if now != nil { ChartHaptics.datumChanged() } }
                     if let i = snapped, pts.indices.contains(i) {
                         CrosshairRule(x: pts[i].x, height: h)
                         HighlightDot(color: hue).position(x: pts[i].x, y: pts[i].y)

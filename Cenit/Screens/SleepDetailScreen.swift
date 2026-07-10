@@ -300,6 +300,12 @@ struct SleepDetailScreen: View {
                 .accessibilityLabel(Text("What we measure"))
             }
             heroDoubleDatum(night)
+            // FER-676: last night's trust grade (duration + resolved stages, H9-guarded), the same
+            // sello Esfuerzo wears. Only when the night's row was graded (strap path) — Apple-only
+            // rows carry no tier and show nothing.
+            if let tier = model.confidence {
+                tier.sello(theme: theme)
+            }
             Text(heroVerdict(night))
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
@@ -1315,6 +1321,9 @@ struct SleepDetailModel {
     let sourceAgreement: FusedMetricPoint?
     /// Whether the repo finished its first load (drives the empty-state copy: loading vs no-data).
     let loaded: Bool
+    /// Last night's rest-confidence tier (FER-676), from the persisted `restConfidence` (duration +
+    /// resolved stages, H9-guarded). nil when the shown night has no graded row (e.g. Apple-only) → no sello.
+    var confidence: ScoreConfidence? = nil
 
     // Regularity (FER-218 engine)
     let regularity: SleepRegularity.Result?
@@ -1531,6 +1540,9 @@ struct SleepDetailModel {
             // the other night metrics read) — non-nil only when band AND Apple reported that night.
             sourceAgreement: latestDay.flatMap { fusion[$0.day]?["sleep_total_min"] },
             loaded: loaded,
+            // FER-676: the persisted rest tier of the same `latestDay` row the other night metrics
+            // read. Apple-only rows never carry it → nil → no sello (honest, nothing was graded).
+            confidence: latestDay?.restConfidence.flatMap(ScoreConfidence.init(rawValue:)),
             regularity: regularity,
             regularityNights: regularityNights,
             excludedNapCount: excludedNapCount,

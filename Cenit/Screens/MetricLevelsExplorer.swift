@@ -95,7 +95,7 @@ struct MetricLevelsExplorer: View {
     private var rangeControl: some View {
         VStack(alignment: .leading, spacing: 8) {
             SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme, inkThumb: inkThumb) { $0.label }
-                .onChange(of: range) { _ in selectedLevelIndex = nil }
+                .onChange(of: range) { selectedLevelIndex = nil }
             if let mode {
                 HStack {
                     Spacer(minLength: 0)

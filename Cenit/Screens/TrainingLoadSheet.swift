@@ -642,7 +642,7 @@ private struct LoadChartView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .scrubGesture(enabled: n > 1, hoverX: $hoverX)
-                    .onChange(of: snapped) { if $0 != nil { ChartHaptics.datumChanged() } }
+                    .onChange(of: snapped) { _, now in if now != nil { ChartHaptics.datumChanged() } }
                 if let i = snapped, series.indices.contains(i) {
                     let px = CGFloat(i) / CGFloat(max(n - 1, 1)) * endX
                     let py = cy(series[i])

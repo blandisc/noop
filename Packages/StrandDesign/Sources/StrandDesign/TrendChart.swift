@@ -446,7 +446,7 @@ public struct TrendChart: View {
         }
         .chartBackground { proxy in
             GeometryReader { geo in
-                let plot = geo[proxy.plotAreaFrame]
+                let plot = proxy.plotFrame.map { geo[$0] } ?? .zero
                 ZStack(alignment: .topLeading) {
                     ForEach(bands) { band in
                         bandLayer(band, proxy: proxy, plot: plot)
@@ -456,7 +456,7 @@ public struct TrendChart: View {
         }
         .chartOverlay { proxy in
             GeometryReader { geo in
-                let plot = geo[proxy.plotAreaFrame]
+                let plot = proxy.plotFrame.map { geo[$0] } ?? .zero
                 // The datum currently under the finger (nil when not scrubbing). Drives the selection
                 // haptic: `.onChange` fires once per snap onto a new point (FER-131 handoff · 10).
                 let snappedIndex: Int? = (showsScrub ? hoverX : nil).flatMap { hx in
@@ -470,7 +470,7 @@ public struct TrendChart: View {
                     // the drag never started (the "scrub does nothing on iOS" bug). Color.clear is
                     // greedy and fills the GeometryReader, giving the gesture a full-size target. (#118)
                     Color.clear
-                        .onChange(of: snappedIndex) { idx in if idx != nil { ChartHaptics.datumChanged() } }
+                        .onChange(of: snappedIndex) { _, idx in if idx != nil { ChartHaptics.datumChanged() } }
 
                     if showsScrub,
                        let hx = hoverX,
