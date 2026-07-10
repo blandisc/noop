@@ -62,10 +62,15 @@ targets:
           - "Resources/Info.plist"
           - "Resources/NOOP.entitlements"
       - path: CenitShared
-      # FER-721: the ActivityKit contract + intents + cross-process bridge are shared with the widget
-      # extension, so both processes agree on the state shape. Only `Shared/` (not the widget's own
-      # views) compiles into the app.
+      # FER-721: the ActivityKit contract + cross-process bridge are shared with the widget extension,
+      # so both processes agree on the state shape. Only `Shared/` (not the widget's own views) compiles
+      # into the app. FER-844: the App Intents are EXCLUDED here — the app never instantiates them (it
+      # only drains their inbox), and registering the same intent id in both the app and the extension
+      # let `appintentsd` resolve the lock-screen auth policy from the app-side record → Face ID. They
+      # live only in the extension now.
       - path: CenitWidgets/Shared
+        excludes:
+          - "RestActivityIntents.swift"
     info:
       path: CenitApp/Resources/Info.plist
       properties:

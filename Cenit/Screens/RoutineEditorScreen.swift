@@ -306,6 +306,10 @@ struct RoutineEditorScreen: View {
     private var reorderList: some View {
         ForEach(reorderBlocks) { block in
             compactBlock(block).plainRow(top: 5, bottom: 5)
+                // Paper, not clear: the List drag preview snapshots the ROW (background included) and
+                // paints a clear background white — an edge-to-edge white band under the lifted card
+                // (FER-847). Paper fuses the preview with the screen.
+                .listRowBackground(theme.paper)
         }
         .onMove(perform: moveBlocks)
         Button { withAnimation(.snappy) { reordering = false } } label: {
@@ -447,12 +451,14 @@ struct RoutineEditorScreen: View {
             columnHeader(item.exercise.type)
         }
         // Long-press enters reorder mode (6a): rows compact, ≡ handles appear, one drop reorders and
-        // leaves the mode. The handle-driven List drag never conflicts with the delete swipe.
-        .onLongPressGesture(minimumDuration: 0.4) {
+        // leaves the mode. `simultaneousGesture` — NOT `.onLongPressGesture` — because the row is mostly
+        // Buttons (name → detail, «···» → menu) and a plain gesture never fires over them (FER-846);
+        // simultaneous lets a short tap keep opening those while a ~0.4 s hold enters the mode.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
             guard !locked else { return }
             focusedCell = nil
             withAnimation(.snappy) { reordering = true }
-        }
+        })
         .accessibilityAction(named: Text("Reorder exercises")) {
             guard !locked else { return }
             withAnimation(.snappy) { reordering = true }
@@ -499,6 +505,12 @@ struct RoutineEditorScreen: View {
                 progressionTarget = ProgressionTarget(ei: idx)
             })
         }
+        // A discoverable door into the drag mode (FER-847) — still no «move up/down»: the row only
+        // enters the same drag-to-reorder the long-press does.
+        rows.append(.init(String(localized: "Reorder exercises"), systemImage: "line.3.horizontal") {
+            focusedCell = nil
+            withAnimation(.snappy) { reordering = true }
+        })
         rows.append(.init(String(localized: "Remove from routine"), systemImage: "trash", isDestructive: true) {
             deleteExercise(idx)
         })

@@ -17,9 +17,13 @@ import Foundation
 //     product-calibration knob, NOT a derived standard error: the √n shape borrows the intuition that
 //     averaging more estimates resolves smaller real moves, but the weekly VO₂max estimates are NOT
 //     independent replicates (they share slowly-moving inputs — age, WHR, resting HR — so a true SE would
-//     shrink slower than √n). We keep √n as a deliberately simple, conservative-leaning floor and let it
-//     stop us reacting to the SEE ~5.7 jitter of any one estimate; the exact shape is for the CDO
-//     (`/estadistico`) to validate, not a claim of statistical exactness.
+//     shrink slower than √n). CDO validation (FER-834) confirmed the DIRECTION of that bias: because the
+//     estimates are positively correlated, √n shrinks TOO FAST, so at large n the floor becomes PERMISSIVE
+//     (anti-conservative), not conservative — it is NOT a safety margin that only grows stricter. We keep
+//     √n as a deliberately simple floor that stops us reacting to the SEE ~5.7 jitter of any one estimate,
+//     but the real primary guard against a spurious direction is the band-excludes-zero gate below (which
+//     is distribution-free and does not depend on √n). The exact floor shape was reviewed by the CDO and
+//     left as-is per FER-834; it is a calibration knob, not a claim of statistical exactness.
 //   A direction is reported only when BOTH gates pass: the slope band excludes zero AND the projected
 //   change beats the floor. Otherwise → `.stable` (or, below the data minimum, `nil` → hide).
 //
@@ -42,7 +46,9 @@ public enum VO2maxTrend {
 
     /// The change-over-window floor (ml·kg⁻¹·min⁻¹) below which we won't claim a direction: ~SEE/√n. A
     /// product-calibration knob (NOT a derived standard error — the estimates aren't independent
-    /// replicates; see the file header). Deliberately simple and conservative-leaning; shrinks with data.
+    /// replicates; see the file header). Deliberately simple; shrinks with data. NOTE (FER-834): √n
+    /// shrinks faster than a correlated true SE, so at large n this floor is permissive, not conservative
+    /// — the band-excludes-zero gate is the primary guard against a spurious direction.
     public static func noiseFloor(pointCount n: Int) -> Double {
         guard n > 0 else { return seeMlKgMin }
         return seeMlKgMin / Double(n).squareRoot()

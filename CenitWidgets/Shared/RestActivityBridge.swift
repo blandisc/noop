@@ -1,12 +1,13 @@
 // FER-721 · Entrenar v3 · F6 — the cross-process channel for the lock-screen actions.
 //
 // Shared source: compiled into BOTH the app and the widget extension. The «+30 s» and «Saltar»
-// buttons in the Live Activity fire App Intents (`RestActivityIntents`). A `LiveActivityIntent`
-// runs in the app's process, but that process may be a fresh background launch where the in-memory
-// strength session no longer exists — so the action can't be applied inline with certainty. Instead
-// the intent writes it to a durable inbox in the shared App Group and posts a Darwin notification;
-// the running app drains the inbox (on the notification, and again whenever it reconciles), applies
-// it to the live `StrengthSessionModel`, and lets the normal reconcile loop update/end the Activity.
+// buttons in the Live Activity fire App Intents (`RestActivityIntents`) that run INSIDE the widget
+// extension (plain `AppIntent`, so they execute while the phone is locked — FER-844). The extension
+// has no access to the in-memory strength session, so instead the intent writes the action to a
+// durable inbox in the shared App Group and posts a Darwin notification; the running app (kept alive
+// by the live BLE session) drains the inbox (on the notification, and again whenever it reconciles or
+// re-activates), applies it to the live `StrengthSessionModel`, and lets the normal reconcile loop
+// update/end the Activity.
 
 import Foundation
 
