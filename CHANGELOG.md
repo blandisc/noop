@@ -40,8 +40,8 @@ approximate; Cénit is built from source — see the [README](README.md).
   ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
 
 - **Al deslizar para volver ya se ve la pantalla de atrás / The swipe-back now reveals the screen behind.**
-  **ES** — En cuanto empiezas a deslizar un detalle de Tendencias hacia la derecha, ya se ve Tendencias detrás (antes quedaba un papel en blanco hasta soltar). El panel arrastra su propio papel opaco sobre una cubierta transparente, y al soltar termina de salir hacia la derecha en vez de caer.
-  **EN** — As soon as you start dragging a Trends detail to the right, the Trends screen shows behind it (before it exposed a blank paper until you let go). The panel carries its own opaque paper over a transparent cover, and on release it finishes sliding off to the right instead of dropping down.
+  **ES** — En cuanto empiezas a deslizar un detalle de Tendencias hacia la derecha, ya se ve Tendencias detrás. El detalle dejó de presentarse como `fullScreenCover` (que ocultaba el landing tras una plancha en blanco) y ahora es una sola capa de papel opaco encima de Tendencias en la misma jerarquía, así que la pantalla de abajo es la real. Sin sombra ni capas sueltas; al soltar se desliza limpio hacia la derecha.
+  **EN** — As soon as you start dragging a Trends detail to the right, the Trends screen shows behind it. The detail is no longer a `fullScreenCover` (which hid the landing behind a blank platter); it's now a single opaque-paper layer over Trends in the same view hierarchy, so what's behind is the real screen. No shadow, no separate layers; on release it slides cleanly off to the right.
   ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
 
 - **La rutina del día ya muestra los thumbnails de cada ejercicio / Today's routine now shows each exercise's thumbnail.**

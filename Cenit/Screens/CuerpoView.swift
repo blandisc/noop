@@ -64,8 +64,11 @@ private enum DetailChromeDate {
 
 private struct DetailChrome<Content: View>: View {
     let theme: InstrumentoTheme
+    /// Pops the detail — clears the presenting state so the parent removes this layer (with a trailing
+    /// slide-out transition). Replaces `@Environment(\.dismiss)`: the detail is now an in-hierarchy layer
+    /// over the Tendencias landing, NOT a `fullScreenCover` (which hid the landing behind a blank platter).
+    let onClose: () -> Void
     @ViewBuilder var content: Content
-    @Environment(\.dismiss) private var dismiss
     /// Live horizontal offset while the user drags in from the left edge (interactive back-swipe, FER-837).
     @State private var dragX: CGFloat = 0
 
@@ -78,7 +81,7 @@ private struct DetailChrome<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
-                Button { dismiss() } label: {
+                Button { onClose() } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
                         Text("Tendencias").font(StrandFont.body)
@@ -95,23 +98,18 @@ private struct DetailChrome<Content: View>: View {
             .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 4)
             content
         }
-        // The whole panel carries its OWN opaque paper and slides as one unit; behind it the cover is
-        // transparent (`.presentationBackground(.clear)` below), so dragging right reveals the REAL
-        // Tendencias screen — not the blank paper backdrop the old stationary-paper ZStack exposed.
+        // One unified, fully-opaque paper panel. It's stacked OVER the Tendencias landing (same view
+        // hierarchy), so as it slides right it reveals the real Tendencias underneath — no blank platter,
+        // no shadow, no separate layers. At rest it covers the landing completely.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(theme.paper.ignoresSafeArea())
         .offset(x: dragX)
-        // A soft leading-edge shadow so the panel reads as lifted above the screen it reveals.
-        .shadow(color: Color.black.opacity(dragX > 0 ? 0.16 : 0), radius: 16, x: -6, y: 0)
         .instrumentoTheme(theme)
-        // Clear the cover's own platter (iOS 16.4+) so the presenting screen shows THROUGH the gap the
-        // sliding panel opens. At rest the panel fully covers it, so Tendencias stays hidden until you drag.
-        .presentationBackground(.clear)
         // Edge-swipe-back (FER-837): a drag that STARTS in the left `edgeZone` and runs horizontally
-        // pulls the whole screen right and, past `dismissThreshold` (or a flick), dismisses — so you
-        // don't have to hit the «‹» chevron exactly. Gated to the left edge + horizontal dominance so
-        // it never competes with vertical scrolling. `.simultaneousGesture` keeps the ScrollView and the
-        // back button fully working. No `NavigationStack` is involved, so there's no FER-171 risk.
+        // pulls the panel right, revealing Tendencias behind it, and past `dismissThreshold` (or a flick)
+        // pops — so you don't have to hit the «‹» chevron exactly. Gated to the left edge + horizontal
+        // dominance so it never competes with vertical scrolling. `.simultaneousGesture` keeps the
+        // ScrollView and the back button working. No `NavigationStack` → no FER-171 risk.
         .simultaneousGesture(
             DragGesture(minimumDistance: 12)
                 .onChanged { v in
@@ -124,10 +122,9 @@ private struct DetailChrome<Content: View>: View {
                     guard v.startLocation.x < Self.edgeZone, dragX > 0 else { return }
                     if v.translation.width > Self.dismissThreshold
                         || v.predictedEndTranslation.width > Self.flickThreshold {
-                        // Finish the slide off to the right (revealing Tendencias underneath), THEN drop
-                        // the now-offscreen cover — so the motion continues under the finger instead of
-                        // snapping vertically. (FER-837 follow-up)
-                        withAnimation(StrandMotion.interactive) { dragX = 1200 } completion: { dismiss() }
+                        // Pop from the current dragged position: the parent removes the layer with a
+                        // trailing slide-out, continuing the motion under the finger (never a snap back).
+                        onClose()
                     } else {
                         withAnimation(StrandMotion.interactive) { dragX = 0 }
                     }
@@ -255,14 +252,13 @@ private struct CuerpoLanding: View {
     private static let recoverySeed = Baselines.minNightsSeed
 
     var body: some View {
+        ZStack {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 titleBlock
                 periodSelector
-                // §8.7 landing micro-legend (FER-837): un solo renglón que enseña que todo el landing es
-                // tocable — reemplaza al viejo «Valores de hoy · tendencias del último mes» y evita un ícono
-                // por métrica (se veía burdo). La afordancia la carga esta línea, no un glifo repetido.
-                Text("Tap any value to see its detail.")
+                // §8.7 landing micro-legend (handoff v2, FER-826): frames what the numbers vs the sparklines are.
+                Text("Today's values · last month's trends")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 recoveryHero
@@ -281,45 +277,19 @@ private struct CuerpoLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(PaperBackground())
+            // Detalle «Instrumento» como CAPA sobre el landing (handoff v2 Chrome, FER-828 / FER-837): una
+            // sola pantalla de papel opaco encima de Tendencias EN LA MISMA jerarquía, no un `fullScreenCover`
+            // (que ocultaba el landing detrás de una plancha en blanco). Así el back-swipe descubre la
+            // pantalla real de Tendencias que está debajo. Cero `NavigationStack` → cero riesgo FER-171.
+            if detailPresented {
+                DetailChrome(theme: theme, onClose: dismissDetail) { detailOverlayContent }
+                    .transition(.move(edge: .trailing))
+                    .zIndex(1)
+            }
+        }
+        .animation(StrandMotion.interactive, value: detailPresented)
         .task(id: repo.refreshSeq) { await loadAll() }
         .sheet(item: $metricInfo) { info in metricSheet(for: info) }
-        .fullScreenCover(item: $metricSpec) { spec in
-          DetailChrome(theme: theme) {
-            MetricDetailScreen(
-                spec: spec,
-                depth: .full,
-                theme: theme,
-                // VO₂max is Apple-only: invite connecting Apple Health from its empty state when nothing's
-                // connected and there's no reading (mirrors the Fitness Age VO₂max nudge). (FER-257)
-                appleConnectHint: spec.descriptor.key == "vo2max"
-                    && health.auth != .authorized && health.auth != .unavailable
-                    && latestAppleVO2max == nil,
-                // FER-487: seal today's datum «Apple» when it came from Apple Health, matching the tile.
-                todayFromApple: todayVitalFromApple(spec.descriptor.key),
-                // FER-635: which nights are Apple-sourced, so the detail folds the baseline/σ, CV and Δ%
-                // on a single source (band-anchored) instead of mixing RMSSD↔SDNN and the band↔Apple offsets.
-                appleDays: repo.appleHealthDays,
-                seriesLoader: { vitalSeries(for: spec.descriptor.key) },
-                nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
-                whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
-                    ? { whatMovesItFindings(for: spec.descriptor.key) }
-                    : nil,
-                intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
-                // FER-702: the frequency-domain HRV breakdown lives only in the HRV detail.
-                spectralLoader: spec.descriptor.key == "hrv" ? { await loadSpectralHRV() } : nil,
-                hrMax: Double(model.profile.hrMax),
-                restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
-                todayKey: Repository.localDayKey(Date()),
-                // FER-670: today's source-agreement point (steps) — nil for every non-fused metric.
-                fusion: repo.fusionPoint(day: Repository.localDayKey(Date()), metric: spec.descriptor.key)
-            )
-          }
-        }
-        // Detalle a PANTALLA COMPLETA (handoff v2 Chrome, FER-828): fullScreenCover con la cabecera
-        // «‹ Tendencias · fecha» — el look de push del handoff SIN tocar NavigationStack (cero riesgo FER-171).
-        .fullScreenCover(item: $recoveryDetail) { item in
-            DetailChrome(theme: theme) { RecoveryDetailScreen(theme: theme, model: item.model) }
-        }
         .sheet(isPresented: $showMuscleMap) {
             // Light «Instrumento» Mapa muscular (FER-350) — theme injected at the root (it doesn't cross
             // the `.sheet` boundary, FER-162) and `repo` re-supplied (a sheet starts a fresh environment).
@@ -379,48 +349,88 @@ private struct CuerpoLanding: View {
             .environmentObject(model)
             .environmentObject(health)
         }
-        .fullScreenCover(item: $strainDetail) { item in
-            DetailChrome(theme: theme) {
-                StrainDetailScreen(theme: theme, model: item.model,
-                                   curveLoader: { await loadStrainCurve() })
-            }
-        }
-        .fullScreenCover(item: $sleepDetail) { item in
-            DetailChrome(theme: theme) { SleepDetailScreen(theme: theme, model: item.model) }
-        }
-        .fullScreenCover(item: $stressDetail) { item in
-            DetailChrome(theme: theme) {
-                StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
-                                   patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
-                                       repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
-                                   eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
-                                       repo: repo, map: stressDayMap) })
-            }
-        }
-        .fullScreenCover(item: $trainingLoadItem) { item in
-            DetailChrome(theme: theme) { TrainingLoadSheet(model: item.model, theme: theme) }
-        }
-        .fullScreenCover(item: $skinTempDetail) { item in
-            DetailChrome(theme: theme) { SkinTempDetailScreen(theme: theme, model: item.model) }
-        }
-        .fullScreenCover(isPresented: $showActivityCost) { DetailChrome(theme: theme) { activityRecoverySheet } }
-        .fullScreenCover(isPresented: $showFitnessAge) {
-            DetailChrome(theme: theme) {
-                FitnessAgeDetailView(snapshot: fitnessAge ?? computeFitnessAge(),
-                                     chronoAge: model.profile.age, sex: model.profile.sex,
-                                     appleVO2max: latestAppleVO2max,
-                                     appleConnectHint: health.auth != .authorized && health.auth != .unavailable
-                                         && latestAppleVO2max == nil,
-                                     theme: theme)
-            }
-        }
-        .fullScreenCover(isPresented: $showBodyAge) {
-            DetailChrome(theme: theme) {
-                BodyAgeSheet(
-                    result: vitalityResult,
-                    inputs: vitalityInputs ?? VitalityEngine.Inputs(chronoAge: Double(model.profile.age)),
-                    theme: theme)
-            }
+    }
+
+    // MARK: - Detail layer (FER-837 follow-up)
+
+    /// Whether ANY «Instrumento» detail is showing over the landing. Drives the `detailOverlayContent`
+    /// layer + its slide-in/out animation. Only one is ever set at a time (each tap sets exactly one).
+    private var detailPresented: Bool {
+        metricSpec != nil || recoveryDetail != nil || strainDetail != nil || sleepDetail != nil
+            || stressDetail != nil || trainingLoadItem != nil || skinTempDetail != nil
+            || showActivityCost || showFitnessAge || showBodyAge
+    }
+
+    /// Pops the detail layer — clears every detail-presenting state (only one is set). The `.animation`
+    /// on `detailPresented` slides the layer out to the trailing edge.
+    private func dismissDetail() {
+        metricSpec = nil; recoveryDetail = nil; strainDetail = nil; sleepDetail = nil
+        stressDetail = nil; trainingLoadItem = nil; skinTempDetail = nil
+        showActivityCost = false; showFitnessAge = false; showBodyAge = false
+    }
+
+    /// The detail body for whichever state is set — built exactly as the old `fullScreenCover`s did (the
+    /// tap sites are unchanged; they still build each model fresh from the in-memory dashboard).
+    @ViewBuilder private var detailOverlayContent: some View {
+        if let spec = metricSpec {
+            MetricDetailScreen(
+                spec: spec,
+                depth: .full,
+                theme: theme,
+                // VO₂max is Apple-only: invite connecting Apple Health from its empty state when nothing's
+                // connected and there's no reading (mirrors the Fitness Age VO₂max nudge). (FER-257)
+                appleConnectHint: spec.descriptor.key == "vo2max"
+                    && health.auth != .authorized && health.auth != .unavailable
+                    && latestAppleVO2max == nil,
+                // FER-487: seal today's datum «Apple» when it came from Apple Health, matching the tile.
+                todayFromApple: todayVitalFromApple(spec.descriptor.key),
+                // FER-635: which nights are Apple-sourced, so the detail folds the baseline/σ, CV and Δ%
+                // on a single source (band-anchored) instead of mixing RMSSD↔SDNN and the band↔Apple offsets.
+                appleDays: repo.appleHealthDays,
+                seriesLoader: { vitalSeries(for: spec.descriptor.key) },
+                nightVitalsLoader: spec.blocks.contains(.nightVitals) ? { await loadNightVitals() } : nil,
+                whatMovesItLoader: spec.blocks.contains(.whatMovesIt)
+                    ? { whatMovesItFindings(for: spec.descriptor.key) }
+                    : nil,
+                intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
+                // FER-702: the frequency-domain HRV breakdown lives only in the HRV detail.
+                spectralLoader: spec.descriptor.key == "hrv" ? { await loadSpectralHRV() } : nil,
+                hrMax: Double(model.profile.hrMax),
+                restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
+                todayKey: Repository.localDayKey(Date()),
+                // FER-670: today's source-agreement point (steps) — nil for every non-fused metric.
+                fusion: repo.fusionPoint(day: Repository.localDayKey(Date()), metric: spec.descriptor.key)
+            )
+        } else if let item = recoveryDetail {
+            RecoveryDetailScreen(theme: theme, model: item.model)
+        } else if let item = strainDetail {
+            StrainDetailScreen(theme: theme, model: item.model, curveLoader: { await loadStrainCurve() })
+        } else if let item = sleepDetail {
+            SleepDetailScreen(theme: theme, model: item.model)
+        } else if let item = stressDetail {
+            StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
+                               patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
+                                   repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
+                               eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
+                                   repo: repo, map: stressDayMap) })
+        } else if let item = trainingLoadItem {
+            TrainingLoadSheet(model: item.model, theme: theme)
+        } else if let item = skinTempDetail {
+            SkinTempDetailScreen(theme: theme, model: item.model)
+        } else if showActivityCost {
+            activityRecoverySheet
+        } else if showFitnessAge {
+            FitnessAgeDetailView(snapshot: fitnessAge ?? computeFitnessAge(),
+                                 chronoAge: model.profile.age, sex: model.profile.sex,
+                                 appleVO2max: latestAppleVO2max,
+                                 appleConnectHint: health.auth != .authorized && health.auth != .unavailable
+                                     && latestAppleVO2max == nil,
+                                 theme: theme)
+        } else if showBodyAge {
+            BodyAgeSheet(
+                result: vitalityResult,
+                inputs: vitalityInputs ?? VitalityEngine.Inputs(chronoAge: Double(model.profile.age)),
+                theme: theme)
         }
     }
 
@@ -521,18 +531,13 @@ private struct CuerpoLanding: View {
                             color: Color, legend: LocalizedStringKey? = nil, estimate: Bool = false,
                             fromApple: Bool = false, spark: [Double] = [], tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            // FER-837: las rejillas de métricas (Descanso y carga · Vitales) centran su contenido sobre su
-            // propio eje — cada celda lee como una carátula de instrumento, no como un dato flotando a la
-            // izquierda con un charco de vacío. Los HERO y los títulos de sección se quedan editorial-izquierda.
-            VStack(alignment: .center, spacing: 3) {
+            VStack(alignment: .leading, spacing: 3) {
                 // §8.7 landing: the label ALL-CAPS in its hue. Per the v2 handoff the landing carries NO
                 // per-stat origin dot and NO legend — provenance lives only at the foot of each detail
                 // screen (the `estimate`/`fromApple` provenance is still tracked, just not shown). (FER-834)
                 Text(label)
                     .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
                     .foregroundStyle(color)
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.9)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value ?? "—")
                         .font(StrandFont.number(21))
@@ -558,11 +563,10 @@ private struct CuerpoLanding: View {
                 }
                 if let legend {
                     Text(legend).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                        .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
@@ -616,14 +620,16 @@ private struct CuerpoLanding: View {
                     let color = band.flag.color(theme)
                     Sparkline(values: load.series.map(\.value),
                               gradient: ChartWell.fillGradient(color),
+                              referenceBand: ReadinessEngine.acwrSweetSpotLow...ReadinessEngine.acwrSweetSpotHigh,
+                              bandColor: theme.hairlineStrong,
                               lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
                         .frame(width: 104, height: 40)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
-                // Sin chevron (FER-837 follow-up): el renglón «Toca cualquier dato para ver su detalle»
-                // ya comunica que la tarjeta es tocable; el chevron se reserva a las que abren una
-                // pantalla/herramienta distinta (Mapa muscular, «tras cada deporte», Comparar, Ver todas).
+                Image(systemName: "chevron.right")
+                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
             }
             .padding(.vertical, 16).padding(.horizontal, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -667,8 +673,8 @@ private struct CuerpoLanding: View {
     /// Vitals — a 3×2 grid of scalar vitals, each into its `MetricDetailScreen`.
     private var vitalsCard: some View {
         domainCard("Vitals") {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .center), count: 3),
-                      alignment: .center, spacing: 18) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .leading), count: 3),
+                      alignment: .leading, spacing: 18) {
                 hrvStat; rhrStat; spo2Stat; heartStat; respStat; skinTempStat
             }
         }
@@ -723,8 +729,9 @@ private struct CuerpoLanding: View {
                 Spacer(minLength: 8)
                 recoveryHeroAccessory(score: score, calibrating: cal,
                                       spark: showSpark ? spark : nil, color: color)
-                // Sin chevron (FER-837 follow-up): el renglón «Toca cualquier dato…» ya comunica el toque;
-                // el chevron queda solo en las tarjetas que abren pantalla/herramienta distinta.
+                Image(systemName: "chevron.right")
+                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
             }
             .padding(.vertical, 18).padding(.horizontal, 20)
             .frame(maxWidth: .infinity)
