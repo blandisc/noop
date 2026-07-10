@@ -90,7 +90,7 @@ struct RootTabView: View {
             // paper throughout, so there's no light-tab → dark-screen status-bar bridge to manage.
             NavigationStack(path: $trainStack) {
                 EntrenarView(
-                    openRoutine: { id in trainStack.append(RoutineRoute(routineId: id)) },
+                    openRoutine: { id in trainStack.append(RoutineEditorRoute.today(routineId: id)) },
                     openBreathe: { trainStack.append(SecondaryScreen.breathe) },
                     openIntervals: { trainStack.append(SecondaryScreen.intervals) },
                     openDiet: { trainStack.append(SecondaryScreen.dieta) },
@@ -105,13 +105,11 @@ struct RootTabView: View {
                 .navigationDestination(for: SecondaryScreen.self) { screen in
                     trainChrome(secondaryDestination(screen))
                 }
-                .navigationDestination(for: RoutineRoute.self) { route in
-                    trainChrome(RutinaDeHoyScreen(routineId: route.routineId))
-                }
-                .navigationDestination(for: PlanDayRoute.self) { route in
-                    // 1o «Editar día del plan» (FER-747): draws its own back/cancel header + pinned CTA,
-                    // so the native nav bar is hidden (trainChrome still paints paper + reserves the bar).
-                    trainChrome(PlanDayEditorScreen(weekday: route.weekday))
+                .navigationDestination(for: RoutineEditorRoute.self) { route in
+                    // «Rutina» (FER-839): ONE prescription editor for every origin (today / plan day /
+                    // Mis rutinas). It draws its own back/cancel header + pinned CTA, so the native nav
+                    // bar is hidden (trainChrome still paints paper + reserves the bar).
+                    trainChrome(RoutineEditorScreen(origin: route))
                         .toolbar(.hidden, for: .navigationBar)
                 }
                 .navigationDestination(for: WorkoutSessionRoute.self) { route in
@@ -340,8 +338,8 @@ struct RootTabView: View {
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
         case .weeklyPlan:   WeeklyPlanEditorView(openRoutines: { trainStack.append(SecondaryScreen.misRutinas) },
-                                                 openDay: { wd in trainStack.append(PlanDayRoute(weekday: wd)) })
-        case .misRutinas:   MisRutinasScreen(openRoutine: { id in trainStack.append(RoutineRoute(routineId: id)) },
+                                                 openDay: { wd in trainStack.append(RoutineEditorRoute.planDay(weekday: wd)) })
+        case .misRutinas:   MisRutinasScreen(openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) },
                                              openLibrary: { trainStack.append(SecondaryScreen.library) })
         case .restDay:      RestDayScreen(
                                 openIntervals: { trainStack.append(SecondaryScreen.intervals) },
@@ -350,7 +348,7 @@ struct RootTabView: View {
         case .otherWays:    OtherWaysScreen(
                                 openIntervals: { trainStack.append(SecondaryScreen.intervals) },
                                 openBreathe: { trainStack.append(SecondaryScreen.breathe) })
-        case .routineToday: RutinaDeHoyScreen(routineId: nil)
+        case .routineToday: RoutineEditorScreen(origin: .today(routineId: nil))
         case .dieta:        DietCaptureView()
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
@@ -362,12 +360,6 @@ struct RootTabView: View {
         }
     }
 }
-
-/// A value pushed onto the Entrenar stack to open «Rutina de hoy» for a specific routine.
-/// `routineId == nil` means "today's pick" (used by DEBUG screenshot-nav, which has no id). A distinct
-/// type so the type-erased `trainStack` can carry it alongside `SecondaryScreen` without the FER-171
-/// mixed-typed-path crash.
-private struct RoutineRoute: Hashable { let routineId: String? }
 
 /// The «Barra de instrumento»'s measured height, bubbled from the floating overlay
 /// bar up to `RootTabView` so each tab can reserve exactly that much. `max` keeps
