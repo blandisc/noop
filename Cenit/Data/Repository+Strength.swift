@@ -79,6 +79,22 @@ extension Repository {
         return (ExerciseCatalog.all + custom).map { $0.applying(overrides) }.sorted { $0.name < $1.name }
     }
 
+    /// One slot's guided-session seed: «la última vez» prefill + the progression evaluation (FER-E).
+    /// The SINGLE implementation behind the Entrenar landing prefetch and the «Rutina» editor, so the
+    /// raise the hero names is exactly the raise the editor seeds (FER-838 /simplify). The evaluation is
+    /// nil when the slot didn't opt in or has no load to progress.
+    func sessionSeed(re: RoutineExercise, exercise: Exercise?,
+                     inventory: [PlateMath.PlateStock], recovery: Double?) async
+        -> (lastSets: [SetEntry], evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?) {
+        guard let store = await storeHandle() else { return ([], nil) }
+        let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
+        guard re.progressionEnabled, exercise?.type == .weightReps else { return (last, nil) }
+        let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
+        let eval = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
+                                               equipment: exercise?.equipment, recovery: recovery)
+        return (last, eval)
+    }
+
     /// Resolve one exercise by id (catalog or custom) with its user type override applied — the single
     /// point every guided-session / builder / detail path uses, so no reader sees a non-overridden type.
     /// Precedence: override > custom > catalog (FER-541). nil if the id is unknown.

@@ -66,6 +66,10 @@ struct RoutineEditorScreen: View {
     /// Drag-reorder mode (6a, FER-841): every row compacts to thumb + name + summary and the set tables
     /// fold away; dropping reopens them. Entered by long-pressing an exercise header.
     @State private var reordering = false
+    /// The routine hue + group label — refreshed by `refreshTint()` only when the exercise set changes,
+    /// never per render (the ring in every set row reads the tint; see `dominantGroup`).
+    @State private var routineTint: Color = .clear
+    @State private var groupTitle: String = ""
     @FocusState private var focusedCell: String?
 
     /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
@@ -207,7 +211,7 @@ struct RoutineEditorScreen: View {
             .buttonStyle(.plain).accessibilityLabel(Text("Back"))
             Spacer()
             if !startsSession {
-                Button { cancel() } label: {
+                Button { back() } label: {
                     Text("Cancel").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                         .frame(minHeight: 44).contentShape(Rectangle())
                 }
@@ -477,10 +481,11 @@ struct RoutineEditorScreen: View {
         if !hasWarmups(idx) {
             rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") { addWarmupRamp(idx) })
         }
-        if idx < items.count - 1 && !sameGroup(idx, idx + 1) {
+        let res = items.map(\.re)
+        if idx < items.count - 1 && !RoutineSetEditing.sameGroup(res, idx, idx + 1) {
             rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
         }
-        if inSuperset(idx) {
+        if RoutineSetEditing.inSuperset(res, idx) {
             rows.append(.init(String(localized: "Break superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
         }
         rows.append(.init(String(localized: "Replace exercise"), systemImage: "arrow.triangle.2.circlepath") {
@@ -692,6 +697,7 @@ struct RoutineEditorScreen: View {
 
     private func deleteExercise(_ idx: Int) {
         withAnimation(.snappy) { _ = items.remove(at: idx) }
+        refreshTint()
         dirty = true
     }
 
@@ -703,6 +709,7 @@ struct RoutineEditorScreen: View {
         copy.supersetGroup = nil                                   // a duplicate stands on its own
         copy.sets = src.re.sets.map { s in var n = s; n.id = UUID().uuidString; return n }
         withAnimation(.snappy) { items.insert(EditorItem(re: copy, exercise: src.exercise), at: idx + 1) }
+        refreshTint()
         dirty = true
     }
 
@@ -723,38 +730,27 @@ struct RoutineEditorScreen: View {
             }
         }
         replaceIndex = nil
+        refreshTint()
         dirty = true
     }
 
-    // MARK: - Superset helpers (a group = consecutive exercises sharing supersetGroup)
+    // MARK: - Superset helpers (shared grouping logic lives in RoutineSetEditing)
 
-    private func inSuperset(_ i: Int) -> Bool {
-        guard items.indices.contains(i), items[i].re.supersetGroup != nil else { return false }
-        return sameGroup(i, i - 1) || sameGroup(i, i + 1)
-    }
-    private func sameGroup(_ a: Int, _ b: Int) -> Bool {
-        guard items.indices.contains(a), items.indices.contains(b),
-              let ga = items[a].re.supersetGroup, let gb = items[b].re.supersetGroup else { return false }
-        return ga == gb
-    }
     /// First member of a superset group (shows the «Superset» overline above it).
-    private func firstOfGroup(_ i: Int) -> Bool { inSuperset(i) && !sameGroup(i, i - 1) }
+    private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
 
     private func supersetWithNext(_ i: Int) {
-        guard i < items.count - 1 else { return }
-        let group = items[i].re.supersetGroup ?? items[i + 1].re.supersetGroup ?? nextFreeGroup()
-        items[i].re.supersetGroup = group
-        items[i + 1].re.supersetGroup = group
+        var res = items.map(\.re)
+        RoutineSetEditing.supersetWithNext(&res, i)
+        for (j, re) in res.enumerated() { items[j].re = re }
         dirty = true
     }
     private func breakSuperset(_ i: Int) {
-        guard let g = items[i].re.supersetGroup else { return }
-        items[i].re.supersetGroup = nil
-        let remaining = items.indices.filter { items[$0].re.supersetGroup == g }
-        if remaining.count == 1 { items[remaining[0]].re.supersetGroup = nil }
+        var res = items.map(\.re)
+        RoutineSetEditing.breakSuperset(&res, i)
+        for (j, re) in res.enumerated() { items[j].re = re }
         dirty = true
     }
-    private func nextFreeGroup() -> Int { (items.compactMap { $0.re.supersetGroup }.max() ?? 0) + 1 }
 
     // MARK: - Meta computations
 
@@ -771,8 +767,10 @@ struct RoutineEditorScreen: View {
         return max(1, Int((Double(seconds) / 60).rounded()))
     }
 
-    /// The routine's dominant coarse group — deterministic tie-break (FER-750).
-    private var dominantGroup: MuscleGroup? {
+    /// The routine's dominant coarse group — deterministic tie-break (FER-750). Recomputed by
+    /// `refreshTint()` only when the exercise set changes (load / add / replace / delete / duplicate):
+    /// the tint colors every set-row ring, and re-tallying on each keystroke was wasted work.
+    private func refreshTint() {
         var tally: [MuscleGroup: Int] = [:]
         for item in items {
             for m in item.exercise.primaryMuscles { if let g = MuscleGroup.of(m) { tally[g, default: 0] += 1 } }
@@ -782,10 +780,9 @@ struct RoutineEditorScreen: View {
         for g in MuscleGroup.allCases where (tally[g] ?? 0) > bestCount {
             best = g; bestCount = tally[g] ?? 0
         }
-        return best
+        routineTint = best?.tint(theme) ?? theme.inkTertiary
+        groupTitle = best?.title ?? String(localized: "Mixed")
     }
-    private var routineTint: Color { dominantGroup?.tint(theme) ?? theme.inkTertiary }
-    private var groupTitle: String { dominantGroup?.title ?? String(localized: "Mixed") }
 
     private func weekdayName(_ weekday: Int) -> String {
         Calendar.current.weekdaySymbols[(weekday - 1) % 7]   // index 0 = Sunday … 6 = Saturday
@@ -797,34 +794,33 @@ struct RoutineEditorScreen: View {
 
     // MARK: - Day assignment (.planDay «···»)
 
+    /// The .planDay weekday; nil for the other origins (whose UI never shows the day menu).
+    private var planWeekday: Int? {
+        if case .planDay(let wd) = origin { return wd } else { return nil }
+    }
+
     private func changeRoutine(to r: Routine) {
+        guard let wd = planWeekday else { return }
         Task {
             guard let store = await repo.storeHandle() else { return }
-            try? await store.setRoutineSchedule(weekday: weekday(of: origin) ?? 0, routineId: r.id)
+            try? await store.setRoutineSchedule(weekday: wd, routineId: r.id)
             await load()
         }
     }
 
     private func markRest() {
+        guard let wd = planWeekday else { return }
         Task {
             guard let store = await repo.storeHandle() else { return }
-            try? await store.clearRoutineSchedule(weekday: weekday(of: origin) ?? 0)
+            try? await store.clearRoutineSchedule(weekday: wd)
             dismiss()
         }
-    }
-
-    private func weekday(of origin: RoutineEditorRoute) -> Int? {
-        if case .planDay(let wd) = origin { return wd } else { return nil }
     }
 
     // MARK: - Navigation (footer promise: the .today origin saves on leave; save origins confirm discard)
 
     private func back() {
         if dirty && startsSession { persist(); dismiss(); return }
-        if dirty { showDiscardConfirm = true } else { dismiss() }
-    }
-
-    private func cancel() {
         if dirty { showDiscardConfirm = true } else { dismiss() }
     }
 
@@ -850,12 +846,13 @@ struct RoutineEditorScreen: View {
         let target: Routine?
         switch origin {
         case .today(let id):
-            // Today's pick: the scheduled routine for today, else the given id, else the most recent.
+            // Today's pick: the given id, else today's SCHEDULED routine via the canonical resolver —
+            // no arbitrary-routine fallback (the FER-531 contract); an unplanned day shows the empty state.
             let sched = (try? await store.routineSchedule()) ?? []
-            let todayWd = Calendar.current.component(.weekday, from: Date())
-            let scheduledId = sched.first { $0.weekday == todayWd }?.routineId
-            let rid = id ?? scheduledId
-            target = rid.flatMap { r in allRoutines.first { $0.id == r } } ?? allRoutines.first
+            let split = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
+            let rid = id ?? WeeklySplit.todayRoutineId(
+                split: split, todayWeekday: Calendar.current.component(.weekday, from: Date()))
+            target = rid.flatMap { r in allRoutines.first { $0.id == r } }
         case .planDay(let wd):
             let sched = (try? await store.routineSchedule()) ?? []
             let rid = sched.first { $0.weekday == wd }?.routineId
@@ -868,24 +865,24 @@ struct RoutineEditorScreen: View {
         let res = await repo.routineExercises(routineId: r.id)
         let all = await repo.allExercises()
         let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        // FER-E: evaluate progression once per plan build — history + plates + today's recovery in, an
-        // earned raise (or nothing) out. Only for slots that opted in. «La última vez» feeds the session
-        // prefill (FER-347). Same wiring «Rutina de hoy» carried; it must survive here (sub-épico 1).
+        // FER-E: «la última vez» + progression, via the ONE `sessionSeed` implementation the landing
+        // prefetch also calls (sub-épico 1 wiring). Only the .today origin can start a session, so the
+        // save-only origins skip that per-exercise history I/O entirely.
         let inventory = plates.inventory
         let recovery = repo.today?.recovery
         var built: [EditorItem] = []
         for re in res {
             guard let ex = byId[re.exerciseId] else { continue }
-            let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
-            var raise: ProgressionPlanner.Raise? = nil
-            if re.progressionEnabled, ex.type == .weightReps {
-                let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
-                raise = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
-                                                    equipment: ex.equipment, recovery: recovery)?.raise
+            if startsSession {
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
+                built.append(EditorItem(re: re, exercise: ex, lastSets: seed.lastSets,
+                                        raise: seed.evaluation?.raise))
+            } else {
+                built.append(EditorItem(re: re, exercise: ex))
             }
-            built.append(EditorItem(re: re, exercise: ex, lastSets: last, raise: raise))
         }
         items = built
+        refreshTint()
         dirty = false
     }
 

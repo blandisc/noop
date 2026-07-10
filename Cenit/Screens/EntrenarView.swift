@@ -857,26 +857,21 @@ private struct EntrenarLanding: View {
             let custom = (try? await store.customExercises()) ?? []
             let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
             let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
-            // FER-E/G: evaluate progression for today's slots — the landing's one-tap «Empezar» must
-            // carry the same seed «Rutina de hoy» would, and the hero names what raises (or waits).
+            // FER-E/G: «la última vez» + progression per slot, via the ONE `sessionSeed` implementation
+            // the «Rutina» editor also calls — the raise the hero names is exactly the raise it seeds.
             let inventory = await MainActor.run { PlatesStore().inventory }
             let recovery = repo.today?.recovery
             var raising: [String] = []
             var deferredNames: [String] = []
             for re in exs {
                 let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
-                let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
-                var raise: ProgressionPlanner.Raise? = nil
-                if re.progressionEnabled, ex?.type == .weightReps {
-                    let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
-                    let result = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
-                                                             equipment: ex?.equipment, recovery: recovery)
-                    raise = result?.raise
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
+                if let result = seed.evaluation {
                     let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
-                    if raise != nil { raising.append(name) }
-                    else if case .deferred = result?.state { deferredNames.append(name) }
+                    if result.raise != nil { raising.append(name) }
+                    else if case .deferred = result.state { deferredNames.append(name) }
                 }
-                slots.append(.init(re: re, exercise: ex, lastSets: last, raise: raise))
+                slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
             }
             raisesToday = raising
             deferredToday = deferredNames
