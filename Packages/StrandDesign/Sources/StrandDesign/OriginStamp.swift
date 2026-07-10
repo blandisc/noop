@@ -29,33 +29,42 @@ public extension DataOrigin {
     }
 
     /// Source label shown before the "· {cuándo}". English keys resolve against the app bundle
-    /// (es: Banda / Apple Health / Calculado — «Apple Health» stays a brand name in every locale).
+    /// (handoff «Detalle de Tendencias Final»: es «Medido por tu banda» / «Calculado en tu teléfono»;
+    /// «Apple Health» stays a brand name in every locale).
     var label: String {
         switch self {
-        case .band:     return String(localized: "Band", bundle: .main)
+        case .band:     return String(localized: "Measured by your band", bundle: .main)
         case .apple:    return String(localized: "Apple Health", bundle: .main)
-        case .computed: return String(localized: "Computed", bundle: .main)
+        case .computed: return String(localized: "Computed on your phone", bundle: .main)
         }
     }
 }
 
 /// `● {Fuente} · {cuándo}` — the standardized origin seal. `when` is passed by the caller (the screen),
-/// typically from `relativeAgo(...)` or a fixed label like «anoche» / «hoy, en curso».
+/// typically from `relativeAgo(...)` or a fixed label like «anoche» / «hoy, en curso». `inProgress`
+/// renders the dot as a hollow 1.5px ring — a reading still accumulating («hoy, en curso»). (FER-856)
 public struct OriginStamp: View {
     private let origin: DataOrigin
     private let when: String
+    private let inProgress: Bool
     private let theme: InstrumentoTheme
 
-    public init(origin: DataOrigin, when: String, theme: InstrumentoTheme) {
+    public init(origin: DataOrigin, when: String, inProgress: Bool = false, theme: InstrumentoTheme) {
         self.origin = origin
         self.when = when
+        self.inProgress = inProgress
         self.theme = theme
     }
 
     public var body: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(origin.color(theme))
+                .fill(inProgress ? Color.clear : origin.color(theme))
+                .overlay {
+                    if inProgress {
+                        Circle().strokeBorder(origin.color(theme), lineWidth: 1.5)
+                    }
+                }
                 .frame(width: 6, height: 6)
             // «{Fuente} · {cuándo}» — one flat line, tertiary ink, 11pt.
             Text(verbatim: "\(origin.label) · \(when)")

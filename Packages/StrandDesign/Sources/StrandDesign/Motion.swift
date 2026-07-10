@@ -83,6 +83,58 @@ public enum StrandMotion {
     public static let countUp = Animation.easeOut(duration: 0.75)
 }
 
+// MARK: - Entrada «Detalle de Tendencias Final» (FER-856) — los 3 keyframes canónicos
+//
+// Las cuatro pantallas de detalle animan su ENTRADA con exactamente tres movimientos (README del
+// handoff): `recGrow` (una barra crece desde su punto de partida), `recRise` (un numeral sube 4px
+// apareciendo) y `recFade` (un área de gráfica aparece). Siempre «backwards» (el estado inicial se
+// aplica antes del delay — aquí, el `@State` arranca apagado), ease-out, sin bounce; el cromo no
+// anima. Nada más anima en esas pantallas.
+
+private struct RecEntrance: ViewModifier {
+    /// scaleX 0→1 (grow), or opacity+translateY (rise), or opacity (fade).
+    enum Kind { case grow(UnitPoint), rise, fade }
+    let kind: Kind
+    let delay: Double
+    let duration: Double
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        Group {
+            switch kind {
+            case .grow(let origin):
+                content.scaleEffect(x: shown ? 1 : 0, y: 1, anchor: origin)
+            case .rise:
+                content.opacity(shown ? 1 : 0).offset(y: shown ? 0 : 4)
+            case .fade:
+                content.opacity(shown ? 1 : 0)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: duration).delay(delay)) { shown = true }
+        }
+    }
+}
+
+public extension View {
+    /// `recGrow` — a data bar grows from its start point: scaleX 0→1, 0.35s ease-out, staggered
+    /// 60ms per index starting at 150ms. `origin` is the bar's start (`.leading`/`.trailing`).
+    func recGrow(index: Int = 0, origin: UnitPoint = .leading) -> some View {
+        modifier(RecEntrance(kind: .grow(origin), delay: 0.15 + 0.06 * Double(index), duration: 0.35))
+    }
+
+    /// `recRise` — a hero numeral appears rising 4px, 0.5s ease-out. The second numeral of a
+    /// double-datum hero passes `second: true` (+80ms).
+    func recRise(second: Bool = false) -> some View {
+        modifier(RecEntrance(kind: .rise, delay: second ? 0.08 : 0, duration: 0.5))
+    }
+
+    /// `recFade` — a chart area fades in, 0.4s ease-out after 250ms.
+    func recFade() -> some View {
+        modifier(RecEntrance(kind: .fade, delay: 0.25, duration: 0.4))
+    }
+}
+
 #if DEBUG
 private struct MotionDemo: View {
     @State private var on = false
