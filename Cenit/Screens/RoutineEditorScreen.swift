@@ -305,11 +305,19 @@ struct RoutineEditorScreen: View {
     @ViewBuilder
     private var reorderList: some View {
         ForEach(reorderBlocks) { block in
-            compactBlock(block).plainRow(top: 5, bottom: 5)
-                // Paper, not clear: the List drag preview snapshots the ROW (background included) and
-                // paints a clear background white — an edge-to-edge white band under the lifted card
-                // (FER-847). Paper fuses the preview with the screen.
+            // The List's reorder LIFT snapshots only the row CONTENT (not `listRowBackground`) and floats
+            // it over a system-white platter — so a clear-margin row shows white around the card while
+            // dragging (FER-847 round 2). Fix: make the content itself full-bleed OPAQUE paper — the
+            // screen margin moves INSIDE as padding and a paper fill spans edge-to-edge — so the lifted
+            // snapshot is paper, hiding the platter. Resting rows look identical (List bg is paper too).
+            compactBlock(block)
+                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.vertical, 5)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(theme.paper)
+                .listRowInsets(EdgeInsets())
                 .listRowBackground(theme.paper)
+                .listRowSeparator(.hidden)
         }
         .onMove(perform: moveBlocks)
         Button { withAnimation(.snappy) { reordering = false } } label: {
