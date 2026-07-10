@@ -180,6 +180,9 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     public var progressionIncrementKg: Double?
     /// What to do on a stall (3 sessions stuck): propose a deload or only warn.
     public var progressionDeload: DeloadPolicy
+    /// `true` = raise even on a low-recovery day (skip the TrainingRegulation gate). Default `false`:
+    /// a `recoveryLow` day DEFERS an earned raise to the next session (2c's "Recuperación baja" row).
+    public var progressionIgnoreRecovery: Bool
 
     public init(id: String = UUID().uuidString, routineId: String, exerciseId: String,
                 position: Int, targetSets: Int, targetReps: Int? = nil,
@@ -188,7 +191,8 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
                 supersetGroup: Int? = nil, sets: [RoutineSet] = [],
                 hrRestReference: HRRestReference = .restingMargin, hrRestValue: Double = 0,
                 progressionEnabled: Bool = false, progressionSessions: Int = 2,
-                progressionIncrementKg: Double? = nil, progressionDeload: DeloadPolicy = .propose) {
+                progressionIncrementKg: Double? = nil, progressionDeload: DeloadPolicy = .propose,
+                progressionIgnoreRecovery: Bool = false) {
         self.id = id; self.routineId = routineId; self.exerciseId = exerciseId
         self.position = position; self.targetSets = targetSets; self.targetReps = targetReps
         self.targetWeightKg = targetWeightKg; self.warmupPercents = warmupPercents
@@ -197,6 +201,7 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
         self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
         self.progressionEnabled = progressionEnabled; self.progressionSessions = progressionSessions
         self.progressionIncrementKg = progressionIncrementKg; self.progressionDeload = progressionDeload
+        self.progressionIgnoreRecovery = progressionIgnoreRecovery
     }
 
     /// The per-set plan to act on: the authored `sets` when present, else a 1:1 expansion of the legacy

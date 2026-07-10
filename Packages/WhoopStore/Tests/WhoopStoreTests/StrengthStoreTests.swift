@@ -47,7 +47,8 @@ final class StrengthStoreTests: XCTestCase {
         let exs = [
             RoutineExercise(id: "a", routineId: "rt1", exerciseId: "ex1", position: 0, targetSets: 4,
                             progressionEnabled: true, progressionSessions: 2,
-                            progressionIncrementKg: 2.5, progressionDeload: .warn),
+                            progressionIncrementKg: 2.5, progressionDeload: .warn,
+                            progressionIgnoreRecovery: true),
             RoutineExercise(id: "b", routineId: "rt1", exerciseId: "ex2", position: 1, targetSets: 3),  // default OFF
         ]
         try await store.saveRoutine(r, exercises: exs)
@@ -57,11 +58,13 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(a.progressionSessions, 2)
         XCTAssertEqual(a.progressionIncrementKg, 2.5)
         XCTAssertEqual(a.progressionDeload, .warn)
+        XCTAssertTrue(a.progressionIgnoreRecovery)
         let b = back.first { $0.id == "b" }!
         XCTAssertFalse(b.progressionEnabled)
         XCTAssertEqual(b.progressionSessions, 2)
         XCTAssertNil(b.progressionIncrementKg)
         XCTAssertEqual(b.progressionDeload, .propose)
+        XCTAssertFalse(b.progressionIgnoreRecovery)
     }
 
     /// FER-540: editing rest mid-session pinpoint-updates one exercise's four rest fields and leaves its

@@ -679,6 +679,13 @@ extension WhoopStore {
                 $0.add(column: "progressionDeload", .text).notNull().defaults(to: "propose")
             }
         }
+        // v30 (FER-D): the recovery gate is configurable per exercise (2c's "Recuperación baja" row).
+        // Default 0 = defer an earned raise on a low-recovery day; 1 = raise anyway.
+        migrator.registerMigration("v30") { db in
+            try addColumnIfMissing(db, "progressionIgnoreRecovery", on: "routineExercise") {
+                $0.add(column: "progressionIgnoreRecovery", .integer).notNull().defaults(to: 0)
+            }
+        }
         return migrator
     }
 
