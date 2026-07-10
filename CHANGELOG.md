@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La app se mantiene fluida durante un jalón de historial grande / The app stays smooth during a big history sync.**
+  **ES** — Al sincronizar meses de historial de una WHOOP 4.0, Cénit decodifica decenas de miles de registros; ese trabajo ahora corre en segundo plano con menor prioridad, así que la interfaz sigue respondiendo mientras la sincronización avanza. No cambia qué datos bajan ni su orden — solo evita los tirones al desplazarte durante una sincronización pesada.
+  **EN** — Syncing months of history from a WHOOP 4.0 decodes tens of thousands of records; that work now runs in the background at a lower priority, so the interface stays responsive while the sync proceeds. It changes neither what data comes down nor its order — it just avoids the scroll hitches during a heavy sync.
+  ([Backfiller.swift](Cenit/Collect/Backfiller.swift))
+
 - **Reordena tu rutina arrastrando, como mover fichas / Reorder your routine by dragging, like sliding tiles.**
   **ES** — Mantén presionado un ejercicio en «Rutina» y todas las filas se compactan a nombre + resumen («3 series · 90 kg»): arrastra la ficha a su lugar y, al soltar, las tablas se reabren con el orden nuevo. Una superserie viaja completa como un solo bloque (romperla sigue viviendo en el «···»). Ya no hay «mover arriba/abajo» en menús: el orden se toca, no se dicta.
   **EN** — Long-press an exercise on "Routine" and every row compacts to name + summary ("3 sets · 90 kg"): drag the tile into place and, on drop, the tables reopen in the new order. A superset travels whole as one block (breaking it still lives in the "···"). No more "move up/down" menu items: order is something you touch, not dictate.
