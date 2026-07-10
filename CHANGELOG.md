@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tu VO₂max, como trayectoria y no como un número que brinca / Your VO₂max as a trajectory, not a jumpy number.**
+  **ES** — El Detalle de Edad de Fitness estrena «VO₂max · tendencia»: te dice si tu condición cardiorrespiratoria viene subiendo, estable o bajando en las últimas semanas, con una pendiente robusta que ignora un mal dato suelto y un piso de ruido para no reaccionar al brinco diario del estimador. Te enseñamos la dirección, nunca «años de vida». Aparece cuando hay suficientes lecturas (varias semanas).
+  **EN** — Fitness Age detail gains a «VO₂max · trend» block: it tells you whether your cardiorespiratory fitness is rising, steady, or falling over recent weeks, with a robust slope that shrugs off a single bad reading and a noise floor so it won't chase the estimator's day-to-day jitter. We show you the direction, never «years of life». It appears once there are enough readings (several weeks).
+  ([VO2maxTrend.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/VO2maxTrend.swift), [FitnessAgeDetailView.swift](Cenit/Screens/FitnessAgeDetailView.swift))
 - **Avisos del sistema con el lenguaje de Cénit / System prompts in Cénit's own language.**
   **ES** — Tres componentes nuevos del sistema de diseño «Instrumento» que sustituyen los diálogos nativos genéricos: ConfirmCard (tarjeta al pie que nombra el contexto, la consecuencia concreta y acciones que dicen lo que hacen, nunca «Cancelar»/«OK»; lo destructivo siempre en contorno rojo), InputCard (tarjeta centrada para nombrar carpetas) y PaperMenu (menú de papel anclado al «···»). Las pantallas los adoptan en un cambio aparte.
   **EN** — Three new «Instrumento» design-system components replacing generic native dialogs: ConfirmCard (bottom card naming the context, the concrete consequence, and actions that say what they do, never "Cancel"/"OK"; destructive is always a red outline), InputCard (centered card for naming folders) and PaperMenu (paper menu anchored to the «···»). Screens adopt them in a separate change.
