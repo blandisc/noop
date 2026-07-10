@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Adiós a los diálogos genéricos de iOS / Goodbye to iOS's generic dialogs.**
+  **ES** — Todas las confirmaciones, menús «···» y resultados del app hablan ahora el lenguaje de Cénit: las confirmaciones nombran lo que está en juego y su consecuencia concreta (nunca «Cancelar»/«OK», lo destructivo siempre en contorno rojo), los menús son tarjetas de papel, nombrar carpetas usa una tarjeta centrada, y un resultado de respaldo o restauración es un aviso discreto que no tapa la pantalla. Única excepción honesta: la oferta de restaurar datos al primer arranque, que ocurre antes de que el app exista visualmente.
+  **EN** — Every confirmation, «···» menu and result now speaks Cénit's language: confirmations name what's at stake and the concrete consequence (never "Cancel"/"OK", destructive always a red outline), menus are paper cards, naming folders uses a centered card, and a backup/restore result is a quiet banner that doesn't cover the screen. The one honest exception: the first-launch restore offer, which fires before the app visually exists.
+  (18 pantallas — [LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift), [AjustesView.swift](Cenit/Screens/AjustesView.swift), [MisRutinasScreen.swift](Cenit/Screens/MisRutinasScreen.swift), [WorkoutDetailScreen.swift](Cenit/Screens/WorkoutDetailScreen.swift), …)
+
 - **Avisos del sistema con el lenguaje de Cénit / System prompts in Cénit's own language.**
   **ES** — Tres componentes nuevos del sistema de diseño «Instrumento» que sustituyen los diálogos nativos genéricos: ConfirmCard (tarjeta al pie que nombra el contexto, la consecuencia concreta y acciones que dicen lo que hacen, nunca «Cancelar»/«OK»; lo destructivo siempre en contorno rojo), InputCard (tarjeta centrada para nombrar carpetas) y PaperMenu (menú de papel anclado al «···»). Las pantallas los adoptan en un cambio aparte.
   **EN** — Three new «Instrumento» design-system components replacing generic native dialogs: ConfirmCard (bottom card naming the context, the concrete consequence, and actions that say what they do, never "Cancel"/"OK"; destructive is always a red outline), InputCard (centered card for naming folders) and PaperMenu (paper menu anchored to the «···»). Screens adopt them in a separate change.

@@ -43,6 +43,9 @@ struct PlanDayEditorScreen: View {
     @State private var showDiscardConfirm = false
     @State private var showReplaceLibrary = false
     @State private var replaceIndex: Int? = nil
+    // FER-837: which «···» paper menu is open (the day's, or an exercise index).
+    @State private var showDayMenu = false
+    @State private var menuExerciseIndex: Int? = nil
     @FocusState private var focusedCell: String?
 
     var body: some View {
@@ -88,10 +91,16 @@ struct PlanDayEditorScreen: View {
             ExerciseLibraryScreen { picks in replace(with: picks) }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        .confirmationDialog("Discard changes to this day?", isPresented: $showDiscardConfirm, titleVisibility: .visible) {
-            Button("Discard changes", role: .destructive) { dismiss() }
-            Button("Keep editing", role: .cancel) {}
-        }
+        .instrumentoConfirm(
+            isPresented: $showDiscardConfirm,
+            title: String(localized: "Discard changes to this day?"),
+            context: String(localized: "PLAN · UNSAVED CHANGES"),
+            message: String(localized: "What you edited today goes back to how it was."),
+            actions: [
+                .init(String(localized: "Keep editing"), role: .primary),
+                .init(String(localized: "Discard changes"), role: .destructive) { dismiss() }
+            ]
+        )
         .task {
             guard !loaded else { return }
             await load()
@@ -186,20 +195,19 @@ struct PlanDayEditorScreen: View {
 
     /// Header «···»: assign/clear the day (choque 9 — «conserva lo callado», re-dressed).
     private var dayMenu: some View {
-        Menu {
-            Menu {
-                ForEach(allRoutines) { r in
-                    Button { changeRoutine(to: r) } label: {
-                        if r.id == routine?.id { Label(r.name, systemImage: "checkmark") } else { Text(r.name) }
-                    }
-                }
-            } label: { Label("Change routine", systemImage: "arrow.left.arrow.right") }
-            Button(role: .destructive) { markRest() } label: { Label("Mark as rest day", systemImage: "moon.zzz") }
-        } label: {
+        Button { showDayMenu = true } label: {
             Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary).frame(width: 40, height: 40).contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .accessibilityLabel(Text("Day options"))
+        .paperMenu(isPresented: $showDayMenu, items: [
+            .init(String(localized: "Change routine"), systemImage: "arrow.left.arrow.right",
+                  children: allRoutines.map { r in
+                      PaperMenuItem(r.name, systemImage: r.id == routine?.id ? "checkmark" : nil) { changeRoutine(to: r) }
+                  }),
+            .init(String(localized: "Mark as rest day"), systemImage: "moon.zzz", isDestructive: true) { markRest() }
+        ])
     }
 
     // MARK: - Exercise header (thumb + name + ⋯ + column header)
@@ -217,19 +225,30 @@ struct PlanDayEditorScreen: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                Menu {
-                    if idx > 0 { Button { moveUp(idx) } label: { Label("Move up", systemImage: "arrow.up") } }
-                    if idx < items.count - 1 { Button { moveDown(idx) } label: { Label("Move down", systemImage: "arrow.down") } }
-                    Button { replaceIndex = idx; showReplaceLibrary = true } label: { Label("Replace exercise", systemImage: "arrow.triangle.2.circlepath") }
-                    Button { duplicate(idx) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
-                    Button(role: .destructive) { deleteExercise(idx) } label: { Label("Remove", systemImage: "trash") }
-                } label: {
+                Button { menuExerciseIndex = idx } label: {
                     Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .paperMenu(
+                    isPresented: Binding(get: { menuExerciseIndex == idx },
+                                         set: { if !$0 { menuExerciseIndex = nil } }),
+                    items: exerciseMenuItems(idx)
+                )
             }
             columnHeader(item.exercise.type)
         }
+    }
+
+    /// The exercise «···» actions as paper-menu rows (FER-837).
+    private func exerciseMenuItems(_ idx: Int) -> [PaperMenuItem] {
+        var rows: [PaperMenuItem] = []
+        if idx > 0 { rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") { moveUp(idx) }) }
+        if idx < items.count - 1 { rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") { moveDown(idx) }) }
+        rows.append(.init(String(localized: "Replace exercise"), systemImage: "arrow.triangle.2.circlepath") { replaceIndex = idx; showReplaceLibrary = true })
+        rows.append(.init(String(localized: "Duplicate"), systemImage: "plus.square.on.square") { duplicate(idx) })
+        rows.append(.init(String(localized: "Remove"), systemImage: "trash", isDestructive: true) { deleteExercise(idx) })
+        return rows
     }
 
     /// A placeholder thumb (media EDB is a separate issue): a soft paper tile per the mock. Placeholder-first.
