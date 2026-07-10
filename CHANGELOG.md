@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La mañana sin banda ya trae el veredicto completo / A strapless morning now gets the full verdict.**
+  **ES** — Cuando duermes sin la banda pero Apple Health midió tu noche, «Hoy» ya mostraba el número estimado en el dial, pero se quedaba sin la palabra del día (Desgastado/Exigido/Equilibrado/A punto) ni la recomendación. Ahora el veredicto completo —palabra, porqué y Daily Brief— se deriva de la misma señal de Apple que produjo el número, marcado «estimado» como siempre. Las mañanas con banda no cambian en nada.
+  **EN** — When you sleep without the strap but Apple Health measured your night, «Today» already showed the estimated number on the dial, yet the day's word (Worn down/Strained/Balanced/Primed) and the recommendation stayed missing. The full verdict —word, why, and Daily Brief— now derives from the same Apple signal that produced the number, marked «estimated» as always. Mornings with the strap are unchanged.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
 - **Crear una rutina te deja dentro de ella / Creating a routine drops you inside it.**
   **ES** — El constructor de rutinas queda solo para crear (desde cero o duplicando una sesión); editar una rutina existente ahora siempre abre la pantalla «Rutina» unificada, también desde el menú de «Mis rutinas». Y al guardar una rutina nueva ya no te quedas en la lista: se abre directo en «Rutina», lista para ajustar o empezar.
   **EN** — The routine builder is now create-only (from scratch or duplicating a session); editing an existing routine always opens the unified "Routine" screen, including from the "My routines" menu. Saving a new routine no longer strands you on the list: it opens straight on "Routine", ready to tweak or start.
