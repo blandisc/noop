@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tu sueño vuelve en las WHOOP 4.0 con el firmware más nuevo / Your sleep comes back on WHOOP 4.0s with the newest firmware.**
+  **ES** — Algunas WHOOP 4.0 con firmware reciente guardan su historial en un formato («v25») que Cénit interpretaba mal: leía la señal de movimiento en el lugar equivocado, la descartaba por no cuadrar, y sin movimiento el análisis de sueño no podía calcular tus etapas — las noches salían en blanco. Ahora Cénit lee ese formato correctamente y recupera el movimiento (el corazón por segundo no viene en v25, es normal), así que tu sueño y tu descanso vuelven a calcularse. Las bandas con firmware anterior no cambian en nada.
+  **EN** — Some WHOOP 4.0s on recent firmware store their history in a format («v25») Cénit misread: it looked for the motion signal in the wrong place, discarded it as not fitting, and without motion the sleep analysis couldn't compute your stages — nights came up blank. Cénit now reads that format correctly and recovers the motion (per-second heart rate isn't stored in v25, which is normal), so your sleep and rest compute again. Straps on earlier firmware are unchanged.
+  ([PostHooks.swift](Packages/WhoopProtocol/Sources/WhoopProtocol/PostHooks.swift))
+
 - **La app se mantiene fluida durante un jalón de historial grande / The app stays smooth during a big history sync.**
   **ES** — Al sincronizar meses de historial de una WHOOP 4.0, Cénit decodifica decenas de miles de registros; ese trabajo ahora corre en segundo plano con menor prioridad, así que la interfaz sigue respondiendo mientras la sincronización avanza. No cambia qué datos bajan ni su orden — solo evita los tirones al desplazarte durante una sincronización pesada.
   **EN** — Syncing months of history from a WHOOP 4.0 decodes tens of thousands of records; that work now runs in the background at a lower priority, so the interface stays responsive while the sync proceeds. It changes neither what data comes down nor its order — it just avoids the scroll hitches during a heavy sync.
