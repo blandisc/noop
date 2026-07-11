@@ -19,11 +19,13 @@ let package = Package(
                 .process("Resources/exercises.json"),
                 .process("Resources/exercises.es.json"),       // Spanish overlay (FER-501/FER-779)
                 .copy("Resources/exercise-stills"),            // baked row thumbnails, {id}.jpg (FER-800)
-            ]
+            ],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(
             name: "StrandTrainingTests",
-            dependencies: ["StrandTraining"]
+            dependencies: ["StrandTraining"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
     ]
 )

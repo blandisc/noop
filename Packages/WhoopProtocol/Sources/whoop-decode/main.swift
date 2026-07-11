@@ -59,7 +59,8 @@ frames from --hex. Family defaults to auto: derived per-frame from `char`
 (fd4b…→whoop5, 6108…→whoop4), falling back to whoop5.
 """
 
-var familyMode: FamilyMode = .auto
+// Single-threaded CLI: set once during top-level arg parsing, read by free functions after. nonisolated(unsafe) is safe here and avoids cascading @MainActor annotations.
+nonisolated(unsafe) var familyMode: FamilyMode = .auto
 var jsonOut = false
 var rawOnly = false
 var hexArgs: [String] = []

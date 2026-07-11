@@ -436,13 +436,15 @@ enum WhoopTime {
         return f
     }()
 
-    private static let isoFormatter: ISO8601DateFormatter = {
+    // Thread-safe per Apple docs (ISO8601DateFormatter is thread-safe); nonisolated(unsafe) silences strict-concurrency for this immutable global.
+    private nonisolated(unsafe) static let isoFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         return f
     }()
 
-    private static let isoFormatterFractional: ISO8601DateFormatter = {
+    // Thread-safe per Apple docs (ISO8601DateFormatter is thread-safe); nonisolated(unsafe) silences strict-concurrency for this immutable global.
+    private nonisolated(unsafe) static let isoFormatterFractional: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f

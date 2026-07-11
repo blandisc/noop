@@ -17,11 +17,13 @@ let package = Package(
                 "WhoopProtocol",
                 "StrandTraining",
                 .product(name: "GRDB", package: "GRDB.swift"),
-            ]
+            ],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(
             name: "WhoopStoreTests",
-            dependencies: ["WhoopStore"]
+            dependencies: ["WhoopStore"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
     ]
 )
