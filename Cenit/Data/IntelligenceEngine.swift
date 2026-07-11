@@ -132,6 +132,11 @@ final class IntelligenceEngine: ObservableObject {
         let computed: [Computed]
         let writtenDays: Set<String>
         let hadDailies: Bool
+        /// FER-881: true iff the computed daily rows this pass produced DIFFER from what was already
+        /// stored. The caller gates `repo.refresh()` on this so a recurring-user relaunch (which
+        /// recomputes byte-identical scores the launch full-refresh already surfaced) doesn't trigger a
+        /// redundant dashboard rebuild. `false` on the empty/early paths (hadDailies gates them out anyway).
+        let changed: Bool
         /// A successful steps-calibration fit to mirror into ProfileStore, or…
         let stepsCalibration: StepsEstimateEngine.Calibration?
         /// …the usable-day count while still collecting (nil when the steps block didn't run).
@@ -139,6 +144,16 @@ final class IntelligenceEngine: ObservableObject {
         let cache: AnalysisCache
         /// Nights that actually ran `analyzeDay` this pass (DEBUG instrumentation).
         let analyzedDays: Int
+    }
+
+    /// FER-881: whether the freshly computed daily rows differ from what's already stored. Compares only
+    /// the days `fresh` writes — a stale prior-only day the engine no longer scores stays put and is not
+    /// a "change" (so it never forces a refresh). Any new day, or any changed value on an existing day,
+    /// returns true. Pure (testable seam); a lossy store round-trip could only over-report (harmless
+    /// extra refresh), never hide a real change.
+    nonisolated static func computedDailiesChanged(_ fresh: [DailyMetric], vsStored stored: [DailyMetric]) -> Bool {
+        let byDay = Dictionary(stored.map { ($0.day, $0) }, uniquingKeysWith: { a, _ in a })
+        return fresh.contains { byDay[$0.day] != $0 }
     }
 
     /// Compute on-device scores for each of the last `maxDays` that actually has raw HR data.
@@ -232,8 +247,12 @@ final class IntelligenceEngine: ObservableObject {
             profile.stepsCalibrationManual = false
         }
 
-        // Reload the dashboard caches so the freshly computed scores show up immediately.
-        if out.hadDailies { await repo.refresh() }
+        // Reload the dashboard caches so the freshly computed scores show up immediately — but only when
+        // the computed rows actually CHANGED (FER-881), so a recurring-user relaunch that recomputes
+        // byte-identical scores (which the launch full-refresh already surfaced) doesn't fire a redundant
+        // rebuild. `force` (the FER-226 re-bucket) always refreshes: it re-dates rows and pairs with a
+        // prune whose effect must surface.
+        if out.hadDailies && (out.changed || force) { await repo.refresh() }
 
         // Record the watermarks for the idempotent skip. The frontier is read from the START of the run
         // (analysis writes daily-metrics/sleep/workouts, never hrSample, so it's still current); the
@@ -260,7 +279,8 @@ final class IntelligenceEngine: ObservableObject {
                                                 store: WhoopStore) async -> AnalysisOutput {
         var cache = cacheIn
         let emptyOut = { (c: AnalysisCache) in
-            AnalysisOutput(computed: [], writtenDays: [], hadDailies: false, stepsCalibration: nil,
+            AnalysisOutput(computed: [], writtenDays: [], hadDailies: false, changed: false,
+                           stepsCalibration: nil,
                            stepsProgressDays: nil, cache: c, analyzedDays: 0)
         }
         guard let hrvCfg = Baselines.metricCfg["hrv"],
@@ -555,7 +575,21 @@ final class IntelligenceEngine: ObservableObject {
         // FER-868: the upserts intentionally still write the FULL set (not just dirty nights) —
         // the workout prune below deletes-and-reinserts the whole window and must stay paired
         // with a full re-insert, and full-set upserts keep every run self-healing.
-        if !dailies.isEmpty { _ = try? await store.upsertDailyMetrics(dailies, deviceId: computedId) }
+        // FER-881: before writing, note whether these computed daily rows DIFFER from what's already
+        // stored — the caller gates the dashboard rebuild on it. Compares only the days this pass writes
+        // (a stale prior-only day the engine no longer scores stays put and is not a "change"); a
+        // recurring-user relaunch with no new raw data recomputes byte-identical rows ⇒ `false` ⇒ the
+        // redundant refresh the launch full-pass already covered is skipped. Read is cheap (bounded
+        // window, indexed by (deviceId, day)); a lossy round-trip could only over-report a change (a
+        // harmless extra refresh), never hide a real one.
+        var dailiesChanged = false
+        if !dailies.isEmpty {
+            let keys = dailies.map(\.day)
+            let prior = (try? await store.dailyMetrics(deviceId: computedId,
+                                                       from: keys.min() ?? "", to: keys.max() ?? "")) ?? []
+            dailiesChanged = Self.computedDailiesChanged(dailies, vsStored: prior)
+            _ = try? await store.upsertDailyMetrics(dailies, deviceId: computedId)
+        }
         if !cachedSleep.isEmpty { _ = try? await store.upsertSleepSessions(cachedSleep, deviceId: computedId) }
         // Make re-detection idempotent across runs: clear the prior computed detected workouts in the
         // scored window (a bout's startTs can drift as more HR arrives, which would otherwise orphan
@@ -718,7 +752,7 @@ final class IntelligenceEngine: ObservableObject {
         }
 
         return AnalysisOutput(computed: out, writtenDays: Set(dailies.map(\.day)),
-                              hadDailies: !dailies.isEmpty,
+                              hadDailies: !dailies.isEmpty, changed: dailiesChanged,
                               stepsCalibration: stepsCalibration, stepsProgressDays: stepsProgressDays,
                               cache: cache, analyzedDays: analyzedDays)
     }
