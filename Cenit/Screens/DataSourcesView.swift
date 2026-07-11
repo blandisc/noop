@@ -25,7 +25,7 @@ import UIKit       // UIApplication.openSettingsURLString
 struct DataSourcesView: View {
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var repo: Repository
-    @EnvironmentObject var live: LiveState
+    @Environment(LiveState.self) var live
     @Environment(\.instrumentoTheme) private var theme
     @State private var showingImporter = false
     @State private var importTarget: ImportTarget = .whoop

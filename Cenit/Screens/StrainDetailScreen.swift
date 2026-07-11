@@ -396,7 +396,7 @@ struct StrainDetailScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             heatGrid
             heatReadout
-            HeatLegend([(theme.dataStrain, String(localized: "hard+")),
+            HeatLegend([(theme.dataStrain, String(localized: "hard")),
                         (theme.strainRampMid, String(localized: "moderate")),
                         (theme.strainRampLow, String(localized: "light")),
                         (theme.hairline, String(localized: "no data"))], theme: theme)
@@ -416,7 +416,11 @@ struct StrainDetailScreen: View {
         var vals: [String: Double] = [:]
         for r in parsed { vals[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
-        let today = cal.startOfDay(for: Date())
+        // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
+        // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
+        // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano. Asi los cuatro
+        // calendarios (Recuperacion, Sueno, Esfuerzo, Estres) miden igual. (FER calendarios mismo tamano)
+        guard let today = Repository.parseDayKey(Repository.localDayKey(Date())) else { return [] }
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
             return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: vals[Self.calDayFmt.string(from: date)])
@@ -429,6 +433,13 @@ struct StrainDetailScreen: View {
         if v >= 14 { return theme.dataStrain }
         if v >= 8 { return theme.strainRampMid }
         return theme.strainRampLow
+    }
+
+    /// A short state word for the calendar read-out (matches the legend rungs and the tint thresholds).
+    private func strainWord(_ v: Double) -> LocalizedStringKey {
+        if v >= 14 { return "hard" }
+        if v >= 8 { return "moderate" }
+        return "light"
     }
 
     private var heatGrid: some View {
@@ -451,6 +462,9 @@ struct StrainDetailScreen: View {
                     Text(String(format: "%.1f", v))
                         .font(StrandFont.number(20))
                         .foregroundStyle(strainHeatTint(v))
+                    Text(strainWord(v))
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
                         .font(StrandFont.number(20))

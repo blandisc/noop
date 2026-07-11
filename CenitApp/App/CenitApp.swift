@@ -82,7 +82,7 @@ struct CenitApp: App {
                 // break the dense glanceable layouts). Sheets inherit this clamp.
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .environmentObject(model)
-                .environmentObject(model.live)
+                .environment(model.live)
                 .environmentObject(model.repo)
                 .environmentObject(model.profile)
                 .environmentObject(model.behavior)

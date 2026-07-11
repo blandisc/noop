@@ -146,7 +146,7 @@ public struct OnboardingWizard: View {
 /// Hidden, isolated observer — fires `onBonded` when the strap bonds, keeping the
 /// main wizard body out of the per-tick re-render path.
 private struct BondWatcher: View {
-    @EnvironmentObject private var live: LiveState
+    @Environment(LiveState.self) private var live
     let onBonded: () -> Void
     var body: some View {
         Color.clear.onChange(of: live.bonded) { _, newValue in if newValue { onBonded() } }
@@ -437,7 +437,7 @@ private struct PrepareStep: View {
 private struct ScanStep: View {
     let onContinue: () -> Void
     @EnvironmentObject private var model: AppModel
-    @EnvironmentObject private var live: LiveState
+    @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
     @State private var scanning = false
@@ -551,7 +551,7 @@ private struct ScanStep: View {
 
 private struct BondedStep: View {
     let onContinue: () -> Void
-    @EnvironmentObject private var live: LiveState
+    @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         CenteredState(
@@ -869,7 +869,7 @@ private struct OnboardingPreview: View {
     var body: some View {
         OnboardingWizard(onFinished: {})
             .environmentObject(model)
-            .environmentObject(model.live)
+            .environment(model.live)
             .environmentObject(model.profile)
             .frame(width: 390, height: 780)
     }

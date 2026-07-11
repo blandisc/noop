@@ -80,7 +80,7 @@ private extension View {
 
 private struct AjustesLanding: View {
     @EnvironmentObject var model: AppModel
-    @EnvironmentObject var live: LiveState
+    @Environment(LiveState.self) var live
     @EnvironmentObject var profile: ProfileStore
     // Read only to re-inject into the dark sibling sheets (a sheet starts a fresh environment branch).
     @EnvironmentObject private var repo: Repository
@@ -146,10 +146,10 @@ private struct AjustesLanding: View {
             UnidadesSheet().instrumentoTheme(theme)
         }
         .sheet(isPresented: $showLog) {
-            StrapLogSheet().instrumentoTheme(theme).environmentObject(live)
+            StrapLogSheet().instrumentoTheme(theme).environment(live)
         }
         .sheet(isPresented: $showAdvanced) {
-            AdvancedSheet().instrumentoTheme(theme).environmentObject(live).environmentObject(model)
+            AdvancedSheet().instrumentoTheme(theme).environment(live).environmentObject(model)
         }
         .sheet(isPresented: $showCyclePhase) {
             CyclePhaseSheet().instrumentoTheme(theme).environmentObject(repo)
@@ -611,7 +611,7 @@ private struct AjustesLanding: View {
             .instrumentoTheme(theme)
             .environmentObject(model)
             .environmentObject(repo)
-            .environmentObject(live)
+            .environment(live)
             .environmentObject(health)
             .environmentObject(behavior)
             .environmentObject(autoBackup)
@@ -632,7 +632,7 @@ private struct AjustesLanding: View {
             .instrumentoTheme(theme)
             .environmentObject(model)
             .environmentObject(repo)
-            .environmentObject(live)
+            .environment(live)
             .environmentObject(health)
             .environmentObject(behavior)
             .environmentObject(autoBackup)
@@ -654,7 +654,7 @@ private struct AjustesLanding: View {
             .instrumentoTheme(theme)
             .environmentObject(model)
             .environmentObject(repo)
-            .environmentObject(live)
+            .environment(live)
             .environmentObject(health)
             .environmentObject(behavior)
             .environmentObject(inactivity)
@@ -965,7 +965,7 @@ private struct StepTicksSheet: View {
 /// shown only when there are captured frames this session (HARD criterion: don't lose Export).
 private struct AdvancedSheet: View {
     @Environment(\.instrumentoTheme) private var theme
-    @EnvironmentObject private var live: LiveState
+    @Environment(LiveState.self) private var live
     @EnvironmentObject private var model: AppModel
     @AppStorage(PuffinExperiment.defaultsKey) private var puffinExperiments = false
     @AppStorage(PuffinFrameRecorder.enabledKey) private var puffinCapture = false
@@ -1075,7 +1075,7 @@ private struct UnidadesSheet: View {
 /// of FER-337: this stays reachable, here under «Tu strap».
 private struct StrapLogSheet: View {
     @Environment(\.instrumentoTheme) private var theme
-    @EnvironmentObject var live: LiveState
+    @Environment(LiveState.self) var live
 
     var body: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {

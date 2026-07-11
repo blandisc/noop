@@ -309,7 +309,7 @@ struct SleepDetailScreen: View {
     private func lastNightContent(_ night: SleepDetailModel.Night) -> some View {
         let s = night.stages
         return VStack(alignment: .leading, spacing: 12) {
-            lastNightVerdict(night)
+            lastNightHeader(night)
             if model.intervals.count >= 2 {
                 Hypnogram(intervals: model.intervals,
                           height: 176,
@@ -343,42 +343,55 @@ struct SleepDetailScreen: View {
                     }
                 }
             }
-            HStack(alignment: .top, spacing: 8) {
-                stageTile(.rem, "REM", s.rem, s.total, typicalPct: model.typicalRemPct)
-                stageTile(.deep, "Deep", s.deep, s.total, typicalPct: model.typicalDeepPct)
-                stageTile(.light, "Light", s.light, s.total, typicalPct: model.typicalLightPct)
-                stageTile(.awake, "Awake", s.awake, s.total, typicalPct: nil)
-            }
-            BarraAncla(
-                String(localized: "The small number is the change in points vs your typical."),
-                color: theme.dataSleep, theme: theme)
         }
     }
 
-    private func lastNightVerdict(_ night: SleepDetailModel.Night) -> some View {
+    /// Header for «Last night»: the shape of the night in words + the clock. The per-stage breakdown that
+    /// used to live here as four tiles is gone — «Last night vs your typical» below already draws the same
+    /// stages, against your average, as bars (no need to say it twice). Left: cycle count and how much of
+    /// the night was awake. Right: the wall-clock the strap saw — asleep at / awake at. Apple-Health nights
+    /// carry no reliable per-epoch clock, so the times hide there, same as the hypnogram. (FER · Anoche)
+    private func lastNightHeader(_ night: SleepDetailModel.Night) -> some View {
         let awakePct = pct(night.stages.awake, night.stages.total)
-        let cycles = remBoutCount
-        let full = (model.performancePct ?? 0) >= 85 || night.stages.asleep >= 6.5 * 60
-        let title = full
-            ? String(localized: "Full night")
-            : String(localized: "Partial night")
-        let clause: String = {
-            if let c = cycles, c > 0 {
-                return String(localized: "\(c) cycles, \(awakePct)% awake")
+        let title = remBoutCount.flatMap { $0 > 0 ? $0 : nil }
+            .map { String(localized: "Night · \($0) cycles") } ?? String(localized: "Night")
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(verbatim: title)
+                    .font(InstrumentoType.grotesk(16, weight: .semibold))
+                    .foregroundColor(theme.ink)
+                Text(String(localized: "\(awakePct)% awake"))
+                    .font(InstrumentoType.grotesk(14))
+                    .foregroundColor(theme.inkSecondary)
             }
-            return String(localized: "\(awakePct)% awake")
-        }()
-        return (Text(verbatim: title)
-            .font(InstrumentoType.grotesk(16, weight: .semibold))
-            .foregroundColor(theme.ink)
-         + Text(verbatim: " · ")
-            .font(InstrumentoType.grotesk(14))
-            .foregroundColor(theme.inkSecondary)
-         + Text(verbatim: clause)
-            .font(InstrumentoType.grotesk(14))
-            .foregroundColor(theme.inkSecondary))
-            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            if !model.isAppleHealth {
+                VStack(alignment: .trailing, spacing: 3) {
+                    clockLine(String(localized: "Asleep"), night.onsetDate)
+                    clockLine(String(localized: "Awake"),
+                              Date(timeIntervalSince1970: TimeInterval(night.endTs)))
+                }
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
     }
+
+    /// One right-aligned clock line: a quiet label + the wall-clock time (locale-aware 12/24 h).
+    private func clockLine(_ label: String, _ date: Date) -> some View {
+        HStack(spacing: 5) {
+            Text(verbatim: label)
+                .font(InstrumentoType.grotesk(13))
+                .foregroundColor(theme.inkTertiary)
+            Text(verbatim: Self.clockFmt.string(from: date))
+                .font(InstrumentoType.grotesk(14, weight: .semibold))
+                .foregroundColor(theme.ink)
+                .monospacedDigit()
+        }
+    }
+
+    private static let clockFmt: DateFormatter = {
+        let f = DateFormatter(); f.timeStyle = .short; f.dateStyle = .none; return f
+    }()
 
     /// Count contiguous REM bouts from the existing hypnogram intervals (presentation only).
     private var remBoutCount: Int? {
@@ -393,21 +406,6 @@ struct SleepDetailScreen: View {
             }
         }
         return n
-    }
-
-    private func stageTile(_ stage: SleepStage, _ label: String, _ minutes: Double, _ total: Double,
-                           typicalPct: Double?) -> some View {
-        let p = pct(minutes, total)
-        let delta = stageDelta(pctOfTotal: p, typicalPct: typicalPct, stage: stage)
-        return TileSurface(
-            label: String(localized: String.LocalizationValue(label)),
-            value: "\(p)%",
-            valueColor: theme.dataSleep,
-            valueSize: 15,
-            swatch: stageColor(stage),
-            delta: delta?.text,
-            deltaColor: delta.map { $0.improves ? theme.verdict : theme.warning },
-            theme: theme)
     }
 
     private func stageColor(_ stage: SleepStage) -> Color {
@@ -442,18 +440,6 @@ struct SleepDetailScreen: View {
         Rectangle()
             .fill(stageColor(stage))
             .frame(width: max(0, CGFloat(minutes / total) * width))
-    }
-
-    /// Delta in points vs typical. Valence: deep/REM ↑ good; light/awake ↑ amber.
-    private func stageDelta(pctOfTotal: Int, typicalPct: Double?,
-                            stage: SleepStage) -> (text: String, improves: Bool)? {
-        guard let typicalPct else { return nil }
-        let d = Int((Double(pctOfTotal) - typicalPct).rounded())
-        if d == 0 { return ("~0", true) }
-        let text = d > 0 ? "+\(d)" : "−\(abs(d))"
-        let higherIsBetter = (stage == .deep || stage == .rem)
-        let improves = higherIsBetter ? d > 0 : d < 0
-        return (text, improves)
     }
 
     // MARK: - 3. Forma de la noche (FER-832) — promovida a sección estándar
@@ -996,7 +982,11 @@ struct SleepDetailScreen: View {
         var mins: [String: Double] = [:]
         for r in durationParsed { mins[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
-        let today = cal.startOfDay(for: Date())
+        // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
+        // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
+        // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano. Asi los cuatro
+        // calendarios (Recuperacion, Sueno, Esfuerzo, Estres) miden igual. (FER calendarios mismo tamano)
+        guard let today = Repository.parseDayKey(Repository.localDayKey(Date())) else { return [] }
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
             let key = Self.calDayFmt.string(from: date)
@@ -1008,6 +998,13 @@ struct SleepDetailScreen: View {
         if hours >= 7 { return theme.dataSleep }
         if hours >= 6 { return theme.dataSleepLight }
         return theme.warning
+    }
+
+    /// A short state word for the calendar read-out (matches the legend rungs and the tint thresholds).
+    private func sleepWord(_ hours: Double) -> LocalizedStringKey {
+        if hours >= 7 { return "enough" }
+        if hours >= 6 { return "ok" }
+        return "short"
     }
 
     private var heatGrid: some View {
@@ -1031,6 +1028,9 @@ struct SleepDetailScreen: View {
                         .font(StrandFont.number(20))
                         .foregroundStyle(sleepHeatTint(m))
                         .monospacedDigit()
+                    Text(sleepWord(m))
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
                         .font(StrandFont.number(20))

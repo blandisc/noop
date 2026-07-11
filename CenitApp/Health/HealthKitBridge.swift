@@ -1,5 +1,6 @@
 #if os(iOS)
 import Foundation
+import CryptoKit
 import HealthKit
 import StrandAnalytics
 import StrandImport
@@ -85,11 +86,18 @@ final class HealthKitBridge: ObservableObject {
     /// (this and `lastAppleWriteSignature` reset each launch); only subsequent ones go delta.
     private var didFullForegroundSyncThisSession = false
 
-    /// Signature of the Apple rows written by the last sync, to skip a dashboard rebuild when a
-    /// foreground re-pull produced identical data (FER-872). In-memory (per-process Hasher) — a stale
-    /// value can never cause a FALSE skip because it's recomputed from the freshly-pulled rows each run;
-    /// resetting it each launch just means the first foreground sync of a session always refreshes once.
-    private var lastAppleWriteSignature: Int?
+    /// Stable signature of the Apple rows written by the last sync THIS session, to skip a dashboard
+    /// rebuild when a foreground re-pull produced identical data (FER-872). In-memory (per-session) for
+    /// the delta comparison between subsequent foregrounds. A stale value can never cause a FALSE skip —
+    /// it's recomputed from the freshly-pulled rows each run.
+    private var lastAppleWriteSignature: String?
+
+    /// FER-881: the stable signature persisted from the last session's FIRST-foreground (full 30-day)
+    /// sync. The first foreground of a NEW session — which is always full — compares its fresh signature
+    /// against this to skip the redundant cold-start rebuild when the Apple data is unchanged since last
+    /// session (the launch full-refresh already surfaced it). Only full foreground syncs read/write it,
+    /// so the window is always the same 30 days and the comparison is apples-to-apples.
+    private static let lastFullSyncSigKey = "appleHealthLastFullSyncSig"
 
     init(repo: Repository, appleDeviceId: String, noopDeviceId: String) {
         self.repo = repo
@@ -385,10 +393,11 @@ final class HealthKitBridge: ObservableObject {
         // fails, do NOT advance lastSync (the next delta sync must re-attempt this window) and surface
         // the error instead of swallowing it with `try?` — a failed upsert used to be silent while
         // lastSync still moved forward, skipping the window and losing the data permanently.
-        // FER-872: fingerprint the Apple rows this run would surface (every written array derives from
-        // `byDay`, plus workouts + sleep sessions). A foreground re-pull of identical data must not bump
-        // `refreshSeq` — which re-runs TodayView.loadAll + insights + live strain for nothing.
-        let signature = Self.appleWriteSignature(byDay: byDay, workouts: wkRows, sleeps: appleSleepSessions)
+        // FER-872/881: a stable fingerprint of the Apple rows this run would surface (every written array
+        // derives from `byDay`, plus workouts + sleep sessions). A foreground re-pull of identical data
+        // must not bump `refreshSeq` — which re-runs TodayView.loadAll + insights + live strain for nothing.
+        let signature = Self.stableAppleSignature(byDay: byDay, workouts: wkRows, sleeps: appleSleepSessions)
+        let isFullSync = (effectiveDays == days)
         do {
             try await store.upsertAppleDaily(appleRows, deviceId: appleDeviceId)
             try await store.upsertDailyMetrics(dmRows, deviceId: appleDeviceId)
@@ -401,9 +410,23 @@ final class HealthKitBridge: ObservableObject {
             if trigger == .foreground { didFullForegroundSyncThisSession = true }
             // Only rebuild the dashboard when the Apple rows actually changed. A manual sync always
             // refreshes so the user sees an unmistakable response to tapping "Sync now" (FER-872).
-            let changed = signature != lastAppleWriteSignature
+            let changed: Bool
+            if trigger != .foreground {
+                changed = true
+            } else if isFullSync {
+                // FER-881: first foreground of the session (full 30d). Compare against the signature
+                // persisted from the last session's full sync — equal ⇒ the store already holds this
+                // exact Apple data (the launch full-refresh surfaced it) ⇒ skip the redundant cold-start
+                // rebuild. This is the second of the two launch refreshes FER-881 removes (the other is
+                // analyzeRecent's), taking a recurring Apple-Health user's cold start to ≤2.
+                changed = (signature != UserDefaults.standard.string(forKey: Self.lastFullSyncSigKey))
+                UserDefaults.standard.set(signature, forKey: Self.lastFullSyncSigKey)
+            } else {
+                // Subsequent delta foreground within the same session.
+                changed = (signature != lastAppleWriteSignature)
+            }
             lastAppleWriteSignature = signature
-            if changed || trigger != .foreground {
+            if changed {
                 await repo.refresh()   // surface the freshly-synced Apple Health days in the dashboard
             }
             coverage = try? await store.appleHealthCoverage(deviceId: appleDeviceId)
@@ -576,30 +599,37 @@ final class HealthKitBridge: ObservableObject {
         try await self.store.save(hkSamples)
     }
 
-    private struct DayAgg: Hashable {
+    private struct DayAgg {
         var restingHr: Double?; var avgHr: Double?; var maxHr: Double?; var hrv: Double?
         var spo2: Double?; var respRate: Double?; var steps: Double?
         var activeKcal: Double?; var basalKcal: Double?; var vo2max: Double?
         var asleepMin: Double?; var deepMin: Double?; var remMin: Double?; var coreMin: Double?
     }
 
-    /// FER-872: an order-independent fingerprint of the Apple rows a sync run would surface. `byDay`
-    /// carries every daily/series/appleDaily value (they're all derived from it); workouts and sleep
-    /// sessions are folded in by their identifying fields. Per-process Hasher — used only for the
-    /// in-memory "did anything change since the last sync this session?" comparison, never persisted.
-    private static func appleWriteSignature(byDay: [String: DayAgg],
-                                            workouts: [WorkoutRow],
-                                            sleeps: [CachedSleepSession]) -> Int {
-        var h = Hasher()
-        for key in byDay.keys.sorted() { h.combine(key); h.combine(byDay[key]) }
+    /// FER-872/881: a STABLE, order-independent fingerprint of the Apple rows a sync run would surface.
+    /// `byDay` carries every daily/series/appleDaily value (they're all derived from it); workouts and
+    /// sleep sessions fold in by their identifying fields. SHA-256 over a deterministic string (NOT the
+    /// per-process `Hasher`, whose seed varies per launch) so it can be PERSISTED across launches and
+    /// compared on the next session's first foreground sync (FER-881). Values are formatted at fixed
+    /// precision so an exact re-pull hashes identically.
+    private static func stableAppleSignature(byDay: [String: DayAgg],
+                                             workouts: [WorkoutRow],
+                                             sleeps: [CachedSleepSession]) -> String {
+        func f(_ d: Double?) -> String { d.map { String(format: "%.4f", $0) } ?? "-" }
+        var s = ""
+        for key in byDay.keys.sorted() {
+            let a = byDay[key]!
+            s += "\(key):\(f(a.restingHr)),\(f(a.avgHr)),\(f(a.maxHr)),\(f(a.hrv)),\(f(a.spo2)),\(f(a.respRate)),\(f(a.steps)),\(f(a.activeKcal)),\(f(a.basalKcal)),\(f(a.vo2max)),\(f(a.asleepMin)),\(f(a.deepMin)),\(f(a.remMin)),\(f(a.coreMin));"
+        }
+        s += "|W:"
         for w in workouts.sorted(by: { ($0.startTs, $0.endTs, $0.sport) < ($1.startTs, $1.endTs, $1.sport) }) {
-            h.combine(w)   // WorkoutRow: Hashable
+            s += "\(w.startTs)-\(w.endTs)-\(w.sport)-\(f(w.durationS))-\(f(w.energyKcal));"
         }
-        for s in sleeps.sorted(by: { ($0.startTs, $0.endTs) < ($1.startTs, $1.endTs) }) {
-            h.combine(s.startTs); h.combine(s.endTs); h.combine(s.efficiency)
-            h.combine(s.restingHr); h.combine(s.avgHrv); h.combine(s.stagesJSON)
+        s += "|S:"
+        for sl in sleeps.sorted(by: { ($0.startTs, $0.endTs) < ($1.startTs, $1.endTs) }) {
+            s += "\(sl.startTs)-\(sl.endTs)-\(f(sl.efficiency))-\(sl.restingHr.map(String.init) ?? "-")-\(f(sl.avgHrv))-\(sl.stagesJSON ?? "-");"
         }
-        return h.finalize()
+        return SHA256.hash(data: Data(s.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
     private func collect(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date,

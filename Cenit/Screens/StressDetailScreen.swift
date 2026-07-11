@@ -422,7 +422,7 @@ struct StressDetailScreen: View {
                     bands: Self.stressBands(theme),
                     ticks: [.init(v: 3, label: "3"), .init(v: 2, label: "2"),
                             .init(v: 1, label: "1"), .init(v: 0, label: "0")],
-                    hue: theme.warning, ymin: 0, ymax: 3,
+                    hue: theme.verdict, ymin: 0, ymax: 3,
                     startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
                     endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
                     mediaValue: fmt(stat.mean),
@@ -487,7 +487,11 @@ struct StressDetailScreen: View {
         var vals: [String: Double] = [:]
         for r in parsed { vals[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
-        let today = cal.startOfDay(for: Date())
+        // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
+        // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
+        // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano. Asi los cuatro
+        // calendarios (Recuperacion, Sueno, Esfuerzo, Estres) miden igual. (FER calendarios mismo tamano)
+        guard let today = Repository.parseDayKey(Repository.localDayKey(Date())) else { return [] }
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
             return RecoveryDay(date: date.addingTimeInterval(12 * 3600),
