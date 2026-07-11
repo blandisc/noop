@@ -98,6 +98,23 @@ public struct YearHeatStrip: View {
         return Int(ceil(Double(firstRow + sorted.count) / 7.0))
     }
 
+    /// Number of week-columns a rolling 90-day window can ever span. A 90-day window is 12.86 weeks, so it
+    /// needs 13 columns when it starts on a Mon/Tue and 14 otherwise — the exact weekday depends on today.
+    public static let rollingWindowColumns = 14
+
+    /// The cell size that makes a rolling-90-day heat strip fill `width`, sized to a FIXED column count so
+    /// every 90-day calendar renders at the SAME cell size — on every screen and every day. Sizing to the
+    /// live `weekColumns` instead lets the cell swing 13↔14 columns (≈19.3↔21.1pt) as the window's start
+    /// weekday drifts day to day, which reads as "the calendars are different sizes". Fixing the divisor
+    /// removes that: on a 13-column day the grid simply leaves one column of trailing space, identically on
+    /// all four calendars (Recuperación / Sueño / Esfuerzo / Estrés). Returns the 14pt fallback for width 0.
+    /// (FER · calendarios mismo tamaño, estable)
+    public static func rollingCellSize(width: CGFloat, spacing: CGFloat = 4, gutter: CGFloat = 24) -> CGFloat {
+        guard width > 0 else { return 14 }
+        let cols = CGFloat(rollingWindowColumns)
+        return max(8, min(22, (width - gutter - spacing - (cols - 1) * spacing) / cols))
+    }
+
     // The grid layout constants used both for drawing and hover hit-testing.
     private let gutterWidth: CGFloat = 24
     private let monthLabelHeight: CGFloat = 10

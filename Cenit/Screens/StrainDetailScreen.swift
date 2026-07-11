@@ -454,7 +454,7 @@ struct StrainDetailScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             heatGrid
             heatReadout
-            HeatLegend([(theme.dataStrain, String(localized: "hard+")),
+            HeatLegend([(theme.dataStrain, String(localized: "hard")),
                         (theme.strainRampMid, String(localized: "moderate")),
                         (theme.strainRampLow, String(localized: "light"))], theme: theme)
         }
@@ -492,13 +492,18 @@ struct StrainDetailScreen: View {
         return theme.strainRampLow
     }
 
+    /// A short state word for the calendar read-out (matches the legend rungs and the tint thresholds).
+    private func strainWord(_ v: Double) -> LocalizedStringKey {
+        if v >= 14 { return "hard" }
+        if v >= 8 { return "moderate" }
+        return "light"
+    }
+
     private var heatGrid: some View {
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: strainHeat))
+        // Celda dimensionada a 14 columnas FIJAS (helper compartido), no al conteo vivo, para que mida lo
+        // mismo en las cuatro pantallas y todos los días (ver YearHeatStrip.rollingCellSize). (FER estable)
         let spacing: CGFloat = 4
-        let gutter: CGFloat = 24
-        let cell: CGFloat = calWidth > 0
-            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-            : 14
+        let cell = YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing)
         return YearHeatStrip(
             days: strainHeat,
             cellSize: cell,
@@ -529,6 +534,9 @@ struct StrainDetailScreen: View {
                     Text(String(format: "%.1f", v))
                         .font(StrandFont.number(20))
                         .foregroundStyle(strainHeatTint(v))
+                    Text(strainWord(v))
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
                         .font(StrandFont.number(20))

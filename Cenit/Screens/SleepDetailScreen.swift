@@ -963,15 +963,18 @@ struct SleepDetailScreen: View {
         return theme.warning
     }
 
+    /// A short state word for the calendar read-out (matches the legend rungs and the tint thresholds).
+    private func sleepWord(_ hours: Double) -> LocalizedStringKey {
+        if hours >= 7 { return "enough" }
+        if hours >= 6 { return "ok" }
+        return "short"
+    }
+
     private var heatGrid: some View {
-        // Dimensiona al número REAL de columnas dibujadas (como Recuperación/Esfuerzo) para llenar SIEMPRE
-        // el ancho de la tarjeta; con `max(14, …)` quedaba ~1 columna angosto. (FER · anchos iguales)
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: sleepHeatCache))
+        // Celda dimensionada a 14 columnas FIJAS (helper compartido), no al conteo vivo, para que mida lo
+        // mismo en las cuatro pantallas y todos los días (ver YearHeatStrip.rollingCellSize). (FER estable)
         let spacing: CGFloat = 4
-        let gutter: CGFloat = 24
-        let cell: CGFloat = calWidth > 0
-            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-            : 14
+        let cell = YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing)
         return YearHeatStrip(
             days: sleepHeatCache, cellSize: cell, spacing: spacing, showsScrub: false,
             tint: sleepHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
@@ -996,6 +999,9 @@ struct SleepDetailScreen: View {
                         .font(StrandFont.number(20))
                         .foregroundStyle(sleepHeatTint(m))
                         .monospacedDigit()
+                    Text(sleepWord(m))
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
                         .font(StrandFont.number(20))
