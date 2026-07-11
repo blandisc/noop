@@ -49,6 +49,9 @@ struct SleepDetailScreen: View {
     @State private var range: ExploreRange = .month
     /// Duration series with each day key parsed once in `.task`.
     @State private var durationParsed: [(day: String, date: Date?, value: Double)] = []
+    /// The 90-night heat grid, built ONCE in `.task` (90 `DateFormatter` passes) instead of on every
+    /// body eval — the recompute was jank on open. (FER-878+)
+    @State private var sleepHeatCache: [RecoveryDay] = []
     /// Measured width so the 90-night heat grid fills it; the tapped night for the read-out. (FER-830)
     @State private var calWidth: CGFloat = 0
     @State private var selectedSleepNight: RecoveryDay? = nil
@@ -115,6 +118,7 @@ struct SleepDetailScreen: View {
         .task {
             range = .month
             durationParsed = model.durationSeries.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            sleepHeatCache = buildSleepHeat()
         }
         .task(id: model.night?.startTs) {
             let (shape, curve) = await loadNightShape()
@@ -257,7 +261,8 @@ struct SleepDetailScreen: View {
         .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
         .frame(maxWidth: .infinity, alignment: .leading)
         .instrumentoCard(.control, theme: theme)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+        // Aire estándar antes de la siguiente franja (igual que Recuperación). (FER-878+)
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
     }
 
     /// Flat hero for empty / loading: no inverted field without a night.
@@ -944,7 +949,7 @@ struct SleepDetailScreen: View {
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
     }()
 
-    private var sleepHeat: [RecoveryDay] {
+    private func buildSleepHeat() -> [RecoveryDay] {
         var mins: [String: Double] = [:]
         for r in durationParsed { mins[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
@@ -964,14 +969,14 @@ struct SleepDetailScreen: View {
 
     private var heatGrid: some View {
         // Misma ventana de 90 días (máx 14 col) que Recuperación para que la celda mida igual. (FER-878+)
-        let cols = Swift.max(14, YearHeatStrip.weekColumns(for: sleepHeat))
+        let cols = Swift.max(14, YearHeatStrip.weekColumns(for: sleepHeatCache))
         let spacing: CGFloat = 4
         let gutter: CGFloat = 24
         let cell: CGFloat = calWidth > 0
             ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
             : 14
         return YearHeatStrip(
-            days: sleepHeat, cellSize: cell, spacing: spacing, showsScrub: false,
+            days: sleepHeatCache, cellSize: cell, spacing: spacing, showsScrub: false,
             tint: sleepHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
             labelColor: theme.inkTertiary, onSelect: { selectedSleepNight = $0 }, selectionColor: theme.ink
         )

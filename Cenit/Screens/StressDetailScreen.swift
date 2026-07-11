@@ -46,6 +46,9 @@ struct StressDetailScreen: View {
     /// The stress series with each point's `Date` already parsed (from `fullTrend`) — the window math
     /// reads `date` straight from here. Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
+    /// The 90-day heat grid, built ONCE in `.task` (90 `DateFormatter` passes) instead of on every body
+    /// eval — the recompute was jank on open. (FER-878+)
+    @State private var stressHeatCache: [RecoveryDay] = []
     /// Detected cross-day «moment of day» patterns (loaded in `.task`). Empty → no line. (FER-378)
     @State private var patterns: [StressTimeOfDayPatterns.Pattern] = []
     /// Detected cross-day «by calendar-event» patterns (loaded in `.task`). Empty → no line. (FER-388)
@@ -114,6 +117,7 @@ struct StressDetailScreen: View {
             parsed = (model?.fullTrend ?? []).map {
                 (Self.dayParser.string(from: $0.date), $0.date, $0.value)
             }
+            stressHeatCache = buildStressHeat()
             if let patternsLoader { patterns = await patternsLoader() }
             if let eventPatternsLoader { eventPatterns = await eventPatternsLoader() }
         }
@@ -203,7 +207,8 @@ struct StressDetailScreen: View {
         .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
         .frame(maxWidth: .infinity, alignment: .leading)
         .instrumentoCard(.control, theme: theme)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+        // Aire estándar antes de la siguiente franja (igual que Recuperación). (FER-878+)
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
     }
 
     /// Flat hero for empty / no-recent states: no inverted field without a number.
@@ -536,7 +541,7 @@ struct StressDetailScreen: View {
         }
     }
 
-    private var stressHeat: [RecoveryDay] {
+    private func buildStressHeat() -> [RecoveryDay] {
         var vals: [String: Double] = [:]
         for r in parsed { vals[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
@@ -557,14 +562,14 @@ struct StressDetailScreen: View {
 
     private var heatGrid: some View {
         // Misma ventana de 90 días (máx 14 col) que Recuperación para que la celda mida igual. (FER-878+)
-        let cols = Swift.max(14, YearHeatStrip.weekColumns(for: stressHeat))
+        let cols = Swift.max(14, YearHeatStrip.weekColumns(for: stressHeatCache))
         let spacing: CGFloat = 4
         let gutter: CGFloat = 24
         let cell: CGFloat = calWidth > 0
             ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
             : 14
         return YearHeatStrip(
-            days: stressHeat,
+            days: stressHeatCache,
             cellSize: cell,
             spacing: spacing,
             showsScrub: false,
