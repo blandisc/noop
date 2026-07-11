@@ -158,18 +158,20 @@ public struct BarraAncla: View {
     }
 
     public var body: some View {
-        HStack(alignment: .top, spacing: 5) {
-            Rectangle()
-                .fill(color)
-                .frame(width: 2, height: 10)
-                .offset(y: 3)
-            Text(texto)
-                .font(.system(size: 11))
-                .lineSpacing(2.5)
-                .foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
+        // La barra (rect 2pt) abarca TODA la altura del texto — no una raya de 10pt: en captions de dos
+        // renglones cubría solo el primero. Overlay a la izquierda del texto: su alto lo fija el texto.
+        Text(texto)
+            .font(.system(size: 11))
+            .lineSpacing(2.5)
+            .foregroundStyle(theme.inkTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.leading, 7)
+            .overlay(alignment: .leading) {
+                Rectangle()
+                    .fill(color)
+                    .frame(width: 2)
+            }
+            .accessibilityElement(children: .combine)
     }
 }
 

@@ -229,7 +229,8 @@ struct RecoveryDetailScreen: View {
         .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
         .frame(maxWidth: .infinity, alignment: .leading)
         .instrumentoCard(.control, theme: theme)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+        // Deja aire antes de la franja «Hoy, vs tu normal» (antes 0 → la franja quedaba pegada). (FER-878+)
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
     }
 
     /// The flat hero for score-less states (loading / calibrating / empty / offline-with-history):
@@ -995,7 +996,9 @@ struct RecoveryDetailScreen: View {
     /// The 90-day heat strip, sized to fill the available width: measure the content width once, then
     /// pick a cell size so the week columns span it (re-tinted to warm paper). (FER-225)
     private var heatGrid: some View {
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: model.heat))
+        // Fija el ancho a una ventana de 90 días (máx 14 columnas) para que Recuperación, Sueño y Estrés
+        // midan la MISMA celda aunque cada métrica tenga distinto número de días con datos. (FER-878+)
+        let cols = Swift.max(14, YearHeatStrip.weekColumns(for: model.heat))
         let spacing: CGFloat = 4
         let gutter: CGFloat = 24
         let cell: CGFloat = calWidth > 0

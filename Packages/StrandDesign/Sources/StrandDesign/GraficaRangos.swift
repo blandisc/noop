@@ -207,8 +207,11 @@ public struct GraficaRangos: View {
 
     /// El overlay del scrub: regla vertical 1px tinta 0.35 (de y=16 al piso), anillo r5 con borde
     /// 2.5px del color de la banda del punto, y chip negro (radio 8, alto 16) con «valor · fecha»
-    /// en Grotesk 9.5/600 papel, centrado en el punto y clampeado al plot. El chip es SIEMPRE
-    /// negro: la valencia vive solo en el anillo.
+    /// en Grotesk 9.5/600 papel. El chip FLOTA junto al punto: por defecto arriba del anillo y, cuando
+    /// el punto está muy alto (el chip se saldría por el techo del plot), salta abajo — así nunca se
+    /// encaballa con el anillo ni se recorta. El chip es SIEMPRE negro: la valencia vive solo en el
+    /// anillo.
+    private static let scrubChipH: CGFloat = 16
     @ViewBuilder private func scrubOverlay(_ i: Int, _ w: CGFloat) -> some View {
         let px = x(i, w)
         let py = y(points[i])
@@ -227,15 +230,19 @@ public struct GraficaRangos: View {
         // Ancho estimado por caracteres (mismo truco del mock) para poder clampear el chip al plot.
         let chipW = CGFloat(text.count) * 5.6 + 16
         let chipX = Swift.max(Self.gutter, Swift.min(w - chipW, px - chipW / 2))
+        // Vertical: arriba del anillo (gap 8); si eso lo sacaría del techo, va abajo del anillo.
+        let gap: CGFloat = 8
+        let aboveY = py - gap - Self.scrubChipH
+        let chipY = aboveY >= 0 ? aboveY : Swift.min(Self.floorY - Self.scrubChipH, py + gap)
         Text(verbatim: text)
             .font(InstrumentoType.groteskNumber(9.5, weight: .semibold))
             .foregroundStyle(theme.paper)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
             .padding(.horizontal, 6)
-            .frame(width: chipW, height: 16)
+            .frame(width: chipW, height: Self.scrubChipH)
             .background(theme.ink, in: Capsule(style: .continuous))
-            .offset(x: chipX, y: 0)
+            .offset(x: chipX, y: chipY)
             .accessibilityHidden(true)
     }
 
@@ -358,7 +365,9 @@ public struct GraficaRangos: View {
         }
     }
 
-    /// El piso 1.2px + las fechas de inicio/fin (Grotesk 9).
+    /// El piso 1.2px + las fechas del eje X (Grotesk 9): inicio/fin en los extremos y, cuando hay
+    /// `labels` suficientes (pantallas con scrub), un par de fechas intermedias equiespaciadas para
+    /// dar más referencia temporal sin saturar.
     private func floorAndDates(_ w: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
             Rectangle()
@@ -369,12 +378,40 @@ public struct GraficaRangos: View {
                 .font(InstrumentoType.grotesk(9))
                 .foregroundStyle(theme.inkTertiary)
                 .offset(x: Self.gutter, y: Self.floorY + 7)
+            // Fechas intermedias: hasta 3 marcas interiores equiespaciadas, centradas en su punto y
+            // clampeadas al plot (ancho estimado por caracteres, como el chip del scrub) para que no
+            // choquen con los extremos.
+            ForEach(interiorDateTicks, id: \.i) { tick in
+                let cx = x(tick.i, w)
+                let halfW = CGFloat(tick.text.count) * 2.7
+                Text(tick.text)
+                    .font(InstrumentoType.grotesk(9))
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize()
+                    .offset(x: Swift.max(Self.gutter, Swift.min(w - halfW * 2, cx - halfW)),
+                            y: Self.floorY + 7)
+            }
             Text(endLabel)
                 .font(InstrumentoType.grotesk(9))
                 .foregroundStyle(theme.inkTertiary)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .offset(y: Self.floorY + 7)
         }
+    }
+
+    /// Índices (+ texto) de las fechas intermedias del eje X. Vacío cuando no hay `labels` o la serie
+    /// es corta; si no, 3 marcas a ¼, ½ y ¾ de la serie (sin repetir los extremos ni entre sí).
+    private var interiorDateTicks: [(i: Int, text: String)] {
+        let n = points.count
+        guard labels.count == n, n >= 8 else { return [] }
+        let raw = [0.25, 0.5, 0.75].map { Int((Double(n - 1) * $0).rounded()) }
+        var seen = Set([0, n - 1])
+        var out: [(i: Int, text: String)] = []
+        for i in raw where !seen.contains(i) && labels.indices.contains(i) {
+            seen.insert(i)
+            out.append((i, labels[i]))
+        }
+        return out
     }
 
     private func linePath(_ w: CGFloat) -> Path {
