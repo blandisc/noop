@@ -26,10 +26,13 @@ concurrency:
 
 jobs:
   test:
-    # Pure-logic packages run on ubuntu (1× billing / faster queue); only StrandDesign
-    # needs macOS because it imports SwiftUI/Charts/UIKit/AppKit, which don't exist on
-    # Linux. The other five import no Apple UI/BLE frameworks, so plain SwiftPM builds
-    # and tests them on Linux with identical coverage.
+    # Linux-safe packages run on ubuntu (1× billing / faster queue). The rest need macOS
+    # because of Apple-only frameworks unavailable on Linux:
+    #   - StrandDesign: SwiftUI / Charts / UIKit / AppKit
+    #   - WhoopStore:   Compression (RawOutbox.swift) — and its dependents inherit it:
+    #   - StrandAnalytics, StrandImport depend on WhoopStore, so they fail to build on
+    #     Linux transitively.
+    # Only WhoopProtocol and StrandTraining are pure and build/test cleanly on Linux.
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -37,14 +40,14 @@ jobs:
         include:
           - package: WhoopProtocol
             os: ubuntu-latest
-          - package: WhoopStore
-            os: ubuntu-latest
-          - package: StrandAnalytics
-            os: ubuntu-latest
-          - package: StrandImport
-            os: ubuntu-latest
           - package: StrandTraining
             os: ubuntu-latest
+          - package: WhoopStore
+            os: macos-15
+          - package: StrandAnalytics
+            os: macos-15
+          - package: StrandImport
+            os: macos-15
           - package: StrandDesign
             os: macos-15
     steps:
