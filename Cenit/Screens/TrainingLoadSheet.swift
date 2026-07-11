@@ -186,16 +186,16 @@ struct TrainingLoadSheet: View {
                             .padding(.horizontal, 20)
                             .padding(.top, 4)
                     }
-                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
-                    VStack(alignment: .leading, spacing: 10) {
+                    PieMetodo(theme: theme) {
                         metodoBlock
+                    } sello: {
                         OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.top, 2)
                     }
-                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
                     // Calibrando: héroe plano honesto + método + sello (mismo fallback que las hermanas).
+                    // Sin PieMetodo: no hay divisor y el VStack padre usa spacing 22, no 10.
                     VStack(alignment: .leading, spacing: 22) {
                         heroFlat
                         calibratingBlock
@@ -217,16 +217,12 @@ struct TrainingLoadSheet: View {
         }
     }
 
-    /// One skeleton section: full-bleed `SeccionFranja` + content with handoff padding.
+    /// One skeleton section: shared `SeccionBloque` (franja + contentPadding handoff).
     private func seccion(_ title: String,
                          pista: String? = nil,
                          contentPadding: EdgeInsets = EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20),
                          @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SeccionFranja(title, pista: pista, theme: theme)
-            content()
-                .padding(contentPadding)
-        }
+        SeccionBloque(title, pista: pista, contentPadding: contentPadding, theme: theme, content: content)
     }
 
     // MARK: - 1. Héroe invertido — palabra de banda pintada por el color de la banda
@@ -287,20 +283,8 @@ struct TrainingLoadSheet: View {
 
     /// The ⓘ card under the hero: what the ratio measures, in plain language (no ACWR jargon).
     private var whatWeMeasureCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("What we measure")
-                .font(InstrumentoType.grotesk(13, weight: .semibold))
-                .foregroundStyle(theme.ink)
-            Text(heroExplanation)
-                .font(InstrumentoType.grotesk(12))
-                .lineSpacing(3)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+        QueMedimosCard(title: "What we measure", explanation: heroExplanation,
+                       theme: theme, bottomInset: 0)
     }
 
     /// Flat hero for the calibrating state: no inverted field for a ratio we don't have.
@@ -423,14 +407,7 @@ struct TrainingLoadSheet: View {
 
     private func observationCardContent(_ text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
-                Text("What we see in your history")
-                    .font(InstrumentoType.grotesk(10, weight: .semibold))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
-                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-            }
+            QueLaMueveHeader("What we see in your history", chip: "trend, not cause", theme: theme)
             Text(text)
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)

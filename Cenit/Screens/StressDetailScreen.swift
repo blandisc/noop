@@ -94,14 +94,13 @@ struct StressDetailScreen: View {
                     if parsed.contains(where: { $0.value > 0 }) {
                         seccion(String(localized: "Calendar · 90 days")) { calendarContent }
                     }
-                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
-                    VStack(alignment: .leading, spacing: 10) {
+                    PieMetodo(theme: theme) {
                         metodoBlock(model)
+                    } sello: {
                         OriginStamp(origin: .computed, when: originWhen(model), theme: theme)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.top, 2)
                     }
-                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
                     heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
                         .padding(NoopMetrics.screenPadding)
@@ -123,13 +122,9 @@ struct StressDetailScreen: View {
         }
     }
 
-    /// One skeleton section: a full-bleed `SeccionFranja` + content with handoff padding (14 · 20 · 22).
+    /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
     private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SeccionFranja(title, theme: theme)
-            content()
-                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
-        }
+        SeccionBloque(title, theme: theme, content: content)
     }
 
     // MARK: - 1. Héroe invertido — semáforo a propósito (evaluativo, menos es mejor)
@@ -194,21 +189,7 @@ struct StressDetailScreen: View {
 
     /// The ⓘ card under the hero: what the score measures, in plain language (mock copy, English source).
     private var whatWeMeasureCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("What we measure")
-                .font(InstrumentoType.grotesk(13, weight: .semibold))
-                .foregroundStyle(theme.ink)
-            Text(heroExplanation)
-                .font(InstrumentoType.grotesk(12))
-                .lineSpacing(3)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        // Aire estándar antes de la siguiente franja (igual que Recuperación). (FER-878+)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
+        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
     }
 
     /// Flat hero for empty / no-recent states: no inverted field without a number.
@@ -394,14 +375,7 @@ struct StressDetailScreen: View {
     /// Surface card: «LO QUE VEMOS EN TU HISTORIAL» + chip «TENDENCIA, NO CAUSA» + non-causal lines.
     private var observationsCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
-                Text("What we see in your history")
-                    .font(InstrumentoType.grotesk(10, weight: .semibold))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
-                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-            }
+            QueLaMueveHeader("What we see in your history", chip: "trend, not cause", theme: theme)
             if let p = patterns.first {
                 patternSentence(p)
                     .font(StrandFont.subhead)

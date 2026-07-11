@@ -112,12 +112,11 @@ struct RecoveryDetailScreen: View {
                         seccion(String(localized: "Trend")) { trendContent }
                     }
                     seccion(String(localized: "Calendar · 90 days")) { calendarContent }
-                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
-                    VStack(alignment: .leading, spacing: 10) {
+                    PieMetodo(theme: theme) {
                         metodoBlock
+                    } sello: {
                         sourceFooter
                     }
-                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
                     // Empty (loaded, no calibration, no data): the flat hero's reading says it.
                     heroFlat.padding(NoopMetrics.screenPadding)
@@ -134,14 +133,9 @@ struct RecoveryDetailScreen: View {
         }
     }
 
-    /// One skeleton section: a full-bleed `SeccionFranja` + its content with the handoff's standard
-    /// padding under a franja (14 · 20 · 22). The title arrives already localized.
+    /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
     private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SeccionFranja(title, theme: theme)
-            content()
-                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
-        }
+        SeccionBloque(title, theme: theme, content: content)
     }
 
     // MARK: - 1. Héroe invertido — el estado pinta el campo (FER-857)
@@ -216,21 +210,7 @@ struct RecoveryDetailScreen: View {
 
     /// The ⓘ card under the hero: what the score measures, in plain language.
     private var whatWeMeasureCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("What we measure")
-                .font(InstrumentoType.grotesk(13, weight: .semibold))
-                .foregroundStyle(theme.ink)
-            Text(heroExplanation)
-                .font(InstrumentoType.grotesk(12))
-                .lineSpacing(3)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        // Deja aire antes de la franja «Hoy, vs tu normal» (antes 0 → la franja quedaba pegada). (FER-878+)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
+        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
     }
 
     /// The flat hero for score-less states (loading / calibrating / empty / offline-with-history):

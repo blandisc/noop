@@ -61,7 +61,8 @@ public struct ContributionBars: View {
             ForEach(items) { item in
                 HStack(spacing: 10) {
                     Text(verbatim: item.label)
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .font(InstrumentoType.grotesk(11, weight: .semibold))
+                        .foregroundStyle(theme.ink)
                         .lineLimit(1).minimumScaleFactor(0.85)
                         .frame(width: 96, alignment: .leading)
                     track(for: item, max: maxAbs)
@@ -92,15 +93,16 @@ public struct ContributionBars: View {
                     .frame(width: 1, height: 16).position(x: halfW, y: cy)
                 // The bar, growing from the axis toward its pole.
                 Capsule().fill(color(for: item.years))
-                    .frame(width: barW, height: 8)
+                    .frame(width: barW, height: 14)
                     .position(x: item.years < 0 ? halfW - barW / 2 : halfW + barW / 2, y: cy)
             }
         }
-        .frame(height: 18)
+        .frame(height: 22)
     }
 
     private func color(for years: Double) -> Color {
-        if years < -0.05 { return theme.dataRecovery }   // rejuvenates
+        // dataRejuvenates (#2E7D57): deeper than dataRecovery so «rejuvenece» reads as longevity.
+        if years < -0.05 { return theme.dataRejuvenates } // rejuvenates
         if years > 0.05 { return theme.warning }          // ages you
         return theme.inkTertiary                          // ~neutral
     }
