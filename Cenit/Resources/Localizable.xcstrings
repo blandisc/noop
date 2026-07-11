@@ -58598,6 +58598,227 @@
           }
         }
       }
+    },
+    "This period": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This period"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este periodo"
+          }
+        }
+      }
+    },
+    "Kcal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kcal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kcal"
+          }
+        }
+      }
+    },
+    "Your sports": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sports"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus deportes"
+          }
+        }
+      }
+    },
+    "points": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "points"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "puntos"
+          }
+        }
+      }
+    },
+    "building": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "building"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "calibrando"
+          }
+        }
+      }
+    },
+    "return to base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "return to base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "regreso a tu base"
+          }
+        }
+      }
+    },
+    "%d sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d sesiones"
+          }
+        }
+      }
+    },
+    "Back to your base in ~1 day · %d sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to your base in ~1 day · %d sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vuelve a tu base en ~1 día · %d sesiones"
+          }
+        }
+      }
+    },
+    "Back to your base in ~%d days · %d sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to your base in ~%d days · %d sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vuelve a tu base en ~%d días · %d sesiones"
+          }
+        }
+      }
+    },
+    "Still gathering how you wake after each sport.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still gathering how you wake after each sport."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún estoy juntando cómo amaneces tras cada deporte."
+          }
+        }
+      }
+    },
+    "Your next-day Charge barely moves after the sports we can see so far.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your next-day Charge barely moves after the sports we can see so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Carga del día siguiente casi no se mueve tras los deportes que alcanzamos a ver."
+          }
+        }
+      }
+    },
+    "Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada sesión es un entrenamiento de tu banda, Apple Salud o una entrada manual. El conteo y los totales siguen el rango que eliges arriba (se amplía si ese rango está vacío)."
+          }
+        }
+      }
+    },
+    "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo suele verse tu Carga la mañana después de cada deporte, vs tus días de descanso. Observado en tu historial, no una causa."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
