@@ -58,7 +58,6 @@ public final class LiveState: ObservableObject {
     /// first event of a session; cleared on disconnect so a stale flag can't outlive the link.
     /// Flag ONLY — the battery % keeps its family-specific source (#77).
     @Published public var charging: Bool? = nil
-    @Published public var lastFrameType: String? = nil
     @Published public var lastEvent: String? = nil
     /// Wrist-wear state from WRIST_ON/WRIST_OFF events. Defaults true so wear-gated features work
     /// before the first event arrives; flipped by FrameRouter on a real event.
@@ -229,16 +228,32 @@ public final class LiveState: ObservableObject {
     /// are exactly the GATT diagnostics a shared log needs to be useful (#421). Thanks @ujix (#447) for
     /// catching the peripheral-UUID leak; this is a targeted form so we don't redact the service UUIDs.
     static func redactPii(_ s: String) -> String {
+        // Compile once (FER-866): `replacingOccurrences(…, .regularExpression)` recompiled every call.
         var out = s
-        out = out.replacingOccurrences(
-            of: "([0-9A-Fa-f]{2}):[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:([0-9A-Fa-f]{2})",
-            with: "$1:••:••:••:••:$2", options: .regularExpression)
-        out = out.replacingOccurrences(
-            of: "WHOOP (\\d[0-9A-Za-z]{5,})", with: "WHOOP <serial>", options: .regularExpression)
+        out = RedactPiiRegex.mac.stringByReplacingMatches(
+            in: out, options: [],
+            range: NSRange(location: 0, length: (out as NSString).length),
+            withTemplate: "$1:••:••:••:••:$2")
+        out = RedactPiiRegex.serial.stringByReplacingMatches(
+            in: out, options: [],
+            range: NSRange(location: 0, length: (out as NSString).length),
+            withTemplate: "WHOOP <serial>")
         // Mask a CoreBluetooth peripheral UUID, but NOT a standard-BLE / WHOOP-vendor service UUID.
-        out = out.replacingOccurrences(
-            of: "(?![0-9A-Fa-f]{8}-(?:0000-1000-8000-00805f9b34fb|8d6d-82b8-614a-1c8cb0f8dcc6))[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}",
-            with: "<device>", options: [.regularExpression, .caseInsensitive])
+        out = RedactPiiRegex.peripheralUUID.stringByReplacingMatches(
+            in: out, options: [],
+            range: NSRange(location: 0, length: (out as NSString).length),
+            withTemplate: "<device>")
         return out
     }
+}
+
+/// Patterns for `LiveState.redactPii` — compiled once, not on every log line (FER-866).
+private enum RedactPiiRegex {
+    static let mac = try! NSRegularExpression(
+        pattern: "([0-9A-Fa-f]{2}):[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:([0-9A-Fa-f]{2})")
+    static let serial = try! NSRegularExpression(
+        pattern: "WHOOP (\\d[0-9A-Za-z]{5,})")
+    static let peripheralUUID = try! NSRegularExpression(
+        pattern: "(?![0-9A-Fa-f]{8}-(?:0000-1000-8000-00805f9b34fb|8d6d-82b8-614a-1c8cb0f8dcc6))[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}",
+        options: .caseInsensitive)
 }

@@ -143,9 +143,9 @@ targets:
 
   # ---------------------------------------------------------------------------
   # FER-740: the watchOS companion (single-target watchOS 10 app). Runs the real HKWorkoutSession for a
-  # guided strength session and mirrors it to the iPhone; no GRDB on the wrist. Depends only on the two
-  # pure packages the watch needs (StrandTraining names/summarizes, StrandDesign paints) plus the shared
-  # mirroring contract in CenitShared. Only builds/signs on a physical Apple Watch (personal team).
+  # guided strength session and mirrors it to the iPhone; no GRDB on the wrist. Depends only on
+  # StrandDesign (paints) plus the shared mirroring contract in CenitShared. Only builds/signs on a
+  # physical Apple Watch (personal team).
   CenitWatch:
     type: application
     platform: watchOS
@@ -189,7 +189,6 @@ targets:
         TARGETED_DEVICE_FAMILY: "4"
         SWIFT_EMIT_LOC_STRINGS: NO
     dependencies:
-      - package: StrandTraining
       - package: StrandDesign
 
   # ---------------------------------------------------------------------------
