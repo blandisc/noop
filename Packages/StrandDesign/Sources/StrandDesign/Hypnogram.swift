@@ -37,19 +37,24 @@ public struct Hypnogram: View {
     /// real clock times (e.g. "23:42–00:04"); otherwise it shows elapsed time
     /// from the start of the night (e.g. "0:06–0:28").
     public var nightStart: Date?
+    /// Per-stage band color. Defaults to the dark `StrandPalette.sleepStageColor`
+    /// so legacy callers keep the old look; Instrumento screens pass paper tokens.
+    public var stageColor: (SleepStage) -> Color
 
     public init(
         intervals: [SleepInterval],
         height: CGFloat = 180,
         showsStageAxis: Bool = true,
         showsScrub: Bool = true,
-        nightStart: Date? = nil
+        nightStart: Date? = nil,
+        stageColor: ((SleepStage) -> Color)? = nil
     ) {
         self.intervals = intervals.sorted { $0.start < $1.start }
         self.height = height
         self.showsStageAxis = showsStageAxis
         self.showsScrub = showsScrub
         self.nightStart = nightStart
+        self.stageColor = stageColor ?? { StrandPalette.sleepStageColor($0) }
     }
 
     /// Index of the hovered interval, or nil.
@@ -109,7 +114,7 @@ public struct Hypnogram: View {
                     // stage bands
                     ForEach(Array(intervals.enumerated()), id: \.element.id) { idx, interval in
                         let rect = bandRect(for: interval, in: geo.size)
-                        let color = StrandPalette.sleepStageColor(interval.stage)
+                        let color = stageColor(interval.stage)
                         let dimmed = hoverIndex != nil && hoverIndex != idx
                         // glow under REM for the dark "REM glowing" requirement — dropped on warm
                         // paper, where bloom only muddies the band's edge (FER-131 handoff · 03).
@@ -133,7 +138,7 @@ public struct Hypnogram: View {
                     if showsScrub, let idx = hoverIndex, idx < intervals.count {
                         let interval = intervals[idx]
                         let rect = bandRect(for: interval, in: geo.size)
-                        let color = StrandPalette.sleepStageColor(interval.stage)
+                        let color = stageColor(interval.stage)
                         // vertical crosshair across the full height at band centre
                         CrosshairRule(x: rect.midX, height: geo.size.height)
                         // ring around the hovered band

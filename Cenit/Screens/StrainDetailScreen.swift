@@ -211,14 +211,15 @@ struct StrainDetailScreen: View {
                     TrendChart(
                         points: curve,
                         gradient: chartGradient,
-                        valueRange: 0...max((curve.map(\.value).max() ?? 1) * 1.15, 1),
+                        valueRange: 0...21,
                         showsArea: true,
                         height: 160,
                         showsScrub: true,
                         valueFormat: { fmt($0) },
                         dateFormat: { Self.hourString($0) },
                         axisLabelColor: theme.inkTertiary,
-                        gridLineColor: theme.hairline
+                        gridLineColor: theme.hairline,
+                        yAxisValues: [10, 21]
                     )
                     .accessibilityElement()
                     .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
@@ -397,7 +398,8 @@ struct StrainDetailScreen: View {
             heatReadout
             HeatLegend([(theme.dataStrain, String(localized: "hard+")),
                         (theme.strainRampMid, String(localized: "moderate")),
-                        (theme.strainRampLow, String(localized: "light"))], theme: theme)
+                        (theme.strainRampLow, String(localized: "light")),
+                        (theme.hairline, String(localized: "no data"))], theme: theme)
         }
     }
 

@@ -315,7 +315,15 @@ struct SleepDetailScreen: View {
                           height: 176,
                           showsStageAxis: true,
                           showsScrub: true,
-                          nightStart: night.onsetDate)
+                          nightStart: night.onsetDate,
+                          stageColor: { stage in
+                              switch stage {
+                              case .awake: return theme.dataSleepAwake
+                              case .rem:   return theme.dataSleepLight
+                              case .light: return theme.dataSleepLightest
+                              case .deep:  return theme.dataSleepDeep
+                              }
+                          })
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .instrumentoCard(.card, theme: theme)
@@ -336,9 +344,9 @@ struct SleepDetailScreen: View {
                 }
             }
             HStack(alignment: .top, spacing: 8) {
+                stageTile(.rem, "REM", s.rem, s.total, typicalPct: model.typicalRemPct)
                 stageTile(.deep, "Deep", s.deep, s.total, typicalPct: model.typicalDeepPct)
                 stageTile(.light, "Light", s.light, s.total, typicalPct: model.typicalLightPct)
-                stageTile(.rem, "REM", s.rem, s.total, typicalPct: model.typicalRemPct)
                 stageTile(.awake, "Awake", s.awake, s.total, typicalPct: nil)
             }
             BarraAncla(
@@ -406,7 +414,7 @@ struct SleepDetailScreen: View {
         switch stage {
         case .deep:  return theme.dataSleepDeep
         case .light: return theme.dataSleepLightest
-        case .rem:   return theme.dataSleep
+        case .rem:   return theme.dataSleepLight
         case .awake: return theme.dataSleepAwake
         }
     }
@@ -533,15 +541,13 @@ struct SleepDetailScreen: View {
     private func stagesVsTypicalContent(_ night: SleepDetailModel.Night) -> some View {
         let s = night.stages
         return VStack(alignment: .leading, spacing: 12) {
-            Text(verbatim: vsTypicalVerdict(s))
-                .font(InstrumentoType.grotesk(16, weight: .semibold))
-                .foregroundStyle(theme.ink)
+            vsTypicalVerdictText(s)
                 .fixedSize(horizontal: false, vertical: true)
             stageVsTypicalRow("Deep", lastMin: s.deep, total: s.total,
                               typicalPct: model.typicalDeepPct, color: theme.dataSleepDeep,
                               higherIsBetter: true, index: 0)
             stageVsTypicalRow("REM", lastMin: s.rem, total: s.total,
-                              typicalPct: model.typicalRemPct, color: theme.dataSleep,
+                              typicalPct: model.typicalRemPct, color: theme.dataSleepLight,
                               higherIsBetter: true, index: 1)
             stageVsTypicalRow("Light", lastMin: s.light, total: s.total,
                               typicalPct: model.typicalLightPct, color: theme.dataSleepLightest,
@@ -551,17 +557,84 @@ struct SleepDetailScreen: View {
         }
     }
 
-    private func vsTypicalVerdict(_ s: SleepDetailModel.Stages) -> String {
+    /// Stage-name portion(s) in `theme.dataSleep`; rest of the phrase in `theme.ink`.
+    /// Uses the same five localized full strings as before (no new copy keys).
+    private func vsTypicalVerdictText(_ s: SleepDetailModel.Stages) -> Text {
+        let font = InstrumentoType.grotesk(16, weight: .semibold)
         let deep = stageShareAbove(s.deep, s.total, model.typicalDeepPct)
         let rem = stageShareAbove(s.rem, s.total, model.typicalRemPct)
-        if deep && rem { return String(localized: "Deep and REM above your typical") }
-        if deep { return String(localized: "Deep above your typical") }
-        if rem { return String(localized: "REM above your typical") }
-        if let light = model.typicalLightPct {
+        let full: String
+        let stageNames: [String]
+        if deep && rem {
+            full = String(localized: "Deep and REM above your typical")
+            stageNames = [String(localized: "Deep"), String(localized: "REM")]
+        } else if deep {
+            full = String(localized: "Deep above your typical")
+            stageNames = [String(localized: "Deep")]
+        } else if rem {
+            full = String(localized: "REM above your typical")
+            stageNames = [String(localized: "REM")]
+        } else if let light = model.typicalLightPct {
             let last = s.total > 0 ? s.light / s.total * 100 : 0
-            if last > light + 1 { return String(localized: "More light sleep than your typical") }
+            if last > light + 1 {
+                full = String(localized: "More light sleep than your typical")
+                // EN source phrase uses "light sleep"; es-MX uses "sueño ligero".
+                let candidates = ["light sleep", "sueño ligero"]
+                stageNames = candidates.filter { full.range(of: $0, options: .caseInsensitive) != nil }
+            } else {
+                full = String(localized: "Close to your typical stage mix")
+                stageNames = []
+            }
+        } else {
+            full = String(localized: "Close to your typical stage mix")
+            stageNames = []
         }
-        return String(localized: "Close to your typical stage mix")
+        return coloredStageVerdict(full: full, stageNames: stageNames, font: font)
+    }
+
+    /// Walks `full` and paints each occurrence of a stage name in `theme.dataSleep`.
+    private func coloredStageVerdict(full: String, stageNames: [String], font: Font) -> Text {
+        guard !stageNames.isEmpty else {
+            return Text(verbatim: full)
+                .font(font)
+                .foregroundColor(theme.ink)
+        }
+        // Collect non-overlapping matches, left-to-right.
+        var matches: [(range: Range<String.Index>, name: String)] = []
+        for name in stageNames {
+            var searchFrom = full.startIndex
+            while searchFrom < full.endIndex,
+                  let r = full.range(of: name, options: .caseInsensitive, range: searchFrom..<full.endIndex) {
+                let overlaps = matches.contains { $0.range.overlaps(r) }
+                if !overlaps { matches.append((r, name)) }
+                searchFrom = r.upperBound
+            }
+        }
+        matches.sort { $0.range.lowerBound < $1.range.lowerBound }
+        guard !matches.isEmpty else {
+            return Text(verbatim: full)
+                .font(font)
+                .foregroundColor(theme.ink)
+        }
+        var result: Text?
+        var cursor = full.startIndex
+        for m in matches {
+            if cursor < m.range.lowerBound {
+                let plain = String(full[cursor..<m.range.lowerBound])
+                let t = Text(verbatim: plain).font(font).foregroundColor(theme.ink)
+                result = result.map { $0 + t } ?? t
+            }
+            let stage = String(full[m.range])
+            let t = Text(verbatim: stage).font(font).foregroundColor(theme.dataSleep)
+            result = result.map { $0 + t } ?? t
+            cursor = m.range.upperBound
+        }
+        if cursor < full.endIndex {
+            let plain = String(full[cursor...])
+            let t = Text(verbatim: plain).font(font).foregroundColor(theme.ink)
+            result = result.map { $0 + t } ?? t
+        }
+        return result ?? Text(verbatim: full).font(font).foregroundColor(theme.ink)
     }
 
     private func stageShareAbove(_ min: Double, _ total: Double, _ typical: Double?) -> Bool {

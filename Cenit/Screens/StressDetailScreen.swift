@@ -476,9 +476,9 @@ struct StressDetailScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             heatGrid
             heatReadout
-            HeatLegend([(theme.critical, String(localized: "Activated").lowercased()),
+            HeatLegend([(theme.verdict, String(localized: "Low").lowercased()),
                         (theme.warning, String(localized: "Moderate").lowercased()),
-                        (theme.verdict, String(localized: "Calm").lowercased()),
+                        (theme.critical, String(localized: "High").lowercased()),
                         (theme.rangeBand, String(localized: "no data"))], theme: theme)
         }
     }
