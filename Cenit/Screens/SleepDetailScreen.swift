@@ -162,7 +162,7 @@ struct SleepDetailScreen: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     Rectangle()
-                        .fill(theme.paper.opacity(0.28))
+                        .fill(theme.paper.opacity(OnFieldOpacity.divider))
                         .frame(width: 1, height: 52)
                     VStack(alignment: .leading, spacing: 4) {
                         if let r = model.regularity {
