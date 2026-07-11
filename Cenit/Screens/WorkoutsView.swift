@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
+import StrandTraining
 import WhoopStore
 import Foundation
 
@@ -33,6 +34,11 @@ struct WorkoutsView: View {
     @State private var allRows: [WorkoutRow]
     @State private var loaded: Bool
     @State private var range: Range = .all
+    /// Strength-tracker sessions + their Σ weight×reps volume (FER-821) — the ONLY source of workout
+    /// volume. `WorkoutRow` (Apple/journal cache) has no load field, so the «Volume» tile and the
+    /// weekly-volume chart aggregate these instead. Loaded alongside `allRows` in `.task`.
+    @State private var strengthSessions: [StrengthSession] = []
+    @State private var sessionVolumes: [String: (volumeKg: Double, setCount: Int)] = [:]
     @State private var sheet: WorkoutSheetTarget?
     /// Opens the (legacy dark) Data Sources screen from the empty state / the connect line. Self-contained.
     @State private var showDataSources = false
@@ -40,9 +46,13 @@ struct WorkoutsView: View {
     /// `.some(nil)` = add a new workout, `.some(row)` = edit `row`, `nil` = closed.
     private struct WorkoutSheetTarget: Identifiable { let editing: WorkoutRow?; let id = UUID() }
 
-    init(previewRows: [WorkoutRow]? = nil) {
+    init(previewRows: [WorkoutRow]? = nil,
+         previewStrengthSessions: [StrengthSession] = [],
+         previewSessionVolumes: [String: (volumeKg: Double, setCount: Int)] = [:]) {
         _allRows = State(initialValue: previewRows ?? [])
         _loaded = State(initialValue: previewRows != nil)
+        _strengthSessions = State(initialValue: previewStrengthSessions)
+        _sessionVolumes = State(initialValue: previewSessionVolumes)
     }
 
     var body: some View {
@@ -81,7 +91,13 @@ struct WorkoutsView: View {
         .task {
             guard !loaded else { return }
             let r = await repo.workoutRows()
+            // Strength volume (FER-821) loads in parallel with the journal rows; it never gates the
+            // loaded/empty state — a user with workouts but no strength sessions still lands on `populated`.
+            async let sessions = repo.recentSessions()
+            async let volumes = repo.sessionVolumes()
             allRows = r
+            strengthSessions = await sessions
+            sessionVolumes = await volumes
             loaded = true
             range = defaultRange(for: r)
         }
@@ -106,7 +122,7 @@ struct WorkoutsView: View {
                     .padding(.top, 14)
                     .padding(.bottom, 4)
                 totalsSection(rows: windowRows, effectiveRange: resolved)
-                // FER: no volumeByWeek / weeklyVolume series on WorkoutRow/Repository — section deferred.
+                volumeByWeekSection
                 SeccionBloque(String(localized: "By sport"), theme: theme) {
                     bySportSection(groups: groups)
                 }
@@ -160,8 +176,8 @@ struct WorkoutsView: View {
 
     // MARK: - Totals (hours · volume placeholder · kcal) — TileSurface strip
 
-    /// Window totals for the selected (effective) range. Replaces the old `supportsRow` pair; volume kg
-    /// is not on `WorkoutRow` so that tile stays a documented placeholder.
+    /// Window totals for the selected (effective) range. Volume kg is not on `WorkoutRow`, so the volume
+    /// tile aggregates strength-tracker sessions (FER-821) over the SAME time window as Hours/Kcal.
     private func totalsSection(rows: [WorkoutRow], effectiveRange: Range) -> some View {
         let totalTimeH = rows.compactMap(\.durationS).reduce(0, +) / 3600.0
         let kcalValues = rows.compactMap(\.energyKcal)
@@ -169,6 +185,8 @@ struct WorkoutsView: View {
             guard !kcalValues.isEmpty else { return "—" }
             return "\(Int(kcalValues.reduce(0, +).rounded()))"
         }()
+        let volKg = strengthVolumeKg(in: effectiveRange)
+        let volValue = volKg > 0 ? StrengthHistoryFormat.volume(volKg, system: unitSystem) : "—"
         return SeccionBloque(String(localized: "This period"),
                              pista: effectiveRange.caption,
                              theme: theme) {
@@ -178,11 +196,12 @@ struct WorkoutsView: View {
                     value: oneDecimal(totalTimeH) + "h",
                     theme: theme
                 )
-                // FER: no existe dato de volumen en WorkoutRow — placeholder
+                // Volume comes from strength-tracker sessions only (Σ weight×reps); tinted amber to tie it
+                // to the weekly-volume chart below. «—» when the window holds no strength volume.
                 TileSurface(
                     label: String(localized: "Volume"),
-                    value: "—",
-                    caption: String(localized: "kg"),
+                    value: volValue,
+                    valueColor: volKg > 0 ? theme.dataStrain : nil,
                     theme: theme
                 )
                 TileSurface(
@@ -192,6 +211,67 @@ struct WorkoutsView: View {
                 )
             }
         }
+    }
+
+    // MARK: - Volume by week (8 bars, strength-tracker volume — FER-821)
+
+    /// Weekly strength volume over the last 8 Monday-anchored weeks, the current week in amber. Hidden
+    /// entirely when every week is zero (no all-flat chart). Mirrors `WorkoutHistoryScreen.weeklyBars`.
+    @ViewBuilder private var volumeByWeekSection: some View {
+        let weeks = weeklyStrengthVolumes()
+        if weeks.contains(where: { $0.volumeKg > 0 }) {
+            let peak = max(weeks.map(\.volumeKg).max() ?? 1, 1)
+            SeccionBloque(String(localized: "Volume by week"),
+                          pista: String(localized: "8 wk"),
+                          theme: theme) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .bottom, spacing: 6) {
+                        ForEach(weeks) { w in
+                            RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: geometría de dato
+                                .fill(w.isCurrent ? theme.dataStrain : theme.hairlineStrong)
+                                .frame(height: max(3, CGFloat(w.volumeKg / peak) * 54))
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .frame(height: 54)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text("Volume over the last 8 weeks"))
+                    BarraAncla(String(localized: "This week in amber · strength volume, last 8 weeks"),
+                               color: theme.dataStrain, theme: theme)
+                }
+            }
+        }
+    }
+
+    private struct WeekVolume: Identifiable { let id: Int; let volumeKg: Double; let isCurrent: Bool }
+
+    /// Total strength volume per week over the last 8 weeks (oldest→newest), Monday-anchored; last bucket
+    /// = current week. Same bucketing as `WorkoutHistoryScreen.weeklyVolumes`.
+    private func weeklyStrengthVolumes() -> [WeekVolume] {
+        var cal = Calendar.current; cal.firstWeekday = 2
+        let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+        var buckets = [Double](repeating: 0, count: 8)
+        for s in strengthSessions {
+            let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
+            guard let ws = cal.dateInterval(of: .weekOfYear, for: date)?.start else { continue }
+            let weeksAgo = cal.dateComponents([.weekOfYear], from: ws, to: thisWeekStart).weekOfYear ?? 0
+            guard weeksAgo >= 0, weeksAgo < 8 else { continue }
+            buckets[7 - weeksAgo] += sessionVolumes[s.id]?.volumeKg ?? 0
+        }
+        return buckets.enumerated().map { WeekVolume(id: $0.offset, volumeKg: $0.element, isCurrent: $0.offset == 7) }
+    }
+
+    /// Σ strength volume for sessions whose `startTs` falls in the SAME window as the Hours/Kcal tiles
+    /// (cutoff = latest workout-row ts − range days; no cutoff for `.all`), so the tile tracks the range.
+    private func strengthVolumeKg(in r: Range) -> Double {
+        let inWindow: [StrengthSession]
+        if let days = r.days, let last = latestTs {
+            let cutoff = last - days * 86_400
+            inWindow = strengthSessions.filter { $0.startTs >= cutoff }
+        } else {
+            inWindow = strengthSessions
+        }
+        return inWindow.reduce(0) { $0 + (sessionVolumes[$1.id]?.volumeKg ?? 0) }
     }
 
     // MARK: - By sport (quiet list — no card-in-card; markup preserved inside SeccionBloque)
@@ -238,7 +318,7 @@ struct WorkoutsView: View {
         var metrics: [TarjetaSesion.Metric] = [
             .init(value: duration, label: String(localized: "Duration"))
         ]
-        // FER: volumen omitido en la tarjeta — no hay campo de carga kg en WorkoutRow; un hueco por fila es peor.
+        // No per-row volume: rows are `WorkoutRow` (journal), with no reliable join to strength sessions.
         if let s = row.strain, s > 0 {
             metrics.append(.init(
                 value: String(format: "%.1f", s),
@@ -485,10 +565,38 @@ private func previewWorkoutRows() -> [WorkoutRow] {
     ]
 }
 
+@MainActor
+private func previewStrengthSessions() -> (sessions: [StrengthSession],
+                                           volumes: [String: (volumeKg: Double, setCount: Int)]) {
+    let now = Int(Date().timeIntervalSince1970)
+    let week = 7 * 86_400
+    // One strength session per week for the last 6 weeks (leaves 2 empty weeks so the chart isn't flat).
+    let specs: [(weeksAgo: Int, vol: Double)] = [(0, 5_200), (1, 6_800), (2, 4_100), (3, 7_400), (4, 3_600), (5, 6_100)]
+    var sessions: [StrengthSession] = []
+    var volumes: [String: (volumeKg: Double, setCount: Int)] = [:]
+    for (i, s) in specs.enumerated() {
+        let id = "prev-strength-\(i)"
+        let start = now - s.weeksAgo * week - 3600
+        sessions.append(StrengthSession(id: id, startTs: start, endTs: start + 3600, strain: 9.1))
+        volumes[id] = (volumeKg: s.vol, setCount: 18)
+    }
+    return (sessions, volumes)
+}
+
+@MainActor
+private func previewWorkoutsPopulated() -> some View {
+    let strength = previewStrengthSessions()
+    return NavigationStack {
+        WorkoutsView(previewRows: previewWorkoutRows(),
+                     previewStrengthSessions: strength.sessions,
+                     previewSessionVolumes: strength.volumes)
+    }
+    .environmentObject(Repository(deviceId: "preview"))
+    .environmentObject(HealthKitBridge(repo: Repository(deviceId: "preview"), appleDeviceId: "a", noopDeviceId: "preview"))
+}
+
 #Preview("Workouts: con datos") {
-    NavigationStack { WorkoutsView(previewRows: previewWorkoutRows()) }
-        .environmentObject(Repository(deviceId: "preview"))
-        .environmentObject(HealthKitBridge(repo: Repository(deviceId: "preview"), appleDeviceId: "a", noopDeviceId: "preview"))
+    previewWorkoutsPopulated()
 }
 
 #Preview("Workouts: vacío") {
