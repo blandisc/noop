@@ -40,8 +40,6 @@ public final class FrameRouter {
         // Reject frames that failed their checksum — never let bad bytes drive state.
         if parsed.crcOK == false { return }
 
-        state.lastFrameType = parsed.typeName
-
         switch parsed.typeName {
         case "REALTIME_DATA", "REALTIME_RAW_DATA":
             // The realtime stream usually reports rr_count=0; only treat R-R as present when this frame
