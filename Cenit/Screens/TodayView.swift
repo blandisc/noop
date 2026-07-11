@@ -727,7 +727,10 @@ struct TodayView: View {
                 // Bloque FIJO del instrumento (handoff «Hoy» 2026-07): header + héroe + pestañas. Sigue
                 // dentro del scroll vertical, así que el pull-to-refresh propio (FER-222) NO cambia.
                 // Todo lo demás desliza con el pager.
-                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                // FER-878 follow-up: aire más apretado entre header y héroe (space1) para recuperar el
+                // alto que sumaron la cápsula del delta y la leyenda de orígenes, y que SEÑALES vuelva a
+                // caber sin scroll.
+                VStack(alignment: .leading, spacing: NoopMetrics.space1) {
                     headerBlock
                     HealthAlertBanner()
                     todayStatusBanner
@@ -1218,7 +1221,9 @@ struct TodayView: View {
                     .opacity((animatingHero && !heroEntered) ? 0 : 1)
                     .offset(y: (animatingHero && !heroEntered) ? 4 : 0)
                     .animation(animatingHero ? .easeOut(duration: 0.5) : nil, value: heroEntered)
-                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                // FER-878 follow-up: columna derecha más apretada (space1) — así la cápsula «vs tu base»
+                // sube y queda mejor centrada contra el número grande, y el héroe pierde alto.
+                VStack(alignment: .leading, spacing: NoopMetrics.space1) {
                     Text(heroOverline(state))
                         .groteskOverline()
                         .foregroundStyle(theme.inkTertiary)
