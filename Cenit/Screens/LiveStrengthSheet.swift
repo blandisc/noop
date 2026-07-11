@@ -776,6 +776,9 @@ struct LiveStrengthSheet: View {
     @State private var showLibraryPicker = false
     @State private var freshSuggestions: [QuickSuggestion]?
     @State private var loadedMuscle: String?
+    /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
+    /// without ending the session (mock v21 handoff). Additive only; does not replace `inlineSession`.
+    @State private var focusMode = false
 
     /// One «Sugeridos · músculos frescos hoy» row: an exercise for a fresh muscle, with its last logged set.
     struct QuickSuggestion: Identifiable {
@@ -906,6 +909,9 @@ struct LiveStrengthSheet: View {
                 )
                 .environmentObject(model)
             }
+        }
+        .fullScreenCover(isPresented: $focusMode) {
+            focusModeView
         }
         // S-2 (FER-830) → FER-837: one destructive-confirmation pattern across the flow, now the
         // «Instrumento» ConfirmCard. The stay-safe verb names its action («Keep training»), never a
@@ -1139,12 +1145,409 @@ struct LiveStrengthSheet: View {
             // Row 6: the Apple Watch mirror status (FER-742) — one tertiary line, silent unless the watch
             // is recording or failed to answer. Never competes with the session; never blocks it.
             watchStatusLine
+
+            // Focus mode entry (mock v21): full-screen capture/rest; does not replace the inline table.
+            if !isEmptyAdHoc && session.summary == nil {
+                Button { focusMode = true } label: {
+                    Label("Focus mode", systemImage: "scope")
+                        .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, NoopMetrics.gap)
+                        .background(theme.surface, in: Capsule())
+                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Focus mode"))
+                .accessibilityHint(Text("Opens a full-screen set logger"))
+            }
         }
         .padding(.horizontal, NoopMetrics.screenPadding)
         .padding(.top, 14)
         .padding(.bottom, 12)
         .background(theme.paper)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
+
+    // MARK: - Focus mode (full-screen cover · additive entry from the inline list)
+
+    /// Full-screen capture/rest surface. Closing returns to the inline table; session state is unchanged.
+    private var focusModeView: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            HStack {
+                Spacer(minLength: 0)
+                Button { focusMode = false } label: {
+                    Image(systemName: "xmark")
+                        .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
+                        .frame(width: 38, height: 38)
+                        .background(theme.surface, in: Circle())
+                        .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Close focus mode"))
+            }
+
+            if session.phase == .resting {
+                focusRestPhase
+            } else {
+                focusCapturePhase
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.top, NoopMetrics.sectionGap)
+        .padding(.bottom, NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(theme.paper.ignoresSafeArea())
+        .instrumentoTheme(theme)
+        .preferredColorScheme(.light)
+    }
+
+    @ViewBuilder private var focusCapturePhase: some View {
+        if let run = session.current {
+            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                    Text(run.name).font(StrandFont.title1).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Set \(run.currentSet + 1) of \(run.sets.count)")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
+
+                switch run.type {
+                case .weightReps:
+                    focusWeightHero
+                    focusRepsRow
+                    focusRegisterButton
+                case .bodyweight:
+                    focusRepsHero
+                    focusAddedWeightRow
+                    focusRegisterButton
+                case .time:
+                    focusTimeControls
+                case .distance:
+                    focusDistanceControls
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Text("All done").font(StrandFont.title1).foregroundStyle(theme.ink)
+                Text("No pending set. Close focus mode to finish from the list.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var focusWeightHero: some View {
+        HStack {
+            stepper(system: "minus") { session.bumpWeight(byKg: -weightStepKg) }
+                .accessibilityLabel(Text("Decrease weight"))
+            Spacer(minLength: NoopMetrics.gap)
+            VStack(spacing: 0) {
+                Text(plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)))
+                    .instrumentoHero(76).foregroundStyle(theme.dataStrain)
+                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                Text(UnitFormatter.massUnit(units)).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer(minLength: NoopMetrics.gap)
+            stepper(system: "plus") { session.bumpWeight(byKg: weightStepKg) }
+                .accessibilityLabel(Text("Increase weight"))
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var focusRepsHero: some View {
+        HStack {
+            stepper(system: "minus") { session.bumpReps(-1) }
+                .accessibilityLabel(Text("Decrease reps"))
+            Spacer(minLength: NoopMetrics.gap)
+            VStack(spacing: 0) {
+                Text("\(session.currentSet?.reps ?? 0)")
+                    .instrumentoHero(76).foregroundStyle(theme.dataStrain)
+                    .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                Text("reps").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer(minLength: NoopMetrics.gap)
+            stepper(system: "plus") { session.bumpReps(1) }
+                .accessibilityLabel(Text("Increase reps"))
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var focusRepsRow: some View {
+        HStack {
+            Text("Reps").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+            Spacer()
+            HStack(spacing: NoopMetrics.sectionGap) {
+                stepper(system: "minus", size: 34) { session.bumpReps(-1) }
+                    .accessibilityLabel(Text("Decrease reps"))
+                Text("\(session.currentSet?.reps ?? 0)")
+                    .font(StrandFont.title2).monospacedDigit().foregroundStyle(theme.ink)
+                    .frame(minWidth: 34)
+                stepper(system: "plus", size: 34) { session.bumpReps(1) }
+                    .accessibilityLabel(Text("Increase reps"))
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var focusAddedWeightRow: some View {
+        let kg = session.currentSet?.weightKg ?? 0
+        return HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Added weight").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                Text(kg > 0 ? "optional" : "optional · bodyweight only")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer()
+            HStack(spacing: NoopMetrics.sectionGap) {
+                stepper(system: "minus", size: 34) { session.bumpWeight(byKg: -weightStepKg) }
+                    .accessibilityLabel(Text("Decrease added weight"))
+                Text("+\(plateNumber(displayWeight(kg))) \(UnitFormatter.massUnit(units))")
+                    .font(StrandFont.title2).monospacedDigit()
+                    .foregroundStyle(kg > 0 ? theme.ink : theme.inkTertiary)
+                stepper(system: "plus", size: 34) { session.bumpWeight(byKg: weightStepKg) }
+                    .accessibilityLabel(Text("Increase added weight"))
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var focusRegisterButton: some View {
+        Button {
+            withAnimation(StrandMotion.gentle) {
+                session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+            }
+        } label: {
+            Label("Register set", systemImage: "checkmark")
+                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, NoopMetrics.sectionGap)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Time sets: running clock + Start / Stop-and-save. Goal store omitted (not present on the live
+    /// sheet after the Foco removal) — plain timer is the simplification.
+    @ViewBuilder private var focusTimeControls: some View {
+        let running = session.timerStart != nil
+        if running {
+            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                focusTimeReadout(elapsed: session.timerElapsed(now: ctx.date))
+            }
+        } else {
+            focusTimeReadout(elapsed: session.currentSet?.timeS ?? 0)
+        }
+        Button {
+            withAnimation(StrandMotion.gentle) {
+                if running {
+                    session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+                } else {
+                    session.startSetTimer()
+                }
+            }
+        } label: {
+            Label(running ? "Stop and save" : "Start",
+                  systemImage: running ? "stop.fill" : "play.fill")
+                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, NoopMetrics.sectionGap)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func focusTimeReadout(elapsed: Int) -> some View {
+        Text(Self.clock(elapsed))
+            .instrumentoHero(76).monospacedDigit()
+            .foregroundStyle(elapsed > 0 ? theme.dataStrain : theme.inkTertiary)
+            .minimumScaleFactor(0.5).lineLimit(1)
+            .frame(maxWidth: .infinity)
+            .accessibilityLabel(Text("Timing, \(elapsed) seconds"))
+    }
+
+    @ViewBuilder private var focusDistanceControls: some View {
+        let dist = session.currentSet?.distanceM ?? 0
+        let running = session.timerStart != nil
+        VStack(spacing: NoopMetrics.gap) {
+            HStack {
+                stepper(system: "minus") { session.bumpDistance(byMeters: -distanceStepM) }
+                    .accessibilityLabel(Text("Decrease distance"))
+                Spacer(minLength: NoopMetrics.gap)
+                VStack(spacing: 0) {
+                    Text(distanceNumber(dist))
+                        .instrumentoHero(76).foregroundStyle(theme.dataStrain)
+                        .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                    Text(imperial ? "mi" : "km").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                }
+                Spacer(minLength: NoopMetrics.gap)
+                stepper(system: "plus") { session.bumpDistance(byMeters: distanceStepM) }
+                    .accessibilityLabel(Text("Increase distance"))
+            }
+            if running {
+                TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                    Text(Self.clock(session.timerElapsed(now: ctx.date)))
+                        .font(StrandFont.title2).monospacedDigit().foregroundStyle(theme.ink)
+                        .frame(maxWidth: .infinity)
+                }
+            } else {
+                Text(Self.clock(session.currentSet?.timeS ?? 0))
+                    .font(StrandFont.title2).monospacedDigit()
+                    .foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity)
+            }
+            HStack(spacing: NoopMetrics.gap) {
+                Button {
+                    withAnimation(StrandMotion.gentle) {
+                        running ? session.stopSetTimer() : session.startSetTimer()
+                    }
+                } label: {
+                    Text(running ? "Stop" : "Start")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, NoopMetrics.gap)
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(running ? "Stop the timer" : "Start the timer"))
+            }
+        }
+        let captured = dist > 0 || (session.currentSet?.timeS ?? 0) > 0 || running
+        Button {
+            withAnimation(StrandMotion.gentle) {
+                session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+            }
+        } label: {
+            Label("Register set", systemImage: "checkmark")
+                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, NoopMetrics.sectionGap)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(!captured)
+        .opacity(captured ? 1 : StrandOpacity.dim)
+    }
+
+    /// Rest phase scaled to full-screen; reuses the inline card's readiness/time evaluation patterns.
+    private var focusRestPhase: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+
+            if session.currentRestMode == .heartRate, let started = session.restStartedAt {
+                PulseReader(model.live.pulse) { p in
+                    TimelineView(.periodic(from: started, by: 1)) { ctx in
+                        let elapsed = max(0, Int(ctx.date.timeIntervalSince(started)))
+                        let v = RestReadinessRule.evaluate(
+                            currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
+                            elapsedS: elapsed, targetHR: session.currentRestTarget)
+                        if v.state == .noSignal {
+                            focusRestTimeHero(end: session.restEndsAt, now: ctx.date, noStrapFallback: true)
+                        } else {
+                            focusRestHRHero(elapsed: elapsed, readiness: v)
+                        }
+                    }
+                }
+            } else if let end = session.restEndsAt, let started = session.restStartedAt {
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    focusRestTimeHero(end: end, now: ctx.date, noStrapFallback: false)
+                }
+            }
+
+            HStack(spacing: NoopMetrics.gap) {
+                focusRestAdjust("−15") { session.extendRest(byseconds: -15) }
+                Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
+                    Label("Skip", systemImage: "forward.fill")
+                        .font(StrandFont.headline).foregroundStyle(theme.paper)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, NoopMetrics.sectionGap)
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Skip rest"))
+                focusRestAdjust("+15") { session.extendRest(byseconds: 15) }
+            }
+        }
+    }
+
+    private func focusRestHRHero(elapsed: Int, readiness v: RestReadiness) -> some View {
+        let bpm = model.bpm ?? 0
+        let target = session.currentRestTarget
+        let ready = v.ready
+        let hue = ready ? theme.dataRecovery : theme.dataHeart
+        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            HStack {
+                Text("Resting · by HR").font(StrandFont.caption).fontWeight(.semibold)
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
+                Spacer()
+                Text("\(Self.clock(elapsed)) elapsed").font(StrandFont.caption).monospacedDigit()
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            if ready {
+                Text("Ready")
+                    .instrumentoHero(76).foregroundStyle(theme.dataRecovery)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.gap) {
+                    Text("\(bpm)").instrumentoHero(90).monospacedDigit().foregroundStyle(theme.dataHeart)
+                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                }
+            }
+            restHRTrack(bpm: bpm, target: target)
+            if let target, !ready {
+                (Text(String(localized: "dropping toward "))
+                 + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
+                 + Text(" · " + String(localized: "the strap will buzz")))
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            } else if let toReady = v.bpmToReady, !ready {
+                Text("\(toReady) bpm to ready")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+            ECGWave(color: hue, animate: true, bpm: model.bpm)
+                .frame(height: NoopMetrics.sectionGap + NoopMetrics.gap)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func focusRestTimeHero(end: Date?, now: Date, noStrapFallback: Bool) -> some View {
+        let cappedEnd = noStrapFallback
+            ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300))
+            : end
+        let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
+        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            HStack {
+                Text(noStrapFallback ? "Resting · by time" : "Resting")
+                    .font(StrandFont.caption).fontWeight(.semibold)
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
+                Spacer()
+            }
+            Text(Self.clock(remaining))
+                .instrumentoHero(90).monospacedDigit()
+                .foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
+                .contentTransition(.numericText())
+            if noStrapFallback {
+                Text("No strap signal: resting by time, 5 min cap")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(remaining == 0 ? "Rest done" : "Resting, \(remaining) seconds left"))
+    }
+
+    private func focusRestAdjust(_ label: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkSecondary)
+                .frame(width: 56)
+                .padding(.vertical, NoopMetrics.sectionGap)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                    .strokeBorder(theme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
     }
 
     /// One progress segment per non-skipped exercise: width ∝ its set count, fill = fraction of its sets done.
