@@ -6617,7 +6617,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Health"
+            "value": "Apple Salud"
           }
         }
       }
@@ -58833,6 +58833,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dónde caes"
+          }
+        }
+      }
+    },
+    "intraday, no daily series": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "intraday, no daily series"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "intradía, sin serie diaria"
+          }
+        }
+      }
+    },
+    "%lld this week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld this week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld esta semana"
+          }
+        }
+      }
+    },
+    "%d this week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d this week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d esta semana"
           }
         }
       }
