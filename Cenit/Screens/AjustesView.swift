@@ -131,7 +131,9 @@ private struct AjustesLanding: View {
                 header
 
                 profileSection
-                strapSection
+                // FER-888 (W3): en modo Solo-Apple no hay banda, así que la sección «Tu strap»
+                // (batería/estado/bitácora) se oculta. Combinado/Solo-banda: idéntico.
+                if repo.dataSourceMode.usesWhoop { strapSection }
                 moreSection
 
                 footer

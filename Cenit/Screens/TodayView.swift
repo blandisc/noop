@@ -345,15 +345,24 @@ struct TodayView: View {
     private var whyEmptyExplanation: LocalizedStringKey? {
         let state = heroState
         guard state != .verdict else { return nil }
+        // FER-888: en modo Solo-Apple el estado vacío habla del Apple Watch, no de la banda.
+        let usesWhoop = repo.dataSourceMode.usesWhoop
         switch state {
         case .loading, .verdict:
             return nil   // neutro de carga (o veredicto, ya filtrado arriba): nada que explicar todavía
         case .calibrating:
-            return "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
+            return usesWhoop
+                ? "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
+                : "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here."
         case .waiting:
             // Modificador «descargando» (ex-`.downloading`); si no, espera / base Apple.
             if isSyncing {
-                return "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
+                return usesWhoop
+                    ? "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
+                    : "We're syncing from Apple Health. As soon as it finishes, your day's verdict shows here."
+            }
+            if !usesWhoop {
+                return "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
             }
             return strapSeen
                 ? "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here."
@@ -976,7 +985,7 @@ struct TodayView: View {
                     .font(InstrumentoType.grotesk(11, weight: .semibold))
                     .tracking(2)
                     .foregroundStyle(theme.inkSecondary)
-                if let pct = live.batteryPct {
+                if let pct = live.batteryPct, repo.dataSourceMode.usesWhoop {
                     Rectangle().fill(theme.hairlineStrong)
                         .frame(width: 1, height: 11)
                         .accessibilityHidden(true)
@@ -993,9 +1002,13 @@ struct TodayView: View {
                         : Text("Strap battery: \(Int(pct.rounded()))%"))
                 }
                 Spacer(minLength: NoopMetrics.space2)
-                if liveBpm != nil { bpmButton }
-                else if bandDisconnectedDaytime { noSignalHeader }
-                headerSeal
+                // FER-888 (W3): BPM en vivo / «sin señal» / sello del dial 24h son de la banda.
+                // En modo Solo-Apple no aplican; en Combinado/Solo-banda quedan idénticos.
+                if repo.dataSourceMode.usesWhoop {
+                    if liveBpm != nil { bpmButton }
+                    else if bandDisconnectedDaytime { noSignalHeader }
+                    headerSeal
+                }
             }
             syncStatusLine
         }
