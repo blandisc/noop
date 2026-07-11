@@ -67,10 +67,12 @@ private struct EntrenarLanding: View {
     @State private var loaded = false
     @State private var routines: [Routine] = []
     @State private var exerciseCounts: [String: Int] = [:]
-    /// Exercises whose earned raise seeds today's session (FER-G): names for the hero's «Hoy subes» line.
-    @State private var raisesToday: [String] = []
+    /// Exercises whose earned raise seeds today's session (FER-G): name + proposed kg for the hero's «Hoy subes» line.
+    @State private var raisesToday: [(name: String, kg: Double)] = []
     /// Exercises whose earned raise is deferred by low recovery today (gate copy in the hero).
     @State private var deferredToday: [String] = []
+    @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
     /// Top primary muscles per routine (Spanish display labels), built from the same per-routine exercise
     /// fetch that feeds `exerciseCounts` — drives the hero muscle line and the «También en tu plan» subtitles.
     @State private var routineMuscles: [String: [String]] = [:]
@@ -279,7 +281,7 @@ private struct EntrenarLanding: View {
                     HStack(alignment: .firstTextBaseline, spacing: 7) {
                         Image(systemName: "arrow.up")
                             .font(StrandFont.glyph(.chevron, weight: .bold)).foregroundStyle(theme.dataRecovery)
-                        Text("Today you raise: \(raisesToday.joined(separator: ", "))")
+                        Text("Today you raise: \(raisesToday.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }.joined(separator: ", "))")
                             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
@@ -863,14 +865,14 @@ private struct EntrenarLanding: View {
             // the «Rutina» editor also calls — the raise the hero names is exactly the raise it seeds.
             let inventory = await MainActor.run { PlatesStore().inventory }
             let recovery = repo.today?.recovery
-            var raising: [String] = []
+            var raising: [(name: String, kg: Double)] = []
             var deferredNames: [String] = []
             for re in exs {
                 let ex = (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.applying(overrides)
                 let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
                 if let result = seed.evaluation {
                     let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
-                    if result.raise != nil { raising.append(name) }
+                    if let raise = result.raise { raising.append((name: name, kg: raise.toKg)) }
                     else if case .deferred = result.state { deferredNames.append(name) }
                 }
                 slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise))
