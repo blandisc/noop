@@ -1216,7 +1216,9 @@ struct TodayView: View {
         let state = heroState
         let animatingHero = !reduceMotion
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            HStack(alignment: .center, spacing: NoopMetrics.gap) {
+            // Alineación al TOPE del numeral (no centrada): el overline «RECUPERACIÓN DE HOY» arranca a
+            // la altura del tope del número. Gap más amplio para dar aire al héroe (FER-878 follow-up).
+            HStack(alignment: .top, spacing: NoopMetrics.sectionGapCompact) {
                 heroNumeralText(state)
                     .opacity((animatingHero && !heroEntered) ? 0 : 1)
                     .offset(y: (animatingHero && !heroEntered) ? 4 : 0)
