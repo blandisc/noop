@@ -439,8 +439,12 @@ struct RoutineEditorScreen: View {
         return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             HStack(spacing: 11) {
                 Button { detailExercise = item.exercise } label: {
-                    HStack(spacing: 11) {
-                        ExerciseThumbView(exercise: item.exercise, side: 40)
+                    ExerciseThumbView(exercise: item.exercise, side: 40)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Opens the exercise"))
+                VStack(alignment: .leading, spacing: 1) {
+                    Button { detailExercise = item.exercise } label: {
                         VStack(alignment: .leading, spacing: 1) {
                             if item.exercise.type != .weightReps {
                                 Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -448,12 +452,27 @@ struct RoutineEditorScreen: View {
                             Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(theme.ink)
                                 .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
                         }
-                        Spacer(minLength: 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("Opens the exercise"))
+                    // Progression chip under the name (mock v8) — same destination as «···» → Progression.
+                    if item.re.progressionEnabled {
+                        Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "arrow.up")
+                                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                                Text(progressionSummary(item.re))
+                                    .font(StrandFont.caption)
+                            }
+                            .foregroundStyle(theme.dataRecovery)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(locked)
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("Opens the exercise"))
+                Spacer(minLength: 8)
                 if !locked { exerciseMenu(idx) }
             }
             columnHeader(item.exercise.type)
@@ -559,6 +578,7 @@ struct RoutineEditorScreen: View {
     private func setRow(idx: Int, si: Int) -> some View {
         let set = items[idx].re.sets[si]
         let type = items[idx].exercise.type
+        let rest = RoutineSetEditing.effectiveRest(items[idx].re, si)
         return HStack(spacing: 8) {
             numeralRing(idx: idx, si: si).frame(width: 40)
             if showsWeight(type) {
@@ -567,14 +587,48 @@ struct RoutineEditorScreen: View {
             if showsReps(type) {
                 cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad, width: 58)
             }
+            // «la última vez» — grey history from session seed, one entry per set position.
+            if let prev = lastSetHistoryLabel(idx: idx, si: si, type: type) {
+                Text(prev)
+                    .font(StrandFont.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
             Spacer(minLength: 6)
-            RestChip(cfg: RoutineSetEditing.effectiveRest(items[idx].re, si), timeColor: theme.inkSecondary) {
+            if rest.mode == .heartRate {
+                HStack(spacing: 2) {
+                    Image(systemName: "heart.fill")
+                        .font(StrandFont.glyph(.chevron))
+                    Text(String(localized: "HR"))
+                        .font(StrandFont.caption)
+                }
+                .foregroundStyle(theme.dataHeart)
+                .accessibilityLabel(Text("Heart-rate rest"))
+            }
+            RestChip(cfg: rest, timeColor: theme.inkSecondary) {
                 focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
             }
             .disabled(locked)
         }
         .frame(minHeight: 44)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
+
+    /// Dim «80×7» from the seeded last session for this set index, when history exists.
+    private func lastSetHistoryLabel(idx: Int, si: Int, type: ExerciseType) -> String? {
+        guard items[idx].lastSets.indices.contains(si) else { return nil }
+        let last = items[idx].lastSets[si]
+        var parts: [String] = []
+        if showsWeight(type), let w = last.weightKg {
+            parts.append(StrengthDisplay.weightNumber(w, system: system))
+        }
+        if showsReps(type), let r = last.reps {
+            parts.append("\(r)")
+        }
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: "×")
     }
 
     /// The set numeral in a 23 px ring of the routine hue («C» for a warm-up set, at half opacity).
