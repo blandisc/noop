@@ -18,6 +18,29 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-878 — Pulido de «Hoy» al ADN §8.7 / handoff Detalle de Tendencias.
+    # Regla de copy FER-642/836: toda comparación es «vs tu base»; sin em-dash (·, :, coma).
+    "vs your baseline": "vs tu base",
+    "At your baseline": "En tu base",
+    "No baseline of your own yet": "Sin base propia aún",
+    "computed on your phone": "calculado en tu teléfono",
+    "The five marks below add up to your recovery of %lld.":
+        "Las cinco marcas de abajo suman tu recuperación de %lld.",
+    "The longer a mark, the more that signal weighed today.":
+        "Mientras más larga la marca, más pesó esa señal hoy.",
+    "HRV (how your heart's timing varied overnight) carries the most weight, because it's the earliest sign of how recovered you are.":
+        "La VFC (cómo varió el ritmo de tu corazón durante la noche) es la que más pesa, porque es la señal más temprana de qué tan recuperado estás.",
+    # Barrido de em-dashes (claves de copy nuevas tras el reemplazo · / : / punto).
+    "Support Cénit · donate or get in touch": "Apoya a Cénit · dona o escríbenos",
+    "Short night · low confidence": "Noche corta · confianza baja",
+    "Wear the strap tonight: the first of %lld nights your own baseline needs.":
+        "Usa la banda esta noche: la primera de %lld noches que tu base necesita.",
+    "All %lld nights are in. Computing your first verdict.":
+        "Las %lld noches están completas. Calculando tu primer veredicto.",
+    "Your own baseline sharpens each night · you're at %lld.":
+        "Tu base se afina cada noche · vas en %lld.",
+    "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here.":
+        "La lectura de tu día viene de cómo dormiste. Aún no hay datos de anoche. Duerme con tu banda y sincroniza en la mañana, y tu veredicto aparece aquí.",
     # Atribución por cobertura en Recuperación estimada (día Apple-only): el bloque «Hoy, vs tu normal»
     # ahora siempre presente, mostrando dirección por señal vs tu norma de Apple (sin puntos).
     "Where the signals Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.":

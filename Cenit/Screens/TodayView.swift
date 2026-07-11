@@ -150,6 +150,13 @@ struct TodayView: View {
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
     @State private var showWhyVerdict = false
+    /// FER-878: la ⓘ junto a «POR QUÉ N» abre la tarjeta «Qué medimos» (el caption explicativo ya no
+    /// flota en pantalla; vive aquí, como en Tendencias).
+    @State private var showWhatWeMeasure = false
+    /// FER-878 `recRise`: el numeral del héroe sube (opacity 0 + translateY 4→0, 0.5s ease-out) SOLO al
+    /// entrar a la pantalla. `false` en el primer frame → anima a `true` en `.onAppear`; el asentado del
+    /// sync no lo re-dispara (solo cambia con el ciclo de vida de la vista, no con los datos).
+    @State private var heroEntered = false
 
     // Rich «Instrumento» Detalle drilled into via the summary sheet's "Ver más" (FER-251). These mirror the
     // ones Cuerpo presents — Today reuses the SAME static `.build()` factories / specs, so the detail is
@@ -335,15 +342,17 @@ struct TodayView: View {
         let state = heroState
         guard state != .verdict else { return nil }
         switch state {
-        case .loading:
-            return nil   // neutro de carga: no hay «i» visible ni nada que explicar todavía
+        case .loading, .verdict:
+            return nil   // neutro de carga (o veredicto, ya filtrado arriba): nada que explicar todavía
         case .calibrating:
             return "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
-        case .downloading:
-            return "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
-        default:   // waiting / importedBaseline
+        case .waiting:
+            // Modificador «descargando» (ex-`.downloading`); si no, espera / base Apple.
+            if isSyncing {
+                return "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
+            }
             return strapSeen
-                ? "Your day's reading comes from how you slept. There's no data for last night yet — sleep with your band and sync in the morning, and your verdict shows here."
+                ? "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here."
                 : "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here."
         }
     }
@@ -409,8 +418,8 @@ struct TodayView: View {
                             .foregroundStyle(theme.critical)
                             .attentionWiggle(period: 4)
                     }
-                    .help("Support Cénit — donate or get in touch")
-                    .accessibilityLabel("Support Cénit — donate or get in touch")
+                    .help("Support Cénit · donate or get in touch")
+                    .accessibilityLabel("Support Cénit · donate or get in touch")
                 }
             }
             .overlay {
@@ -431,6 +440,9 @@ struct TodayView: View {
                                 emptyStateExplanation: whyEmptyExplanation,
                                 isRecoveryEstimated: repo.isRecoveryEstimated(Repository.localDayKey(Date())),
                                 recoveryConfidence: repo.recoveryConfidence(Repository.localDayKey(Date())))
+            }
+            .sheet(isPresented: $showWhatWeMeasure) {
+                WhatWeMeasureSheet(score: recoveryScore ?? 0, theme: theme)
             }
             // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
             // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
@@ -1066,11 +1078,12 @@ struct TodayView: View {
                 .font(StrandFont.caption).monospacedDigit()
                 .foregroundStyle(theme.verdict)
         } else if let at = live.lastSyncedAt {
+            // FER-878: la frescura del header pasa al sello de origen estándar (`OriginStamp`, el mismo
+            // que el pie de Tendencias): punto 6 px de banda + «Medido por tu banda · hace N». La lectura
+            // en reposo vino del último offload de la banda, así que el origen es `.band`.
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 let secondsAgo = Swift.max(context.date.timeIntervalSince1970 - at, 1)
-                Text("last read \(Self.compactAgo(secondsAgo))")
-                    .font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(theme.inkTertiary)
+                OriginStamp(origin: .band, when: Self.compactAgo(secondsAgo), theme: theme)
             }
         }
     }
@@ -1157,15 +1170,17 @@ struct TodayView: View {
     // hace de semáforo de estado: numeral con color de banda = la lectura de hoy está lista; numeral en
     // tinta o em-dash «—» = en espera o sin contexto. Mata el último layout pre-veredicto separado.
 
-    /// Los cuatro modos del héroe, derivados de las MISMAS señales de solo-lectura de antes (sin tocar
-    /// el motor). El orden de prioridad replica el árbol previo del `iosBody`.
+    /// FER-878: los 3 estados NARRADOS del héroe + el frame de carga, colapsados del árbol de 6 previo.
+    /// Las variantes «descargando» (FER-286) y «base Apple» (FER-106) ya NO son estados propios: son
+    /// MODIFICADORES de EN ESPERA (`.waiting`), derivados de las mismas señales de solo-lectura de antes
+    /// (`isSyncing` narra la descarga vía la línea de sync del header + el sello girando; `hasImportedBaseline`
+    /// pinta el chip «Base · Apple Salud» y el CTA «Buscar banda»). El orden de prioridad se conserva
+    /// idéntico: solo cambia la etiqueta del caso, no cuándo se entra a él.
     private enum HeroState: Equatable {
-        case loading                    // el dashboard aún no publica (repo.loaded == false): neutro, sin narrativa
-        case verdict                    // repo.today?.recovery != nil → hay número
-        case downloading                // pre-veredicto: la banda está drenando el historial de la noche (FER-286)
-        case importedBaseline           // pre-veredicto: base sembrada por Apple Health (FER-106)
-        case calibrating(nights: Int)   // pre-veredicto: strap visto, ownNights < seed
-        case waiting                    // pre-veredicto: sin strap nunca, o base propia sin lectura de hoy
+        case loading                    // el dashboard aún no publica (repo.loaded == false): esqueleto neutro, sin narrativa
+        case verdict                    // LISTO — repo.today?.recovery != nil → hay número
+        case calibrating(nights: Int)   // CALIBRANDO — strap visto, ownNights < seed
+        case waiting                    // EN ESPERA — absorbe descargando (isSyncing) y base Apple (hasImportedBaseline)
     }
 
     private var heroState: HeroState {
@@ -1176,11 +1191,10 @@ struct TodayView: View {
         // hoy, y la ventana corta siempre trae la fila de hoy; solo los narrativos pre-veredicto
         // aguardan `fullyLoaded` para no narrar un estado falso.
         if !repo.fullyLoaded { return .loading }
-        // FER-286: mientras la banda drena el historial de la noche y aún no hay recovery, el Hero dice la
-        // verdad —«Descargando la noche…»— en vez de «Falta la lectura de hoy»: el dato viene en camino,
-        // no falta. Reusa la misma señal que ya hace girar el dial (FER-221), sin agregar otra.
-        if isSyncing { return .downloading }
-        if hasImportedBaseline { return .importedBaseline }
+        // FER-286/FER-106: descargando la noche o base sembrada por Apple → EN ESPERA (la descarga la
+        // narran el header + el sello; la base Apple, el chip de procedencia). Mismo corte y prioridad que
+        // antes —solo que ahora ambos ramales caen en `.waiting` en vez de en dos casos propios.
+        if isSyncing || hasImportedBaseline { return .waiting }
         let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
         if strapSeen && ownNights < Baselines.minNightsSeed { return .calibrating(nights: ownNights) }
         return .waiting
@@ -1197,9 +1211,13 @@ struct TodayView: View {
     /// estimado.
     @ViewBuilder private var heroBlock: some View {
         let state = heroState
+        let animatingHero = !reduceMotion
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .center, spacing: NoopMetrics.gap) {
                 heroNumeralText(state)
+                    .opacity((animatingHero && !heroEntered) ? 0 : 1)
+                    .offset(y: (animatingHero && !heroEntered) ? 4 : 0)
+                    .animation(animatingHero ? .easeOut(duration: 0.5) : nil, value: heroEntered)
                 VStack(alignment: .leading, spacing: NoopMetrics.space2) {
                     Text(heroOverline(state))
                         .groteskOverline()
@@ -1216,6 +1234,7 @@ struct TodayView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear { heroEntered = true }   // FER-878: dispara recRise una vez al entrar a la pantalla
     }
 
     /// El numeral dominante (96/700 tabular, tracking −4.5). Veredicto → el score en su color de nivel
@@ -1246,7 +1265,7 @@ struct TodayView: View {
             .accessibilityAddTraits(.isButton)
         case .calibrating:
             Text(verbatim: "··").groteskHero().foregroundStyle(theme.inkTertiary)
-        case .importedBaseline, .waiting, .downloading, .loading:
+        case .waiting, .loading:
             Text(verbatim: "—").groteskHero().foregroundStyle(theme.inkTertiary)
         }
     }
@@ -1286,39 +1305,56 @@ struct TodayView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let delta = recoveryVsAverage {
-                Text(delta >= 0 ? "+\(delta) vs your average" : "−\(abs(delta)) vs your average")
-                    .font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(theme.inkSecondary)
+                heroDeltaCapsule(delta)
             }
         case .calibrating(let nights):
             Text("Calibrating")
                 .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
             Text("\(nights) of \(Baselines.minNightsSeed) nights")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-        case .downloading:
-            Text("Downloading")
-                .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-            Text("your night is on its way")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-        case .importedBaseline, .waiting:
-            Text("No reading")
-                .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-            Text(strapSeen ? "arrives with the morning sync" : "connect your band or Apple Health")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+        case .waiting:
+            if isSyncing {
+                // Modificador «descargando» (ex-`.downloading`): la noche está bajando.
+                Text("Downloading")
+                    .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
+                Text("your night is on its way")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            } else {
+                Text("No reading")
+                    .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
+                Text(strapSeen ? "arrives with the morning sync" : "connect your band or Apple Health")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         case .loading:
             // Neutro de carga: nada que narrar — el numeral «—» y la overline bastan mientras la DB publica.
             EmptyView()
         }
     }
 
-    /// El delta del héroe: la recuperación de hoy vs la media de 7 días (misma base que los tiles).
+    /// El delta del héroe: la recuperación de hoy vs tu base (misma base que los tiles).
     /// nil sin lectura o sin ≥4 días de base.
     private var recoveryVsAverage: Int? {
         guard let today = repo.today?.recovery else { return nil }
         let base = history(baselineDays()) { $0.recovery }
         guard base.count >= 4 else { return nil }
         return Int((today - base.reduce(0, +) / Double(base.count)).rounded())
+    }
+
+    /// FER-878: la cápsula del delta del héroe («+3 vs tu base»), reemplaza el texto plano «vs your
+    /// average». 500/12 SG tabular, texto en `positiveText`/`negativeText` según valencia (recuperación:
+    /// más alta es mejor) sobre un fondo del mismo tinte al 10 %, radio-cápsula, padding 3×9. La ventana
+    /// de la base («tus últimos 30 días») vive solo en el ⓘ del veredicto, no aquí (regla FER-642/836).
+    @ViewBuilder private func heroDeltaCapsule(_ delta: Int) -> some View {
+        let favorable = delta >= 0
+        let tint = favorable ? theme.positiveText : theme.negativeText
+        // Texto en dos partes: el numeral con signo (verbatim) + la clave localizada «vs tu base» como
+        // `LocalizedStringKey` cacheada (evita `String(localized:)` en el camino caliente del héroe).
+        (Text(verbatim: "\(favorable ? "+" : "\u{2212}")\(abs(delta)) ") + Text("vs your baseline"))
+            .font(InstrumentoType.grotesk(12, weight: .medium).monospacedDigit())
+            .foregroundStyle(tint)
+            .padding(.horizontal, 9).padding(.vertical, 3)
+            .background(theme.tint(tint), in: Capsule())
     }
 
     /// Una línea horizontal simple para el subrayado punteado del veredicto.
@@ -1353,10 +1389,12 @@ struct TodayView: View {
     /// primeras noches) conserva su copy honesto de `heroBody` —siguen siendo precisos— + el puente.
     @ViewBuilder private func transitionalBriefView(_ state: HeroState) -> some View {
         switch state {
-        case .waiting, .importedBaseline:
+        case .waiting where !isSyncing:
+            // EN ESPERA (sin la descarga en curso) y base Apple: el Brief «en espera» enriquecido. La
+            // descarga (isSyncing) cae al copy honesto de heroBody de abajo, como antes `.downloading`.
             waitingBrief(state)
-        default:   // downloading / calibrating — y .verdict SÍ llega aquí cuando `dailyBrief == nil`
-                   // (nivel .insufficient o < 2 viñetas): cae al copy honesto de heroBody/heroFooter (FER-547)
+        default:   // descargando (waiting+isSyncing) / calibrating — y .verdict SÍ llega aquí cuando
+                   // `dailyBrief == nil` (nivel .insufficient o < 2 viñetas): cae al copy honesto (FER-547)
             VStack(spacing: NoopMetrics.gap) {
                 heroBody(state)
                 heroFooter(state)
@@ -1825,14 +1863,21 @@ struct TodayView: View {
     @ViewBuilder private var fiveRulesBlock: some View {
         let rows = rulesRows
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            HStack {
+            HStack(spacing: NoopMetrics.space1) {
                 Text("Why \(recoveryScore ?? 0)")
                     .groteskOverline().foregroundStyle(theme.inkTertiary)
+                // FER-878: la ⓘ que abre «Qué medimos» (la explicación deja de flotar en pantalla).
+                Button { showWhatWeMeasure = true } label: {
+                    Image(systemName: "info.circle").font(StrandFont.glyph(.chevron))
+                        .foregroundStyle(theme.inkTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("What we measure"))
                 Spacer(minLength: NoopMetrics.space2)
                 Text("Length is weight")
                     .groteskOverline(small: true).foregroundStyle(theme.inkMuted)
             }
-            FiveRulesView(rows: rows)
+            FiveRulesView(rows: rows, animateEntrance: true)   // FER-878: recGrow al entrar (scaleX + stagger)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Why \(recoveryScore ?? 0): the sum of your five signals"))
@@ -2041,30 +2086,6 @@ struct TodayView: View {
         switch s {
         case .verdict:
             verdictBody
-        case .downloading:
-            // FER-286: el dial ya gira (FER-221); aquí el copy honesto de que el dato viene en camino.
-            VStack(alignment: .center, spacing: NoopMetrics.space2) {
-                Text("Downloading last night…")
-                    .font(StrandFont.headline).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Your data from last night is arriving. The first sync of the day can take a few minutes.")
-                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-        case .importedBaseline:
-            VStack(alignment: .center, spacing: NoopMetrics.space2) {
-                appleBaseChip   // FER-467: el pulso vivo se mudó al encabezado de Métricas (página 2)
-                Text("Today's reading is missing")
-                    .font(StrandFont.headline).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Use your band to add the one thing Apple Health can't: today's reading.")
-                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
         case .calibrating(let nights):
             VStack(alignment: .center, spacing: NoopMetrics.gap) {
                 calibrationDots(nights: nights)   // FER-467: pulso vivo movido al encabezado de Métricas
@@ -2076,15 +2097,35 @@ struct TodayView: View {
             .frame(maxWidth: .infinity)
         case .waiting:
             VStack(alignment: .center, spacing: NoopMetrics.space2) {
-                // FER-467: el pulso vivo se mudó al encabezado de Métricas (página 2); aquí solo el titular.
-                Text(strapSeen ? "No reading for today yet" : "No reading yet")
-                    .font(StrandFont.headline).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(strapSeen
-                     ? "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
-                     : "Connect Apple Health to start. Your WHOOP strap sharpens the reading.")
-                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if isSyncing {
+                    // Modificador «descargando» (ex-`.downloading`, FER-286): el dial ya gira (FER-221);
+                    // aquí el copy honesto de que el dato viene en camino.
+                    Text("Downloading last night…")
+                        .font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Your data from last night is arriving. The first sync of the day can take a few minutes.")
+                        .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if hasImportedBaseline {
+                    // Modificador «base Apple» (ex-`.importedBaseline`, FER-106): el chip de procedencia.
+                    appleBaseChip   // FER-467: el pulso vivo se mudó al encabezado de Métricas (página 2)
+                    Text("Today's reading is missing")
+                        .font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Use your band to add the one thing Apple Health can't: today's reading.")
+                        .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    // FER-467: el pulso vivo se mudó al encabezado de Métricas (página 2); aquí solo el titular.
+                    Text(strapSeen ? "No reading for today yet" : "No reading yet")
+                        .font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(strapSeen
+                         ? "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
+                         : "Connect Apple Health to start. Your WHOOP strap sharpens the reading.")
+                        .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
@@ -2113,7 +2154,7 @@ struct TodayView: View {
                 // conserva (a11y / otros consumidores), pero el Hero ya no lo muestra entero.
                 HStack(spacing: NoopMetrics.space2) {
                     Image(systemName: "exclamationmark.triangle.fill").font(StrandFont.glyph(.chevron))
-                    Text("Short night — low confidence").font(StrandFont.caption)
+                    Text("Short night · low confidence").font(StrandFont.caption)
                 }
                 .foregroundStyle(theme.warning)
             }
@@ -2154,14 +2195,16 @@ struct TodayView: View {
     /// limpio: número + veredicto. En veredicto / espera-con-strap el pie del héroe no muestra nada.
     @ViewBuilder private func heroFooter(_ s: HeroState) -> some View {
         switch s {
-        case .verdict, .downloading, .waiting, .loading:
+        case .verdict, .loading:
             // En espera sin fuentes el CTA vive en la tarjeta de fuentes (`emptySourcesCard`), no en
             // el pie del héroe. (FER-364)
             EmptyView()
         case .calibrating:
             appleHealthShortcut { showDataSources = true }
-        case .importedBaseline:
-            if !strapSeen { scanButton }
+        case .waiting:
+            // Modificador «base Apple» (ex-`.importedBaseline`) sin banda vista → CTA «Buscar banda».
+            // Descargando o espera pura → vacío (el CTA de espera vive en `emptySourcesCard`).
+            if hasImportedBaseline && !strapSeen { scanButton }
         }
     }
 
@@ -2251,9 +2294,9 @@ struct TodayView: View {
     /// Enmarca el conteo como las noches que tu PROPIA base necesita, nunca «tu veredicto».
     private func calibrationDetailCopy(nights: Int) -> LocalizedStringKey {
         let total = Baselines.minNightsSeed
-        if nights == 0 { return "Wear the strap tonight — the first of \(total) nights your own baseline needs." }
-        if nights >= total { return "All \(total) nights are in — computing your first verdict." }
-        return "Your own baseline sharpens each night — you're at \(nights)."
+        if nights == 0 { return "Wear the strap tonight: the first of \(total) nights your own baseline needs." }
+        if nights >= total { return "All \(total) nights are in. Computing your first verdict." }
+        return "Your own baseline sharpens each night · you're at \(nights)."
     }
 
     /// Atajo de adelanto por Apple Health (solo en calibración): un usuario con historial puede sembrar la
@@ -2507,6 +2550,30 @@ struct TodayView: View {
                                          betterHigher: false, deadband: 0.1, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .stress(stressT) }
             }
+            originLegend   // FER-878: la leyenda de puntos de origen vuelve bajo la retícula (FER-743 la retiró).
+        }
+    }
+
+    /// FER-878: la leyenda de puntos de origen, anclada bajo la retícula 2×4 tras un hairline. Decodifica
+    /// el punto de cada tile: banda (verde) · Apple Salud (azul) · calculado en tu teléfono (gris). El
+    /// texto en tinta terciaria 11 pt, igual que el sello de origen del header.
+    private var originLegend: some View {
+        HStack(spacing: NoopMetrics.gap + 2) {
+            legendItem(origin: .band, label: "band")
+            legendItem(origin: .apple, label: "Apple Health source")
+            legendItem(origin: .computed, label: "computed on your phone")
+        }
+        .padding(.top, NoopMetrics.space2)
+        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
+        .accessibilityHidden(true)
+    }
+
+    /// El punto de cada origen sale de `DataOrigin.color(theme)` — la MISMA fuente que el sello del
+    /// header (`OriginStamp`), para que el color del punto y su significado nunca se separen.
+    private func legendItem(origin: DataOrigin, label: LocalizedStringKey) -> some View {
+        HStack(spacing: 5) {
+            Circle().fill(origin.color(theme)).frame(width: 6, height: 6)
+            Text(label).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
     }
 
@@ -2574,12 +2641,12 @@ struct TodayView: View {
         let mean = valid.reduce(0, +) / Double(valid.count)
         let change = t - mean
         if abs(change) <= deadband {
-            return .ready(text: String(localized: "At your 7-day average"), color: theme.inkSecondary)
+            return .ready(text: String(localized: "At your baseline"), color: theme.inkSecondary)
         }
         let up = change > 0
         let color: Color = betterHigher.map { (up == $0) ? positive : theme.negativeText } ?? theme.inkSecondary
         let sign = up ? "+" : "\u{2212}"
-        return .ready(text: "\(sign)\(format(abs(change))) \(String(localized: "vs your 7-day average"))",
+        return .ready(text: "\(sign)\(format(abs(change))) \(String(localized: "vs your baseline"))",
                       color: color)
     }
 
@@ -2706,7 +2773,7 @@ struct TodayView: View {
                     .foregroundStyle(color)
                     .lineLimit(1).minimumScaleFactor(0.75)
             case .building:
-                Text("No average of your own yet")
+                Text("No baseline of your own yet")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.75)
             case .none:
@@ -3138,3 +3205,48 @@ struct TodayView: View {
         .preferredColorScheme(.light)
 }
 #endif
+
+/// FER-878: la tarjeta «Qué medimos» que abre la ⓘ junto a «POR QUÉ N». Saca de la pantalla el caption
+/// explicativo (ya no flota bajo las cinco reglas) y lo deja aquí, en la misma superficie radio-12 que las
+/// tarjetas de Tendencias: la suma encendida ES el numeral, el largo de cada marca es su peso, y por qué
+/// la VFC pesa más. El tema se pasa explícito (no se propaga por `.sheet`).
+private struct WhatWeMeasureSheet: View {
+    let score: Int
+    var theme: InstrumentoTheme = .base
+    @State private var contentHeight: CGFloat = 0
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                Text("What we measure")
+                    .font(StrandFont.title2)
+                    .foregroundStyle(theme.ink)
+                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                    Text("The five marks below add up to your recovery of \(score).")
+                    Text("The longer a mark, the more that signal weighed today.")
+                    Text("HRV (how your heart's timing varied overnight) carries the most weight, because it's the earliest sign of how recovered you are.")
+                }
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(NoopMetrics.gap)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .instrumentoCard(.control, theme: theme)   // superficie + hairline, radio 12 (como Tendencias)
+            }
+            .padding(NoopMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { g in
+                Color.clear.preference(key: WhatWeMeasureHeightKey.self, value: g.size.height)
+            })
+        }
+        .onPreferenceChange(WhatWeMeasureHeightKey.self) { contentHeight = $0 }
+        .background(theme.paper)
+        .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.medium])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+private struct WhatWeMeasureHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
