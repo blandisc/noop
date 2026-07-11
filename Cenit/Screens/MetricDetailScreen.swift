@@ -721,6 +721,7 @@ struct MetricDetailScreen: View {
     @ViewBuilder private func stepsBodyFinal(_ window: MetricWindow) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             stepsHeroFinal
+            if infoOpen { queMedimosCardFinal }
             if !loaded {
                 ChartWell(theme).loading(height: 160)
                     .padding(.horizontal, 20)
@@ -752,7 +753,7 @@ struct MetricDetailScreen: View {
             title: "Steps",
             hue: metricHue,
             theme: theme,
-            onInfo: nil,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
             numeral: {
                 if stepsToday == nil {
                     Text(verbatim: "—")
@@ -848,6 +849,7 @@ struct MetricDetailScreen: View {
     @ViewBuilder private func vo2maxBodyFinal(_ window: MetricWindow) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             vo2maxHeroFinal
+            if infoOpen { queMedimosCardFinal }
             if !loaded {
                 ChartWell(theme).loading(height: 160)
                     .padding(.horizontal, 20)
@@ -878,7 +880,7 @@ struct MetricDetailScreen: View {
             title: "VO₂ Max",
             hue: metricHue,
             theme: theme,
-            onInfo: nil,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
             numeral: {
                 if heroValue == nil {
                     Text(verbatim: "—")
@@ -1379,6 +1381,9 @@ struct MetricDetailScreen: View {
             return "Your step count for today. Steady activity, even a short walk, supports your heart, your mood and your recovery."
         case ("steps", .trend):
             return "Where your steps are headed this month compared with last month."
+
+        case ("vo2max", .header):
+            return "Your Apple Watch's estimate of your aerobic fitness: how well your body uses oxygen. Higher usually means better cardio shape; it's an estimate, not a lab test."
 
         default:
             return nil

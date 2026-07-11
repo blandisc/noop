@@ -58887,6 +58887,23 @@
           }
         }
       }
+    },
+    "Your Apple Watch's estimate of your aerobic fitness: how well your body uses oxygen. Higher usually means better cardio shape; it's an estimate, not a lab test.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Apple Watch's estimate of your aerobic fitness: how well your body uses oxygen. Higher usually means better cardio shape; it's an estimate, not a lab test."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La estimación que hace tu Apple Watch de tu condición aeróbica: qué tan bien usa tu cuerpo el oxígeno. Más alto suele significar mejor forma cardiovascular; es una estimación, no una prueba de laboratorio."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

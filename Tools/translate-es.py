@@ -1977,6 +1977,7 @@ ES: dict[str, str] = {
     "Your band": "Tu banda",
     "This period": "Este periodo",
     "Where you fall": "Dónde caes",
+    "Your Apple Watch's estimate of your aerobic fitness: how well your body uses oxygen. Higher usually means better cardio shape; it's an estimate, not a lab test.": "La estimación que hace tu Apple Watch de tu condición aeróbica: qué tan bien usa tu cuerpo el oxígeno. Más alto suele significar mejor forma cardiovascular; es una estimación, no una prueba de laboratorio.",
     # Fase 4 — landing de Tendencias (decisiones del dueño).
     "Today's values · last month's trends": "Valores de hoy · tendencias del último mes",
     "intraday, no daily series": "intradía, sin serie diaria",
