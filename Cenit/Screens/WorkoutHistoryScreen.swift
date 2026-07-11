@@ -21,6 +21,10 @@ struct WorkoutSessionRoute: Hashable {
     let routineName: String
 }
 
+/// Route pushed onto the Entrenar stack for the saved thermal-receipts grid.
+struct SavedTicketsRoute: Hashable {}
+
+
 /// Cross-screen state for the workout-history stack (FER-556). The detail is a sibling pushed onto the
 /// same NavigationStack as the list, not its child — so a delete or edit done in the detail can't reach
 /// the list directly. This shared object bridges them: the detail seeds `pendingUndo` (the list shows the
@@ -64,6 +68,7 @@ struct WorkoutHistoryScreen: View {
                         monthlyTotal
                         weeklyBars
                         list
+                        savedTicketsEntry
                     }
                 }
             }
@@ -163,6 +168,59 @@ struct WorkoutHistoryScreen: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Saved tickets entry (thermal receipts peek)
+
+    private var savedTicketsEntry: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            NavigationLink(value: SavedTicketsRoute()) {
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(theme.hairline)
+                        .frame(width: 38, height: 38)
+                        .overlay(
+                            Image(systemName: "doc.plaintext")
+                                .font(StrandFont.glyph(.inline, weight: .semibold))
+                                .foregroundStyle(theme.ink)
+                        )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("My saved tickets").font(StrandFont.title2).foregroundStyle(theme.ink)
+                        Text("\(sessions.count) receipts · today's on top")
+                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(StrandFont.glyph(.chevron, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                }
+                .padding(NoopMetrics.cardPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                    .strokeBorder(theme.hairline, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: 10) {
+                ForEach(Array(sessions.prefix(3).enumerated()), id: \.element.id) { index, session in
+                    MiniTicketView(ticket: TicketMapping.miniTicket(
+                        for: session,
+                        index: index,
+                        routineName: session.routineId.flatMap { routineNames[$0] },
+                        volumeKg: volumes[session.id]?.volumeKg ?? 0,
+                        system: system
+                    ))
+                    .frame(width: 110)
+                }
+            }
+
+            BarraAncla(
+                String(localized: "Each session saves its receipt. Open them to reprint or share."),
+                color: theme.dataStrain,
+                theme: theme
+            )
         }
     }
 

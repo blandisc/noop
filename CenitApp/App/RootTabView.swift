@@ -120,6 +120,9 @@ struct RootTabView: View {
                 .navigationDestination(for: MuscleVolumeRoute.self) { _ in
                     trainChrome(MuscleVolumeScreen())
                 }
+                .navigationDestination(for: SavedTicketsRoute.self) { _ in
+                    trainChrome(SavedTicketsScreen())
+                }
             }
             .environmentObject(workoutHistory)
             .toolbar(.hidden, for: .tabBar)
