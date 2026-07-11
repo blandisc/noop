@@ -737,7 +737,7 @@ struct TodayView: View {
                     heroBlock
                 }
                 sectionTabs
-                    .padding(.top, NoopMetrics.space2)
+                    .padding(.top, NoopMetrics.space1)   // FER-878 follow-up: cromo apretado para caber sin scroll
                 // Franja de carga (FER-705 · handoff «Carga»): vive en el bloque FIJO, bajo las pestañas, así
                 // que es visible en AMBAS páginas del pager (Señales y Brief) y no viaja con el swipe. No
                 // respira ni participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no
@@ -746,7 +746,7 @@ struct TodayView: View {
                     TrainingLoadStrip(model: trainingLoad, theme: theme) {
                         trainingLoadItem = makeTrainingLoadItem(trainingLoad)
                     }
-                    .padding(.top, NoopMetrics.sectionGapCompact)
+                    .padding(.top, NoopMetrics.space2)   // FER-878 follow-up: 16→8 para caber sin scroll
                 }
                 // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Full-bleed (FER-725):
                 // se le pasa el ancho COMPLETO de la pantalla y el pager cancela el margen del padre por
@@ -1854,9 +1854,9 @@ struct TodayView: View {
     /// Página 1 del pager: SEÑALES — el bloque «POR QUÉ N» (las cinco reglas, solo con veredicto) +
     /// la retícula 2×4 de tiles; o la tarjeta de fuentes si no hay ninguna (FER-364).
     @ViewBuilder private var senalesPage: some View {
-        // Gap `gap` (12) en vez de `sectionGapCompact` (16) entre «Por qué N» y la retícula: aire
-        // suficiente entre ambos bloques y −4 pt para que SEÑALES quepa sin scroll (solo esta página).
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        // Gap `space2` (8) entre «Por qué N» y la retícula (FER-878 follow-up: 12→8 para recuperar el alto
+        // que sumó la leyenda de orígenes y el numeral más grande, y que SEÑALES quepa sin scroll).
+        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             if heroState == .verdict, !rulesRows.isEmpty { fiveRulesBlock }
             if noSources { emptySourcesCard } else { iosMetricsSection }
         }
@@ -2570,7 +2570,7 @@ struct TodayView: View {
             legendItem(origin: .apple, label: "Apple Health source")
             legendItem(origin: .computed, label: "computed on your phone")
         }
-        .padding(.top, NoopMetrics.space2)
+        .padding(.top, NoopMetrics.space1)   // FER-878 follow-up: 8→4, cabe sin scroll
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
         .accessibilityHidden(true)
     }
