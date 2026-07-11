@@ -1,5 +1,5 @@
 import Foundation
-import Combine
+import Observation
 
 /// One line in the on-device strap diagnostic log. Stable `id` so SwiftUI can diff
 /// append/trim without re-rendering every row when the 200-line cap drops the head (FER-876).
@@ -15,9 +15,15 @@ public struct LogLine: Identifiable {
 /// Observable snapshot of the live connection + biometric state, driven by FrameRouter
 /// (from decoded frames) and BLEManager (from CoreBluetooth callbacks).
 /// `@MainActor` so SwiftUI views observe it safely; mutators are called on the main queue.
+/// FER-874: `@Observable` (not `ObservableObject`) so SwiftUI tracks reads per-property — a change to
+/// any one of the ~26 fields invalidates only the views that actually read THAT field, instead of every
+/// view observing LiveState (the class-wide invalidation FER-30/FER-755 had to mitigate by hand). The
+/// two former `$bonded`/`$lastSyncedAt` Combine sinks became `onBondedChange`/`onSyncCompleted` callbacks
+/// (the existing `onDoubleTap` pattern), since `@Observable` has no `$` publishers.
 @MainActor
-public final class LiveState: ObservableObject {
-    @Published public var connected: Bool = false {
+@Observable
+public final class LiveState {
+    public var connected: Bool = false {
         didSet { if connected && !oldValue { beatsThisSession = 0 } }  // fresh session → zero the live beat tally
     }
     // NOTE: do NOT auto-clear `pairingHint` when `bonded` flips true. On a 5/MG, `bonded` is also set by
@@ -25,7 +31,14 @@ public final class LiveState: ObservableObject {
     // there hides the still-accurate "free the strap" guidance from users who are streaming HR but never
     // got the real encrypted bond (issue #69). The genuine bond path clears the hint itself (the
     // CLIENT_HELLO ack), and a fresh connect attempt resets it.
-    @Published public var bonded: Bool = false
+    public var bonded: Bool = false {
+        // FER-874: replaces the `live.$bonded.removeDuplicates()` sink — fire once per bond transition.
+        didSet { if bonded != oldValue { onBondedChange?(bonded) } }
+    }
+    /// Fired once per `bonded` transition (true/false). Wired by AppModel to re-arm the smart alarm on
+    /// (re)bond (#59). Replaces the former Combine `$bonded` sink (FER-874); the `!= oldValue` guard is
+    /// the `removeDuplicates()` it carried.
+    public var onBondedChange: ((Bool) -> Void)?
     /// True ONLY when the link reached a GENUINE encrypted bond — the WHOOP 5/MG CLIENT_HELLO ack, the
     /// WHOOP 4 confirmed-write bond, or a restored already-bonded link. Deliberately NOT set by the
     /// live-HR shortcut that flips `bonded` true when HR streams over the *unbonded* standard profile on
@@ -33,7 +46,7 @@ public final class LiveState: ObservableObject {
     /// paired"). WHOOP 4 always reaches a genuine bond, so the two track together there. Reset on
     /// connect/disconnect. Drives the Live pill's two-state distinction; the encrypted channel (buzz,
     /// alarm, double-tap, history offload) only works when this is true.
-    @Published public var encryptedBond: Bool = false
+    public var encryptedBond: Bool = false
 
     /// The per-heartbeat slice (heartRate/rr/beats/smoothed bpm) lives in its own observable so the
     /// ~1 Hz cadence doesn't invalidate every screen observing LiveState (FER-755). The properties
@@ -43,7 +56,7 @@ public final class LiveState: ObservableObject {
 
     /// Publishes ONLY the nil↔value transitions of `heartRate`, so container views can key
     /// visibility ("show the live pill?") off LiveState without subscribing to every beat.
-    @Published public private(set) var hrStreaming = false
+    public private(set) var hrStreaming = false
 
     public var heartRate: Int? {
         get { pulse.heartRate }
@@ -63,18 +76,18 @@ public final class LiveState: ObservableObject {
         get { pulse.beatsThisSession }
         set { pulse.beatsThisSession = newValue }
     }
-    @Published public var batteryPct: Double? = nil
+    public var batteryPct: Double? = nil
     /// Charging flag from the strap's BATTERY_LEVEL events — wire observation: u8 bit0 in the
     /// event payload (4.0 @26 / 5.0 @30), pushed ~every 8 min on captured links. nil until the
     /// first event of a session; cleared on disconnect so a stale flag can't outlive the link.
     /// Flag ONLY — the battery % keeps its family-specific source (#77).
-    @Published public var charging: Bool? = nil
-    @Published public var lastEvent: String? = nil
+    public var charging: Bool? = nil
+    public var lastEvent: String? = nil
     /// Wrist-wear state from WRIST_ON/WRIST_OFF events. Defaults true so wear-gated features work
     /// before the first event arrives; flipped by FrameRouter on a real event.
-    @Published public var worn: Bool = true
+    public var worn: Bool = true
     /// Rolling log of human-readable lines for the on-device verification checklist.
-    @Published public var log: [LogLine] = []
+    public var log: [LogLine] = []
 
     /// Fired (live only) when the strap reports a DOUBLE_TAP gesture. Wired by AppModel to the
     /// user's chosen action. Debounced in AppModel.
@@ -84,41 +97,49 @@ public final class LiveState: ObservableObject {
 
     /// True when the stuck-strap watchdog finds the strap has newer records than us but our frontier
     /// won't advance (likely needs a manual reboot; ~never after high-freq-sync removal). Banner-only.
-    @Published public var strapNeedsReboot = false
+    public var strapNeedsReboot = false
 
     /// Wall time (unix seconds) of the last successfully-completed offload (a sync, even if nothing new
     /// came — i.e. caught up). Drives the sync tile + the staleness nudge.
-    @Published public var lastSyncedAt: TimeInterval?
+    public var lastSyncedAt: TimeInterval? {
+        // FER-874: replaces the `live.$lastSyncedAt.dropFirst().compactMap().removeDuplicates()` sink.
+        // didSet never fires on init (so `dropFirst` is implicit); the non-nil + `!= oldValue` guard is
+        // `compactMap` + `removeDuplicates`.
+        didSet { if let v = lastSyncedAt, v != oldValue { onSyncCompleted?(v) } }
+    }
+    /// Fired on each new, non-nil, distinct `lastSyncedAt` — a completed offload. Wired by AppModel to
+    /// refresh the dashboard after a backfill. Replaces the former Combine `$lastSyncedAt` sink (FER-874).
+    public var onSyncCompleted: ((TimeInterval) -> Void)?
 
     /// Set when an offload ended abnormally (the idle watchdog fired — the strap went quiet mid-sync),
     /// so a stalled history download isn't silent. Cleared by the next successful HISTORY_COMPLETE.
     /// Process-local on purpose (mirrors Android, ed6a31d): the next connect / 15-min tick re-offloads
     /// anyway, so persisting a stale error across launches would outlive its relevance.
-    @Published public var lastSyncError: String? = nil
+    public var lastSyncError: String? = nil
 
     /// The strap's own stored-history window (real-unix seconds) from the last `GET_DATA_RANGE`
     /// response — proof the SENSOR captured data and the band still holds it. `oldest`/`newest` are
     /// the min/max plausible-unix markers in that response; both nil until a range response arrives.
     /// Surfaced read-only in the Data Sources sync diagnostic (FER-83).
-    @Published public var strapHistoryOldest: TimeInterval?
-    @Published public var strapHistoryNewest: TimeInterval?
+    public var strapHistoryOldest: TimeInterval?
+    public var strapHistoryNewest: TimeInterval?
 
     /// Per-sensor "data receipt" for the current/last offload session — proof NOOP received, decoded
     /// and stored the strap's history. The per-sensor counts are rows ACTUALLY persisted (from
     /// `StreamStore.insert`'s return, accumulated across chunks); `framesReceived` vs `rowsDecoded`
     /// distinguish "the band had nothing new" (no frames) from "frames arrive but don't decode"
     /// (frames, zero decoded rows — the silent-loss case, #30/#77). Zeroed when a fresh offload begins.
-    @Published public var syncReceipt = SyncReceipt()
+    public var syncReceipt = SyncReceipt()
 
     /// FER-93: the last offload judged the strap's RTC likely lost (narrating CONSOLE_LOGS / no biometry /
     /// implausible stored-history range) — it isn't saving to flash. Drives the honest "clock lost, re-setting
     /// it" sync diagnostic; cleared the moment type-47 flows again. Set in `exitBackfilling` from `RtcHealthPolicy`.
-    @Published public var rtcLikelyLost = false
+    public var rtcLikelyLost = false
 
     /// True once a historical offload has run to completion (HISTORY_COMPLETE) THIS session — so the
     /// sync diagnostic only shows its receipt + verdict after a real sync, not a stale `lastSyncedAt`
     /// restored from a prior launch. Reset when a fresh offload begins (FER-83).
-    @Published public var syncCompletedThisSession = false
+    public var syncCompletedThisSession = false
 
     /// Accumulated offload receipt. Per-sensor fields mirror the six sensor streams the diagnostic
     /// shows (hr/rr/spo₂/temp/respiration/movement); `framesReceived`/`biometricFrames`/`rowsDecoded`
@@ -169,19 +190,19 @@ public final class LiveState: ObservableObject {
 
     /// True while a historical offload session is running, so screens can say "Syncing strap
     /// history…" instead of presenting half-loaded data as final (#77).
-    @Published public var backfilling = false
+    public var backfilling = false
     /// True in the brief window between one offload session closing and the auto-continue gate (FER-480)
     /// deciding — async, because it awaits the persisted frontier — whether to chain another. Screens OR
     /// this with `backfilling` so the «Descargando la noche…» hero stays steady across chained sessions
     /// instead of flickering off for the async hop. Set when a clean session ends; cleared once the gate
     /// has decided (if it chained, `backfilling` is already true again).
-    @Published public var draining = false
+    public var draining = false
     /// Chunks acked during the current offload session — an honest progress signal (total pending is
     /// unknowable from the protocol, so a count, never a percent).
-    @Published public var syncChunksThisSession: Int = 0
+    public var syncChunksThisSession: Int = 0
     /// Incremented each time a standard-HR flush commits to SQLite. TodayView observes this
     /// to re-query hrBuckets immediately, without waiting for the 15-min analyzeRecent cycle.
-    @Published public var hrFlushSeq: Int = 0
+    public var hrFlushSeq: Int = 0
 
     /// Optional hook invoked on every battery update (wired by LiveViewModel to the alert monitor).
     /// Kept as a closure so LiveState stays a plain observable snapshot with no alert dependency.
@@ -189,28 +210,28 @@ public final class LiveState: ObservableObject {
 
     /// Number of WHOOP 5/MG ("puffin") frames captured this session (when frame capture is enabled in
     /// Settings → Experimental). Drives the capture status line + export button.
-    @Published public var puffinCaptureCount: Int = 0
+    public var puffinCaptureCount: Int = 0
     /// On-disk location of the current puffin capture file, once anything has been flushed. The
     /// Settings "Export" / "Reveal" actions target this URL.
-    @Published public var puffinCaptureURL: URL?
+    public var puffinCaptureURL: URL?
 
     /// Set when a WHOOP 5/MG strap refuses the encrypted bond on first connect ("Encryption/Authentication
     /// is insufficient") — CoreBluetooth won't start a fresh just-works bond against a strap still bonded to
     /// the official WHOOP app. Surfaced as actionable pairing-mode guidance; cleared once the link bonds.
-    @Published public var pairingHint: String? = nil
+    public var pairingHint: String? = nil
 
     /// Set when a connect attempt fails because the strap wiped its bond ("Peer removed pairing
     /// information") — a firmware update, or the official WHOOP app re-bonding it. macOS keeps re-presenting
     /// the now-stale pairing key, so reconnects loop on the same error with no recovery. Carries an
     /// actionable forget-and-re-pair guide; cleared on the next successful connect. (5/MG firmware reset, 2026-06)
-    @Published public var reconnectGuide: String? = nil
+    public var reconnectGuide: String? = nil
 
     /// Set when NOOP detects a marginal Bluetooth radio that can't sustain the WHOOP 4 R10/R11 raw realtime
     /// stream (#80 — a 2016 Mac / OpenCore drops the link the instant that high-bandwidth burst is armed).
     /// After repeated arm-then-timeout cycles NOOP stops arming the heavy stream and falls back to the
     /// low-bandwidth 0x2A37 standard Heart Rate profile, so live HR can still flow on a radio that otherwise
     /// looped forever. Informational note for the Live screen; cleared on a clean reconnect or Live re-open.
-    @Published public var standardHRMode: String? = nil
+    public var standardHRMode: String? = nil
 
     public init() {}
 

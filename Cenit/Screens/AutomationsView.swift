@@ -21,7 +21,7 @@ private struct AutomationsContent: View {
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var behavior: BehaviorStore
     @EnvironmentObject var inactivity: InactivityPrefs
-    @EnvironmentObject var live: LiveState
+    @Environment(LiveState.self) var live
     @Environment(\.instrumentoTheme) private var theme
 
     var body: some View {

@@ -154,7 +154,7 @@ private enum CuerpoSheet: Identifiable {
 
 private struct CuerpoLanding: View {
     @EnvironmentObject var repo: Repository
-    @EnvironmentObject var live: LiveState
+    @Environment(LiveState.self) var live
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var health: HealthKitBridge
     @EnvironmentObject var tabRouter: TabRouter
@@ -315,7 +315,7 @@ private struct CuerpoLanding: View {
             CompareView()
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
-                .environmentObject(live)
+                .environment(live)
                 .environmentObject(model)
                 .environmentObject(health)
         }
@@ -327,7 +327,7 @@ private struct CuerpoLanding: View {
             NavigationStack { WorkoutsView() }
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
-                .environmentObject(live)
+                .environment(live)
                 .environmentObject(model)
                 .environmentObject(health)
         }
@@ -347,7 +347,7 @@ private struct CuerpoLanding: View {
             }
             .instrumentoTheme(theme)
             .environmentObject(repo)
-            .environmentObject(live)
+            .environment(live)
             .environmentObject(model)
             .environmentObject(health)
         }
@@ -1164,7 +1164,7 @@ private struct CuerpoLanding: View {
         }
         .instrumentoTheme(theme)
         .environmentObject(repo)
-        .environmentObject(live)
+        .environment(live)
         .environmentObject(model)
         .environmentObject(health)
         .preferredColorScheme(.light)
@@ -1492,7 +1492,7 @@ private struct CuerpoLanding: View {
 
     return CuerpoView()
         .environmentObject(repo)
-        .environmentObject(LiveState())
+        .environment(LiveState())
         .environmentObject(AppModel())
         .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
         .frame(width: 390, height: 900)

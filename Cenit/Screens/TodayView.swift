@@ -54,7 +54,7 @@ private struct SleepDetailItem: Identifiable {
 
 struct TodayView: View {
     @EnvironmentObject var repo: Repository
-    @EnvironmentObject var live: LiveState
+    @Environment(LiveState.self) var live
 
     #if os(iOS)
     // iOS-only: the root app state, so the first-launch empty state's "Scan for strap" CTA can kick
@@ -685,7 +685,7 @@ struct TodayView: View {
         .sheet(isPresented: $showLiveMonitor) {
             LiveView(theme: theme, monitorOnly: true)
                 .environmentObject(model)
-                .environmentObject(live)
+                .environment(live)
                 .environmentObject(repo)
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
@@ -712,7 +712,7 @@ struct TodayView: View {
             .instrumentoTheme(theme)
             .environmentObject(model)
             .environmentObject(repo)
-            .environmentObject(live)
+            .environment(live)
             .environmentObject(health)
             .preferredColorScheme(.light)
         }
