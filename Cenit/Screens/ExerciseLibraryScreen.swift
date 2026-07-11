@@ -33,8 +33,10 @@ struct ExerciseLibraryScreen: View {
     @State private var search = ""
     @State private var muscle: String? = nil
     @State private var equipment: String? = nil
+    @State private var typeFilter: String? = nil
     @State private var showMuscleFilter = false
     @State private var showEquipmentFilter = false
+    @State private var showTypeFilter = false
     @State private var selected: Set<String> = []
     @State private var detail: Exercise? = nil
     @State private var showCreate = false
@@ -118,6 +120,10 @@ struct ExerciseLibraryScreen: View {
                        selection: $muscle, options: muscleOptions, label: StrengthDisplay.muscle)
             filterMenu(title: String(localized: "Equipment"), isPresented: $showEquipmentFilter,
                        selection: $equipment, options: equipmentOptions, label: StrengthDisplay.equipment)
+            filterMenu(title: String(localized: "Type"), isPresented: $showTypeFilter,
+                       selection: $typeFilter,
+                       options: ExerciseType.allCases.map(\.rawValue),
+                       label: { StrengthDisplay.typeName(ExerciseType(rawValue: $0) ?? .weightReps) })
             Spacer(minLength: 0)
         }
     }
@@ -158,6 +164,19 @@ struct ExerciseLibraryScreen: View {
         let rows = filtered   // filter the 800+ catalog once per body pass, not per ForEach read
         let mine = rows.filter { historyIds.contains($0.id) }
         let rest = rows.filter { !historyIds.contains($0.id) }
+        // «De la biblioteca» grouped by primary muscle (empty key → "Other"), sorted by display label.
+        let libraryGroups: [(key: String, items: [Exercise])] = {
+            var dict: [String: [Exercise]] = [:]
+            for ex in rest {
+                dict[ex.primaryMuscles.first ?? "", default: []].append(ex)
+            }
+            return dict.map { (key: $0.key, items: $0.value) }
+                .sorted { a, b in
+                    let la = a.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(a.key)
+                    let lb = b.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(b.key)
+                    return la.localizedCaseInsensitiveCompare(lb) == .orderedAscending
+                }
+        }()
         return LazyVStack(alignment: .leading, spacing: 0) {
             if loaded && rows.isEmpty {
                 Text("No exercises match your filters.")
@@ -173,13 +192,20 @@ struct ExerciseLibraryScreen: View {
                     if ex.id != mine.last?.id { Divider().overlay(theme.hairline.opacity(StrandOpacity.muted)) }
                 }
             }
-            // «De la biblioteca» — the rest of the catalog.
+            // «De la biblioteca» — catalog remainder, one overline section per primary muscle.
             if !rest.isEmpty {
-                Text("From the library").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.top, mine.isEmpty ? 4 : 18).padding(.bottom, 6)
-                ForEach(rest) { ex in
-                    exerciseRow(ex, showsHistory: false)
-                    if ex.id != rest.last?.id { Divider().overlay(theme.hairline.opacity(StrandOpacity.muted)) }
+                ForEach(Array(libraryGroups.enumerated()), id: \.element.key) { index, group in
+                    Text(group.key.isEmpty
+                         ? String(localized: "Other")
+                         : StrengthDisplay.muscle(group.key))
+                        .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        .padding(.top, index == 0 && mine.isEmpty ? 4 : 18).padding(.bottom, 6)
+                    ForEach(group.items) { ex in
+                        exerciseRow(ex, showsHistory: false)
+                        if ex.id != group.items.last?.id {
+                            Divider().overlay(theme.hairline.opacity(StrandOpacity.muted))
+                        }
+                    }
                 }
             }
         }
@@ -320,6 +346,7 @@ struct ExerciseLibraryScreen: View {
                 || (ex.nameES?.localizedCaseInsensitiveContains(search) ?? false))   // search both languages (FER-501)
             && (muscle == nil || ex.primaryMuscles.contains(muscle!) || ex.secondaryMuscles.contains(muscle!))
             && (equipment == nil || ex.equipment == equipment)
+            && (typeFilter == nil || ex.type.rawValue == typeFilter!)
         }
     }
 }
