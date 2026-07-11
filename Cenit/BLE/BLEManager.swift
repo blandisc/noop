@@ -201,6 +201,15 @@ public final class BLEManager: NSObject, ObservableObject {
     /// the ParsedFrame produced by the single per-frame parse in `didUpdateValueFor` (FER-183) so
     /// the Backfiller never re-parses offload bytes (FER-752).
     private var backfillFrameQueue: [(frame: [UInt8], parsed: ParsedFrame)] = []
+    /// Head cursor into `backfillFrameQueue` — consumed entries stay in storage until the cursor
+    /// reaches the end (then we compact). Avoids O(n) `removeFirst` shifts on every drain batch (FER-877).
+    private var backfillFrameQueueHead = 0
+    /// Approximate total bytes of frames still queued (sum of `frame.count` past the head cursor).
+    /// Soft visibility cap only — never drops frames.
+    private var backfillFrameQueueBytes = 0
+    /// Soft cap on queued offload frame bytes (~4 MB). Log once when crossed; never drop (FER-877).
+    private static let backfillFrameQueueSoftByteCap = 4 * 1024 * 1024
+    private var backfillFrameQueueSoftCapLogged = false
     /// The single in-flight drain task, or nil when idle. Acts as the re-entrancy guard: while it is
     /// non-nil no second drain is launched, so frames are only ever consumed by ONE drain loop — even
     /// if the queue/flags are reset mid-flight on a disconnect. Replaces a bare Bool flag that could be
@@ -629,6 +638,15 @@ public final class BLEManager: NSObject, ObservableObject {
         seq = seq &+ 1
         let frame = command.frame(seq: seq, payload: payload)
         p.writeValue(Data(frame), for: ch, type: writeType)
+        // WHOOP 4: throttle historicalDataResult ack logs to match the puffin branch (1st + every 25th).
+        // Logging only — the write above already sent the ack; do not gate the send itself (FER-877).
+        if command == .historicalDataResult {
+            historicalAckLogCounter += 1
+            if historicalAckLogCounter == 1 || historicalAckLogCounter.isMultiple(of: 25) {
+                log("→ \(command.label) ack #\(historicalAckLogCounter) payload=\(hex(payload))")
+            }
+            return
+        }
         log("→ \(command.label) payload=\(hex(payload))")
     }
 
@@ -760,6 +778,13 @@ public final class BLEManager: NSObject, ObservableObject {
     /// data / END chunk assembly is never reordered while the UI still gets time to paint.
     private func routeBackfillFrame(_ frame: [UInt8], parsed: ParsedFrame) {
         backfillFrameQueue.append((frame: frame, parsed: parsed))
+        backfillFrameQueueBytes += frame.count
+        // Soft visibility only — never drop or reorder frames (would corrupt historical decode).
+        if !backfillFrameQueueSoftCapLogged,
+           backfillFrameQueueBytes > Self.backfillFrameQueueSoftByteCap {
+            backfillFrameQueueSoftCapLogged = true
+            log("Backfill: frame queue soft cap exceeded (~\(backfillFrameQueueBytes / 1024) KB queued; cap=\(Self.backfillFrameQueueSoftByteCap / 1024) KB) — draining continues, no frames dropped")
+        }
         if backfillDrainTask != nil { return }   // a drain is already running — it will pick up this frame
         backfillDrainTask = Task { @MainActor in
             await drainBackfillFrames()
@@ -767,23 +792,58 @@ public final class BLEManager: NSObject, ObservableObject {
         }
     }
 
+    /// Logical length of the backfill queue (storage may hold consumed slots before the head cursor).
+    private var backfillFrameQueuePendingCount: Int {
+        backfillFrameQueue.count - backfillFrameQueueHead
+    }
+
+    /// Reset storage + head cursor + byte counter together so the cursor never points past a shorter array.
+    private func clearBackfillFrameQueue(keepingCapacity: Bool = false) {
+        if keepingCapacity {
+            backfillFrameQueue.removeAll(keepingCapacity: true)
+        } else {
+            backfillFrameQueue.removeAll()
+        }
+        backfillFrameQueueHead = 0
+        backfillFrameQueueBytes = 0
+        backfillFrameQueueSoftCapLogged = false
+    }
+
     private func drainBackfillFrames() async {
-        while !backfillFrameQueue.isEmpty {
+        // O(1)-amortized drain via head cursor: advance the cursor instead of removeFirst (O(n)
+        // shift). Compact storage only when the queue is logically empty (FER-877).
+        while backfillFrameQueuePendingCount > 0 {
             if Task.isCancelled { break }   // disconnect tore down the session — stop ingesting at once
-            let count = min(Self.backfillDrainBatchSize, backfillFrameQueue.count)
-            let batch = Array(backfillFrameQueue.prefix(count))
-            backfillFrameQueue.removeFirst(count)
+            let count = min(Self.backfillDrainBatchSize, backfillFrameQueuePendingCount)
+            let start = backfillFrameQueueHead
+            let end = start + count
+            let batch = Array(backfillFrameQueue[start..<end])
+            for i in start..<end {
+                backfillFrameQueueBytes -= backfillFrameQueue[i].frame.count
+            }
+            backfillFrameQueueHead = end
+            if backfillFrameQueueHead >= backfillFrameQueue.count {
+                // Queue logically empty — reclaim storage so capacity doesn't grow unbounded.
+                backfillFrameQueue.removeAll(keepingCapacity: true)
+                backfillFrameQueueHead = 0
+                backfillFrameQueueBytes = 0
+            } else if backfillFrameQueueHead >= 256 {
+                // Bulk-reclaim the dead prefix under sustained load (queue never fully empty).
+                // Amortized O(1) per drained frame; keeps storage ≈ pending, not dead+pending.
+                backfillFrameQueue.removeFirst(backfillFrameQueueHead)
+                backfillFrameQueueHead = 0
+            }
 
             for f in batch {
                 await backfiller?.ingest(f.frame, parsed: f.parsed)
                 afterBackfillIngest()
                 if !backfilling {
-                    backfillFrameQueue.removeAll(keepingCapacity: true)
+                    clearBackfillFrameQueue(keepingCapacity: true)
                     break
                 }
             }
 
-            if !backfillFrameQueue.isEmpty {
+            if backfillFrameQueuePendingCount > 0 {
                 await Task.yield()
             }
         }
@@ -865,7 +925,7 @@ public final class BLEManager: NSObject, ObservableObject {
         backfillTimeout = nil
         backfillAbsoluteTimeout?.cancel()
         backfillAbsoluteTimeout = nil
-        backfillFrameQueue.removeAll()
+        clearBackfillFrameQueue()
         log("Backfill: session ended — reason=\(reason)")
         // FER-480: capture this session's ground-truth signals BEFORE any re-fire below resets the receipt
         // (beginBackfill clears it). `rowsThisSession` = biometric rows actually persisted (the #451
@@ -1444,7 +1504,7 @@ extension BLEManager: CBCentralManagerDelegate {
         backfillTimeout = nil
         backfillAbsoluteTimeout?.cancel()   // a dropped link mid-offload must not leave the cap armed (FER-174)
         backfillAbsoluteTimeout = nil
-        backfillFrameQueue.removeAll()
+        clearBackfillFrameQueue()
         // Cancel — don't nil — the in-flight drain: it owns `backfillDrainTask` and clears the handle
         // itself when it returns. Nil-ing it here would let the next frame spawn a SECOND drain that
         // runs concurrently with the one still suspended at an `await`, reordering/duplicating frames

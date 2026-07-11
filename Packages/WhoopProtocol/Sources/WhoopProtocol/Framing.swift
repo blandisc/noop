@@ -41,7 +41,9 @@ private let crc32Table: [UInt32] = {
     return table
 }()
 
-public func crc32(_ bytes: [UInt8]) -> UInt32 {
+/// zlib CRC-32 over any `UInt8` collection (Array, ArraySlice, …). Generic so frame verifiers
+/// can pass `frame[lo..<hi]` without copying into a temporary `[UInt8]`.
+public func crc32<C: Collection>(_ bytes: C) -> UInt32 where C.Element == UInt8 {
     var crc: UInt32 = 0xFFFFFFFF
     for b in bytes {
         crc = crc32Table[Int((crc ^ UInt32(b)) & 0xFF)] ^ (crc >> 8)
@@ -101,8 +103,8 @@ public func verifyFrame(_ frame: [UInt8]) -> FrameCheck {
     var crc32OK: Bool? = nil
     // length must cover at least the envelope's inner bytes (mirrors framing.py).
     if 7 <= length && length + 4 <= frame.count {
-        let inner = Array(frame[4..<length])
-        crc32OK = crc32(inner) == u32le(frame, length)
+        // Zero-copy: crc32 accepts ArraySlice — no temporary [UInt8] allocation per frame.
+        crc32OK = crc32(frame[4..<length]) == u32le(frame, length)
     }
     let ok = crc8OK && (crc32OK ?? false)
     return FrameCheck(ok: ok, length: length, crc8OK: crc8OK, crc32OK: crc32OK)
@@ -153,9 +155,9 @@ private func verifyFrameWhoop5(_ frame: [UInt8]) -> FrameCheck {
     var crc32OK: Bool? = nil
     if frame.count >= total {
         // payload spans [8, total-4); CRC32 trailer is the final 4 bytes of the frame.
+        // Zero-copy: crc32 accepts ArraySlice — no temporary [UInt8] allocation per frame.
         let payloadEnd = total - 4
-        let payload = Array(frame[8..<payloadEnd])
-        let want = crc32(payload)
+        let want = crc32(frame[8..<payloadEnd])
         let got = u32le(frame, payloadEnd)
         crc32OK = want == got
     }
