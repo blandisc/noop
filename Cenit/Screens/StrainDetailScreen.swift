@@ -336,7 +336,7 @@ struct StrainDetailScreen: View {
         .padding(.horizontal, 8)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
                 .fill(band.isActive ? theme.tint(theme.dataStrain) : Color.clear)
         )
     }

@@ -264,12 +264,12 @@ struct StressDetailScreen: View {
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4, style: .continuous) // token-exempt: geometría de dato
                         .fill(gradient)
-                        .opacity(0.85)
+                        .opacity(0.85) // token-exempt: geometría de dato (barra de gradiente)
                         .frame(height: 8)
                     RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
                         .fill(theme.ink)
                         .frame(width: 3, height: 16)
-                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato (marcador 3×16)
                             .strokeBorder(theme.paper, lineWidth: 2))
                         .offset(x: geo.size.width * frac - 1.5)
                 }
