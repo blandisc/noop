@@ -11,30 +11,18 @@ private struct StrainCalWidthKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
-// MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en «Instrumento» (FER-238)
+// MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en «Instrumento» (FER-238 · FER-859)
 //
-// Hermana de `MetricDetailScreen` (FER-185), `RecoveryDetailScreen` (FER-225) y `SleepDetailScreen`
-// (FER-212): REUSA su lenguaje visual (hero, `InfoAccordion`, `theme: InstrumentoTheme` explícito,
-// `sheetPaper`, `ScrollView`→`VStack`, `methodDisclosure`, los wells, la window-math de la
-// tendencia) pero con su propio modelo. NO extiende `MetricDetailScreen`/`MetricDetailSpec` (esos son
-// para vitales de serie ESCALAR única — HRV/FC/Respiración, con hero = promedio móvil 7d y rango normal
-// personal). El esfuerzo es una métrica COMPUESTA con forma propia: el hero es el valor de HOY en escala
-// fija 0–21, su visualización firma es la CURVA INTRADÍA acumulada del día, y su referencia son ZONAS
-// fijas (no un rango rolling). Reemplaza, para Esfuerzo en Cuerpo, la vieja `MetricInfoSheet`. Hoy
-// (TodayView) NO cambia: sigue abriendo `MetricInfo.strain`/`MetricInfoSheet`.
+// Hermana de `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto del handoff «Detalle de
+// Tendencias Final» — héroe invertido → instrumento firma → niveles → historial siempre abierto
+// (`GraficaRangos`) → calendario 90 días → método + sello. NO extiende `MetricDetailScreen`/
+// `MetricDetailSpec` (esos son para vitales de serie escalar). El esfuerzo es una métrica
+// compuesta: el hero es el valor de HOY en escala fija 0–21 (último punto de la curva intradía,
+// FER-650), su visualización firma es la curva acumulada del día, y su referencia son zonas fijas.
 //
-// Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`, FER-162) y
-// SIN `NavigationStack` anidado (un stack anidado cruzando el path de la tab crasheaba SwiftUI, FER-171).
-//
-// Bloques, cada uno con su ⓘ (`InfoAccordion`) salvo el método (DisclosureGroup): 1) Hero (valor de hoy
-// en `theme.dataStrain`, lectura por nivel) · 2) Cómo se acumuló hoy (curva intradía, async) · 3) Niveles
-// (la tabla de las 4 bandas fijas de `MetricInfo.strain`, la activa marcada) · 4) «Ver tu historial»
-// (tendencia con selector + «Media · periodo · Δ%» neutral + qué lo mueve, plegado) · 5) Ver el método.
-// Consume `StrandAnalytics`/la curva de `CuerpoView.loadStrainCurve()` TAL CUAL: no crea math.
-//
-// FER-597 lo alinea al handoff «Detalle · Esfuerzo»: UNA sola tabla de Niveles + la tendencia de vuelta en
-// «Ver tu historial» (revierte el `MetricLevelsExplorer` de FER-572, que duplicaba los niveles y ocupaba el
-// lugar de la tendencia). El explorer sigue vivo para las pantallas hermanas — solo deja de usarse aquí.
+// Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`, FER-162)
+// y SIN `NavigationStack` anidado (FER-171). Consume `StrandAnalytics` y la curva de
+// `CuerpoView.loadStrainCurve()` TAL CUAL: no crea math.
 
 /// Light «Instrumento» Detalle de Esfuerzo. Built once from a `StrainDetailModel` (the caller injects the
 /// model so the screen stays DB-free); the intraday curve is loaded async (it reads HR samples from the
@@ -63,51 +51,43 @@ struct StrainDetailScreen: View {
     /// hero equals the end of the curve BY CONSTRUCTION (they read the same array — FER-650). nil until the
     /// curve loads, or when there's too little activity today; the hero then falls back to the settled score.
     @State private var liveToday: Double?
-    @State private var methodExpanded = false
-    /// Level-3 disclosure: the period trend (+ «Media · periodo · Δ%») and «What moves your strain» live
-    /// under «See your history», collapsed on open. Strain is the LIGHT cut — no Level 2 — so this is the
-    /// only re-sequencing state, and it folds just those blocks for consistency. (Detalles escalonados)
-    @State private var historyExpanded = false
+    /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-859)
+    @State private var infoOpen = false
+
+    // MARK: - Body — el esqueleto estándar del handoff «Detalle de Tendencias Final» (FER-859)
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                // Level 1 · the answer: hero + today's intraday curve + the fixed zones. Already the
-                // daily check; Strain needed no condensing (light cut).
-                hero
+            VStack(alignment: .leading, spacing: 0) {
                 if !model.loaded {
-                    ChartWell(theme).loading(height: 160)
+                    Group {
+                        heroFlat
+                        ChartWell(theme).loading(height: 160).padding(.top, 22)
+                    }
+                    .padding(NoopMetrics.screenPadding)
+                } else if model.hasData {
+                    if shownToday != nil {
+                        heroField
+                    } else {
+                        heroFlat.padding(NoopMetrics.screenPadding)
+                    }
+                    if infoOpen { whatWeMeasureCard }
+                    seccion(String(localized: "How today added up")) { howTodayContent }
+                    seccion(String(localized: "Levels")) { levelsContent }
+                    seccion(String(localized: "See your history")) { historyContent }
+                    if parsed.contains(where: { $0.value > 0 }) {
+                        seccion(String(localized: "Calendar · 90 days")) { calendarContent }
+                    }
+                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
+                    VStack(alignment: .leading, spacing: 10) {
+                        metodoBlock
+                        sourceFooter
+                    }
+                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
-                    // The intraday curve needs a score / activity today; it's hidden when there's none.
-                    if model.hasData {
-                        blockDivider
-                        curveBlock
-                    }
-                    // Niveles · the handoff's single reference table (the 4 fixed bands of `MetricInfo.strain`,
-                    // the active one marked). FIXED reference, so it shows even on a brand-new empty screen —
-                    // the hero's "—" reading is honest about the missing score. The FER-572 level explorer was
-                    // a SECOND copy of these same bands AND took the trend's place; it's gone. (FER-597)
-                    blockDivider
-                    levelsTable
-                    // Level 3 · «Ver tu historial»: the period trend + «Media · periodo · Δ%» (neutral) + what
-                    // moves your strain, collapsed by default — the handoff's history, restored here. (FER-597)
-                    if model.hasData {
-                        blockDivider
-                        historySection
-                    }
-                    if model.hasData {
-                        blockDivider
-                        strainCalendarBlock
-                    }
-                    blockDivider
-                    methodDisclosure
-                    // Standardized origin seal (FER-803): strain is a score computed on-device, live today.
-                    OriginStamp(origin: .computed, when: String(localized: "today, in progress"), theme: theme)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
+                    heroFlat.padding(NoopMetrics.screenPadding)
                 }
             }
-            .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
@@ -125,12 +105,17 @@ struct StrainDetailScreen: View {
         }
     }
 
-    /// A subtle 1px rule between blocks (token-only). Mirrors the sibling screens' `blockDivider`.
-    private var blockDivider: some View {
-        Rectangle().fill(theme.hairline).frame(height: 1)
+    /// One skeleton section: a full-bleed `SeccionFranja` + its content with the handoff's standard
+    /// padding under a franja (14 · 20 · 22). The title arrives already localized.
+    private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SeccionFranja(title, theme: theme)
+            content()
+                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
+        }
     }
 
-    // MARK: - 1. Hero — el valor de hoy (0–21) en color del dato
+    // MARK: - 1. Héroe invertido — siempre `dataStrain` (descriptivo, sin semáforo)
 
     /// The value shown as today's strain: the live curve endpoint once the curve loads (so hero == the
     /// curve's last point by construction, FER-650), falling back to the settled `repo.today.strain` before
@@ -138,41 +123,111 @@ struct StrainDetailScreen: View {
     /// language reading, and the highlighted level — one value, never a contradiction on-screen.
     private var shownToday: Double? { liveToday ?? model.today }
 
-    private var hero: some View {
-        let v = shownToday
-        // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Explanation stays behind
-        // the ⓘ exactly as the old InfoAccordion had it.
-        return VStack(alignment: .leading, spacing: 6) {
-            InstrumentoScreenTitle("Day Strain", theme: theme,
-                explanation: "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)",
-                glyph: .strain)
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(v.map { fmt($0) } ?? "—")
-                        .instrumentoHero(46)
-                        .foregroundStyle(v == nil ? theme.inkTertiary : theme.dataStrain)
-                    if v != nil {
-                        Text("/ 21").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                    }
+    /// The inverted hero: the ONE field saturated at 100% of `theme.dataStrain`. Overline + ⓘ,
+    /// 60pt Grotesk numeral (recRise), «en curso» capsule, verdict line. Text is paper on hue.
+    private var heroField: some View {
+        let v = shownToday ?? 0
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: MetricGlyph.strain.sfSymbol)
+                    .font(StrandFont.glyph(.chevron))
+                    .foregroundStyle(theme.paper)
+                    .frame(width: 14, height: 14)
+                    .accessibilityHidden(true)
+                Text("Day Strain")
+                    .font(InstrumentoType.grotesk(12, weight: .bold))
+                    .tracking(2.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.paper)
+                Spacer()
+                Button {
+                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(StrandFont.glyph(.chevron, weight: .regular))
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("What we measure")
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(fmt(v))
+                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                    .tracking(-2)
+                    .foregroundStyle(theme.paper)
+                    .recRise()
+                Text(verbatim: "/ 21")
+                    .font(InstrumentoType.grotesk(13))
+                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                Text("in progress")
+                    .font(InstrumentoType.grotesk(13, weight: .semibold))
+                    .foregroundStyle(theme.paper)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+            }
+            // Keep `heroReading` as ONE localized sentence (existing String Catalog keys). Splitting the
+            // four zone strings cleanly into short-clause + secondary clause is awkward for "Moderate
+            // effort today." — visual fidelity to the mock's two-tone verdict is secondary to not inventing
+            // new copy. (FER-859)
+            Text(heroReading)
+                .font(InstrumentoType.grotesk(15, weight: .semibold))
+                .foregroundStyle(theme.paper)
+                .fixedSize(horizontal: false, vertical: true)
+            if let tier = model.confidence {
+                tier.sello(theme: theme)
+                    .padding(.top, 2)
+            }
+        }
+        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.dataStrain)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The ⓘ card under the hero: what the score measures, in plain language.
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("What we measure")
+                .font(InstrumentoType.grotesk(13, weight: .semibold))
+                .foregroundStyle(theme.ink)
+            Text(heroExplanation)
+                .font(InstrumentoType.grotesk(12))
+                .lineSpacing(3)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.control, theme: theme)
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+    }
+
+    /// The flat hero for score-less states (loading / empty / history-only): the pre-handoff identity —
+    /// no inverted field for a number we don't have.
+    private var heroFlat: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            InstrumentoScreenTitle("Day Strain", theme: theme, explanation: heroExplanation, glyph: .strain)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(verbatim: "—")
+                    .instrumentoHero(46)
+                    .foregroundStyle(theme.inkTertiary)
                 Text(heroReading)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.headline)
+                    .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
-                // FER-676: how much of the active day the strap actually covered — the score's
-                // trust grade, shown only when there IS a score to grade. Calibrating never
-                // reaches here (no score → no sello), so the chip has two states.
-                if v != nil, let tier = model.confidence {
-                    tier.sello(theme: theme)
-                        .padding(.top, 2)
-                }
             }
         }
     }
 
+    /// The hero ⓘ copy — the standard day-strain explanation (Edwards/Banister).
+    private var heroExplanation: LocalizedStringKey {
+        "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)"
+    }
+
     /// A plain-language reading of today's strain by zone, or an honest "no strain yet" when there's no
     /// score (strain is strap-only; Apple Health doesn't compute it). The zone is derived from the SAME
-    /// `MetricInfo.strain` bands the zones block shows, so the reading and the highlighted zone can never
+    /// `MetricInfo.strain` bands the levels block shows, so the reading and the highlighted zone can never
     /// disagree if a boundary is ever retuned (single source of truth — no second copy of the thresholds).
     /// Source strings are English; the es values live in `Localizable.xcstrings`.
     private var heroReading: LocalizedStringKey {
@@ -190,13 +245,18 @@ struct StrainDetailScreen: View {
 
     // MARK: - 2. Cómo se acumuló hoy (curva intradía acumulada)
 
-    private var curveBlock: some View {
-        InfoAccordion(
-            title: "How today added up",
-            explanation: "The line shows how your strain piled up through the day — each second of heart rate adds to the running total, so it only ever rises. It ends on today's score above.",
-            accessibilityLabel: "Information about how today's strain added up",
-            theme: theme
-        ) {
+    private var howTodayContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            (Text("Only rises")
+                .font(InstrumentoType.grotesk(16, weight: .semibold))
+                .foregroundColor(theme.ink)
+             + Text(verbatim: " · ")
+                .font(InstrumentoType.grotesk(14))
+                .foregroundColor(theme.inkSecondary)
+             + Text("every second of pulse adds to the total")
+                .font(InstrumentoType.grotesk(14))
+                .foregroundColor(theme.inkSecondary))
+                .fixedSize(horizontal: false, vertical: true)
             Group {
                 if curve.count > 1 {
                     TrendChart(
@@ -213,6 +273,9 @@ struct StrainDetailScreen: View {
                     )
                     .accessibilityElement()
                     .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
+                    BarraAncla(
+                        String(localized: "Ends on your score today: it's the same number as the hero."),
+                        color: theme.dataStrain, theme: theme)
                 } else if !curveLoaded {
                     ChartWell(theme).loading(height: 160)
                 } else {
@@ -220,135 +283,157 @@ struct StrainDetailScreen: View {
                 }
             }
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.card, theme: theme)
     }
 
-    // MARK: - 3. Niveles (las 4 bandas fijas, la activa marcada) — la tabla de referencia del handoff
+    // MARK: - 3. Niveles (las 4 bandas fijas de `MetricInfo.strain`, la activa marcada)
 
-    /// The handoff's «Niveles» reference table: the 4 fixed bands (Rest/Light · Moderate · Hard · Extreme,
-    /// the active one flagged for today's value) straight from the shared `MetricInfo.strain` factory — the
-    /// same source of truth the hero reading uses, so the table and the highlighted band can never disagree.
-    /// This is now the SOLE levels block; the FER-572 `MetricLevelsExplorer` duplicated it. (FER-597)
-    private var levelsTable: some View {
+    private var levelsContent: some View {
         let bands = MetricInfo.strain(shownToday).bands
-        return InfoAccordion(
-            title: "Levels",
-            explanation: "Your heart rate falls into one of four intensity zones through the day. The highlighted row is where today's score lands on the 0–21 scale.",
-            accessibilityLabel: "Information about the strain levels",
-            theme: theme
-        ) {
-            VStack(spacing: 0) {
-                ForEach(Array(bands.enumerated()), id: \.offset) { i, band in
-                    zoneRow(band)
-                    if i < bands.count - 1 {
-                        Divider().overlay(theme.hairline).padding(.leading, 22)
-                    }
+        return VStack(alignment: .leading, spacing: 8) {
+            if let v = shownToday, let active = bands.first(where: \.isActive) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(fmt(v))
+                        .font(InstrumentoType.groteskNumber(24, weight: .bold))
+                        .foregroundStyle(theme.dataStrain)
+                    (Text("falls in ")
+                     + Text(active.label)
+                     + Text(" · fixed scale from 0 to 21"))
+                        .font(InstrumentoType.grotesk(13))
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            VStack(spacing: 0) {
+                ForEach(Array(bands.enumerated()), id: \.offset) { _, band in
+                    zoneRow(band)
+                }
+            }
+            .padding(.top, 2)
         }
     }
 
     /// One zone row: a dot (active → the strain hue, else quiet ink) + label + its range, with a subtle
-    /// active highlight. Token-only (no hex/spacing literals beyond the layout paddings the siblings use).
+    /// active highlight. Token-only.
     private func zoneRow(_ band: MetricInfo.Band) -> some View {
         HStack(spacing: 10) {
             Circle()
                 .fill(band.isActive ? theme.dataStrain : theme.inkTertiary.opacity(StrandOpacity.dim))
                 .frame(width: 8, height: 8)
             Text(band.label)
-                .font(StrandFont.subhead)
+                .font(band.isActive
+                      ? InstrumentoType.grotesk(13, weight: .semibold)
+                      : InstrumentoType.grotesk(13))
                 .foregroundStyle(band.isActive ? theme.ink : theme.inkSecondary)
             Spacer(minLength: 8)
             Text(band.range)
-                .font(StrandFont.captionNumber)
+                .font(InstrumentoType.groteskNumber(12))
                 .foregroundStyle(band.isActive ? theme.dataStrain : theme.inkTertiary)
         }
-        .padding(.vertical, 11)
+        .padding(.vertical, 9)
+        .padding(.horizontal, 8)
         .frame(maxWidth: .infinity)
-        .background(band.isActive ? theme.dataStrain.opacity(StrandOpacity.tintFill) : Color.clear)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(band.isActive ? theme.tint(theme.dataStrain) : Color.clear)
+        )
     }
 
-    // MARK: - 4. Tendencia (selector + «Media · periodo · Δ%») — vive en «Ver tu historial»
+    // MARK: - 4. Ver tu historial (SIEMPRE abierto) — PeriodSelector + GraficaRangos + tiles + drivers
 
-    /// The handoff's trend: a period selector (`MetricTrendChart`) over the daily strain series, drawn as a
-    /// 7-day moving average (strain is a noisy day-to-day composite), in the strain hue. No ⓘ — the smoothing
-    /// is named in the caption right below and the TRIMP math lives in «See the method». Replaces FER-572's
-    /// level explorer, which doubled the Niveles table AND took this trend's place. The `window` is derived
-    /// once by the caller (`expandedHistory`) and shared with `averageCaption` — the FER-216 rule. (FER-597)
-    private func trendBlock(_ window: MetricWindow) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            MetricTrendChart(
-                range: $range,
-                window: window,
-                theme: theme,
-                style: .init(
-                    smoothing: 7,
-                    gradient: chartGradient,
-                    height: 160,
-                    valueRange: { chartRange($0) },
-                    valueFormat: { fmt($0) },
-                    accessibilityLabel: "Day strain, 7-day moving average"
-                )
-            ) {
-                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
-            }
+    private var historyContent: some View {
+        let window = MetricWindowMath.make(parsed, selected: range)
+        let smoothed = SeriesShape.movingAverage(window.values, window: 7)
+        let mediaStat = ComparisonEngine.stat(smoothed)
+        let rawStat = ComparisonEngine.stat(window.values)
+        let pct = range.periodComparison(of: model.series)?.pctChange
+        return VStack(alignment: .leading, spacing: 8) {
+            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
             if window.values.count > 1 {
-                Text("7-day moving average")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-            }
-        }
-    }
-
-    /// The handoff's period-average caption: «Media · periodo · valor · Δ% vs previo» + the window's range,
-    /// from the SAME `ComparisonEngine` figures as the trend. Effort is NEUTRAL (no good direction → no colour
-    /// on the Δ); shown on the 0–21 scale, no unit. Sits right under the trend in «Ver tu historial», sharing
-    /// the same `window` the trend already derived. (FER-587)
-    @ViewBuilder private func averageCaption(_ window: MetricWindow) -> some View {
-        if window.values.count > 1 {
-            let s = ComparisonEngine.stat(window.values)
-            DynamicAverageCaption(
-                windowName: range.name,
-                average: fmt(s.mean),
-                pctChange: range.periodComparison(of: model.series)?.pctChange,
-                polarity: .neutral,
-                rangeText: "\(fmt(s.min))–\(fmt(s.max))",
-                theme: theme)
-        }
-    }
-
-    // MARK: - 4.5 Qué mueve tu esfuerzo (correlación direccional, gated — FER-239)
-
-    /// Documented, DIRECTIONAL drivers of strain (same-day recovery, the prior day's strain), computed from
-    /// the user's OWN history in `StrandAnalytics` and degraded to a direction — never a coefficient, never
-    /// a causal claim (hence the "tendencia, no causa" chip). Mirrors `MetricDetailScreen`'s block. When no
-    /// relationship clears the gate it renders an honest empty state instead of vanishing (FER-246).
-    private var whatMovesBlock: some View {
-        // The ⓘ discloses the correlation method + the sufficiency gate (FER-220 pattern); the chip and the
-        // directional sentences live inside the accordion's content.
-        InfoAccordion(
-            title: "What moves your strain",
-            explanation: "We line up your day strain against your own recovery and the prior day's strain, day by day across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired days (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013; Vesterinen 2016)",
-            accessibilityLabel: "Information about what moves your strain",
-            theme: theme
-        ) {
-            VStack(alignment: .leading, spacing: 10) {
-                if model.drivers.isEmpty {
-                    // Too few paired days yet, or none strong enough — honest, neutral empty state (FER-246).
-                    Text("Not enough data yet — keep wearing your strap and check back in a few weeks.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else {
-                    InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-                    ForEach(model.drivers, id: \.driver) { finding in
-                        Text(Self.driverPhrase(finding))
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                GraficaRangos(
+                    points: smoothed,
+                    bands: Self.strainBands(theme),
+                    ticks: [.init(v: 18, label: "18"), .init(v: 13, label: "13"), .init(v: 8, label: "8")],
+                    hue: theme.dataStrain, ymin: 6, ymax: 19,
+                    startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    mediaValue: fmt(mediaStat.mean),
+                    mediaNote: String(localized: "average of the \(range.name)"),
+                    mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
+                    deltaColor: theme.inkSecondary,
+                    countUnit: "d",
+                    anchorMedia: String(localized: "7-day moving average: day-to-day strain is noisy."),
+                    anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+                    scrub: true,
+                    labels: window.rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" },
+                    theme: theme)
+                    .padding(.top, 6)
+                    .id(range)
+                HStack(alignment: .top, spacing: 8) {
+                    TileSurface(label: String(localized: "Average"),
+                                value: fmt(mediaStat.mean),
+                                theme: theme)
+                    TileSurface(label: String(localized: "Range"),
+                                value: "\(fmt(rawStat.min))–\(fmt(rawStat.max))",
+                                theme: theme)
+                    TileSurface(label: String(localized: "Today"),
+                                value: shownToday.map { fmt($0) } ?? "—",
+                                valueColor: shownToday != nil ? theme.dataStrain : nil,
+                                theme: theme)
                 }
+                .padding(.top, 4)
+            } else {
+                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
+                    .padding(.top, 6)
+            }
+            if !model.drivers.isEmpty {
+                whatMovesCard
+                    .padding(.top, 10)
             }
         }
+    }
+
+    /// The four fixed strain lanes for `GraficaRangos`, derived from `MetricInfo.strain` (its bands now
+    /// carry numeric bounds) — the SAME ladder the hero verdict and the Niveles table read, never
+    /// restated as a second math source. Colors rest→extreme: low / mid / full / deep amber; list
+    /// order high→low mirrors Recovery.
+    static func strainBands(_ theme: InstrumentoTheme) -> [GraficaRangos.Banda] {
+        let ramp = [theme.strainRampLow, theme.strainRampMid, theme.dataStrain, theme.strainDeep]
+        // Display words per lane (rest→extreme); bounds/ranges come from the ladder itself.
+        let words = [String(localized: "Rest / Light"), String(localized: "Moderate"),
+                     String(localized: "Hard"), String(localized: "Extreme")]
+        return MetricInfo.strain(nil).bands.enumerated().reversed().map { i, band in
+            GraficaRangos.Banda(label: words[Swift.min(i, words.count - 1)],
+                                lo: band.lower, hi: band.upper,
+                                color: ramp[Swift.min(i, ramp.count - 1)],
+                                range: band.range)
+        }
+    }
+
+    /// «Qué mueve tu esfuerzo» — directional drivers, gated (FER-239). Card disappears entirely when
+    /// nothing clears the sufficiency gate (FER-246 / mock: no empty-state message).
+    private var whatMovesCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                Text("What moves your strain")
+                    .font(InstrumentoType.grotesk(10, weight: .semibold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.inkTertiary)
+                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
+            }
+            ForEach(model.drivers, id: \.driver) { finding in
+                Text(Self.driverPhrase(finding))
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.card, theme: theme)
     }
 
     /// The directional sentence for a driver. The direction comes from the user's data; no number is ever
@@ -362,70 +447,24 @@ struct StrainDetailScreen: View {
         }
     }
 
-    // MARK: - Level 3 · «See your history» — trend + what moves your strain, collapsed by default
-    //
-    // The analyst's view, one tap down. An in-place disclosure (NOT a navigation push); the chevron and
-    // copy mirror «See the method». Holds the period-selector trend and the directional drivers that used
-    // to sit always-open in the daily scroll. Strain is the light cut, so this is its only fold and there
-    // is no Level 2. (Detalles escalonados)
+    // MARK: - 5. Calendario · 90 días (YearHeatStrip re-tint + leyenda + read-out)
 
-    @ViewBuilder private var historySection: some View {
-        VStack(alignment: .leading, spacing: historyExpanded ? 22 : 0) {
-            historyDisclosureHeader(caption: "Trend · what moves it")
-            if historyExpanded { expandedHistory }
+    private var calendarContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            heatGrid
+            heatReadout
+            HeatLegend([(theme.dataStrain, String(localized: "hard+")),
+                        (theme.strainRampMid, String(localized: "moderate")),
+                        (theme.strainRampLow, String(localized: "light"))], theme: theme)
         }
     }
-
-    /// «Ver tu historial» expanded: the period trend + «Media · periodo · Δ%» (neutral), then the gated
-    /// directional drivers. The window is derived ONCE here and handed to both the chart and the caption
-    /// (the FER-216 «compute the window once» rule), instead of each re-deriving it. The trend needs ≥2
-    /// days; «what moves it» carries its own sufficiency gate. The section only renders under `model.hasData`
-    /// (see `body`), so `whatMovesBlock` is unconditional here. (FER-597)
-    private var expandedHistory: some View {
-        let window = MetricWindowMath.make(parsed, selected: range)
-        return VStack(alignment: .leading, spacing: 22) {
-            if model.series.count >= 2 {
-                trendBlock(window)
-                averageCaption(window)
-                blockDivider
-            }
-            whatMovesBlock
-        }
-    }
-
-    /// The «See your history» row: a tappable header toggling the Level-3 disclosure in place. The
-    /// chevron rotates with the house interactive spring. Shared shape across the four detail screens.
-    private func historyDisclosureHeader(caption: LocalizedStringKey) -> some View {
-        Button {
-            withAnimation(StrandMotion.interactive) { historyExpanded.toggle() }
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("See your history").instrumentoOverline().foregroundStyle(theme.ink)
-                    Text(caption).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.down")
-                    .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-                    .rotationEffect(.degrees(historyExpanded ? 0 : -90))
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityValue(Text(historyExpanded ? "expanded" : "collapsed"))
-    }
-
-    // MARK: - Calendario · 90 días (handoff v2, FER-830) — heatmap en el hue de esfuerzo por nivel
 
     private static let calDayFmt: DateFormatter = {
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = TimeZone(identifier: "UTC")!; f.dateFormat = "yyyy-MM-dd"; return f
     }()
     private static let calReadoutFmt: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "EEE d MMM"; return f
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
     }()
 
     /// The trailing 90 days as `RecoveryDay` (score = strain 0–21, nil where there's no reading).
@@ -440,91 +479,93 @@ struct StrainDetailScreen: View {
         }
     }
 
-    /// Strain is descriptive (not evaluative), so the heat is one hue at three intensities.
+    /// Strain is descriptive (not evaluative), so the heat is one hue at three intensities — tokens for
+    /// the mid/low rungs (FER-859).
     private func strainHeatTint(_ v: Double) -> Color {
         if v >= 14 { return theme.dataStrain }
-        if v >= 8 { return theme.dataStrain.opacity(0.6) }  // token-exempt: rampa de calor (3 intensidades)
-        return theme.dataStrain.opacity(0.32)  // token-exempt: rampa de calor (3 intensidades)
+        if v >= 8 { return theme.strainRampMid }
+        return theme.strainRampLow
     }
 
-    @ViewBuilder private var strainCalendarBlock: some View {
-        if parsed.contains(where: { $0.value > 0 }) {
-            DetailBlock("Calendar · 90 days", theme: theme) {
-                VStack(alignment: .leading, spacing: 10) {
-                    let cols = Swift.max(1, YearHeatStrip.weekColumns(for: strainHeat))
-                    let spacing: CGFloat = 4
-                    let cell: CGFloat = calWidth > 0
-                        ? Swift.max(8, Swift.min(22, (calWidth - 24 - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-                        : 14
-                    YearHeatStrip(
-                        days: strainHeat, cellSize: cell, spacing: spacing, showsScrub: false,
-                        tint: strainHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
-                        labelColor: theme.inkTertiary, onSelect: { selectedStrainDay = $0 }, selectionColor: theme.ink
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(GeometryReader { g in Color.clear
-                        .preference(key: StrainCalWidthKey.self, value: g.size.width) })
-                    .onPreferenceChange(StrainCalWidthKey.self) { calWidth = $0 }
-                    if let d = selectedStrainDay {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(Self.calReadoutFmt.string(from: d.date)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                            Spacer(minLength: 8)
-                            if let v = d.score {
-                                Text(String(format: "%.1f", v)).font(StrandFont.number(20)).foregroundStyle(theme.dataStrain)
-                            } else {
-                                Text("—").font(StrandFont.number(20)).foregroundStyle(theme.inkTertiary)
-                                Text("no reading").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                            }
-                        }
-                        .accessibilityElement(children: .combine)
-                    } else {
-                        Text("Tap a day to see its strain.").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    }
+    private var heatGrid: some View {
+        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: strainHeat))
+        let spacing: CGFloat = 4
+        let gutter: CGFloat = 24
+        let cell: CGFloat = calWidth > 0
+            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
+            : 14
+        return YearHeatStrip(
+            days: strainHeat,
+            cellSize: cell,
+            spacing: spacing,
+            showsScrub: false,
+            tint: strainHeatTint,
+            emptyFill: theme.hairline,
+            emptyStroke: theme.hairlineStrong,
+            labelColor: theme.inkTertiary,
+            onSelect: { selectedStrainDay = $0 },
+            selectionColor: theme.ink
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { g in
+            Color.clear.preference(key: StrainCalWidthKey.self, value: g.size.width)
+        })
+        .onPreferenceChange(StrainCalWidthKey.self) { calWidth = $0 }
+    }
+
+    @ViewBuilder private var heatReadout: some View {
+        if let d = selectedStrainDay {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(Self.calReadoutFmt.string(from: d.date))
+                    .instrumentoOverline()
+                    .foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                if let v = d.score {
+                    Text(String(format: "%.1f", v))
+                        .font(StrandFont.number(20))
+                        .foregroundStyle(strainHeatTint(v))
+                } else {
+                    Text("—")
+                        .font(StrandFont.number(20))
+                        .foregroundStyle(theme.inkTertiary)
+                    Text("no reading")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkTertiary)
                 }
             }
+            .accessibilityElement(children: .combine)
+        } else {
+            Text("Tap a day to see its strain.")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    // MARK: - Ver el método (DisclosureGroup, patrón de las otras pantallas)
+    // MARK: - Método + sello
 
-    private var methodDisclosure: some View {
-        DisclosureGroup(isExpanded: $methodExpanded) {
-            VStack(alignment: .leading, spacing: 10) {
-                Divider().overlay(theme.hairline)
-                Text("Each second of heart rate is mapped to one of five intensity zones; time in the higher zones counts for much more. The weighted total is compressed onto a 0–21 scale through a logarithmic curve, so the top of the scale represents a theoretical full day at peak intensity.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Heart-rate-zone load (TRIMP), compressed logarithmically. (Edwards 1993; Banister 1991)")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Text("How it's calculated")
+    private var metodoBlock: some View {
+        Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+            Text("Each second of heart rate is mapped to one of five intensity zones; time in the higher zones counts for much more. The weighted total is compressed onto a 0–21 scale through a logarithmic curve, so the top of the scale represents a theoretical full day at peak intensity.")
                 .font(StrandFont.subhead)
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Heart-rate-zone load (TRIMP), compressed logarithmically. (Edwards 1993; Banister 1991)")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .tint(theme.inkTertiary)
-        .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+    }
+
+    private var sourceFooter: some View {
+        OriginStamp(origin: .computed, when: String(localized: "today, in progress"), inProgress: true, theme: theme)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 2)
     }
 
     // MARK: - Colour + format
 
     private var chartGradient: Gradient { ChartWell.fillGradient(theme.dataStrain) }
-
-    /// The trend chart's Y domain: the smoothed line's own min/max with a little breath, clamped to the
-    /// fixed 0–21 strain scale so the axis never runs past the metric's range. (FER-597)
-    private func chartRange(_ smoothed: [Double]) -> ClosedRange<Double> {
-        let lo = smoothed.min() ?? 0
-        let hi = smoothed.max() ?? 21
-        if hi <= lo { return Swift.max(0, lo - 1)...Swift.min(21, hi + 1) }
-        let pad = (hi - lo) * 0.15
-        return Swift.max(0, lo - pad)...Swift.min(21, hi + pad)
-    }
 
     /// Strain reads to one decimal (0–21), like the row and the hero.
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }

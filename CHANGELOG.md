@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El Detalle de Esfuerzo estrena la piel «Final» de Tendencias / The Strain detail debuts the final Trends skin.**
+  **ES** — La pantalla de Esfuerzo del día se rediseñó con el esqueleto estándar de los detalles de Tendencias: un héroe que pinta todo su campo en ámbar (con la cápsula «en curso» al lado del número 0–21), la curva de cómo se acumuló hoy sobre una tarjeta, la tabla de Niveles con dato primero, un historial siempre abierto con `GraficaRangos` (media móvil de 7 días, Δ% neutro y bandas de nivel en rampa ámbar), el calendario de 90 días con leyenda, y el sello de origen «Calculado en tu teléfono · hoy, en curso». Nada del cálculo cambió: es el mismo esfuerzo, contado mejor.
+  **EN** — The Day Strain screen was redesigned with the standard Trends-detail skeleton: a hero that paints its whole field in amber (with the "in progress" capsule beside the 0–21 number), today's accumulation curve on a card, the Levels table with the datum first, an always-open history with `GraficaRangos` (7-day moving average, neutral Δ%, and level lanes in the amber ramp), the 90-day calendar with a legend, and the origin seal "Computed on your phone · today, in progress". None of the math changed — it's the same strain, told better.
+  ([StrainDetailScreen.swift](Cenit/Screens/StrainDetailScreen.swift), [Instrumento.swift](Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift))
+
 - **Arrastra sobre el historial de Recuperación para leer cada día / Drag across the Recovery history to read each day.**
   **ES** — La gráfica de historial del Detalle de Recuperación ahora se puede explorar con el dedo: al arrastrar aparece una regla vertical, un anillo del color de la banda de ese día y un chip con el valor y la fecha («78 · 4 jul»). Funciona en las dos vistas (Media y Rangos) y se limpia al soltar. Las demás pantallas de detalle lo heredarán con su rediseño.
   **EN** — The history chart in the Recovery detail is now explorable by touch: dragging shows a vertical rule, a ring in that day's band color and a chip with the value and date ("78 · Jul 4"). It works in both views (Mean and Ranges) and clears when you lift your finger. The other detail screens will inherit it with their redesign.

@@ -54904,6 +54904,159 @@
           }
         }
       }
+    },
+    "Only rises": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only rises"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo sube"
+          }
+        }
+      }
+    },
+    "every second of pulse adds to the total": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every second of pulse adds to the total"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cada segundo de pulso suma al total"
+          }
+        }
+      }
+    },
+    "Ends on your score today: it's the same number as the hero.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ends on your score today: it's the same number as the hero."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termina en tu valor de hoy: es el mismo número del héroe."
+          }
+        }
+      }
+    },
+    "falls in ": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "falls in "
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cae en "
+          }
+        }
+      }
+    },
+    " · fixed scale from 0 to 21": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · fixed scale from 0 to 21"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · escala fija de 0 a 21"
+          }
+        }
+      }
+    },
+    "in progress": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in progress"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en curso"
+          }
+        }
+      }
+    },
+    "7-day moving average: day-to-day strain is noisy.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-day moving average: day-to-day strain is noisy."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media móvil de 7 días: el esfuerzo día a día es ruidoso."
+          }
+        }
+      }
+    },
+    "average of the %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "average of the %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "media del %@"
+          }
+        }
+      }
+    },
+    "hard+": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hard+"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "duro+"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
