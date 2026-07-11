@@ -18,7 +18,7 @@ import StrandDesign
 struct BreathingView: View {
 
     @EnvironmentObject private var model: AppModel
-    @EnvironmentObject private var live: LiveState
+    @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
     // MARK: Pace presets

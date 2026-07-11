@@ -16,7 +16,7 @@ import StrandDesign
 /// flat ring. All timer logic and haptics are unchanged.
 struct IntervalTimerView: View {
     @EnvironmentObject private var model: AppModel
-    @EnvironmentObject private var live: LiveState
+    @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
     // MARK: Config (persisted only in-view)
@@ -465,7 +465,7 @@ struct IntervalTimerView: View {
 #Preview("Interval Timer · Instrumento") {
     IntervalTimerView()
         .environmentObject(AppModel())
-        .environmentObject(LiveState())
+        .environment(LiveState())
         .frame(width: 720, height: 900)
 }
 #endif

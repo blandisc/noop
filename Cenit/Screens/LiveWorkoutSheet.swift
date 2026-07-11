@@ -18,7 +18,7 @@ import WhoopStore
 /// "Recording m:ss" state while a session runs, and a brief saved/discarded notice afterwards.
 struct LiveWorkoutHubRow: View {
     @EnvironmentObject private var model: AppModel
-    @EnvironmentObject private var live: LiveState
+    @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
     @State private var showSheet = false

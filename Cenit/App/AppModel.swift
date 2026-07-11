@@ -277,22 +277,19 @@ final class AppModel: ObservableObject {
             .store(in: &hrCancellables)
         // Re-arm the strap's firmware alarm whenever it (re)bonds. A smart-alarm time changed while the
         // strap was away never reached it — the send is gated on bond — so the strap kept the OLD time
-        // and fired at it (#59). removeDuplicates() fires once per bond; gated on enabled so a disabled
-        // alarm doesn't disarm on every reconnect.
-        live.$bonded.removeDuplicates().sink { [weak self] bonded in
+        // and fired at it (#59). FER-874: LiveState is `@Observable` (no `$` publishers), so this is now a
+        // callback fired from `bonded`'s didSet; the `!= oldValue` guard there is the old `removeDuplicates`.
+        // Gated on enabled so a disabled alarm doesn't disarm on every reconnect.
+        live.onBondedChange = { [weak self] bonded in
             guard let self, bonded, self.behavior.smartAlarmEnabled else { return }
             self.applySmartAlarm()
-        }.store(in: &hrCancellables)
-        // A completed backfill has just written strap history. Refresh the dashboard cache,
-        // but leave heavyweight analysis to its own guarded/background-friendly path.
-        live.$lastSyncedAt
-            .dropFirst()
-            .compactMap { $0 }
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                Task { [weak self] in await self?.refreshAfterCompletedBackfill() }
-            }
-            .store(in: &hrCancellables)
+        }
+        // A completed backfill has just written strap history. Refresh the dashboard cache, but leave
+        // heavyweight analysis to its own guarded/background-friendly path. FER-874: callback from
+        // `lastSyncedAt`'s didSet (non-nil + distinct), replacing the old `$lastSyncedAt` Combine sink.
+        live.onSyncCompleted = { [weak self] _ in
+            Task { [weak self] in await self?.refreshAfterCompletedBackfill() }
+        }
 
         moments = (UserDefaults.standard.array(forKey: "moments") as? [Double] ?? [])
             .map { Date(timeIntervalSince1970: $0) }

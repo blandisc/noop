@@ -23,7 +23,7 @@ private struct SheetContentHeightKey: PreferenceKey {
 /// the caller (TodayView's beat-by-beat sheet) hands its by-the-hour theme in.
 struct LiveView: View {
     @EnvironmentObject private var model: AppModel
-    @EnvironmentObject private var live: LiveState
+    @Environment(LiveState.self) private var live
     @EnvironmentObject private var repo: Repository
     /// Drives the release/re-arm of the heavy R10/R11 realtime stream around backgrounding (FER-636):
     /// `onDisappear` doesn't fire when the app backgrounds with this sheet still open, so without this
