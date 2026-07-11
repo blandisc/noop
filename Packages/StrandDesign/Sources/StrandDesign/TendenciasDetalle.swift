@@ -33,6 +33,8 @@ public enum OnFieldOpacity {
     public static let capsule: Double = 0.16
     /// Chrome atenuado (el trazo del ⓘ).
     public static let dimChrome: Double = 0.8
+    /// Regla/divisor vertical entre dos datos sobre el campo invertido.
+    public static let divider: Double = 0.28
 }
 
 // MARK: - SeccionFranja
