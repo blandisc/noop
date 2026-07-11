@@ -121,21 +121,37 @@ public enum CircadianEngine {
     /// aren't penalised. Returns only the hours with ≥1 contributing day, plus the count of days that carried
     /// any motion (drives `estimatePhase`'s confidence gate).
     public static func activityBins(_ days: [DayGravity]) -> (bins: [ActivityBin], daysObserved: Int) {
+        activityBins(hourlyProfiles: days.map { hourlyMotionProfile($0.samples, tzOffsetSeconds: $0.tzOffsetSeconds) })
+    }
+
+    /// One day's raw gravity samples → its 24-slot hourly motion profile. `nil` = the hour had NO
+    /// samples (it contributes nothing to the pooled bins); a present 0.0 = the hour HAD samples but
+    /// no motion (it still counts as an observed hour). This is the persistable half of the old
+    /// monolithic `activityBins` (FER-868: the engine caches it per day as `act_h00`…`act_h23`).
+    public static func hourlyMotionProfile(_ samples: [GravitySample], tzOffsetSeconds: Int) -> [Double?] {
+        let sorted = samples.sorted { $0.ts < $1.ts }
+        var hourly = [[GravitySample]](repeating: [], count: 24)
+        for s in sorted {
+            let local = ((s.ts + tzOffsetSeconds) % 86_400 + 86_400) % 86_400
+            hourly[local / 3600].append(s)
+        }
+        return (0..<24).map { hourly[$0].isEmpty ? nil : hourMotionIntensity(hourly[$0]) }
+    }
+
+    /// Pool per-day hourly profiles into the cosinor bins. Each profile is a 24-slot array from
+    /// `hourlyMotionProfile` (nil = hour unobserved that day). Equivalent to the `[DayGravity]`
+    /// overload by construction (it delegates here); pinned by test.
+    public static func activityBins(hourlyProfiles: [[Double?]]) -> (bins: [ActivityBin], daysObserved: Int) {
         var perHourSum = [Double](repeating: 0, count: 24)   // Σ per-day intensity in each local hour
         var perHourDays = [Int](repeating: 0, count: 24)     // # days that had samples in each hour
         var daysObserved = 0
-        for day in days {
-            let sorted = day.samples.sorted { $0.ts < $1.ts }
-            var hourly = [[GravitySample]](repeating: [], count: 24)
-            for s in sorted {
-                let local = ((s.ts + day.tzOffsetSeconds) % 86_400 + 86_400) % 86_400
-                hourly[local / 3600].append(s)
-            }
+        for profile in hourlyProfiles {
             var dayHadMotion = false
-            for h in 0..<24 where !hourly[h].isEmpty {
-                perHourSum[h] += hourMotionIntensity(hourly[h])
+            for h in 0..<24 {
+                guard h < profile.count, let v = profile[h] else { continue }
+                perHourSum[h] += v
                 perHourDays[h] += 1
-                if hourMotionIntensity(hourly[h]) > 0 { dayHadMotion = true }
+                if v > 0 { dayHadMotion = true }
             }
             if dayHadMotion { daysObserved += 1 }
         }
