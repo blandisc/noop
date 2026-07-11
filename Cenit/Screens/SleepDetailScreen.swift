@@ -945,7 +945,11 @@ struct SleepDetailScreen: View {
         var mins: [String: Double] = [:]
         for r in durationParsed { mins[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
-        let today = cal.startOfDay(for: Date())
+        // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
+        // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
+        // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano. Asi los cuatro
+        // calendarios (Recuperacion, Sueno, Esfuerzo, Estres) miden igual. (FER calendarios mismo tamano)
+        guard let today = Repository.parseDayKey(Repository.localDayKey(Date())) else { return [] }
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
             let key = Self.calDayFmt.string(from: date)
