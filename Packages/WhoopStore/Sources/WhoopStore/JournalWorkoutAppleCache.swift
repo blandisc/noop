@@ -21,7 +21,7 @@ public struct JournalEntry: Equatable, Codable {
 /// One workout. Natural key (deviceId, startTs, sport). All metric columns nullable.
 /// `zonesJSON` is verbatim JSON of HR-zone percentages, stored as a string so the cache stays
 /// schema-agnostic about the zone shape.
-public struct WorkoutRow: Equatable, Hashable, Codable {
+public struct WorkoutRow: Equatable, Hashable, Codable, Sendable {
     public let startTs: Int          // unix seconds
     public let endTs: Int            // unix seconds
     public let sport: String

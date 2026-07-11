@@ -156,6 +156,45 @@ extension WhoopStore {
         }
     }
 
+    /// COUNT(*) per LOCAL civil day — epochDay = floor((ts + tzOffset) / 86 400) — for each raw
+    /// stream feeding `analyzeDay`, over ts >= `from`. The incremental engine's dirtiness signature
+    /// (FER-868): one GROUP BY per table, each served by the (deviceId, ts) primary-key/index order
+    /// with no row materialization. Streams keyed "hr", "rr", "resp", "gravity", "steps", "skinTemp".
+    ///
+    /// Precondition: the stream writers never UPDATE rows in place (`INSERT … ON CONFLICT DO
+    /// NOTHING`, StreamStore.insert), so per-day counts are a COMPLETE dirtiness signature — a count
+    /// can only move when rows were genuinely inserted (backfill, live) or deleted (safe-trim).
+    /// `ts + tzOffset` is assumed non-negative (any real timestamp), so SQL's truncating division
+    /// equals floor.
+    public func streamDayCounts(deviceId: String, from: Int,
+                                tzOffsetSeconds: Int) async throws -> [String: [Int: Int]] {
+        // hrSample/rrInterval/respSample/gravitySample/skinTempSample store the v21 integer
+        // surrogate; stepSample still stores the TEXT deviceId (not migrated in v21).
+        let intId = try await resolvedDeviceId(deviceId, createIfMissing: false)
+        return try syncRead { db in
+            func counts(table: String, id: DatabaseValueConvertible) throws -> [Int: Int] {
+                var out: [Int: Int] = [:]
+                let rows = try Row.fetchAll(db, sql: """
+                    SELECT (ts + ?) / 86400 AS ld, COUNT(*) AS n FROM \(table)
+                    WHERE deviceId = ? AND ts >= ?
+                    GROUP BY ld
+                    """, arguments: [tzOffsetSeconds, id, from])
+                for r in rows { out[r["ld"]] = r["n"] }
+                return out
+            }
+            var result: [String: [Int: Int]] = [:]
+            if let intId {
+                result["hr"] = try counts(table: "hrSample", id: intId)
+                result["rr"] = try counts(table: "rrInterval", id: intId)
+                result["resp"] = try counts(table: "respSample", id: intId)
+                result["gravity"] = try counts(table: "gravitySample", id: intId)
+                result["skinTemp"] = try counts(table: "skinTempSample", id: intId)
+            }
+            result["steps"] = try counts(table: "stepSample", id: deviceId)
+            return result
+        }
+    }
+
     /// Aggregate storage footprint: total decoded rows, raw batch count, total raw byteSize.
     public func storageStats() async throws -> (decodedRows: Int, rawBatches: Int, rawBytes: Int) {
         try syncRead { db in
