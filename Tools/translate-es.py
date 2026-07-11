@@ -1968,6 +1968,10 @@ ES: dict[str, str] = {
     "within your normal": "dentro de tu normal",
     "within your normal range": "dentro de tu rango normal",
     "lower than your normal": "más baja de lo normal",
+    # Fase 1 — migración Detalle de vitales al esqueleto Final (Temp. de piel).
+    "Today, vs your range": "Hoy, vs tu rango",
+    "Nightly thermal stability": "Estabilidad térmica nocturna",
+    "Tends to rise with alcohol, fever, ambient heat, and the days before your period.": "Suele subir con alcohol, fiebre, calor ambiental y los días previos a tu periodo.",
     # FER-666 «Ritmo» — pantalla experimental de regularidad latido-a-latido (no clínica).
     "Looked steady.": "Se vio estable.",
     "A few extra or skipped beats showed up.": "Se vieron algunos latidos extra o salteados.",

@@ -58496,6 +58496,57 @@
           }
         }
       }
+    },
+    "Today, vs your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today, vs your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy, vs tu rango"
+          }
+        }
+      }
+    },
+    "Nightly thermal stability": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nightly thermal stability"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estabilidad térmica nocturna"
+          }
+        }
+      }
+    },
+    "Tends to rise with alcohol, fever, ambient heat, and the days before your period.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to rise with alcohol, fever, ambient heat, and the days before your period."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele subir con alcohol, fiebre, calor ambiental y los días previos a tu periodo."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
