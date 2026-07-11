@@ -843,10 +843,12 @@ private struct CuerpoLanding: View {
     private var strainStat: some View {
         // Valor VIVO del día en curso (fin de la curva intradía), no el score asentado — una sola
         // derivación alimenta este número, el héroe del Detalle y la curva (FER-650). Cae al asentado
-        // mientras el vivo aún no se computa.
+        // mientras el vivo aún no se computa. FER-883: on a band-less Apple day the label flips to
+        // «Day load» + originApple; band days stay byte-identical ("Day Strain" / originComputed).
         let v = model.displayedDayStrain
-        return statColumn("Day Strain", value: v.map { String(format: "%.1f", $0) },
-                          color: theme.dataStrain, origin: theme.originComputed,
+        let estimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
+        return statColumn(estimated ? "Day load" : "Day Strain", value: v.map { String(format: "%.1f", $0) },
+                          color: theme.dataStrain, origin: estimated ? theme.originApple : theme.originComputed,
                           spark: windowedSpark { $0.strain }) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
             // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses

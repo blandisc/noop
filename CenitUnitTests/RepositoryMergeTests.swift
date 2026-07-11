@@ -1,5 +1,6 @@
 import XCTest
 import WhoopStore
+import WhoopProtocol
 import StrandAnalytics
 @testable import Cenit
 
@@ -253,5 +254,77 @@ final class RepositoryMergeTests: XCTestCase {
         let apple = (1...3).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
         let days: Set<String> = ["2026-06-01", "2026-06-02", "2026-06-03"]
         XCTAssertTrue(Repository.appleRecoveryEstimates(apple: apple, eligibleDays: days).isEmpty)
+    }
+
+    // MARK: - FER-883 — Apple workout-HR strain estimate is a side map keyed on `strain == nil`
+
+    /// Dense 1 Hz HR samples at a constant bpm (same pattern as StrainScorerTests).
+    private func denseHR(_ bpm: Int, n: Int = 600, start: Int = 1_700_000_000) -> [HRSample] {
+        (0..<n).map { HRSample(ts: start + $0, bpm: bpm) }
+    }
+
+    /// Sparse HR: fewer samples than both dense and sparse gates → hasEnoughData false.
+    private func sparseHR(_ bpm: Int, n: Int = 10, start: Int = 1_700_000_000) -> [HRSample] {
+        (0..<n).map { HRSample(ts: start + $0, bpm: bpm) }
+    }
+
+    /// Eligible day with dense workout HR → non-nil strain estimate (0–21).
+    func testAppleStrainEstimatesDenseHREligibleDay() {
+        let day = "2026-06-10"
+        // ts around a fixed epoch so DayKey.local grouping isn't under test here — we pass hrByDay pre-grouped.
+        let hrByDay = [day: denseHR(150)]
+        let out = Repository.appleStrainEstimates(hrByDay: hrByDay, eligibleDays: [day])
+        XCTAssertNotNil(out[day])
+        XCTAssertGreaterThan(out[day]!, 0)
+        XCTAssertLessThanOrEqual(out[day]!, 21)
+    }
+
+    /// Sparse/too-few HR → no entry even if the day is eligible.
+    func testAppleStrainEstimatesSparseHRNoEntry() {
+        let day = "2026-06-10"
+        let out = Repository.appleStrainEstimates(hrByDay: [day: sparseHR(150)], eligibleDays: [day])
+        XCTAssertNil(out[day])
+        XCTAssertTrue(out.isEmpty)
+    }
+
+    /// Only days in `eligibleDays` get estimates — mirrors recovery "only eligible days".
+    func testAppleStrainEstimatesOnlyForEligibleDays() {
+        let d1 = "2026-06-01", d2 = "2026-06-02", d3 = "2026-06-03"
+        let hrByDay = [
+            d1: denseHR(150, start: 1_700_000_000),
+            d2: denseHR(160, start: 1_700_100_000),
+            d3: denseHR(155, start: 1_700_200_000),
+        ]
+        // d2 not eligible (e.g. band already has measured strain that day).
+        let out = Repository.appleStrainEstimates(hrByDay: hrByDay, eligibleDays: [d1, d3])
+        XCTAssertNotNil(out[d1])
+        XCTAssertNil(out[d2])
+        XCTAssertNotNil(out[d3])
+        XCTAssertEqual(Set(out.keys), [d1, d3])
+    }
+
+    /// Band strain present ⇒ day not eligible ⇒ estimate never wins over real strain, even with HR samples.
+    func testAppleStrainEstimatesNeverWinsOverBandStrain() {
+        let day = "2026-06-10"
+        // Contract at appleStrainEstimates level: pass day NOT in eligibleDays despite hrByDay samples.
+        let out = Repository.appleStrainEstimates(
+            hrByDay: [day: denseHR(180)],
+            eligibleDays: []   // band day filtered out of eligibility by assembleDashboard
+        )
+        XCTAssertNil(out[day])
+        XCTAssertTrue(out.isEmpty)
+    }
+
+    /// `mergeDaily` is untouched by strain estimates — Apple rows carry no strain into days/displayDays.
+    func testMergeDailyUnaffectedByStrainEstimates() {
+        let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
+        let r = Repository.mergeDaily(imported: [], computed: [], apple: apple)
+        XCTAssertTrue(r.days.allSatisfy { $0.strain == nil })
+        XCTAssertTrue(r.displayDays.allSatisfy { $0.strain == nil })
+    }
+
+    /// Empty hrByDay → empty map (whoopOnly / no workout HR).
+    func testAppleStrainEstimatesEmptyHR() {
+        XCTAssertTrue(Repository.appleStrainEstimates(hrByDay: [:], eligibleDays: ["2026-06-01"]).isEmpty)
     }
 }

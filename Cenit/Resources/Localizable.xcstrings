@@ -11967,6 +11967,22 @@
         }
       }
     },
+    "Day load": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day load"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga del día"
+          }
+        }
+      }
+    },
     "Day Stress": {
       "localizations": {
         "en": {

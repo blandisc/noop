@@ -1375,7 +1375,9 @@ final class AppModel: ObservableObject {
     /// The value the CURRENT day's strain shows on the Hoy/Cuerpo tiles: the live derivation when it's
     /// computed, else the settled `repo.today.strain` (before the first live pass, or too little activity).
     /// One accessor so both tiles share the exact same fallback (FER-650).
-    var displayedDayStrain: Double? { liveDayStrain ?? repo.today?.strain }
+    var displayedDayStrain: Double? {
+        liveDayStrain ?? repo.today?.strain ?? repo.estimatedStrain(repo.today?.day ?? Repository.localDayKey(Date()))
+    }
 
     /// The in-progress day's intraday strain curve as chart points, with the local-midnight anchor prepended
     /// (so the line reads "from 00:00" even if the strap wasn't worn until later). The ONE builder both the
