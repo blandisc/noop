@@ -23,6 +23,14 @@ struct SavedTicketsScreen: View {
     @State private var volumes: [String: (volumeKg: Double, setCount: Int)] = [:]
     @State private var loaded = false
 
+    /// The receipt being reprinted (tap → reconstruct summary → present the printer). nil = closed.
+    @State private var receiptTarget: ReceiptTarget?
+    private struct ReceiptTarget: Identifiable {
+        let id = UUID()
+        let summary: StrengthSummary
+        let sessionId: String
+    }
+
     private let columns = [
         GridItem(.flexible(), spacing: 11),
         GridItem(.flexible(), spacing: 11)
@@ -59,6 +67,10 @@ struct SavedTicketsScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .task { await load() }
+        .fullScreenCover(item: $receiptTarget) { target in
+            ReceiptPrinterScreen(theme: theme, summary: target.summary,
+                                 sessionId: target.sessionId, onClose: { receiptTarget = nil })
+        }
     }
 
     private var header: some View {
@@ -83,7 +95,7 @@ struct SavedTicketsScreen: View {
     private var ticketGrid: some View {
         LazyVGrid(columns: columns, spacing: 11) {
             ForEach(Array(filteredSessions.enumerated()), id: \.element.id) { index, session in
-                NavigationLink(value: route(for: session)) {
+                Button { openReceipt(session) } label: {
                     MiniTicketView(ticket: TicketMapping.miniTicket(
                         for: session,
                         index: index,
@@ -133,9 +145,18 @@ struct SavedTicketsScreen: View {
         session.routineId.flatMap { routineNames[$0] } ?? String(localized: "Strength workout")
     }
 
-    private func route(for session: StrengthSession) -> WorkoutSessionRoute {
-        WorkoutSessionRoute(id: session.id, startTs: session.startTs, endTs: session.endTs,
-                            strain: session.strain, avgHr: session.avgHr, routineName: name(for: session))
+    /// Tap → reconstruct the session's summary from stored data, then present the receipt printer as a
+    /// full-screen cover (the reprint path, mirroring the end-of-session receipt).
+    private func openReceipt(_ session: StrengthSession) {
+        Task {
+            let sets = await repo.sessionSets(sessionId: session.id)
+            let all = await repo.allExercises()
+            let names = Dictionary(all.map { ($0.id, StrengthDisplay.name($0)) },
+                                   uniquingKeysWith: { a, _ in a })
+            let summary = ReceiptMapping.summary(session: session, sets: sets,
+                                                 exerciseNames: names, routineName: name(for: session))
+            receiptTarget = ReceiptTarget(summary: summary, sessionId: session.id)
+        }
     }
 
     private func load() async {
