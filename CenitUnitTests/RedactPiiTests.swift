@@ -57,6 +57,6 @@ final class RedactPiiTests: XCTestCase {
     func testAppendRedactsThroughTheSink() {
         let st = LiveState()
         st.append(log: "Discovered WHOOP 4C1594026 at AB:CD:EF:12:34:56")
-        XCTAssertEqual(st.log.last, "Discovered WHOOP <serial> at AB:••:••:••:••:56")
+        XCTAssertEqual(st.log.last?.text, "Discovered WHOOP <serial> at AB:••:••:••:••:56")
     }
 }
