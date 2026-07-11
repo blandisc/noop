@@ -3,15 +3,17 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import WhoopStore
+import Foundation
 
-// MARK: - Carga de entrenamiento — franja en «Hoy» + hoja explicativa (FER-705 · handoff «Carga»)
+// MARK: - Carga de entrenamiento — franja en «Hoy» + hoja «Detalle de Tendencias Final» (FER-705 · FER-862)
 //
 // La carga de entrenamiento (ACWR) entra a «Hoy» como una FRANJA fija bajo las pestañas (visible en
-// Señales y Brief) que al tocarla abre esta HOJA. La recuperación mide, la carga guía: son independientes.
-// El dato dominante es SIEMPRE la palabra de banda en su color de flag, nunca el ratio pelado — la jerga
-// («acute:chronic», ACWR, Gabbett 2016 / Impellizzeri 2020) vive SOLO dentro de «Cómo se calcula».
-// Toda la matemática viene de `ReadinessEngine` (umbrales 0.8 / 1.3 / 1.5 intactos); estas vistas solo
-// presentan `acwr`, `acwrSeries` y `loadBand`. Tokens únicamente; el tema se pasa explícito (no cruza `.sheet`).
+// Señales y Brief) que al tocarla abre esta HOJA. La hoja sigue el esqueleto de las hermanas
+// (Recuperación / Esfuerzo / Estrés / Sueño): héroe invertido → instrumento firma (la colina
+// scrubbable) → historial (`GraficaRangos`) → método + sello. SIN calendario de 90 días (ventana
+// móvil 7/28). Toda la matemática viene de `ReadinessEngine` (umbrales 0.8 / 1.3 / 1.5 intactos);
+// estas vistas solo presentan `acwr`, `acwrSeries` y `loadBand`. Tokens únicamente; el tema se
+// pasa explícito (no cruza `.sheet`).
 
 /// Todo lo que la franja, la hoja y la tarjeta de Tendencias dibujan, construido una vez desde el
 /// dashboard band-masked (`CuerpoView.loadAll` / `TodayView.recomputeDerived`). `acwr == nil` → calibrando.
@@ -145,7 +147,7 @@ struct TrainingLoadStrip: View {
     }
 }
 
-// MARK: - Hoja «Carga de entrenamiento»
+// MARK: - Hoja «Carga de entrenamiento» — esqueleto «Detalle de Tendencias Final» (FER-862)
 
 struct TrainingLoadSheet: View {
     let model: TrainingLoadModel
@@ -158,252 +160,165 @@ struct TrainingLoadSheet: View {
     var onSeeTrends: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
-    /// Altura natural medida, para que el detent se ajuste al contenido (patrón de `MetricInfoSheet`).
-    @State private var contentHeight: CGFloat = 0
-    /// El periodo de la gráfica (S/M/3M/6M/1A). La franja de equilibrio y los carriles no cambian con él.
-    @State private var period: LoadPeriod = .week
-    /// El carril destacado en la gráfica (por defecto el de hoy); tocarlo re-sombrea la franja y la etiqueta.
-    @State private var featured: ReadinessEngine.LoadBand? = nil
+    /// El periodo del historial (S/M/3M/6M/1A/TODO).
+    @State private var range: ExploreRange = .month
+    /// Serie ACWR con día parseado una sola vez (lección FER-216).
+    @State private var parsed: [(day: String, date: Date?, value: Double)] = []
+    /// El ⓘ del héroe abre «Qué medimos».
+    @State private var infoOpen = false
 
-    // MARK: Periodo
-
-    private enum LoadPeriod: Int, CaseIterable, Hashable {
-        case week, month, quarter, half, year
-        /// `lastN` días para recomputar `acwrSeries` en ese periodo.
-        var lastN: Int { switch self { case .week: 7; case .month: 30; case .quarter: 90; case .half: 180; case .year: 365 } }
-        /// Etiqueta corta (localizada: S/M/3M/6M/1A).
-        var label: String { switch self {
-            case .week:  String(localized: "W")
-            case .month: String(localized: "M")
-            case .quarter: String(localized: "3M")
-            case .half:  String(localized: "6M")
-            case .year:  String(localized: "1Y")
-        } }
-    }
-
-    private var activeBand: ReadinessEngine.LoadBand? { featured ?? model.band }
+    // MARK: - Body
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                titleRow
+            VStack(alignment: .leading, spacing: 0) {
                 if let acwr = model.acwr, let band = model.band {
-                    hero(band)
-                    ratioCard(acwr: acwr)
-                    hillBlock(acwr: acwr, band: band)
-                    Divider().overlay(theme.hairline)
-                    periodSelector
-                    chartBlock(band: band)
-                    lanes(todayBand: band)
-                    if let patternText, onSeePattern != nil { patternBlockView(patternText) }
-                    methodAccordion(acwr: acwr)
+                    heroField(acwr: acwr, band: band)
+                    if infoOpen { whatWeMeasureCard }
+                    seccion(String(localized: "The hill"),
+                            pista: String(localized: "Drag to explore"),
+                            contentPadding: EdgeInsets(top: 14, leading: 14, bottom: 22, trailing: 14)) {
+                        hillContent(acwr: acwr, band: band)
+                    }
+                    seccion(String(localized: "See your history")) { historyContent }
+                    if let onSeeTrends {
+                        seeTrendsButton(onSeeTrends)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 4)
+                    }
+                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
+                    VStack(alignment: .leading, spacing: 10) {
+                        metodoBlock
+                        OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 2)
+                    }
+                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
-                    hero(nil)
-                    calibratingBlock
-                    methodAccordion(acwr: nil)
+                    // Calibrando: héroe plano honesto + método + sello (mismo fallback que las hermanas).
+                    VStack(alignment: .leading, spacing: 22) {
+                        heroFlat
+                        calibratingBlock
+                        metodoBlock
+                        OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
+                    }
+                    .padding(NoopMetrics.screenPadding)
                 }
-                if let onSeeTrends { seeTrendsButton(onSeeTrends) }
-                hedgeFooter
-                // Standardized origin seal at the foot (FER-803): load is computed from your strap's strain.
-                OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
-                    .padding(.top, 2)
             }
-            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(GeometryReader { g in
-                Color.clear.preference(key: TrainingLoadHeightKey.self, value: g.size.height)
-            })
         }
-        .onPreferenceChange(TrainingLoadHeightKey.self) { contentHeight = $0 }
         .background(theme.paper)
-        .environment(\.instrumentoTheme, theme)
-        .presentationDetents(contentHeight > 0 ? [.height(contentHeight)] : [.large])
         .presentationDragIndicator(.visible)
-    }
-
-    // MARK: Título + origen
-
-    private var titleRow: some View {
-        HStack(spacing: 6) {
-            HillGlyph().stroke(theme.dataStrain, style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                .frame(width: 14, height: 14)
-            Text("Training load").groteskSheetTitle().foregroundStyle(theme.ink)
-            Spacer(minLength: 8)
-            // §8.7 (FER-803): no origin dot in the title — provenance moved to the OriginStamp at the foot.
+        .sheetPaper(theme)
+        .environment(\.instrumentoTheme, theme)
+        .task {
+            range = .month
+            parsed = chartSeriesPairs.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
         }
     }
 
-    // MARK: Héroe — la palabra de banda es el dato dominante (nunca el ratio pelado)
+    /// One skeleton section: full-bleed `SeccionFranja` + content with handoff padding.
+    private func seccion(_ title: String,
+                         pista: String? = nil,
+                         contentPadding: EdgeInsets = EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20),
+                         @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SeccionFranja(title, pista: pista, theme: theme)
+            content()
+                .padding(contentPadding)
+        }
+    }
 
-    @ViewBuilder private func hero(_ band: ReadinessEngine.LoadBand?) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if let band {
-                Text(band.shortLabel)
-                    .font(InstrumentoType.grotesk(34, weight: .bold, relativeTo: .largeTitle))
-                    .tracking(-0.8)
-                    .foregroundStyle(band.flag.color(theme))
-                Text(meaning(band))
-                    .font(StrandFont.subhead.weight(.semibold))
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text(verbatim: "—")
-                    .font(InstrumentoType.grotesk(34, weight: .bold, relativeTo: .largeTitle))
-                    .tracking(-0.8)
-                    .foregroundStyle(theme.inkDim)
+    // MARK: - 1. Héroe invertido — palabra de banda pintada por el color de la banda
+
+    private func heroField(acwr: Double, band: ReadinessEngine.LoadBand) -> some View {
+        let hue = band.flag.color(theme)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: MetricGlyph.trainingLoad.sfSymbol)
+                    .font(StrandFont.glyph(.chevron))
+                    .foregroundStyle(theme.paper)
+                    .frame(width: 14, height: 14)
+                    .accessibilityHidden(true)
+                Text("Training load")
+                    .font(InstrumentoType.grotesk(12, weight: .bold))
+                    .tracking(2.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.paper)
+                Spacer()
+                Button {
+                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(StrandFont.glyph(.chevron, weight: .regular))
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("What we measure")
             }
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(band.shortLabel)
+                    .font(InstrumentoType.grotesk(38, weight: .bold, relativeTo: .largeTitle))
+                    .tracking(-1.2)
+                    .foregroundStyle(theme.paper)
+                    .recRise()
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    Text(fmt(acwr))
+                        .font(InstrumentoType.groteskNumber(13, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                    Text("vs your base")
+                        .font(InstrumentoType.grotesk(11))
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+            }
+            Text(heroVerdict(band))
+                .font(InstrumentoType.grotesk(15, weight: .semibold))
+                .foregroundStyle(theme.paper)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(hue)
         .accessibilityElement(children: .combine)
     }
 
-    /// Una frase por banda, descriptiva (sin imperativo).
-    private func meaning(_ band: ReadinessEngine.LoadBand) -> LocalizedStringKey {
-        switch band {
-        case .rampingDown:  "These days you've trained less than your body is used to."
-        case .sweetSpot:    "Your recent load is in line with what your body is used to."
-        case .buildingFast: "These days you've trained more than your body is used to."
-        case .spiking:      "Your recent load is well above what your body is used to."
-        }
-    }
-
-    // MARK: Ratio glosado — el número se muestra, pero nunca solo
-
-    private func ratioCard(acwr: Double) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(String(format: "%.2f", acwr))
-                .font(StrandFont.number(24, weight: .semibold))
+    /// The ⓘ card under the hero: what the ratio measures, in plain language (no ACWR jargon).
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("What we measure")
+                .font(InstrumentoType.grotesk(13, weight: .semibold))
                 .foregroundStyle(theme.ink)
-            Text("your recent load (~7 days) vs. your usual (~28)")
-                .font(StrandFont.caption)
+            Text(heroExplanation)
+                .font(InstrumentoType.grotesk(12))
+                .lineSpacing(3)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.vertical, 12).padding(.horizontal, 16)
+        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.cta, theme: theme)
-        .accessibilityElement(children: .combine)
+        .instrumentoCard(.control, theme: theme)
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
     }
 
-    // MARK: La colina — el terreno + la franja de bandas + el punto que respira
-
-    private func hillBlock(acwr: Double, band: ReadinessEngine.LoadBand) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("The hill").groteskOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
-                Text("The green crest is your zone").groteskOverline(small: true).foregroundStyle(theme.inkMuted)
-            }
-            HillView(acwr: acwr, band: band, theme: theme)
-                .frame(height: 128)
-                .accessibilityHidden(true)
-                .padding(.bottom, 4)
-        }
-    }
-
-    // MARK: Selector de periodo
-
-    private var periodSelector: some View {
-        SegmentedPillControl(LoadPeriod.allCases, selection: $period, theme: theme, inkThumb: true) { $0.label }
-    }
-
-    // MARK: Carril activo + gráfica
-
-    private func chartBlock(band todayBand: ReadinessEngine.LoadBand) -> some View {
-        let shown = activeBand ?? todayBand
-        let isToday = shown == todayBand
-        let counts = laneCounts()
-        return VStack(alignment: .leading, spacing: 4) {
-            Text(isToday ? "\(shown.shortLabel) · \(String(localized: "today"))" : shown.shortLabel)
-                .font(InstrumentoType.grotesk(12, weight: .bold)).tracking(1.8).textCase(.uppercase)
-                .foregroundStyle(shown.flag.color(theme))
-            LoadChartView(series: chartSeries, featured: shown, isTodayLane: isToday, theme: theme)
-                .frame(height: 152)
-                .accessibilityHidden(true)
-            Text("\(counts[shown, default: 0]) of your last 28 days in this lane")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-        }
-    }
-
-    // MARK: Carriles tocables
-
-    private func lanes(todayBand: ReadinessEngine.LoadBand) -> some View {
-        let counts = laneCounts()
-        return VStack(spacing: 0) {
-            ForEach([ReadinessEngine.LoadBand.rampingDown, .sweetSpot, .buildingFast, .spiking], id: \.self) { b in
-                let isToday = b == todayBand
-                Button {
-                    withAnimation(StrandMotion.interactive) { featured = b }
-                } label: {
-                    HStack(spacing: 10) {
-                        RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
-                            .fill(b.flag.color(theme)).frame(width: 8, height: 8)
-                        HStack(spacing: 4) {
-                            Text(b.shortLabel).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                            if isToday {
-                                Text("· \(String(localized: "today"))")
-                                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(b.flag.color(theme))
-                            }
-                        }
-                        Spacer(minLength: 8)
-                        Text("\(counts[b, default: 0]) of your last 28 days")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
-                            .foregroundStyle(theme.inkMuted)
-                    }
-                    .padding(.vertical, 10).padding(.horizontal, 10)
-                    .background(activeBand == b ? theme.verdict.opacity(0.07) : .clear, // token-exempt: fondo condicional
-                                in: RoundedRectangle(cornerRadius: 10, style: .continuous)) // token-exempt: fondo condicional
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    // MARK: Tu patrón (solo desde «Hoy», solo cuando hay hallazgo real)
-
-    private func patternBlockView(_ text: String) -> some View {
-        Button { dismiss(); onSeePattern?() } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Your pattern").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
-                (Text(text).foregroundStyle(theme.ink)
-                 + Text(verbatim: "  ") + Text("See pattern →").foregroundStyle(theme.positiveText).fontWeight(.semibold))
-                    .font(StrandFont.subhead)
+    /// Flat hero for the calibrating state: no inverted field for a ratio we don't have.
+    private var heroFlat: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            InstrumentoScreenTitle("Training load", theme: theme,
+                                   explanation: heroExplanation, glyph: .trainingLoad)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(verbatim: "—")
+                    .instrumentoHero(46)
+                    .foregroundStyle(theme.inkTertiary)
+                Text("Needs about 2 weeks of recorded strain. Keep wearing the strap and this read will appear.")
+                    .font(StrandFont.headline)
+                    .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
-                    .multilineTextAlignment(.leading)
-            }
-            .padding(.vertical, 12).padding(.horizontal, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .patternBlock(theme, bar: theme.dataStrain)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: ⓘ — la única casa de la jerga (acute:chronic / ACWR + citas)
-
-    private func methodAccordion(acwr: Double?) -> some View {
-        InfoAccordion(
-            title: "Behind the number",
-            explanation: "The ratio compares your average load over the last ~7 days against your last ~28: the acute:chronic workload ratio (ACWR). 1.0 means you trained exactly your usual; 0.8–1.3 reads as balanced (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).",
-            accessibilityLabel: "Information about the training-load method",
-            theme: theme
-        ) {
-            if let acwr {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("Load ratio").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                        Text(String(format: "%.2f", acwr)).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                    }
-                    Text("acute (~7 d) ÷ chronic (~28 d) · what science calls ACWR")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
             }
         }
     }
-
-    // MARK: Calibrando — sin número, la espera honesta
 
     private var calibratingBlock: some View {
         Text("Needs about 2 weeks of recorded strain. Keep wearing the strap and this read will appear.")
@@ -412,11 +327,162 @@ struct TrainingLoadSheet: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    // MARK: Ver más en Tendencias + hedge
+    /// Short verdict under the band word. Descriptive, no imperative.
+    private func heroVerdict(_ band: ReadinessEngine.LoadBand) -> LocalizedStringKey {
+        switch band {
+        case .rampingDown:  "Less than your body is used to these days."
+        case .sweetSpot:    "In line with what your body is used to."
+        case .buildingFast: "More than your body is used to these days."
+        case .spiking:      "Well above what your body is used to."
+        }
+    }
+
+    /// ⓘ copy: 7 vs 28, 1.0 = usual, balance band, hedge. ACWR jargon stays in `Metodo` only.
+    private var heroExplanation: LocalizedStringKey {
+        "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained exactly your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction."
+    }
+
+    // MARK: - 2. La colina (instrumento firma scrubbable)
+
+    private func hillContent(acwr: Double, band: ReadinessEngine.LoadBand) -> some View {
+        LoadHillView(acwr: acwr, todayBand: band, theme: theme)
+    }
+
+    // MARK: - 3. Ver tu historial — PeriodSelector + GraficaRangos + tiles + observación
+
+    private var historyContent: some View {
+        let window = MetricWindowMath.make(parsed, selected: range)
+        let stat = ComparisonEngine.stat(window.values)
+        let seriesPairs = parsed.map { ($0.day, $0.value) }
+        let pct = range.periodComparison(of: seriesPairs)?.pctChange
+        return VStack(alignment: .leading, spacing: 8) {
+            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+            if window.values.count > 1 {
+                GraficaRangos(
+                    points: window.values,
+                    bands: Self.loadBands(theme),
+                    ticks: [
+                        .init(v: ReadinessEngine.acwrSpikeAt, label: cutLabel(ReadinessEngine.acwrSpikeAt)),
+                        .init(v: 1.0, label: "1.0"),
+                        .init(v: ReadinessEngine.acwrSweetSpotLow, label: cutLabel(ReadinessEngine.acwrSweetSpotLow)),
+                    ],
+                    hue: theme.dataStrain,
+                    ymin: 0.45, ymax: 1.9,
+                    startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    mediaValue: fmt(stat.mean),
+                    mediaNote: String(localized: "average of the \(range.name)"),
+                    mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
+                    deltaColor: theme.inkSecondary,
+                    countUnit: "d",
+                    anchorMedia: historyAnchorMedia,
+                    anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+                    scrub: true,
+                    labels: window.rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" },
+                    fmt: { String(format: "%.2f", $0) },
+                    theme: theme)
+                    .padding(.top, 6)
+                    .id(range)
+                HStack(alignment: .top, spacing: 8) {
+                    TileSurface(label: String(localized: "Average"),
+                                value: fmt(stat.mean),
+                                theme: theme)
+                    TileSurface(label: String(localized: "Range"),
+                                value: "\(fmt(stat.min))–\(fmt(stat.max))",
+                                theme: theme)
+                    TileSurface(label: String(localized: "Today"),
+                                value: model.acwr.map { fmt($0) } ?? "—",
+                                valueColor: model.band.map { $0.flag.color(theme) },
+                                theme: theme)
+                }
+                .padding(.top, 4)
+            } else {
+                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
+                    .padding(.top, 6)
+            }
+            if let patternText, !patternText.isEmpty {
+                historyObservationCard(patternText)
+                    .padding(.top, 10)
+            }
+        }
+    }
+
+    /// «LO QUE VEMOS EN TU HISTORIAL» + chip «TENDENCIA, NO CAUSA» + observación del modelo (gated).
+    @ViewBuilder
+    private func historyObservationCard(_ text: String) -> some View {
+        if let onSeePattern {
+            Button { dismiss(); onSeePattern() } label: {
+                observationCardContent(text)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        } else {
+            observationCardContent(text)
+        }
+    }
+
+    private func observationCardContent(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                Text("What we see in your history")
+                    .font(InstrumentoType.grotesk(10, weight: .semibold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.inkTertiary)
+                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
+            }
+            Text(text)
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.leading)
+        }
+        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.card, theme: theme)
+    }
+
+    /// Four load lanes for `GraficaRangos`, high→low. Bounds from `LoadScale` / `ReadinessEngine` only.
+    static func loadBands(_ theme: InstrumentoTheme) -> [GraficaRangos.Banda] {
+        let lo = ReadinessEngine.acwrSweetSpotLow
+        let hi = ReadinessEngine.acwrSweetSpotHigh
+        let spike = ReadinessEngine.acwrSpikeAt
+        return [
+            .init(label: ReadinessEngine.LoadBand.spiking.shortLabel,
+                  lo: spike, hi: nil, color: theme.critical,
+                  range: String(localized: "\(cutLabel(spike)) and up")),
+            .init(label: ReadinessEngine.LoadBand.buildingFast.shortLabel,
+                  lo: hi, hi: spike, color: theme.warning,
+                  range: "\(cutLabel(hi))–\(cutLabel(spike))"),
+            .init(label: ReadinessEngine.LoadBand.sweetSpot.shortLabel,
+                  lo: lo, hi: hi, color: theme.verdict,
+                  range: "\(cutLabel(lo))–\(cutLabel(hi))"),
+            .init(label: ReadinessEngine.LoadBand.rampingDown.shortLabel,
+                  lo: nil, hi: lo, color: theme.inkMuted,
+                  range: String(localized: "Below \(cutLabel(lo))")),
+        ]
+    }
+
+    private var historyAnchorMedia: String {
+        let lo = cutLabel(ReadinessEngine.acwrSweetSpotLow)
+        let hi = cutLabel(ReadinessEngine.acwrSweetSpotHigh)
+        return String(localized: "Your day-to-day ratio: the green band is your balance \(lo) to \(hi). Drag the chart to read each day.")
+    }
+
+    // MARK: - Método + sello
+
+    private var metodoBlock: some View {
+        Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+            Text("The ratio compares your average load over the last ~7 days against your last ~28: what science calls ACWR (acute:chronic). 1.0 is training exactly your usual; 0.8 to 1.3 reads as balance (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Ver más en Tendencias (solo desde «Hoy»)
 
     private func seeTrendsButton(_ action: @escaping () -> Void) -> some View {
-        // Botón ancho con borde ink + glifo de Tendencias, unificado con la hoja de resumen de cada métrica
-        // (`MetricInfoSheet.seeMoreLink`), en vez de la cápsula chica que tenía antes.
         Button { dismiss(); action() } label: {
             HStack(spacing: 7) {
                 TendenciasGlyph(color: theme.ink, lineWidth: 1.8).frame(width: 15, height: 15)
@@ -431,260 +497,269 @@ struct TrainingLoadSheet: View {
         .buttonStyle(.plain)
     }
 
-    private var hedgeFooter: some View {
-        Text("Context for your recovery, not an injury prediction · Calculated from your strap's strain")
-            .font(StrandFont.footnote)
-            .foregroundStyle(theme.inkMuted)
-            .fixedSize(horizontal: false, vertical: true)
+    // MARK: - Datos derivados
+
+    /// Serie de ratios por día: recomputa desde `days` cuando hay (ventana larga para el selector);
+    /// cae a la serie precomputada (28) del modelo.
+    private var chartSeriesPairs: [(day: String, value: Double)] {
+        if model.days.isEmpty { return model.series }
+        return ReadinessEngine.acwrSeries(days: model.days, lastN: 365)
+            .map { (day: $0.day, value: $0.ratio) }
     }
 
-    // MARK: Datos derivados (por periodo / por carril)
+    /// Ratio with two decimals everywhere.
+    private func fmt(_ v: Double) -> String { String(format: "%.2f", v) }
 
-    /// La serie de la gráfica, recomputada al `lastN` del periodo desde los días band-masked; cae a la
-    /// serie precomputada (28) cuando no hay días (fallback del tap en la tarjeta).
-    private var chartSeries: [Double] {
-        if model.days.isEmpty { return model.series.map(\.value) }
-        return ReadinessEngine.acwrSeries(days: model.days, lastN: period.lastN).map(\.ratio)
-    }
-
-    /// Cuántos de los últimos 28 días cayeron en cada banda (ventana fija, independiente del periodo).
-    private func laneCounts() -> [ReadinessEngine.LoadBand: Int] {
-        let ratios: [Double] = model.days.isEmpty
-            ? model.series.suffix(28).map(\.value)
-            : ReadinessEngine.acwrSeries(days: model.days, lastN: 28).map(\.ratio)
-        var out: [ReadinessEngine.LoadBand: Int] = [:]
-        for r in ratios { out[ReadinessEngine.loadBand(forACWR: r), default: 0] += 1 }
-        return out
-    }
+    /// One decimal for cut marks (0.8 / 1.3 / 1.5) from engine constants.
+    private static func cutLabel(_ v: Double) -> String { String(format: "%.1f", v) }
+    private func cutLabel(_ v: Double) -> String { Self.cutLabel(v) }
 }
 
-// MARK: - La colina (terreno + franja de bandas + punto que respira)
+// MARK: - La colina scrubbable (instrumento firma de Carga)
 
-private struct HillView: View {
+/// Curva tipo colina sobre la escala 0…2, con punto del día, chip negro anclado y drag horizontal
+/// que explora cada zona. Al soltar vuelve a HOY. No reusa `GraficaRangos`: es un instrumento distinto.
+private struct LoadHillView: View {
     let acwr: Double
-    let band: ReadinessEngine.LoadBand
+    let todayBand: ReadinessEngine.LoadBand
     let theme: InstrumentoTheme
 
-    /// El terreno: `y = base − amp·(x/W)^1.8` sobre un lienzo de 118 de alto (base 92, amp 78).
-    private func terrainY(_ x: CGFloat, w: CGFloat) -> CGFloat { 92 - 78 * pow(x / w, 1.8) }
-    private func cutX(_ r: Double, w: CGFloat) -> CGFloat { CGFloat(r) / 2 * w }
+    /// `nil` = mostrando HOY; non-nil = ratio bajo el dedo.
+    @State private var scrubRatio: Double? = nil
+
+    private var displayRatio: Double { scrubRatio ?? acwr }
+    private var isShowingToday: Bool { scrubRatio == nil }
+    private var displayBand: ReadinessEngine.LoadBand {
+        ReadinessEngine.loadBand(forACWR: displayRatio)
+    }
+
+    /// Fixed drawing height matching the mock viewBox (132).
+    private let chartH: CGFloat = 132
+    /// Mock path coordinate width; x is scaled to the live width.
+    private let mockW: CGFloat = 320
 
     var body: some View {
-        GeometryReader { g in
-            let w = g.size.width
-            let dx = cutX(min(max(acwr, 0.06), 1.94), w: w)
-            let dy = terrainY(dx, w: w)
-            ZStack(alignment: .topLeading) {
-                Canvas { ctx, size in
-                    let W = size.width
-                    // Terreno (área + trazo).
-                    var line = Path()
-                    line.move(to: CGPoint(x: 0, y: terrainY(0, w: W)))
-                    var x: CGFloat = 0
-                    while x <= W { line.addLine(to: CGPoint(x: x, y: terrainY(x, w: W))); x += 6 }
-                    line.addLine(to: CGPoint(x: W, y: terrainY(W, w: W)))
-                    var area = line
-                    area.addLine(to: CGPoint(x: W, y: 92)); area.addLine(to: CGPoint(x: 0, y: 92)); area.closeSubpath()
-                    ctx.fill(area, with: .color(theme.ink.opacity(0.05))) // token-exempt: relleno de área de chart <0.10
-                    ctx.stroke(line, with: .color(theme.ink), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    // Franja de bandas bajo el terreno (y 98, alto 4): activa plena, inactivas al 35 %.
-                    let segs: [(CGFloat, CGFloat, ReadinessEngine.LoadBand)] = [
-                        (0, cutX(0.8, w: W), .rampingDown),
-                        (cutX(0.8, w: W) + 2, cutX(1.3, w: W), .sweetSpot),
-                        (cutX(1.3, w: W) + 2, cutX(1.5, w: W), .buildingFast),
-                        (cutX(1.5, w: W) + 2, W, .spiking)]
-                    for (x0, x1, b) in segs where x1 > x0 {
-                        let r = Path(roundedRect: CGRect(x: x0, y: 98, width: x1 - x0, height: 4), cornerRadius: 2) // token-exempt: geometría de dato
-                        ctx.fill(r, with: .color(b.flag.color(theme).opacity(b == band ? 1 : 0.35)))
+        VStack(alignment: .leading, spacing: 8) {
+            GeometryReader { g in
+                let w = max(g.size.width, 1)
+                let r = displayRatio
+                let hx = xForRatio(r, width: w)
+                let hy = hillY(atX: hx, width: w) - 6
+                let bandColor = hillPointColor(displayBand)
+                let chip = chipText(ratio: r, band: displayBand, today: isShowingToday)
+                let chipW = CGFloat(chip.count) * 5.6 + 16
+                let chipX = max(0, min(w - chipW, hx - chipW / 2))
+                let chipY = max(0, hy - 26)
+
+                ZStack(alignment: .topLeading) {
+                    // Área + trazo de la colina.
+                    hillAreaPath(width: w)
+                        .fill(LinearGradient(
+                            colors: [theme.ink.opacity(0.07), theme.ink.opacity(0)],
+                            startPoint: .top, endPoint: .bottom))
+                        .recFade()
+                    hillLinePath(width: w)
+                        .stroke(theme.ink, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+
+                    // Barras de zona (crest verde al 100%, el resto al 35%).
+                    zoneBars(width: w)
+
+                    // Ticks en los cortes del motor.
+                    ForEach(LoadScale.cuts, id: \.self) { cut in
+                        let tx = xForRatio(cut, width: w)
+                        Text(String(format: "%.1f", cut))
+                            .font(InstrumentoType.groteskNumber(9, weight: .regular))
+                            .foregroundStyle(theme.inkTertiary)
+                            .position(x: tx, y: 120)
                     }
-                    // Cortes 0.8 / 1.3 / 1.5.
-                    for r in [0.8, 1.3, 1.5] {
-                        let t = ctx.resolve(Text(String(format: "%.1f", r))
-                            .font(InstrumentoType.groteskNumber(9, weight: .regular)).foregroundStyle(theme.inkMuted))
-                        ctx.draw(t, at: CGPoint(x: cutX(r, w: W), y: 111), anchor: .top)
+
+                    // Fantasma de HOY mientras se explora.
+                    if !isShowingToday {
+                        let gx = xForRatio(acwr, width: w)
+                        let gy = hillY(atX: gx, width: w) - 6
+                        Circle()
+                            .strokeBorder(theme.inkMuted, lineWidth: 1.5)
+                            .frame(width: 6, height: 6)
+                            .position(x: gx, y: gy)
                     }
+
                     // Guía punteada del punto a la franja.
-                    var guide = Path(); guide.move(to: CGPoint(x: dx, y: dy + 8)); guide.addLine(to: CGPoint(x: dx, y: 96))
-                    ctx.stroke(guide, with: .color(theme.rangeMidline), style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
-                    // «HOY» sobre el punto.
-                    let hoy = ctx.resolve(Text("Today").font(InstrumentoType.grotesk(8, weight: .bold))
-                        .foregroundStyle(theme.ink))
-                    ctx.draw(hoy, at: CGPoint(x: min(max(dx, 14), W - 14), y: dy - 12), anchor: .bottom)
-                }
-                // Punto que respira (componente compartido), centrado en la curva.
-                BreathingDot(color: band.flag.color(theme), radius: 3.5)
-                    .position(x: dx, y: dy)
-            }
-        }
-    }
-}
-
-// MARK: - La gráfica de la hoja (serie + franja de equilibrio + punto que respira)
-
-private struct LoadChartView: View {
-    let series: [Double]
-    let featured: ReadinessEngine.LoadBand
-    let isTodayLane: Bool
-    let theme: InstrumentoTheme
-
-    /// La x del dedo que arrastra (nil sin arrastre) — dibuja la cruz + tooltip. (FER-748)
-    @State private var hoverX: CGFloat? = nil
-
-    /// Fecha corta y localizada para el tooltip de scrub (ej. «sáb 4 jul»).
-    private static let dayFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
-        return f
-    }()
-
-    /// La fecha del punto `i`: el último punto es hoy, cada índice previo es un día atrás. (FER-748)
-    private func date(forIndex i: Int) -> Date {
-        let startOfToday = Calendar.current.startOfDay(for: Date())
-        return Calendar.current.date(byAdding: .day, value: -(series.count - 1 - i), to: startOfToday) ?? startOfToday
-    }
-
-    /// El mapeo ratio → y sobre 130 de alto (0.3 abajo, subiendo con el ratio), como el mock.
-    private func cy(_ r: Double) -> CGFloat { min(max(122 - (CGFloat(r) - 0.3) * 72, 10), 122) }
-
-    /// El rango [lo, hi] en ratio de la banda destacada (para sombrear la franja).
-    private var range: (lo: Double, hi: Double) {
-        switch featured {
-        case .rampingDown:  (0.3, ReadinessEngine.acwrSweetSpotLow)
-        case .sweetSpot:    (ReadinessEngine.acwrSweetSpotLow, ReadinessEngine.acwrSweetSpotHigh)
-        case .buildingFast: (ReadinessEngine.acwrSweetSpotHigh, ReadinessEngine.acwrSpikeAt)
-        case .spiking:      (ReadinessEngine.acwrSpikeAt, 1.95)
-        }
-    }
-
-    private var rangeLabel: String {
-        switch featured {
-        case .rampingDown:  String(localized: "Below 0.8")
-        case .sweetSpot:    String(localized: "Your balance 0.8–1.3")
-        case .buildingFast: String(localized: "1.3–1.5")
-        case .spiking:      String(localized: "1.5 and up")
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 6) {
-            chart
-            dateAxis
-        }
-    }
-
-    /// El eje X: primera fecha · fecha del medio · «hoy» (el último punto de la serie es hoy). Complementa
-    /// al tooltip del scrub (FER-748) con una referencia de tiempo siempre visible, en reposo.
-    private var dateAxis: some View {
-        HStack(spacing: 0) {
-            Text(series.isEmpty ? "" : Self.axisFmt.string(from: date(forIndex: 0)))
-            Spacer(minLength: 0)
-            if series.count > 3 {
-                Text(Self.axisFmt.string(from: date(forIndex: series.count / 2)))
-                Spacer(minLength: 0)
-            }
-            Text("today")
-        }
-        .font(InstrumentoType.grotesk(9, weight: .regular))
-        .foregroundStyle(theme.inkMuted)
-    }
-
-    /// «d MMM» localizado para las marcas del eje X.
-    private static let axisFmt: DateFormatter = {
-        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("dMMM"); return f
-    }()
-
-    private var chart: some View {
-        GeometryReader { g in
-            let w = g.size.width
-            let head: CGFloat = 8          // margen para que el punto final no se recorte
-            let n = series.count
-            let last = series.last ?? 1.0
-            let endX = w - head
-            ZStack(alignment: .topLeading) {
-                Canvas { ctx, size in
-                    let W = size.width - head
-                    // Franja de la banda destacada.
-                    let bandRect = CGRect(x: 0, y: cy(range.hi), width: size.width, height: cy(range.lo) - cy(range.hi))
-                    ctx.fill(Path(roundedRect: bandRect, cornerRadius: 4), with: .color(theme.rangeBand)) // token-exempt: geometría de dato
-                    if isTodayLane {
-                        ctx.fill(Path(roundedRect: bandRect, cornerRadius: 4), // token-exempt: geometría de dato
-                                 with: .color(featured.flag.color(theme).opacity(0.07))) // token-exempt: tinte de banda de chart <0.10
+                    Path { p in
+                        p.move(to: CGPoint(x: hx, y: hy + 8))
+                        p.addLine(to: CGPoint(x: hx, y: 98))
                     }
-                    // Media punteada en 1.0.
-                    var mid = Path(); mid.move(to: CGPoint(x: 0, y: cy(1.0))); mid.addLine(to: CGPoint(x: size.width, y: cy(1.0)))
-                    ctx.stroke(mid, with: .color(theme.rangeMidline), style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
-                    guard n > 1 else { return }
-                    // Línea + área ámbar.
-                    var line = Path()
-                    for (i, v) in series.enumerated() {
-                        let p = CGPoint(x: CGFloat(i) / CGFloat(n - 1) * W, y: cy(v))
-                        if i == 0 { line.move(to: p) } else { line.addLine(to: p) }
-                    }
-                    var area = line
-                    area.addLine(to: CGPoint(x: W, y: 122)); area.addLine(to: CGPoint(x: 0, y: 122)); area.closeSubpath()
-                    ctx.fill(area, with: .linearGradient(
-                        Gradient(colors: [theme.dataStrain.opacity(0.14), theme.dataStrain.opacity(0)]), // token-exempt: gradiente de área a transparente
-                        startPoint: CGPoint(x: 0, y: cy(range.hi)), endPoint: CGPoint(x: 0, y: 122)))
-                    ctx.stroke(line, with: .color(theme.dataStrain), style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    // Etiqueta de la franja, dentro.
-                    let t = ctx.resolve(Text(rangeLabel).font(InstrumentoType.grotesk(8, weight: .semibold))
-                        .foregroundStyle(theme.inkMuted))
-                    ctx.draw(t, at: CGPoint(x: 6, y: cy(range.hi) - 4), anchor: .bottomLeading)
-                }
-                BreathingDot(color: theme.dataStrain, radius: 3.2)
-                    .position(x: endX, y: cy(last))
+                    .stroke(theme.inkMuted, style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
 
-                // Scrub: cruz + punto + tooltip (ratio · fecha · banda) que siguen el dedo. La banda
-                // del punto se lee de su propio ratio, no de la destacada. Reusa el scrub compartido. (FER-748)
-                let snapped: Int? = hoverX.flatMap {
-                    ChartScrubMath.nearestIndex(toX: $0, count: n, width: endX)
+                    // Punto del ratio mostrado.
+                    Circle()
+                        .fill(theme.surface)
+                        .overlay(Circle().strokeBorder(bandColor, lineWidth: 2.5))
+                        .frame(width: 9, height: 9)
+                        .position(x: hx, y: hy)
+
+                    // Chip negro anclado (mismo look que el scrub de `GraficaRangos`).
+                    Text(verbatim: chip)
+                        .font(InstrumentoType.groteskNumber(9.5, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .padding(.horizontal, 6)
+                        .frame(width: chipW, height: 16)
+                        .background(theme.ink, in: Capsule(style: .continuous))
+                        .position(x: chipX + chipW / 2, y: chipY + 8)
+                        .accessibilityHidden(true)
                 }
-                Color.clear
-                    .contentShape(Rectangle())
-                    .scrubGesture(enabled: n > 1, hoverX: $hoverX)
-                    .onChange(of: snapped) { _, now in if now != nil { ChartHaptics.datumChanged() } }
-                if let i = snapped, series.indices.contains(i) {
-                    let px = CGFloat(i) / CGFloat(max(n - 1, 1)) * endX
-                    let py = cy(series[i])
-                    let band = ReadinessEngine.loadBand(forACWR: series[i])
-                    CrosshairRule(x: px, height: g.size.height)
-                    HighlightDot(color: band.flag.color(theme)).position(x: px, y: py)
-                    PositionedTooltip(
-                        anchor: CGPoint(x: px, y: py),
-                        container: g.size,
-                        tooltip: ChartTooltip(
-                            value: String(format: "%.2f", series[i]),
-                            label: "\(Self.dayFmt.string(from: date(forIndex: i))) · \(band.shortLabel)",
-                            accent: band.flag.color(theme)
-                        )
-                    )
-                }
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let ratio = ratioForX(value.location.x, width: w)
+                            scrubRatio = min(max(ratio, 0), LoadScale.max)
+                        }
+                        .onEnded { _ in
+                            scrubRatio = nil
+                        }
+                )
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("The hill"))
+                .accessibilityValue(Text(chip))
             }
-            .environment(\.instrumentoTheme, theme)
-            .environment(\.instrumentoFlat, true)
-            .animation(StrandMotion.fade, value: hoverX)
+            .frame(height: chartH)
+
+            BarraAncla(anchorText(for: displayBand),
+                       color: hillPointColor(displayBand),
+                       theme: theme)
         }
-        .frame(height: 130)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.card, theme: theme)
     }
-}
 
-// MARK: - Glifo de colina (icono del título)
+    // MARK: Mapping x ↔ ratio (mock: HX(r) = (r / 2) * width)
 
-private struct HillGlyph: Shape {
-    func path(in rect: CGRect) -> Path {
-        // Una curva de una línea: sube y baja como una loma (proporcional al frame).
-        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height) }
-        var path = Path()
-        path.move(to: p(0.05, 0.85))
-        path.addCurve(to: p(0.55, 0.30), control1: p(0.30, 0.85), control2: p(0.40, 0.40))
-        path.addCurve(to: p(0.95, 0.20), control1: p(0.75, 0.20), control2: p(0.85, 0.45))
-        return path
+    private func xForRatio(_ r: Double, width w: CGFloat) -> CGFloat {
+        CGFloat(r / LoadScale.max) * w
     }
-}
 
-private struct TrainingLoadHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+    private func ratioForX(_ x: CGFloat, width w: CGFloat) -> Double {
+        Double(x / w) * LoadScale.max
+    }
+
+    // MARK: Bezier hill (mock path scaled to live width)
+
+    /// Mock path: M0 92 C60 90, 100 74, 140 52 C180 30, 240 16, 320 14
+    private func hillY(atX x: CGFloat, width w: CGFloat) -> CGFloat {
+        let sx = x * (mockW / w)
+        var bestY: CGFloat = 92
+        var bestDist = CGFloat.greatestFiniteMagnitude
+        var t: CGFloat = 0
+        while t <= 1 {
+            let (x1, y1) = cubic(0, 92, 60, 90, 100, 74, 140, 52, t)
+            let d1 = abs(x1 - sx)
+            if d1 < bestDist { bestDist = d1; bestY = y1 }
+            let (x2, y2) = cubic(140, 52, 180, 30, 240, 16, 320, 14, t)
+            let d2 = abs(x2 - sx)
+            if d2 < bestDist { bestDist = d2; bestY = y2 }
+            t += 0.02
+        }
+        return bestY
+    }
+
+    private func cubic(_ x0: CGFloat, _ y0: CGFloat,
+                       _ x1: CGFloat, _ y1: CGFloat,
+                       _ x2: CGFloat, _ y2: CGFloat,
+                       _ x3: CGFloat, _ y3: CGFloat,
+                       _ t: CGFloat) -> (CGFloat, CGFloat) {
+        let u = 1 - t
+        let uu = u * u, tt = t * t
+        let uuu = uu * u, ttt = tt * t
+        let x = uuu * x0 + 3 * uu * t * x1 + 3 * u * tt * x2 + ttt * x3
+        let y = uuu * y0 + 3 * uu * t * y1 + 3 * u * tt * y2 + ttt * y3
+        return (x, y)
+    }
+
+    private func hillLinePath(width w: CGFloat) -> Path {
+        let s = w / mockW
+        var p = Path()
+        p.move(to: CGPoint(x: 0, y: 92))
+        p.addCurve(to: CGPoint(x: 140 * s, y: 52),
+                   control1: CGPoint(x: 60 * s, y: 90),
+                   control2: CGPoint(x: 100 * s, y: 74))
+        p.addCurve(to: CGPoint(x: w, y: 14),
+                   control1: CGPoint(x: 180 * s, y: 30),
+                   control2: CGPoint(x: 240 * s, y: 16))
+        return p
+    }
+
+    private func hillAreaPath(width w: CGFloat) -> Path {
+        var p = hillLinePath(width: w)
+        p.addLine(to: CGPoint(x: w, y: 92))
+        p.addLine(to: CGPoint(x: 0, y: 92))
+        p.closeSubpath()
+        return p
+    }
+
+    /// Zone strips under the axis: crest (sweet spot) at full green; the other three at 35%.
+    /// Positions from `LoadScale.cuts` so the bars never desync from `loadBand(forACWR:)`.
+    private func zoneBars(width w: CGFloat) -> some View {
+        let gap: CGFloat = 2
+        let y: CGFloat = 100
+        let h: CGFloat = 4
+        let x0: CGFloat = 0
+        let x1 = xForRatio(LoadScale.cuts[0], width: w)
+        let x2 = xForRatio(LoadScale.cuts[1], width: w)
+        let x3 = xForRatio(LoadScale.cuts[2], width: w)
+        return ZStack(alignment: .topLeading) {
+            zoneBar(x: x0, width: max(0, x1 - gap), y: y, h: h, color: theme.verdict.opacity(0.35))
+            zoneBar(x: x1 + gap, width: max(0, x2 - x1 - gap), y: y, h: h, color: theme.verdict)
+            zoneBar(x: x2 + gap, width: max(0, x3 - x2 - gap), y: y, h: h, color: theme.warning.opacity(0.35))
+            zoneBar(x: x3 + gap, width: max(0, w - x3 - gap), y: y, h: h, color: theme.critical.opacity(0.35))
+        }
+    }
+
+    private func zoneBar(x: CGFloat, width: CGFloat, y: CGFloat, h: CGFloat, color: Color) -> some View {
+        RoundedRectangle(cornerRadius: 2, style: .continuous)
+            .fill(color)
+            .frame(width: max(0, width), height: h)
+            .offset(x: x, y: y)
+    }
+
+    // MARK: Chip + ancla
+
+    private func chipText(ratio: Double, band: ReadinessEngine.LoadBand, today: Bool) -> String {
+        let num = String(format: "%.2f", ratio)
+        let word = band.shortLabel
+        if today {
+            return "\(String(localized: "Today").uppercased()) · \(num) · \(word)"
+        }
+        return "\(num) · \(word)"
+    }
+
+    /// Point/chip/ancla color for a band on the hill. Matches the zone-strip palette (mock): both
+    /// the climb and the crest are green; the descent is amber; the drop is red. (Distinct from
+    /// `LoadBand.flag`, which paints "easing off" as watch/amber in the strip and hero.)
+    private func hillPointColor(_ band: ReadinessEngine.LoadBand) -> Color {
+        switch band {
+        case .rampingDown, .sweetSpot: return theme.verdict
+        case .buildingFast:            return theme.warning
+        case .spiking:                 return theme.critical
+        }
+    }
+
+    private func anchorText(for band: ReadinessEngine.LoadBand) -> String {
+        let lo = String(format: "%.1f", ReadinessEngine.acwrSweetSpotLow)
+        let hi = String(format: "%.1f", ReadinessEngine.acwrSweetSpotHigh)
+        switch band {
+        case .rampingDown:
+            return String(localized: "Less than your body is used to: the uphill slope.")
+        case .sweetSpot:
+            return String(localized: "The crest: your balance \(lo) to \(hi).")
+        case .buildingFast:
+            return String(localized: "More than usual: coming down from the crest.")
+        case .spiking:
+            return String(localized: "Well above usual: the drop.")
+        }
+    }
 }
 
 // MARK: - Preview

@@ -58173,6 +58173,244 @@
           }
         }
       }
+    },
+    "Drag to explore": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to explore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrastra para explorar"
+          }
+        }
+      }
+    },
+    "Less than your body is used to these days.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less than your body is used to these days."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menos de lo que tu cuerpo acostumbra estos días."
+          }
+        }
+      }
+    },
+    "In line with what your body is used to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In line with what your body is used to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Va en línea con lo que tu cuerpo acostumbra."
+          }
+        }
+      }
+    },
+    "More than your body is used to these days.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than your body is used to these days."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de lo que tu cuerpo acostumbra estos días."
+          }
+        }
+      }
+    },
+    "Well above what your body is used to.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Well above what your body is used to."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy por encima de lo que tu cuerpo acostumbra."
+          }
+        }
+      }
+    },
+    "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained exactly your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We compare your average strain over the last ~7 days against your last ~28. 1.0 means you trained exactly your usual; 0.8 to 1.3 reads as balance. It's context for your recovery, not an injury prediction."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparamos tu esfuerzo promedio de los últimos ~7 días contra tus últimos ~28. 1.0 significa que entrenaste exactamente lo habitual; 0.8 a 1.3 se lee como equilibrio. Es contexto para tu recuperación, no predice lesiones."
+          }
+        }
+      }
+    },
+    "The ratio compares your average load over the last ~7 days against your last ~28: what science calls ACWR (acute:chronic). 1.0 is training exactly your usual; 0.8 to 1.3 reads as balance (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The ratio compares your average load over the last ~7 days against your last ~28: what science calls ACWR (acute:chronic). 1.0 is training exactly your usual; 0.8 to 1.3 reads as balance (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El ratio compara tu carga media de los últimos ~7 días contra tus últimos ~28: lo que la ciencia llama ACWR (agudo:crónico). 1.0 es entrenar exactamente lo habitual; 0.8 a 1.3 se lee como equilibrio (Gabbett 2016). Es una heurística debatida y no predice lesiones (Impellizzeri 2020)."
+          }
+        }
+      }
+    },
+    "Less than your body is used to: the uphill slope.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less than your body is used to: the uphill slope."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menos de lo que tu cuerpo acostumbra: la cuesta de subida."
+          }
+        }
+      }
+    },
+    "The crest: your balance %@ to %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The crest: your balance %@ to %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La cresta: tu equilibrio %@ a %@."
+          }
+        }
+      }
+    },
+    "More than usual: coming down from the crest.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than usual: coming down from the crest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más de lo habitual: bajando de la cresta."
+          }
+        }
+      }
+    },
+    "Well above usual: the drop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Well above usual: the drop."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muy por encima de lo habitual: la caída."
+          }
+        }
+      }
+    },
+    "Your day-to-day ratio: the green band is your balance %@ to %@. Drag the chart to read each day.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your day-to-day ratio: the green band is your balance %@ to %@. Drag the chart to read each day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu ratio día a día: la franja verde es tu equilibrio %@ a %@. Arrastra sobre la gráfica para leer cada día."
+          }
+        }
+      }
+    },
+    "%@ and up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ and up"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ en adelante"
+          }
+        }
+      }
+    },
+    "Below %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bajo %@"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
