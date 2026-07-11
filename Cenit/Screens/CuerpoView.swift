@@ -501,13 +501,18 @@ private struct CuerpoLanding: View {
     /// memoized, so it re-windows when the selector changes.
     private var recoverySpark: [Double] { windowedSpark(\.recovery) }
 
-    /// The stress sparkline over the selected period — from the stored daily stress series (stress isn't a
-    /// `DailyMetric` field). `.all` uses the whole series; otherwise the trailing window.
+    /// The stress sparkline over the selected period. Reads the model's DERIVED daily trend (`fullTrend`) —
+    /// the same source the Stress value uses (stored "stress" series where present, else derived from
+    /// resting-HR / HRV), so the spark isn't blank for users with no persisted WHOOP stress rows (e.g.
+    /// Apple-Health-only) even though the value shows. Falls back to the raw series only if the model isn't
+    /// built yet. `.all` uses the whole trend; otherwise the trailing window. (FER · sparkline de estrés)
     private var stressSpark: [Double] {
-        guard let n = selectedPeriod.days else { return stressSeries.map(\.value) }
-        let cutoffKey = Repository.localDayKey(
-            Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date())
-        return stressSeries.filter { $0.day >= cutoffKey }.map(\.value)
+        let trend = stressModel?.fullTrend ?? []
+        guard !trend.isEmpty else { return stressSeries.map(\.value) }
+        guard let n = selectedPeriod.days else { return trend.map(\.value) }
+        let cutoff = Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date()
+        let cutoffKey = Repository.localDayKey(cutoff)
+        return trend.filter { Repository.localDayKey($0.date) >= cutoffKey }.map(\.value)
     }
 
     // MARK: - Domain card scaffolding (Instrumento rule 3: one surface, no card-in-card)
