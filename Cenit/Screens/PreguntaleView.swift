@@ -343,7 +343,7 @@ private struct OnDeviceChatScreen: View {
                 startItem = nil
                 engine.messages.append(ChatMessage(role: .assistant, text: started != nil
                     ? "Listo, empecé tu experimento de 7 días con \(behavior.lowercased()). Lo verás en el Bucle, en «Tu experimento»."
-                    : "Ya tienes un experimento en curso. Cuando termine, podrás probar este — lo ves en el Bucle, en «Tu experimento»."))
+                    : "Ya tienes un experimento en curso. Cuando termine, podrás probar este: lo ves en el Bucle, en «Tu experimento»."))
                 engine.lastWhatIf = nil
             }
             .instrumentoTheme(theme)

@@ -376,7 +376,7 @@ private struct AjustesLanding: View {
                     if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
                     else { mediaCoordinator.resetDownloadState() }
                 }
-                Text("Descarga la animación de cada ejercicio desde el CDN de imágenes de ExerciseDB, un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin señal después. Esta es la única excepción a la regla de NOOP de cero red — al bajar cada imagen tu IP es visible para ese servicio, como al cargar cualquier imagen en internet; ningún otro dato tuyo (ni el nombre del ejercicio) sale jamás. Apagar esto detiene descargas futuras, no borra lo ya guardado.")
+                Text("Descarga la animación de cada ejercicio desde el CDN de imágenes de ExerciseDB, un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin señal después. Esta es la única excepción a la regla de NOOP de cero red: al bajar cada imagen tu IP es visible para ese servicio, como al cargar cualquier imagen en internet; ningún otro dato tuyo (ni el nombre del ejercicio) sale jamás. Apagar esto detiene descargas futuras, no borra lo ya guardado.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 mediaDownloadStatus
@@ -898,7 +898,7 @@ private struct StepsCalibrationSheet: View {
                     if calibrated {
                         fitLine
                     } else {
-                        Text("Needs \(max(0, StepsEstimateEngine.minCalibrationDays - profile.stepsCalibrationSampleDays)) more days where your iPhone also counted steps — or set the coefficient manually.")
+                        Text("Needs \(max(0, StepsEstimateEngine.minCalibrationDays - profile.stepsCalibrationSampleDays)) more days where your iPhone also counted steps, or set the coefficient manually.")
                     }
                 }
                 .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
@@ -1034,7 +1034,7 @@ private struct UnidadesSheet: View {
                 Text("Display").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Units & format").font(StrandFont.title1).foregroundStyle(theme.ink)
             }
-            Text("Your data is always stored the same way — this only changes how distances, weights, heights and temperatures are shown.")
+            Text("Your data is always stored the same way: this only changes how distances, weights, heights and temperatures are shown.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -1126,7 +1126,7 @@ private struct StrapLogSheet: View {
     private func strapLogText() -> String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         let osName = "iOS"
-        let header = "Cénit strap log — \(osName)\nApp: \(v)\n\(osName): "
+        let header = "Cénit strap log: \(osName)\nApp: \(v)\n\(osName): "
             + ProcessInfo.processInfo.operatingSystemVersionString + "\n"
             + String(repeating: "-", count: 40) + "\n"
         return header + live.log.joined(separator: "\n")

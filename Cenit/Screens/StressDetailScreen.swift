@@ -69,7 +69,7 @@ struct StressDetailScreen: View {
                         heroField(model)
                         bandScale(model.score)
                     } else {
-                        heroFlat(message: "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below.")
+                        heroFlat(message: "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs: your history is below.")
                             .padding(NoopMetrics.screenPadding)
                     }
                     if infoOpen { whatWeMeasureCard }
@@ -100,7 +100,7 @@ struct StressDetailScreen: View {
                     }
                     .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
-                    heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
+                    heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
                         .padding(NoopMetrics.screenPadding)
                 }
             }
@@ -264,12 +264,12 @@ struct StressDetailScreen: View {
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4, style: .continuous) // token-exempt: geometría de dato
                         .fill(gradient)
-                        .opacity(0.85)
+                        .opacity(0.85) // token-exempt: geometría de dato (barra de gradiente)
                         .frame(height: 8)
                     RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
                         .fill(theme.ink)
                         .frame(width: 3, height: 16)
-                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato (marcador 3×16)
                             .strokeBorder(theme.paper, lineWidth: 2))
                         .offset(x: geo.size.width * frac - 1.5)
                 }
@@ -690,13 +690,13 @@ private func sampleStressModel(score: Double) -> StressModel? {
     return StressModel(days: days, stored: stored, todayKey: f.string(from: today))
 }
 
-#Preview("Stress detail — moderate") {
+#Preview("Stress detail: moderate") {
     Color.clear.sheet(isPresented: .constant(true)) {
         StressDetailScreen(model: sampleStressModel(score: 1.8))
     }
 }
 
-#Preview("Stress detail — empty") {
+#Preview("Stress detail: empty") {
     Color.clear.sheet(isPresented: .constant(true)) {
         StressDetailScreen(model: nil)
     }

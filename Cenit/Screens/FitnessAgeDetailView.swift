@@ -268,7 +268,7 @@ struct FitnessAgeDetailView: View {
                     .accessibilityHidden(true)
             }
 
-            Text("We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.")
+            Text("We show you the direction, not an exact number: the estimate jumps day to day, the trend is more honest.")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -430,21 +430,21 @@ private func previewSnapshot(rhr: Int, strainActiveDays: Int, age: Int, sex: Str
                                      age: age, sex: sex, hasHeightWeight: true)
 }
 
-#Preview("Fitness Age — younger (ready)") {
+#Preview("Fitness Age: younger (ready)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         FitnessAgeDetailView(snapshot: previewSnapshot(rhr: 50, strainActiveDays: 7, age: 36),
                              chronoAge: 36, sex: "male")
     }
 }
 
-#Preview("Fitness Age — older (estimate)") {
+#Preview("Fitness Age: older (estimate)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         FitnessAgeDetailView(snapshot: previewSnapshot(rhr: 72, strainActiveDays: 4, age: 36),
                              chronoAge: 36, sex: "male")
     }
 }
 
-#Preview("Fitness Age — not ready") {
+#Preview("Fitness Age: not ready") {
     Color.clear.sheet(isPresented: .constant(true)) {
         FitnessAgeDetailView(
             snapshot: FitnessAgeEngine.snapshot(

@@ -1747,7 +1747,7 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text("Previous, \(text)"))
             .accessibilityHint(Text("Copies it to this set"))
         } else {
-            Text(verbatim: "— · \(rest)").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+            Text(verbatim: "— · \(rest)").font(StrandFont.caption).foregroundStyle(theme.inkDim) // token-exempt: glifo «sin registro previo» (—), no es copy conector
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .accessibilityLabel(Text("No previous record"))
         }

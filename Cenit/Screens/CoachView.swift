@@ -76,8 +76,8 @@ struct CoachView: View {
                 Text("Let the coach use my data")
                     .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Text(coach.dataConsent
-                     ? "On — your recovery, sleep, HRV and workouts are shared with the provider for tailored coaching."
-                     : "Off — the coach answers generally and sends none of your metrics.")
+                     ? "On: your recovery, sleep, HRV and workouts are shared with the provider for tailored coaching."
+                     : "Off: the coach answers generally and sends none of your metrics.")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -426,7 +426,7 @@ struct CoachView: View {
 
     private var privacyFootnote: some View {
         Label {
-            Text("This is the only feature that leaves your phone — it sends a summary of your metrics to \(coach.provider.displayName) using your own key. Nothing is sent until you ask.")
+            Text("This is the only feature that leaves your phone: it sends a summary of your metrics to \(coach.provider.displayName) using your own key. Nothing is sent until you ask.")
                 .font(StrandFont.footnote)
                 .foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)

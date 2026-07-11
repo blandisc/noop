@@ -566,7 +566,7 @@ struct LiveView: View {
         } else if activeConnection {
             // Bonded but not encrypted: only live HR is being saved — say so honestly.
             footerLine(icon: "exclamationmark.triangle.fill", tint: theme.warning,
-                       text: String(localized: "Live heart rate only — finish secure pairing to save the rest"))
+                       text: String(localized: "Live heart rate only: finish secure pairing to save the rest"))
         } else {
             // Connected but not bonded (5/MG live-HR shortcut): show the last sync time.
             footerLine(icon: "clock", tint: theme.inkTertiary,
@@ -621,7 +621,7 @@ struct LiveView: View {
             .disabled(autoBackup.busy)
             .sensoryFeedback(.impact(weight: .light), trigger: backupHaptic)
             .accessibilityLabel(autoBackup.busy ? String(localized: "Backing up to iCloud")
-                                : (isError ? String(localized: "iCloud backup failed — tap to retry")
+                                : (isError ? String(localized: "iCloud backup failed: tap to retry")
                                    : String(localized: "Back up to iCloud now")))
         }
         #else
@@ -722,7 +722,7 @@ struct LiveView: View {
                 .foregroundStyle(theme.warning)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Can't connect — your strap's pairing was reset")
+                Text("Can't connect: your strap's pairing was reset")
                     .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Text(guide)
                     .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
@@ -742,7 +742,7 @@ struct LiveView: View {
                 .foregroundStyle(theme.warning)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Live HR works — free the strap to unlock buzz, alarms & sync")
+                Text("Live HR works: free the strap to unlock buzz, alarms & sync")
                     .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Text(hint)
                     .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)

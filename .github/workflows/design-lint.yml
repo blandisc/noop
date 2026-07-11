@@ -34,3 +34,5 @@ jobs:
         run: python3 Tools/check-design-drift.py --rules no-hex
       - name: Design-drift linter — no ad-hoc font/radius/opacity (migrated screens)
         run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal Cenit/Screens Cenit/Onboarding
+      - name: Design-drift linter — no em-dash in copy (FER-879, app-wide)
+        run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding

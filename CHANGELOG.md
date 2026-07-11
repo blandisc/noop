@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Copy más limpio en toda la app: fuera los guiones largos / Cleaner copy across the app: no more em-dashes.**
+  **ES** — Barrimos los guiones largos (—) de los textos de todas las pantallas y los cambiamos por dos puntos, un punto medio o una coma, según el sentido de cada frase. Es la misma información, con un ritmo de lectura más claro y consistente con el resto del app. La regla que lo vigila ahora corre sobre todas las pantallas, no solo «Hoy» (FER-879).
+  **EN** — We swept the em-dashes (—) out of the copy on every screen and replaced them with a colon, a middle dot or a comma, depending on each sentence. Same information, with a clearer reading rhythm that's consistent with the rest of the app. The lint rule that guards it now runs over every screen, not just "Today" (FER-879).
+  ([check-design-drift.py](Tools/check-design-drift.py))
+
 - **El Detalle de Estrés estrena la piel «Final» de Tendencias / The Stress detail debuts the final Trends skin.**
   **ES** — La pantalla de Estrés se rediseñó con el esqueleto estándar de los detalles de Tendencias: un héroe invertido que pinta todo su campo con el color de banda del día (semáforo a propósito: menos es mejor), mini-escala Calma·Base·Activado, el mapa del día como instrumento firma (antes de «qué lo mueve»), tiles de FC en reposo y VFC, patrones con la tarjeta «lo que vemos en tu historial», un historial siempre abierto con `GraficaRangos` (serie diaria cruda, Δ% verde al bajar), el calendario de 90 días en semáforo y el sello de origen. Nada del cálculo cambió: es el mismo estrés, contado mejor.
   **EN** — The Stress screen was redesigned with the standard Trends-detail skeleton: an inverted hero that paints its whole field in the day's band color (a purposeful traffic light: less is better), the Calm·Base·Activated mini-scale, the day map as the signature instrument (before "what moves it"), resting-HR and HRV tiles, patterns with the "what we see in your history" card, an always-open history with `GraficaRangos` (raw daily series, green Δ% when stress falls), the 90-day calendar as a semaphore, and the origin seal. None of the math changed — it's the same stress, told better.

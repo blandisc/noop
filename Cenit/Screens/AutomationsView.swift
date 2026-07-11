@@ -29,7 +29,7 @@ private struct AutomationsContent: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Automations").font(StrandFont.title1).foregroundStyle(theme.ink)
-                    Text("Make the strap do things — tap to act, train by feel, wake to a buzz.")
+                    Text("Make the strap do things: tap to act, train by feel, wake to a buzz.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -129,10 +129,10 @@ private struct AutomationsContent: View {
     // MARK: - Wear & presence (Mac-only "lock" control removed — iOS-only, FER-69)
 
     private var wearSection: some View {
-        section("Wear & presence", blurb: "Run a Shortcut when the strap comes off or goes back on — set a Focus, pause media, mark yourself away.") {
+        section("Wear & presence", blurb: "Run a Shortcut when the strap comes off or goes back on: set a Focus, pause media, mark yourself away.") {
             VStack(spacing: 0) {
                 shortcutFieldRow("Run a Shortcut when taken off",
-                                 help: "Presence automation — set a Focus, pause media, set away…",
+                                 help: "Presence automation: set a Focus, pause media, set away…",
                                  text: $behavior.wristOffShortcut)
                 divider
                 shortcutFieldRow("Run a Shortcut when put back on",
@@ -145,14 +145,14 @@ private struct AutomationsContent: View {
     // MARK: - Coaching
 
     private var coachingSection: some View {
-        section("Haptic coaching", blurb: "Train by feel — the strap buzzes so you don't have to watch a screen.") {
+        section("Haptic coaching", blurb: "Train by feel: the strap buzzes so you don't have to watch a screen.") {
             VStack(spacing: 0) {
                 toggleRow("HR-zone coaching",
                           help: "Buzz when you hit your top zone (ease off) and again when you recover. Uses your max HR from Settings.",
                           isOn: $behavior.zoneCoaching)
                 divider
                 toggleRow("Resting stress nudge (experimental)",
-                          help: "A gentle buzz when your HRV drops while your heart rate is calm — a cue to take a paced breath. Rate-limited to once every 15 minutes; off by default.",
+                          help: "A gentle buzz when your HRV drops while your heart rate is calm: a cue to take a paced breath. Rate-limited to once every 15 minutes; off by default.",
                           isOn: $behavior.stressNudge)
             }
         }
@@ -164,7 +164,7 @@ private struct AutomationsContent: View {
         section("Movement reminder", blurb: "A gentle wrist buzz when you've been sitting a long stretch, so you remember to get up and walk. Sitting less through the day is linked to better long-term health, independent of your workouts.") {
             VStack(spacing: 0) {
                 toggleRow("Nudge me to move",
-                          help: "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness — typing at a desk still counts as sitting.",
+                          help: "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness: typing at a desk still counts as sitting.",
                           isOn: $inactivity.enabled)
                     .onChange(of: inactivity.enabled) {
                         if inactivity.enabled { IllnessNotifier.requestAuthorization() }
@@ -190,7 +190,7 @@ private struct AutomationsContent: View {
                     }
                     divider
                     toggleRow("Quiet hours",
-                              help: "Silence the nudges during a window you choose — a meeting block, an evening wind-down.",
+                              help: "Silence the nudges during a window you choose: a meeting block, an evening wind-down.",
                               isOn: $inactivity.quietHoursEnabled)
                     if inactivity.quietHoursEnabled {
                         divider
@@ -261,7 +261,7 @@ private struct AutomationsContent: View {
                             .labelsHidden().datePickerStyle(.compact).tint(theme.ink)
                     }
                     .frame(minHeight: 42).padding(.vertical, 4)
-                    Text("On WHOOP 5/MG this is experimental — arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.")
+                    Text("On WHOOP 5/MG this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                         .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
                 }
@@ -274,9 +274,9 @@ private struct AutomationsContent: View {
     // MARK: - Illness early-warning
 
     private var illnessSection: some View {
-        section("Illness early-warning", blurb: "Watches your resting HR, HRV, skin temperature and respiration against your own 28-day baseline. On-device and approximate — informational only, not a diagnosis.") {
+        section("Illness early-warning", blurb: "Watches your resting HR, HRV, skin temperature and respiration against your own 28-day baseline. On-device and approximate: informational only, not a diagnosis.") {
             toggleRow("Watch for early-illness signs",
-                      help: "Needs at least 14 days of history. When two or more signals drift together you get a notification — at most once a day.",
+                      help: "Needs at least 14 days of history. When two or more signals drift together you get a notification: at most once a day.",
                       isOn: $behavior.illnessWatch)
                 .onChange(of: behavior.illnessWatch) {
                     model.reevaluateIllness()

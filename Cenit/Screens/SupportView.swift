@@ -29,7 +29,7 @@ private struct SupportContent: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("About & support").font(StrandFont.title1).foregroundStyle(theme.ink)
-                    Text("\(ProjectInfo.appName) — all your data, none of the cloud.")
+                    Text("\(ProjectInfo.appName): all your data, none of the cloud.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -69,7 +69,7 @@ private struct SupportContent: View {
                 QuietButton("What's new") { showWhatsNew = true }
             }
 
-            Text("A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project, not the WHOOP app.")
+            Text("A standalone companion for your WHOOP. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project, not the WHOOP app.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

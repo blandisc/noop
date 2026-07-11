@@ -166,7 +166,7 @@ struct PalancaDetailSheet: View {
 
     private var confidenceTitle: String {
         switch insight.confidence {
-        case .candidate: return String(localized: "Candidate — no experiment yet")
+        case .candidate: return String(localized: "Candidate: no experiment yet")
         case .proven:    return String(localized: "Proven by your experiment")
         case .medium:    return String(localized: "A read of your data")
         }
@@ -569,7 +569,7 @@ enum BucleFormat {
         case .sustained:
             return String(localized: "“\(behavior)” raised your \(outcome) this week. We marked it as proven in What works for you.")
         case .notSustained:
-            return String(localized: "“\(behavior)” didn't move your \(outcome) this week. A week is weak evidence — you can try again.")
+            return String(localized: "“\(behavior)” didn't move your \(outcome) this week. A week is weak evidence: you can try again.")
         case .insufficient:
             return String(localized: "You kept \(adherent) of \(window) days: not enough days to judge. Try another week, logging daily.")
         }
@@ -689,7 +689,7 @@ struct BucleInfo: Identifiable {
 
     static let onDevice = BucleInfo(
         id: "on-device", systemImage: "cpu", title: "Everything on your phone",
-        body: "Cénit computes your recovery, your findings and your levers here, on your iPhone — no cloud, no account, no server.\n\nThe only thing that goes to the internet is «Ask your data», and only if you connect your own AI key.")
+        body: "Cénit computes your recovery, your findings and your levers here, on your iPhone: no cloud, no account, no server.\n\nThe only thing that goes to the internet is «Ask your data», and only if you connect your own AI key.")
 
     static let loQueFunciona = BucleInfo(
         id: "lo-que-funciona", systemImage: "flask", title: "What works for you",
@@ -825,7 +825,7 @@ struct ExperimentDetailSheet: View {
                                       accent: BucleFormat.metricColor(row.outcome, theme), theme: theme)
                     .padding(.top, 12)
                 HStack {
-                    Text("— — average before").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text("— — average before").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary) // token-exempt: leyenda de línea «sin dato» (glifo —), no es copy conector
                     Spacer()
                     if let d = e.delta {
                         HStack(spacing: 4) {

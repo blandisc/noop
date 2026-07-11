@@ -141,7 +141,7 @@ struct WorkoutsView: View {
         let unit = count == 1 ? String(localized: "session") : String(localized: "sessions")
         let countUnit = "\(count) \(unit)"
         if fellBack {
-            return String(format: String(localized: "%@ · sparse — widened to %@"), countUnit, effectiveRange.caption)
+            return String(format: String(localized: "%@ · sparse: widened to %@"), countUnit, effectiveRange.caption)
         }
         return "\(countUnit) · \(effectiveRange.caption)"
     }
@@ -279,7 +279,7 @@ struct WorkoutsView: View {
                 .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
             Text("No workouts yet").font(StrandFont.title2).foregroundStyle(theme.ink)
                 .multilineTextAlignment(.center)
-            Text("They come from your WHOOP and Apple Health history. Import them in Data Sources — or add one you tracked elsewhere.")
+            Text("They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: 300)
@@ -435,13 +435,13 @@ private func previewWorkoutRows() -> [WorkoutRow] {
     ]
 }
 
-#Preview("Workouts — con datos") {
+#Preview("Workouts: con datos") {
     NavigationStack { WorkoutsView(previewRows: previewWorkoutRows()) }
         .environmentObject(Repository(deviceId: "preview"))
         .environmentObject(HealthKitBridge(repo: Repository(deviceId: "preview"), appleDeviceId: "a", noopDeviceId: "preview"))
 }
 
-#Preview("Workouts — vacío") {
+#Preview("Workouts: vacío") {
     NavigationStack { WorkoutsView(previewRows: []) }
         .environmentObject(Repository(deviceId: "preview"))
         .environmentObject(HealthKitBridge(repo: Repository(deviceId: "preview"), appleDeviceId: "a", noopDeviceId: "preview"))

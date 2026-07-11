@@ -115,7 +115,7 @@ struct BodyAgeSheet: View {
         // Differentiator vs the cardio-only Physical Age (FER-141).
         VStack(alignment: .leading, spacing: 4) {
             Text("This isn't your Physical age").font(StrandFont.subhead).foregroundStyle(theme.ink)
-            Text("Physical age measures only the cardiorespiratory side. This one also weighs sleep, regularity, HRV and steps — so the two can differ.")
+            Text("Physical age measures only the cardiorespiratory side. This one also weighs sleep, regularity, HRV and steps: so the two can differ.")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -148,7 +148,7 @@ struct BodyAgeSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
 
-            Text("Keep wearing the band a few nights and it appears on its own — we don't show a half-finished number.")
+            Text("Keep wearing the band a few nights and it appears on its own: we don't show a half-finished number.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
             disclaimers
@@ -193,12 +193,12 @@ struct BodyAgeSheet: View {
         let keys = Set(r.contributions.map(\.key))
         let noHRV = !keys.contains("hrv"), noRHR = !keys.contains("rhr")
         if noHRV && noRHR {
-            return "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision."
+            return "Worked out without HRV or resting heart rate: the two heaviest signals. The number still holds, with less precision."
         }
         if noHRV {
-            return "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision."
+            return "Worked out without HRV: one of the heaviest signals. The number still holds, with less precision."
         }
-        return "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision."
+        return "Worked out without resting heart rate: one of the heaviest signals. The number still holds, with less precision."
     }
 
     // MARK: - Empty-state coverage
@@ -277,7 +277,7 @@ struct BodyAgeSheet: View {
 // MARK: - Preview
 
 #if DEBUG
-#Preview("BodyAgeSheet — con datos") {
+#Preview("BodyAgeSheet: con datos") {
     let inputs = VitalityInputsBuilder.build(.init(
         chronoAge: 34,
         nightlyRestingHR: Array(repeating: 54, count: 10),
@@ -289,7 +289,7 @@ struct BodyAgeSheet: View {
     }
 }
 
-#Preview("BodyAgeSheet — estimación parcial (solo Apple)") {
+#Preview("BodyAgeSheet: estimación parcial (solo Apple)") {
     // No band → no nocturnal RHR and HRV gated out; only sleep, regularity and steps remain → the
     // reading computes but flags «Partial estimate» (FER-643).
     let inputs = VitalityInputsBuilder.build(.init(
@@ -301,7 +301,7 @@ struct BodyAgeSheet: View {
     }
 }
 
-#Preview("BodyAgeSheet — sin señales") {
+#Preview("BodyAgeSheet: sin señales") {
     let inputs = VitalityInputsBuilder.build(.init(chronoAge: 34, nightlyRestingHR: [55, 56]))
     return Color.clear.sheet(isPresented: .constant(true)) {
         BodyAgeSheet(result: VitalityEngine.compute(inputs), inputs: inputs)

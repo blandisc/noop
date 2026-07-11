@@ -498,7 +498,7 @@ struct MetricDetailView: View {
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
                 // Association, not cause. (FER-299)
-                Text("Association, not cause — these move together, neither drives the other.")
+                Text("Association, not cause: these move together, neither drives the other.")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)

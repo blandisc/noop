@@ -12,7 +12,7 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-adhoc-font      `.font(.system(size:`                                 (after task 02)
     no-radius-literal  `cornerRadius: <number>` not using a NoopMetrics token (after task 01)
     no-opacity-literal `.opacity(<number>)` not using StrandOpacity/helpers   (after task 03)
-    no-emdash-string   em-dash (—) inside a Swift string literal (copy rule)   (FER-878; opt-in)
+    no-emdash-string   em-dash (—) inside a Swift string literal (copy rule)   (FER-878/879; on for Screens+Onboarding)
 
 Per-line escape: a trailing `// token-exempt: <reason>` silences every rule on that line (geometry of
 data — bars, legends, swatches, keypad, Dynamic-Island widget — that legitimately needs a literal).
