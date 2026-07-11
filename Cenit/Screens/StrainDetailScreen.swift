@@ -200,7 +200,8 @@ struct StrainDetailScreen: View {
         .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
         .frame(maxWidth: .infinity, alignment: .leading)
         .instrumentoCard(.control, theme: theme)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+        // Aire estándar antes de la siguiente franja (igual que Recuperación). (FER-878+)
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
     }
 
     /// The flat hero for score-less states (loading / empty / history-only): the pre-handoff identity —
