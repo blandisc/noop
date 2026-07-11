@@ -5,12 +5,6 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
-/// Measured-width key for the 90-day calendar heat grid (FER-830).
-private struct StrainCalWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 // MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en «Instrumento» (FER-238 · FER-859)
 //
 // Hermana de `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto del handoff «Detalle de
@@ -41,8 +35,7 @@ struct StrainDetailScreen: View {
     /// The strain series with each `day` string parsed to a `Date` exactly ONCE (not per slice / per
     /// render) — the window math reads `date` straight from here. Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
-    /// Measured width so the 90-day heat grid fills it; the tapped day for the read-out. (FER-830)
-    @State private var calWidth: CGFloat = 0
+    /// The tapped day for the calendar read-out. (FER-830)
     @State private var selectedStrainDay: RecoveryDay? = nil
     /// Today's intraday curve, loaded in `.task` (loading well until then).
     @State private var curve: [TrendPoint] = []
@@ -78,12 +71,11 @@ struct StrainDetailScreen: View {
                     if parsed.contains(where: { $0.value > 0 }) {
                         seccion(String(localized: "Calendar · 90 days")) { calendarContent }
                     }
-                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
-                    VStack(alignment: .leading, spacing: 10) {
+                    PieMetodo(theme: theme) {
                         metodoBlock
+                    } sello: {
                         sourceFooter
                     }
-                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
                     heroFlat.padding(NoopMetrics.screenPadding)
                 }
@@ -105,14 +97,9 @@ struct StrainDetailScreen: View {
         }
     }
 
-    /// One skeleton section: a full-bleed `SeccionFranja` + its content with the handoff's standard
-    /// padding under a franja (14 · 20 · 22). The title arrives already localized.
+    /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
     private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SeccionFranja(title, theme: theme)
-            content()
-                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
-        }
+        SeccionBloque(title, theme: theme, content: content)
     }
 
     // MARK: - 1. Héroe invertido — siempre `dataStrain` (descriptivo, sin semáforo)
@@ -127,81 +114,42 @@ struct StrainDetailScreen: View {
     /// 60pt Grotesk numeral (recRise), «en curso» capsule, verdict line. Text is paper on hue.
     private var heroField: some View {
         let v = shownToday ?? 0
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.strain.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Day Strain")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
+        return HeroInvertido(
+            glyph: .strain,
+            title: "Day Strain",
+            hue: theme.dataStrain,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                HeroNumeral(fmt(v), suffix: "/ 21", theme: theme) {
+                    Text("in progress")
+                        .font(InstrumentoType.grotesk(13, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .heroCapsule(theme: theme)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(fmt(v))
-                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                    .tracking(-2)
+            },
+            verdict: {
+                // Keep `heroReading` as ONE localized sentence (existing String Catalog keys). Splitting the
+                // four zone strings cleanly into short-clause + secondary clause is awkward for "Moderate
+                // effort today." Visual fidelity to the mock's two-tone verdict is secondary to not inventing
+                // new copy. (FER-859)
+                Text(heroReading)
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .recRise()
-                Text(verbatim: "/ 21")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                Text("in progress")
-                    .font(InstrumentoType.grotesk(13, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+                    .fixedSize(horizontal: false, vertical: true)
+            },
+            trailing: {
+                if let tier = model.confidence {
+                    tier.sello(theme: theme, onField: true)
+                        .padding(.top, 2)
+                }
             }
-            // Keep `heroReading` as ONE localized sentence (existing String Catalog keys). Splitting the
-            // four zone strings cleanly into short-clause + secondary clause is awkward for "Moderate
-            // effort today." — visual fidelity to the mock's two-tone verdict is secondary to not inventing
-            // new copy. (FER-859)
-            Text(heroReading)
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundStyle(theme.paper)
-                .fixedSize(horizontal: false, vertical: true)
-            if let tier = model.confidence {
-                tier.sello(theme: theme, onField: true)
-                    .padding(.top, 2)
-            }
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.dataStrain)
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the score measures, in plain language.
     private var whatWeMeasureCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("What we measure")
-                .font(InstrumentoType.grotesk(13, weight: .semibold))
-                .foregroundStyle(theme.ink)
-            Text(heroExplanation)
-                .font(InstrumentoType.grotesk(12))
-                .lineSpacing(3)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        // Aire estándar antes de la siguiente franja (igual que Recuperación). (FER-878+)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
+        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
     }
 
     /// The flat hero for score-less states (loading / empty / history-only): the pre-handoff identity —
@@ -263,14 +211,15 @@ struct StrainDetailScreen: View {
                     TrendChart(
                         points: curve,
                         gradient: chartGradient,
-                        valueRange: 0...max((curve.map(\.value).max() ?? 1) * 1.15, 1),
+                        valueRange: 0...21,
                         showsArea: true,
                         height: 160,
                         showsScrub: true,
                         valueFormat: { fmt($0) },
                         dateFormat: { Self.hourString($0) },
                         axisLabelColor: theme.inkTertiary,
-                        gridLineColor: theme.hairline
+                        gridLineColor: theme.hairline,
+                        yAxisValues: [10, 21]
                     )
                     .accessibilityElement()
                     .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
@@ -417,14 +366,7 @@ struct StrainDetailScreen: View {
     /// nothing clears the sufficiency gate (FER-246 / mock: no empty-state message).
     private var whatMovesCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
-                Text("What moves your strain")
-                    .font(InstrumentoType.grotesk(10, weight: .semibold))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
-                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-            }
+            QueLaMueveHeader("What moves your strain", chip: "trend, not cause", theme: theme)
             ForEach(model.drivers, id: \.driver) { finding in
                 Text(Self.driverPhrase(finding))
                     .font(StrandFont.caption)
@@ -456,7 +398,8 @@ struct StrainDetailScreen: View {
             heatReadout
             HeatLegend([(theme.dataStrain, String(localized: "hard")),
                         (theme.strainRampMid, String(localized: "moderate")),
-                        (theme.strainRampLow, String(localized: "light"))], theme: theme)
+                        (theme.strainRampLow, String(localized: "light")),
+                        (theme.hairline, String(localized: "no data"))], theme: theme)
         }
     }
 
@@ -500,27 +443,12 @@ struct StrainDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        // Celda dimensionada a 14 columnas FIJAS (helper compartido), no al conteo vivo, para que mida lo
-        // mismo en las cuatro pantallas y todos los días (ver YearHeatStrip.rollingCellSize). (FER estable)
-        let spacing: CGFloat = 4
-        let cell = YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing)
-        return YearHeatStrip(
+        Calendario90(
             days: strainHeat,
-            cellSize: cell,
-            spacing: spacing,
-            showsScrub: false,
             tint: strainHeatTint,
-            emptyFill: theme.hairline,
-            emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary,
             onSelect: { selectedStrainDay = $0 },
-            selectionColor: theme.ink
+            theme: theme
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: StrainCalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(StrainCalWidthKey.self) { calWidth = $0 }
     }
 
     @ViewBuilder private var heatReadout: some View {

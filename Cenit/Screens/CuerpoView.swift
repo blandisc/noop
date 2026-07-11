@@ -234,6 +234,8 @@ private struct CuerpoLanding: View {
     /// Sessions in the trailing 14 days — the «Entrenamientos» row's protagonist (recent training, not
     /// the unbounded all-time total). `workoutCount` stays the lifetime count for the Apple-connect hint.
     @State private var recentWorkoutCount: Int = 0
+    /// Sessions whose start falls in the current calendar week (for the Workouts column legend).
+    @State private var weekWorkoutCount: Int = 0
     /// Today's stress model (0–3 autonomic proxy + markers + trend) — the same transparent model Hoy builds.
     /// Held whole (not just the score) so the «Stress» row can open the dedicated detail (FER-241).
     @State private var stressModel: StressModel? = nil
@@ -257,10 +259,8 @@ private struct CuerpoLanding: View {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 titleBlock
                 periodSelector
-                // §8.7 landing micro-legend (FER-837): un solo renglón que enseña que todo el landing es
-                // tocable — reemplaza al viejo «Valores de hoy · tendencias del último mes» y evita un ícono
-                // por métrica (se veía burdo). La afordancia la carga esta línea, no un glifo repetido.
-                Text("Tap any value to see its detail.")
+                // §8.7 landing micro-legend: today's values vs last month's trends (period selector above).
+                Text("Today's values \u{00B7} last month's trends")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 recoveryHero
@@ -399,9 +399,7 @@ private struct CuerpoLanding: View {
                 spectralLoader: spec.descriptor.key == "hrv" ? { await loadSpectralHRV() } : nil,
                 hrMax: Double(model.profile.hrMax),
                 restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
-                todayKey: Repository.localDayKey(Date()),
-                // FER-670: today's source-agreement point (steps) — nil for every non-fused metric.
-                fusion: repo.fusionPoint(day: Repository.localDayKey(Date()), metric: spec.descriptor.key)
+                todayKey: Repository.localDayKey(Date())
             )
         } else if let item = recoveryDetail {
             RecoveryDetailScreen(theme: theme, model: item.model)
@@ -544,17 +542,13 @@ private struct CuerpoLanding: View {
                             color: Color, legend: LocalizedStringKey? = nil, estimate: Bool = false,
                             fromApple: Bool = false, spark: [Double] = [], tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            // FER-837: las rejillas de métricas (Descanso y carga · Vitales) centran su contenido sobre su
-            // propio eje — cada celda lee como una carátula de instrumento, no como un dato flotando a la
-            // izquierda con un charco de vacío. Los HERO y los títulos de sección se quedan editorial-izquierda.
-            VStack(alignment: .center, spacing: 3) {
-                // §8.7 landing: the label ALL-CAPS in its hue. Per the v2 handoff the landing carries NO
-                // per-stat origin dot and NO legend — provenance lives only at the foot of each detail
-                // screen (the `estimate`/`fromApple` provenance is still tracked, just not shown). (FER-834)
+            // Columns left-aligned; the metric name carries its own data hue. No per-stat origin dot —
+            // provenance now lives only on the detail's OriginStamp seal (FER-826 follow-up).
+            VStack(alignment: .leading, spacing: 3) {
                 Text(label)
                     .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
                     .foregroundStyle(color)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
                     .minimumScaleFactor(0.9)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value ?? "—")
@@ -581,11 +575,11 @@ private struct CuerpoLanding: View {
                 }
                 if let legend {
                     Text(legend).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                        .multilineTextAlignment(.center)
+                        .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(MetricRowButtonStyle(pressedFill: theme.ink.opacity(0.05))) // token-exempt: press-fill <0.10
@@ -637,12 +631,16 @@ private struct CuerpoLanding: View {
                 Spacer(minLength: 8)
                 if let load, load.series.count > 1, let band {
                     let color = band.flag.color(theme)
-                    Sparkline(values: load.series.map(\.value),
-                              gradient: ChartWell.fillGradient(color),
-                              lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
-                        .frame(width: 104, height: 40)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
+                    ZStack(alignment: .center) {
+                        Capsule().fill(theme.rangeBand)
+                            .frame(width: 104, height: 3)
+                        Sparkline(values: load.series.map(\.value),
+                                  gradient: ChartWell.fillGradient(color),
+                                  lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
+                            .frame(width: 104, height: 40)
+                    }
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
                 }
                 // Sin chevron (FER-837): el renglón «Toca cualquier dato para ver su detalle» ya comunica
                 // que la tarjeta es tocable; el chevron se reserva a las que abren una pantalla/herramienta
@@ -666,8 +664,7 @@ private struct CuerpoLanding: View {
                 HStack(spacing: 8) {
                     Text("Muscle map").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // serif group (FER-581)
                     // Provisional placement here, pending a product decision on its permanent home (likely
-                    // Entrenar / Patrones) — flagged, not final. (FER-566 / handoff «DE MOMENTO»)
-                    InlineFlagChip("For now", color: theme.warning)
+                    // Entrenar / Patrones). (FER-566 / handoff «DE MOMENTO»)
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.right")
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
@@ -816,8 +813,9 @@ private struct CuerpoLanding: View {
 
     private var sleepStat: some View {
         let r = resolveMeasured { $0.totalSleepMin }
+        let fromApple = r?.fromApple == true
         return statColumn("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
-                          fromApple: r?.fromApple == true, spark: windowedSpark { $0.totalSleepMin }) {
+                          fromApple: fromApple, spark: windowedSpark { $0.totalSleepMin }) {
             sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
                 days: repo.days,
                 sleeps: repo.sleeps,
@@ -833,10 +831,13 @@ private struct CuerpoLanding: View {
     private var strainStat: some View {
         // Valor VIVO del día en curso (fin de la curva intradía), no el score asentado — una sola
         // derivación alimenta este número, el héroe del Detalle y la curva (FER-650). Cae al asentado
-        // mientras el vivo aún no se computa.
+        // mientras el vivo aún no se computa. FER-883: on a band-less Apple day the label flips to
+        // «Day load» + originApple; band days stay byte-identical ("Day Strain" / originComputed).
         let v = model.displayedDayStrain
-        return statColumn("Day Strain", value: v.map { String(format: "%.1f", $0) },
-                          color: theme.dataStrain, spark: windowedSpark { $0.strain }) {
+        let estimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
+        return statColumn(estimated ? "Day load" : "Day Strain", value: v.map { String(format: "%.1f", $0) },
+                          color: theme.dataStrain,
+                          spark: windowedSpark { $0.strain }) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
             // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses
             // `MetricInfo.strain`/`MetricInfoSheet`.)
@@ -849,7 +850,8 @@ private struct CuerpoLanding: View {
         let s = stressModel?.score
         return statColumn("Stress", value: s.map { String(format: "%.1f", $0) },
                           unit: s == nil ? nil : "/ 3",
-                          color: s.map(stressDataColor) ?? theme.inkTertiary, spark: stressSpark) {
+                          color: s.map(stressDataColor) ?? theme.inkTertiary,
+                          spark: stressSpark) {
             stressDayMap = StressDayMapPresenter.make(
                 repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR)
             stressDetail = StressDetailItem(model: stressModel)
@@ -864,8 +866,10 @@ private struct CuerpoLanding: View {
 
     private var hrvStat: some View {
         let r = resolveMeasured { $0.avgHrv }
+        let fromApple = r?.fromApple == true
         return statColumn("HRV", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "ms"),
-                          color: theme.dataHrv, fromApple: r?.fromApple == true,
+                          color: theme.dataHrv,
+                          fromApple: fromApple,
                           spark: windowedSpark { $0.avgHrv }) {
             metricSpec = .hrv(r?.value)
         }
@@ -873,8 +877,10 @@ private struct CuerpoLanding: View {
 
     private var rhrStat: some View {
         let r = resolveMeasured { $0.restingHr.map(Double.init) }
+        let fromApple = r?.fromApple == true
         return statColumn("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "bpm"),
-                          color: theme.dataHeart, fromApple: r?.fromApple == true,
+                          color: theme.dataHeart,
+                          fromApple: fromApple,
                           spark: windowedSpark { $0.restingHr.map(Double.init) }) {
             metricSpec = .restingHR(r.map { Int($0.value.rounded()) })
         }
@@ -882,8 +888,10 @@ private struct CuerpoLanding: View {
 
     private var spo2Stat: some View {
         let r = resolveMeasured { $0.spo2Pct }
+        let fromApple = r?.fromApple == true
         return statColumn("Blood Oxygen", value: r.map { String(format: "%.0f", $0.value) }, unit: "%",
-                          color: theme.dataSpO2, fromApple: r?.fromApple == true,
+                          color: theme.dataSpO2,
+                          fromApple: fromApple,
                           spark: windowedSpark { $0.spo2Pct }) {
             metricSpec = .spo2(r?.value)
         }
@@ -895,15 +903,18 @@ private struct CuerpoLanding: View {
         // dashboard series — its own detail has no period trend either (FER-253). A daily mean-HR series
         // doesn't exist in `displayDays`, so the honest landing read is the number alone. (FER-566)
         return statColumn("Heart Rate", value: avg.map { "\($0)" }, unit: String(localized: "bpm"),
-                          color: theme.dataHeart) {
+                          color: theme.dataHeart,
+                          legend: "intraday, no daily series") {
             metricSpec = .heartRate(avg)
         }
     }
 
     private var respStat: some View {
         let r = resolveMeasured { $0.respRateBpm }
+        let fromApple = r?.fromApple == true
         return statColumn("Respiratory", value: r.map { String(format: "%.1f", $0.value) }, unit: String(localized: "rpm"),
-                          color: theme.dataSpO2, fromApple: r?.fromApple == true,
+                          color: theme.dataSpO2,
+                          fromApple: fromApple,
                           spark: windowedSpark { $0.respRateBpm }) {
             metricSpec = .respiratory(r?.value)
         }
@@ -911,8 +922,10 @@ private struct CuerpoLanding: View {
 
     private var skinTempStat: some View {
         let r = resolveMeasured { $0.skinTempDevC }
+        let fromApple = r?.fromApple == true
         return statColumn("Skin temp", value: r.map { String(format: "%+.1f", $0.value) }, unit: "°C",
-                          color: theme.dataStrain, fromApple: r?.fromApple == true,
+                          color: theme.dataStrain,
+                          fromApple: fromApple,
                           spark: windowedSpark { $0.skinTempDevC }) {
             // Opens the rich light Detalle de Temperatura de la piel (FER-256) — built fresh from the
             // in-memory dashboard (última lectura resuelta + serie completa de `displayDays`).
@@ -923,8 +936,10 @@ private struct CuerpoLanding: View {
 
     private var stepsStat: some View {
         let steps = freshSteps
+        let fromApple = steps != nil
         return statColumn("Steps", value: steps.map { intString(Double($0)) },
-                          color: theme.dataSteps, fromApple: steps != nil,
+                          color: theme.dataSteps,
+                          fromApple: fromApple,
                           spark: windowedSpark { $0.steps.map(Double.init) }) {
             metricSpec = .steps(steps)
         }
@@ -935,7 +950,8 @@ private struct CuerpoLanding: View {
     @ViewBuilder private var workoutsStat: some View {
         let n = recentWorkoutCount
         let col = statColumn("Workouts · 14d", value: n > 0 ? "\(n)" : nil,
-                             color: theme.dataStrain) {
+                             color: theme.dataStrain,
+                             legend: n > 0 ? "\(weekWorkoutCount) this week" : nil) {
             showWorkouts = true
         }
         if n > 0 { col } else { col.accessibilityLabel(Text("sin entrenamientos aún")) }
@@ -951,7 +967,8 @@ private struct CuerpoLanding: View {
         let color = snap?.result.map(physicalAgeColor) ?? theme.inkTertiary
         return statColumn("Physical age",
                           value: snap?.result.map { "\(Int($0.fitnessAge.rounded()))" },
-                          color: color, legend: physicalAgeLegend(snap), estimate: estimate) {
+                          color: color,
+                          legend: physicalAgeLegend(snap), estimate: estimate) {
             showFitnessAge = true
         }
     }
@@ -1002,7 +1019,8 @@ private struct CuerpoLanding: View {
         // «Estimate» chip when a heaviest factor (HRV/RHR) is missing — same mechanism as Physical age
         // (FER-643), so the two longevity stats read consistently.
         return statColumn("Body age", value: r.map { "\(Int($0.bodyAge.rounded()))" },
-                          color: color, legend: r == nil ? nil : "vs your \(model.profile.age)",
+                          color: color,
+                          legend: r == nil ? nil : "vs your \(model.profile.age)",
                           estimate: r?.isPartialEstimate == true) {
             showBodyAge = true
         }
@@ -1013,7 +1031,8 @@ private struct CuerpoLanding: View {
     private var vo2maxStat: some View {
         let v = latestAppleVO2max
         return statColumn("VO₂ Max", value: v.map { String(format: "%.0f", $0) },
-                          color: theme.dataSpO2, legend: "ml/kg·min", fromApple: v != nil) {
+                          color: theme.dataSpO2,
+                          legend: "ml/kg·min", fromApple: v != nil) {
             metricSpec = .vo2max(value: v, age: model.profile.age, sex: model.profile.sex)
         }
     }
@@ -1076,8 +1095,7 @@ private struct CuerpoLanding: View {
                 HStack(spacing: 8) {
                     Text("How you wake after each sport")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    // Provisional placement (likely Entrenar / Patrones later) — flagged, not final. (FER-566)
-                    InlineFlagChip("For now", color: theme.warning)
+                    // Provisional placement (likely Entrenar / Patrones later). (FER-566)
                     Spacer(minLength: 8)
                     if activityCosts.isEmpty {
                         Text("Gathering data").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -1206,6 +1224,13 @@ private struct CuerpoLanding: View {
             for: Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
         let recentCutoffTs = Int(recentCutoff.timeIntervalSince1970)
         recentWorkoutCount = workouts.filter { $0.startTs >= recentCutoffTs }.count
+        // Calendar-week count for the Workouts column legend (same `workouts` array, no second fetch).
+        if let weekStart = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start {
+            let weekStartTs = Int(weekStart.timeIntervalSince1970)
+            weekWorkoutCount = workouts.filter { $0.startTs >= weekStartTs }.count
+        } else {
+            weekWorkoutCount = 0
+        }
         activityCosts = repo.activityCosts(from: workouts)   // reuses the rows above — no second query
         hrPoints = await hrRows.map {
             TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm)

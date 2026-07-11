@@ -6651,7 +6651,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple Health"
+            "value": "Apple Salud"
           }
         }
       }
@@ -11963,6 +11963,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esfuerzo del día"
+          }
+        }
+      }
+    },
+    "Day load": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day load"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carga del día"
           }
         }
       }
@@ -52675,6 +52691,22 @@
         }
       }
     },
+    "Measured by Apple Health": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured by Apple Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medido por Apple Salud"
+          }
+        }
+      }
+    },
     "Computed on your phone": {
       "localizations": {
         "en": {
@@ -58510,6 +58542,448 @@
           "stringUnit": {
             "state": "translated",
             "value": "bajo %@"
+          }
+        }
+      }
+    },
+    "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La regularidad es la variabilidad noche a noche de tu punto medio de sueño (el punto medio entre dormirte y despertar), un horario más parejo predice tu salud con más fuerza que cuánto duermes. Las siestas no cuentan: solo tu noche principal (de al menos 3 h) entra en la regularidad. Las etapas se estiman del movimiento, la frecuencia cardíaca y la HRV, así que son aproximadas; el sueño profundo repara el cuerpo, el REM consolida memoria y emociones. La «necesidad» es un objetivo poblacional de 7–9 h, no una medición tuya."
+          }
+        }
+      }
+    },
+    "within your normal range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "within your normal range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dentro de tu rango normal"
+          }
+        }
+      }
+    },
+    "Today, vs your range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today, vs your range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy, vs tu rango"
+          }
+        }
+      }
+    },
+    "Nightly thermal stability": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nightly thermal stability"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estabilidad térmica nocturna"
+          }
+        }
+      }
+    },
+    "Tends to rise with alcohol, fever, ambient heat, and the days before your period.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to rise with alcohol, fever, ambient heat, and the days before your period."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele subir con alcohol, fiebre, calor ambiental y los días previos a tu periodo."
+          }
+        }
+      }
+    },
+    "Tends to rise with alcohol, fever, and ambient heat.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to rise with alcohol, fever, and ambient heat."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele subir con alcohol, fiebre y calor ambiental."
+          }
+        }
+      }
+    },
+    "Nes/HUNT model (2011)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nes/HUNT model (2011)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modelo Nes/HUNT (2011)"
+          }
+        }
+      }
+    },
+    "Your band": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu banda"
+          }
+        }
+      }
+    },
+    "This period": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This period"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este periodo"
+          }
+        }
+      }
+    },
+    "Kcal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kcal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kcal"
+          }
+        }
+      }
+    },
+    "Your sports": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sports"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus deportes"
+          }
+        }
+      }
+    },
+    "points": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "points"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "puntos"
+          }
+        }
+      }
+    },
+    "building": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "building"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "calibrando"
+          }
+        }
+      }
+    },
+    "return to base": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "return to base"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "regreso a tu base"
+          }
+        }
+      }
+    },
+    "%d sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d sesiones"
+          }
+        }
+      }
+    },
+    "Back to your base in ~1 day · %d sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to your base in ~1 day · %d sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vuelve a tu base en ~1 día · %d sesiones"
+          }
+        }
+      }
+    },
+    "Back to your base in ~%d days · %d sessions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to your base in ~%d days · %d sessions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vuelve a tu base en ~%d días · %d sesiones"
+          }
+        }
+      }
+    },
+    "Still gathering how you wake after each sport.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still gathering how you wake after each sport."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún estoy juntando cómo amaneces tras cada deporte."
+          }
+        }
+      }
+    },
+    "Your next-day Charge barely moves after the sports we can see so far.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your next-day Charge barely moves after the sports we can see so far."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Carga del día siguiente casi no se mueve tras los deportes que alcanzamos a ver."
+          }
+        }
+      }
+    },
+    "Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty).": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada sesión es un entrenamiento de tu banda, Apple Salud o una entrada manual. El conteo y los totales siguen el rango que eliges arriba (se amplía si ese rango está vacío)."
+          }
+        }
+      }
+    },
+    "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo suele verse tu Carga la mañana después de cada deporte, vs tus días de descanso. Observado en tu historial, no una causa."
+          }
+        }
+      }
+    },
+    "Where you fall": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where you fall"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dónde caes"
+          }
+        }
+      }
+    },
+    "intraday, no daily series": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "intraday, no daily series"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "intradía, sin serie diaria"
+          }
+        }
+      }
+    },
+    "%lld this week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld this week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld esta semana"
+          }
+        }
+      }
+    },
+    "%d this week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d this week"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d esta semana"
+          }
+        }
+      }
+    },
+    "Your Apple Watch's estimate of your aerobic fitness: how well your body uses oxygen. Higher usually means better cardio shape; it's an estimate, not a lab test.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Apple Watch's estimate of your aerobic fitness: how well your body uses oxygen. Higher usually means better cardio shape; it's an estimate, not a lab test."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La estimación que hace tu Apple Watch de tu condición aeróbica: qué tan bien usa tu cuerpo el oxígeno. Más alto suele significar mejor forma cardiovascular; es una estimación, no una prueba de laboratorio."
           }
         }
       }

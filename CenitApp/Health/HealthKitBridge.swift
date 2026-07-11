@@ -283,10 +283,10 @@ final class HealthKitBridge: ObservableObject {
         var byDay: [String: DayAgg] = [:]
         func agg(_ day: String) -> DayAgg { byDay[day] ?? DayAgg() }
 
-        // 10 quantity collectors + sleep + workouts + the store write = 13 pipeline stages. Publishing
-        // the stage *before* running it turns the silent background pull into "Importing HRV… (4/13)"
-        // in the UI; `done` counts stages already finished. (FER-70)
-        let total = 13
+        // 10 quantity collectors + sleep + workouts + workout HR (FER-883) + the store write = 14
+        // pipeline stages. Publishing the stage *before* running it turns the silent background pull
+        // into "Importing HRV… (4/14)" in the UI; `done` counts stages already finished. (FER-70)
+        let total = 14
         func stage(_ done: Int, _ key: String) { syncProgress = SyncProgress(stageKey: key, done: done, total: total) }
 
         // Quantity aggregates per day.
@@ -341,14 +341,26 @@ final class HealthKitBridge: ObservableObject {
 
         // Workouts: fetched directly from HealthKit and stored alongside WHOOP sessions.
         stage(11, "workouts")
-        let wkRows = await collectWorkouts(start: start, end: end)
+        let hkWorkouts = await collectHKWorkouts(start: start, end: end)
+        let wkRows = Self.mapWorkouts(hkWorkouts)
+
+        // FER-883: per-workout heart-rate samples (raw only — strain is scored at read time).
+        // Skipped in whoopOnly so we never pull Apple HR into the store when the mode excludes Apple;
+        // the stage is still published so the progress bar stays 14-step consistent.
+        stage(12, "hr_apple_workouts")
+        let workoutHrSamples: [HRSample]
+        if repo.dataSourceMode == .whoopOnly {
+            workoutHrSamples = []
+        } else {
+            workoutHrSamples = await collectWorkoutHeartRate(workouts: hkWorkouts)
+        }
 
         // FER-486: per-night Apple sleep SESSIONS with a stage timeline (for the Detalle de Sueño
         // hypnogram), ALONGSIDE the daily totals from collectSleep above — F3 is additive. Pure decode
         // (SleepHKDecoder, StrandImport); the idempotent upsert below keeps a re-sync from duplicating.
         let appleSleepSessions = SleepHKDecoder.sessions(from: await collectSleepSamples(start: start, end: end))
 
-        stage(12, "saving")
+        stage(13, "saving")
 
         // Build + upsert the store rows under the apple-health source.
         let appleRows = byDay.map { (day, a) in
@@ -403,6 +415,11 @@ final class HealthKitBridge: ObservableObject {
             try await store.upsertDailyMetrics(dmRows, deviceId: appleDeviceId)
             try await store.upsertMetricSeries(seriesRows, deviceId: appleDeviceId)
             try await store.upsertWorkouts(wkRows, deviceId: appleDeviceId)
+            // FER-883: raw workout HR under apple-health — never fused into baselines; strain is
+            // scored at read time via `Repository.appleStrainEstimates`. Empty is a no-op (idempotent).
+            if !workoutHrSamples.isEmpty {
+                try await store.insert(Streams(hr: workoutHrSamples), deviceId: appleDeviceId)
+            }
             try await store.upsertSleepSessions(appleSleepSessions, deviceId: appleDeviceId)   // FER-486 (F3): per-night stage timeline
             try await writeBack(whoopStore: store)
             lastSync = Date()
@@ -711,31 +728,68 @@ final class HealthKitBridge: ObservableObject {
 
     // MARK: - Workout helpers
 
-    /// Fetch all HKWorkout samples in [start, end] and map them to WorkoutRow.
-    private func collectWorkouts(start: Date, end: Date) async -> [WorkoutRow] {
+    /// Raw `HKWorkout`s in [start, end] — shared by `mapWorkouts` and `collectWorkoutHeartRate`
+    /// so we don't re-query HealthKit for the same window. (FER-883)
+    private func collectHKWorkouts(start: Date, end: Date) async -> [HKWorkout] {
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
-        return await withCheckedContinuation { (cont: CheckedContinuation<[WorkoutRow], Never>) in
+        return await withCheckedContinuation { (cont: CheckedContinuation<[HKWorkout], Never>) in
             let q = HKSampleQuery(sampleType: HKObjectType.workoutType(),
                                   predicate: predicate,
                                   limit: HKObjectQueryNoLimit,
                                   sortDescriptors: nil) { _, samples, _ in
-                let rows: [WorkoutRow] = (samples as? [HKWorkout] ?? []).map { (w: HKWorkout) -> WorkoutRow in
-                    WorkoutRow(
-                        startTs: Int(w.startDate.timeIntervalSince1970),
-                        endTs:   Int(w.endDate.timeIntervalSince1970),
-                        sport:   Self.activityTypeName(w.workoutActivityType),
-                        source:  "apple-health",
-                        durationS:  w.duration > 0 ? w.duration : nil,
-                        energyKcal: w.totalEnergyBurned?.doubleValue(for: .kilocalorie()),
-                        avgHr: nil, maxHr: nil, strain: nil,
-                        distanceM: w.totalDistance?.doubleValue(for: .meter()),
-                        zonesJSON: nil, notes: nil
-                    )
-                }
-                cont.resume(returning: rows)
+                cont.resume(returning: (samples as? [HKWorkout]) ?? [])
             }
             store.execute(q)
         }
+    }
+
+    /// Map raw `HKWorkout`s to store rows (same shape as pre-FER-883 `collectWorkouts`).
+    private nonisolated static func mapWorkouts(_ workouts: [HKWorkout]) -> [WorkoutRow] {
+        workouts.map { w in
+            WorkoutRow(
+                startTs: Int(w.startDate.timeIntervalSince1970),
+                endTs:   Int(w.endDate.timeIntervalSince1970),
+                sport:   Self.activityTypeName(w.workoutActivityType),
+                source:  "apple-health",
+                durationS:  w.duration > 0 ? w.duration : nil,
+                energyKcal: w.totalEnergyBurned?.doubleValue(for: .kilocalorie()),
+                avgHr: nil, maxHr: nil, strain: nil,
+                distanceM: w.totalDistance?.doubleValue(for: .meter()),
+                zonesJSON: nil, notes: nil
+            )
+        }
+    }
+
+    /// Heart-rate samples belonging to each workout, merged + sorted + deduped by `ts`.
+    /// Scopes via `HKQuery.predicateForObjects(from:)` only — that already limits to the workout.
+    /// Raw HR only; strain is scored at read time. (FER-883)
+    private func collectWorkoutHeartRate(workouts: [HKWorkout]) async -> [HRSample] {
+        guard !workouts.isEmpty,
+              let type = HKQuantityType.quantityType(forIdentifier: .heartRate) else { return [] }
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        var all: [HRSample] = []
+        all.reserveCapacity(workouts.count * 600)
+        for w in workouts {
+            let samples = await withCheckedContinuation { (cont: CheckedContinuation<[HRSample], Never>) in
+                let predicate = HKQuery.predicateForObjects(from: w)
+                let q = HKSampleQuery(sampleType: type, predicate: predicate,
+                                      limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, raw, _ in
+                    let unitLocal = unit
+                    let out: [HRSample] = (raw as? [HKQuantitySample] ?? []).map { s in
+                        HRSample(ts: Int(s.startDate.timeIntervalSince1970),
+                                 bpm: Int(s.quantity.doubleValue(for: unitLocal).rounded()))
+                    }
+                    cont.resume(returning: out)
+                }
+                store.execute(q)
+            }
+            all.append(contentsOf: samples)
+        }
+        // Sort ascending by ts, then keep first occurrence of each ts (overlapping workouts).
+        all.sort { $0.ts < $1.ts }
+        var seen = Set<Int>()
+        seen.reserveCapacity(all.count)
+        return all.filter { seen.insert($0.ts).inserted }
     }
 
     /// Convert an HKWorkoutActivityType to the camelCase string that matches what the XML export

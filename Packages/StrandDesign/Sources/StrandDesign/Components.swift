@@ -131,9 +131,10 @@ public struct SegmentedPillControl<T: Hashable>: View {
             // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
             // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
             Text(label(item))
-                .font(InstrumentoType.grotesk(12, weight: sel ? .bold : .medium))
+                .font(InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
+                .tracking(1.6)
                 .lineLimit(1).minimumScaleFactor(0.85)
-                .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+                .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
                 .padding(.horizontal, 12)
                 .frame(height: tall ? 44 : 34)
                 .background {
