@@ -76,9 +76,9 @@ struct BreathingView: View {
     @State private var pace: Pace = .coherence
     @State private var running = false
 
-    /// 0 = fully contracted, 1 = fully expanded. Drives the orb scale.
-    @State private var orbProgress: CGFloat = 0
     @State private var phase: Phase = .inhale
+    /// Wall-clock start of the current inhale/exhale; drives orb scale via TimelineView.
+    @State private var phaseStart: Date = .distantPast
     @State private var phaseDeadline: Date = .distantFuture
 
     @State private var sessionSeconds: Int = 0
@@ -238,12 +238,38 @@ struct BreathingView: View {
         }
     }
 
+    /// Orb only — progress is scoped here via TimelineView so the rest of the screen
+    /// does not re-evaluate each animation frame (FER-876).
     private var breathingOrb: some View {
+        Group {
+            if running {
+                TimelineView(.animation) { timeline in
+                    orbGeometry(progress: easedProgress(at: timeline.date))
+                }
+            } else {
+                // At rest: fully contracted, no TimelineView ticks.
+                orbGeometry(progress: 0)
+            }
+        }
+    }
+
+    /// easeInOut cubic progress for the current phase at `date`.
+    /// Inhale: 0→1; exhale: 1→0. Same visual feel as SwiftUI's easeInOut.
+    private func easedProgress(at date: Date) -> CGFloat {
+        guard running else { return 0 }
+        let duration = (phase == .inhale) ? pace.inhale : pace.exhale
+        let elapsed = date.timeIntervalSince(phaseStart)
+        let t = max(0, min(1, elapsed / duration))
+        let eased = t < 0.5 ? 2 * t * t : 1 - pow(-2 * t + 2, 2) / 2
+        return phase == .inhale ? CGFloat(eased) : CGFloat(1 - eased)
+    }
+
+    private func orbGeometry(progress: CGFloat) -> some View {
         GeometryReader { geo in
             // Orb scales between a calm minimum and the available square.
             let maxDiameter = min(geo.size.width, geo.size.height)
             let minScale: CGFloat = 0.42
-            let scale = minScale + (1.0 - minScale) * orbProgress
+            let scale = minScale + (1.0 - minScale) * progress
             let diameter = maxDiameter * scale
 
             ZStack {
@@ -479,21 +505,16 @@ struct BreathingView: View {
     private func stop() {
         running = false
         phaseDeadline = .distantFuture
-        withAnimation(.easeInOut(duration: 0.8)) {
-            orbProgress = 0
-        }
+        // Orb snaps to contracted rest (progress 0) via the !running branch of breathingOrb.
     }
 
     /// Begin a breath phase: set the target, schedule its end, and (optionally)
     /// fire the haptic cue. Inhale = 1 pulse, exhale = 2 pulses.
     private func armPhase(_ newPhase: Phase, from now: Date, buzz: Bool) {
         phase = newPhase
+        phaseStart = now
         let duration = (newPhase == .inhale) ? pace.inhale : pace.exhale
         phaseDeadline = now.addingTimeInterval(duration)
-
-        withAnimation(.easeInOut(duration: duration)) {
-            orbProgress = (newPhase == .inhale) ? 1.0 : 0.0
-        }
 
         if buzz {
             model.buzz(loops: newPhase == .inhale ? 1 : 2)

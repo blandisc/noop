@@ -151,7 +151,7 @@ struct WorkoutHistoryScreen: View {
     }
 
     private var list: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        LazyVStack(alignment: .leading, spacing: 10) {
             ForEach(sessions) { session in
                 NavigationLink(value: route(for: session)) {
                     sessionCard(session)

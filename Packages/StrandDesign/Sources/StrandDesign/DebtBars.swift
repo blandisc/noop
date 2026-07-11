@@ -159,6 +159,14 @@ public struct DebtBars: View {
 }
 
 #if DEBUG
+private enum DebtBarsPreviewFormatters {
+    static let weekday: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEEEE")
+        return f
+    }()
+}
+
 #Preview("DebtBars") {
     let cal = Calendar(identifier: .gregorian)
     let base = Date(timeIntervalSince1970: 1_718_000_000)
@@ -177,7 +185,7 @@ public struct DebtBars: View {
         ruleColor: InstrumentoTheme.base.hairlineStrong,
         axisLabelColor: InstrumentoTheme.base.inkTertiary,
         ruleLabel: "your need",
-        weekdayLabel: { d in let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEEE"); return f.string(from: d) },
+        weekdayLabel: { d in DebtBarsPreviewFormatters.weekday.string(from: d) },
         valueFormat: { $0 < 0 ? "−\(hm($0))" : "+\(hm($0))" },
         sleptFormat: { "slept \(hm($0))" }
     )
