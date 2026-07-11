@@ -196,10 +196,12 @@ struct MetricDetailScreen: View {
         let window = MetricWindowMath.make(parsedSeries, selected: range)
         return ScrollView {
             // Final skeleton for the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂).
-            // Heart Rate is narrative but intraday → stays on legacyBody until its own migration.
+            // Heart Rate is narrative + intraday → its own Final path (narrativeIntradayFinal).
             // Steps / VO₂max are non-narrative → legacyBody verbatim.
             if isNarrative && !isIntraday {
                 narrativeBodyFinal(window)
+            } else if isIntraday {
+                narrativeIntradayFinal(window)
             } else {
                 legacyBody(window)
             }
@@ -227,17 +229,13 @@ struct MetricDetailScreen: View {
         }
     }
 
-    /// Legacy body: Steps / VO₂max / Heart Rate (intraday). Extracted VERBATIM from the pre-Final
+    /// Legacy body: Steps / VO₂max. Extracted VERBATIM from the pre-Final
     /// `VStack(spacing: 22){ hero; content; originFooter }.padding(screenPadding)` — no behaviour change.
     @ViewBuilder private func legacyBody(_ window: MetricWindow) -> some View {
         VStack(alignment: .leading, spacing: 22) {
             hero
             if loaded {
-                // Heart Rate's intraday path has no "N/7 nights" calibration — each block shows its
-                // own honest empty state (no readings yet today). (FER-253)
-                if isIntraday {
-                    content(window)
-                } else if spec.sparseMeasured {
+                if spec.sparseMeasured {
                     // A sparsely-measured metric (VO₂max): one reading is enough to render; zero
                     // readings show a dedicated explanatory empty state, not the nights-calibration. (FER-257)
                     if series.isEmpty {
@@ -707,6 +705,131 @@ struct MetricDetailScreen: View {
         } sello: {
             if !series.isEmpty {
                 OriginStamp(origin: footerOrigin, when: String(localized: "today"), theme: theme)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
+            }
+        }
+    }
+
+    // MARK: - Narrative Final skeleton — Heart Rate (intraday)
+
+    /// Full-bleed Final body for Heart Rate: HeroInvertido → SeccionBloque("Your day") → zones → PieMetodo.
+    /// No nights-calibration gate (each section owns its empty state). No period selector / GraficaRangos.
+    @ViewBuilder private func narrativeIntradayFinal(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            narrativeHeroIntradayFinal
+            if infoOpen { queMedimosCardFinal }
+            if !loaded {
+                ChartWell(theme).loading(height: 160)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+            } else {
+                SeccionBloque(String(localized: "Your day"), theme: theme) {
+                    intradayCurveFinalContent
+                }
+                if let mins = cachedZoneMinutes, mins[1...].contains(where: { $0 > 0 }) {
+                    SeccionBloque(String(localized: "Time in zones · today"), theme: theme) {
+                        hrZonesBlockContent(mins)
+                    }
+                }
+                pieMetodoIntradayFinal
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Inverted hero for Heart Rate (intraday Final): today's average bpm + "in progress" capsule.
+    private var narrativeHeroIntradayFinal: some View {
+        let valueText = heroTodayValue.map { fmt($0) } ?? "—"
+        return HeroInvertido(
+            glyph: metricGlyph ?? .heartRate,
+            title: narrativeHeroTitle,
+            hue: metricHue,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                if heroTodayValue == nil {
+                    Text(verbatim: "—")
+                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                } else {
+                    HeroNumeral(valueText, suffix: "bpm", size: 60, theme: theme) {
+                        Text("in progress")
+                            .font(InstrumentoType.grotesk(13, weight: .semibold))
+                            .foregroundStyle(theme.paper)
+                            .heroCapsule(theme: theme)
+                    }
+                }
+            },
+            verdict: {
+                if loaded, let ctx = intradayHeroContextLine {
+                    Text(ctx)
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        )
+    }
+
+    /// Today's minute curve + Min/Average/Max row (same math as `narrativeIntraday`, new SeccionBloque wrapper).
+    @ViewBuilder private var intradayCurveFinalContent: some View {
+        if intradayCurve.count > 1 {
+            let v = intradayCurve.map(\.value)
+            VStack(alignment: .leading, spacing: 12) {
+                TrendChart(
+                    points: intradayCurve,
+                    gradient: chartGradient,
+                    valueRange: Self.hrRange(v, resting: restingHR),
+                    showsArea: true,
+                    height: 240,
+                    showsScrub: true,
+                    valueFormat: { "\(Int($0.rounded())) \(unit)" },
+                    dateFormat: { Self.hrClock.string(from: $0) },
+                    axisLabelColor: theme.inkTertiary,
+                    gridLineColor: theme.hairline,
+                    referenceLine: restingHR,
+                    referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
+                    markedPoint: peakPoint,
+                    tightTrailing: true
+                )
+                .accessibilityElement()
+                .accessibilityLabel(Text("Today's heart rate, 5-minute averages"))
+                peakRestingCaption
+                HStack(spacing: 9) {
+                    hrStatCell("Min", "\(Int((v.min() ?? 0).rounded()))")
+                    hrStatCell("Average", "\(Int((v.reduce(0, +) / Double(max(v.count, 1))).rounded()))")
+                    hrStatCell("Max", "\(Int((v.max() ?? 0).rounded()))")
+                }
+            }
+        } else {
+            ChartWell(theme).empty(text: "No readings yet today.")
+        }
+    }
+
+    /// PieMetodo for Heart Rate: method disclosure + in-progress origin seal (hollow ring).
+    @ViewBuilder private var pieMetodoIntradayFinal: some View {
+        PieMetodo(theme: theme) {
+            if visibleBlocks.contains(.method), let method = spec.info.method {
+                Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(method.prose)
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let citation = method.citation {
+                            Text(citation)
+                                .font(StrandFont.caption)
+                                .foregroundStyle(theme.inkTertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        } sello: {
+            if intradayCurve.count > 1 {
+                OriginStamp(origin: footerOrigin, when: String(localized: "today, in progress"), inProgress: true, theme: theme)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 2)
             }
@@ -1685,41 +1808,47 @@ struct MetricDetailScreen: View {
     }
 
     private func hrZonesBlock(_ mins: [Double]) -> some View {
+        DetailBlock("Time in zones · today", theme: theme) {
+            hrZonesBlockContent(mins)
+        }
+    }
+
+    /// Inner content of the HR zones block — shared by `hrZonesBlock` (legacy DetailBlock wrapper)
+    /// and `narrativeIntradayFinal` (SeccionBloque wrapper supplies its own title/divider).
+    @ViewBuilder private func hrZonesBlockContent(_ mins: [Double]) -> some View {
         let elevated = Int((mins[3] + mins[4] + mins[5]).rounded())
         let total = Swift.max(mins.reduce(0, +), 1)
-        return DetailBlock("Time in zones · today", theme: theme) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(elevated)").instrumentoHero(30).foregroundStyle(metricHue)
-                    Text("min elevated (zone 3+)")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                GeometryReader { geo in
-                    HStack(spacing: 0) {
-                        ForEach(0..<6, id: \.self) { i in
-                            Rectangle()
-                                .fill(zoneFill(i))
-                                .frame(width: geo.size.width * CGFloat(mins[i] / total))
-                        }
-                    }
-                }
-                .frame(height: 10)
-                .clipShape(Capsule())
-                VStack(alignment: .leading, spacing: 7) {
-                    ForEach((1...5).filter { mins[$0] >= 1 }, id: \.self) { i in
-                        HStack(spacing: 8) {
-                            Circle().fill(zoneFill(i)).frame(width: 8, height: 8)
-                            Text(zoneLabel(i)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                            Spacer()
-                            Text("\(Int(mins[i].rounded())) min")
-                                .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-                        }
-                    }
-                }
-                Text("Zones as a percentage of your max heart rate (\(Int(hrMax.rounded())) bpm, Tanaka). The rest of the day you were resting or very light.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(elevated)").instrumentoHero(30).foregroundStyle(metricHue)
+                Text("min elevated (zone 3+)")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    ForEach(0..<6, id: \.self) { i in
+                        Rectangle()
+                            .fill(zoneFill(i))
+                            .frame(width: geo.size.width * CGFloat(mins[i] / total))
+                    }
+                }
+            }
+            .frame(height: 10)
+            .clipShape(Capsule())
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach((1...5).filter { mins[$0] >= 1 }, id: \.self) { i in
+                    HStack(spacing: 8) {
+                        Circle().fill(zoneFill(i)).frame(width: 8, height: 8)
+                        Text(zoneLabel(i)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        Spacer()
+                        Text("\(Int(mins[i].rounded())) min")
+                            .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                    }
+                }
+            }
+            Text("Zones as a percentage of your max heart rate (\(Int(hrMax.rounded())) bpm, Tanaka). The rest of the day you were resting or very light.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
