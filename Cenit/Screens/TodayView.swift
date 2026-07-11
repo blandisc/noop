@@ -2472,7 +2472,9 @@ struct TodayView: View {
         // Esfuerzo del día en curso: el valor VIVO (fin de la curva intradía), no el score asentado —
         // así el tile, el héroe del Detalle y la curva muestran UN solo número (FER-650). Cae al asentado
         // mientras el vivo aún no se computa. Los días pasados no lo tocan.
+        // FER-883: Apple workout-HR estimate → label «Day load» + source .apple; band days unchanged.
         let strainT = model.displayedDayStrain
+        let strainEstimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
         // Pasos: Apple Salud primero; acota a la ventana de 14 días para no mostrar pasos rancios bajo
         // un tile de "hoy". Sin conteo real, cae a la ESTIMACIÓN on-device de la WHOOP 4.0 (steps_est,
         // FER-663) — el real siempre gana; la estimación solo llena el hueco, rotulada «est.».
@@ -2530,12 +2532,13 @@ struct TodayView: View {
                                          betterHigher: false, deadband: 1, positive: positiveDelta) { "\(Int($0.rounded())) \(String(localized: "bpm"))" }
                 )) { metricDetail = .restingHR(rhrR.map { Int($0.value.rounded()) }) }
                 // Esfuerzo del día — carga del día, sin valencia (Δ en tinta neutra).
+                // FER-883: estimated Apple workout-HR → "Day load" + .apple; band → "Day Strain" + .calculated.
                 metricTile(TodayMetricTile(
-                    label: "Day Strain",
+                    label: strainEstimated ? "Day load" : "Day Strain",
                     icon: MetricGlyph.strain.sfSymbol,
                     value: strainT.map { String(format: "%.1f", $0) } ?? "—",
                     valueColor: theme.dataStrain,
-                    source: .calculated,
+                    source: strainEstimated ? .apple : .calculated,
                     context: tileContext(today: strainT, history: history(base) { $0.strain },
                                          betterHigher: nil, deadband: 0.3, positive: positiveDelta) { String(format: "%.1f", $0) }
                 )) { metricDetail = .strain(strainT) }

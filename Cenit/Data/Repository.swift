@@ -27,6 +27,11 @@ final class Repository: ObservableObject {
     /// Set by `AppModel` from `ProfileStore.baselineEpochOrNil`. The estimated-recovery path honors it
     /// so the Apple estimate re-anchors exactly like the strap baseline in `IntelligenceEngine`.
     var baselineEpoch: String? = nil
+    /// FER-883: the user's effective HRmax + sex for the estimated «Carga del día», set by `AppModel`
+    /// from `Profile` (`hrMaxOverride ?? Tanaka(age)`) so the Apple workout-HR estimate uses the SAME
+    /// HRmax as the strap's live strain path — no band↔Apple discontinuity. nil ⇒ StrainScorer default.
+    var strainHRmax: Double? = nil
+    var strainSex: String = "male"
     /// Source id for on-device computed scores (recovery/strain/sleep derived from the raw strap
     /// streams by IntelligenceEngine). Merged UNDER the imported `deviceId` rows at read time, so a
     /// real WHOOP import always wins and the strap-only user still gets a populated dashboard.
@@ -70,6 +75,10 @@ final class Repository: ObservableObject {
         /// it is deliberately NOT folded into `days`/`displayDays`, so every recovery statistic over
         /// history stays band-measured (the house rule). Empty unless Apple covers a band-less night.
         var recoveryEstimates: [String: AppleRecoveryEstimator.DayEstimate] = [:]
+        /// FER-883: Apple workout-HR strain estimate per band-less day, keyed by day. Mirrors
+        /// `recoveryEstimates` — surfaced ONLY via `repo.today`/`estimatedStrain`, never folded into
+        /// `days`/`displayDays` or any baseline.
+        var strainEstimates: [String: Double] = [:]
         /// FER-670: per-day single-construct fusion — day → metric key ("steps" / "sleep_total_min" /
         /// "active_kcal") → the fused point, ONLY for days where ≥2 sources reported that metric (a
         /// `.single` day has nothing to cross-check, so it's omitted and the dict stays small). Display
@@ -134,6 +143,10 @@ final class Repository: ObservableObject {
     func isRecoveryEstimated(_ day: String) -> Bool { dashboard.recoveryEstimates[day] != nil }
     /// Confidence grade for an estimated-recovery day; nil when the day isn't an Apple estimate.
     func recoveryConfidence(_ day: String) -> ScoreConfidence? { dashboard.recoveryEstimates[day]?.confidence }
+    /// True when today's surfaced strain is an Apple workout-HR estimate (FER-883).
+    func isStrainEstimated(_ day: String) -> Bool { dashboard.strainEstimates[day] != nil }
+    /// The estimated strain (0–21) for a band-less day; nil unless it's an Apple estimate.
+    func estimatedStrain(_ day: String) -> Double? { dashboard.strainEstimates[day] }
     /// How many of the 3 primary drivers (HRV, resting HR, sleep) backed an estimated-recovery day's
     /// score (FER-700); nil when the day isn't an Apple estimate. Lets the UI say WHY an estimate is
     /// conservative («N de 3 señales») rather than only showing the shrunk number.
@@ -302,6 +315,11 @@ final class Repository: ObservableObject {
         // FER-486: Apple Health sleep sessions (real per-epoch stage timeline), gated on the mode. The band
         // wins per night, so the appleSleeps surfaced to the Detalle drop any overlapping a strap session.
         let appleSleepRaw = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: lo, to: hi, limit: 4000)) ?? []) : []
+        // FER-883: Apple workout-HR samples under apple-health (persisted by HealthKitBridge during
+        // HKWorkouts only). Gated on usesAppleHealth so whoopOnly never reads them into the dashboard.
+        let appleHrRaw: [HRSample] = dataSourceMode.usesAppleHealth
+            ? ((try? await store.hrSamples(deviceId: "apple-health", from: lo, to: hi, limit: 500_000)) ?? [])
+            : []
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
@@ -324,8 +342,10 @@ final class Repository: ObservableObject {
             imported: imported, computed: computed, apple: apple,
             impSleepRaw: impSleepRaw, compSleepRaw: compSleepRaw,
             impSleep: impSleep, compSleep: compSleep, appleSleepRaw: appleSleepRaw,
+            appleHrRaw: appleHrRaw,
             appleAggRaw: appleAggRaw, stepsEstRaw: stepsEstRaw,
-            perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch))
+            perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch,
+            strainHRmax: strainHRmax, strainSex: strainSex))
 
         // Back on the main actor: publish only if this is still the newest refresh, and never let a
         // first-paint pass overwrite a fully loaded dashboard.
@@ -352,10 +372,15 @@ final class Repository: ObservableObject {
         var impSleepRaw: [CachedSleepSession]; var compSleepRaw: [CachedSleepSession]
         var impSleep: [CachedSleepSession]; var compSleep: [CachedSleepSession]
         var appleSleepRaw: [CachedSleepSession]
+        /// FER-883: Apple workout-HR samples (deviceId `apple-health`), empty when whoopOnly.
+        var appleHrRaw: [HRSample] = []
         var appleAggRaw: [AppleDaily]; var stepsEstRaw: [MetricPoint]
         var perf: [MetricPoint]; var cons: [MetricPoint]; var need: [MetricPoint]; var debt: [MetricPoint]
         /// Baseline cut day-key for the estimated-recovery path (FER-677); nil = no cut.
         var baselineEpoch: String? = nil
+        /// FER-883: effective HRmax + sex for the estimated strain, threaded from the Repository props.
+        var strainHRmax: Double? = nil
+        var strainSex: String = "male"
     }
 
     /// Pure assembly of the dashboard from rows already read — the EXACT merge pipeline `refresh()`
@@ -385,6 +410,22 @@ final class Repository: ObservableObject {
         let daysNeedingEstimate = Set(merged.days.filter { $0.recovery == nil }.map(\.day))
         let estimates = Self.appleRecoveryEstimates(apple: inputs.apple, eligibleDays: daysNeedingEstimate,
                                                     epoch: inputs.baselineEpoch)
+        // FER-883: ESTIMATED strain for days whose MEASURED strain is nil (band-less Apple day).
+        // Mirrors recovery: never folded into days/displayDays; surfaced only via estimatedStrain.
+        let daysNeedingStrainEstimate = Set(merged.days.filter { $0.strain == nil }.map(\.day))
+        var hrByDayApple: [String: [HRSample]] = [:]
+        for s in inputs.appleHrRaw {
+            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.ts)))
+            hrByDayApple[day, default: []].append(s)
+        }
+        var restingHRByDayApple: [String: Double] = [:]
+        for row in inputs.apple {
+            if let rhr = row.restingHr { restingHRByDayApple[row.day] = Double(rhr) }
+        }
+        let strainEstimates = Self.appleStrainEstimates(hrByDay: hrByDayApple,
+                                                        eligibleDays: daysNeedingStrainEstimate,
+                                                        restingHRByDay: restingHRByDayApple,
+                                                        maxHR: inputs.strainHRmax, sex: inputs.strainSex)
         // FER-485: stored per-source coverage from the UNFILTERED raws (the always-Combined truth), so the
         // diagnostic coverage shows what's stored even when the mode hides a source from the dashboard.
         let storedStrap = Set(inputs.importedRaw.map(\.day)).union(inputs.computedRaw.map(\.day))
@@ -407,6 +448,7 @@ final class Repository: ObservableObject {
             storedAppleOnlyDays: storedAppleOnly,
             storedSleepsCount: storedSleeps,
             recoveryEstimates: estimates,
+            strainEstimates: strainEstimates,
             fusion: fusion
         )
     }
@@ -477,6 +519,31 @@ final class Repository: ObservableObject {
         var out: [String: AppleRecoveryEstimator.DayEstimate] = [:]
         for e in AppleRecoveryEstimator.estimate(nights: nights, epoch: epoch) where eligibleDays.contains(e.day) {
             out[e.day] = e   // surfaced only where the measured recovery is nil (band-less OR cold-start)
+        }
+        return out
+    }
+
+    /// FER-883: per-day cardiovascular-load estimate from Apple workout HR, for days whose MEASURED
+    /// strain is nil (band-less day in Apple/Combined mode). Mirrors `appleRecoveryEstimates`'s contract:
+    /// pure + static (RepositoryMergeTests pins it), NEVER folded into `days`/`displayDays`, surfaced only
+    /// via `repo.today`/`estimatedStrain`/`isStrainEstimated`. `hrByDay` is apple-health HR samples
+    /// (workout-only — HealthKitBridge only persists HR during HKWorkouts) grouped by LOCAL day
+    /// (`WhoopStore.DayKey.local`). Reuses `StrainScorer.strain` (Edwards TRIMP) — no new math.
+    /// `maxHR`/`sex` come from the user's `Profile` (`hrMaxOverride ?? Tanaka(age)`), threaded via the
+    /// Repository props by `AppModel` — the SAME HRmax the strap live-strain path uses, so the estimate
+    /// never jumps band↔Apple (FER-883 /cso). nil `maxHR` still falls back to the StrainScorer default.
+    nonisolated static func appleStrainEstimates(hrByDay: [String: [HRSample]], eligibleDays: Set<String>,
+                                                 restingHRByDay: [String: Double] = [:],
+                                                 maxHR: Double? = nil, sex: String = "male")
+        -> [String: Double] {
+        guard !hrByDay.isEmpty else { return [:] }
+        var out: [String: Double] = [:]
+        for day in eligibleDays {
+            guard let samples = hrByDay[day], !samples.isEmpty else { continue }
+            let restingHR = restingHRByDay[day] ?? StrainScorer.defaultRestingHR
+            if let s = StrainScorer.strain(samples, maxHR: maxHR, restingHR: restingHR, sex: sex) {
+                out[day] = s
+            }
         }
         return out
     }
