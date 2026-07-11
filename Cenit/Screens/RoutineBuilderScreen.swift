@@ -215,8 +215,11 @@ struct RoutineBuilderScreen: View {
             HStack(spacing: 11) {
                 // Tapping the thumb/name opens the exercise info sheet (parity with the library, FER-776).
                 Button { detail = item.exercise } label: {
-                    HStack(spacing: 11) {
-                        ExerciseThumbView(exercise: item.exercise, side: 40)   // cached GIF still, or paper placeholder (FER-790)
+                    ExerciseThumbView(exercise: item.exercise, side: 40)   // cached GIF still, or paper placeholder (FER-790)
+                }
+                .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 1) {
+                    Button { detail = item.exercise } label: {
                         VStack(alignment: .leading, spacing: 1) {
                             if item.exercise.type != .weightReps {
                                 Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -224,11 +227,25 @@ struct RoutineBuilderScreen: View {
                             Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(theme.ink)
                                 .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
                         }
-                        Spacer(minLength: 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    // Progression chip under the name — same destination as «···» → Progression.
+                    if item.re.progressionEnabled {
+                        Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "arrow.up")
+                                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                                Text(progressionSummary(item.re))
+                                    .font(StrandFont.caption)
+                            }
+                            .foregroundStyle(theme.dataRecovery)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
+                Spacer(minLength: 8)
                 Button { menuExerciseIndex = idx } label: {
                     Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
@@ -375,6 +392,16 @@ struct RoutineBuilderScreen: View {
         }
         rows.append(.init(String(localized: "Remove"), systemImage: "trash", isDestructive: true) { deleteExercise(idx) })
         return rows
+    }
+
+    /// «+2,5 kg cada 2 ✓» — the active plan named under the exercise (and in the ··· menu when on).
+    private func progressionSummary(_ re: RoutineExercise) -> String {
+        guard let inc = re.progressionIncrementKg else {
+            return String(localized: "Progression · on")
+        }
+        let unit = StrengthDisplay.weightUnit(system).lowercased()
+        return "+\(StrengthDisplay.weightNumber(inc, system: system)) \(unit) "
+            + String(localized: "every \(re.progressionSessions)") + " ✓"
     }
 
     private func addWarmup(_ idx: Int) {
