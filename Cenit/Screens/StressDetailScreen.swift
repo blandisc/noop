@@ -561,8 +561,9 @@ struct StressDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        // Misma ventana de 90 días (máx 14 col) que Recuperación para que la celda mida igual. (FER-878+)
-        let cols = Swift.max(14, YearHeatStrip.weekColumns(for: stressHeatCache))
+        // Dimensiona al número REAL de columnas dibujadas (como Recuperación/Esfuerzo) para llenar SIEMPRE
+        // el ancho de la tarjeta; con `max(14, …)` quedaba ~1 columna angosto. (FER · anchos iguales)
+        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: stressHeatCache))
         let spacing: CGFloat = 4
         let gutter: CGFloat = 24
         let cell: CGFloat = calWidth > 0

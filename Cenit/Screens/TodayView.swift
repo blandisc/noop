@@ -1220,6 +1220,10 @@ struct TodayView: View {
             // la altura del tope del número. Gap más amplio para dar aire al héroe (FER-878 follow-up).
             HStack(alignment: .top, spacing: NoopMetrics.sectionGapCompact) {
                 heroNumeralText(state)
+                    // El numeral de 98pt (Space Grotesk) trae ~28.6pt de descenso VACÍO bajo la línea base
+                    // (los dígitos no bajan): ese hueco es el «padding» de más hacia SEÑALES. Lo recupero con
+                    // padding inferior negativo para apretar la fila del héroe contra las pestañas.
+                    .padding(.bottom, -Self.heroNumeralBottomInk)
                     .opacity((animatingHero && !heroEntered) ? 0 : 1)
                     .offset(y: (animatingHero && !heroEntered) ? 4 : 0)
                     .animation(animatingHero ? .easeOut(duration: 0.5) : nil, value: heroEntered)
@@ -1232,6 +1236,10 @@ struct TodayView: View {
                         .lineSpacing(2)
                     heroVerdictColumn(state)
                 }
+                // El mismo numeral trae ~27.8pt de blanco SOBRE el glifo, así que con top-align el overline
+                // «RECUPERACIÓN DE HOY» quedaba ~25pt más alto que el «75». Bajo la columna esa diferencia
+                // (28 del numeral − ~3 del propio overline) para que su tope case con el tope del número.
+                .alignmentGuide(.top) { $0[.top] - Self.heroColumnTopDrop }
                 Spacer(minLength: 0)
             }
             // FER-545: sello «estimado · confianza» cuando el veredicto de hoy es un estimado de Apple
@@ -1241,8 +1249,22 @@ struct TodayView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        // Toda el área del héroe (número, columna y el aire alrededor) abre el detalle de Recuperación,
+        // no solo el numeral: un blanco de toque generoso. Solo con veredicto (en calibrando/sin lectura
+        // no hay detalle que abrir). La palabra «Equilibrado» es un Button propio y gana la prioridad del
+        // toque, así que sigue abriendo su «¿por qué?» sin chocar con esto.
+        .contentShape(Rectangle())
+        .onTapGesture { if state == .verdict { metricDetail = recoveryInfo } }
         .onAppear { heroEntered = true }   // FER-878: dispara recRise una vez al entrar a la pantalla
     }
+
+    /// Blanco vacío que trae el numeral de 98pt de Space Grotesk (medido con CoreText a ese tamaño):
+    /// ~28.6pt de descenso bajo la línea base y ~27.8pt sobre la altura de mayúscula. Los usamos para
+    /// apretar la fila del héroe (bottom) y para casar el tope de la columna con el del número (top).
+    private static let heroNumeralBottomInk: CGFloat = 24
+    /// Cuánto baja la columna «RECUPERACIÓN…» para que su tope case con el glifo: blanco superior del
+    /// numeral (~28) menos el del propio overline de 10pt (~3).
+    private static let heroColumnTopDrop: CGFloat = 25
 
     /// El numeral dominante (96/700 tabular, tracking −4.5). Veredicto → el score en su color de nivel
     /// (con `~` chico si es estimado); calibrando → «··»; descargando / sin lectura → «—». Tocarlo con

@@ -974,8 +974,9 @@ struct SleepDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        // Misma ventana de 90 días (máx 14 col) que Recuperación para que la celda mida igual. (FER-878+)
-        let cols = Swift.max(14, YearHeatStrip.weekColumns(for: sleepHeatCache))
+        // Dimensiona al número REAL de columnas dibujadas (como Recuperación/Esfuerzo) para llenar SIEMPRE
+        // el ancho de la tarjeta; con `max(14, …)` quedaba ~1 columna angosto. (FER · anchos iguales)
+        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: sleepHeatCache))
         let spacing: CGFloat = 4
         let gutter: CGFloat = 24
         let cell: CGFloat = calWidth > 0
@@ -1550,11 +1551,17 @@ struct SleepDetailModel {
     /// Trailing 14 nights of a metric, in whatever unit `pick` returns, as `TrendPoint`s. Skips nights
     /// where the value is missing; empty when there's nothing to chart. (FER-227)
     private static func metricTrend(_ days: [DailyMetric], _ pick: (DailyMetric) -> Double?) -> [TrendPoint] {
-        let pts = days.compactMap { d -> TrendPoint? in
-            guard let v = pick(d), let date = Repository.parseDayKey(d.day) else { return nil }
-            return TrendPoint(date: date, value: v)
+        // Solo se dibujan los últimos 14 puntos. Recorre desde el final y parsea a lo más ~14 llaves de día
+        // en vez de parsear TODO el historial 5 veces en el hilo del tap: `Repository.parseDayKey` usa un
+        // `DateFormatter` (caro), y build() antes hacía 5·N parseos síncronos → jank al abrir Sueño. Mismo
+        // resultado que `compactMap{…}.suffix(14)` (últimos 14 puntos no nulos, en orden). (perf FER-freeze)
+        var pts: [TrendPoint] = []
+        for d in days.reversed() {
+            guard let v = pick(d), let date = Repository.parseDayKey(d.day) else { continue }
+            pts.append(TrendPoint(date: date, value: v))
+            if pts.count == 14 { break }
         }
-        return Array(pts.suffix(14))
+        return pts.reversed()
     }
 
     // MARK: - Night resolution (ported from the old sleep screen)
