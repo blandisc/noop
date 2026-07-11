@@ -242,6 +242,10 @@ public extension InstrumentoTheme {
     var dataSleepDeep: Color { Color(hex: "#3F3C78") }
     /// Light-sleep stage fill.
     var dataSleepLight: Color { Color(hex: "#8E8BC4") }
+    /// Lightest-sleep stage fill (handoff «Detalle de Tendencias Final» / Sueño).
+    var dataSleepLightest: Color { Color(hex: "#A9A6D4") }
+    /// Awake stage fill on the sleep hypnogram (warm paper-adjacent, not a risk red).
+    var dataSleepAwake: Color { Color(hex: "#C9C2AF") }
     /// A keycap on the session's custom numeric keypad (FER-716) — the ONE white surface the paper
     /// language allows, calqued from the UIKit keycap over `surface` (with its own hairline + 1px
     /// shadow). Not a canvas; never used as a background elsewhere.

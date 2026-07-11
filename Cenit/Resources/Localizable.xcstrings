@@ -55201,6 +55201,618 @@
           }
         }
       }
+    },
+    "Braking reserve": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Braking reserve"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reserva para bajar de marcha"
+          }
+        }
+      }
+    },
+    "read": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "read"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lectura"
+          }
+        }
+      }
+    },
+    "Above": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Above"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por encima"
+          }
+        }
+      }
+    },
+    "Below": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por debajo"
+          }
+        }
+      }
+    },
+    "resting vagal reserve": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "resting vagal reserve"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "reserva vagal en reposo"
+          }
+        }
+      }
+    },
+    "your pulse dropped as you fell asleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your pulse dropped as you fell asleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bajó tu pulso al dormirte"
+          }
+        }
+      }
+    },
+    "Full night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche completa"
+          }
+        }
+      }
+    },
+    "Partial night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partial night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche parcial"
+          }
+        }
+      }
+    },
+    "%lld cycles, %lld%% awake": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cycles, %lld%% awake"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ciclos, %lld %% despierto"
+          }
+        }
+      }
+    },
+    "%lld%% awake": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% awake"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %% despierto"
+          }
+        }
+      }
+    },
+    "%@ and %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ and %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ y %@"
+          }
+        }
+      }
+    },
+    "%lld%% of your need, %@ rhythm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% of your need, %@ rhythm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %% de tu necesidad, ritmo %@"
+          }
+        }
+      }
+    },
+    "%@ rhythm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ rhythm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ritmo %@"
+          }
+        }
+      }
+    },
+    "Still learning your schedule · %lld nights to go": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still learning your schedule · %lld nights to go"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún aprendo tu horario · faltan %lld noches"
+          }
+        }
+      }
+    },
+    "The small number is the change in points vs your typical.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The small number is the change in points vs your typical."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El número chico es el cambio en puntos frente a tu típico."
+          }
+        }
+      }
+    },
+    "The mark is your average.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The mark is your average."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La marca es tu promedio."
+          }
+        }
+      }
+    },
+    "Deep and REM above your typical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep and REM above your typical"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profundo y REM por encima de tu típico"
+          }
+        }
+      }
+    },
+    "Deep above your typical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep above your typical"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profundo por encima de tu típico"
+          }
+        }
+      }
+    },
+    "REM above your typical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "REM above your typical"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "REM por encima de tu típico"
+          }
+        }
+      }
+    },
+    "More light sleep than your typical": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More light sleep than your typical"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más sueño ligero que tu típico"
+          }
+        }
+      }
+    },
+    "Close to your typical stage mix": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close to your typical stage mix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerca de tu mezcla típica de etapas"
+          }
+        }
+      }
+    },
+    "A bit short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A bit short"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Algo corta"
+          }
+        }
+      }
+    },
+    "enough": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "enough"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "suficiente"
+          }
+        }
+      }
+    },
+    "ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ok"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ok"
+          }
+        }
+      }
+    },
+    "short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "short"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "corta"
+          }
+        }
+      }
+    },
+    "optimal 7–9 h": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "optimal 7–9 h"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "óptimo 7–9 h"
+          }
+        }
+      }
+    },
+    "Hours asleep per night. The wash is the optimal 7–9 h band.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours asleep per night. The wash is the optimal 7–9 h band."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas dormidas por noche. El wash es la banda óptima de 7–9 h."
+          }
+        }
+      }
+    },
+    "How many nights of the period fell in each band. Tap one to see its nights on the chart.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How many nights of the period fell in each band. Tap one to see its nights on the chart."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuántas noches del periodo cayeron en cada banda. Toca una para verlas en la gráfica."
+          }
+        }
+      }
+    },
+    "Regularity is how much your mid-sleep point moves night to night (the midpoint between falling asleep and waking): it predicts your health better than total hours. Naps don't count. \"Need\" is the 7–9 h target, not a measurement of you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regularity is how much your mid-sleep point moves night to night (the midpoint between falling asleep and waking): it predicts your health better than total hours. Naps don't count. \"Need\" is the 7–9 h target, not a measurement of you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La regularidad es qué tanto se mueve tu punto medio de sueño (el punto entre dormirte y despertar) noche a noche: predice tu salud mejor que las horas totales. Las siestas no cuentan. «Necesidad» es la meta 7–9 h, no una medición tuya."
+          }
+        }
+      }
+    },
+    "A marked, early drop: a sign you settled into rest. It's a pattern, not a diagnosis.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A marked, early drop: a sign you settled into rest. It's a pattern, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caída marcada y temprana: señal de que entraste en descanso. Es un patrón, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "Last night your heart had more room to ease off the gas than your base. A personal pattern: follow it over time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night your heart had more room to ease off the gas than your base. A personal pattern: follow it over time."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche tu corazón tuvo más margen para soltar el acelerador que tu base. Un patrón personal: síguelo en el tiempo."
+          }
+        }
+      }
+    },
+    "Last night your heart had less room to ease off the gas than your base. A personal pattern: follow it over time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last night your heart had less room to ease off the gas than your base. A personal pattern: follow it over time."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anoche tu corazón tuvo menos margen para soltar el acelerador que tu base. Un patrón personal: síguelo en el tiempo."
+          }
+        }
+      }
+    },
+    "Your resting braking reserve was in your usual range last night. A personal pattern: follow it over time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting braking reserve was in your usual range last night. A personal pattern: follow it over time."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu reserva para bajar de marcha en reposo estuvo en tu rango habitual anoche. Un patrón personal: síguelo en el tiempo."
+          }
+        }
+      }
+    },
+    "Your resting braking reserve last night. It reads best as a personal trend: follow it over time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your resting braking reserve last night. It reads best as a personal trend: follow it over time."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu reserva para bajar de marcha en reposo anoche. Se lee mejor como tendencia personal: síguela en el tiempo."
+          }
+        }
+      }
+    },
+    "Enough sleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enough sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suficiente"
+          }
+        }
+      }
+    },
+    "Short sleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short sleep"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corta"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
