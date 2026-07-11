@@ -79,4 +79,32 @@ final class IllnessWatchSourceTests: XCTestCase {
             IllnessWatch.isAnomaly(recentMean: recentBandRhr, base: rhrBase(days), higherIsWorse: true),
             "against the Apple-contaminated baseline, the same rise is sub-2σ noise → silenced (the bug)")
     }
+
+    /// FER-884: in Apple-only mode every night is Apple, so `strapOnlyHistory` returns EMPTY — the illness
+    /// RHR/HRV terms would have no baseline and could never fire (illness collapses to <2 signals). The fix
+    /// routes them through `SourceLens.maskForBaseline(keep: .apple)`, which PRESERVES Apple's own RHR/HRV: a
+    /// within-source z-score is valid despite Apple's awake-RHR offset (it compares Apple to the user's own
+    /// Apple norm). This pins that a real Apple RHR rise is detectable in Apple-only mode after the fix, and
+    /// was undetectable under the old strap-only path.
+    func testAppleOnlyModeRoutesRhrThroughAppleLens() {
+        var days: [DailyMetric] = []
+        var appleDays: Set<String> = []
+        let cycle = [71, 72, 73]   // a stable Apple RHR baseline (~72 bpm awake sedentary)
+        for i in 0..<33 {
+            let day = String(format: "2026-06-%02d", i + 1)
+            days.append(dm(day, rhr: cycle[i % 3]))
+            appleDays.insert(day)
+        }
+        // OLD path: strap-only history is empty in Apple-only mode → no baseline → the term can never fire.
+        let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: appleDays)
+        XCTAssertTrue(strapDays.isEmpty, "Apple-only mode: strap-only history is empty")
+        XCTAssertTrue(rhrBase(strapDays).isEmpty, "so the RHR term has no baseline — the gap FER-884 closes")
+
+        // NEW path: the Apple lens preserves Apple's own RHR, so a real +8 bpm rise fires the anomaly.
+        let appleLens = SourceLens.maskForBaseline(days, keep: .apple, appleDays: appleDays)
+        XCTAssertFalse(rhrBase(appleLens).isEmpty, "the Apple-isolated baseline carries Apple's own RHR")
+        XCTAssertTrue(
+            IllnessWatch.isAnomaly(recentMean: 80.0, base: rhrBase(appleLens), higherIsWorse: true),
+            "against the Apple baseline, +8 bpm is several σ → the RHR anomaly fires in Apple-only mode")
+    }
 }

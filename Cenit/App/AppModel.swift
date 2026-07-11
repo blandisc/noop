@@ -1653,17 +1653,27 @@ final class AppModel: ObservableObject {
     private func applyIllnessEvaluation(_ days: [DailyMetric], context: IllnessSignalEngine.Context) {
         let previous = healthAlert
         func mean(_ vals: [Double]) -> Double? { vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count) }
-        // FER-543 / FER-641 / FER-882: the HRV and resting-HR terms score against a STRAP-ONLY history.
-        // Apple-only nights carry SDNN, not the band's RMSSD (not interchangeable, no published conversion;
-        // Shaffer & Ginsberg 2017), AND their resting HR is read from awake sedentary samples excluding sleep
-        // — so it sits a systematic ~10–13 bpm above the band's sleep-nadir RHR (Fenland Study; Gonzales et
-        // al. 2023, PLoS One 18(5):e0285272). Mixing either into the illness baseline contaminates it the
-        // same way FER-519 fixed for recovery. Skin temp is now source-routed via `SourceLens.maskForBaseline`
-        // (band by default; Apple only in appleHealthOnly) so a band-Δ night never folds with an Apple-Δ
-        // night (each instrument has its own absolute-°C baseline). Respiration IS the same physical metric
-        // across sources (both measured during sleep, breaths/min) and still keeps the full merged history.
-        // `appleHealthDays == []` ⇒ identity (whoopOnly / a strap-only user → no change).
+        // FER-543 / FER-641 / FER-882 / FER-884: the HRV and resting-HR terms score against a
+        // SINGLE-SOURCE history, chosen by the data-source mode. In Combined / strap-only they use the
+        // STRAP-ONLY history exactly as before (regression zero): Apple-only nights carry SDNN, not the
+        // band's RMSSD (not interchangeable, no published conversion; Shaffer & Ginsberg 2017), AND their
+        // resting HR is read from awake sedentary samples excluding sleep — ~10–13 bpm above the band's
+        // sleep-nadir RHR (Fenland Study; Gonzales et al. 2023, PLoS One 18(5):e0285272) — so mixing either
+        // into the band baseline contaminates it (FER-519). In Apple-only mode `strapDays` is EMPTY, which
+        // would collapse illness to <2 signals and never fire; instead we score Apple's OWN RHR/SDNN against
+        // an APPLE-ISOLATED baseline (`SourceLens.maskForBaseline(keep:.apple)`). A within-source z-score is
+        // valid regardless of Apple's absolute RHR offset or SDNN≠RMSSD — it measures the deviation from the
+        // user's own Apple norm, exactly as `AppleRecoveryEstimator` already scores Apple SDNN (FER-153).
+        // Skin temp is likewise source-routed (FER-882: each instrument has its own absolute-°C baseline).
+        // Respiration IS the same physical metric across sources (both measured during sleep, breaths/min)
+        // and keeps the full merged history. `appleHealthDays == []` ⇒ identity (a strap-only user → no change).
         let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
+        // FER-884: the source that feeds RHR/HRV/skin-temp — Apple only when the mode excludes the band.
+        let signalSource: SourceLens.Source = (repo.dataSourceMode == .appleHealthOnly) ? .apple : .band
+        // RHR/HRV history: strapDays byte-for-byte in Combined/strap-only; Apple-isolated in Apple-only.
+        let vitalsDays = signalSource == .apple
+            ? SourceLens.maskForBaseline(days, keep: .apple, appleDays: repo.appleHealthDays)
+            : strapDays
 
         // Each signal's illness-ward z-score is computed exactly as before (robust σ via IllnessWatch,
         // recent = last ~2 nights, base = the ~28 nights ending 3 days ago), then handed to the engine
@@ -1682,18 +1692,17 @@ final class AppModel: ObservableObject {
             labels[key] = label(r, dev.baseMean)
             return IllnessSignalEngine.SignalReading(zIllnessward: dev.z)
         }
-        inputs.restingHR = read("restingHR", { $0.restingHr.map(Double.init) }, higherIsWorse: true, from: strapDays) {
+        inputs.restingHR = read("restingHR", { $0.restingHr.map(Double.init) }, higherIsWorse: true, from: vitalsDays) {
             String(localized: "resting HR +\(Int(($0 - $1).rounded())) bpm")
         }
         // HRV's percentage phrase needs a positive baseline; skip the whole term if the base mean is 0.
-        if let hrvBase = mean(Array(strapDays.suffix(31).dropLast(3)).compactMap { $0.avgHrv }), hrvBase > 0 {
-            inputs.hrv = read("hrv", { $0.avgHrv }, higherIsWorse: false, from: strapDays) {
+        if let hrvBase = mean(Array(vitalsDays.suffix(31).dropLast(3)).compactMap { $0.avgHrv }), hrvBase > 0 {
+            inputs.hrv = read("hrv", { $0.avgHrv }, higherIsWorse: false, from: vitalsDays) {
                 String(localized: "HRV −\(Int(((1 - $0 / $1) * 100).rounded()))%")
             }
         }
-        // FER-882: skin temp Δ is source-specific — route through the baseline lens.
-        let tempSource: SourceLens.Source = (repo.dataSourceMode == .appleHealthOnly) ? .apple : .band
-        let skinTempDays = SourceLens.maskForBaseline(days, keep: tempSource, appleDays: repo.appleHealthDays)
+        // FER-882: skin temp Δ is source-specific — route through the same baseline lens.
+        let skinTempDays = SourceLens.maskForBaseline(days, keep: signalSource, appleDays: repo.appleHealthDays)
         inputs.skinTemp = read("skinTemp", { $0.skinTempDevC }, higherIsWorse: true, from: skinTempDays) { r, _ in
             String(localized: "skin temp +\(String(format: "%.1f", r))°C")
         }
