@@ -480,7 +480,7 @@ struct StressDetailScreen: View {
                     bands: Self.stressBands(theme),
                     ticks: [.init(v: 3, label: "3"), .init(v: 2, label: "2"),
                             .init(v: 1, label: "1"), .init(v: 0, label: "0")],
-                    hue: theme.warning, ymin: 0, ymax: 3,
+                    hue: theme.verdict, ymin: 0, ymax: 3,
                     startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
                     endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
                     mediaValue: fmt(stat.mean),

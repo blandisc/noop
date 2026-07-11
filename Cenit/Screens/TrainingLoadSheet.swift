@@ -555,7 +555,7 @@ private struct LoadHillView: View {
                     // Área + trazo de la colina.
                     hillAreaPath(width: w)
                         .fill(LinearGradient(
-                            colors: [theme.ink.opacity(0.07), theme.ink.opacity(0)],
+                            colors: [theme.ink.opacity(0.07), theme.ink.opacity(0)],  // token-exempt: rampa decorativa (sombra de fondo)
                             startPoint: .top, endPoint: .bottom))
                         .recFade()
                     hillLinePath(width: w)
@@ -710,15 +710,15 @@ private struct LoadHillView: View {
         let x2 = xForRatio(LoadScale.cuts[1], width: w)
         let x3 = xForRatio(LoadScale.cuts[2], width: w)
         return ZStack(alignment: .topLeading) {
-            zoneBar(x: x0, width: max(0, x1 - gap), y: y, h: h, color: theme.verdict.opacity(0.35))
+            zoneBar(x: x0, width: max(0, x1 - gap), y: y, h: h, color: theme.verdict.opacity(0.35))  // token-exempt: sombreado de zona de carga
             zoneBar(x: x1 + gap, width: max(0, x2 - x1 - gap), y: y, h: h, color: theme.verdict)
-            zoneBar(x: x2 + gap, width: max(0, x3 - x2 - gap), y: y, h: h, color: theme.warning.opacity(0.35))
-            zoneBar(x: x3 + gap, width: max(0, w - x3 - gap), y: y, h: h, color: theme.critical.opacity(0.35))
+            zoneBar(x: x2 + gap, width: max(0, x3 - x2 - gap), y: y, h: h, color: theme.warning.opacity(0.35))  // token-exempt: sombreado de zona de carga
+            zoneBar(x: x3 + gap, width: max(0, w - x3 - gap), y: y, h: h, color: theme.critical.opacity(0.35))  // token-exempt: sombreado de zona de carga
         }
     }
 
     private func zoneBar(x: CGFloat, width: CGFloat, y: CGFloat, h: CGFloat, color: Color) -> some View {
-        RoundedRectangle(cornerRadius: 2, style: .continuous)
+        RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de dato
             .fill(color)
             .frame(width: max(0, width), height: h)
             .offset(x: x, y: y)
