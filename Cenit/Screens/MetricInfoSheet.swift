@@ -799,7 +799,7 @@ struct MetricInfoSheet: View {
         .task {
             guard let loader = trendLoader else { return }
             trendLoading = true
-            trendData = await loader()
+            trendData = (await loader()).sorted { $0.date < $1.date }
             trendLoading = false
         }
         .task {
@@ -1396,8 +1396,8 @@ struct MetricInfoSheet: View {
         // Steps' latest point is the in-progress day (FER-264) — drop it so the counts read completed days
         // only, and it carries no "today" band.
         let isSteps = info.id == "steps"
-        let sorted = trendData.sorted { $0.date < $1.date }
-        let source = (isSteps && sorted.count > 1) ? Array(sorted.dropLast()) : sorted
+        // trendData is already date-sorted at load (FER-876).
+        let source = (isSteps && trendData.count > 1) ? Array(trendData.dropLast()) : trendData
         let values = source.map { toHours ? $0.value / 60 : $0.value }
         let bands = info.bands.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
         let todayIndex = isSteps ? nil : info.bands.firstIndex(where: { $0.isActive })
@@ -1412,8 +1412,8 @@ struct MetricInfoSheet: View {
         guard !info.bands.isEmpty, !trendData.isEmpty else { return nil }
         let toHours = info.id == "sleep"
         let isSteps = info.id == "steps"
-        let sorted = trendData.sorted { $0.date < $1.date }
-        let source = (isSteps && sorted.count > 1) ? Array(sorted.dropLast()) : sorted
+        // trendData is already date-sorted at load (FER-876).
+        let source = (isSteps && trendData.count > 1) ? Array(trendData.dropLast()) : trendData
         let values = source.map { toHours ? $0.value / 60 : $0.value }
         let bands = info.bands.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
         // Active band = today's band (the highlighted row + the chart's shaded band), so the line agrees
@@ -1610,8 +1610,8 @@ struct MetricInfoSheet: View {
         guard banded.contains(info.id), !info.bands.isEmpty, trendData.count > 1 else { return nil }
         let toHours = info.id == "sleep"
         let isSteps = info.id == "steps"
-        let sorted = trendData.sorted { $0.date < $1.date }
-        let pts = sorted.map { TrendPoint(date: $0.date, value: toHours ? $0.value / 60 : $0.value) }
+        // trendData is already date-sorted at load (FER-876).
+        let pts = trendData.map { TrendPoint(date: $0.date, value: toHours ? $0.value / 60 : $0.value) }
         let values = pts.map(\.value)
         // Steps' latest point is today's partial total (FER-264): plot every day, but count completed days
         // only so the partial total doesn't inflate the active band's tally.

@@ -1100,18 +1100,20 @@ private struct StrapLogSheet: View {
                 }
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 2) {
-                            ForEach(Array(live.log.enumerated()), id: \.offset) { idx, line in
-                                Text(line).font(StrandFont.mono)
+                        LazyVStack(alignment: .leading, spacing: 2) {
+                            ForEach(live.log) { line in
+                                Text(line.text).font(StrandFont.mono)
                                     .foregroundStyle(theme.inkSecondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .id(idx)
+                                    .id(line.id)
                             }
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .onChange(of: live.log.count) {
-                        if let last = live.log.indices.last { proxy.scrollTo(last, anchor: .bottom) }
+                        if let lastLine = live.log.last {
+                            proxy.scrollTo(lastLine.id, anchor: .bottom)
+                        }
                     }
                 }
             }
@@ -1129,7 +1131,7 @@ private struct StrapLogSheet: View {
         let header = "Cénit strap log: \(osName)\nApp: \(v)\n\(osName): "
             + ProcessInfo.processInfo.operatingSystemVersionString + "\n"
             + String(repeating: "-", count: 40) + "\n"
-        return header + live.log.joined(separator: "\n")
+        return header + live.log.map(\.text).joined(separator: "\n")
     }
     private func copyStrapLog() { PlatformPasteboard.copy(strapLogText()) }
     private func saveStrapLog() { FileExport.exportText(strapLogText(), suggestedName: "noop-strap-log.txt") }

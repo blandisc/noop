@@ -546,6 +546,12 @@ struct SleepDetailScreen: View {
         }
     }
 
+    private static let clockFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.timeStyle = .short
+        return f
+    }()
+
     private func clockLabel(_ hour: Double) -> String {
         var h = Int(hour) % 24
         var m = Int(((hour - Double(Int(hour))) * 60).rounded())
@@ -553,7 +559,7 @@ struct SleepDetailScreen: View {
         var comps = DateComponents(); comps.hour = h; comps.minute = m
         let cal = Calendar.current
         if let date = cal.date(from: comps) {
-            let f = DateFormatter(); f.timeStyle = .short; return f.string(from: date)
+            return Self.clockFormatter.string(from: date)
         }
         return String(format: "%d:%02d", h, m)
     }

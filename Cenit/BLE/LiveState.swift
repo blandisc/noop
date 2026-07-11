@@ -1,6 +1,17 @@
 import Foundation
 import Combine
 
+/// One line in the on-device strap diagnostic log. Stable `id` so SwiftUI can diff
+/// append/trim without re-rendering every row when the 200-line cap drops the head (FER-876).
+public struct LogLine: Identifiable {
+    public let id: UUID
+    public let text: String
+    public init(text: String) {
+        self.id = UUID()
+        self.text = text
+    }
+}
+
 /// Observable snapshot of the live connection + biometric state, driven by FrameRouter
 /// (from decoded frames) and BLEManager (from CoreBluetooth callbacks).
 /// `@MainActor` so SwiftUI views observe it safely; mutators are called on the main queue.
@@ -63,7 +74,7 @@ public final class LiveState: ObservableObject {
     /// before the first event arrives; flipped by FrameRouter on a real event.
     @Published public var worn: Bool = true
     /// Rolling log of human-readable lines for the on-device verification checklist.
-    @Published public var log: [String] = []
+    @Published public var log: [LogLine] = []
 
     /// Fired (live only) when the strap reports a DOUBLE_TAP gesture. Wired by AppModel to the
     /// user's chosen action. Debounced in AppModel.
@@ -211,7 +222,7 @@ public final class LiveState: ObservableObject {
     }
 
     public func append(log line: String) {
-        log.append(Self.redactPii(line))
+        log.append(LogLine(text: Self.redactPii(line)))
         if log.count > 200 { log.removeFirst(log.count - 200) }
     }
 
