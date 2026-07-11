@@ -53067,6 +53067,23 @@
         }
       }
     },
+    "hard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "duro"
+          }
+        }
+      }
+    },
     "hard+": {
       "extractionState": "manual",
       "localizations": {

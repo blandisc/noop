@@ -996,16 +996,12 @@ struct RecoveryDetailScreen: View {
     /// The 90-day heat strip, sized to fill the available width: measure the content width once, then
     /// pick a cell size so the week columns span it (re-tinted to warm paper). (FER-225)
     private var heatGrid: some View {
-        // Dimensiona la celda al número REAL de columnas que se dibujan (como Esfuerzo), no a un tope de 14:
-        // así el grid llena SIEMPRE el ancho de la tarjeta. Con `max(14, …)` la celda se medía para 14 pero
-        // se pintaban solo 13 en la mayoría de ventanas de 90 días → quedaba ~1 columna más angosto que la
-        // tarjeta, y Sueño/Estrés se veían más angostos que Recuperación según el día. (FER · anchos iguales)
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: model.heat))
+        // Dimensiona la celda a un número FIJO de columnas (14, el máximo de una ventana de 90 días), no al
+        // conteo vivo: así la celda mide LO MISMO en las cuatro pantallas y todos los días. Dimensionar al
+        // `weekColumns` vivo hacía que la celda oscilara 13↔14 columnas (≈19.3↔21.1pt) según en qué día de
+        // la semana arranca la ventana → se leía como "los calendarios son de distinto tamaño". (FER estable)
         let spacing: CGFloat = 4
-        let gutter: CGFloat = 24
-        let cell: CGFloat = calWidth > 0
-            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-            : 14
+        let cell = YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing)
         return YearHeatStrip(
             days: model.heat,
             cellSize: cell,
