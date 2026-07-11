@@ -32,8 +32,14 @@ enum InsightsProvider {
         }
 
         let proven = await repo.provenLevers()
-        return rank(days: days, appleDays: repo.appleHealthDays, behaviors: behaviors,
-                    eligibleDaysByBehavior: eligibleDaysByBehavior, proven: proven, today: today)
+        // FER-872: the ranking core (correlations + FDR over the whole journal history) is pure and can be
+        // heavy; hop it off the main actor so the launch cascade's `loadAll` doesn't block a frame on it.
+        // Inputs are snapshotted on the main actor above (all value types), so nothing races.
+        let appleDays = repo.appleHealthDays
+        return await Task.detached(priority: .userInitiated) {
+            rank(days: days, appleDays: appleDays, behaviors: behaviors,
+                 eligibleDaysByBehavior: eligibleDaysByBehavior, proven: proven, today: today)
+        }.value
     }
 
     /// Pure ranking core (testable seam). Masks every cross-source column to the BAND source (FER-639)
@@ -44,10 +50,10 @@ enum InsightsProvider {
     /// the HRV↔behavior correlations shift by SCALE, not physiology. `strain`/ACWR (trainingLoadInsight)
     /// aren't cross-source columns, so that path is untouched. `appleDays == []` (strap-only) is the
     /// identity — an existing strap user's insights are bit-for-bit unchanged.
-    static func rank(days: [DailyMetric], appleDays: Set<String>,
-                     behaviors: [String: Set<String>],
-                     eligibleDaysByBehavior: [String: Set<String>],
-                     proven: Set<Lever>, today: String) -> [Insight] {
+    nonisolated static func rank(days: [DailyMetric], appleDays: Set<String>,
+                                 behaviors: [String: Set<String>],
+                                 eligibleDaysByBehavior: [String: Set<String>],
+                                 proven: Set<Lever>, today: String) -> [Insight] {
         let bandDays = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleDays)
         let inputs = InsightEngine.Inputs(days: bandDays, behaviors: behaviors,
                                           eligibleDaysByBehavior: eligibleDaysByBehavior, referenceDay: today)

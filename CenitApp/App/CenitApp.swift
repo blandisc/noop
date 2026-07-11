@@ -121,7 +121,7 @@ struct CenitApp: App {
                 model.startAnalysisLoop()
                 model.drainPendingIntents()
                 Task {
-                    await health.sync()
+                    await health.sync(trigger: .foreground)   // FER-872: delta window + no-op refresh guard
                     // Snapshot the (possibly just-offloaded) strap history to iCloud Drive. Throttled
                     // to ~once a day and a no-op until the user picks a folder, so it's safe here.
                     await autoBackup.backupIfDue(checkpoint: { await model.repo.checkpointForBackup() })
