@@ -404,7 +404,8 @@ private struct CuerpoLanding: View {
         } else if let item = recoveryDetail {
             RecoveryDetailScreen(theme: theme, model: item.model)
         } else if let item = strainDetail {
-            StrainDetailScreen(theme: theme, model: item.model, curveLoader: { await loadStrainCurve() })
+            StrainDetailScreen(theme: theme, model: item.model, curveLoader: { await loadStrainCurve() },
+                               estimated: item.estimated)
         } else if let item = sleepDetail {
             SleepDetailScreen(theme: theme, model: item.model,
                               loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
@@ -842,7 +843,8 @@ private struct CuerpoLanding: View {
             // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses
             // `MetricInfo.strain`/`MetricInfoSheet`.)
             strainDetail = StrainDetailItem(model: StrainDetailModel.build(
-                days: repo.days, today: repo.today, loaded: repo.loaded))
+                days: repo.days, today: repo.today, loaded: repo.loaded),
+                estimated: repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date())))
         }
     }
 

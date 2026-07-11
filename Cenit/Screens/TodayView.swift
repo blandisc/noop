@@ -462,7 +462,7 @@ struct TodayView: View {
             }
             .sheet(item: $strainDetail) { item in
                 StrainDetailScreen(theme: theme, model: item.model,
-                                   curveLoader: { await loadStrainCurve() })
+                                   curveLoader: { await loadStrainCurve() }, estimated: item.estimated)
             }
             .sheet(item: $skinTempDetail) { item in
                 SkinTempDetailScreen(theme: theme, model: item.model,
@@ -600,7 +600,8 @@ struct TodayView: View {
         case "strain":
             present = {
                 strainDetail = StrainDetailItem(model: StrainDetailModel.build(
-                    days: repo.days, today: repo.today, loaded: repo.loaded))
+                    days: repo.days, today: repo.today, loaded: repo.loaded),
+                    estimated: repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date())))
             }
         case "stress":
             present = {

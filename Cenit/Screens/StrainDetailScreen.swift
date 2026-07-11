@@ -29,6 +29,9 @@ struct StrainDetailScreen: View {
     /// Today's accumulated-strain curve, loaded async (it reads HR samples — DB I/O, not pure). Returns
     /// `[]` when there's no score / too little activity yet. Injected by the caller (`loadStrainCurve`).
     var curveLoader: () async -> [TrendPoint] = { [] }
+    /// FER-885: today's «Day load» is an Apple workout-HR estimate (Apple-only mode, FER-883), not a
+    /// band-measured Day Strain. Flips the footer to the Apple seal and adds the honest under-count hedge.
+    var estimated: Bool = false
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
     @State private var range: ExploreRange = .month
@@ -495,11 +498,19 @@ struct StrainDetailScreen: View {
                 .font(StrandFont.caption)
                 .foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
+            // FER-885: honest hedge when the load is an Apple workout-HR estimate (no strap).
+            if estimated {
+                Text("Estimated from your Apple Watch workout heart rate. It doesn't include activity outside those workouts, so it can read a little low.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
     private var sourceFooter: some View {
-        OriginStamp(origin: .computed, when: String(localized: "today, in progress"), inProgress: true, theme: theme)
+        OriginStamp(origin: estimated ? .apple : .computed,
+                    when: String(localized: "today, in progress"), inProgress: true, theme: theme)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 2)
     }
@@ -530,6 +541,8 @@ struct StrainDetailScreen: View {
 struct StrainDetailItem: Identifiable {
     let id = UUID()
     let model: StrainDetailModel
+    /// FER-885: today's load is an Apple workout-HR estimate (Apple-only mode), captured when the sheet opens.
+    var estimated: Bool = false
 }
 
 // MARK: - StrainDetailModel — every derivation the screen draws, built ONCE from the repo
