@@ -125,6 +125,11 @@ final class AppModel: ObservableObject {
         var liveStrain: Double = 0
         var avgHr: Int = 0
         var peakHr: Int = 0
+        // FER-870: running sums so each 1 Hz sample extends the average/strain in O(1)+O(300) instead
+        // of re-summing and re-sorting the whole growing buffer. `strainState` folds the same Edwards
+        // TRIMP `StrainScorer.strain` computes, so `strain` == the from-scratch value at every sample.
+        var hrSum: Int = 0
+        var strainState: StrainScorer.CumulativeStrainState?
     }
     /// Illness/strain early-warning (recent RHR up + HRV down + skin-temp up vs baseline). nil = clear.
     @Published var healthAlert: String?
@@ -215,6 +220,18 @@ final class AppModel: ObservableObject {
     /// (it still feeds recovery/readiness baselines). nil until first computed, or when there's too little
     /// activity today to score. Refreshed by `refreshLiveDayStrain()` on each dashboard/HR-flush tick.
     @Published private(set) var liveDayStrain: Double?
+    // FER-870: incremental cache for the in-progress day's strain curve. Each HR flush folds ONLY the
+    // samples newer than `liveStrainState.lastTs` (TRIMP is additive) off the main actor, instead of
+    // re-reading ~86k rows and re-sorting every gap from scratch. Reset when the civil day rolls over,
+    // the data source switches, or a scoring parameter changes (`liveStrainDayStart`/`liveStrainSource`
+    // + the state's own parameter check) — the only cases where the batch recompute would differ.
+    private var liveStrainState: StrainScorer.CumulativeStrainState?
+    private var liveStrainDayStart: Int?
+    private var liveStrainSource: DataSourceMode?
+    /// Generation counter for in-flight live-strain folds: only the most recently STARTED fold may
+    /// commit its extended state, so a slow older fold can never double-count or clobber a newer one
+    /// (same discipline as `Repository.refreshGen`). @MainActor-confined ⇒ no races.
+    private var liveStrainGen = 0
     private var hrWindow: [(t: Date, v: Double)] = []
     private var hrCancellables = Set<AnyCancellable>()
 
@@ -1262,15 +1279,22 @@ final class AppModel: ObservableObject {
         s.hrSamples.append(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr))
     }
 
-    /// Append the current smoothed `bpm` to the active workout and recompute its running strain. Called
-    /// from `ingestHR` on every fresh sample; a no-op when no workout is running. Recomputing strain
-    /// over the growing window each sample is cheap at the ~1 Hz live-HR cadence.
+    /// Append the current smoothed `bpm` to the active workout and extend its running strain. Called
+    /// from `ingestHR` on every fresh sample; a no-op when no workout is running. FER-870: the average
+    /// and strain extend from running state (`hrSum` + `strainState`) instead of re-summing and
+    /// re-sorting the whole growing buffer each sample — same values, O(1)+O(300) per sample.
     private func captureWorkoutSample() {
         guard var w = activeWorkout, let hr = bpm else { return }
-        w.samples.append(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr))
+        let sample = HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr)
+        w.samples.append(sample)
         w.peakHr = max(w.peakHr, hr)
-        w.avgHr = Int((Double(w.samples.map(\.bpm).reduce(0, +)) / Double(w.samples.count)).rounded())
-        w.liveStrain = StrainScorer.strain(w.samples, maxHR: Double(profile.hrMax), sex: profile.sex) ?? 0
+        w.hrSum += hr
+        w.avgHr = Int((Double(w.hrSum) / Double(w.samples.count)).rounded())
+        if w.strainState == nil {
+            w.strainState = StrainScorer.CumulativeStrainState(maxHR: Double(profile.hrMax), sex: profile.sex)
+        }
+        w.strainState?.extend(with: [sample])
+        w.liveStrain = w.strainState?.strain ?? 0
         activeWorkout = w
     }
 
@@ -1294,12 +1318,47 @@ final class AppModel: ObservableObject {
         guard repo.today?.strain != nil else { liveDayStrain = nil; return [] }
         let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
         let nowTs = Int(Date().timeIntervalSince1970)
-        let samples = await repo.hrSamples(from: startOfToday, to: nowTs, limit: 100_000)
         let restHR = repo.today?.restingHr.map(Double.init) ?? StrainScorer.defaultRestingHR
         let effMax: Double? = profile.hrMaxOverride > 0
             ? Double(profile.hrMaxOverride)
             : (profile.age > 0 ? StrainScorer.tanakaHRmax(age: Double(profile.age)) : nil)
-        let curve = StrainScorer.cumulativeStrain(samples, maxHR: effMax, restingHR: restHR, sex: profile.sex)
+        let source = repo.dataSourceMode
+
+        // FER-870: reuse the cached incremental state unless the civil day rolled over, the data source
+        // switched, or a scoring parameter changed — any of which would make the batch recompute differ,
+        // so we discard and re-seed from midnight. Otherwise we only ever fold the NEW samples.
+        let cached = liveStrainState
+        let reusable = cached.map {
+            liveStrainDayStart == startOfToday && liveStrainSource == source
+                && $0.hasSameParameters(bucketSeconds: 900, maxHR: effMax, restingHR: restHR,
+                                        method: .edwards, sex: profile.sex,
+                                        denominator: StrainScorer.strainDenominator)
+        } ?? false
+        let base = reusable ? cached! : StrainScorer.CumulativeStrainState(
+            maxHR: effMax, restingHR: restHR, sex: profile.sex)
+        if !reusable {
+            liveStrainDayStart = startOfToday
+            liveStrainSource = source
+            liveStrainState = base   // publish the empty re-seed immediately so a stale day never lingers
+        }
+
+        // Only the samples newer than what we've already folded. On a fresh seed that's midnight → now.
+        let from = (base.lastTs ?? (startOfToday - 1)) + 1
+        let newSamples = await repo.hrSamples(from: from, to: nowTs, limit: 100_000)
+
+        liveStrainGen &+= 1
+        let gen = liveStrainGen
+        // Fold OFF the main actor: the accumulate + O(300) median never touches the UI thread.
+        let (extended, curve): (StrainScorer.CumulativeStrainState, [StrainScorer.CumulativeStrainPoint]) =
+            await Task.detached(priority: .utility) {
+                let next = base.extended(with: newSamples)
+                return (next, next.curve)
+            }.value
+
+        // Commit only if we're still the newest fold (a newer flush that started while we were folding
+        // reads from the same base and supersedes us — no double-count, no clobber).
+        guard gen == liveStrainGen else { return curve }
+        liveStrainState = extended
         liveDayStrain = curve.last?.strain
         return curve
     }
