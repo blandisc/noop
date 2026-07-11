@@ -14238,6 +14238,23 @@
         }
       }
     },
+    "Estimated from your Apple Watch workout heart rate. It doesn't include activity outside those workouts, so it can read a little low.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated from your Apple Watch workout heart rate. It doesn't include activity outside those workouts, so it can read a little low."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimada a partir de la frecuencia cardiaca de tus entrenamientos del Apple Watch. No incluye la actividad fuera de esos entrenamientos, así que puede quedar un poco baja."
+          }
+        }
+      }
+    },
     "Estimated from your age (208 − 0.7 × age). Set it manually if you know your true max.": {
       "extractionState": "manual",
       "localizations": {
