@@ -198,7 +198,7 @@ extension WhoopStore {
     public func pruneRaw(now: Int, keepWindowSeconds: Int, maxUnsyncedBytes: Int) async throws -> Int {
         // maxUnsyncedBytes intentionally unused: unsynced raw is the sole copy of unknown bytes
         // post-trim and must never be dropped.
-        try syncWrite { db in
+        let pruned: Int = try syncWrite { db in
             var pruned = 0
             // Policy 1: aged synced batches.
             let cutoff = now - keepWindowSeconds
@@ -207,6 +207,20 @@ extension WhoopStore {
                 """, arguments: [cutoff])
             pruned += db.changesCount
             return pruned
+        }
+        // Reclaim free pages left by the DELETE above (and prior freelist). Outside a transaction
+        // (same rule as VACUUM / wal_checkpoint — see checkpointWALImpl). Cap at 200 pages
+        // (~800 KB at 4 KB page size): bounded amortized reclaim on every prune call, not a
+        // one-shot unbounded VACUUM that could block on a huge freelist backlog.
+        try incrementalVacuumAfterPruneImpl()
+        return pruned
+    }
+
+    /// Non-async so GRDB's synchronous `writeWithoutTransaction` overload is chosen (mirrors
+    /// `checkpointWALImpl` / `vacuumImpl`). Cap N=200 — see `pruneRaw`.
+    private func incrementalVacuumAfterPruneImpl() throws {
+        try dbQueue.writeWithoutTransaction { db in
+            try db.execute(sql: "PRAGMA incremental_vacuum(200)")
         }
     }
 

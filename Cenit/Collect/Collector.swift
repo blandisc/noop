@@ -20,16 +20,32 @@ extension WhoopStore: StoreWriting {}
 struct CollectorPolicy {
     var maxFrames: Int
     var maxInterval: TimeInterval
-    /// Defensive cap on the PRE-CLOCK buffer only (see `ingest`). Generous default —
-    /// ~4096 frames at ~60 bytes/frame is ~240KB, far beyond the handful seen pre-clock
-    /// normally. Custom init keeps `.init(maxFrames:maxInterval:)` call sites compiling.
-    var maxPreClockFrames: Int
-    init(maxFrames: Int, maxInterval: TimeInterval, maxPreClockFrames: Int = 4096) {
+    /// Defensive BYTE cap on the PRE-CLOCK buffer only (see `ingest`). Type-43 REALTIME_RAW_DATA
+    /// frames are ~1920 B and DO reach `Collector.ingest` on the live path (no offload-frame filter
+    /// when `!backfilling`), so a frame-count cap of 4096 would allow ~8 MB, not ~240 KB. Default
+    /// 512 KB bounds memory under a type-43 flood while keeping the most recent frames (FER-877).
+    var maxPreClockBytes: Int
+    /// Legacy frame-count alias kept so existing `CollectorPolicy(maxFrames:maxInterval:maxPreClockFrames:)`
+    /// call sites still compile; mapped into `maxPreClockBytes` with a ~60 B/frame assumption only when
+    /// the caller passes an explicit count (default path uses `maxPreClockBytes` directly).
+    var maxPreClockFrames: Int {
+        // Approximate inverse for introspection; the live gate is bytes.
+        max(1, maxPreClockBytes / 60)
+    }
+    init(maxFrames: Int, maxInterval: TimeInterval, maxPreClockFrames: Int = 4096, maxPreClockBytes: Int? = nil) {
         self.maxFrames = maxFrames
         self.maxInterval = maxInterval
-        self.maxPreClockFrames = maxPreClockFrames
+        // Prefer explicit bytes; otherwise derive from the (legacy) frame count × ~60 B/frame so
+        // old call sites that pass maxPreClockFrames keep a similar memory budget.
+        if let maxPreClockBytes {
+            self.maxPreClockBytes = maxPreClockBytes
+        } else {
+            self.maxPreClockBytes = maxPreClockFrames * 60
+        }
     }
-    static let `default` = CollectorPolicy(maxFrames: 64, maxInterval: 30, maxPreClockFrames: 4096)
+    /// 512 KB pre-clock byte cap — enough for hundreds of small live frames, tight enough that a
+    /// type-43 flood cannot grow the buffer into multi-MB territory before GET_CLOCK lands.
+    static let `default` = CollectorPolicy(maxFrames: 64, maxInterval: 30, maxPreClockBytes: 512 * 1024)
 }
 
 /// Buffers complete (reassembled) frames and periodically persists them:
@@ -116,10 +132,19 @@ final class Collector {
     func ingest(_ frame: [UInt8]) {
         buffer.append(frame)
         // Pre-clock only: bound memory if GET_CLOCK never lands while data keeps flowing.
-        // Drop OLDEST beyond the cap (keep most recent). Post-clock this branch is skipped —
-        // the cadence flush below bounds the buffer instead.
-        if clockRef == nil && buffer.count > policy.maxPreClockFrames {
-            buffer.removeFirst(buffer.count - policy.maxPreClockFrames)
+        // Cap by approximate total BYTES (type-43 frames are ~1920 B, not ~60 B). Drop OLDEST
+        // until under the byte cap (keep most recent). Post-clock this branch is skipped —
+        // the cadence flush below bounds the buffer instead (FER-877).
+        if clockRef == nil {
+            var bytes = buffer.reduce(0) { $0 + $1.count }
+            if bytes > policy.maxPreClockBytes {
+                var drop = 0
+                while drop < buffer.count && bytes > policy.maxPreClockBytes {
+                    bytes -= buffer[drop].count
+                    drop += 1
+                }
+                if drop > 0 { buffer.removeFirst(drop) }
+            }
         }
         guard clockRef != nil else { return }   // can't correlate ts yet → keep buffering
         if buffer.count >= policy.maxFrames || (monotonic() - batchStartedAt) >= policy.maxInterval {
