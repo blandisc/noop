@@ -400,9 +400,7 @@ private struct CuerpoLanding: View {
                 spectralLoader: spec.descriptor.key == "hrv" ? { await loadSpectralHRV() } : nil,
                 hrMax: Double(model.profile.hrMax),
                 restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
-                todayKey: Repository.localDayKey(Date()),
-                // FER-670: today's source-agreement point (steps) — nil for every non-fused metric.
-                fusion: repo.fusionPoint(day: Repository.localDayKey(Date()), metric: spec.descriptor.key)
+                todayKey: Repository.localDayKey(Date())
             )
         } else if let item = recoveryDetail {
             RecoveryDetailScreen(theme: theme, model: item.model)

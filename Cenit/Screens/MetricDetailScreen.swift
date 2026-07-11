@@ -76,11 +76,6 @@ struct MetricDetailScreen: View {
     /// in-progress current day for a cumulative metric (steps). nil → nothing is dropped. (FER-264)
     var todayKey: String? = nil
 
-    /// FER-670: today's fused single-construct point for THIS metric (steps today) — drives the quiet
-    /// source-agreement row under the hero ("coinciden / en conflicto"). nil (one source, or a metric
-    /// the fusion engine doesn't arbitrate) shows nothing; the caller reads `repo.fusionPoint`.
-    var fusion: FusedMetricPoint? = nil
-
     enum Depth { case focus, full }
 
     /// The «Tu historia» chart view for metrics with population ranges. (Detalle de Vital)
@@ -107,10 +102,6 @@ struct MetricDetailScreen: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var range: ExploreRange = .month
-    /// Which inline disclosure is open (one at a time per sheet): `"band"`, `"stat:<slot>"` or `"quemueve"`.
-    /// nil = none. Replaces the per-block ⓘ `InfoAccordion`s for the redesigned vitals — the whole datum is
-    /// the tap target now, and tapping toggles a panel that reuses the SAME `explanation` copy. (Detalle de Vital)
-    @State private var openDisclosure: String? = nil
     /// «Tu historia» chart mode for metrics that carry labeled population ranges (Resting HR / Respiration /
     /// Steps): your 7-day moving average + personal band, OR the classification ranges (athlete / excellent /
     /// normal / elevated …) showing where you fall. HRV (personal only) and SpO₂ (already clinical) don't
@@ -124,8 +115,6 @@ struct MetricDetailScreen: View {
     @State private var cachedZoneMinutes: [Double]? = nil
     /// Last night's frequency-domain HRV breakdown (nil = no band-night spectrum → section hidden). (FER-702)
     @State private var spectral: SpectralHRV? = nil
-    /// «Tu HRV por frecuencia» starts collapsed — a deep, for-the-curious layer, not a hero. (FER-702)
-    @State private var spectralExpanded = false
     @State private var loaded = false
     /// The inverted hero's ⓘ toggles the «What we measure» card under the field (Final skeleton).
     @State private var infoOpen = false
@@ -180,13 +169,6 @@ struct MetricDetailScreen: View {
         }
     }
 
-    /// The standardized origin seal at the foot (`● {Banda/Apple Salud/Calculado} · hoy`).
-    private var originFooter: some View {
-        OriginStamp(origin: footerOrigin, when: String(localized: "today"), theme: theme)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 2)
-    }
-
     // MARK: - Body
 
     var body: some View {
@@ -195,9 +177,8 @@ struct MetricDetailScreen: View {
         // history on every redraw. (FER-216)
         let window = MetricWindowMath.make(parsedSeries, selected: range)
         return ScrollView {
-            // Final skeleton for the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂).
-            // Heart Rate is narrative + intraday → its own Final path (narrativeIntradayFinal).
-            // Steps / VO₂max → their own Final skeletons; anything else falls back to legacyBody.
+            // Every metric this screen renders routes to a Final skeleton (the four scalar narrative
+            // vitals HRV / rhr / resp_rate / SpO₂, Heart Rate's intraday path, Steps, and VO₂max).
             if isNarrative && !isIntraday {
                 narrativeBodyFinal(window)
             } else if isIntraday {
@@ -206,8 +187,6 @@ struct MetricDetailScreen: View {
                 stepsBodyFinal(window)
             } else if spec.descriptor.key == "vo2max" {
                 vo2maxBodyFinal(window)
-            } else {
-                legacyBody(window)
             }
         }
         .background(theme.paper)
@@ -231,37 +210,6 @@ struct MetricDetailScreen: View {
             if let loader = spectralLoader { spectral = await loader() }
             loaded = true
         }
-    }
-
-    /// Legacy body: Steps / VO₂max. Extracted VERBATIM from the pre-Final
-    /// `VStack(spacing: 22){ hero; content; originFooter }.padding(screenPadding)` — no behaviour change.
-    @ViewBuilder private func legacyBody(_ window: MetricWindow) -> some View {
-        VStack(alignment: .leading, spacing: 22) {
-            hero
-            if loaded {
-                if spec.sparseMeasured {
-                    // A sparsely-measured metric (VO₂max): one reading is enough to render; zero
-                    // readings show a dedicated explanatory empty state, not the nights-calibration. (FER-257)
-                    if series.isEmpty {
-                        sparseEmptyState
-                    } else {
-                        content(window)
-                    }
-                } else if enoughHistory {
-                    content(window)
-                } else {
-                    calibrationBlock
-                }
-            } else {
-                ChartWell(theme).loading(height: 160)
-            }
-            // Standardized origin seal at the foot (FER-804), once there's data to attribute.
-            if loaded, !series.isEmpty || !intradayCurve.isEmpty {
-                originFooter
-            }
-        }
-        .padding(NoopMetrics.screenPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Narrative Final skeleton (HRV / rhr / resp_rate / SpO₂)
@@ -306,7 +254,7 @@ struct MetricDetailScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Inverted hero for the four scalar vitals (Final). Heart Rate keeps `narrativeHero` via legacyBody.
+    /// Inverted hero for the four scalar vitals (Final). Heart Rate uses its own `narrativeHeroIntradayFinal`.
     private var narrativeHeroFinal: some View {
         let glyph = metricGlyph ?? .hrv
         let valueText = heroTodayValue.map { fmt($0) } ?? "—"
@@ -727,7 +675,7 @@ struct MetricDetailScreen: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 14)
             } else if !enoughHistory {
-                // Same gate as legacyBody for non-sparse metrics (steps is not sparseMeasured).
+                // Calibration gate for non-sparse metrics (steps is not sparseMeasured).
                 calibrationBlock
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
@@ -761,7 +709,7 @@ struct MetricDetailScreen: View {
                         .tracking(-2)
                         .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
                 } else {
-                    // No unit suffix on the hero numeral (legacyHero shows none for steps).
+                    // No unit suffix on the hero numeral (steps show none).
                     HeroNumeral(valueText, suffix: nil, size: 60, theme: theme) {
                         if todayFromApple {
                             Text("Apple")
@@ -855,7 +803,7 @@ struct MetricDetailScreen: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 14)
             } else if series.isEmpty {
-                // Same sparseMeasured empty gate as legacyBody (vo2max is sparseMeasured).
+                // Sparse-measured empty gate (vo2max is sparseMeasured).
                 sparseEmptyState
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
@@ -959,7 +907,7 @@ struct MetricDetailScreen: View {
                                 valueColor: metricHue, theme: theme)
                 }
             }
-            // Inner copy from vo2maxWhyBlock, without its DetailBlock title wrapper
+            // The «why it matters» copy, without a DetailBlock title wrapper
             // (SeccionBloque already frames the section as "Where you fall").
             VStack(alignment: .leading, spacing: 6) {
                 Text("A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.")
@@ -1035,7 +983,7 @@ struct MetricDetailScreen: View {
         )
     }
 
-    /// Today's minute curve + Min/Average/Max row (same math as `narrativeIntraday`, new SeccionBloque wrapper).
+    /// Today's minute curve + Min/Average/Max row, in a SeccionBloque wrapper.
     @ViewBuilder private var intradayCurveFinalContent: some View {
         if intradayCurve.count > 1 {
             let v = intradayCurve.map(\.value)
@@ -1098,99 +1046,6 @@ struct MetricDetailScreen: View {
         }
     }
 
-    /// The body below the hero. The redesigned five vitals get the Hoy → Tu historia → (Tu patrón) →
-    /// Método narrative; Steps / VO₂max keep the original divider-separated block stack. (Detalle de Vital)
-    @ViewBuilder private func content(_ window: MetricWindow) -> some View {
-        if isNarrative {
-            narrativeContent(window)
-        } else {
-            legacyContent(window)
-        }
-    }
-
-    /// The original block stack (kept verbatim for Steps / VO₂max, which the redesign doesn't touch).
-    @ViewBuilder private func legacyContent(_ window: MetricWindow) -> some View {
-        let hasMethod = visibleBlocks.contains(.method) && spec.info.method != nil
-        // Heart Rate's intraday blocks (curve always renders something; zones only when there's
-        // elevation to report, so its divider is gated to avoid a dangling rule). (FER-253)
-        if visibleBlocks.contains(.intradayCurve) {
-            blockDivider
-            intradayBlock
-        }
-        if visibleBlocks.contains(.hrZones), let mins = cachedZoneMinutes, mins[1...].contains(where: { $0 > 0 }) {
-            blockDivider
-            hrZonesBlock(mins)
-        }
-        if visibleBlocks.contains(.periodSelector) {
-            blockDivider
-            periodSelector(window)
-        }
-        if visibleBlocks.contains(.seriesChartBand) {
-            blockDivider
-            chartBlock(window)
-            // In «Ranges» mode, the fixed per-band counts table for Steps (legacy layout). (FER-469)
-            if rangesModeActive { rangesFixedBlock(window) }
-        }
-        if visibleBlocks.contains(.normalRange), spec.descriptor.key != "hrv" {
-            blockDivider
-            normalRangeBlock
-        }
-        if visibleBlocks.contains(.consistency) {
-            blockDivider
-            consistencyBlock
-        }
-        if visibleBlocks.contains(.fixedBands) {
-            blockDivider
-            fixedBandsBlock
-        }
-        if visibleBlocks.contains(.lowNightsCount) {
-            blockDivider
-            lowNightsBlock
-        }
-        if visibleBlocks.contains(.trend) {
-            blockDivider
-            trendBlock(window)
-        }
-        if visibleBlocks.contains(.normalRange), spec.descriptor.key == "hrv" {
-            blockDivider
-            normalRangeBlock
-        }
-        if visibleBlocks.contains(.nightVitals) {
-            blockDivider
-            nightVitalsBlock
-        }
-        // Shown whenever there's series data — when no relationship clears the gate it renders an honest
-        // empty state instead of vanishing (FER-246). Stays hidden on a cold-start/empty screen.
-        if visibleBlocks.contains(.whatMovesIt), !series.isEmpty {
-            blockDivider
-            whatMovesItBlock
-        }
-        // Steps extras (handoff v2, FER-824): the 3-tile strip + «what moves your steps», under the chart
-        // and above the method. The ranges (Ranges mode) stay behind the toggle — nothing is removed.
-        if spec.descriptor.key == "steps", !series.isEmpty {
-            blockDivider
-            stepsTilesBlock
-            if stepsMovers != nil {
-                blockDivider
-                stepsMoversBlock
-            }
-        }
-        // VO₂max's age/sex-anchored extras (change over the period · fitness category · cardiorespiratory-
-        // equivalent age · why it matters) sit between the chart and the method. (FER-257)
-        if spec.descriptor.key == "vo2max" {
-            vo2maxExtras(window)
-        }
-        if hasMethod, let method = spec.info.method {
-            blockDivider
-            methodDisclosure(method)
-        }
-    }
-
-    /// A subtle 1px rule between blocks (token-only, no hex). (FER-216)
-    private var blockDivider: some View {
-        Rectangle().fill(theme.hairline).frame(height: 1)
-    }
-
     // MARK: - Steps extras (handoff v2, FER-824): 3 tiles + «Qué mueve tus pasos»
 
     /// Today's step count (the hero datum; may still be accumulating).
@@ -1226,46 +1081,6 @@ struct MetricDetailScreen: View {
         let pct = Int((abs(we - wd) / wd * 100).rounded())
         guard pct >= 5 else { return nil }            // below ~noise, don't overclaim a pattern
         return (we, pct, we >= wd)
-    }
-
-    /// The 3-tile strip: HOY · MEDIA 7 D · RACHA.
-    @ViewBuilder private var stepsTilesBlock: some View {
-        HStack(spacing: 8) {
-            stepsTile(label: "TODAY", value: stepsToday.map(fmt) ?? "—", hue: theme.dataSteps)
-            stepsTile(label: "7-DAY AVG", value: stepsAvg7.map(fmt) ?? "—", hue: theme.ink)
-            stepsTile(label: "STREAK", value: stepsStreak.map { "\($0)" } ?? "—", hue: theme.ink)
-        }
-    }
-
-    private func stepsTile(label: LocalizedStringKey, value: String, hue: Color) -> some View {
-        VStack(spacing: 4) {
-            Text(value).font(InstrumentoType.groteskNumber(21)).foregroundStyle(hue)
-            Text(label).font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(1.2)
-                .foregroundStyle(theme.inkTertiary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .instrumentoCard(.cta, theme: theme, lineWidth: 0.5)
-        .accessibilityElement(children: .combine)
-    }
-
-    /// «What moves your steps» — the weekend/weekday reading. Hidden when there isn't a clear pattern.
-    @ViewBuilder private var stepsMoversBlock: some View {
-        if let m = stepsMovers {
-            let pctStr = "\(m.pct)%"
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("What moves your steps").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 8)
-                    InlineFlagChip("trend, not cause", color: theme.inkTertiary)   // handoff chip (FER-830)
-                }
-                Text(m.weekendHigher
-                     ? "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) more than your weekdays."
-                     : "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) fewer than your weekdays.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 
     // MARK: - Derived series
@@ -1392,73 +1207,6 @@ struct MetricDetailScreen: View {
 
     // MARK: - Hero
 
-    /// The redesigned vitals lead with TODAY's reading (the «Hoy» section); Steps / VO₂max keep the
-    /// original hero (7-day average / latest reading). (Detalle de Vital)
-    @ViewBuilder private var hero: some View {
-        if isNarrative { narrativeHero } else { legacyHero }
-    }
-
-    private var legacyHero: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Serif in-screen title (FER-581). The "· 7-day average / · today" context the old overline
-            // carried now lives in `heroSecondary` below the numeral; the title is just the metric name.
-            InstrumentoScreenTitle(legacyHeroTitle, theme: theme, glyph: metricGlyph)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(heroValue.map { fmt($0) } ?? "—")
-                    .instrumentoHero(44)
-                    .foregroundStyle(heroValue == nil ? theme.inkTertiary : metricHue)
-                if heroValue != nil, !unit.isEmpty {
-                    Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                }
-            }
-            if loaded { heroSecondary }
-            // FER-670: when a second source reported today, say whether they agree — both values stay
-            // visible, a conflict is flagged, nothing is averaged.
-            if loaded, let fusion {
-                FusionAgreementRow(point: fusion, theme: theme, format: fmt)
-                    .padding(.top, 2)
-            }
-            if let reading = readingCopy(for: .header) {
-                Text(reading)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// The secondary line(s) under the hero numeral. VO₂max reads its latest value against its age/sex
-    /// peers across up to three lines (comparison · expected · measured-ago — FER-257); every other metric
-    /// shows the single `heroSecondaryText` (vitals frame today against the band, steps show the 7-day
-    /// average, Heart Rate shows today's range — FER-253/254).
-    @ViewBuilder private var heroSecondary: some View {
-        if spec.descriptor.key == "vo2max" {
-            if heroValue != nil {
-                Text(vo2maxComparison)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let expected = vo2maxExpectedLine {
-                    Text(expected)
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let ago = vo2maxMeasuredAgoLine {
-                    Text(ago)
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary)
-                }
-            }
-        } else if let text = heroSecondaryText {
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
     /// Heart Rate (intraday) → today's range + resting floor; steps → its 7-day daily average; the
     /// vitals → today's reading framed against the band.
     private var heroSecondaryText: LocalizedStringKey? {
@@ -1469,15 +1217,6 @@ struct MetricDetailScreen: View {
         }
         guard let today = todayValue else { return nil }
         return heroContext(today)
-    }
-
-    /// The serif in-screen title for the legacy hero (Steps / VO₂max) — the metric's short name. (FER-581)
-    private var legacyHeroTitle: LocalizedStringKey {
-        switch spec.descriptor.key {
-        case "steps":  return "Steps"
-        case "vo2max": return "VO₂ Max"
-        default:       return "Today"
-        }
     }
 
     /// The Heart Rate hero context: today's average is the hero, so frame it with the day's range and
@@ -1790,35 +1529,6 @@ struct MetricDetailScreen: View {
 
     // MARK: - Normal range (rolling mean ± SD)
 
-    @ViewBuilder private var normalRangeBlock: some View {
-        if let baseline = baselineState, baseline.nValid >= 1 {
-            // log-aware ±1σ band (multiplicative in ms for HRV; plain ± for linear metrics).
-            let band = Baselines.normalRange(baseline)
-            let lo = band.lowerBound
-            let hi = band.upperBound
-            // The ⓘ discloses the rolling-baseline math (FER-220); the block's overline + datum +
-            // plain-language reading (FER-216) stay exactly as before, inside the accordion's content.
-            InfoAccordion(
-                title: "Your normal range",
-                explanation: "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)",
-                accessibilityLabel: "Information about your normal range",
-                theme: theme
-            ) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(fmt(lo))–\(fmt(hi)) \(unit) · \(baseline.nValid) nights")
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    if let reading = readingCopy(for: .normalRange) {
-                        Text(reading)
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-        }
-    }
-
     /// The personal rolling baseline (trailing mean/SD), or nil when no config / no valid nights.
     private var baselineState: BaselineState? {
         guard let cfg = spec.baselineCfg else { return nil }
@@ -1835,101 +1545,9 @@ struct MetricDetailScreen: View {
 
     // MARK: - Consistency (coefficient of variation)
 
-    @ViewBuilder private var consistencyBlock: some View {
-        if let cv = SeriesShape.coefficientOfVariation(allValues, window: 7) {
-            let pct = Int((cv * 100).rounded())
-            // The ⓘ discloses the coefficient-of-variation math (FER-220); the block now leads with the
-            // word (Steady/Variable) as the protagonist and demotes the ±% below it (FER-255).
-            InfoAccordion(
-                title: "Consistency",
-                explanation: "Coefficient of variation = standard deviation ÷ the mean of your last few weeks. It measures how spread out your values are around your average. Low = steady. In HRV, a rising CV can precede fatigue even while the value still looks high. (Plews 2013)",
-                accessibilityLabel: "Information about consistency",
-                theme: theme
-            ) {
-                ConsistencySummary(cvPercent: pct, reading: readingCopy(for: .consistency), theme: theme)
-            }
-        }
-    }
-
     // MARK: - Fixed clinical bands (population range table) — SpO₂ (FER-252)
 
-    /// The metric's fixed population bands (Normal / Borderline / Low) as a table, with the band
-    /// today's value falls in marked "· today". Unlike `normalRangeBlock` (a personal rolling ±SD),
-    /// this is the same clinical reference for everyone — what matters for SpO₂ is the population floor.
-    @ViewBuilder private var fixedBandsBlock: some View {
-        DetailBlock("Reference range", theme: theme) {
-            VStack(spacing: 0) {
-                ForEach(Array(spec.info.bands.enumerated()), id: \.offset) { i, band in
-                    bandRow(band)
-                    if i < spec.info.bands.count - 1 { bandTableDivider }
-                }
-            }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-        }
-    }
-
-    /// A hairline between rows of a band table, inset past the indicator dot. Shared by the SpO₂ fixed
-    /// bands and the VO₂max category table. (FER-252 / FER-257)
-    private var bandTableDivider: some View {
-        Rectangle().fill(theme.hairline).frame(height: 1).padding(.leading, 36)
-    }
-
-    /// One row of a population-band table: an indicator dot (active → metric hue), the band label, its
-    /// range, and a `badge` ("· today" for SpO₂, "· you" for the VO₂max level) on the active row. (FER-252)
-    private func bandRow(_ band: MetricInfo.Band, badge: LocalizedStringKey = "· today") -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(band.isActive ? metricHue : theme.inkTertiary.opacity(StrandOpacity.dim))
-                .frame(width: 8, height: 8)
-                .padding(.leading, 14)
-            Text(band.label)
-                .font(StrandFont.subhead)
-                .foregroundStyle(band.isActive ? theme.ink : theme.inkSecondary)
-            Spacer()
-            Text(band.range)
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(band.isActive ? metricHue : theme.inkTertiary)
-            if band.isActive {
-                Text(badge)
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(metricHue)
-                    .padding(.trailing, 14)
-            } else {
-                Spacer().frame(width: 14)
-            }
-        }
-        .padding(.vertical, 11)
-        .frame(maxWidth: .infinity)
-        .background(band.isActive ? metricHue.opacity(StrandOpacity.tintFill) : Color.clear)
-    }
-
     // MARK: - Nights below the clinical floor — SpO₂ (FER-252)
-
-    /// How many of the recent nights fell under the clinical floor (SpO₂ < 95%). Replaces the
-    /// consistency block for clinically-anchored metrics, where the CV is near-zero and a low-night
-    /// count is the figure that actually reads.
-    @ViewBuilder private var lowNightsBlock: some View {
-        if let threshold = spec.lowThreshold {
-            let recent = MetricWindowMath.slice(parsedSeries, for: .month)
-            let low = recent.reduce(0) { $0 + ($1.value < threshold ? 1 : 0) }
-            DetailBlock("Nights below \(fmt(threshold))\(unit)", theme: theme) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("\(low)")
-                            .instrumentoHero(34)
-                            .foregroundStyle(low == 0 ? theme.verdict : theme.ink)
-                        Text("of the last \(recent.count) nights")
-                            .font(StrandFont.subhead)
-                            .foregroundStyle(theme.inkSecondary)
-                    }
-                    Text(lowNightsReading(low: low))
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
 
     private func lowNightsReading(low: Int) -> LocalizedStringKey {
         low == 0
@@ -1938,51 +1556,6 @@ struct MetricDetailScreen: View {
     }
 
     // MARK: - Intraday HR curve (FER-253)
-
-    /// Today's continuous HR curve — the protagonist block for Heart Rate. Reuses the same render the
-    /// summary sheet used (BPM chart + min/avg/max), now with the day's peak marked and the night's
-    /// resting HR as a quiet dashed reference line. Empty curve → an honest "no readings yet" well.
-    @ViewBuilder private var intradayBlock: some View {
-        if intradayCurve.count > 1 {
-            let v = intradayCurve.map(\.value)
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Beats per minute").font(StrandFont.headline).foregroundStyle(theme.ink)
-                        Text("5-minute average · since midnight")
-                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    }
-                    Spacer()
-                    if let last = v.last {
-                        Text("\(Int(last.rounded())) bpm")
-                            .font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                    }
-                }
-                TrendChart(
-                    points: intradayCurve,
-                    gradient: chartGradient,
-                    valueRange: Self.hrRange(v, resting: restingHR),
-                    showsArea: true,
-                    height: 240,
-                    showsScrub: true,
-                    valueFormat: { "\(Int($0.rounded())) \(unit)" },
-                    dateFormat: { Self.hrClock.string(from: $0) },
-                    axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline,
-                    referenceLine: restingHR,
-                    referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
-                    markedPoint: peakPoint,
-                    tightTrailing: true
-                )
-                .accessibilityElement()
-                .accessibilityLabel(Text("Today's heart rate, 5-minute averages"))
-                peakRestingCaption
-                intradayFooter(v)
-            }
-        } else {
-            ChartWell(theme).empty(text: "No readings yet today.")
-        }
-    }
 
     /// The peak of the day (max bpm), marked on the curve.
     private var peakPoint: TrendPoint? { intradayCurve.max { $0.value < $1.value } }
@@ -2001,27 +1574,6 @@ struct MetricDetailScreen: View {
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
             }
-        }
-    }
-
-    private func intradayFooter(_ v: [Double]) -> some View {
-        let lo = Int((v.min() ?? 0).rounded())
-        let avg = Int((v.reduce(0, +) / Double(max(v.count, 1))).rounded())
-        let hi = Int((v.max() ?? 0).rounded())
-        return HStack {
-            intradayStat("Min", "\(lo)")
-            Spacer()
-            intradayStat("Avg", "\(avg)")
-            Spacer()
-            intradayStat("Max", "\(hi)")
-        }
-    }
-
-    private func intradayStat(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).textCase(.uppercase)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
         }
     }
 
@@ -2072,14 +1624,8 @@ struct MetricDetailScreen: View {
         return mins
     }
 
-    private func hrZonesBlock(_ mins: [Double]) -> some View {
-        DetailBlock("Time in zones · today", theme: theme) {
-            hrZonesBlockContent(mins)
-        }
-    }
-
-    /// Inner content of the HR zones block — shared by `hrZonesBlock` (legacy DetailBlock wrapper)
-    /// and `narrativeIntradayFinal` (SeccionBloque wrapper supplies its own title/divider).
+    /// Inner content of the HR zones block, framed by `narrativeIntradayFinal`'s SeccionBloque
+    /// wrapper (which supplies its own title/divider).
     @ViewBuilder private func hrZonesBlockContent(_ mins: [Double]) -> some View {
         let elevated = Int((mins[3] + mins[4] + mins[5]).rounded())
         let total = Swift.max(mins.reduce(0, +), 1)
@@ -2142,43 +1688,6 @@ struct MetricDetailScreen: View {
 
     // MARK: - Trend (month over month)
 
-    @ViewBuilder private func trendBlock(_ window: MetricWindow) -> some View {
-        // Figures read over COMPLETED days: for a running daily total (steps) drop the in-progress
-        // current day, else it's always the floor of the range and drags the average. (FER-264)
-        let s = ComparisonEngine.stat(trendStatRows(window).map(\.value))
-        // Compare the selected window against the equally-long window before it (not always the calendar
-        // month), over completed days. `.all` has no previous period, so no chip. (FER-264)
-        let comparison = window.range.periodComparison(of: trendComparisonSeries)
-        if s.n > 0 {
-            // The ⓘ discloses how the slope, the period comparison and the stats are computed (FER-220).
-            InfoAccordion(
-                title: "Trend",
-                explanation: "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage compares this period's average against the previous period of the same length. Average, Lowest and Highest are from the range you selected.",
-                accessibilityLabel: "Information about the trend",
-                theme: theme
-            ) {
-                VStack(alignment: .leading, spacing: 10) {
-                    TrendStatSummary(
-                        average: fmt(s.mean),
-                        unit: unit.isEmpty ? nil : unit,
-                        pctChange: comparison?.pctChange,
-                        polarity: trendPolarity,
-                        period: window.range.comparisonPeriod ?? .month,
-                        rangeLow: fmt(s.min),
-                        rangeHigh: unit.isEmpty ? fmt(s.max) : "\(fmt(s.max)) \(unit)",
-                        theme: theme
-                    )
-                    if let reading = readingCopy(for: .trend) {
-                        Text(reading)
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-        }
-    }
-
     /// True when the latest series point is TODAY and this metric's day is still accumulating (steps) —
     /// then the trend figures exclude it so they read over completed days only. (FER-264)
     private var dropsIncompleteToday: Bool {
@@ -2210,24 +1719,6 @@ struct MetricDetailScreen: View {
 
     // MARK: - Night vitals
 
-    @ViewBuilder private var nightVitalsBlock: some View {
-        if nightVitals.respiration != nil || nightVitals.restingHR != nil {
-            DetailBlock("Last night's vitals", theme: theme) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(nightVitalsLine)
-                        .font(StrandFont.bodyNumber)
-                        .foregroundStyle(theme.ink)
-                    if let reading = readingCopy(for: .nightVitals) {
-                        Text(reading)
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-        }
-    }
-
     private var nightVitalsLine: LocalizedStringKey {
         let resp = nightVitals.respiration.map { String(format: "%.1f", $0) } ?? "—"
         let rhr = nightVitals.restingHR.map { "\(Int($0.rounded()))" } ?? "—"
@@ -2236,71 +1727,7 @@ struct MetricDetailScreen: View {
 
     // MARK: - What moves it (FER-209)
 
-    /// A documented, DIRECTIONAL tendency between this vital and another signal (same-night sleep,
-    /// the prior day's strain), computed from the user's OWN history and degraded to a direction —
-    /// never a coefficient, never a causal claim (hence the "tendencia, no causa" chip). Rendered only
-    /// when at least one relationship clears the sufficiency gate (see `WhatMovesItEngine` /
-    /// `CorrelationEngine.trend`); otherwise the whole block is absent.
-    private var whatMovesItBlock: some View {
-        // The ⓘ discloses the correlation method + the sufficiency gate (FER-220 pattern); the chip and
-        // the directional sentences stay inside the accordion's content.
-        InfoAccordion(
-            title: "What moves it",
-            explanation: "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance: never the number, and never as a cause. (Plews 2013)",
-            accessibilityLabel: "Information about what moves it",
-            theme: theme
-        ) {
-            VStack(alignment: .leading, spacing: 10) {
-                if whatMovesItFindings.isEmpty {
-                    // No relationship cleared the gate yet (too few paired nights, or none strong enough).
-                    // Honest empty state instead of vanishing — neutral wording true in both cases (FER-246).
-                    Text("Not enough data yet: keep wearing your strap and check back in a few weeks.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else {
-                    InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-                    ForEach(whatMovesItFindings) { finding in
-                        Text(finding.phrase)
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-        }
-    }
-
     // MARK: - Method disclosure (ported from MetricInfoSheet)
-
-    @State private var methodExpanded = false
-
-    private func methodDisclosure(_ method: MetricInfo.Method) -> some View {
-        DisclosureGroup(isExpanded: $methodExpanded) {
-            VStack(alignment: .leading, spacing: 10) {
-                Divider().overlay(theme.hairline)
-                Text(method.prose)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let citation = method.citation {
-                    Text(citation)
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.top, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Text("How it's calculated")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.ink)
-        }
-        .tint(theme.inkTertiary)
-        .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-    }
 
     // MARK: - VO₂max (Apple Health, measured · FER-257)
 
@@ -2318,85 +1745,6 @@ struct MetricDetailScreen: View {
         return "In line with what's expected for your age."
     }
 
-    /// "Expected for your age: ~N" — the median value, so the headline comparison is legible.
-    private var vo2maxExpectedLine: LocalizedStringKey? {
-        guard let exp = vo2maxExpected else { return nil }
-        return "Expected for your age: ~\(Int(exp.rounded()))"
-    }
-
-    /// "Measured today / yesterday / N days ago" — three legible cases so the count never reads "1 days".
-    /// Apple measures VO₂max sparsely, so freshness is worth surfacing. `nil` when there's no parseable reading.
-    private var vo2maxMeasuredAgoLine: LocalizedStringKey? {
-        guard let day = series.last?.day, let date = Repository.parseDayKey(day) else { return nil }
-        let cal = Calendar.current
-        guard let d = cal.dateComponents([.day], from: cal.startOfDay(for: date), to: cal.startOfDay(for: Date())).day,
-              d >= 0 else { return nil }
-        switch d {
-        case 0:  return "Measured today"
-        case 1:  return "Measured yesterday"
-        default: return "Measured \(d) days ago"
-        }
-    }
-
-    /// The age/sex-anchored extras the user asked for, between the chart and the method (FER-257): how it
-    /// changed over the period (≥2 readings), the fitness category, the cardiorespiratory-equivalent age,
-    /// and why VO₂max matters. Each emits its own leading divider only when it renders.
-    @ViewBuilder private func vo2maxExtras(_ window: MetricWindow) -> some View {
-        if window.values.count >= 2 {
-            blockDivider
-            vo2maxChangeBlock(window)
-        }
-        if let v = heroValue, let profile = spec.vo2maxProfile {
-            blockDivider
-            vo2maxTilesRow(value: v, profile: profile)
-        }
-        blockDivider
-        vo2maxWhyBlock
-    }
-
-    /// How much VO₂max moved across the selected window (last − first measured value). Framed as a long-run
-    /// change ("up since your first reading"), NOT a noisy month-over-month %, because the data is sparse.
-    @ViewBuilder private func vo2maxChangeBlock(_ window: MetricWindow) -> some View {
-        if let first = window.values.first, let last = window.values.last {
-            let delta = Int((last - first).rounded())
-            let color = delta > 0 ? theme.dataRecovery : (delta < 0 ? theme.warning : theme.ink)
-            DetailBlock("Change", theme: theme) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(delta > 0 ? "+\(delta)" : "\(delta)")
-                            .instrumentoHero(30)
-                            .foregroundStyle(color)
-                        Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                    }
-                    Text(vo2maxChangeReading(delta))
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-
-    private func vo2maxChangeReading(_ delta: Int) -> LocalizedStringKey {
-        if delta > 0 { return "Up since your first reading in this range. VO₂max responds to training." }
-        if delta < 0 { return "Down since your first reading in this range." }
-        return "About the same across this range."
-    }
-
-    /// The two compact tiles the handoff pairs under the chart: fitness category + cardiorespiratory
-    /// «equivalent age», side by side. Replaces the former 4-band table + separate age block, per the
-    /// Tendencias v2 handoff. VO₂max is descriptive, so both tiles carry the metric hue (no semaphore).
-    /// The band ranges and the «different basis from Physical age» note move to «Why it matters» / the ⓘ.
-    /// (FER-833)
-    private func vo2maxTilesRow(value v: Double, profile: VO2maxProfile) -> some View {
-        let active = VO2maxReference.category(value: v, age: profile.age, sex: profile.sex)
-        let eq = VO2maxReference.equivalentAge(value: v, sex: profile.sex)
-        return HStack(spacing: 8) {
-            stepsTile(label: "FITNESS CATEGORY", value: vo2maxCategoryWord(active), hue: metricHue)
-            stepsTile(label: "EQUIVALENT AGE", value: "~\(eq)", hue: metricHue)
-        }
-    }
-
     /// The category as a display word — the same labels the former four-band table used. (FER-833)
     private func vo2maxCategoryWord(_ c: VO2maxReference.Category) -> String {
         switch c {
@@ -2404,21 +1752,6 @@ struct MetricDetailScreen: View {
         case .average:   return String(localized: "Average")
         case .good:      return String(localized: "Good")
         case .excellent: return String(localized: "Excellent")
-        }
-    }
-
-    /// Why the number is worth caring about — VO₂max's all-cause-mortality association, with citations.
-    private var vo2maxWhyBlock: some View {
-        DetailBlock("Why it matters", theme: theme) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Mandsager 2018 (JAMA) · Kodama 2009")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-            }
         }
     }
 
@@ -2490,58 +1823,10 @@ struct MetricDetailScreen: View {
     //
     // The five vitals lead with TODAY's reading, draw the personal/clinical range inline AND behind the
     // chart line, and fold the old per-block ⓘ accordions into a tappable stat strip + per-datum disclosures
-    // that reuse the SAME `explanation` copy. Steps / VO₂max keep `legacyHero` / `legacyContent`.
-
-    private func toggle(_ key: String) { openDisclosure = (openDisclosure == key) ? nil : key }
+    // that reuse the SAME `explanation` copy. Steps / VO₂max have their own Final skeletons
+    // (`stepsBodyFinal` / `vo2maxBodyFinal`).
 
     // MARK: Hoy (hero)
-
-    private var narrativeHero: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Serif in-screen title (the «Instrumento» detail identity, FER-581). No ⓘ: the dueño chose to
-            // keep the plain-language reading always visible below the hero, so a disclosure is redundant.
-            InstrumentoScreenTitle(narrativeHeroTitle, theme: theme, glyph: metricGlyph)
-            if isIntraday {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(heroTodayValue.map { fmt($0) } ?? "—")
-                        .instrumentoHero(44)
-                        .foregroundStyle(heroTodayValue == nil ? theme.inkTertiary : theme.ink)
-                    if heroTodayValue != nil {
-                        Text("bpm average").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                if loaded, let ctx = intradayHeroContextLine {
-                    Text(ctx).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-            } else {
-                HStack(alignment: .lastTextBaseline) {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(heroTodayValue.map { fmt($0) } ?? "—")
-                            .instrumentoHero(44)
-                            .foregroundStyle(heroTodayValue == nil ? theme.inkTertiary : theme.ink)
-                        if heroTodayValue != nil, !unit.isEmpty {
-                            Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                        }
-                        // FER-487: seal a band-less Apple reading next to the datum (the band is the expected
-                        // source, so only Apple gets a chip). Moved here from the old overline. (FER-581)
-                        if todayFromApple { InlineFlagChip("Apple", color: theme.inkTertiary) }
-                    }
-                    Spacer(minLength: 8)
-                    if loaded { heroVerdictColumn }
-                }
-                if loaded { inlineBandSection }
-            }
-            // Plain-language reading, kept always visible below the hero (FER-216 readability + the dueño's
-            // choice in FER-581). The serif title carries the identity; this stays put.
-            if let reading = readingCopy(for: .header) {
-                Text(reading)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 
     /// The serif in-screen title — the metric's SHORT name (matching the Cuerpo tile labels), not the
     /// "{metric} · today" overline it replaces. (FER-581)
@@ -2558,18 +1843,6 @@ struct MetricDetailScreen: View {
 
     /// The hero numeral: today's reading for the vitals, today's average bpm for Heart Rate.
     private var heroTodayValue: Double? { isIntraday ? intradayAverage : todayValue }
-
-    /// The reading word + 7-day level shown to the right of the numeral (the personal vitals + SpO₂).
-    @ViewBuilder private var heroVerdictColumn: some View {
-        VStack(alignment: .trailing, spacing: 2) {
-            if let v = heroVerdict {
-                Text(v.word).font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(v.color)
-            }
-            if let level = sevenDayLevelText {
-                Text(level).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            }
-        }
-    }
 
     /// Today's plain-language verdict word: in-range «Normal for you» (green) vs «Unusual for you» (amber)
     /// for the personal vitals; the clinical Healthy / Borderline / Low for SpO₂. nil until there's a reading.
@@ -2659,17 +1932,6 @@ struct MetricDetailScreen: View {
             disclosureTitle: "Your normal range", disclosureText: EX_RANGO)
     }
 
-    // Handoff v2 (reconciliación B): el slider de posición SIMPLE — track del rango normal + pulgar en tu
-    // posición + 3 etiquetas (bajo · tu normal · alto), reemplaza la barra de banda tocable.
-    @ViewBuilder private var inlineBandSection: some View {
-        if let b = inlineBandData {
-            positionSlider(b)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(b.disclosureTitle))
-                .accessibilityValue(Text(b.markLabel))
-        }
-    }
-
     /// The handoff's position slider: a 64%-wide normal-range track centered on the rail, with a circular
     /// thumb marking where today sits inside your normal range, and lo · «tu normal» · hi labels beneath.
     private func positionSlider(_ b: InlineBand) -> some View {
@@ -2703,33 +1965,7 @@ struct MetricDetailScreen: View {
         .frame(height: 40)
     }
 
-
     // MARK: Narrative body
-
-    @ViewBuilder private func narrativeContent(_ window: MetricWindow) -> some View {
-        if isIntraday {
-            narrativeIntraday(window)
-        } else {
-            blockDivider
-            historiaSection(window)
-            if spec.descriptor.key == "spo2" {
-                blockDivider
-                fixedBandsBlock
-            }
-            if hasPatron {
-                blockDivider
-                patronSection
-            }
-            if spec.descriptor.key == "hrv", let s = spectral {
-                blockDivider
-                spectralSection(s)
-            }
-            if visibleBlocks.contains(.method), let method = spec.info.method {
-                blockDivider
-                methodDisclosure(method)
-            }
-        }
-    }
 
     /// Whether the «Tu patrón» section has anything to show (HRV / Resting HR have «what moves it»; HRV /
     /// Respiration have last night's companion signals). SpO₂ and Heart Rate have no pattern section.
@@ -2742,129 +1978,7 @@ struct MetricDetailScreen: View {
 
     // MARK: Tu historia (selector + chart + stat strip)
 
-    private func historiaSection(_ window: MetricWindow) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Your story").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            if visibleBlocks.contains(.periodSelector) { periodSelector(window) }
-            chartBlock(window)
-            // «Days in range»: moving-average mode shows your PERSONAL band; ranges mode shows the fixed
-            // population table with the standardized «{band} · X of N days in this range» line + per-band
-            // counts (same as the summary sheet). (FER-469)
-            if chartMode == .movingAverage, let dir = daysInRangeLine(window) {
-                Text(dir).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if rangesModeActive {
-                rangesFixedBlock(window)
-            }
-            statStripSection(window)
-        }
-    }
-
-    /// «X of the last N days within your range» — how many of the windowed daily readings fell inside your
-    /// personal normal band. The «days in range» readout the owner missed, adapted to the vitals' personal
-    /// band (HRV / Resting HR / Respiration). SpO₂ has its own «Nights < 95%», so it's excluded. (Detalle de Vital)
-    private func daysInRangeLine(_ window: MetricWindow) -> LocalizedStringKey? {
-        guard isNarrative, !spec.clinicalBands, let band = normalRange else { return nil }
-        let vals = window.values
-        guard vals.count > 1 else { return nil }
-        let inRange = vals.reduce(0) { $0 + (band.contains($1) ? 1 : 0) }
-        return "\(inRange) of the last \(vals.count) days within your range"
-    }
-
     // MARK: - Ranges-mode fixed table (FER-469)
-
-    /// Per-band counts for the «Ranges» table: each band with how many of the windowed (completed) days
-    /// fell in it, plus the active band = today's band (matching the chart's shaded band + the hero; falls
-    /// back to the latest completed reading). Counts read completed days only. `nil` when there are no
-    /// labeled bands or no data. (FER-469 / FER-471)
-    private func rangesData(_ window: MetricWindow)
-        -> (rows: [(band: MetricInfo.Band, count: Int)], activeIndex: Int, total: Int)? {
-        let banded = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
-        guard !banded.isEmpty else { return nil }
-        let tbands = banded.map { TrendBand(label: $0.label, lower: $0.lower, upper: $0.upper) }
-        let values = trendStatRows(window).map(\.value)
-        guard !values.isEmpty else { return nil }
-        var counts = Array(repeating: 0, count: banded.count)
-        for v in values { if let i = TrendBands.index(containing: v, in: tbands) { counts[i] += 1 } }
-        // Active band = today's band (the chart's shaded band + the hero), so the table agrees with the
-        // chart; the counts still come from completed days. Falls back to the latest completed reading when
-        // there's no today value. (FER-471)
-        guard let activeIndex = banded.firstIndex(where: { $0.isActive })
-            ?? TrendBands.activeBand(values: values, bands: tbands)?.index else { return nil }
-        return (Array(zip(banded, counts)), activeIndex, values.count)
-    }
-
-    /// «Ranges» mode: the standardized «{band} · X of the last N days/nights in this range» line + a FIXED
-    /// per-band counts table (the same table the summary sheet shows), always visible while the selector is
-    /// on Ranges — no ⓘ to expand. Replaces the old cutoffs disclosure. (FER-469)
-    @ViewBuilder private func rangesFixedBlock(_ window: MetricWindow) -> some View {
-        if let d = rangesData(window) {
-            let nightly = BandSummaryCopy.isNightly(metricID: spec.descriptor.key)
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 6) {
-                    Text(d.rows[d.activeIndex].band.label).foregroundStyle(metricHue)
-                    Text(verbatim: "·").foregroundStyle(theme.inkTertiary)
-                    Text(nightly ? "\(d.rows[d.activeIndex].count) of the last \(d.total) nights in this range"
-                                 : "\(d.rows[d.activeIndex].count) of the last \(d.total) days in this range")
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .font(StrandFont.subhead)
-                VStack(spacing: 0) {
-                    ForEach(Array(d.rows.enumerated()), id: \.offset) { i, row in
-                        detailBandRow(row.band, count: row.count, nightly: nightly, active: i == d.activeIndex)
-                        if i < d.rows.count - 1 { Divider().overlay(theme.hairline).padding(.leading, 36) }
-                    }
-                }
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-            }
-        }
-    }
-
-    /// One row of the «Ranges» fixed table: dot · label · numeric range · «N days/nights» count, the active
-    /// band tinted + shaded. Mirrors the summary sheet's `bandRow`. (FER-469)
-    private func detailBandRow(_ band: MetricInfo.Band, count: Int, nightly: Bool, active: Bool) -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(active ? metricHue : theme.inkTertiary.opacity(StrandOpacity.dim))
-                .frame(width: 8, height: 8)
-                .padding(.leading, 14)
-            Text(band.label)
-                .font(StrandFont.subhead)
-                .foregroundStyle(active ? theme.ink : theme.inkSecondary)
-            Spacer()
-            Text(band.range)
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(active ? metricHue : theme.inkTertiary)
-            Text(BandSummaryCopy.countLabel(count, nightly: nightly))
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(active ? metricHue : theme.inkTertiary.opacity(0.85)) // token-exempt: atenuado 0.85 fuera de escala
-                .frame(minWidth: 56, alignment: .trailing)
-        }
-        .padding(.trailing, 14)
-        .padding(.vertical, 11)
-        .frame(maxWidth: .infinity)
-        .background(active ? metricHue.opacity(StrandOpacity.tintFill) : Color.clear)
-    }
-
-    @ViewBuilder private func statStripSection(_ window: MetricWindow) -> some View {
-        let cells = statCells(window)
-        if !cells.isEmpty {
-            VStack(alignment: .leading, spacing: 9) {
-                HStack(alignment: .top, spacing: 9) {
-                    ForEach(cells) { statCellView($0) }
-                }
-                if let open = openDisclosure, open.hasPrefix("stat:") {
-                    let slot = String(open.dropFirst("stat:".count))
-                    if slot == "consistencia" {
-                        consistencyDisclosure
-                    } else if let cell = cells.first(where: { $0.slot == slot }), let d = cell.disclosure {
-                        inlineDisclosure(label: d.title, text: d.text)
-                    }
-                }
-            }
-        }
-    }
 
     /// One datum of the stat strip. `value` is the formatted figure; `disclosure == nil` makes the cell
     /// non-tappable (e.g. SpO₂'s average). The consistency cell carries `slot == "consistencia"` so the
@@ -2956,132 +2070,9 @@ struct MetricDetailScreen: View {
         return [avg, nights]
     }
 
-    private func statCellView(_ cell: StatCell) -> some View {
-        let isOpen = openDisclosure == "stat:\(cell.slot)"
-        let tappable = cell.disclosure != nil
-        return Button {
-            withAnimation(.easeInOut(duration: 0.25)) { toggle("stat:\(cell.slot)") }
-        } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Text(cell.label).textCase(.uppercase).font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary).lineLimit(1).minimumScaleFactor(0.8)
-                    Spacer(minLength: 2)
-                    if tappable {
-                        Image(systemName: "info.circle").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(cell.value).font(StrandFont.number(17)).foregroundStyle(cell.color)   // handoff tile 17px (FER-830)
-                    if let u = cell.unitSuffix {
-                        Text(u).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    }
-                    if let n = cell.note {
-                        Text(n).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 10).padding(.vertical, 9)
-            .instrumentoCard(.inset, theme: theme, stroke: isOpen ? metricHue : theme.hairline)
-        }
-        .buttonStyle(.plain)
-        .disabled(!tappable)
-    }
-
     // MARK: Disclosure panels (reuse the same explanation copy the old ⓘ accordions showed)
 
-    @ViewBuilder private func disclosurePanel<C: View>(@ViewBuilder content: () -> C) -> some View {
-        HStack(spacing: 0) {
-            Rectangle().fill(theme.hairlineStrong).frame(width: 2)
-            VStack(alignment: .leading, spacing: 6) { content() }
-                .padding(.horizontal, 12).padding(.vertical, 11)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-        // Fade in place (no slide): with the gentle spring this lets the content below settle smoothly
-        // instead of the panel flying in from the top and shoving everything down. (Detalle de Vital fix)
-        .transition(.opacity)
-    }
-
-    private func inlineDisclosure(label: LocalizedStringKey, text: LocalizedStringKey) -> some View {
-        disclosurePanel {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(text).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// The consistency disclosure: plain language + a tiny «steady vs variable» visual + the CV definition.
-    private var consistencyDisclosure: some View {
-        disclosurePanel {
-            Text("Consistency").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(EX_CONSIST_PLAIN).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(alignment: .top, spacing: 14) {
-                VStack(spacing: 3) {
-                    MiniSpark(values: [16, 14, 17, 13, 16, 14, 16, 14, 15], color: theme.verdict)
-                    Text("Steady · similar nights").font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkSecondary).multilineTextAlignment(.center)
-                }.frame(maxWidth: .infinity)
-                VStack(spacing: 3) {
-                    MiniSpark(values: [22, 7, 24, 9, 25, 6, 23, 11, 20], color: theme.dataStrain)
-                    Text("Variable · precedes fatigue").font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkSecondary).multilineTextAlignment(.center)
-                }.frame(maxWidth: .infinity)
-            }
-            Text(EX_CONSIST_TECH).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
     // MARK: Tu patrón (what moves it + last night's companion signals)
-
-    private var patronSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Your pattern").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            if visibleBlocks.contains(.whatMovesIt), !series.isEmpty { quemueveView }
-            if visibleBlocks.contains(.nightVitals),
-               nightVitals.respiration != nil || nightVitals.restingHR != nil {
-                nightSignalsView
-            }
-        }
-    }
-
-    private var quemueveView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button { withAnimation(.easeInOut(duration: 0.25)) { toggle("quemueve") } } label: {
-                HStack(spacing: 7) {
-                    Text("What moves it").font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
-                    InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-                    Image(systemName: "info.circle").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            if openDisclosure == "quemueve" {
-                inlineDisclosure(label: "What moves it", text: EX_QUEMUEVE)
-            }
-            if whatMovesItFindings.isEmpty {
-                Text("Not enough data yet: keep wearing your strap and check back in a few weeks.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                ForEach(whatMovesItFindings) { f in
-                    HStack(alignment: .top, spacing: 8) {
-                        Text(Self.whatMovesArrow(f)).font(StrandFont.subhead).fontWeight(.semibold)
-                            .foregroundStyle(whatMovesColor(f))
-                        Text(f.phrase).font(StrandFont.caption)
-                            .foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-        }
-    }
 
     private static func whatMovesArrow(_ f: WhatMovesItFinding) -> String { f.trend == .rises ? "↑" : "↓" }
     private func whatMovesColor(_ f: WhatMovesItFinding) -> Color {
@@ -3115,53 +2106,6 @@ struct MetricDetailScreen: View {
     }
 
     // MARK: Tu HRV por frecuencia (frequency-domain breakdown, FER-702)
-
-    /// The nightly LF/HF/total power breakdown, collapsed by default. HF is the protagonist (the only
-    /// datum with the HRV accent); LF and total stay in ink. Every value is a descriptive band power in
-    /// ms² compared to the user's own recent nights — never an autonomic-balance claim.
-    @ViewBuilder private func spectralSection(_ s: SpectralHRV) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button { withAnimation(.easeInOut(duration: 0.25)) { spectralExpanded.toggle() } } label: {
-                HStack(spacing: 8) {
-                    Text("Your HRV by frequency").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 8)
-                    Image(systemName: spectralExpanded ? "chevron.up" : "chevron.down")
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            if spectralExpanded {
-                spectralBandRow(title: "Respiratory", tag: "HF",
-                                subtitle: "your calm signal, tied to your breathing",
-                                band: s.hf, accent: theme.dataHrv)
-                if let lf = s.lf {
-                    Divider().overlay(theme.hairline)
-                    spectralBandRow(title: "Slow", tag: "LF",
-                                    subtitle: "slow waves; a mix of signals",
-                                    band: lf, accent: theme.ink)
-                }
-                Divider().overlay(theme.hairline)
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Total variation").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        Text("everything together, the “volume” of your HRV")
-                            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 8)
-                    spectralValue(s.total, accent: theme.ink)
-                }
-                // Honest, state-specific note before the method line.
-                if s.lf == nil {
-                    spectralNote("Last night's reading was short, so it only covers the respiratory part: not the slow waves.")
-                } else if s.hf.label == nil {
-                    spectralNote("Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you.")
-                }
-                spectralNote("Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself: not a diagnosis or a “stress balance.”")
-            }
-        }
-    }
 
     private func spectralBandRow(title: LocalizedStringKey, tag: String, subtitle: LocalizedStringKey,
                                  band: SpectralHRV.Band, accent: Color) -> some View {
@@ -3207,50 +2151,6 @@ struct MetricDetailScreen: View {
 
     // MARK: Tu día (Heart Rate intraday)
 
-    @ViewBuilder private func narrativeIntraday(_ window: MetricWindow) -> some View {
-        blockDivider
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Your day").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            if intradayCurve.count > 1 {
-                let v = intradayCurve.map(\.value)
-                TrendChart(
-                    points: intradayCurve,
-                    gradient: chartGradient,
-                    valueRange: Self.hrRange(v, resting: restingHR),
-                    showsArea: true,
-                    height: 240,
-                    showsScrub: true,
-                    valueFormat: { "\(Int($0.rounded())) \(unit)" },
-                    dateFormat: { Self.hrClock.string(from: $0) },
-                    axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline,
-                    referenceLine: restingHR,
-                    referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
-                    markedPoint: peakPoint,
-                    tightTrailing: true
-                )
-                .accessibilityElement()
-                .accessibilityLabel(Text("Today's heart rate, 5-minute averages"))
-                peakRestingCaption
-                HStack(spacing: 9) {
-                    hrStatCell("Min", "\(Int((v.min() ?? 0).rounded()))")
-                    hrStatCell("Average", "\(Int((v.reduce(0, +) / Double(max(v.count, 1))).rounded()))")
-                    hrStatCell("Max", "\(Int((v.max() ?? 0).rounded()))")
-                }
-            } else {
-                ChartWell(theme).empty(text: "No readings yet today.")
-            }
-        }
-        if let mins = cachedZoneMinutes, mins[1...].contains(where: { $0 > 0 }) {
-            blockDivider
-            hrZonesBlock(mins)
-        }
-        if visibleBlocks.contains(.method), let method = spec.info.method {
-            blockDivider
-            methodDisclosure(method)
-        }
-    }
-
     private func hrStatCell(_ label: LocalizedStringKey, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label).textCase(.uppercase).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -3266,8 +2166,6 @@ struct MetricDetailScreen: View {
     private var EX_TREND: LocalizedStringKey { "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage compares this period's average against the previous period of the same length. Average, Lowest and Highest are from the range you selected." }
     private var EX_RANGO: LocalizedStringKey { "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)" }
     private var EX_CONSIST_TECH: LocalizedStringKey { "Coefficient of variation = standard deviation ÷ the mean of your last few weeks. It measures how spread out your values are around your average. Low = steady. In HRV, a rising CV can precede fatigue even while the value still looks high. (Plews 2013)" }
-    private var EX_CONSIST_PLAIN: LocalizedStringKey { "How alike your nights are to one another. \"Steady\" means they resemble each other. When HRV starts jumping from night to night, even while the average still looks high, it tends to get ahead of fatigue, before the number drops." }
-    private var EX_QUEMUEVE: LocalizedStringKey { "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance: never the number, and never as a cause. (Plews 2013)" }
     private var EX_SPO2_FLOOR: LocalizedStringKey { "95% is the typical floor for a healthy adult: the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend." }
 
     // MARK: - Colour + format
