@@ -30,11 +30,17 @@ public struct FiveRulesView: View {
     /// 0…1 lights the lit marks in sequence across the instrument (the pull-to-refresh
     /// celebration). 1 = settled (default; opening the screen never animates).
     public var reveal: Double
+    /// FER-878 `recGrow`: on FIRST appear, each row scales in horizontally (scaleX 0→1, 0.35s
+    /// ease-out) with a 60 ms per-row stagger — the canonical entry choreography. Off by default so
+    /// existing callers (and the pull-to-refresh `reveal`) are untouched; Reduce Motion disables it.
+    public var animateEntrance: Bool
 
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var grown = false
 
-    public init(rows: [Row], reveal: Double = 1) {
-        self.rows = rows; self.reveal = reveal
+    public init(rows: [Row], reveal: Double = 1, animateEntrance: Bool = false) {
+        self.rows = rows; self.reveal = reveal; self.animateEntrance = animateEntrance
     }
 
     // FER-743: 23 → 20 para compactar SEÑALES sin scroll (las marcas de 12/7 pt siguen cabiendo).
@@ -51,12 +57,16 @@ public struct FiveRulesView: View {
     public var body: some View {
         let maxMarks = max(rows.map(\.marks).max() ?? 1, 1)
         let visible = visibleLitByRow()
+        let animating = animateEntrance && !reduceMotion
         VStack(spacing: Self.rowSpacing) {
             ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
                 ruleRow(row, visibleLit: visible[i], maxMarks: maxMarks)
+                    .scaleEffect(x: (animating && !grown) ? 0 : 1, anchor: .leading)
+                    .animation(animating ? .easeOut(duration: 0.35).delay(Double(i) * 0.06) : nil, value: grown)
             }
         }
         .accessibilityElement(children: .contain)
+        .onAppear { grown = true }
     }
 
     /// Reveal sequencing: the lit marks light left→right, row by row, as `reveal` sweeps 0→1.

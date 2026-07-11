@@ -12,6 +12,7 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-adhoc-font      `.font(.system(size:`                                 (after task 02)
     no-radius-literal  `cornerRadius: <number>` not using a NoopMetrics token (after task 01)
     no-opacity-literal `.opacity(<number>)` not using StrandOpacity/helpers   (after task 03)
+    no-emdash-string   em-dash (—) inside a Swift string literal (copy rule)   (FER-878; opt-in)
 
 Per-line escape: a trailing `// token-exempt: <reason>` silences every rule on that line (geometry of
 data — bars, legends, swatches, keypad, Dynamic-Island widget — that legitimately needs a literal).
@@ -29,7 +30,23 @@ DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "CenitWidgets", "CenitWatc
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string"]
+
+# no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
+# (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
+# thousands of legitimate em-dashes in comments/doc-comments are ignored, and the bare «—» no-data
+# placeholder glyph (a string with no letters) is allowed — only em-dashes used as a copy connector
+# (a quoted span that also contains a letter) are flagged.
+RE_STRING_SPAN = re.compile(r'"([^"\\]*(?:\\.[^"\\]*)*)"')
+RE_HAS_LETTER = re.compile(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]")
+
+
+def _emdash_string_hit(line):
+    for m in RE_STRING_SPAN.finditer(line):
+        content = m.group(1)
+        if "—" in content and RE_HAS_LETTER.search(content):
+            return True
+    return False
 
 # no-hex: any Color(hex: … outside the design package.
 RE_HEX = re.compile(r"Color\(hex:")
@@ -72,12 +89,16 @@ def check(paths, rules):
             continue
         for i, line in enumerate(lines, 1):
             stripped = line.strip()
-            if stripped.startswith("//"):
+            if stripped.startswith("//") or stripped.startswith("*") or stripped.startswith("/*"):
                 continue
             if EXEMPT.search(line):
                 continue
             for rule in rules:
                 if rule == "no-hex" and in_design_pkg:
+                    continue
+                if rule == "no-emdash-string":
+                    if _emdash_string_hit(line):
+                        hits.append((path, i, rule, stripped[:100]))
                     continue
                 m = RULE_PATTERNS[rule].search(line)
                 if m:

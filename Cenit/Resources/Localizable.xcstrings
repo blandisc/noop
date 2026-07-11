@@ -55201,6 +55201,227 @@
           }
         }
       }
+    },
+    "vs your baseline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs your baseline"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vs tu base"
+          }
+        }
+      }
+    },
+    "At your baseline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At your baseline"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tu base"
+          }
+        }
+      }
+    },
+    "No baseline of your own yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No baseline of your own yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin base propia aún"
+          }
+        }
+      }
+    },
+    "computed on your phone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "computed on your phone"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "calculado en tu teléfono"
+          }
+        }
+      }
+    },
+    "The five marks below add up to your recovery of %lld.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The five marks below add up to your recovery of %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las cinco marcas de abajo suman tu recuperación de %lld."
+          }
+        }
+      }
+    },
+    "The longer a mark, the more that signal weighed today.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The longer a mark, the more that signal weighed today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mientras más larga la marca, más pesó esa señal hoy."
+          }
+        }
+      }
+    },
+    "HRV (how your heart's timing varied overnight) carries the most weight, because it's the earliest sign of how recovered you are.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HRV (how your heart's timing varied overnight) carries the most weight, because it's the earliest sign of how recovered you are."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La VFC (cómo varió el ritmo de tu corazón durante la noche) es la que más pesa, porque es la señal más temprana de qué tan recuperado estás."
+          }
+        }
+      }
+    },
+    "Support Cénit · donate or get in touch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support Cénit · donate or get in touch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apoya a Cénit · dona o escríbenos"
+          }
+        }
+      }
+    },
+    "Short night · low confidence": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Short night · low confidence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche corta · confianza baja"
+          }
+        }
+      }
+    },
+    "Wear the strap tonight: the first of %lld nights your own baseline needs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wear the strap tonight: the first of %lld nights your own baseline needs."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usa la banda esta noche: la primera de %lld noches que tu base necesita."
+          }
+        }
+      }
+    },
+    "All %lld nights are in. Computing your first verdict.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All %lld nights are in. Computing your first verdict."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las %lld noches están completas. Calculando tu primer veredicto."
+          }
+        }
+      }
+    },
+    "Your own baseline sharpens each night · you're at %lld.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your own baseline sharpens each night · you're at %lld."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu base se afina cada noche · vas en %lld."
+          }
+        }
+      }
+    },
+    "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La lectura de tu día viene de cómo dormiste. Aún no hay datos de anoche. Duerme con tu banda y sincroniza en la mañana, y tu veredicto aparece aquí."
+          }
+        }
+      }
     }
   },
   "version": "1.1"
