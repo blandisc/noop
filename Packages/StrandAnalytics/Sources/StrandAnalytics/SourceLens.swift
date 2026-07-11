@@ -15,7 +15,9 @@ import WhoopStore
 // Folding an Apple night into a band-anchored baseline mixes the two and biases every z-score taken
 // against it — «HRV vs your base» reads further from baseline than it is (FER-623: mixed base meanHRV
 // ≈ 43.8 ms vs band-only ≈ 49.6 ms), resting-HR σ collapses toward «normal», and so on.
-// `spo2Pct`, `skinTempDevC`, `steps`, `efficiency` are single-source (one instrument) → no lens needed.
+// `spo2Pct`, `steps`, `efficiency` are single-source (one instrument) → no lens needed.
+// `skinTempDevC` was single-source until FER-882 (Apple now writes its own wrist-temp Δ); it is
+// cross-source and must be masked so a band-Δ night and an Apple-Δ night never share a baseline fold.
 //
 // THE FIX — one row classification, two lenses
 // --------------------------------------------
@@ -28,14 +30,15 @@ import WhoopStore
 //   • `maskHrv` (FER-623) nils ONLY `avgHrv` on the other source's rows — for consumers that still want the
 //     Apple night's OTHER signals (verdict / Daily Brief σ, StressModel): the brief adds an estimated SDNN
 //     bullet on a band-less day, Stress scores each reading against its own source.
-//   • `maskForBaseline` (FER-631) nils EVERY cross-source column — `avgHrv`, `restingHr`, `respRateBpm`,
-//     `deepMin`/`remMin`/`lightMin` — for band-anchored consumers (Recovery detail σ, FER-632+). It is the
-//     column-level equivalent of `IntelligenceEngine.strapOnlyHistory` (which drops the whole row): under
-//     the engine's skip-and-hold folds both yield the SAME single-source baseline (pinned by test — the
-//     folds treat a nil column and an absent row identically). The row-windowed respiration/Stress baselines
-//     (`suffix(30)`) are the one place the two differ past 30 rows of history: masking keeps fewer, more
-//     recent band nights in-window rather than reaching further back. Both stay 100% band-pure — masking is
-//     simply the more conservative of the two — so it never reintroduces contamination.
+//   • `maskForBaseline` (FER-631 / FER-882) nils EVERY cross-source column — `avgHrv`, `restingHr`,
+//     `respRateBpm`, `deepMin`/`remMin`/`lightMin`, and `skinTempDevC` — for band-anchored consumers
+//     (Recovery detail σ, FER-632+; illness/cycle skin-temp routing). It is the column-level equivalent of
+//     `IntelligenceEngine.strapOnlyHistory` (which drops the whole row): under the engine's skip-and-hold
+//     folds both yield the SAME single-source baseline (pinned by test — the folds treat a nil column and
+//     an absent row identically). The row-windowed respiration/Stress baselines (`suffix(30)`) are the one
+//     place the two differ past 30 rows of history: masking keeps fewer, more recent band nights in-window
+//     rather than reaching further back. Both stay 100% band-pure — masking is simply the more conservative
+//     of the two — so it never reintroduces contamination.
 //
 // `appleDays` is the set of day-keys the app surfaced from Apple Health (`repo.appleHealthDays`) — source is
 // app knowledge, so the caller passes the set and this package stays pure (no store/actor state).
@@ -65,12 +68,14 @@ public enum SourceLens {
         mask(days, keep: keep, appleDays: appleDays) { $0.hrvMasked() }
     }
 
-    /// Return `days` with EVERY cross-source column — `avgHrv`, `restingHr`, `respRateBpm`, and the sleep
-    /// stages `deepMin`/`remMin`/`lightMin` — preserved ONLY on the rows belonging to `keep`, and nil on the
-    /// rest. Single-source and cross-source-comparable columns (`totalSleepMin`, `disturbances`, `efficiency`,
-    /// `recovery`, `strain`, `spo2Pct`, `skinTempDevC`, `steps`, `activeKcalEst`, `exerciseCount`) are left
-    /// intact. This is the column-level twin of `IntelligenceEngine.strapOnlyHistory` (whole-row drop): under
-    /// the readiness engine's skip-and-hold folds, the resulting single-source baseline is identical (FER-631).
+    /// Return `days` with EVERY cross-source column — `avgHrv`, `restingHr`, `respRateBpm`, the sleep
+    /// stages `deepMin`/`remMin`/`lightMin`, and `skinTempDevC` — preserved ONLY on the rows belonging to
+    /// `keep`, and nil on the rest. Single-source and cross-source-comparable columns (`totalSleepMin`,
+    /// `disturbances`, `efficiency`, `recovery`, `strain`, `spo2Pct`, `steps`, `activeKcalEst`,
+    /// `exerciseCount`) are left intact. `skinTempDevC` is cross-source as of FER-882 (Apple writes its own
+    /// wrist-temp Δ vs its own baseline; never fold a band-Δ night with an Apple-Δ night). This is the
+    /// column-level twin of `IntelligenceEngine.strapOnlyHistory` (whole-row drop): under the readiness
+    /// engine's skip-and-hold folds, the resulting single-source baseline is identical (FER-631).
     /// `keep: .band, appleDays: []` returns `days` verbatim (identity — a strap-only user is unchanged).
     public static func maskForBaseline(_ days: [DailyMetric], keep: Source,
                                        appleDays: Set<String>) -> [DailyMetric] {
@@ -95,13 +100,15 @@ private extension DailyMetric {
         with(avgHrv: .set(nil))
     }
 
-    /// Rebuild the row with every CROSS-SOURCE column nilled — `avgHrv`, `restingHr`, `respRateBpm`, and the
-    /// sleep stages `deepMin`/`remMin`/`lightMin` — and everything else (duration, disturbances, efficiency,
-    /// recovery, strain, single-source signals) intact. Each nilled column reads as "missing" to a fold, so
-    /// the baseline is built from the kept source only. Duration survives because it's comparable across
-    /// sources (it feeds the engine's short-night confidence honestly); the STAGES don't (measured offsets).
+    /// Rebuild the row with every CROSS-SOURCE column nilled — `avgHrv`, `restingHr`, `respRateBpm`, the
+    /// sleep stages `deepMin`/`remMin`/`lightMin`, and `skinTempDevC` (FER-882) — and everything else
+    /// (duration, disturbances, efficiency, recovery, strain, single-source signals) intact. Each nilled
+    /// column reads as "missing" to a fold, so the baseline is built from the kept source only. Duration
+    /// survives because it's comparable across sources (it feeds the engine's short-night confidence
+    /// honestly); the STAGES don't (measured offsets). Skin-temp Δ is source-specific: band and Apple each
+    /// fold their own absolute °C baseline, so the stored Δs are not interchangeable.
     func crossSourceMasked() -> DailyMetric {
         with(deepMin: .set(nil), remMin: .set(nil), lightMin: .set(nil),
-             restingHr: .set(nil), avgHrv: .set(nil), respRateBpm: .set(nil))
+             restingHr: .set(nil), avgHrv: .set(nil), skinTempDevC: .set(nil), respRateBpm: .set(nil))
     }
 }

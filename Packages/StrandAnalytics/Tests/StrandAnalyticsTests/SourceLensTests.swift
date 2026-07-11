@@ -2,18 +2,20 @@ import XCTest
 @testable import StrandAnalytics
 import WhoopStore
 
-/// FER-623 / FER-631 — the source lens keeps a baseline pure by source (RMSSD band vs SDNN Apple), the same
-/// policy FER-519/FER-543 applied to Recovery and the illness sentinel. RMSSD and SDNN are two time-domain
-/// HRV constructs with no published conversion (Task Force 1996, Circulation 93:1043; Shaffer & Ginsberg
-/// 2017, Front Public Health 5:258), so Apple SDNN must never enter the band's RMSSD baseline; RHR / resp /
-/// sleep stages carry measured band↔Apple offsets too (FER-629), which `maskForBaseline` (FER-631) also nils.
+/// FER-623 / FER-631 / FER-882 — the source lens keeps a baseline pure by source (RMSSD band vs SDNN Apple),
+/// the same policy FER-519/FER-543 applied to Recovery and the illness sentinel. RMSSD and SDNN are two
+/// time-domain HRV constructs with no published conversion (Task Force 1996, Circulation 93:1043; Shaffer &
+/// Ginsberg 2017, Front Public Health 5:258), so Apple SDNN must never enter the band's RMSSD baseline; RHR /
+/// resp / sleep stages carry measured band↔Apple offsets too (FER-629); `skinTempDevC` is source-specific as
+/// of FER-882 (Apple wrist-temp Δ vs its own baseline). `maskForBaseline` nils every cross-source column.
 final class SourceLensTests: XCTestCase {
 
-    private func d(_ i: Int, hrv: Double?, rhr: Int? = 52, resp: Double? = 14) -> DailyMetric {
+    private func d(_ i: Int, hrv: Double?, rhr: Int? = 52, resp: Double? = 14,
+                   skinTemp: Double? = 0.1) -> DailyMetric {
         DailyMetric(day: String(format: "2024-03-%02d", i), totalSleepMin: 420, efficiency: 0.9,
                     deepMin: 90, remMin: 90, lightMin: 240, disturbances: 2, restingHr: rhr,
                     avgHrv: hrv, recovery: 60, strain: 10, exerciseCount: 1,
-                    spo2Pct: 97, skinTempDevC: 0.1, respRateBpm: resp)
+                    spo2Pct: 97, skinTempDevC: skinTemp, respRateBpm: resp)
     }
 
     // MARK: maskHrv — Identity (strap-only user)
@@ -109,9 +111,11 @@ final class SourceLensTests: XCTestCase {
     /// I3: `maskForBaseline(days, keep: .band, appleDays: [])` is the identity for a strap-only user, and the
     /// engine verdict over it is bit-for-bit the raw history's (the fast-path guarantee).
     func testBaselineMaskBandIdentityNoAppleDays() {
-        let days = (1...10).map { d($0, hrv: 60) }
+        let days = (1...10).map { d($0, hrv: 60, skinTemp: 0.1) }
         let out = SourceLens.maskForBaseline(days, keep: .band, appleDays: [])
         XCTAssertEqual(out, days)
+        // FER-882: skinTempDevC survives the identity fast path (strap-only / band-only user).
+        XCTAssertEqual(out.map(\.skinTempDevC), days.map(\.skinTempDevC))
         XCTAssertEqual(ReadinessEngine.evaluate(days: out, today: "2024-03-10"),
                        ReadinessEngine.evaluate(days: days, today: "2024-03-10"))
     }
@@ -119,8 +123,9 @@ final class SourceLensTests: XCTestCase {
     // MARK: maskForBaseline — nils EXACTLY the cross-source columns, nothing else
 
     /// keep `.band`: on an Apple row, every cross-source column (`avgHrv`, `restingHr`, `respRateBpm`,
-    /// `deepMin`/`remMin`/`lightMin`) is nil; every other column — including sleep DURATION, which is
-    /// comparable across sources unlike the STAGES — survives untouched. Band rows pass through verbatim.
+    /// `deepMin`/`remMin`/`lightMin`, `skinTempDevC`) is nil; every other column — including sleep DURATION,
+    /// which is comparable across sources unlike the STAGES — survives untouched. Band rows pass through
+    /// verbatim.
     func testBaselineMaskNilsCrossSourceColumnsOnly() {
         let days = (1...6).map { d($0, hrv: 60) }
         let appleDays: Set<String> = ["2024-03-02", "2024-03-05"]
@@ -134,6 +139,7 @@ final class SourceLensTests: XCTestCase {
                 XCTAssertNil(row.deepMin,     "deepMin (stage) must be masked on an Apple night")
                 XCTAssertNil(row.remMin,      "remMin (stage) must be masked on an Apple night")
                 XCTAssertNil(row.lightMin,    "lightMin (stage) must be masked on an Apple night")
+                XCTAssertNil(row.skinTempDevC, "skinTempDevC must be masked on an Apple night (FER-882)")
                 // Comparable / single-source columns survive — DURATION is comparable, stages are not.
                 XCTAssertEqual(row.totalSleepMin, 420, "sleep duration is comparable across sources → kept")
                 XCTAssertEqual(row.efficiency, 0.9)
@@ -142,7 +148,6 @@ final class SourceLensTests: XCTestCase {
                 XCTAssertEqual(row.strain, 10)
                 XCTAssertEqual(row.exerciseCount, 1)
                 XCTAssertEqual(row.spo2Pct, 97)
-                XCTAssertEqual(row.skinTempDevC, 0.1)
             } else {
                 XCTAssertEqual(row, d(Int(row.day.suffix(2))!, hrv: 60), "band rows pass through verbatim")
             }
@@ -159,6 +164,36 @@ final class SourceLensTests: XCTestCase {
             } else {
                 XCTAssertNil(row.avgHrv);      XCTAssertNil(row.restingHr); XCTAssertNil(row.respRateBpm)
                 XCTAssertNil(row.deepMin);     XCTAssertNil(row.remMin);    XCTAssertNil(row.lightMin)
+                XCTAssertNil(row.skinTempDevC, "skinTempDevC must be masked on a band night under keep:.apple (FER-882)")
+            }
+        }
+    }
+
+    // MARK: maskForBaseline — skinTempDevC isolation (FER-882)
+
+    /// Band and Apple each carry a distinguishable skin-temp Δ; the mask keeps only the kept source's
+    /// column so a fold can never mix a band-Δ night with an Apple-Δ night.
+    func testBaselineMaskIsolatesSkinTempDevCBySource() {
+        let appleDays: Set<String> = ["2024-03-02", "2024-03-05"]
+        let days = (1...6).map { i -> DailyMetric in
+            let isApple = appleDays.contains(String(format: "2024-03-%02d", i))
+            // 9.9 is nowhere near a real Δ — contamination is obvious if the mask fails.
+            return d(i, hrv: 60, skinTemp: isApple ? 9.9 : 0.1)
+        }
+        let bandKeep = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleDays)
+        for row in bandKeep {
+            if appleDays.contains(row.day) {
+                XCTAssertNil(row.skinTempDevC, "keep:.band must nil Apple skinTempDevC")
+            } else {
+                XCTAssertEqual(row.skinTempDevC, 0.1, "keep:.band must preserve band skinTempDevC")
+            }
+        }
+        let appleKeep = SourceLens.maskForBaseline(days, keep: .apple, appleDays: appleDays)
+        for row in appleKeep {
+            if appleDays.contains(row.day) {
+                XCTAssertEqual(row.skinTempDevC, 9.9, "keep:.apple must preserve Apple skinTempDevC")
+            } else {
+                XCTAssertNil(row.skinTempDevC, "keep:.apple must nil band skinTempDevC")
             }
         }
     }

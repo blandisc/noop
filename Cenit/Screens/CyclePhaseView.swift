@@ -45,7 +45,10 @@ struct CyclePhaseSheet: View {
     var body: some View {
         ScrollView {
             if enabled {
-                CyclePhaseStateBody(days: repo.days,
+                // FER-882: Apple now writes skinTempDevC too; cycle is deliberately kept band-only,
+                // matching its "needs your band" copy — revisit only if a future issue changes that UX.
+                CyclePhaseStateBody(days: SourceLens.maskForBaseline(repo.days, keep: .band,
+                                                                     appleDays: repo.appleHealthDays),
                                     onDeactivate: { enabled = false })
             } else {
                 CyclePhaseConsentBody(onActivate: {
