@@ -19,6 +19,10 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Ícono para la app del Apple Watch / App icon for the Apple Watch app.**
+  **ES** — La app del Watch ya tiene ícono: el dial de Cénit sobre papel cálido (el mismo del iPhone). Antes su `AppIcon` estaba vacío y salía en blanco en el reloj.
+  **EN** — The Watch app now has an icon: the Cénit dial on warm paper (the same as on iPhone). Its `AppIcon` was previously empty and showed blank on the watch.
+  ([Assets.xcassets/AppIcon.appiconset](CenitWatch/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json))
 - **La carga baja a Señales + héroe de Hoy un poco más grande / Load moves into Signals + slightly bigger Today hero.**
   **ES** — (a) En «Hoy», la franja de **carga** ahora vive DENTRO de la página **Señales**, justo debajo de la gráfica de las cinco reglas: pertenece solo a Señales y ya no aparece al deslizar a Brief. (b) El número grande de recuperación crece de 98 a 102pt y la palabra del veredicto de al lado de 20 a 22pt —más dominantes— sin meter scroll: el alto extra del glifo se reclama en el descenso vacío y en el margen inferior. (c) Los puntitos de página quedan un pelín más grandes (barra 22×7 / punto 7) y un poco más abajo, más cerca del dock.
   **EN** — (a) On "Today", the **load** strip now lives INSIDE the **Signals** page, right below the five-rules chart: it belongs to Signals only and no longer shows when you swipe to Brief. (b) The big recovery number grows from 98 to 102pt and the verdict word beside it from 20 to 22pt — more dominant — without introducing scroll: the glyph's extra height is reclaimed from its empty descender and the bottom inset. (c) The page dots are a touch larger (bar 22×7 / dot 7) and sit slightly lower, closer to the dock.
