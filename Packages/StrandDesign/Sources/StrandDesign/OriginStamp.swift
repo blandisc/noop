@@ -28,13 +28,14 @@ public extension DataOrigin {
         }
     }
 
-    /// Source label shown before the "· {cuándo}". English keys resolve against the app bundle
-    /// (handoff «Detalle de Tendencias Final»: es «Medido por tu banda» / «Calculado en tu teléfono»;
-    /// «Apple Health» stays a brand name in every locale).
+    /// Source label shown before the "· {cuándo}". English keys resolve against the app bundle. All three
+    /// share the same «Medido por … / Calculado en …» verb frame so the foot of every detail reads the
+    /// same way (es «Medido por tu banda» / «Medido por Apple Salud» / «Calculado en tu teléfono»); the
+    /// «Apple Health» brand name stays intact inside the phrase.
     var label: String {
         switch self {
         case .band:     return String(localized: "Measured by your band", bundle: .main)
-        case .apple:    return String(localized: "Apple Health", bundle: .main)
+        case .apple:    return String(localized: "Measured by Apple Health", bundle: .main)
         case .computed: return String(localized: "Computed on your phone", bundle: .main)
         }
     }
