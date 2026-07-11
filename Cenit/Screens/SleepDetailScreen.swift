@@ -232,7 +232,7 @@ struct SleepDetailScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let tier = model.confidence {
-                tier.sello(theme: theme)
+                tier.sello(theme: theme, onField: true)
                     .padding(.top, 2)
             }
         }
@@ -762,7 +762,7 @@ struct SleepDetailScreen: View {
                             valueSize: 15, theme: theme)
             }
             BarraAncla(String(localized: String.LocalizationValue(dcCopyKey(dc.trend))),
-                       color: theme.verdict, theme: theme)
+                       color: theme.dataSleep, theme: theme)
         }
     }
 
@@ -963,7 +963,8 @@ struct SleepDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: sleepHeat))
+        // Misma ventana de 90 días (máx 14 col) que Recuperación para que la celda mida igual. (FER-878+)
+        let cols = Swift.max(14, YearHeatStrip.weekColumns(for: sleepHeat))
         let spacing: CGFloat = 4
         let gutter: CGFloat = 24
         let cell: CGFloat = calWidth > 0

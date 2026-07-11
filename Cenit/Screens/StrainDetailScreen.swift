@@ -175,7 +175,7 @@ struct StrainDetailScreen: View {
                 .foregroundStyle(theme.paper)
                 .fixedSize(horizontal: false, vertical: true)
             if let tier = model.confidence {
-                tier.sello(theme: theme)
+                tier.sello(theme: theme, onField: true)
                     .padding(.top, 2)
             }
         }

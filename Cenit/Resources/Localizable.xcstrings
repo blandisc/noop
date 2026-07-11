@@ -1,6 +1,57 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Prolonged": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prolonged"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prolongado"
+          }
+        }
+      }
+    },
+    "Onset time isn't available for this night yet; it needs the strap's own lights-out mark. The range above is the healthy reference.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onset time isn't available for this night yet; it needs the strap's own lights-out mark. The range above is the healthy reference."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El tiempo para dormirte aún no está disponible para esta noche; necesita la marca de apagar luces de la banda. El rango de arriba es la referencia sana."
+          }
+        }
+      }
+    },
+    "One night says little on its own. What matters is whether your typical onset drifts over weeks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One night says little on its own. What matters is whether your typical onset drifts over weeks."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una noche dice poco por sí sola. Lo que importa es si tu tiempo para dormirte típico se desvía con las semanas."
+          }
+        }
+      }
+    },
     "%lld sessions · 90 days": {
       "localizations": {
         "en": {

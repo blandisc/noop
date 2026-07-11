@@ -309,17 +309,31 @@ extension MetricInfo {
         )
     }
 
-    /// Sleep latency — minutes to fall asleep. Shown only when the night carries an onset latency.
+    /// Sleep latency — minutes to fall asleep. The onset value isn't in the cache yet, so it usually
+    /// reads "—"; the reference bands still teach the healthy range so the sheet is never empty.
     static func sleepLatency(_ minutes: Double?) -> MetricInfo {
-        MetricInfo(
+        // Half-open bounds [lower, upper) so a value lands in exactly one band. Ranges follow the sleep
+        // literature: 10–20 min is the healthy adult norm; falling asleep almost instantly can signal
+        // sleep debt, and > 20 min is prolonged onset. (Ohayon 2017)
+        let bands: [Band] = [
+            Band(label: "Quick", range: "< 10 min",
+                 isActive: minutes.map { $0 < 10 } ?? false, lower: nil, upper: 10),
+            Band(label: "Healthy", range: "10 – 20 min",
+                 isActive: minutes.map { $0 >= 10 && $0 < 20 } ?? false, lower: 10, upper: 20),
+            Band(label: "Prolonged", range: "> 20 min",
+                 isActive: minutes.map { $0 >= 20 } ?? false, lower: 20, upper: nil),
+        ]
+        return MetricInfo(
             id: "sleep_latency",
             name: "Latency",
             headline: "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range.",
             displayValue: minutes.map { "\(Int($0.rounded())) min" } ?? "—",
             unit: nil,
             headerTint: minutes == nil ? .neutral : .metric,
-            bands: [],
-            note: nil
+            bands: bands,
+            note: minutes == nil
+                ? "Onset time isn't available for this night yet; it needs the strap's own lights-out mark. The range above is the healthy reference."
+                : "One night says little on its own. What matters is whether your typical onset drifts over weeks."
         )
     }
 

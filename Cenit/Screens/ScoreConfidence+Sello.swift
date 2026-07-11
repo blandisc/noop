@@ -32,9 +32,10 @@ extension ScoreConfidence {
     }
 
     /// The ready-to-place stamp for this tier. `solid` reads a step stronger; every thinner
-    /// tier dims — the emphasis rule owned in one place, not per call site.
-    func sello(theme: InstrumentoTheme) -> ConfidenceSello {
+    /// tier dims — the emphasis rule owned in one place, not per call site. Pass `onField: true`
+    /// when it sits on a coloured hero field (Sleep/Strain) so it flips to paper ink for contrast.
+    func sello(theme: InstrumentoTheme, onField: Bool = false) -> ConfidenceSello {
         ConfidenceSello(Text(confidenceLabel), a11yLabel: Text(confidenceA11y),
-                        dimmed: self != .solid, theme: theme)
+                        dimmed: self != .solid, onField: onField, theme: theme)
     }
 }

@@ -17,6 +17,7 @@ public struct ConfidenceSello: View {
     private let label: Text
     private let a11yLabel: Text
     private let dimmed: Bool
+    private let onField: Bool
     private let theme: InstrumentoTheme
 
     /// - Parameters:
@@ -24,10 +25,14 @@ public struct ConfidenceSello: View {
     ///   - a11yLabel: the VoiceOver phrase — spell out "confidence: …" so the tier is
     ///     never announced as a bare adjective.
     ///   - dimmed: true for a thinner tier (building/calibrating) — drops the ink one step.
-    public init(_ label: Text, a11yLabel: Text, dimmed: Bool, theme: InstrumentoTheme) {
+    ///   - onField: true when the sello sits on a coloured data field (the Sleep/Strain hero),
+    ///     not light paper. Ink tokens read dark-on-dark there, so switch to `paper` for text
+    ///     and border. Shape+text still carry the meaning; only the tint flips to stay legible.
+    public init(_ label: Text, a11yLabel: Text, dimmed: Bool, onField: Bool = false, theme: InstrumentoTheme) {
         self.label = label
         self.a11yLabel = a11yLabel
         self.dimmed = dimmed
+        self.onField = onField
         self.theme = theme
     }
 
@@ -36,12 +41,21 @@ public struct ConfidenceSello: View {
             .font(.system(size: 11, weight: .semibold))   // token-exempt: sello semibold+tracking (micro es 11/medium)
             .tracking(0.3)
             .textCase(.uppercase)
-            .foregroundStyle(dimmed ? theme.inkTertiary : theme.inkSecondary)
+            .foregroundStyle(textTint)
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
             .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)   // token-exempt: geometría de dato (sello ≤6pt)
-                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .strokeBorder(borderTint, lineWidth: 1))
             .accessibilityLabel(a11yLabel)
+    }
+
+    private var textTint: Color {
+        if onField { return dimmed ? theme.paper.opacity(OnFieldOpacity.secondary) : theme.paper }
+        return dimmed ? theme.inkTertiary : theme.inkSecondary
+    }
+
+    private var borderTint: Color {
+        onField ? theme.paper.opacity(OnFieldOpacity.secondary) : theme.hairlineStrong
     }
 }
 
