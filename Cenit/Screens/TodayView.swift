@@ -139,6 +139,10 @@ struct TodayView: View {
     // «La conexión de hoy» — la correlación más relevante del día (FER-614). Cargados en `loadAll` vía el
     // loader compartido `InsightsProvider`, así la conexión del brief == la que muestra Patrones (mismo FDR).
     @State private var insights: [Insight] = []
+    // FER-872: memo de los insights por (refreshSeq, díaLocal). `loadAll` se dispara por `refreshSeq`, pero
+    // un re-`.task` con el MISMO seq (misma data) no debe recomputar la correlación+FDR de nuevo — se
+    // conserva el resultado. Un seq nuevo (data nueva) o el rollover de día invalidan el memo.
+    @State private var memoInsightsKey: String?
 
     // El experimento N-of-1 en curso, espejo de Patrones (FER-615): la 2ª fuente del renglón «La conexión de
     // hoy». Cargado en `loadAll` desde `Repository` (activeExperiment + experimentProgress); `nil` sin experimento.
@@ -2887,8 +2891,14 @@ struct TodayView: View {
         // Esfuerzo del día en curso (FER-650): recomputa el valor VIVO en cada refresh del dashboard, para
         // que el tile refleje la carga hasta ahora incluso sin abrir el Detalle.
         await model.refreshLiveDayStrain()
-        // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones.
-        insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))
+        // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones. Memoizado
+        // por (refreshSeq, díaLocal) — FER-872: si el mismo seq re-dispara `loadAll`, no repite la
+        // correlación+FDR (que ya corre off-main dentro de `generate`).
+        let insightsKey = "\(repo.refreshSeq)|\(Repository.localDayKey(Date()))"
+        if memoInsightsKey != insightsKey {
+            insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))
+            memoInsightsKey = insightsKey
+        }
         // El experimento N-of-1 en curso (FER-615): la 2ª fuente del mismo renglón.
         await loadActiveExperiment()
     }

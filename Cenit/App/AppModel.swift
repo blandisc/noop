@@ -266,7 +266,15 @@ final class AppModel: ObservableObject {
         // Illness/strain early-warning recomputes when the daily history changes. `days` is no longer
         // its own @Published (folded into `dashboard` for single-publish refreshes, FER-30), so watch
         // the dashboard and project its days — still one emission per refresh.
-        repo.$dashboard.map(\.days).sink { [weak self] days in self?.evaluateIllness(days) }.store(in: &hrCancellables)
+        // FER-872: the launch cascade publishes the dashboard 4-5× in the first seconds (firstPaint,
+        // full, morning analyzeRecent, HealthKit sync…). The illness window only reads counts + the
+        // last two nights, so dedup by (count, last day) collapses those redundant re-evals into one —
+        // a genuine data change (a new night or a longer history) still changes the signature and fires.
+        // `reevaluateIllness()` calls `evaluateIllness` directly, so a settings toggle is never deduped.
+        repo.$dashboard.map(\.days)
+            .removeDuplicates { $0.count == $1.count && $0.last?.day == $1.last?.day }
+            .sink { [weak self] days in self?.evaluateIllness(days) }
+            .store(in: &hrCancellables)
         // Re-arm the strap's firmware alarm whenever it (re)bonds. A smart-alarm time changed while the
         // strap was away never reached it — the send is gated on bond — so the strap kept the OLD time
         // and fired at it (#59). removeDuplicates() fires once per bond; gated on enabled so a disabled

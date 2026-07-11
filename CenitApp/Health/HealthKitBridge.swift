@@ -69,6 +69,28 @@ final class HealthKitBridge: ObservableObject {
     /// as `HKWorkout`s (FER-390). Default off — opt-in, so we never write or prompt without consent.
     static let saveStrengthWorkoutsKey = "health.saveStrengthWorkouts"
 
+    /// Why `sync` was called. `.foreground` is the automatic scenePhase-active trigger that fires on
+    /// every launch/return; it opts into the FER-872 delta window + no-op refresh guard below. Every
+    /// other caller (manual "Sync now", onboarding, the FER-226 re-bucket that reads the returned key
+    /// set) is `.manual` and always does the caller's full window and a dashboard refresh.
+    enum SyncTrigger { case manual, foreground }
+
+    /// FER-872: extra days of back-margin a delta foreground sync reaches past `lastSync`, so a night
+    /// Apple wrote late (or the overnight backfill) is re-pulled within the session (FER-406/407). The
+    /// deep case — a Watch/iCloud dump of several STALE days that a lastSync window would step past
+    /// forever — is caught by the first foreground sync of the NEXT session, which is always full.
+    private static let deltaBackMarginDays = 3
+
+    /// True once a foreground sync has completed this session. The first foreground sync stays full
+    /// (this and `lastAppleWriteSignature` reset each launch); only subsequent ones go delta.
+    private var didFullForegroundSyncThisSession = false
+
+    /// Signature of the Apple rows written by the last sync, to skip a dashboard rebuild when a
+    /// foreground re-pull produced identical data (FER-872). In-memory (per-process Hasher) — a stale
+    /// value can never cause a FALSE skip because it's recomputed from the freshly-pulled rows each run;
+    /// resetting it each launch just means the first foreground sync of a session always refreshes once.
+    private var lastAppleWriteSignature: Int?
+
     init(repo: Repository, appleDeviceId: String, noopDeviceId: String) {
         self.repo = repo
         self.appleDeviceId = appleDeviceId
@@ -227,7 +249,7 @@ final class HealthKitBridge: ObservableObject {
     /// upserts keyed by day). Returns the set of local `day` keys written this run — the FER-226
     /// re-bucket uses it to prune UTC orphans; empty on an early-out or a failed store write.
     @discardableResult
-    func sync(days: Int = 30) async -> Set<String> {
+    func sync(days: Int = 30, trigger: SyncTrigger = .manual) async -> Set<String> {
         guard auth == .authorized, !syncing else { return [] }
         syncing = true
         defer { syncing = false; syncProgress = nil }
@@ -235,7 +257,20 @@ final class HealthKitBridge: ObservableObject {
 
         let cal = Calendar.current
         let end = Date()
-        guard let start = cal.date(byAdding: .day, value: -days, to: cal.startOfDay(for: end)) else { return [] }
+        // FER-872: the scenePhase foreground trigger fires on every launch/return; re-pulling the full
+        // 30-day window each time (13 HK stages + upserts + a dashboard rebuild) is wasted work when
+        // nothing changed. The FIRST foreground sync of a session stays full — the delta state resets
+        // each launch, so a Watch/iCloud backfill of several STALE days (which a lastSync window would
+        // step past forever) is caught here — and subsequent foregrounds pull only a short delta window
+        // from `lastSync` plus a few days of back-margin, so a late-arriving night / the overnight Apple
+        // backfill is never missed (FER-406/407). Manual/onboarding/re-bucket keep the caller's window.
+        let effectiveDays: Int = {
+            guard trigger == .foreground, didFullForegroundSyncThisSession, let last = lastSync else { return days }
+            let sinceLast = end.timeIntervalSince(last)
+            guard sinceLast > 0, sinceLast < Double(days) * 86_400 else { return days }
+            return min(days, Int(sinceLast / 86_400) + Self.deltaBackMarginDays)
+        }()
+        guard let start = cal.date(byAdding: .day, value: -effectiveDays, to: cal.startOfDay(for: end)) else { return [] }
 
         var byDay: [String: DayAgg] = [:]
         func agg(_ day: String) -> DayAgg { byDay[day] ?? DayAgg() }
@@ -350,6 +385,10 @@ final class HealthKitBridge: ObservableObject {
         // fails, do NOT advance lastSync (the next delta sync must re-attempt this window) and surface
         // the error instead of swallowing it with `try?` — a failed upsert used to be silent while
         // lastSync still moved forward, skipping the window and losing the data permanently.
+        // FER-872: fingerprint the Apple rows this run would surface (every written array derives from
+        // `byDay`, plus workouts + sleep sessions). A foreground re-pull of identical data must not bump
+        // `refreshSeq` — which re-runs TodayView.loadAll + insights + live strain for nothing.
+        let signature = Self.appleWriteSignature(byDay: byDay, workouts: wkRows, sleeps: appleSleepSessions)
         do {
             try await store.upsertAppleDaily(appleRows, deviceId: appleDeviceId)
             try await store.upsertDailyMetrics(dmRows, deviceId: appleDeviceId)
@@ -359,7 +398,14 @@ final class HealthKitBridge: ObservableObject {
             try await writeBack(whoopStore: store)
             lastSync = Date()
             lastError = nil
-            await repo.refresh()   // surface the freshly-synced Apple Health days in the dashboard
+            if trigger == .foreground { didFullForegroundSyncThisSession = true }
+            // Only rebuild the dashboard when the Apple rows actually changed. A manual sync always
+            // refreshes so the user sees an unmistakable response to tapping "Sync now" (FER-872).
+            let changed = signature != lastAppleWriteSignature
+            lastAppleWriteSignature = signature
+            if changed || trigger != .foreground {
+                await repo.refresh()   // surface the freshly-synced Apple Health days in the dashboard
+            }
             coverage = try? await store.appleHealthCoverage(deviceId: appleDeviceId)
             refreshPermissions()   // a denied scope may have changed between runs
             return Set(byDay.keys)   // FER-226: the local days written this run (for the re-bucket prune)
@@ -530,11 +576,30 @@ final class HealthKitBridge: ObservableObject {
         try await self.store.save(hkSamples)
     }
 
-    private struct DayAgg {
+    private struct DayAgg: Hashable {
         var restingHr: Double?; var avgHr: Double?; var maxHr: Double?; var hrv: Double?
         var spo2: Double?; var respRate: Double?; var steps: Double?
         var activeKcal: Double?; var basalKcal: Double?; var vo2max: Double?
         var asleepMin: Double?; var deepMin: Double?; var remMin: Double?; var coreMin: Double?
+    }
+
+    /// FER-872: an order-independent fingerprint of the Apple rows a sync run would surface. `byDay`
+    /// carries every daily/series/appleDaily value (they're all derived from it); workouts and sleep
+    /// sessions are folded in by their identifying fields. Per-process Hasher — used only for the
+    /// in-memory "did anything change since the last sync this session?" comparison, never persisted.
+    private static func appleWriteSignature(byDay: [String: DayAgg],
+                                            workouts: [WorkoutRow],
+                                            sleeps: [CachedSleepSession]) -> Int {
+        var h = Hasher()
+        for key in byDay.keys.sorted() { h.combine(key); h.combine(byDay[key]) }
+        for w in workouts.sorted(by: { ($0.startTs, $0.endTs, $0.sport) < ($1.startTs, $1.endTs, $1.sport) }) {
+            h.combine(w)   // WorkoutRow: Hashable
+        }
+        for s in sleeps.sorted(by: { ($0.startTs, $0.endTs) < ($1.startTs, $1.endTs) }) {
+            h.combine(s.startTs); h.combine(s.endTs); h.combine(s.efficiency)
+            h.combine(s.restingHr); h.combine(s.avgHrv); h.combine(s.stagesJSON)
+        }
+        return h.finalize()
     }
 
     private func collect(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date,
