@@ -498,7 +498,13 @@ table so *any* scalar metric from *any* source can be queried/compared uniformly
 the Metric Explorer and correlations), indexed by `(deviceId, key, day)`. The nightly frequency-domain
 HRV powers (`hrv_lf` / `hrv_hf` / `hrv_totalpower`, ms², FER-702) persist here under the `-noop`
 computed source — an additive scalar cache with no schema change, alongside `steps_est` and the stress
-aggregates.
+aggregates. FER-868 added the daily motion derivatives under the same `-noop` source: `motion_intensity`
+(the civil day's gravity motion volume, `StepsEstimateEngine.dayMotionIntensity` — the steps-estimate
+input) and `act_h00`…`act_h23` (the per-local-hour motion profile feeding `CircadianEngine`'s cosinor;
+a row exists iff the hour had samples, even at 0.0 — absent hour = no row, preserving the pooled-bins
+semantics). Persisting them means the engine reads each day's raw `gravitySample` rows ONCE when the
+day's data changes, instead of re-reading 60+14 days of gravity every 15-minute pass — and the derived
+motion history survives both an app relaunch and a raw-stream safe-trim.
 
 **Circadian phase** — `circadianPhase(deviceId, day, tempMinHour, acrophaseHours, offsetMinutes,
 confidence, daysObserved, bedtimeHour, wakeHour, computedAt)`, PK `(deviceId, day)`: one structured
@@ -726,6 +732,24 @@ first-paint pass can never overwrite a fully loaded dashboard (`Repository.shoul
 anything that *persists* a value derived from `repo.days` — `IntelligenceEngine.analyzeRecent`
 baselines, `Repository.closeDueExperiment`, the restore offer — must gate on `repo.fullyLoaded`;
 pure display readers may see the short window transiently and self-correct on the full publish.
+
+`IntelligenceEngine.analyzeRecent` — the ~15-minute scoring loop — is **incremental per day and
+off-main** (FER-868). Each pass takes ONE `WhoopStore.streamDayCounts` snapshot (COUNT(\*) per local
+civil day per raw stream; sound because the stream writers only `INSERT … ON CONFLICT DO NOTHING`,
+never UPDATE — a backfill that fills a gap moves the COUNT even when it doesn't move MAX(ts), and a
+safe-trim lowers it) and compares each night's window signature (`AnalysisScheduler`, pure, in
+`StrandAnalytics`) against an **in-memory** cache: clean nights replay their cached pass-1
+`NightResult` with zero store reads; only dirty nights (plus today, always) pay the 8 stream reads +
+`analyzeDay`. Pass 2 — the baseline seed + `recomputeRecovery` — still runs over ALL nights
+unchanged, so the published scores are identical to a full pass; the upserts also still write the
+full window (the detected-workout prune deletes-and-reinserts it). The cache is not persisted: a
+relaunch costs one full first pass, and `force` / any context change (profile, tz, mode, baseline
+epoch) resets it. The heavy body is a `nonisolated static runAnalysis(_:cache:store:)` run on a
+`.utility` detached task — same pattern as `Repository.assembleDashboard` — with all repo-derived
+inputs snapshotted contiguously on the main actor before the hop (FER-177/519); `analyzeRecent`
+itself stays a thin `@MainActor` wrapper (guards → snapshot → hop → publish). The daily motion
+derivatives it persists (`motion_intensity`, `act_hNN`) are described in §7 "Generic metric series".
+
 Screens render with `StrandDesign` components — `RecoveryRing`, `StrainGauge`, `Hypnogram`,
 `TrendChart`, `TrajectoryChart` (the goal simulator's two-path + confidence-band plot), `Sparkline`,
 `YearHeatStrip` — over the `StrandPalette` tokens. `AppModel` also hosts
