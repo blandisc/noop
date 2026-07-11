@@ -1966,6 +1966,7 @@ ES: dict[str, str] = {
     "Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself: not a diagnosis or a “stress balance.”": "Calculado de los latidos de anoche (Lomb-Scargle). Son potencias descriptivas para compararte contigo mismo, no un diagnóstico ni un «balance de estrés».",
     "higher than your normal": "más alta de lo normal",
     "within your normal": "dentro de tu normal",
+    "within your normal range": "dentro de tu rango normal",
     "lower than your normal": "más baja de lo normal",
     # FER-666 «Ritmo» — pantalla experimental de regularidad latido-a-latido (no clínica).
     "Looked steady.": "Se vio estable.",

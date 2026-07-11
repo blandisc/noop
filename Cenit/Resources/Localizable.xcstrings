@@ -58462,6 +58462,40 @@
           }
         }
       }
+    },
+    "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La regularidad es la variabilidad noche a noche de tu punto medio de sueño (el punto medio entre dormirte y despertar), un horario más parejo predice tu salud con más fuerza que cuánto duermes. Las siestas no cuentan: solo tu noche principal (de al menos 3 h) entra en la regularidad. Las etapas se estiman del movimiento, la frecuencia cardíaca y la HRV, así que son aproximadas; el sueño profundo repara el cuerpo, el REM consolida memoria y emociones. La «necesidad» es un objetivo poblacional de 7–9 h, no una medición tuya."
+          }
+        }
+      }
+    },
+    "within your normal range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "within your normal range"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dentro de tu rango normal"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
