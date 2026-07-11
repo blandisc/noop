@@ -269,7 +269,7 @@ struct SleepDetailScreen: View {
                     .instrumentoHero(46)
                     .foregroundStyle(theme.inkTertiary)
                 Text(model.loaded
-                     ? "No nights yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
+                     ? "No nights yet. Import your WHOOP export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
                      : "Loading your sleep history…")
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.ink)
@@ -1015,7 +1015,7 @@ struct SleepDetailScreen: View {
 
     private var metodoBlock: some View {
         Metodo(title: String(localized: "How it's calculated"), theme: theme) {
-            Text("Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.")
+            Text("Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking): a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1127,9 +1127,9 @@ struct SleepDetailScreen: View {
 
     private var napNotice: LocalizedStringKey {
         if let minutes = model.excludedNapMinutes {
-            return "We didn't count your \(napDurationText(minutes)) nap — regularity uses only your main night."
+            return "We didn't count your \(napDurationText(minutes)) nap, regularity uses only your main night."
         }
-        return "We didn't count your naps (under \(napDurationText(Int(SleepMainNight.minDurationMinutes)))) — regularity uses only your main night."
+        return "We didn't count your naps (under \(napDurationText(Int(SleepMainNight.minDurationMinutes)))), regularity uses only your main night."
     }
 
     private func napDurationText(_ minutes: Int) -> String {
@@ -1192,7 +1192,7 @@ struct SleepStagesInfoSheet: View {
                 Text("Sleep stages")
                     .font(StrandFont.title2)
                     .foregroundStyle(theme.ink)
-                Text("Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate — it gets about 2 of 3 right.")
+                Text("Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)

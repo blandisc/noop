@@ -302,7 +302,7 @@ struct RecoveryDetailScreen: View {
         // para no duplicar el texto SDNN-vs-RMSSD.
         if model.isColdStartEstimate { return WhyVerdictSheet.estimatedCaveat(coldStart: true) }
         if model.isEstimated { return WhyVerdictSheet.estimatedCaveat(coldStart: false) }
-        return "Recovery blends several signals from your nervous system — your HRV above all, plus resting heart rate, sleep and breathing — and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)"
+        return "Recovery blends several signals from your nervous system, your HRV above all, plus resting heart rate, sleep and breathing, and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)"
     }
 
     /// The «estimado · confianza X» marker + coverage («N de 3 señales») + one honest line, shown only for
@@ -347,7 +347,7 @@ struct RecoveryDetailScreen: View {
     /// with full coverage shows no count).
     static func coverageLabel(_ present: Int?) -> LocalizedStringKey? {
         guard let present else { return nil }
-        return "Estimated — \(present) of \(AppleRecoveryEstimator.DayEstimate.totalPrimaryDrivers) signals"
+        return "Estimated: \(present) of \(AppleRecoveryEstimator.DayEstimate.totalPrimaryDrivers) signals"
     }
 
     /// The score's band color: green ≥67 → verdict, yellow 34–67 → warning, red <34 → critical. The hero
@@ -364,16 +364,16 @@ struct RecoveryDetailScreen: View {
     private var heroReading: LocalizedStringKey {
         if let s = model.score {
             switch RecoveryScorer.band(Double(s)) {
-            case "green":  return "Above your baseline — your body is ready for a strong day."
-            case "yellow": return "Recovering — train, but keep it controlled."
-            default:       return "Low — prioritize rest today."
+            case "green":  return "Above your baseline: your body is ready for a strong day."
+            case "yellow": return "Recovering: train, but keep it controlled."
+            default:       return "Low: prioritize rest today."
             }
         }
-        if model.calibration != nil { return "Calibrating — we need a few more nights of your strap." }
+        if model.calibration != nil { return "Calibrating: we need a few more nights of your strap." }
         // Offline / no reading today but history exists: be honest the day's number is missing without
         // implying a brand-new user (the trend and calendar below are populated). (FER-225, QA O1)
-        if !model.series.isEmpty { return "No reading from last night yet — your recent history is below." }
-        return "No recovery yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources."
+        if !model.series.isEmpty { return "No reading from last night yet: your recent history is below." }
+        return "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources."
     }
 
     // MARK: - 2. Hoy, vs tu normal — atribución unificada por nivel (FER-642)
@@ -1038,7 +1038,7 @@ struct RecoveryDetailScreen: View {
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your base and normal range are your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR) — context for recovery, never an injury claim.")
+            Text("The «vs your base» bars show each signal's deviation in σ (above your base = right). HRV, resting heart rate and respiration are z-scored that way; sleep and skin temperature carry no σ, so they show their state, not a position. Your base and normal range are your recent average ± one σ. Steadiness is the coefficient of variation (CV). Training load is the acute:chronic workload ratio (ACWR): context for recovery, never an injury claim.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1379,19 +1379,19 @@ private func sampleModel(score: Int?, calibration: Int?,
         estimatedDirections: estimatedDirections)
 }
 
-#Preview("Recovery detail — con datos") {
+#Preview("Recovery detail: con datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         RecoveryDetailScreen(model: sampleModel(score: 78, calibration: nil))
     }
 }
 
-#Preview("Recovery detail — calibrando") {
+#Preview("Recovery detail: calibrando") {
     Color.clear.sheet(isPresented: .constant(true)) {
         RecoveryDetailScreen(model: sampleModel(score: nil, calibration: 3))
     }
 }
 
-#Preview("Recovery detail — sin datos") {
+#Preview("Recovery detail: sin datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         RecoveryDetailScreen(model: RecoveryDetailModel(
             score: nil, calibration: nil, nightsNeeded: 4, impact: nil, change: nil,
@@ -1400,7 +1400,7 @@ private func sampleModel(score: Int?, calibration: Int?,
     }
 }
 
-#Preview("Recovery detail — estimado (Apple)") {
+#Preview("Recovery detail: estimado (Apple)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         RecoveryDetailScreen(model: sampleModel(score: 64, calibration: nil,
                                                 isEstimated: true, confidence: .building,

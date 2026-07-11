@@ -283,9 +283,9 @@ struct WorkoutDetailScreen: View {
         // Keyed off the hero so the note never disagrees with the degraded value (a 0/absent strain reads
         // as "no effort number", not as a 0–21 reading).
         if case .strain = heroKind {
-            return "Scale 0–21, WHOOP-style: it grows logarithmically — not a physical unit."
+            return "Scale 0–21, WHOOP-style: it grows logarithmically, not a physical unit."
         }
-        return "Effort (0–21 scale) is computed only by your WHOOP — this session doesn't carry it."
+        return "Effort (0–21 scale) is computed only by your WHOOP: this session doesn't carry it."
     }
 
     // MARK: - Acciones (menú ••• según fuente)
@@ -410,13 +410,13 @@ struct WorkoutDetailScreen: View {
     /// message localizes with the app while staying the engine's intra-user story — never Cole's cutoff.
     private func hrrNote(_ trend: HeartRateRecovery.Trend) -> LocalizedStringKey {
         if trend.nPrior < 2 {
-            return "Still learning your usual recovery — keep logging sessions."
+            return "Still learning your usual recovery: keep logging sessions."
         }
         if trend.bluntedVsNormal {
-            return "Your heart came down slower than usual after this one — a sign to watch recovery."
+            return "Your heart came down slower than usual after this one: a sign to watch recovery."
         }
         if let z = trend.z, z >= HeartRateRecovery.bluntedZThreshold {
-            return "Your heart came down faster than usual — strong recovery after this session."
+            return "Your heart came down faster than usual: strong recovery after this session."
         }
         return "Your recovery after this session looks like your normal."
     }

@@ -235,7 +235,7 @@ struct MuscleMapScreen: View {
             isPresented: $showResetConfirm,
             title: String(localized: "Mark all muscles as recovered?"),
             context: String(localized: "MUSCLE MAP"),
-            message: String(localized: "The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again."),
+            message: String(localized: "The map resets to fresh. Your workout history isn't deleted: logging a new workout loads that muscle again."),
             actions: [
                 .init(String(localized: "Mark recovered"), role: .primary) { markAllRecovered() },
                 .init(String(localized: "Leave the map as is"), role: .secondary)
@@ -684,9 +684,9 @@ private struct MuscleDetailView: View {
 
     private var bandText: LocalizedStringKey {
         switch load?.band ?? .below {
-        case .below: return "Below the recommended band — room for more volume this week."
+        case .below: return "Below the recommended band: room for more volume this week."
         case .within: return "Within the recommended weekly band."
-        case .above: return "Above the recommended band — a lot of volume this week."
+        case .above: return "Above the recommended band: a lot of volume this week."
         }
     }
 
@@ -763,9 +763,9 @@ private struct MuscleDetailView: View {
 
     private func recommendationText(_ r: MuscleFatigueMap.Readiness) -> LocalizedStringKey {
         switch r {
-        case .rest: return "Your recovery is low — rest or train light today."
-        case .caution: return "Still loaded — give it a day or two before training it again."
-        case .ready: return "Fresh and ready — a good muscle to train today."
+        case .rest: return "Your recovery is low: rest or train light today."
+        case .caution: return "Still loaded: give it a day or two before training it again."
+        case .ready: return "Fresh and ready: a good muscle to train today."
         }
     }
 }

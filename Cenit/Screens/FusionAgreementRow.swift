@@ -52,7 +52,7 @@ struct FusionAgreementRow: View {
 }
 
 #if DEBUG
-#Preview("FusionAgreementRow — states") {
+#Preview("FusionAgreementRow: states") {
     VStack(alignment: .leading, spacing: 16) {
         FusionAgreementRow(
             point: FusedMetricPoint(

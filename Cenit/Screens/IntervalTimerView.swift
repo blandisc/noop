@@ -115,7 +115,7 @@ struct IntervalTimerView: View {
             Text("Interval Timer")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
-            Text("Silent haptic HIIT — the strap buzzes the transitions")
+            Text("Silent haptic HIIT: the strap buzzes the transitions")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
         }

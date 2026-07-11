@@ -409,8 +409,8 @@ struct MetricDetailScreen: View {
                     InlineFlagChip("trend, not cause", color: theme.inkTertiary)   // handoff chip (FER-830)
                 }
                 Text(m.weekendHigher
-                     ? "Your weekends average about \(fmt(m.weekendAvg)) steps — roughly \(pctStr) more than your weekdays."
-                     : "Your weekends average about \(fmt(m.weekendAvg)) steps — roughly \(pctStr) fewer than your weekdays.")
+                     ? "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) more than your weekdays."
+                     : "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) fewer than your weekdays.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -524,10 +524,10 @@ struct MetricDetailScreen: View {
             return "The oxygen in your blood, read at your wrist while you sleep. A healthy adult usually stays at 95% or above."
 
         case ("heart_rate", .header):
-            return "Your heart rate across the day, in 5-minute averages. Your resting heart rate — the low while you sleep — is its own metric."
+            return "Your heart rate across the day, in 5-minute averages. Your resting heart rate, the low while you sleep, is its own metric."
 
         case ("steps", .header):
-            return "Your step count for today. Steady activity — even a short walk — supports your heart, your mood and your recovery."
+            return "Your step count for today. Steady activity, even a short walk, supports your heart, your mood and your recovery."
         case ("steps", .trend):
             return "Where your steps are headed this month compared with last month."
 
@@ -719,7 +719,7 @@ struct MetricDetailScreen: View {
                         Text("\(fmt(only)) \(unit)")
                             .font(StrandFont.bodyNumber)
                             .foregroundStyle(metricHue)
-                        Text("Only one reading in this range — not enough to draw a line yet.")
+                        Text("Only one reading in this range: not enough to draw a line yet.")
                             .font(StrandFont.footnote)
                             .foregroundStyle(theme.inkTertiary)
                     }
@@ -1386,7 +1386,7 @@ struct MetricDetailScreen: View {
         // the directional sentences stay inside the accordion's content.
         InfoAccordion(
             title: "What moves it",
-            explanation: "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)",
+            explanation: "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance: never the number, and never as a cause. (Plews 2013)",
             accessibilityLabel: "Information about what moves it",
             theme: theme
         ) {
@@ -1394,7 +1394,7 @@ struct MetricDetailScreen: View {
                 if whatMovesItFindings.isEmpty {
                     // No relationship cleared the gate yet (too few paired nights, or none strong enough).
                     // Honest empty state instead of vanishing — neutral wording true in both cases (FER-246).
-                    Text("Not enough data yet — keep wearing your strap and check back in a few weeks.")
+                    Text("Not enough data yet: keep wearing your strap and check back in a few weeks.")
                         .font(StrandFont.caption)
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1569,7 +1569,7 @@ struct MetricDetailScreen: View {
             Text("No VO₂max yet")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
-            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal — it isn't recorded by the WHOOP strap.")
+            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -2207,7 +2207,7 @@ struct MetricDetailScreen: View {
                 inlineDisclosure(label: "What moves it", text: EX_QUEMUEVE)
             }
             if whatMovesItFindings.isEmpty {
-                Text("Not enough data yet — keep wearing your strap and check back in a few weeks.")
+                Text("Not enough data yet: keep wearing your strap and check back in a few weeks.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
@@ -2294,11 +2294,11 @@ struct MetricDetailScreen: View {
                 }
                 // Honest, state-specific note before the method line.
                 if s.lf == nil {
-                    spectralNote("Last night's reading was short, so it only covers the respiratory part — not the slow waves.")
+                    spectralNote("Last night's reading was short, so it only covers the respiratory part: not the slow waves.")
                 } else if s.hf.label == nil {
                     spectralNote("Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you.")
                 }
-                spectralNote("Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself — not a diagnosis or a “stress balance.”")
+                spectralNote("Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself: not a diagnosis or a “stress balance.”")
             }
         }
     }
@@ -2406,9 +2406,9 @@ struct MetricDetailScreen: View {
     private var EX_TREND: LocalizedStringKey { "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage compares this period's average against the previous period of the same length. Average, Lowest and Highest are from the range you selected." }
     private var EX_RANGO: LocalizedStringKey { "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)" }
     private var EX_CONSIST_TECH: LocalizedStringKey { "Coefficient of variation = standard deviation ÷ the mean of your last few weeks. It measures how spread out your values are around your average. Low = steady. In HRV, a rising CV can precede fatigue even while the value still looks high. (Plews 2013)" }
-    private var EX_CONSIST_PLAIN: LocalizedStringKey { "How alike your nights are to one another. \"Steady\" means they resemble each other. When HRV starts jumping from night to night — even while the average still looks high — it tends to get ahead of fatigue, before the number drops." }
-    private var EX_QUEMUEVE: LocalizedStringKey { "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance — never the number, and never as a cause. (Plews 2013)" }
-    private var EX_SPO2_FLOOR: LocalizedStringKey { "95% is the typical floor for a healthy adult — the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend." }
+    private var EX_CONSIST_PLAIN: LocalizedStringKey { "How alike your nights are to one another. \"Steady\" means they resemble each other. When HRV starts jumping from night to night, even while the average still looks high, it tends to get ahead of fatigue, before the number drops." }
+    private var EX_QUEMUEVE: LocalizedStringKey { "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance: never the number, and never as a cause. (Plews 2013)" }
+    private var EX_SPO2_FLOOR: LocalizedStringKey { "95% is the typical floor for a healthy adult: the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend." }
 
     // MARK: - Colour + format
 
@@ -2484,7 +2484,7 @@ private func sampleVitalSeries(base: Double, swing: Double, days: Int = 40) -> [
     }
 }
 
-#Preview("MetricDetailScreen — HRV (full)") {
+#Preview("MetricDetailScreen: HRV (full)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricDetailScreen(
             spec: .hrv(64),
@@ -2495,7 +2495,7 @@ private func sampleVitalSeries(base: Double, swing: Double, days: Int = 40) -> [
     }
 }
 
-#Preview("MetricDetailScreen — HRV (focus)") {
+#Preview("MetricDetailScreen: HRV (focus)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricDetailScreen(
             spec: .hrv(64),
@@ -2506,7 +2506,7 @@ private func sampleVitalSeries(base: Double, swing: Double, days: Int = 40) -> [
     }
 }
 
-#Preview("MetricDetailScreen — Resting HR (full)") {
+#Preview("MetricDetailScreen: Resting HR (full)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricDetailScreen(
             spec: .restingHR(54),
@@ -2516,7 +2516,7 @@ private func sampleVitalSeries(base: Double, swing: Double, days: Int = 40) -> [
     }
 }
 
-#Preview("MetricDetailScreen — Respiratory (full)") {
+#Preview("MetricDetailScreen: Respiratory (full)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricDetailScreen(
             spec: .respiratory(14.8),
@@ -2538,7 +2538,7 @@ private func sampleHRCurve() -> [TrendPoint] {
     }
 }
 
-#Preview("MetricDetailScreen — Heart Rate (full)") {
+#Preview("MetricDetailScreen: Heart Rate (full)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricDetailScreen(
             spec: .heartRate(68),
@@ -2551,7 +2551,7 @@ private func sampleHRCurve() -> [TrendPoint] {
     }
 }
 
-#Preview("MetricDetailScreen — Heart Rate (no readings)") {
+#Preview("MetricDetailScreen: Heart Rate (no readings)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricDetailScreen(
             spec: .heartRate(nil),
@@ -2563,7 +2563,7 @@ private func sampleHRCurve() -> [TrendPoint] {
     }
 }
 
-#Preview("MetricDetailScreen — HRV (calibrating)") {
+#Preview("MetricDetailScreen: HRV (calibrating)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricDetailScreen(
             spec: .hrv(nil),

@@ -241,6 +241,30 @@ final class AnalyticsEngineTests: XCTestCase {
 
     // MARK: - Local civil-day attribution (FER-226)
 
+    func testDayRangeMatchesDayStringAtBoundaries() {
+        let day = "2024-06-15"
+        for tz in [0, -21600, 19800] {
+            guard let range = AnalyticsEngine.dayRange(day, tzOffsetSeconds: tz) else {
+                XCTFail("dayRange should parse \(day) for tz=\(tz)")
+                continue
+            }
+            let dayStart = range.lowerBound
+            let timestamps = [
+                dayStart - 1,
+                dayStart,
+                dayStart + 43_200,
+                dayStart + 86_399,
+                dayStart + 86_400,
+            ]
+            for ts in timestamps {
+                let numeric = range.contains(ts)
+                let stringMatch = AnalyticsEngine.dayString(ts, tzOffsetSeconds: tz) == day
+                XCTAssertEqual(numeric, stringMatch,
+                               "mismatch at ts=\(ts) tz=\(tz): dayRange.contains=\(numeric) dayString==day=\(stringMatch)")
+            }
+        }
+    }
+
     func testDayStringLocalNegativeOffsetCrossesMidnight() {
         // 2026-06-18 01:30:00 UTC is still 2026-06-17 19:30 in México (UTC−6) — the exact incident.
         let ts = utcTimestamp("2026-06-18 01:30:00")

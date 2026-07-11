@@ -280,7 +280,7 @@ struct AppleHealthView: View {
         let rows = loaded ? windowedRows : appleRows
         guard let first = rows.first?.day, let last = rows.last?.day,
               let lo = date(first), let hi = date(last) else {
-            return String(localized: "Steps, heart, sleep, body composition and VO₂ max — read locally on this iPhone.")
+            return String(localized: "Steps, heart, sleep, body composition and VO₂ max: read locally on this iPhone.")
         }
         let loS = Self.spanFormatter.string(from: lo)
         let hiS = Self.spanFormatter.string(from: hi)
@@ -637,7 +637,7 @@ struct AppleHealthView: View {
         let n = rows.count
         let unit = n == 1 ? "reading" : "readings"
         if eff != range {
-            return "\(n) \(unit) · sparse — widened to \(eff.name)"
+            return "\(n) \(unit) · sparse: widened to \(eff.name)"
         }
         return "\(n) \(unit) · \(range.name)"
     }
@@ -753,13 +753,13 @@ private func appleHealthPreviewData() -> AppleHealthView.PreviewData {
     return .init(rows: rows, workoutCount: 124, series: series)
 }
 
-#Preview("Apple Health — seeded") {
+#Preview("Apple Health: seeded") {
     AppleHealthView(previewData: appleHealthPreviewData())
         .environmentObject(Repository(deviceId: "preview"))
         .frame(width: 920, height: 980)
 }
 
-#Preview("Apple Health — empty") {
+#Preview("Apple Health: empty") {
     AppleHealthView(previewData: .init(rows: [], workoutCount: 0, series: [:]))
         .environmentObject(Repository(deviceId: "preview"))
         .frame(width: 920, height: 600)

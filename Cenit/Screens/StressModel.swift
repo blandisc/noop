@@ -126,26 +126,26 @@ struct StressModel {
         switch band {
         case .high:
             if rhrUp && hrvDn {
-                return String(localized: "Resting HR is elevated and HRV is below your baseline — both classic signs of high activation. Prioritise rest, hydration and an easy day.")
+                return String(localized: "Resting HR is elevated and HRV is below your baseline: both classic signs of high activation. Prioritise rest, hydration and an easy day.")
             } else if hrvDn {
                 return String(localized: "HRV has dropped well below your baseline, pointing to elevated stress or fatigue. Ease off and give your body time to recover.")
             } else if rhrUp {
-                return String(localized: "Resting heart rate is running high versus your norm — your body is under load today. Keep effort light.")
+                return String(localized: "Resting heart rate is running high versus your norm: your body is under load today. Keep effort light.")
             }
             return String(localized: "Your autonomic markers are skewed toward stress today. Treat it as a recovery-focused day.")
         case .medium:
             if rhrUp || hrvDn {
                 let driver = rhrUp ? String(localized: "resting HR is a touch high") : String(localized: "HRV is a little low")
-                return String(localized: "Slightly off baseline — \(driver) — so you're moderately activated. Nothing alarming; just don't overreach.")
+                return String(localized: "Slightly off baseline, \(driver), so you're moderately activated. Nothing alarming; just don't overreach.")
             }
-            return String(localized: "You're sitting around your typical autonomic baseline — moderate stress, a normal, balanced day.")
+            return String(localized: "You're sitting around your typical autonomic baseline: moderate stress, a normal, balanced day.")
         case .low:
             if rhrDn && hrvUp {
-                return String(localized: "Resting heart rate is low and HRV is up — your nervous system looks well-recovered and calm. A great day to push if you want to.")
+                return String(localized: "Resting heart rate is low and HRV is up: your nervous system looks well-recovered and calm. A great day to push if you want to.")
             } else if hrvUp {
                 return String(localized: "HRV is above baseline, a sign of a relaxed, well-recovered nervous system. Stress is low.")
             }
-            return String(localized: "Resting heart rate and HRV are sitting at or below baseline — low physiological stress. You're in a calm, recovered state.")
+            return String(localized: "Resting heart rate and HRV are sitting at or below baseline: low physiological stress. You're in a calm, recovered state.")
         }
     }
 }

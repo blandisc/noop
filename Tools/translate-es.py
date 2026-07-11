@@ -18,6 +18,29 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    # FER-878 — Pulido de «Hoy» al ADN §8.7 / handoff Detalle de Tendencias.
+    # Regla de copy FER-642/836: toda comparación es «vs tu base»; sin em-dash (·, :, coma).
+    "vs your baseline": "vs tu base",
+    "At your baseline": "En tu base",
+    "No baseline of your own yet": "Sin base propia aún",
+    "computed on your phone": "calculado en tu teléfono",
+    "The five marks below add up to your recovery of %lld.":
+        "Las cinco marcas de abajo suman tu recuperación de %lld.",
+    "The longer a mark, the more that signal weighed today.":
+        "Mientras más larga la marca, más pesó esa señal hoy.",
+    "HRV (how your heart's timing varied overnight) carries the most weight, because it's the earliest sign of how recovered you are.":
+        "La VFC (cómo varió el ritmo de tu corazón durante la noche) es la que más pesa, porque es la señal más temprana de qué tan recuperado estás.",
+    # Barrido de em-dashes (claves de copy nuevas tras el reemplazo · / : / punto).
+    "Support Cénit · donate or get in touch": "Apoya a Cénit · dona o escríbenos",
+    "Short night · low confidence": "Noche corta · confianza baja",
+    "Wear the strap tonight: the first of %lld nights your own baseline needs.":
+        "Usa la banda esta noche: la primera de %lld noches que tu base necesita.",
+    "All %lld nights are in. Computing your first verdict.":
+        "Las %lld noches están completas. Calculando tu primer veredicto.",
+    "Your own baseline sharpens each night · you're at %lld.":
+        "Tu base se afina cada noche · vas en %lld.",
+    "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here.":
+        "La lectura de tu día viene de cómo dormiste. Aún no hay datos de anoche. Duerme con tu banda y sincroniza en la mañana, y tu veredicto aparece aquí.",
     # Atribución por cobertura en Recuperación estimada (día Apple-only): el bloque «Hoy, vs tu normal»
     # ahora siempre presente, mostrando dirección por señal vs tu norma de Apple (sin puntos).
     "Where the signals Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.":
@@ -145,7 +168,7 @@ ES: dict[str, str] = {
     "Steady · similar nights": "Estable · noches parecidas",
     "Variable · precedes fatigue": "Variable · adelanta fatiga",
     # SpO₂ — disclosure de la zona sana
-    "95% is the typical floor for a healthy adult — the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend.": "El 95% es el piso típico de un adulto sano, la misma referencia para todos, no tu base personal. Debajo de 90% se considera bajo (hipoxemia). El sensor de muñeca es menos preciso que un oxímetro médico, así que léelo como tendencia.",
+    "95% is the typical floor for a healthy adult: the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend.": "El 95% es el piso típico de un adulto sano, la misma referencia para todos, no tu base personal. Debajo de 90% se considera bajo (hipoxemia). El sensor de muñeca es menos preciso que un oxímetro médico, así que léelo como tendencia.",
     # Tu patrón
     "What moves it": "Qué la mueve",
     "trend, not cause": "tendencia, no causa",
@@ -240,7 +263,7 @@ ES: dict[str, str] = {
     "Your strength sessions appear in Health and count toward your Move ring, with estimated calories.": "Tus sesiones de fuerza aparecen en Salud y cuentan para tu anillo de Movimiento, con calorías estimadas.",
     # FER-397 — Estrés: fallback al último día con dato (tope ayer, fechado)
     'Yesterday · %@': 'ayer · %@',
-    "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below.": "Sin lectura en los últimos días. Usa tu banda de noche y se actualizará cuando sincronice, tu historial está abajo.",
+    "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs: your history is below.": "Sin lectura en los últimos días. Usa tu banda de noche y se actualizará cuando sincronice, tu historial está abajo.",
     # FER-388 — Patrones de estrés por evento
     '«%@» tends to coincide with higher stress.': '«%@» tiende a coincidir con tu estrés alto.',
     '«%@» tends to coincide with lower stress.': '«%@» tiende a coincidir con tu estrés bajo.',
@@ -316,7 +339,7 @@ ES: dict[str, str] = {
     'Preview this template': 'Ver esta plantilla',
     'Back to templates': 'Volver a plantillas',
     # FER-377 — Estrés × calendario: el «mapa del día»
-    'No events today and no stress readings yet — your curve fills in as your strap syncs.': "Hoy no hay eventos ni lecturas de estrés todavía, tu curva se llena conforme tu banda sincroniza.",
+    "No events today and no stress readings yet: your curve fills in as your strap syncs.": "Hoy no hay eventos ni lecturas de estrés todavía, tu curva se llena conforme tu banda sincroniza.",
     'Stress through the day': 'Estrés a lo largo del día',
     'Information about stress through the day': 'Información sobre el estrés a lo largo del día',
     'Connect my calendar': 'Conectar mi calendario',
@@ -326,7 +349,7 @@ ES: dict[str, str] = {
     'Choose calendars': 'Elegir calendarios',
     'Crossing your day…': 'Cruzando tu día…',
     "You have no events today in the calendars you chose. Your stress curve is still here; come back when something's scheduled to see coincidences.": 'Hoy no tienes eventos en los calendarios que elegiste. Tu curva de estrés sigue aquí; vuelve cuando tengas algo agendado para ver coincidencias.',
-    "I'm still learning your rhythm — I need a few days of waking readings to mark your peaks. Your events are already here.": "Aún estoy aprendiendo tu ritmo, necesito unos días de lecturas de vigilia para marcar tus picos. Tus eventos ya están aquí.",
+    "I'm still learning your rhythm: I need a few days of waking readings to mark your peaks. Your events are already here.": "Aún estoy aprendiendo tu ritmo, necesito unos días de lecturas de vigilia para marcar tus picos. Tus eventos ya están aquí.",
     'All day': 'Todo el día',
     'Your highest point today, %@, fell within “%@”.': 'Tu punto más alto de hoy, %@, cayó dentro de «%@».',
     "Your highest point today was at %@. It didn't coincide with any of your events.": 'Tu punto más alto de hoy fue a las %@. No coincidió con ninguno de tus eventos.',
@@ -359,10 +382,10 @@ ES: dict[str, str] = {
     'Other': 'Otra',
     # FER-431 — Dieta: ciclo semanal
     'Rest day · no meals planned': 'Día libre · sin comidas hoy',
-    'Rest day — your plan has no meals today. Come back tomorrow or use ‹ ›.': "Día libre, tu plan no tiene comidas hoy. Vuelve mañana o usa ‹ ›.",
+    "Rest day: your plan has no meals today. Come back tomorrow or use ‹ ›.": "Día libre, tu plan no tiene comidas hoy. Vuelve mañana o usa ‹ ›.",
     'Days': 'Días',
-    "That plan's cycle isn't supported — it must be daily or weekly.": "El ciclo de ese plan no es válido, debe ser diario o semanal.",
-    'One of the meals has invalid days — use weekday numbers 1–7. Check the file and try again.': "Una comida tiene días inválidos, usa números de día 1–7. Revisa el archivo e inténtalo de nuevo.",
+    "That plan's cycle isn't supported: it must be daily or weekly.": "El ciclo de ese plan no es válido, debe ser diario o semanal.",
+    "One of the meals has invalid days: use weekday numbers 1–7. Check the file and try again.": "Una comida tiene días inválidos, usa números de día 1–7. Revisa el archivo e inténtalo de nuevo.",
     "A weekly plan needs each meal's days. Check the file and try again.": 'Un plan semanal necesita los días de cada comida. Revisa el archivo e inténtalo de nuevo.',
     # FER-412 — Dieta: recordatorios locales por comida
     'Meal reminders': 'Recordatorios por comida',
@@ -407,7 +430,7 @@ ES: dict[str, str] = {
     'Copy the prompt and paste it into your trusted AI, along with your plan (PDF or photo).': 'Copia el prompt y pégalo en tu IA de confianza, junto con tu plan (PDF o foto).',
     'Copied': 'Copiado',
     'Copy prompt': 'Copiar prompt',
-    'Bring back the file it gives you — paste it or upload it.': 'Trae el archivo que te dé: pégalo o súbelo.',
+    "Bring back the file it gives you: paste it or upload it.": 'Trae el archivo que te dé: pégalo o súbelo.',
     'Upload .json file': 'Subir archivo .json',
     'Continue': 'Continuar',
     'Paste the result here…': 'Pega aquí el resultado…',
@@ -421,14 +444,14 @@ ES: dict[str, str] = {
     'Replace plan': 'Reemplazar plan',
     "We couldn't read that as a plan file. Paste the full result your AI gave you, or upload the .json.": 'No pudimos leer eso como un archivo de plan. Pega el resultado completo que te dio tu IA, o sube el .json.',
     "That file isn't a NOOP diet plan. Make sure you used the prompt above.": 'Ese archivo no es un plan de dieta de NOOP. Asegúrate de haber usado el prompt de arriba.',
-    "The plan's language isn't supported — it must be Spanish or English.": "El idioma del plan no es compatible, debe ser español o inglés.",
+    "The plan's language isn't supported: it must be Spanish or English.": "El idioma del plan no es compatible, debe ser español o inglés.",
     'Only daily plans are supported for now.': 'Por ahora solo se admiten planes diarios.',
     'That plan has no meals. Check the file and try again.': 'Ese plan no tiene comidas. Revisa el archivo y vuelve a intentar.',
     'One of the meals has no food options. Check the file and try again.': 'Una de las comidas no tiene opciones de alimentos. Revisa el archivo y vuelve a intentar.',
     'One of the meals has an empty option. Check the file and try again.': 'Una de las comidas tiene una opción vacía. Revisa el archivo y vuelve a intentar.',
     'The daily targets must be numbers. Check the file and try again.': 'Los objetivos diarios deben ser números. Revisa el archivo y vuelve a intentar.',
     # FER-69 — Reskin «Automatizaciones» a «Instrumento» + saneo Mac-only
-    'Make the strap do things — tap to act, train by feel, wake to a buzz.': "Haz que la banda haga cosas, toca para actuar, entrena por sensación, despierta con un zumbido.",
+    "Make the strap do things: tap to act, train by feel, wake to a buzz.": "Haz que la banda haga cosas, toca para actuar, entrena por sensación, despierta con un zumbido.",
     'Double-tap': 'Doble toque',
     'Shortcut name': 'Nombre del atajo',
     'Wear & presence': 'Uso y presencia',
@@ -442,16 +465,16 @@ ES: dict[str, str] = {
     'Illness early-warning': 'Aviso temprano de enfermedad',
     'Watch for early-illness signs': 'Vigilar señales tempranas de enfermedad',
     'Double-tap the strap to trigger an action. (The strap exposes a single double-tap gesture.)': 'Da doble toque a la banda para disparar una acción. (La banda expone un solo gesto de doble toque.)',
-    'Run a Shortcut when the strap comes off or goes back on — set a Focus, pause media, mark yourself away.': "Ejecuta un atajo cuando te quitas o te pones la banda, activa un modo de Concentración, pausa el audio, márcate ausente.",
-    'Presence automation — set a Focus, pause media, set away…': "Automatización de presencia, activa un modo de Concentración, pausa el audio, márcate ausente…",
+    "Run a Shortcut when the strap comes off or goes back on: set a Focus, pause media, mark yourself away.": "Ejecuta un atajo cuando te quitas o te pones la banda, activa un modo de Concentración, pausa el audio, márcate ausente.",
+    "Presence automation: set a Focus, pause media, set away…": "Automatización de presencia, activa un modo de Concentración, pausa el audio, márcate ausente…",
     'Reverse the above when you return.': 'Revierte lo anterior cuando regresas.',
-    "Train by feel — the strap buzzes so you don't have to watch a screen.": "Entrena por sensación, la banda zumba para que no tengas que mirar una pantalla.",
+    "Train by feel: the strap buzzes so you don't have to watch a screen.": "Entrena por sensación, la banda zumba para que no tengas que mirar una pantalla.",
     'Buzz when you hit your top zone (ease off) and again when you recover. Uses your max HR from Settings.': 'Zumba cuando llegas a tu zona más alta (baja el ritmo) y otra vez cuando te recuperas. Usa tu FC máx de Ajustes.',
-    'A gentle buzz when your HRV drops while your heart rate is calm — a cue to take a paced breath. Rate-limited to once every 15 minutes; off by default.': "Un zumbido suave cuando tu HRV baja mientras tu pulso está en calma, una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto.",
+    "A gentle buzz when your HRV drops while your heart rate is calm: a cue to take a paced breath. Rate-limited to once every 15 minutes; off by default.": "Un zumbido suave cuando tu HRV baja mientras tu pulso está en calma, una señal para respirar con calma. Limitado a una vez cada 15 minutos; apagado por defecto.",
     "Wake to a wrist buzz. This arms the strap's own firmware alarm, so it still fires even if your iPhone is asleep or Cénit is closed.": 'Despierta con un zumbido en la muñeca. Esto arma la alarma del propio firmware de la banda, así que suena aunque tu iPhone esté dormido o Cénit esté cerrado.',
     'Arms the strap to buzz at your wake time.': 'Arma la banda para que zumbe a tu hora de despertar.',
-    'Watches your resting HR, HRV, skin temperature and respiration against your own 28-day baseline. On-device and approximate — informational only, not a diagnosis.': "Vigila tu FC en reposo, HRV, temperatura de la piel y respiración contra tu propia base de 28 días. En el dispositivo y aproximado, solo informativo, no un diagnóstico.",
-    'Needs at least 14 days of history. When two or more signals drift together you get a notification — at most once a day.': "Necesita al menos 14 días de historial. Cuando dos o más señales se desvían juntas, recibes una notificación, máximo una vez al día.",
+    "Watches your resting HR, HRV, skin temperature and respiration against your own 28-day baseline. On-device and approximate: informational only, not a diagnosis.": "Vigila tu FC en reposo, HRV, temperatura de la piel y respiración contra tu propia base de 28 días. En el dispositivo y aproximado, solo informativo, no un diagnóstico.",
+    "Needs at least 14 days of history. When two or more signals drift together you get a notification: at most once a day.": "Necesita al menos 14 días de historial. Cuando dos o más señales se desvían juntas, recibes una notificación, máximo una vez al día.",
     # FER-337 — Rediseño de Ajustes a «Instrumento»: raíz + sub-pantallas (Unidades, Log) + huérfanos rehubicados
     'Your numbers, your strap, and how Cénit works. All on this iPhone.': 'Tus números, tu banda y cómo funciona Cénit. Todo en este iPhone.',
     'Your strap': 'Tu banda',
@@ -463,7 +486,7 @@ ES: dict[str, str] = {
     'Data & sources': 'Datos y fuentes',
     'About & support': 'Acerca de y soporte',
     'Display': 'Visualización',
-    'Your data is always stored the same way — this only changes how distances, weights, heights and temperatures are shown.': 'Tus datos siempre se guardan igual; esto solo cambia cómo se muestran distancias, pesos, estaturas y temperaturas.',
+    "Your data is always stored the same way: this only changes how distances, weights, heights and temperatures are shown.": 'Tus datos siempre se guardan igual; esto solo cambia cómo se muestran distancias, pesos, estaturas y temperaturas.',
     "Your strap's connection trail. Attach it to a bug report if something looks off.": 'El rastro de conexión de tu banda. Adjúntalo a un reporte de error si algo se ve raro.',
     'View imported data': 'Ver datos importados',
     "Everything stays on this iPhone. Bring your history in once, then it's yours.": 'Todo se queda en este iPhone. Trae tu historial una vez y es tuyo.',
@@ -475,11 +498,11 @@ ES: dict[str, str] = {
     'Coverage': 'Cobertura',
     'Backup': 'Respaldo',
     'WHOOP Strap': 'Banda WHOOP',
-    'Pairs directly with your strap over Bluetooth — no WHOOP app, no cloud.': "Se vincula directo con tu banda por Bluetooth, sin app de WHOOP, sin nube.",
-    'Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)': "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de exportación de arriba.)",
+    "Pairs directly with your strap over Bluetooth: no WHOOP app, no cloud.": "Se vincula directo con tu banda por Bluetooth, sin app de WHOOP, sin nube.",
+    "Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in: nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)": "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de exportación de arriba.)",
     'Nothing imported yet': 'Aún no importas nada',
     'On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources.': 'En un iPhone: app Salud, toca tu foto, Exportar todos los datos de salud, y luego importa el .zip aquí en Datos y fuentes.',
-    'Steps, heart, sleep, body composition and VO₂ max — read locally on this iPhone.': "Pasos, corazón, sueño, composición corporal y VO₂ máx, leídos localmente en este iPhone.",
+    "Steps, heart, sleep, body composition and VO₂ max: read locally on this iPhone.": "Pasos, corazón, sueño, composición corporal y VO₂ máx, leídos localmente en este iPhone.",
     'Apple-logged': 'Registrado por Apple',
     'A standalone companion for your WHOOP. Everything stays on this device — your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project, not the WHOOP app.': "Un compañero independiente para tu WHOOP. Todo se queda en este dispositivo, tu historial, tu transmisión en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental, no la app de WHOOP.",
     # FER-312 — Pregúntale (Coach): los 2 strings que faltaban en es (setup + footnote de privacidad)
@@ -488,8 +511,8 @@ ES: dict[str, str] = {
     # FER-299 — Honestidad estadística de Insights: framing de asociación + autocorrelación
     'Association, not cause — these signals move together; neither makes the other happen.': "Asociación, no causa, estas señales se mueven juntas; ninguna hace que ocurra la otra.",
     'Association, not cause. ‘Significant’ accounts for testing every behaviour at once.': 'Asociación, no causa. ‘Significativo’ ya considera que se prueban todos los comportamientos a la vez.',
-    "Association, not cause — moving together isn't one driving the other.": "Asociación, no causa, moverse juntas no es que una empuje a la otra.",
-    'Association, not cause — these move together, neither drives the other.': "Asociación, no causa, se mueven juntas, ninguna empuja a la otra.",
+    "Association, not cause: moving together isn't one driving the other.": "Asociación, no causa, moverse juntas no es que una empuje a la otra.",
+    "Association, not cause: these move together, neither drives the other.": "Asociación, no causa, se mueven juntas, ninguna empuja a la otra.",
     'carry-over': 'arrastre',
     "Day-to-day persistence (r = %@, n = %lld) — the same signal compared with itself, so there's no independent significance to report.": "Persistencia de un día a otro (r = %@, n = %lld), la misma señal comparada consigo misma, así que no hay una significancia independiente que reportar.",
     # FER-277 — Detalle de Recuperación: bloque de pronóstico «Mañana, si descansas igual»
@@ -516,9 +539,9 @@ ES: dict[str, str] = {
     'The line is your 7-day moving average over the period you pick. The percentage compares this period\'s average with the previous period of the same length. The average and range come from the range you selected.': 'La línea es tu promedio móvil de 7 días sobre el periodo que elijas. El porcentaje compara el promedio de este periodo con el del periodo anterior del mismo largo. El promedio y el rango salen del rango que seleccionaste.',
     'The line is your 7-day moving average over the period you pick. The percentage compares this period\'s average with the previous period of the same length. Average, Lowest and Highest come from the range you selected.': 'La línea es tu promedio móvil de 7 días sobre el periodo que elijas. El porcentaje compara el promedio de este periodo con el del periodo anterior del mismo largo. Promedio, Más bajo y Más alto salen del rango que seleccionaste.',
     'Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this period\'s average with the previous period of the same length; Average, Lowest and Highest come from the range you selected. What matters isn\'t a single day — it\'s several days in a row drifting into a higher band.': 'Cada punto es tu índice de estrés diario. Las bandas detrás son las zonas fijas Bajo / Moderado / Alto (0–1 / 1–2 / 2–3). El porcentaje compara el promedio de este periodo con el del periodo anterior del mismo largo; Promedio, Más bajo y Más alto salen del rango que seleccionaste. Lo que importa no es un solo día, sino varios días seguidos derivando a una banda más alta.',
-    'Each point is one night\'s deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0) — inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this period\'s average with the previous period of the same length, in °C.': "Cada punto es la desviación de una noche respecto a tu base. La banda sombreada es tu propio vaivén típico de noche a noche (±1 DE alrededor de 0), dentro de ella es lo normal; varias noches seguidas saliéndose por el mismo lado son la señal. El promedio y el rango salen del periodo que elijas; el chip compara el promedio de este periodo con el del periodo anterior del mismo largo, en °C.",
+    "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0): inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this period's average with the previous period of the same length, in °C.": "Cada punto es la desviación de una noche respecto a tu base. La banda sombreada es tu propio vaivén típico de noche a noche (±1 DE alrededor de 0), dentro de ella es lo normal; varias noches seguidas saliéndose por el mismo lado son la señal. El promedio y el rango salen del periodo que elijas; el chip compara el promedio de este periodo con el del periodo anterior del mismo largo, en °C.",
     # FER-256 — Detalle de Temperatura de la piel (SkinTempDetailScreen)
-    "How far last night's skin temperature ran from your own recent baseline, in °C. We learn your normal over recent nights, so 0 is your usual and the number is the shift up or down. A single warm or cool night rarely means much — what's worth noticing is several nights in a row drifting the same way. It's a comfort signal, not a thermometer or a diagnosis.": "Qué tanto se alejó la temperatura de tu piel anoche de tu propia base reciente, en °C. Aprendemos tu normal de las últimas noches, así que 0 es lo de siempre y el número es cuánto subió o bajó. Una sola noche cálida o fría rara vez significa algo, lo que vale la pena notar son varias noches seguidas moviéndose hacia el mismo lado. Es una señal de confort, no un termómetro ni un diagnóstico.",
+    "How far last night's skin temperature ran from your own recent baseline, in °C. We learn your normal over recent nights, so 0 is your usual and the number is the shift up or down. A single warm or cool night rarely means much: what's worth noticing is several nights in a row drifting the same way. It's a comfort signal, not a thermometer or a diagnosis.": "Qué tanto se alejó la temperatura de tu piel anoche de tu propia base reciente, en °C. Aprendemos tu normal de las últimas noches, así que 0 es lo de siempre y el número es cuánto subió o bajó. Una sola noche cálida o fría rara vez significa algo, lo que vale la pena notar son varias noches seguidas moviéndose hacia el mismo lado. Es una señal de confort, no un termómetro ni un diagnóstico.",
     'Information about skin temperature': 'Información sobre la temperatura de la piel',
     'No skin-temperature reading yet. Wear your strap overnight and open this again after it syncs.': 'Aún no hay lectura de temperatura de piel. Usa tu banda por la noche y vuelve a abrir esto cuando sincronice.',
     'Right around your usual nighttime baseline.': 'Justo alrededor de tu base nocturna de siempre.',
@@ -526,15 +549,15 @@ ES: dict[str, str] = {
     'A touch cooler than your baseline last night.': 'Una pizca más fría que tu base anoche.',
     "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0) — inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this month's average with last month's, in °C.": "Cada punto es la desviación de una noche respecto a tu base. La banda sombreada es tu propio vaivén típico de noche a noche (±1 DE alrededor de 0), dentro de ella es lo normal; varias noches seguidas saliéndose por el mismo lado son la señal. El promedio y el rango salen del periodo que elijas; el chip compara el promedio de este mes con el del mes pasado, en °C.",
     'Information about the skin temperature trend': 'Información sobre la tendencia de la temperatura de la piel',
-    'The standard deviation of your nightly deviations — how much your skin temperature wanders around your baseline from night to night, in °C. A small number means steady thermoregulation; a larger one means more night-to-night swing. (We show the spread in °C rather than a percentage because the average sits near zero, where a percentage would be meaningless.)': "La desviación estándar de tus desviaciones nocturnas, cuánto se mueve la temperatura de tu piel alrededor de tu base de noche a noche, en °C. Un número chico significa una termorregulación estable; uno más grande, más vaivén de noche a noche. (Mostramos la dispersión en °C y no en porcentaje porque el promedio queda cerca de cero, donde un porcentaje no significaría nada.)",
+    "The standard deviation of your nightly deviations: how much your skin temperature wanders around your baseline from night to night, in °C. A small number means steady thermoregulation; a larger one means more night-to-night swing. (We show the spread in °C rather than a percentage because the average sits near zero, where a percentage would be meaningless.)": "La desviación estándar de tus desviaciones nocturnas, cuánto se mueve la temperatura de tu piel alrededor de tu base de noche a noche, en °C. Un número chico significa una termorregulación estable; uno más grande, más vaivén de noche a noche. (Mostramos la dispersión en °C y no en porcentaje porque el promedio queda cerca de cero, donde un porcentaje no significaría nada.)",
     'How much your nightly temperature swings around your baseline. Lower is steadier.': 'Cuánto oscila tu temperatura nocturna alrededor de tu base. Más bajo es más estable.',
-    "Each night your strap records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C — so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation.": "Cada noche tu banda registra la temperatura de tu piel. La comparamos con una base móvil de tus propias noches recientes y reportamos la diferencia en °C, así el valor siempre es relativo a ti, no una temperatura absoluta. La tendencia y la dispersión se calculan de esa misma desviación nocturna.",
+    "Each night your strap records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation.": "Cada noche tu banda registra la temperatura de tu piel. La comparamos con una base móvil de tus propias noches recientes y reportamos la diferencia en °C, así el valor siempre es relativo a ti, no una temperatura absoluta. La tendencia y la dispersión se calculan de esa misma desviación nocturna.",
     'Nightly skin-temperature deviation from a personal rolling baseline. A comfort signal, not a thermometer or a diagnosis.': 'Desviación nocturna de la temperatura de piel respecto a una base móvil personal. Una señal de confort, no un termómetro ni un diagnóstico.',
     'Nightly skin-temperature deviation, in degrees Celsius': 'Desviación nocturna de la temperatura de piel, en grados Celsius',
     # FER-254 — Detalle de Métrica «Instrumento» para Steps
     'Steps · today': 'Pasos · hoy',
     '7-day average · %@ steps': 'Promedio de 7 días · %@ pasos',
-    'Your step count for today. Steady activity — even a short walk — supports your heart, your mood and your recovery.': "Tu conteo de pasos de hoy. La actividad constante, aunque sea una caminata corta, apoya tu corazón, tu ánimo y tu recuperación.",
+    "Your step count for today. Steady activity, even a short walk, supports your heart, your mood and your recovery.": "Tu conteo de pasos de hoy. La actividad constante, aunque sea una caminata corta, apoya tu corazón, tu ánimo y tu recuperación.",
     'Where your steps are headed this month compared with last month.': 'Hacia dónde van tus pasos este mes comparado con el anterior.',
     'Gathering': 'Reuniendo',
     '%lld / 7 days': '%lld / 7 días',
@@ -566,25 +589,25 @@ ES: dict[str, str] = {
     "A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.": 'Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas. Es uno de los predictores de salud a largo plazo mejor fundamentados.',
     'Mandsager 2018 (JAMA) · Kodama 2009': 'Mandsager 2018 (JAMA) · Kodama 2009',
     'No VO₂max yet': 'Aún no hay VO₂max',
-    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal — it isn't recorded by the WHOOP strap.": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS, la banda WHOOP no lo registra.",
+    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap.": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS, la banda WHOOP no lo registra.",
     'ml/kg/min': 'ml/kg/min',
-    "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness — and one of the best-evidenced predictors of long-term health.": "El máximo de oxígeno que tu cuerpo puede usar en ejercicio intenso, por kilo de peso. Es la mejor medida de tu condición cardiorrespiratoria, y uno de los predictores de salud a largo plazo mejor fundamentados.",
-    "Measured by your Apple Watch during outdoor walks and runs — it isn't recorded by the WHOOP strap.": "Lo mide tu Apple Watch en caminatas y carreras al aire libre, la banda WHOOP no lo registra.",
-    "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality — it's one of the best-evidenced markers of long-term health.": "Tu Apple Watch estima el VO₂max a partir de tu frecuencia cardiaca y tu ritmo en caminatas y carreras al aire libre con buena señal de GPS, así que se actualiza de vez en cuando, no a diario. Leemos dónde cae entre adultos sanos de tu edad y sexo (la mediana de referencia FRIEND) y lo traducimos en una banda sencilla. Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas, es uno de los marcadores de salud a largo plazo mejor fundamentados.",
-    'Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement — NOOP is not a medical device.': "Referencia: Kaminsky et al., Registro FRIEND (Mayo Clin Proc 2015). Asociación con longevidad: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Es una referencia poblacional aproximada, no una medición clínica, NOOP no es un dispositivo médico.",
+    "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness, and one of the best-evidenced predictors of long-term health.": "El máximo de oxígeno que tu cuerpo puede usar en ejercicio intenso, por kilo de peso. Es la mejor medida de tu condición cardiorrespiratoria, y uno de los predictores de salud a largo plazo mejor fundamentados.",
+    "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the WHOOP strap.": "Lo mide tu Apple Watch en caminatas y carreras al aire libre, la banda WHOOP no lo registra.",
+    "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality: it's one of the best-evidenced markers of long-term health.": "Tu Apple Watch estima el VO₂max a partir de tu frecuencia cardiaca y tu ritmo en caminatas y carreras al aire libre con buena señal de GPS, así que se actualiza de vez en cuando, no a diario. Leemos dónde cae entre adultos sanos de tu edad y sexo (la mediana de referencia FRIEND) y lo traducimos en una banda sencilla. Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas, es uno de los marcadores de salud a largo plazo mejor fundamentados.",
+    "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement: NOOP is not a medical device.": "Referencia: Kaminsky et al., Registro FRIEND (Mayo Clin Proc 2015). Asociación con longevidad: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Es una referencia poblacional aproximada, no una medición clínica, NOOP no es un dispositivo médico.",
     # FER-238 — Detalle de Esfuerzo (StrainDetailScreen)
-    'All-out day — about as much strain as you carry.': "Día a tope, casi todo el esfuerzo que aguantas.",
-    "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)": 'El Esfuerzo del día es tu carga cardiovascular en una escala de 0 a 21. Cada segundo en que se registra tu frecuencia cardiaca se asigna a una zona de intensidad (1–5); las zonas altas pesan más, y el total se comprime logarítmicamente, así que 21 es un máximo teórico: un día entero a intensidad máxima. (Edwards 1993; Banister 1991)',
+    "All-out day: about as much strain as you carry.": "Día a tope, casi todo el esfuerzo que aguantas.",
+    "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum: a full day at peak intensity. (Edwards 1993; Banister 1991)": 'El Esfuerzo del día es tu carga cardiovascular en una escala de 0 a 21. Cada segundo en que se registra tu frecuencia cardiaca se asigna a una zona de intensidad (1–5); las zonas altas pesan más, y el total se comprime logarítmicamente, así que 21 es un máximo teórico: un día entero a intensidad máxima. (Edwards 1993; Banister 1991)',
     'Day strain, 7-day moving average': 'Esfuerzo del día, promedio móvil de 7 días',
     'Each second of heart rate is mapped to one of five intensity zones; time in the higher zones counts for much more. The weighted total is compressed onto a 0–21 scale through a logarithmic curve, so the top of the scale represents a theoretical full day at peak intensity.': 'Cada segundo de frecuencia cardiaca se asigna a una de cinco zonas de intensidad; el tiempo en las zonas altas cuenta mucho más. El total ponderado se comprime a una escala de 0 a 21 con una curva logarítmica, así que el tope representa un día entero teórico a intensidad máxima.',
-    'Hard effort today — solid work.': "Esfuerzo fuerte hoy, buen trabajo.",
+    "Hard effort today: solid work.": "Esfuerzo fuerte hoy, buen trabajo.",
     'Heart-rate-zone load (TRIMP), compressed logarithmically. (Edwards 1993; Banister 1991)': 'Carga por zonas de frecuencia cardiaca (TRIMP), comprimida logarítmicamente. (Edwards 1993; Banister 1991)',
     'Information about day strain': 'Información sobre el esfuerzo del día',
     "Information about how today's strain added up": 'Información sobre cómo se acumuló tu esfuerzo hoy',
     'Information about the strain zones': 'Información sobre las zonas de esfuerzo',
-    'Light load today — plenty left in the tank.': "Carga ligera hoy, te queda mucho en el tanque.",
+    "Light load today: plenty left in the tank.": "Carga ligera hoy, te queda mucho en el tanque.",
     'Moderate effort today.': 'Esfuerzo moderado hoy.',
-    'No strain from today yet — your recent history is below.': "Aún no hay esfuerzo de hoy, abajo está tu historial reciente.",
+    "No strain from today yet: your recent history is below.": "Aún no hay esfuerzo de hoy, abajo está tu historial reciente.",
     'No strain yet. Wear your strap through the day and open this again after it syncs.': 'Aún no hay esfuerzo. Usa tu banda durante el día y vuelve a abrir esto cuando sincronice.',
     "The line is your 7-day moving average over the period you pick. The percentage compares this month's average with last month's. Average, Lowest and Highest come from the range you selected.": 'La línea es tu promedio móvil de 7 días en el periodo que elijas. El porcentaje compara el promedio de este mes con el del mes pasado. Promedio, Mínimo y Máximo salen del rango que seleccionaste.',
     "The line shows how your strain piled up through the day — each second of heart rate adds to the running total, so it only ever rises. It ends on today's score above.": "La línea muestra cómo se fue acumulando tu esfuerzo durante el día, cada segundo de frecuencia cardiaca suma al total, así que solo sube. Termina en tu puntaje de hoy, arriba.",
@@ -596,14 +619,14 @@ ES: dict[str, str] = {
     '%@ · recovery %lld': '%@ · recuperación %lld',
     '%@ · no reading': '%@ · sin lectura',
     # FER-225 — Detalle de Recuperación
-    'No reading from last night yet — your recent history is below.': "Aún no hay lectura de anoche, abajo está tu historial reciente.",
-    "Recovery blends several signals from your nervous system — your HRV above all, plus resting heart rate, sleep and breathing — and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)": "La recuperación combina varias señales de tu sistema nervioso, tu HRV sobre todo, más la frecuencia cardiaca en reposo, el sueño y la respiración, y las compara con tu propia base de las últimas semanas. Es una estimación de qué tan listo está tu cuerpo hoy, no un diagnóstico. (Buchheit 2014)",
+    "No reading from last night yet: your recent history is below.": "Aún no hay lectura de anoche, abajo está tu historial reciente.",
+    "Recovery blends several signals from your nervous system, your HRV above all, plus resting heart rate, sleep and breathing, and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)": "La recuperación combina varias señales de tu sistema nervioso, tu HRV sobre todo, más la frecuencia cardiaca en reposo, el sueño y la respiración, y las compara con tu propia base de las últimas semanas. Es una estimación de qué tan listo está tu cuerpo hoy, no un diagnóstico. (Buchheit 2014)",
     'Information about recovery': 'Información sobre la recuperación',
-    'Above your baseline — your body is ready for a strong day.': "Por encima de tu base, tu cuerpo está listo para un día fuerte.",
-    'Recovering — train, but keep it controlled.': "Recuperándote, entrena, pero con cabeza.",
-    'Low — prioritize rest today.': "Baja, hoy prioriza el descanso.",
-    'Calibrating — we need a few more nights of your strap.': "Calibrando, necesitamos unas noches más con tu banda.",
-    'No recovery yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources.': "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos.",
+    "Above your baseline: your body is ready for a strong day.": "Por encima de tu base, tu cuerpo está listo para un día fuerte.",
+    "Recovering: train, but keep it controlled.": "Recuperándote, entrena, pero con cabeza.",
+    "Low: prioritize rest today.": "Baja, hoy prioriza el descanso.",
+    "Calibrating: we need a few more nights of your strap.": "Calibrando, necesitamos unas noches más con tu banda.",
+    "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources.": "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos.",
     'What explains your recovery': 'Qué explica tu recuperación',
     "HRV carries the most weight — it's the best window onto your autonomic nervous system. What matters is the average of your recent nights, not a single day. If a signal is missing on a given night, its weight is shared among the others. (Plews 2013; Buchheit 2014)": 'La HRV es la que más pesa: es la mejor ventana a tu sistema nervioso autónomo. Lo que importa es el promedio de tus últimas noches, no un día suelto. Si falta una señal en una noche, su peso se reparte entre las demás. (Plews 2013; Buchheit 2014)',
     'Information about what explains your recovery': 'Información sobre qué explica tu recuperación',
@@ -654,7 +677,7 @@ ES: dict[str, str] = {
     "What the stages mean": "Qué significan las etapas",
     "Shows what this means": "Muestra qué significa esto",
     "Sleep stages": "Etapas del sueño",
-    "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate — it gets about 2 of 3 right.": "Tu noche pasa por cuatro fases. El reloj las estima con tu movimiento y tu ritmo cardiaco, así que son aproximadas: acierta cerca de 2 de cada 3.",
+    "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right.": "Tu noche pasa por cuatro fases. El reloj las estima con tu movimiento y tu ritmo cardiaco, así que son aproximadas: acierta cerca de 2 de cada 3.",
     "Dreams and memory. It consolidates what you learned and processes emotion.": "Sueños y memoria. Consolida lo que aprendiste y procesa las emociones.",
     "Physical repair. Your body restores itself and releases growth hormone.": "Reparación física. El cuerpo se restaura y libera hormona de crecimiento.",
     "Most of the night. A transition in which your body winds down.": "La mayor parte de la noche. Una transición en la que tu cuerpo baja revoluciones.",
@@ -663,8 +686,8 @@ ES: dict[str, str] = {
     "How much you slept versus what your body needs. At 100% you fully covered last night's need.": "Cuánto dormiste frente a lo que tu cuerpo necesita. Al 100% cubriste por completo lo que necesitabas anoche.",
     "Your need is your own rolling average of recent nights, never under 7.5 h.": "Tu necesidad es tu propio promedio de las últimas noches, nunca menos de 7.5 h.",
     "Of the time you spent in bed, how much you actually spent asleep. Above about 85% is considered healthy.": "Del tiempo que pasaste en cama, cuánto dormiste de verdad. Por encima del 85% se considera saludable.",
-    "The share of your sleep spent in deep and REM — the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult.": "La parte de tu sueño en profundo y REM, las etapas que te restauran física y mentalmente. Cerca del 40–50% es lo típico en un adulto sano.",
-    "How many times you briefly woke during the night. A few are completely normal — everyone surfaces between sleep cycles.": "Cuántas veces te despertaste brevemente durante la noche. Unas pocas son del todo normales: todos salimos a flote entre ciclos de sueño.",
+    "The share of your sleep spent in deep and REM: the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult.": "La parte de tu sueño en profundo y REM, las etapas que te restauran física y mentalmente. Cerca del 40–50% es lo típico en un adulto sano.",
+    "How many times you briefly woke during the night. A few are completely normal: everyone surfaces between sleep cycles.": "Cuántas veces te despertaste brevemente durante la noche. Unas pocas son del todo normales: todos salimos a flote entre ciclos de sueño.",
     "Brief awakenings are normal and often not remembered. What matters is the trend, not a single night.": "Los microdespertares son normales y a menudo no se recuerdan. Lo que importa es la tendencia, no una sola noche.",
     "How long it took you to fall asleep after lights out. Ten to twenty minutes is a healthy range.": "Cuánto tardaste en quedarte dormido tras apagar la luz. De diez a veinte minutos es un rango saludable.",
 
@@ -723,11 +746,11 @@ ES: dict[str, str] = {
 
     # MetricInfoSheet — light-theme redesign + full es-MX copy (FER-162).
     # Headlines.
-    "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum — a full day at peak intensity.": "La carga sobre tu corazón a lo largo del día, en una escala de 0 a 21. Cada segundo que se registra tu frecuencia cardíaca cae en una zona (1 a 5); las zonas más altas pesan más. El total se comprime de forma logarítmica, así que 21 es un máximo teórico: un día entero a intensidad máxima.",
+    "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum: a full day at peak intensity.": "La carga sobre tu corazón a lo largo del día, en una escala de 0 a 21. Cada segundo que se registra tu frecuencia cardíaca cae en una zona (1 a 5); las zonas más altas pesan más. El total se comprime de forma logarítmica, así que 21 es un máximo teórico: un día entero a intensidad máxima.",
     "Total time asleep last night, estimated from movement and heart rate. Sleep contributes ~15% of your recovery score and feeds the strain-to-load balance (ACWR).": "El tiempo total que dormiste anoche, estimado a partir de tu movimiento y tu frecuencia cardíaca. El sueño aporta alrededor del 15% de tu recuperación y alimenta el balance entre esfuerzo y carga (ACWR).",
-    "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.": "Tu frecuencia cardíaca cuando tu cuerpo está en reposo total: lo que le cuesta latir sin hacer nada. Más baja suele indicar un sistema cardiovascular más fuerte y eficiente. Cénit la usa como cerca del 20% de tu recuperación; una subida respecto a tu norma puede señalar fatiga o que algo se está gestando.",
+    "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.": "Tu frecuencia cardíaca cuando tu cuerpo está en reposo total: lo que le cuesta latir sin hacer nada. Más baja suele indicar un sistema cardiovascular más fuerte y eficiente. Cénit la usa como cerca del 20% de tu recuperación; una subida respecto a tu norma puede señalar fatiga o que algo se está gestando.",
     "Percentage of haemoglobin carrying oxygen in your blood. Healthy adults typically stay above 95%. A drop can indicate altitude effects, sleep apnea, or respiratory illness.": "El porcentaje de tu hemoglobina que lleva oxígeno. En adultos sanos suele mantenerse por encima del 95%. Una baja puede reflejar el efecto de la altitud, apnea del sueño o una afección respiratoria.",
-    "Daily step count. Consistent activity — even a 30-minute walk — supports cardiovascular health, mood, and recovery quality.": "Tu conteo de pasos del día. La actividad constante, aunque sea una caminata de 30 minutos, apoya tu salud cardiovascular, tu ánimo y la calidad de tu recuperación.",
+    "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health, mood, and recovery quality.": "Tu conteo de pasos del día. La actividad constante, aunque sea una caminata de 30 minutos, apoya tu salud cardiovascular, tu ánimo y la calidad de tu recuperación.",
     "Your heart rate across the day, averaged in 5-minute buckets.": "Tu frecuencia cardíaca a lo largo del día, promediada en intervalos de 5 minutos.",
     # Notes.
     "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead.": "Se mide de noche con tu strap; cuando no lo traes, Cénit usa la frecuencia cardíaca en reposo de Apple Salud.",
@@ -758,13 +781,13 @@ ES: dict[str, str] = {
 
     # HRV "how it's calculated" explainer sheet (FER-109).
     "HRV is how much the time between your heartbeats varies, in milliseconds, while you sleep. More variation usually means better recovery. What matters isn't the number itself, but how it compares with your own average.": "La HRV es cuánto varían, en milisegundos, los tiempos entre tus latidos mientras duermes. Más variación suele indicar mejor recuperación. Lo que importa no es el número en sí, sino cómo se compara con tu propio promedio.",
-    "HRV is personal. There are no universal good/bad thresholds — only your trend over time.": "La HRV es personal. No hay umbrales universales de bueno o malo, solo tu tendencia en el tiempo.",
+    "HRV is personal. There are no universal good/bad thresholds: only your trend over time.": "La HRV es personal. No hay umbrales universales de bueno o malo, solo tu tendencia en el tiempo.",
     "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats.": "No hay HRV de anoche. Puede pasar si no usaste el strap o si la noche fue muy corta para reunir 20 latidos limpios.",
     "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.": "Tomamos los intervalos entre tus latidos durante la noche, descartamos los que quedan fuera de 300–2000 ms y los que se desvían más de 20% de sus vecinos (latidos ectópicos). Si quedan al menos 20 latidos limpios, calculamos el RMSSD.",
     "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score.": "RMSSD (Task Force, 1996); rechazo de ectópicos con la regla de Malik. La HRV pesa cerca del 60% de tu recuperación.",
 
     # Recovery "how it's calculated" explainer sheet (FER-108).
-    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night — your HRV above all — and compares them with your own average from recent weeks, not anyone else's.": "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu HRV, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más.",
+    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's.": "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu HRV, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más.",
     "If a signal is missing on a given night, its weight is shared among the others.": "Si falta alguna señal esa noche, su peso se reparte entre las demás.",
     "Each signal becomes a score of how far above or below your personal average it sits; they're averaged with the weights above and mapped onto a 0–100 scale, calibrated so a typical day lands near 58.": "Cada señal se vuelve un puntaje de qué tan arriba o abajo está de tu promedio personal; se promedian con los pesos de arriba y se ajustan a una escala 0–100, calibrada para que un día típico caiga cerca de 58.",
     "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996).": "Un compuesto de z-scores con una curva logística. HRV vía RMSSD (Task Force, 1996).",
@@ -1027,7 +1050,7 @@ ES: dict[str, str] = {
     "Record a timestamped moment in NOOP.": "Registra un momento con marca de tiempo en NOOP.",
     "Log": "Registro",
     "Syncing strap history…": "Sincronizando el historial de la banda…",
-    "Live HR works — free the strap to unlock buzz, alarms & sync": "La FC en vivo funciona, libera la banda para desbloquear vibración, alarmas y sincronización",
+    "Live HR works: free the strap to unlock buzz, alarms & sync": "La FC en vivo funciona, libera la banda para desbloquear vibración, alarmas y sincronización",
     "Experimental · WHOOP 5 / MG": "Experimental · WHOOP 5 / MG",
     "Live heart rate already works on a WHOOP 5/MG strap. These probes go further and try to coax more out of it. They are guesses, off by default, and only ever touch a 5/MG strap — WHOOP 4.0 is never affected.": "La frecuencia cardiaca en vivo ya funciona en una banda WHOOP 5/MG. Estas sondas van más allá e intentan sacarle más. Son conjeturas, vienen apagadas por defecto y solo tocan una banda 5/MG, WHOOP 4.0 nunca se ve afectada.",
     "On a 5/MG connection NOOP will send a puffin realtime-stream request after the handshake, and log what comes back. If you have a 5/MG strap, turning this on and sharing your strap log helps map the protocol. No effect on WHOOP 4.0.": "En una conexión 5/MG, NOOP enviará una solicitud de transmisión en tiempo real (puffin) después del handshake y registrará lo que regrese. Si tienes una banda 5/MG, activarlo y compartir tu registro de banda ayuda a mapear el protocolo. No afecta a WHOOP 4.0.",
@@ -1039,7 +1062,7 @@ ES: dict[str, str] = {
 
     # Breathe.
     "Haptic-paced breathing · watch your HRV respond": "Respiración guiada por vibración · mira cómo responde tu HRV",
-    "Connect your strap for haptic guidance — you'll feel one pulse on the inhale, two on the exhale, so you can breathe with your eyes closed.": "Conecta tu banda para la guía háptica: sentirás un pulso al inhalar y dos al exhalar, para que puedas respirar con los ojos cerrados.",
+    "Connect your strap for haptic guidance: you'll feel one pulse on the inhale, two on the exhale, so you can breathe with your eyes closed.": "Conecta tu banda para la guía háptica: sentirás un pulso al inhalar y dos al exhalar, para que puedas respirar con los ojos cerrados.",
     "Connect strap for buzz cues": "Conecta la banda para señales de vibración",
     "Buzz cues on": "Señales de vibración activadas",
     "Haptics on": "Háptica activada",
@@ -1051,7 +1074,7 @@ ES: dict[str, str] = {
     "SESSION DONE": "SESIÓN TERMINADA",
 
     # Intervals.
-    "Silent haptic HIIT — the strap buzzes the transitions": "HIIT háptico silencioso, la banda vibra en las transiciones",
+    "Silent haptic HIIT: the strap buzzes the transitions": "HIIT háptico silencioso, la banda vibra en las transiciones",
     "Bond your strap on the Live screen to feel the transitions hands-free.": "Vincula tu banda en la pantalla En vivo para sentir las transiciones sin ver la pantalla.",
     "ROUND": "RONDA",
     "SECONDS": "SEGUNDOS",
@@ -1231,8 +1254,8 @@ ES: dict[str, str] = {
     "Refresh models": "Actualizar modelos",
     "Refresh models from provider": "Actualizar modelos del proveedor",
     "Let the coach use my data": "Permitir que el Coach use mis datos",
-    "On — your recovery, sleep, HRV and workouts are shared with the provider for tailored coaching.": "Encendido, tu recuperación, sueño, HRV y entrenamientos se comparten con el proveedor para un coaching a tu medida.",
-    "Off — the coach answers generally and sends none of your metrics.": "Apagado, el Coach responde de forma general y no envía ninguna de tus métricas.",
+    "On: your recovery, sleep, HRV and workouts are shared with the provider for tailored coaching.": "Encendido, tu recuperación, sueño, HRV y entrenamientos se comparten con el proveedor para un coaching a tu medida.",
+    "Off: the coach answers generally and sends none of your metrics.": "Apagado, el Coach responde de forma general y no envía ninguna de tus métricas.",
     "Question": "Pregunta",
     "Send": "Enviar",
     "Thinking": "Pensando",
@@ -1478,7 +1501,7 @@ ES: dict[str, str] = {
 
     # Compare / Insights — generated sentences and qualifier words.
     "%@ ↔ %@: r = %@ (%@ %@) over %lld shared days.": "%1$@ ↔ %2$@: r = %3$@ (%4$@ %5$@) en %6$lld días en común.",
-    " No clear relationship — they move largely independently.": " Sin relación clara, se mueven de forma independiente.",
+    " No clear relationship: they move largely independently.": " Sin relación clara, se mueven de forma independiente.",
     " When %@ rises, %@ %@ — a %@ %@ link.": " Cuando %1$@ sube, %2$@ %3$@, un vínculo %5$@ %4$@.",
     "tends to fall": "tiende a bajar",
     "tends to rise": "tiende a subir",
@@ -1547,17 +1570,17 @@ ES: dict[str, str] = {
     "LOW": "BAJO",
     "MEDIUM": "MEDIO",
     "HIGH": "ALTO",
-    "Resting HR is elevated and HRV is below your baseline — both classic signs of high activation. Prioritise rest, hydration and an easy day.": "La FC en reposo está elevada y la HRV está por debajo de tu línea base, dos señales clásicas de alta activación. Prioriza el descanso, la hidratación y un día tranquilo.",
+    "Resting HR is elevated and HRV is below your baseline: both classic signs of high activation. Prioritise rest, hydration and an easy day.": "La FC en reposo está elevada y la HRV está por debajo de tu línea base, dos señales clásicas de alta activación. Prioriza el descanso, la hidratación y un día tranquilo.",
     "HRV has dropped well below your baseline, pointing to elevated stress or fatigue. Ease off and give your body time to recover.": "La HRV cayó muy por debajo de tu línea base, lo que apunta a estrés o fatiga elevados. Baja el ritmo y dale a tu cuerpo tiempo de recuperarse.",
-    "Resting heart rate is running high versus your norm — your body is under load today. Keep effort light.": "La frecuencia cardiaca en reposo anda alta respecto a tu norma, tu cuerpo está bajo carga hoy. Mantén el esfuerzo ligero.",
+    "Resting heart rate is running high versus your norm: your body is under load today. Keep effort light.": "La frecuencia cardiaca en reposo anda alta respecto a tu norma, tu cuerpo está bajo carga hoy. Mantén el esfuerzo ligero.",
     "Your autonomic markers are skewed toward stress today. Treat it as a recovery-focused day.": "Tus marcadores autonómicos se inclinan hacia el estrés hoy. Tómalo como un día enfocado en recuperarte.",
     "resting HR is a touch high": "la FC en reposo está un poco alta",
     "HRV is a little low": "la HRV está un poco baja",
     "Slightly off baseline — %@ — so you're moderately activated. Nothing alarming; just don't overreach.": "Ligeramente fuera de tu línea base, %@, así que estás moderadamente activado. Nada alarmante; solo no te excedas.",
-    "You're sitting around your typical autonomic baseline — moderate stress, a normal, balanced day.": "Estás alrededor de tu línea base autonómica típica, estrés moderado, un día normal y equilibrado.",
-    "Resting heart rate is low and HRV is up — your nervous system looks well-recovered and calm. A great day to push if you want to.": "La frecuencia cardiaca en reposo está baja y la HRV alta, tu sistema nervioso se ve recuperado y en calma. Un gran día para exigirte si quieres.",
+    "You're sitting around your typical autonomic baseline: moderate stress, a normal, balanced day.": "Estás alrededor de tu línea base autonómica típica, estrés moderado, un día normal y equilibrado.",
+    "Resting heart rate is low and HRV is up: your nervous system looks well-recovered and calm. A great day to push if you want to.": "La frecuencia cardiaca en reposo está baja y la HRV alta, tu sistema nervioso se ve recuperado y en calma. Un gran día para exigirte si quieres.",
     "HRV is above baseline, a sign of a relaxed, well-recovered nervous system. Stress is low.": "La HRV está por encima de tu línea base, señal de un sistema nervioso relajado y bien recuperado. El estrés es bajo.",
-    "Resting heart rate and HRV are sitting at or below baseline — low physiological stress. You're in a calm, recovered state.": "La frecuencia cardiaca en reposo y la HRV están en tu línea base o por debajo, estrés fisiológico bajo. Estás en un estado tranquilo y recuperado.",
+    "Resting heart rate and HRV are sitting at or below baseline: low physiological stress. You're in a calm, recovered state.": "La frecuencia cardiaca en reposo y la HRV están en tu línea base o por debajo, estrés fisiológico bajo. Estás en un estado tranquilo y recuperado.",
 
     # Health.
     "Idle": "Inactivo",
@@ -1619,7 +1642,7 @@ ES: dict[str, str] = {
     "Checking…": "Verificando…",
     "Everything checks out": "Todo en orden",
     "Check failed — try a re-sync": "Falló la verificación, intenta resincronizar",
-    "Live heart rate only — finish secure pairing to save the rest": "Solo frecuencia en vivo, completa el emparejamiento seguro para guardar lo demás",
+    "Live heart rate only: finish secure pairing to save the rest": "Solo frecuencia en vivo, completa el emparejamiento seguro para guardar lo demás",
     "Last synced %@": "Última sincronización %@",
     "live": "en vivo",
     "Done": "Listo",
@@ -1627,7 +1650,7 @@ ES: dict[str, str] = {
     "Not synced yet": "Aún no sincronizado",
     "Strap sync": "Sincronización de la banda",
     "Battery %lld%% · Charging": "Batería %lld%% · Cargando",
-    "Can't connect — your strap's pairing was reset": "No se puede conectar, el emparejamiento de tu banda se restableció",
+    "Can't connect: your strap's pairing was reset": "No se puede conectar, el emparejamiento de tu banda se restableció",
     "Reconnect help: %@": "Ayuda de reconexión: %@",
     # VitalBands (personal baselines)
     "In your range": "En tu rango",
@@ -1692,7 +1715,7 @@ ES: dict[str, str] = {
     "Accept & Continue": "Aceptar y continuar",
     "The full terms are in TERMS.md, shipped with NOOP. This is not legal advice.": "Los términos completos están en TERMS.md, incluido con NOOP. Esto no es asesoría legal.",
     # Firmware wake-up alarm note
-    "On WHOOP 5/MG this is experimental — arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.": "En WHOOP 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. WHOOP 4 es la vía probada.",
+    "On WHOOP 5/MG this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.": "En WHOOP 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. WHOOP 4 es la vía probada.",
     # Updates / CSV import notice
     "Get the latest release": "Obtener la última versión",
     "Opens the GitHub releases page in your browser. NOOP itself makes no network connections — the macOS sandbox has no network entitlement.": "Abre la página de versiones de GitHub en tu navegador. NOOP en sí no hace conexiones de red, el sandbox de macOS no tiene permiso de red.",
@@ -1753,13 +1776,13 @@ ES: dict[str, str] = {
     # FER-83 — Data Sources strap-sync diagnostic (band range + per-sensor receipt + verdict).
     "Sync diagnostic": "Diagnóstico de sincronización",
     "Connect your strap to run the sync diagnostic.": "Conecta tu banda para ejecutar el diagnóstico de sincronización.",
-    "Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set.": "Primero completa el emparejamiento seguro, la banda no descargará su historial hasta que se establezca el vínculo cifrado.",
+    "Complete secure pairing first: the strap won’t offload its history until the encrypted bond is set.": "Primero completa el emparejamiento seguro, la banda no descargará su historial hasta que se establezca el vínculo cifrado.",
     "On the band:": "En la banda:",
     "%lld pieces": "%lld piezas",
     "Received this sync": "Recibido en esta sincronización",
     "R-R": "R-R",
     "The band has nothing new.": "La banda no tiene nada nuevo.",
-    "Data arrives but doesn’t decode — please report.": "Llegan datos pero no se decodifican, repórtalo.",
+    "Data arrives but doesn’t decode: please report.": "Llegan datos pero no se decodifican, repórtalo.",
     "Receiving and storing everything.": "Recibiendo y guardando todo.",
 
     # FER-180 — «Métricas de hoy»: rejilla de tiles intradía + variante stress de MetricInfoSheet.
@@ -1768,8 +1791,8 @@ ES: dict[str, str] = {
     "Same as yesterday": "Igual que ayer",
     "Medium": "Medio",
     "High": "Alto",
-    "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated.": "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba, señales clásicas de que tu cuerpo está activado.",
-    "Derived from your overnight resting heart rate and HRV — a transparent proxy for autonomic load, not a clinical stress measure.": "Se deriva de tu frecuencia cardíaca en reposo y tu HRV nocturnas, un proxy transparente de la carga autonómica, no una medida clínica de estrés.",
+    "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up: classic signs your body is activated.": "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba, señales clásicas de que tu cuerpo está activado.",
+    "Derived from your overnight resting heart rate and HRV: a transparent proxy for autonomic load, not a clinical stress measure.": "Se deriva de tu frecuencia cardíaca en reposo y tu HRV nocturnas, un proxy transparente de la carga autonómica, no una medida clínica de estrés.",
     "We take today's resting heart rate and HRV and express each as how far it sits from your 30-day average (a z-score). A resting HR above your norm and an HRV below it both add to the load; the two are summed and squashed onto a 0–3 scale where 0 is calm, 1.5 is your baseline, and 3 is highly activated.": "Tomamos tu frecuencia cardíaca en reposo y tu HRV de hoy y expresamos cada una como qué tan lejos está de tu promedio de 30 días (un z-score). Una FC en reposo por arriba de tu norma y una HRV por debajo suman a la carga; las dos se combinan y se ajustan a una escala de 0 a 3, donde 0 es calma, 1.5 es tu línea base y 3 es muy activado.",
     "Combined resting-HR / HRV z-score through a logistic curve; HRV via RMSSD (Task Force, 1996).": "Z-score combinado de FC en reposo y HRV a través de una curva logística; HRV vía RMSSD (Task Force, 1996).",
 
@@ -1785,7 +1808,7 @@ ES: dict[str, str] = {
     "← rejuvenates you": "← te rejuvenece",
     "ages you →": "te envejece →",
     "This isn't your Physical age": "No es tu Edad física",
-    "Physical age measures only the cardiorespiratory side. This one also weighs sleep, regularity, HRV and steps — so the two can differ.": "La Edad física mide solo el lado cardiorrespiratorio. Esta también pesa sueño, regularidad, HRV y pasos, por eso pueden no coincidir.",
+    "Physical age measures only the cardiorespiratory side. This one also weighs sleep, regularity, HRV and steps: so the two can differ.": "La Edad física mide solo el lado cardiorrespiratorio. Esta también pesa sueño, regularidad, HRV y pasos, por eso pueden no coincidir.",
     "A wellness comparison, not a biological age or a clinical diagnosis. HRV is estimated from nighttime PPG; the reference norm is conservative.": "Una comparación de bienestar, no una edad biológica ni un diagnóstico clínico. La HRV se estima desde PPG nocturno; la norma de referencia es conservadora.",
     "I need at least 3 signals to work this out without guessing. You have %lld.": "Necesito al menos 3 señales para calcularla sin adivinar. Llevas %lld.",
     "What it's built from": "De qué se arma",
@@ -1797,7 +1820,7 @@ ES: dict[str, str] = {
     "needs valid nights": "faltan noches válidas",
     "connect Apple Health": "conecta Apple Salud",
     "ready": "listo",
-    "Keep wearing the band a few nights and it appears on its own — we don't show a half-finished number.": "Sigue usando la banda unas noches y aparece sola, no mostramos un número a medias.",
+    "Keep wearing the band a few nights and it appears on its own: we don't show a half-finished number.": "Sigue usando la banda unas noches y aparece sola, no mostramos un número a medias.",
     "%lld years younger than your age (%lld)": "%lld años más joven que tu edad (%lld)",
     "%lld years older than your age (%lld)": "%lld años mayor que tu edad (%lld)",
     "Right at your chronological age (%lld)": "Justo en tu edad cronológica (%lld)",
@@ -1846,7 +1869,7 @@ ES: dict[str, str] = {
     "Windred et al., Sleep 2024 (regularity); Miller et al., J Sports Sci 2020 (wrist staging vs PSG); Hirshkowitz et al., 2015 (sleep need).": "Windred et al., Sleep 2024 (regularidad); Miller et al., J Sports Sci 2020 (etapas en muñeca vs PSG); Hirshkowitz et al., 2015 (necesidad de sueño).",
     "Source · Apple Health": "Fuente · Apple Salud",
     "Source · your strap, on device": "Fuente · tu banda, en el dispositivo",
-    "No nights yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs.": "Aún no hay noches. Importa tu exportación de WHOOP, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice.",
+    "No nights yet. Import your WHOOP export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs.": "Aún no hay noches. Importa tu exportación de WHOOP, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice.",
     "Loading your sleep history…": "Cargando tu historial de sueño…",
     "Hours asleep per night, last 30 days": "Horas dormidas por noche, últimos 30 días",
     "%@ – %@ · %lld%% efficiency": "%@ – %@ · %lld%% de eficiencia",
@@ -1860,7 +1883,7 @@ ES: dict[str, str] = {
     "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). This number is your whole day against your baseline of the last ~30 days — a different lens from the day map below, which marks the moments you spiked. It's an estimate, not a diagnosis.": "Tu carga autonómica del día: qué tan activado está tu cuerpo. Tomamos tu frecuencia en reposo y tu HRV de hoy, comparamos cada una con tu propia base de 30 días como z-score, y mapeamos el desplazamiento combinado a una escala 0–3 con una curva logística (0 en calma · 1.5 tu base · 3 muy activado). Este número es tu día completo frente a tu base de los últimos ~30 días, una lente distinta a la del mapa del día de abajo, que marca los momentos en que te disparaste. Es una estimación, no un diagnóstico.",
     "Information about stress": "Información sobre el estrés",
     "/ 3": "/ 3",
-    "No stress reading yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.": "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV.",
+    "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.": "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV.",
     "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this month's average with last month's; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band.": "Cada punto es tu índice de estrés diario. Las bandas detrás son las zonas fijas Bajo / Moderado / Alto (0–1 / 1–2 / 2–3). El porcentaje compara el promedio de este mes con el del mes pasado; Promedio, Mínimo y Máximo salen del rango que seleccionaste. Lo que importa no es un día suelto, son varios días seguidos subiendo de banda.",
     "Information about the stress trend": "Información sobre la tendencia del estrés",
     "Daily stress index, 0 to 3": "Índice de estrés diario, 0 a 3",
@@ -1897,7 +1920,7 @@ ES: dict[str, str] = {
     "Every recent night sat in the healthy range.": "Todas las noches recientes quedaron en el rango sano.",
     "Isolated low nights are usually noise (altitude, a cold, sensor fit). A sustained run is worth a look with a finger pulse oximeter.": "Las noches bajas aisladas suelen ser ruido (altitud, un resfriado, cómo quedó el sensor). Una racha sostenida amerita revisarla con un oxímetro de dedo.",
     "Each night your strap averages the oxygen saturation read at your wrist while you sleep. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.": "Cada noche tu banda promedia la saturación de oxígeno medida en tu muñeca mientras duermes. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido, altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo.",
-    "Wrist optical sensors are less accurate than medical pulse oximeters — read this as a trend, not a clinical measurement. NOOP is not a medical device.": "Los sensores ópticos de muñeca son menos precisos que un oxímetro médico, léelo como tendencia, no como una medición clínica. NOOP no es un dispositivo médico.",
+    "Wrist optical sensors are less accurate than medical pulse oximeters: read this as a trend, not a clinical measurement. NOOP is not a medical device.": "Los sensores ópticos de muñeca son menos precisos que un oxímetro médico, léelo como tendencia, no como una medición clínica. NOOP no es un dispositivo médico.",
     # FER-496 — Importar un programa de entrenamiento generado por un LLM (pantalla
     # WorkoutImportView + fila «Import plan» del hub). Cadenas compartidas con Dieta
     # (Copy prompt, Copied, Upload .json file, Continue, Paste your plan, «Bring back
@@ -1905,7 +1928,7 @@ ES: dict[str, str] = {
     "Import plan": "Importar plan",
     "Bring your plan from your AI": "Trae tu plan desde tu IA",
     "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).": "Copia el prompt y pégalo en tu IA de confianza, junto con tu plan (texto, foto o PDF).",
-    "Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself.": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta, el paso de la IA lo haces tú.",
+    "Your routines are created on your iPhone. NOOP never connects: you run the AI step yourself.": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta, el paso de la IA lo haces tú.",
     "%lld exercises to set up": "%lld ejercicios por ubicar",
     "These aren't in your library. Match each one to an exercise you have, or create it.": "Estos no están en tu biblioteca. Empareja cada uno con un ejercicio que tengas, o créalo.",
     "Matched automatically · %@": "Emparejado automático · %@",
@@ -1919,7 +1942,7 @@ ES: dict[str, str] = {
     "They're in «My routines», ready to train.": "Están en «Mis rutinas», listas para entrenar.",
     "bodyweight": "peso corporal",
     "That file isn't a NOOP workout plan. Make sure you used the prompt above.": "Ese archivo no es un plan de entrenamiento de NOOP. Asegúrate de haber usado el prompt de arriba.",
-    "The plan's unit isn't supported — it must be kg or lb.": "La unidad del plan no es compatible, debe ser kg o lb.",
+    "The plan's unit isn't supported: it must be kg or lb.": "La unidad del plan no es compatible, debe ser kg o lb.",
     "One of the exercises has an unsupported type. Check the file and try again.": "Uno de los ejercicios tiene un tipo no compatible. Revisa el archivo e intenta de nuevo.",
     "That plan has no routines. Check the file and try again.": "Ese plan no tiene rutinas. Revisa el archivo e intenta de nuevo.",
     "One of the routines has no exercises. Check the file and try again.": "Una de las rutinas no tiene ejercicios. Revisa el archivo e intenta de nuevo.",
@@ -1927,9 +1950,9 @@ ES: dict[str, str] = {
     # FER-643 — Body Age: chip «estimación parcial» + caveat cuando faltan HRV/FC en reposo (solo-Apple).
     "Partial estimate": "Estimación parcial",
     "Partial estimate. ": "Estimación parcial. ",
-    "Worked out without HRV or resting heart rate — the two heaviest signals. The number still holds, with less precision.": "Calculada sin HRV ni FC en reposo, las dos señales de mayor peso. El número sigue valiendo, con menos precisión.",
-    "Worked out without HRV — one of the heaviest signals. The number still holds, with less precision.": "Calculada sin HRV, una de las señales de mayor peso. El número sigue valiendo, con menos precisión.",
-    "Worked out without resting heart rate — one of the heaviest signals. The number still holds, with less precision.": "Calculada sin FC en reposo, una de las señales de mayor peso. El número sigue valiendo, con menos precisión.",
+    "Worked out without HRV or resting heart rate: the two heaviest signals. The number still holds, with less precision.": "Calculada sin HRV ni FC en reposo, las dos señales de mayor peso. El número sigue valiendo, con menos precisión.",
+    "Worked out without HRV: one of the heaviest signals. The number still holds, with less precision.": "Calculada sin HRV, una de las señales de mayor peso. El número sigue valiendo, con menos precisión.",
+    "Worked out without resting heart rate: one of the heaviest signals. The number still holds, with less precision.": "Calculada sin FC en reposo, una de las señales de mayor peso. El número sigue valiendo, con menos precisión.",
     # FER-702 — «Tu HRV por frecuencia»: desglose espectral (LF/HF/total) en el Detalle de HRV.
     "Your HRV by frequency": "Tu HRV por frecuencia",
     "Respiratory": "Respiratoria",
@@ -1938,9 +1961,9 @@ ES: dict[str, str] = {
     "slow waves; a mix of signals": "ondas lentas; mezcla de varias señales",
     "Total variation": "Variación total",
     "everything together, the “volume” of your HRV": "todo junto, el «volumen» de tu HRV",
-    "Last night's reading was short, so it only covers the respiratory part — not the slow waves.": "Anoche la lectura fue corta, así que solo alcanza para la parte respiratoria, no para las ondas lentas.",
+    "Last night's reading was short, so it only covers the respiratory part: not the slow waves.": "Anoche la lectura fue corta, así que solo alcanza para la parte respiratoria, no para las ondas lentas.",
     "Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you.": "Todavía estoy aprendiendo tu rango normal. Cuando haya suficientes noches, te diré si un valor está alto o bajo para ti.",
-    "Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself — not a diagnosis or a “stress balance.”": "Calculado de los latidos de anoche (Lomb-Scargle). Son potencias descriptivas para compararte contigo mismo, no un diagnóstico ni un «balance de estrés».",
+    "Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself: not a diagnosis or a “stress balance.”": "Calculado de los latidos de anoche (Lomb-Scargle). Son potencias descriptivas para compararte contigo mismo, no un diagnóstico ni un «balance de estrés».",
     "higher than your normal": "más alta de lo normal",
     "within your normal": "dentro de tu normal",
     "lower than your normal": "más baja de lo normal",
@@ -2093,8 +2116,8 @@ ES: dict[str, str] = {
     'of the night': 'de la noche',
     "There isn't enough signal tonight to read how your heart eased off.":
         'No hay suficiente señal esta noche para leer cómo bajó tu corazón.',
-    "A marked, early drop — a sign you settled into rest. It's a pattern, not a diagnosis.":
-        'Un descenso marcado y temprano — señal de que descansaste. Es un patrón, no un diagnóstico.',
+    "A marked, early drop: a sign you settled into rest. It's a pattern, not a diagnosis.":
+        "Un descenso marcado y temprano: señal de que descansaste. Es un patrón, no un diagnóstico.",
     "A moderate drop overnight. It's a pattern, not a diagnosis.":
         'Un descenso moderado durante la noche. Es un patrón, no un diagnóstico.',
     "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis.":
@@ -2105,17 +2128,17 @@ ES: dict[str, str] = {
     'Rising': 'Subiendo',
     'Falling': 'Bajando',
     'Steady': 'Estable',
-    'We show you the direction, not an exact number — the estimate jumps day to day, the trend is more honest.':
-        'Te enseñamos la dirección, no un número exacto — el estimado brinca de día a día, la tendencia es más honesta.',
+    "We show you the direction, not an exact number: the estimate jumps day to day, the trend is more honest.":
+        "Te enseñamos la dirección, no un número exacto: el estimado brinca de día a día, la tendencia es más honesta.",
 
     # FER-842 — peinado i18n
     # A — préstamos (keys that had drifted out of the dict)
     "For now, without your band the recovery and sleep detail come estimated or later. The day's numbers do read from Apple Health.":
         "Por ahora, sin tu banda la recuperación y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud.",
     "Suggested by your recovery": "Sugerido por tu recuperación",
-    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. Not a diagnosis.":
+    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy: read it as a guide, not a band reading. Not a diagnosis.":
         "Esta recuperación es ESTIMADA a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. No es un diagnóstico.",
-    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep while your band is still calibrating its own baseline, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. It switches to your band automatically once it's calibrated. Not a diagnosis.":
+    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep while your band is still calibrating its own baseline, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy: read it as a guide, not a band reading. It switches to your band automatically once it's calibrated. Not a diagnosis.":
         "Esta recuperación es ESTIMADA a partir del HRV (SDNN) y el sueño de tu Apple Watch mientras tu banda aún calibra su propia base, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. Cambia a tu banda automáticamente en cuanto calibra. No es un diagnóstico.",
     "Import WHOOP export": "Importar exportación de WHOOP",
     "Import Apple Health export": "Importar exportación de Apple Salud",
@@ -2141,7 +2164,7 @@ ES: dict[str, str] = {
     "No training days yet · assign a routine to a day.":
         "Sin días de entrenamiento · asigna una rutina a un día.",
     "Save this workout?": "¿Guardar este entrenamiento?",
-    "The map resets to fresh. Your workout history isn't deleted — logging a new workout loads that muscle again.":
+    "The map resets to fresh. Your workout history isn't deleted: logging a new workout loads that muscle again.":
         "El mapa vuelve a fresco. No se borra tu historial de entrenamientos: al registrar un nuevo entrenamiento, ese músculo se vuelve a cargar.",
     "Workout": "Entrenamiento",
     "Workout complete": "Entrenamiento completo",
@@ -2164,14 +2187,50 @@ ES: dict[str, str] = {
         "vs tu normal · ~%lld bpm · %lld sesiones",
     "Personal trend, not a clinical threshold. Experimental reading.":
         "Tendencia personal, no un umbral clínico. Lectura experimental.",
-    "Still learning your usual recovery — keep logging sessions.":
-        "Aún estoy aprendiendo tu recuperación habitual — sigue registrando sesiones.",
-    "Your heart came down slower than usual after this one — a sign to watch recovery.":
-        "Tu corazón bajó más lento que de costumbre tras esta — una señal para cuidar la recuperación.",
-    "Your heart came down faster than usual — strong recovery after this session.":
-        "Tu corazón bajó más rápido que de costumbre — buena recuperación tras esta sesión.",
+    "Still learning your usual recovery: keep logging sessions.":
+        "Aún estoy aprendiendo tu recuperación habitual: sigue registrando sesiones.",
+    "Your heart came down slower than usual after this one: a sign to watch recovery.":
+        "Tu corazón bajó más lento que de costumbre tras esta: una señal para cuidar la recuperación.",
+    "Your heart came down faster than usual: strong recovery after this session.":
+        "Tu corazón bajó más rápido que de costumbre: buena recuperación tras esta sesión.",
     "Your recovery after this session looks like your normal.":
         "Tu recuperación tras esta sesión se ve como tu normal.",
+    # FER-879 — barrido de em-dashes app-wide: claves migradas desde el catálogo (es ya limpio en FER-706).
+    "Wear it snug: the sensor needs skin contact.": "Póntela ajustada, el sensor necesita contacto con la piel.",
+    "WHOOP straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there.": "Las bandas no salen en Ajustes › Bluetooth de tu iPhone, usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí.",
+    "It's charged and worn: the sensor wakes with skin contact.": "Está cargada y puesta, el sensor despierta con la piel.",
+    "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness: typing at a desk still counts as sitting.": "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca, teclear en el escritorio sigue contando como estar sentado.",
+    "Silence the nudges during a window you choose: a meeting block, an evening wind-down.": "Silencia los avisos en una franja que elijas, un bloque de juntas, la calma de la noche.",
+    "Candidate: no experiment yet": "Candidato, aún sin experimento",
+    "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported WHOOP history is untouched. This can't be undone.": "Esto borra todo lo que aportaste, tu diario y todos tus experimentos (con sus veredictos). Los patrones detectados de tu cuerpo se quedan, y tu historial importado de WHOOP no se toca. No se puede deshacer.",
+    "You don't have to wait: an experiment speeds up what I learn about you.": "No tienes que esperar, un experimento acelera lo que aprendo de ti.",
+    "Nothing proven yet: your experiments will land here.": "Nada confirmado aún, tus experimentos caerán aquí.",
+    "No Apple Health data imported yet: tap Sync now to pull your recent history.": "Aún no has importado datos de Apple Salud: toca Sincronizar ahora para traer tu historial reciente.",
+    "iCloud backup failed: tap to retry": "Falló el respaldo en iCloud, toca para reintentar",
+    "Your heart rate across the day, in 5-minute averages. Your resting heart rate, the low while you sleep, is its own metric.": "Tu frecuencia cardiaca a lo largo del día, en promedios de 5 minutos. Tu frecuencia en reposo, la más baja mientras duermes, es una métrica aparte.",
+    "Only one reading in this range: not enough to draw a line yet.": "Solo una lectura en este rango, aún no alcanza para trazar una línea.",
+    "We line up this vital against your own sleep and the prior day's strain, night by night across your history, and read which way it leans (Pearson correlation). We only show a direction once there are enough paired nights (about six weeks) and the link is strong enough to be unlikely to be chance: never the number, and never as a cause. (Plews 2013)": "Alineamos este vital con tu propio sueño y con el esfuerzo del día anterior, noche por noche a lo largo de tu historial, y leemos hacia dónde se inclina (correlación de Pearson). Solo mostramos una dirección cuando hay suficientes noches pareadas (unas seis semanas) y la relación es lo bastante fuerte como para que sea poco probable que sea azar, nunca el número, y nunca como causa. (Plews 2013)",
+    "Not enough data yet: keep wearing your strap and check back in a few weeks.": "Aún no hay suficientes datos, sigue usando tu banda y vuelve en unas semanas.",
+    "Blood oxygen comes from Apple Health. Wrist-based sensors have lower accuracy than medical pulse oximeters: treat values as a trend, not a clinical reading.": "El oxígeno en sangre viene de Apple Salud. Los sensores de muñeca son menos precisos que un oxímetro médico: tómalo como tendencia, no como una lectura clínica.",
+    "Cénit reads your blood oxygen from Apple Health, your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise, altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.": "Cénit lee tu oxígeno en sangre desde Apple Salud, tu banda lo detecta ópticamente en la muñeca, pero Cénit no lo convierte en porcentaje por su cuenta. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido, altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo.",
+    "Steps come from Apple Health. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that: there is nothing magic about exactly 10,000.": "Los pasos vienen de Apple Salud. El detalle toma el total de cada día y lo suaviza en una tendencia de 7 días, para que los altibajos entre semana y fin de semana no tapen hacia dónde vas. La investigación asocia entre 7,000 y 9,000 pasos al día con menor mortalidad, y el beneficio se aplana más allá de eso: no hay nada mágico en los 10,000 exactos.",
+    "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate, the low while you sleep, is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%).": "Promediamos tu frecuencia cardiaca en tramos de 5 minutos a lo largo del día, desde medianoche. Tu frecuencia en reposo, la más baja mientras duermes, es una métrica aparte. Las zonas dividen el día según qué tan fuerte trabajó tu corazón, como porcentaje de tu frecuencia cardiaca máxima estimada (la zona 1 es 50–60%, la zona 5 es 90–100%).",
+    "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights, HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5%, and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.": "Cada señal se convierte en un puntaje de qué tan por arriba o por abajo de tu promedio personal quedó (un z-score, en σ). Se promedian con pesos fijos, HRV 60%, FC en reposo 20%, sueño 15%, temperatura de la piel 10%, respiración 5%, y se mapean a una escala de 0 a 100, calibrada para que un día típico caiga cerca de 58. Si una señal falta una noche, su peso se reparte entre las demás.",
+    "Your levels come from your own baseline: a few more nights and they'll appear.": "Tus niveles salen de tu propia base, con unas noches más aparecen.",
+    "Below the recommended band: room for more volume this week.": "Por debajo de la banda recomendada: hay espacio para más volumen esta semana.",
+    "Above the recommended band: a lot of volume this week.": "Por encima de la banda recomendada: mucho volumen esta semana.",
+    "Your recovery is low: rest or train light today.": "Tu recuperación está baja: descansa o entrena suave hoy.",
+    "Still loaded: give it a day or two before training it again.": "Aún cargado: dale uno o dos días antes de volver a entrenarlo.",
+    "Fresh and ready: a good muscle to train today.": "Fresco y listo: un buen músculo para entrenar hoy.",
+    "Your mid-sleep point is among your steadiest: it predicts your health better than total hours.": "Tu punto medio de sueño es de los más constantes, predice tu salud mejor que el total de horas.",
+    "Your mid-sleep point still shifts night to night: it predicts your health better than total hours.": "Tu punto medio de sueño aún cambia de una noche a otra, predice tu salud mejor que el total de horas.",
+    "The ratio compares your average load over the last ~7 days against your last ~28: the acute:chronic workload ratio (ACWR). 1.0 means you trained exactly your usual; 0.8–1.3 reads as balanced (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).": "La razón compara tu carga promedio de los últimos ~7 días contra tus últimos ~28 (la razón de carga aguda:crónica, ACWR). 1.0 significa que entrenaste exactamente tu normal; 0.8–1.3 se lee como equilibrio (Gabbett 2016). Es una heurística debatida y no predice lesiones (Impellizzeri 2020).",
+    "Confianza baja: noche corta": "Confianza baja, noche corta",
+    "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor: así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza.": "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor, así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza.",
+    "Scale 0–21, WHOOP-style: it grows logarithmically, not a physical unit.": "Escala 0–21, tipo WHOOP: crece de forma logarítmica, no es una unidad física.",
+    "Effort (0–21 scale) is computed only by your WHOOP: this session doesn't carry it.": "El esfuerzo (escala 0–21) solo lo calcula tu banda, esta sesión no lo trae.",
+    "%@ · sparse: widened to %@": "%@ · pocas, se amplió a %@",
+    "They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.": "Vienen de tu historial de WHOOP y Apple Salud. Impórtalos en Orígenes de datos, o agrega uno que registraste en otro lado.",
 }
 
 

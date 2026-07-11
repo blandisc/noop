@@ -104,7 +104,7 @@ struct DietCaptureView: View {
                 QuietButton(copied ? "Copied" : "Copy prompt") { copyPrompt() }
             }
 
-            step(2, "Bring back the file it gives you — paste it or upload it.") {
+            step(2, "Bring back the file it gives you: paste it or upload it.") {
                 VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                     pasteField
                     HStack(spacing: NoopMetrics.gap) {
@@ -342,7 +342,7 @@ struct DietCaptureView: View {
         VStack(alignment: .center, spacing: NoopMetrics.space2) {
             Image(systemName: "moon.zzz").font(StrandFont.title1)
                 .foregroundStyle(theme.hairlineStrong).accessibilityHidden(true)
-            Text("Rest day — your plan has no meals today. Come back tomorrow or use ‹ ›.")
+            Text("Rest day: your plan has no meals today. Come back tomorrow or use ‹ ›.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -905,9 +905,9 @@ struct DietCaptureView: View {
         case .unsupportedSchema:
             return "That file isn't a NOOP diet plan. Make sure you used the prompt above."
         case .unsupportedIdioma:
-            return "The plan's language isn't supported — it must be Spanish or English."
+            return "The plan's language isn't supported: it must be Spanish or English."
         case .unsupportedCiclo:
-            return "That plan's cycle isn't supported — it must be daily or weekly."
+            return "That plan's cycle isn't supported: it must be daily or weekly."
         case .noMeals:
             return "That plan has no meals. Check the file and try again."
         case .mealWithoutOptions:
@@ -917,7 +917,7 @@ struct DietCaptureView: View {
         case .invalidDailyTargets:
             return "The daily targets must be numbers. Check the file and try again."
         case .invalidDias:
-            return "One of the meals has invalid days — use weekday numbers 1–7. Check the file and try again."
+            return "One of the meals has invalid days: use weekday numbers 1–7. Check the file and try again."
         case .semanalWithoutDias:
             return "A weekly plan needs each meal's days. Check the file and try again."
         }

@@ -94,11 +94,11 @@ struct StressDayMapBlock: View {
         let hasEvents = !map.timed.isEmpty
         VStack(alignment: .leading, spacing: 10) {
             if map.referenceMissing {
-                Text("I'm still learning your rhythm — I need a few days of waking readings to mark your peaks. Your events are already here.")
+                Text("I'm still learning your rhythm: I need a few days of waking readings to mark your peaks. Your events are already here.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             } else if !hasReadings && !hasEvents {
-                Text("No events today and no stress readings yet — your curve fills in as your strap syncs.")
+                Text("No events today and no stress readings yet: your curve fills in as your strap syncs.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
