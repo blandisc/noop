@@ -124,59 +124,35 @@ struct StressDetailScreen: View {
     /// The inverted hero: the ONE field saturated at 100% of the day's band hue. Overline + ⓘ,
     /// 60pt Grotesk numeral (recRise), «/ 3», band-word capsule, two-tone verdict. Text is paper on hue.
     private func heroField(_ model: StressModel) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.stress.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Stress")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
+        HeroInvertido(
+            glyph: .stress,
+            title: "Stress",
+            hue: bandColor(model.band),
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                // Date chip sits above the numeral (same order as the pre-extract layout).
+                VStack(alignment: .leading, spacing: 8) {
+                    if !model.anchorIsToday {
+                        heroDateChip(model.anchorDayKey)
+                    }
+                    HeroNumeral(fmt(model.score), suffix: "/ 3", theme: theme) {
+                        Text(bandWord(model.band))
+                            .font(InstrumentoType.grotesk(13, weight: .semibold))
+                            .foregroundStyle(theme.paper)
+                            .heroCapsule(theme: theme)
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            if !model.anchorIsToday {
-                heroDateChip(model.anchorDayKey)
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(fmt(model.score))
-                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                    .tracking(-2)
+            },
+            verdict: {
+                // Keep `model.explanation` as one localized sentence from StressModel (content source of
+                // truth). Two-tone mock split is secondary to not inventing new copy. (FER-860)
+                Text(verbatim: model.explanation)
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .recRise()
-                Text(verbatim: "/ 3")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                Text(bandWord(model.band))
-                    .font(InstrumentoType.grotesk(13, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            // Keep `model.explanation` as one localized sentence from StressModel (content source of
-            // truth). Two-tone mock split is secondary to not inventing new copy. (FER-860)
-            Text(verbatim: model.explanation)
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundStyle(theme.paper)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(bandColor(model.band))
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the score measures, in plain language (mock copy, English source).

@@ -142,68 +142,34 @@ struct RecoveryDetailScreen: View {
     /// 60pt Grotesk numeral (recRise), «+N vs tu base» capsule, verdict line. Text is paper on hue.
     private var heroField: some View {
         let score = model.score ?? 0
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.recovery.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Recovery")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text("\(score)")
-                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                    .tracking(-2)
-                    .foregroundStyle(theme.paper)
-                    .recRise()
-                Text(verbatim: "/100")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                if let base = baseValue {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(verbatim: (score - base) >= 0 ? "+\(score - base)" : "\(score - base)")
-                            .font(InstrumentoType.groteskNumber(13, weight: .semibold))
-                            .foregroundStyle(theme.paper)
-                        Text("vs your base")
-                            .font(InstrumentoType.grotesk(11))
-                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+        return HeroInvertido(
+            glyph: .recovery,
+            title: "Recovery",
+            hue: bandColor,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                HeroNumeral("\(score)", suffix: "/100", theme: theme) {
+                    if let base = baseValue {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text(verbatim: (score - base) >= 0 ? "+\(score - base)" : "\(score - base)")
+                                .font(InstrumentoType.groteskNumber(13, weight: .semibold))
+                                .foregroundStyle(theme.paper)
+                            Text("vs your base")
+                                .font(InstrumentoType.grotesk(11))
+                                .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                        }
+                        .heroCapsule(theme: theme)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
                 }
+            },
+            verdict: {
+                HeroVeredictoBicolor(word: heroVerdictWord, clause: heroVerdictClause, theme: theme)
+            },
+            trailing: {
+                if model.isEstimated { estimatedNoteOnField }
             }
-            (Text(heroVerdictWord)
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundColor(theme.paper)
-             + Text(verbatim: " · ")
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
-             + Text(heroVerdictClause)
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary)))
-                .fixedSize(horizontal: false, vertical: true)
-            if model.isEstimated { estimatedNoteOnField }
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(bandColor)
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the score measures, in plain language.

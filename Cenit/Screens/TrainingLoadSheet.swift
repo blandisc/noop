@@ -229,56 +229,38 @@ struct TrainingLoadSheet: View {
 
     private func heroField(acwr: Double, band: ReadinessEngine.LoadBand) -> some View {
         let hue = band.flag.color(theme)
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.trainingLoad.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Training load")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(band.shortLabel)
-                    .font(InstrumentoType.grotesk(38, weight: .bold, relativeTo: .largeTitle))
-                    .tracking(-1.2)
-                    .foregroundStyle(theme.paper)
-                    .recRise()
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text(fmt(acwr))
-                        .font(InstrumentoType.groteskNumber(13, weight: .semibold))
+        return HeroInvertido(
+            glyph: .trainingLoad,
+            title: "Training load",
+            hue: hue,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                // Hero is the band WORD (not a /100 number). Custom numeral markup.
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(band.shortLabel)
+                        .font(InstrumentoType.grotesk(38, weight: .bold, relativeTo: .largeTitle))
+                        .tracking(-1.2)
                         .foregroundStyle(theme.paper)
-                    Text("vs your base")
-                        .font(InstrumentoType.grotesk(11))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                        .recRise()
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text(fmt(acwr))
+                            .font(InstrumentoType.groteskNumber(13, weight: .semibold))
+                            .foregroundStyle(theme.paper)
+                        Text("vs your base")
+                            .font(InstrumentoType.grotesk(11))
+                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                    }
+                    .heroCapsule(theme: theme)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+            },
+            verdict: {
+                Text(heroVerdict(band))
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
+                    .foregroundStyle(theme.paper)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(heroVerdict(band))
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundStyle(theme.paper)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(hue)
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the ratio measures, in plain language (no ACWR jargon).

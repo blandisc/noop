@@ -138,100 +138,90 @@ struct SleepDetailScreen: View {
 
     /// Inverted hero: the ONE field at 100% indigo. Double datum (hours | regularity) + two-level verdict.
     private func heroField(_ night: SleepDetailModel.Night) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.sleep.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Sleep")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            HStack(alignment: .center, spacing: 0) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(hoursOnly(night.stages.asleep))
-                        .font(InstrumentoType.groteskNumber(44, weight: .bold))
-                        .tracking(-1.2)
-                        .foregroundStyle(theme.paper)
-                        .monospacedDigit()
-                        .recRise()
-                    Text("hours")
-                        .font(InstrumentoType.grotesk(10, weight: .semibold))
-                        .tracking(1.2)
-                        .textCase(.uppercase)
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Rectangle()
-                    .fill(theme.paper.opacity(0.28))
-                    .frame(width: 1, height: 52)
-                VStack(alignment: .leading, spacing: 4) {
-                    if let r = model.regularity {
-                        HStack(alignment: .firstTextBaseline, spacing: 2) {
-                            Text("\(r.score)")
-                                .font(InstrumentoType.groteskNumber(44, weight: .bold))
-                                .tracking(-1.2)
-                                .foregroundStyle(theme.paper)
-                                .monospacedDigit()
-                                .recRise(second: true)
-                            Text(verbatim: "/100")
-                                .font(InstrumentoType.grotesk(13))
-                                .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                        }
-                    } else {
-                        Text(verbatim: "—")
+        HeroInvertido(
+            glyph: .sleep,
+            title: "Sleep",
+            hue: theme.dataSleep,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                // Dual 44pt datum (hours | regularity). Not HeroNumeral: compound layout.
+                HStack(alignment: .center, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(hoursOnly(night.stages.asleep))
                             .font(InstrumentoType.groteskNumber(44, weight: .bold))
+                            .tracking(-1.2)
+                            .foregroundStyle(theme.paper)
+                            .monospacedDigit()
+                            .recRise()
+                        Text("hours")
+                            .font(InstrumentoType.grotesk(10, weight: .semibold))
+                            .tracking(1.2)
+                            .textCase(.uppercase)
                             .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                            .recRise(second: true)
                     }
-                    Text("regularity")
-                        .font(InstrumentoType.grotesk(10, weight: .semibold))
-                        .tracking(1.2)
-                        .textCase(.uppercase)
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Rectangle()
+                        .fill(theme.paper.opacity(0.28))
+                        .frame(width: 1, height: 52)
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let r = model.regularity {
+                            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                                Text("\(r.score)")
+                                    .font(InstrumentoType.groteskNumber(44, weight: .bold))
+                                    .tracking(-1.2)
+                                    .foregroundStyle(theme.paper)
+                                    .monospacedDigit()
+                                    .recRise(second: true)
+                                Text(verbatim: "/100")
+                                    .font(InstrumentoType.grotesk(13))
+                                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                            }
+                        } else {
+                            Text(verbatim: "—")
+                                .font(InstrumentoType.groteskNumber(44, weight: .bold))
+                                .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                                .recRise(second: true)
+                        }
+                        Text("regularity")
+                            .font(InstrumentoType.grotesk(10, weight: .semibold))
+                            .tracking(1.2)
+                            .textCase(.uppercase)
+                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 16)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 16)
-            }
-            (Text(verbatim: heroVerdictTitle(night))
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundColor(theme.paper)
-             + Text(verbatim: " · ")
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
-             + Text(verbatim: heroVerdictClause(night))
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary)))
-                .fixedSize(horizontal: false, vertical: true)
-            if model.excludedNapCount > 0 {
-                Text(napNotice)
-                    .font(InstrumentoType.grotesk(11))
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+            },
+            verdict: {
+                // Dynamic String (already localized via String(localized:)); HeroVeredictoBicolor
+                // takes LocalizedStringKey and would re-key lookup. Keep verbatim markup.
+                (Text(verbatim: heroVerdictTitle(night))
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
+                    .foregroundColor(theme.paper)
+                 + Text(verbatim: " · ")
+                    .font(InstrumentoType.grotesk(14))
+                    .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
+                 + Text(verbatim: heroVerdictClause(night))
+                    .font(InstrumentoType.grotesk(14))
+                    .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary)))
                     .fixedSize(horizontal: false, vertical: true)
+            },
+            trailing: {
+                VStack(alignment: .leading, spacing: 8) {
+                    if model.excludedNapCount > 0 {
+                        Text(napNotice)
+                            .font(InstrumentoType.grotesk(11))
+                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let tier = model.confidence {
+                        tier.sello(theme: theme, onField: true)
+                            .padding(.top, 2)
+                    }
+                }
             }
-            if let tier = model.confidence {
-                tier.sello(theme: theme, onField: true)
-                    .padding(.top, 2)
-            }
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.dataSleep)
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the score measures, in plain language (mock FER-858).

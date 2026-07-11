@@ -114,62 +114,37 @@ struct StrainDetailScreen: View {
     /// 60pt Grotesk numeral (recRise), «en curso» capsule, verdict line. Text is paper on hue.
     private var heroField: some View {
         let v = shownToday ?? 0
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.strain.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Day Strain")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
+        return HeroInvertido(
+            glyph: .strain,
+            title: "Day Strain",
+            hue: theme.dataStrain,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                HeroNumeral(fmt(v), suffix: "/ 21", theme: theme) {
+                    Text("in progress")
+                        .font(InstrumentoType.grotesk(13, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .heroCapsule(theme: theme)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(fmt(v))
-                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                    .tracking(-2)
+            },
+            verdict: {
+                // Keep `heroReading` as ONE localized sentence (existing String Catalog keys). Splitting the
+                // four zone strings cleanly into short-clause + secondary clause is awkward for "Moderate
+                // effort today." Visual fidelity to the mock's two-tone verdict is secondary to not inventing
+                // new copy. (FER-859)
+                Text(heroReading)
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .recRise()
-                Text(verbatim: "/ 21")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                Text("in progress")
-                    .font(InstrumentoType.grotesk(13, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+                    .fixedSize(horizontal: false, vertical: true)
+            },
+            trailing: {
+                if let tier = model.confidence {
+                    tier.sello(theme: theme, onField: true)
+                        .padding(.top, 2)
+                }
             }
-            // Keep `heroReading` as ONE localized sentence (existing String Catalog keys). Splitting the
-            // four zone strings cleanly into short-clause + secondary clause is awkward for "Moderate
-            // effort today." — visual fidelity to the mock's two-tone verdict is secondary to not inventing
-            // new copy. (FER-859)
-            Text(heroReading)
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundStyle(theme.paper)
-                .fixedSize(horizontal: false, vertical: true)
-            if let tier = model.confidence {
-                tier.sello(theme: theme, onField: true)
-                    .padding(.top, 2)
-            }
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.dataStrain)
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the score measures, in plain language.
