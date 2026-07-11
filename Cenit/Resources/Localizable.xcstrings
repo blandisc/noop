@@ -55057,6 +55057,150 @@
           }
         }
       }
+    },
+    "Your autonomic load for the day: how activated your body is. We compare today's resting heart rate and HRV with your own 30-day baseline and map the combined shift onto a 0–3 scale (0 calm, 1.5 your baseline, 3 highly activated). It's an estimate, not a diagnosis.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your autonomic load for the day: how activated your body is. We compare today's resting heart rate and HRV with your own 30-day baseline and map the combined shift onto a 0–3 scale (0 calm, 1.5 your baseline, 3 highly activated). It's an estimate, not a diagnosis."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu carga autonómica del día: qué tan activado está tu cuerpo. Comparamos tu FC en reposo y tu VFC de hoy con tu propia base de 30 días y llevamos el desvío combinado a una escala 0 a 3 (0 calma, 1.5 tu base, 3 muy activado). Es una estimación, no un diagnóstico."
+          }
+        }
+      }
+    },
+    "Resting HR up and HRV down from your base: classic signs of activation.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resting HR up and HRV down from your base: classic signs of activation."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FC en reposo arriba y VFC abajo de tu base: señales clásicas de activación."
+          }
+        }
+      }
+    },
+    "Markers vs your base: toward stress in amber, toward calm in green.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markers vs your base: toward stress in amber, toward calm in green."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marcadores vs tu base: hacia más estrés en ámbar, hacia calma en verde."
+          }
+        }
+      }
+    },
+    "Both markers near your base today.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both markers near your base today."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ambos marcadores cerca de tu base hoy."
+          }
+        }
+      }
+    },
+    "What we see in your history": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What we see in your history"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que vemos en tu historial"
+          }
+        }
+      }
+    },
+    "Raw daily values, no smoothing: stress is read day to day. Lower is better.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raw daily values, no smoothing: stress is read day to day. Lower is better."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valores diarios crudos, sin suavizar: el estrés se lee día a día. Menos es mejor."
+          }
+        }
+      }
+    },
+    "The grey gaps are hours with no waking reading, never a made-up value.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The grey gaps are hours with no waking reading, never a made-up value."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los huecos grises son horas sin lectura despierta, nunca un valor inventado."
+          }
+        }
+      }
+    },
+    "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up: classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up: classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparamos tu FC en reposo y tu VFC de hoy con tu propia base de 30 días. Una FC en reposo más alta de lo habitual y una VFC más baja empujan el índice hacia arriba: señales clásicas de activación. El desvío combinado se convierte en una suma de z-scores y se comprime a 0–3 con una curva logística: 0 calma, 1.5 en tu base, 3 muy activado."
+          }
+        }
+      }
+    },
+    "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Tiempo en calma» es la parte del último mes que cayó en la banda Baja; «regularidad» es cuánto varía tu índice día a día de semana a semana (su coeficiente de variación: menor es más estable). Las bandas Baja / Moderada / Alta (0–1 / 1–2 / 2–3) son iguales para todos porque el índice ya está ajustado a tu propia base. (Plews 2013)"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

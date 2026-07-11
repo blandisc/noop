@@ -3,13 +3,12 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// StressDayMapView.swift — the «mapa del día» block for the Detalle de Estrés (FER-377).
+// StressDayMapView.swift — the «mapa del día» block for the Detalle de Estrés (FER-377 · FER-860).
 //
-// Vertical carril (Apple-Calendar-day-view metaphor) in the «Instrumento» language: time runs top→down,
-// a stress STRIP colored by band on the left is the ONLY saturated color (the datum), events are plain
-// TEXT ROWS on the right (no cards — DNA: no card-in-card). The day's peak is tied to its event and the
-// coincidence is stated as observation ("fell within"), never cause. Honest with gaps: noisy/active
-// buckets and cold start read "no reading", never a fabricated value. Driven by `CalendarDayMap`.
+// Presentation skin for the handoff «Detalle de Tendencias Final» / Estrés: content sits on a surface
+// card under the parent's `SeccionFranja` (no nested InfoAccordion). Answer-first headline, hourly bars
+// colored by band (gaps = short hairline, never interpolated), ranked moments with calendar events,
+// and a `BarraAncla` explaining the gaps. Driven by `CalendarDayMap` — logic and EventKit unchanged.
 
 struct StressDayMapBlock: View {
     @ObservedObject var model: CalendarDayMap
@@ -17,19 +16,12 @@ struct StressDayMapBlock: View {
     @State private var showPicker = false
 
     var body: some View {
-        InfoAccordion(
-            title: "Stress through the day",
-            explanation: "We put your day's stress curve next to your events so you can see what your most and least activated moments coincided with. Here each moment is measured against your recent calm — your waking readings over about the last 7 days — so this maps when you spiked today, a different lens from the day's number above (your whole day vs your 30-day baseline). You choose which calendars are included; all-day events aren't matched to a moment. It reads coincidence, not cause — seeing two things together doesn't mean one caused the other. Everything is computed on your iPhone; nothing is shared.",
-            accessibilityLabel: "Information about stress through the day",
-            theme: theme
-        ) {
-            content
-        }
-        .task { await model.refresh() }
-        .sheet(isPresented: $showPicker) {
-            CalendarPickerSheet(model: model, theme: theme, isPresented: $showPicker)
-                .instrumentoTheme(theme)
-        }
+        content
+            .task { await model.refresh() }
+            .sheet(isPresented: $showPicker) {
+                CalendarPickerSheet(model: model, theme: theme, isPresented: $showPicker)
+                    .instrumentoTheme(theme)
+            }
     }
 
     @ViewBuilder private var content: some View {
@@ -95,19 +87,13 @@ struct StressDayMapBlock: View {
             .padding(.vertical, 24)
     }
 
-    // MARK: - Ready — «Momentos primero» (FER-433)
-    //
-    // Answer-first: the headline names the day's peak + the event it fell within; a small supporting bars
-    // strip gives the shape of the day; then the ranked activated moments + the calmest one. The chart
-    // never carries an event name (titles live in the rows + headline, cleaned + truncated); all-day
-    // events stay context-only at the bottom.
+    // MARK: - Ready — «Momentos primero» on a surface card (FER-433 · FER-860)
 
     @ViewBuilder private func ready(_ map: CalendarDayMap.DayMap) -> some View {
         let hasReadings = map.curve.contains { $0.stress != nil }
         let hasEvents = !map.timed.isEmpty
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             if map.referenceMissing {
-                // Cold start: the personal waking reference isn't ready, so there's no curve to read yet.
                 Text("I'm still learning your rhythm — I need a few days of waking readings to mark your peaks. Your events are already here.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -120,117 +106,112 @@ struct StressDayMapBlock: View {
                 if hasReadings {
                     StressBarsStrip(curve: map.curve, events: map.timed, now: map.now, theme: theme)
                 }
-                momentsSections(map.moments)
+                momentsList(map.moments)
+                if hasReadings {
+                    BarraAncla(
+                        String(localized: "The grey gaps are hours with no waking reading, never a made-up value."),
+                        color: theme.hairline, theme: theme)
+                }
             }
             if !map.allDay.isEmpty { allDayRow(map.allDay) }
             calendarsFooter(map.selectedNames)
         }
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.card, theme: theme)
     }
 
-    // MARK: Headline — the answer (peak + its event + level)
+    // MARK: Headline — the answer (peak + its event + over-calm)
 
     @ViewBuilder private func headline(_ c: StressDayMap.Coincidence?) -> some View {
         if let c {
             let time = c.peakDate.formatted(.dateTime.hour().minute())
-            // Give the peak a SIZE, not just an hour (Pase v2 #3): how far it rose above your usual calm
-            // (the Low / activated boundary, `activatedFloor` = 1.0 — the same line drawn behind the bars).
             let overCalm = c.peakStress - StressMoments.activatedFloor
-            let head = Text("Your highest point today was at \(time)").foregroundColor(theme.ink)
-            let tail: Text = overCalm >= 0.1
-                ? Text(verbatim: " — ").foregroundColor(theme.inkTertiary)
-                    + Text("+\(magFmt(overCalm)) over your usual calm.").foregroundColor(bandColor(c.peakStress))
-                : Text(verbatim: ".").foregroundColor(theme.ink)
-            VStack(alignment: .leading, spacing: 4) {
-                (head + tail)
-                    .font(StrandFont.headline)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 3) {
                 if let ev = c.event {
-                    (Text("Coincided with “\(EventTitleCleaner.clean(ev.title))” · ")
-                        .foregroundColor(theme.inkSecondary)
-                     + Text(bandWord(c.peakStress)).foregroundColor(bandColor(c.peakStress)))
-                        .font(StrandFont.subhead)
+                    let clean = EventTitleCleaner.clean(ev.title)
+                    // Reuses the existing coincidence copy keys (FER-433); clean title for display.
+                    Text("Your highest point today, \(time), fell within “\(clean)”.")
+                        .font(InstrumentoType.grotesk(16, weight: .semibold))
+                        .foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    Text("It didn't coincide with any of your events.")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Text("Your highest point today was at \(time)")
+                        .font(InstrumentoType.grotesk(16, weight: .semibold))
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("no event on your calendar")
+                        .font(InstrumentoType.grotesk(13))
+                        .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("It's coincidence, not cause.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                if overCalm >= 0.1 {
+                    Text("+\(magFmt(overCalm)) over your usual calm.")
+                        .font(InstrumentoType.grotesk(13))
+                        .foregroundStyle(bandColor(c.peakStress))
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    // MARK: Moments — the ranked list (magnitude + time + clean event + band)
+    // MARK: Moments — ranked list (time + event + band word), hairlines between rows
 
-    @ViewBuilder private func momentsSections(_ m: StressMoments.DayMoments) -> some View {
-        if !m.activated.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                sectionLabel("Your most activated moments")
-                ForEach(Array(m.activated.enumerated()), id: \.offset) { _, mo in momentRow(mo) }
+    @ViewBuilder private func momentsList(_ m: StressMoments.DayMoments) -> some View {
+        let rows: [StressMoments.Moment] = m.activated + (m.calmest.map { [$0] } ?? [])
+        if !rows.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { i, mo in
+                    if i > 0 {
+                        Rectangle().fill(theme.hairline).frame(height: 1)
+                    }
+                    momentRow(mo)
+                }
             }
         }
-        if let calm = m.calmest {
-            VStack(alignment: .leading, spacing: 10) {
-                sectionLabel("Your calmest moment")
-                momentRow(calm)
-            }
-        }
-    }
-
-    private func sectionLabel(_ key: LocalizedStringKey) -> some View {
-        Text(key).instrumentoOverline().foregroundStyle(theme.inkTertiary)
     }
 
     private func momentRow(_ mo: StressMoments.Moment) -> some View {
         let time = mo.date.formatted(.dateTime.hour().minute())
         let cleanTitle = mo.event.map { EventTitleCleaner.clean($0.title) }
-        return HStack(alignment: .center, spacing: 12) {
-            magnitudeMeter(mo.stress)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(verbatim: time).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                if let cleanTitle {
-                    Text(verbatim: cleanTitle)
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                        .lineLimit(1).truncationMode(.tail)
-                } else {
-                    Text("no event on your calendar")
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).italic()
-                }
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(verbatim: time)
+                .font(InstrumentoType.groteskNumber(12))
+                .foregroundStyle(theme.inkTertiary)
+                .frame(width: 38, alignment: .leading)
+                .monospacedDigit()
+            if let cleanTitle {
+                Text(verbatim: cleanTitle)
+                    .font(InstrumentoType.grotesk(13))
+                    .foregroundStyle(theme.ink)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            } else {
+                Text("no event on your calendar")
+                    .font(InstrumentoType.grotesk(13))
+                    .foregroundStyle(theme.inkSecondary)
+                    .lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text(bandWord(mo.stress)).font(StrandFont.footnote).foregroundStyle(bandColor(mo.stress))
+            Text(bandWord(mo.stress))
+                .font(InstrumentoType.grotesk(12, weight: .semibold))
+                .foregroundStyle(bandColor(mo.stress))
         }
+        .padding(.vertical, 7)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(momentA11yLabel(mo, time: time))
     }
 
-    /// VoiceOver reads time + the ORIGINAL (uncleaned) event title + the band word (band never by color
-    /// alone). The display uses the cleaned title; accessibility keeps the user's full title.
     private func momentA11yLabel(_ mo: StressMoments.Moment, time: String) -> Text {
         var label = Text(verbatim: time)
         if let ev = mo.event { label = label + Text(verbatim: ", \(ev.title)") }
         return label + Text(verbatim: ", ") + Text(bandWord(mo.stress))
     }
 
-    /// A small 0–3 magnitude bar in the moment's band color (how high that moment ran).
-    private func magnitudeMeter(_ stress: Double) -> some View {
-        let frac = max(0, min(1, stress / 3))
-        return ZStack(alignment: .leading) {
-            Capsule().fill(theme.hairline).frame(width: 40, height: 6)
-            Capsule().fill(bandColor(stress)).frame(width: 40 * frac, height: 6)
-        }
-        .frame(width: 40)
-    }
-
     // MARK: Band helpers (reuse StressBand — single source for the 0–3 → band mapping)
 
     private func bandColor(_ score: Double) -> Color { StressBand(score: score).dataColor(theme) }
     private func bandWord(_ score: Double) -> LocalizedStringKey { StressBand(score: score).displayWord }
-
-    /// A 0–3 magnitude at one decimal, with no sign (the caller prepends «+»). e.g. 0.9.
     private func magFmt(_ v: Double) -> String { String(format: "%.1f", v) }
 
     private func allDayRow(_ events: [StressDayMap.DayEvent]) -> some View {
@@ -241,7 +222,6 @@ struct StressDayMapBlock: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 2)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1).offset(y: -8) }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("All day: \(events.map(\.title).joined(separator: ", ")). Not matched to a moment."))
     }
@@ -260,27 +240,22 @@ struct StressDayMapBlock: View {
     }
 }
 
-// MARK: - Hourly bars strip (the day's shape, scrubbable) — FER-433 / 447
+// MARK: - Hourly bars strip (the day's shape, scrubbable) — FER-433 / 447 / 860
 
-/// An hour-by-hour strip of the day's 0–3 stress — each bar is the MEAN of that civil hour's readings,
-/// colored by band, from midnight to the current hour. Hold-and-drag to scrub: the touched hour highlights
-/// and the readout names its level (band word in band colour) and the event that overlapped it. Taller than
-/// the old per-bucket strip so the shape reads clearly. Hours with no waking reading (activity / sleep) draw
-/// a faint stub, never a fabricated value. The precise peak + ranked moments still come from the fine 3-min
-/// curve (headline + list), so this stays the day's *shape*; decorative for VoiceOver (the moments list and
-/// headline carry the meaning).
+/// Hour-by-hour 0–3 stress strip: each bar is the MEAN of that civil hour's readings, colored by band.
+/// Gaps (no waking reading) draw a short hairline stub, never a fabricated value. Calm reference uses
+/// `baseMark`. Axis ticks: 6 h / 14 h / 22 h. Logic unchanged from the previous map.
 private struct StressBarsStrip: View {
     let curve: [StressEngine.StressPoint]
     let events: [StressDayMap.DayEvent]
     let now: Date
     let theme: InstrumentoTheme
 
-    /// The hour the user is reading; it persists after release so the value stays legible. nil before any touch.
     @State private var scrubHour: Int? = nil
-    /// True only while the finger is down — dims the un-selected bars and shows the cursor line.
     @State private var isDragging = false
 
-    private static let barsHeight: CGFloat = 150
+    private static let barsHeight: CGFloat = 96
+    private static let barWidth: CGFloat = 10
 
     private var cal: Calendar { .current }
     private var startOfDay: Date { cal.startOfDay(for: now) }
@@ -301,7 +276,7 @@ private struct StressBarsStrip: View {
 
     var body: some View {
         let hours = hourly
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 6) {
             readout(hours)
             chart(hours)
             axis
@@ -309,8 +284,6 @@ private struct StressBarsStrip: View {
         .sensoryFeedback(.selection, trigger: scrubHour)
         .accessibilityHidden(true)
     }
-
-    // MARK: Readout — hora + nivel + evento (the hour under the finger)
 
     @ViewBuilder private func readout(_ hours: [Double?]) -> some View {
         Group {
@@ -351,25 +324,30 @@ private struct StressBarsStrip: View {
             .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
         } else {
             Text("no event on your calendar")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).italic()
+                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
     }
-
-    // MARK: Bars + scrub
 
     private func chart(_ hours: [Double?]) -> some View {
         GeometryReader { geo in
             let w = geo.size.width
-            let n = hours.count
+            let n = max(hours.count, 1)
+            let gap = max(2.0, (w - Self.barWidth * CGFloat(n)) / CGFloat(max(n - 1, 1)))
             ZStack(alignment: .bottomLeading) {
-                calmReferenceLine                     // «your usual calm» dashed line, behind the bars (#6)
-                HStack(alignment: .bottom, spacing: 3) {
+                // Floor line
+                Rectangle()
+                    .fill(theme.hairlineStrong)
+                    .frame(height: 1.2)
+                    .offset(y: 0)
+                calmReferenceLine
+                HStack(alignment: .bottom, spacing: gap) {
                     ForEach(Array(0..<n), id: \.self) { h in
-                        RoundedRectangle(cornerRadius: 1.5, style: .continuous) // token-exempt: geometría de dato
-                            .fill(hours[h].map { StressBand(score: $0).dataColor(theme) } ?? theme.hairlineStrong)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: barHeight(hours[h]), alignment: .bottom)
-                            .opacity(isDragging && scrubHour != h ? 0.3 : 1)
+                        let v = h < hours.count ? hours[h] : nil
+                        RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
+                            .fill(barFill(v))
+                            .frame(width: Self.barWidth, height: barHeight(v), alignment: .bottom)
+                            .opacity(barOpacity(v, h: h))
+                            .recGrow(index: h)
                     }
                 }
                 .frame(width: w, height: Self.barsHeight, alignment: .bottom)
@@ -390,17 +368,36 @@ private struct StressBarsStrip: View {
         .frame(height: Self.barsHeight)
     }
 
-    /// A dotted «your usual calm» reference (Pase v2 #6): a horizontal dashed line at the Low / activated
-    /// boundary (stress 1.0, `activatedFloor`), so which hours rose into activated reads at a glance —
-    /// exactly the bars that are NOT calm-colored. Drawn behind the bars, with a quiet right-aligned tag.
+    /// Low band at 0.55 opacity; gaps use hairline fill at full opacity; others full.
+    private func barFill(_ v: Double?) -> Color {
+        guard let v else { return theme.hairline }
+        return StressBand(score: v).dataColor(theme)
+    }
+
+    private func barOpacity(_ v: Double?, h: Int) -> Double {
+        let base: Double
+        if let v {
+            // Low band at 0.55 (mock); other bands full. Switch avoids needing Equatable.
+            switch StressBand(score: v) {
+            case .low: base = 0.55
+            case .medium, .high: base = 1.0
+            }
+        } else {
+            base = 1.0
+        }
+        if isDragging && scrubHour != h { return base * 0.3 }
+        return base
+    }
+
+    /// Dotted «your usual calm» at activatedFloor (1.0 of 0–3), label on the right. Uses `baseMark`.
     private var calmReferenceLine: some View {
-        let frac = CGFloat(StressMoments.activatedFloor / 3.0)   // 1.0 of 0–3
+        let frac = CGFloat(StressMoments.activatedFloor / 3.0)
         return VStack(alignment: .trailing, spacing: 2) {
             Text("your usual calm")
-                .font(.system(size: 9, weight: .medium)) // token-exempt: microtexto <10pt
+                .font(InstrumentoType.grotesk(9, weight: .medium))
                 .foregroundStyle(theme.inkTertiary)
             DashedHLine()
-                .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                .stroke(theme.baseMark, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 .frame(height: 1)
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -418,25 +415,25 @@ private struct StressBarsStrip: View {
 
     private var axis: some View {
         HStack {
-            Text(verbatim: startOfDay.formatted(.dateTime.hour()))
+            Text(verbatim: "6 h")
             Spacer()
-            Text("now").foregroundStyle(theme.ink)
+            Text(verbatim: "14 h")
+            Spacer()
+            Text(verbatim: "22 h")
         }
-        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        .font(InstrumentoType.grotesk(9))
+        .foregroundStyle(theme.inkTertiary)
     }
 
-    // MARK: Helpers
-
     private func barHeight(_ v: Double?) -> CGFloat {
-        guard let v else { return 3 }
-        return Swift.max(7, CGFloat(Swift.min(1, v / 3)) * Self.barsHeight)
+        guard let v else { return 8 } // short stub for gaps — never a made-up height
+        return Swift.max(10, CGFloat(Swift.min(1, v / 3)) * Self.barsHeight)
     }
 
     private func hourLabel(_ h: Int) -> String {
         startOfDay.addingTimeInterval(TimeInterval(h * 3600)).formatted(.dateTime.hour())
     }
 
-    /// The first timed event overlapping `[hourStart, hourStart+1h)`, cleaned for display. nil = none.
     private func eventTitle(atHour h: Int) -> String? {
         let s = startOfDay.addingTimeInterval(TimeInterval(h * 3600))
         let e = s.addingTimeInterval(3600)
@@ -501,7 +498,6 @@ private struct CalendarPickerSheet: View {
 
 // MARK: - Dashed horizontal line (for the «your usual calm» reference)
 
-/// A single horizontal line through the view's vertical center, for `.stroke(dash:)`. Token-free shape.
 private struct DashedHLine: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
