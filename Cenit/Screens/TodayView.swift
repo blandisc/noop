@@ -742,16 +742,8 @@ struct TodayView: View {
                 }
                 sectionTabs
                     .padding(.top, NoopMetrics.space1)   // FER-878 follow-up: cromo apretado para caber sin scroll
-                // Franja de carga (FER-705 · handoff «Carga»): vive en el bloque FIJO, bajo las pestañas, así
-                // que es visible en AMBAS páginas del pager (Señales y Brief) y no viaja con el swipe. No
-                // respira ni participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no
-                // sembró (primer refresh) se omite; una vez con datos muestra la banda o «calibrando».
-                if let trainingLoad {
-                    TrainingLoadStrip(model: trainingLoad, theme: theme) {
-                        trainingLoadItem = makeTrainingLoadItem(trainingLoad)
-                    }
-                    .padding(.top, NoopMetrics.space2)   // FER-878 follow-up: 16→8 para caber sin scroll
-                }
+                // La franja de carga YA NO vive aquí: se movió DENTRO de la página Señales (bajo las cinco
+                // reglas) para que pertenezca solo a Señales y no aparezca al deslizar a Brief. Ver `senalesPage`.
                 // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Full-bleed (FER-725):
                 // se le pasa el ancho COMPLETO de la pantalla y el pager cancela el margen del padre por
                 // dentro, así cada hoja ocupa todo el ancho y se va limpia a un lado. Ejes ortogonales al
@@ -774,8 +766,10 @@ struct TodayView: View {
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
             .padding(.horizontal, NoopMetrics.screenPadding)
             // Margen inferior compacto (FER-475): los page dots (último elemento) quedan pegados al dock,
-            // no flotando con 24pt de aire. La rejilla de métricas mantiene su aire propio (cards + gap).
-            .padding(.bottom, NoopMetrics.space2)
+            // no flotando con 24pt de aire. Bajado 8→4 para asentar los dots un pelín MÁS abajo (más cerca
+            // del dock) y, de paso, reclamar altura que compensa el numeral mayor. La rejilla de métricas
+            // mantiene su aire propio (cards + gap).
+            .padding(.bottom, NoopMetrics.space1)
             .padding(.top, NoopMetrics.space2)
             // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
             // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
@@ -1210,7 +1204,7 @@ struct TodayView: View {
     /// Whether a strap has ever been seen (drives the foot affordance: Scan before, live pulse after).
     private var strapSeen: Bool { live.lastSyncedAt != nil || liveBpm != nil }
 
-    /// El héroe del handoff «Hoy» 2026-07 (FER-709; numeral 96 pt desde FER-743): en el color del veredicto +
+    /// El héroe del handoff «Hoy» 2026-07 (FER-709; numeral 102 pt): en el color del veredicto +
     /// la columna derecha (overline, palabra-veredicto con subrayado punteado + ⓘ que abre la hoja
     /// Recuperación, y el delta «+3 vs tu promedio»). El dial de 240 pt y el numeral concéntrico SE
     /// RETIRAN (decisión del dueño; `DiurnalDial` grande sigue en el paquete hasta F3) — el 24 h vive
@@ -1224,7 +1218,7 @@ struct TodayView: View {
             // la altura del tope del número. Gap más amplio para dar aire al héroe (FER-878 follow-up).
             HStack(alignment: .top, spacing: NoopMetrics.sectionGapCompact) {
                 heroNumeralText(state)
-                    // El numeral de 98pt (Space Grotesk) trae ~28.6pt de descenso VACÍO bajo la línea base
+                    // El numeral de 102pt (Space Grotesk) trae ~29.8pt de descenso VACÍO bajo la línea base
                     // (los dígitos no bajan): ese hueco es el «padding» de más hacia SEÑALES. Lo recupero con
                     // padding inferior negativo para apretar la fila del héroe contra las pestañas.
                     .padding(.bottom, -Self.heroNumeralBottomInk)
@@ -1262,15 +1256,17 @@ struct TodayView: View {
         .onAppear { heroEntered = true }   // FER-878: dispara recRise una vez al entrar a la pantalla
     }
 
-    /// Blanco vacío que trae el numeral de 98pt de Space Grotesk (medido con CoreText a ese tamaño):
-    /// ~28.6pt de descenso bajo la línea base y ~27.8pt sobre la altura de mayúscula. Los usamos para
+    /// Blanco vacío que trae el numeral de 102pt de Space Grotesk (medido con CoreText a ese tamaño):
+    /// ~29.8pt de descenso bajo la línea base y ~28.9pt sobre la altura de mayúscula. Los usamos para
     /// apretar la fila del héroe (bottom) y para casar el tope de la columna con el del número (top).
-    private static let heroNumeralBottomInk: CGFloat = 24
+    /// Al subir el numeral 98→102, subo también el claw-back inferior (24→27) para reclamar el descenso
+    /// EXTRA del glifo mayor, de modo que la fila del héroe casi no crece y SEÑALES sigue sin scroll.
+    private static let heroNumeralBottomInk: CGFloat = 27
     /// Cuánto baja la columna «RECUPERACIÓN…» para que su tope case con el glifo: blanco superior del
-    /// numeral (~28) menos el del propio overline de 10pt (~3).
-    private static let heroColumnTopDrop: CGFloat = 25
+    /// numeral (~29) menos el del propio overline de 10pt (~3).
+    private static let heroColumnTopDrop: CGFloat = 27
 
-    /// El numeral dominante (96/700 tabular, tracking −4.5). Veredicto → el score en su color de nivel
+    /// El numeral dominante (102/700 tabular, tracking −4.5). Veredicto → el score en su color de nivel
     /// (con `~` chico si es estimado); calibrando → «··»; descargando / sin lectura → «—». Tocarlo con
     /// veredicto abre la hoja de Recuperación. El score se asienta directo (sin conteo de arranque);
     /// un cambio real de valor rueda con `contentTransition(.numericText())`.
@@ -1884,6 +1880,15 @@ struct TodayView: View {
         // que sumó la leyenda de orígenes y el numeral más grande, y que SEÑALES quepa sin scroll).
         VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             if heroState == .verdict, !rulesRows.isEmpty { fiveRulesBlock }
+            // Franja de carga (FER-705 · handoff «Carga»): ahora vive DENTRO de Señales, bajo las cinco
+            // reglas, así que pertenece solo a esta página y NO viaja al Brief con el swipe. No respira ni
+            // participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no sembró (primer
+            // refresh) se omite; una vez con datos muestra la banda o «calibrando».
+            if let trainingLoad {
+                TrainingLoadStrip(model: trainingLoad, theme: theme) {
+                    trainingLoadItem = makeTrainingLoadItem(trainingLoad)
+                }
+            }
             if noSources { emptySourcesCard } else { iosMetricsSection }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2034,9 +2039,10 @@ struct TodayView: View {
         }
     }
 
-    /// Page dots: punto 6×6 inactivo (`hairlineStrong`) · barra 18×6 activa (`ink`), centrados. Tocar un
-    /// punto navega a su página (`StrandMotion.interactive`, omitida bajo Reduce Motion). El acento verde
-    /// NO se usa en el chrome: la página activa es TINTA, no verde (handoff). Área tocable de 28pt.
+    /// Page dots: punto 7×7 inactivo (`hairlineStrong`) · barra 22×7 activa (`ink`), centrados (un pelín
+    /// más grandes para dar más presencia al indicador). Tocar un punto navega a su página
+    /// (`StrandMotion.interactive`, omitida bajo Reduce Motion). El acento verde NO se usa en el chrome:
+    /// la página activa es TINTA, no verde (handoff). Área tocable de 28pt.
     private var todayPageDots: some View {
         HStack(spacing: NoopMetrics.space2) {
             ForEach(0..<2, id: \.self) { i in
@@ -2046,7 +2052,7 @@ struct TodayView: View {
                 } label: {
                     Capsule(style: .continuous)
                         .fill(active ? theme.ink : theme.hairlineStrong)
-                        .frame(width: active ? 18 : 6, height: 6)
+                        .frame(width: active ? 22 : 7, height: 7)
                         .frame(width: 28, height: 28)
                         .contentShape(Rectangle())
                 }

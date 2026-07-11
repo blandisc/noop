@@ -58,12 +58,14 @@ public extension InstrumentoType {
 
     // MARK: Scale (handoff «Hoy» 2026-07)
 
-    /// The «Hoy» hero numeral — 98/700, tracking −4.5 (apply `groteskHeroTracking`).
-    /// (FER-743 lo bajó de 124 a 96 para compactar SEÑALES sin scroll; FER-878 follow-up lo deja en 98
-    /// —un pelín más dominante que 96— tras medir que 104 metía scroll: el numeral manda el alto de la
-    /// fila del héroe, así que su tamaño es el que pesa contra el fit de SEÑALES, no la columna.)
-    static let groteskHero = groteskNumber(98)
-    /// Tracking for the 96pt hero numeral.
+    /// The «Hoy» hero numeral — 102/700, tracking −4.5 (apply `groteskHeroTracking`).
+    /// (FER-743 lo bajó de 124 a 96 para compactar SEÑALES sin scroll; FER-878 follow-up lo dejó en 98
+    /// tras medir que 104 metía scroll. Ahora sube a 102 —dominante pero por debajo del 104 que scrolleó—
+    /// y el alto EXTRA se reclama en TodayView subiendo `heroNumeralBottomInk` (descenso vacío) y bajando
+    /// el margen inferior de los page dots, de modo que el neto de SEÑALES queda casi igual y sigue sin
+    /// scroll. El numeral manda el alto de la fila del héroe, así que es lo que pesa contra el fit.)
+    static let groteskHero = groteskNumber(102)
+    /// Tracking for the hero numeral.
     static let groteskHeroTracking: CGFloat = -4.5
 
     /// A sheet's hero numeral — 56/700, tracking −2. FIXED.
@@ -77,8 +79,8 @@ public extension InstrumentoType {
     /// Tracking for the live BPM numeral.
     static let groteskLiveBpmTracking: CGFloat = -1.5
 
-    /// The verdict word next to the hero («Equilibrado») — 20/700, scales with `.title3`.
-    static let groteskVerdict = grotesk(20, weight: .bold, relativeTo: .title3)
+    /// The verdict word next to the hero («Equilibrado») — 22/700, scales with `.title3`.
+    static let groteskVerdict = grotesk(22, weight: .bold, relativeTo: .title3)
 
     /// A sheet title — 12/700, tracking 2.4, ALL-CAPS (`groteskSheetTitle(_: )` on `Text` bakes
     /// the case + tracking in). FIXED chrome.
