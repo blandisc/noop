@@ -58564,6 +58564,40 @@
           }
         }
       }
+    },
+    "Nes/HUNT model (2011)": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nes/HUNT model (2011)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modelo Nes/HUNT (2011)"
+          }
+        }
+      }
+    },
+    "Your band": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu banda"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

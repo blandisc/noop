@@ -1972,6 +1972,9 @@ ES: dict[str, str] = {
     "Today, vs your range": "Hoy, vs tu rango",
     "Nightly thermal stability": "Estabilidad térmica nocturna",
     "Tends to rise with alcohol, fever, and ambient heat.": "Suele subir con alcohol, fiebre y calor ambiental.",
+    # Fase 2 — migración Actividad/Longevidad al esqueleto Final.
+    "Nes/HUNT model (2011)": "Modelo Nes/HUNT (2011)",
+    "Your band": "Tu banda",
     # FER-666 «Ritmo» — pantalla experimental de regularidad latido-a-latido (no clínica).
     "Looked steady.": "Se vio estable.",
     "A few extra or skipped beats showed up.": "Se vieron algunos latidos extra o salteados.",
