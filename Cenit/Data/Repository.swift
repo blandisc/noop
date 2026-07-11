@@ -27,6 +27,11 @@ final class Repository: ObservableObject {
     /// Set by `AppModel` from `ProfileStore.baselineEpochOrNil`. The estimated-recovery path honors it
     /// so the Apple estimate re-anchors exactly like the strap baseline in `IntelligenceEngine`.
     var baselineEpoch: String? = nil
+    /// FER-883: the user's effective HRmax + sex for the estimated «Carga del día», set by `AppModel`
+    /// from `Profile` (`hrMaxOverride ?? Tanaka(age)`) so the Apple workout-HR estimate uses the SAME
+    /// HRmax as the strap's live strain path — no band↔Apple discontinuity. nil ⇒ StrainScorer default.
+    var strainHRmax: Double? = nil
+    var strainSex: String = "male"
     /// Source id for on-device computed scores (recovery/strain/sleep derived from the raw strap
     /// streams by IntelligenceEngine). Merged UNDER the imported `deviceId` rows at read time, so a
     /// real WHOOP import always wins and the strap-only user still gets a populated dashboard.
@@ -339,7 +344,8 @@ final class Repository: ObservableObject {
             impSleep: impSleep, compSleep: compSleep, appleSleepRaw: appleSleepRaw,
             appleHrRaw: appleHrRaw,
             appleAggRaw: appleAggRaw, stepsEstRaw: stepsEstRaw,
-            perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch))
+            perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch,
+            strainHRmax: strainHRmax, strainSex: strainSex))
 
         // Back on the main actor: publish only if this is still the newest refresh, and never let a
         // first-paint pass overwrite a fully loaded dashboard.
@@ -372,6 +378,9 @@ final class Repository: ObservableObject {
         var perf: [MetricPoint]; var cons: [MetricPoint]; var need: [MetricPoint]; var debt: [MetricPoint]
         /// Baseline cut day-key for the estimated-recovery path (FER-677); nil = no cut.
         var baselineEpoch: String? = nil
+        /// FER-883: effective HRmax + sex for the estimated strain, threaded from the Repository props.
+        var strainHRmax: Double? = nil
+        var strainSex: String = "male"
     }
 
     /// Pure assembly of the dashboard from rows already read — the EXACT merge pipeline `refresh()`
@@ -415,7 +424,8 @@ final class Repository: ObservableObject {
         }
         let strainEstimates = Self.appleStrainEstimates(hrByDay: hrByDayApple,
                                                         eligibleDays: daysNeedingStrainEstimate,
-                                                        restingHRByDay: restingHRByDayApple)
+                                                        restingHRByDay: restingHRByDayApple,
+                                                        maxHR: inputs.strainHRmax, sex: inputs.strainSex)
         // FER-485: stored per-source coverage from the UNFILTERED raws (the always-Combined truth), so the
         // diagnostic coverage shows what's stored even when the mode hides a source from the dashboard.
         let storedStrap = Set(inputs.importedRaw.map(\.day)).union(inputs.computedRaw.map(\.day))
@@ -519,7 +529,9 @@ final class Repository: ObservableObject {
     /// via `repo.today`/`estimatedStrain`/`isStrainEstimated`. `hrByDay` is apple-health HR samples
     /// (workout-only — HealthKitBridge only persists HR during HKWorkouts) grouped by LOCAL day
     /// (`WhoopStore.DayKey.local`). Reuses `StrainScorer.strain` (Edwards TRIMP) — no new math.
-    /// Uses StrainScorer defaults for maxHR/sex (no ProfileStore plumbing into Repository).
+    /// `maxHR`/`sex` come from the user's `Profile` (`hrMaxOverride ?? Tanaka(age)`), threaded via the
+    /// Repository props by `AppModel` — the SAME HRmax the strap live-strain path uses, so the estimate
+    /// never jumps band↔Apple (FER-883 /cso). nil `maxHR` still falls back to the StrainScorer default.
     nonisolated static func appleStrainEstimates(hrByDay: [String: [HRSample]], eligibleDays: Set<String>,
                                                  restingHRByDay: [String: Double] = [:],
                                                  maxHR: Double? = nil, sex: String = "male")

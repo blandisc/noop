@@ -242,6 +242,12 @@ final class AppModel: ObservableObject {
         self.repo = Repository(deviceId: "my-whoop")
         self.repo.dataSourceMode = sources.mode      // FER-484: honor the persisted mode from launch
         self.repo.baselineEpoch = profile.baselineEpochOrNil   // FER-677: honor a persisted recalibration
+        // FER-883: same HRmax as the live path. Inlined (not `effectiveHRmax`) — a computed property
+        // can't be read here before all stored props are initialized.
+        self.repo.strainHRmax = profile.hrMaxOverride > 0
+            ? Double(profile.hrMaxOverride)
+            : (profile.age > 0 ? StrainScorer.tanakaHRmax(age: Double(profile.age)) : nil)
+        self.repo.strainSex = profile.sex
         self.coach = AICoachEngine(repo: repo)
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
                                                family: WhoopModel.persisted.deviceFamily)
@@ -485,6 +491,7 @@ final class AppModel: ObservableObject {
         guard m != sources.mode else { return }
         sources.mode = m
         repo.dataSourceMode = m
+        repo.strainHRmax = effectiveHRmax; repo.strainSex = profile.sex   // FER-883: refresh HRmax when entering Apple mode
         Task { @MainActor in
             await repo.refresh()
             await intelligence.analyzeRecent(force: true)
@@ -1318,15 +1325,23 @@ final class AppModel: ObservableObject {
     /// with the curve. Returns [] under the same guard as the daily score: no settled score for today yet
     /// (the engine hasn't acknowledged the civil day), too few readings, or invalid HRR. PAST days are never
     /// read here — this only ever scores today's window, so settled history is untouched.
+    /// The user's effective HRmax: an explicit override, else Tanaka(age), else nil (unknown age).
+    /// ONE definition shared by the strap live-strain path (`liveDayStrainCurve`) and the Apple
+    /// estimated «Carga del día» (pushed to `repo.strainHRmax`), so the number never jumps band↔Apple
+    /// for the same person on the same day (FER-883, /cso finding 1).
+    var effectiveHRmax: Double? {
+        profile.hrMaxOverride > 0
+            ? Double(profile.hrMaxOverride)
+            : (profile.age > 0 ? StrainScorer.tanakaHRmax(age: Double(profile.age)) : nil)
+    }
+
     @discardableResult
     func liveDayStrainCurve() async -> [StrainScorer.CumulativeStrainPoint] {
         guard repo.today?.strain != nil else { liveDayStrain = nil; return [] }
         let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
         let nowTs = Int(Date().timeIntervalSince1970)
         let restHR = repo.today?.restingHr.map(Double.init) ?? StrainScorer.defaultRestingHR
-        let effMax: Double? = profile.hrMaxOverride > 0
-            ? Double(profile.hrMaxOverride)
-            : (profile.age > 0 ? StrainScorer.tanakaHRmax(age: Double(profile.age)) : nil)
+        let effMax: Double? = effectiveHRmax
         let source = repo.dataSourceMode
 
         // FER-870: reuse the cached incremental state unless the civil day rolled over, the data source

@@ -327,4 +327,16 @@ final class RepositoryMergeTests: XCTestCase {
     func testAppleStrainEstimatesEmptyHR() {
         XCTAssertTrue(Repository.appleStrainEstimates(hrByDay: [:], eligibleDays: ["2026-06-01"]).isEmpty)
     }
+
+    /// FER-883 (/cso finding 1): the threaded HRmax actually changes the estimate — the Apple «Carga del
+    /// día» must use the user's HRmax (the same the strap live path uses), not a fixed default. A lower
+    /// HRmax ⇒ higher %HRR ⇒ higher Edwards load.
+    func testAppleStrainEstimatesHRmaxAffectsResult() {
+        let day = "2026-06-10"
+        let hr = [day: denseHR(150)]
+        let low  = Repository.appleStrainEstimates(hrByDay: hr, eligibleDays: [day], maxHR: 170)[day]
+        let high = Repository.appleStrainEstimates(hrByDay: hr, eligibleDays: [day], maxHR: 210)[day]
+        XCTAssertNotNil(low); XCTAssertNotNil(high)
+        XCTAssertGreaterThan(low!, high!)
+    }
 }
