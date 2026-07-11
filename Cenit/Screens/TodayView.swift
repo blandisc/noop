@@ -496,9 +496,7 @@ struct TodayView: View {
                     intradayCurveLoader: spec.blocks.contains(.intradayCurve) ? { hrPoints } : nil,
                     hrMax: Double(model.profile.hrMax),
                     restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
-                    todayKey: Repository.localDayKey(Date()),
-                    // FER-670: today's source-agreement point (steps) — nil for every non-fused metric.
-                    fusion: repo.fusionPoint(day: Repository.localDayKey(Date()), metric: spec.descriptor.key)
+                    todayKey: Repository.localDayKey(Date())
                 )
             }
             .sheet(item: $trainingLoadItem) { item in
