@@ -1976,6 +1976,7 @@ ES: dict[str, str] = {
     "Nes/HUNT model (2011)": "Modelo Nes/HUNT (2011)",
     "Your band": "Tu banda",
     "This period": "Este periodo",
+    "Where you fall": "Dónde caes",
     "Kcal": "Kcal",
     "Your sports": "Tus deportes",
     "points": "puntos",

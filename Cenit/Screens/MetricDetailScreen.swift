@@ -197,11 +197,15 @@ struct MetricDetailScreen: View {
         return ScrollView {
             // Final skeleton for the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂).
             // Heart Rate is narrative + intraday → its own Final path (narrativeIntradayFinal).
-            // Steps / VO₂max are non-narrative → legacyBody verbatim.
+            // Steps / VO₂max → their own Final skeletons; anything else falls back to legacyBody.
             if isNarrative && !isIntraday {
                 narrativeBodyFinal(window)
             } else if isIntraday {
                 narrativeIntradayFinal(window)
+            } else if spec.descriptor.key == "steps" {
+                stepsBodyFinal(window)
+            } else if spec.descriptor.key == "vo2max" {
+                vo2maxBodyFinal(window)
             } else {
                 legacyBody(window)
             }
@@ -707,6 +711,262 @@ struct MetricDetailScreen: View {
                 OriginStamp(origin: footerOrigin, when: String(localized: "today"), theme: theme)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 2)
+            }
+        }
+    }
+
+    // MARK: - Steps Final skeleton
+
+    /// Full-bleed Final body for Steps: HeroInvertido → Your story → optional Your pattern → PieMetodo.
+    @ViewBuilder private func stepsBodyFinal(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            stepsHeroFinal
+            if !loaded {
+                ChartWell(theme).loading(height: 160)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+            } else if !enoughHistory {
+                // Same gate as legacyBody for non-sparse metrics (steps is not sparseMeasured).
+                calibrationBlock
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+            } else {
+                SeccionBloque(String(localized: "Your story"), theme: theme) {
+                    stepsHistoriaFinalContent(window)
+                }
+                if stepsMovers != nil {
+                    SeccionBloque(String(localized: "Your pattern"), theme: theme) {
+                        stepsPatronFinalContent
+                    }
+                }
+                pieMetodoFinal
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var stepsHeroFinal: some View {
+        let valueText = stepsToday.map { fmt($0) } ?? "—"
+        return HeroInvertido(
+            glyph: .steps,
+            title: "Steps",
+            hue: metricHue,
+            theme: theme,
+            onInfo: nil,
+            numeral: {
+                if stepsToday == nil {
+                    Text(verbatim: "—")
+                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                } else {
+                    // No unit suffix on the hero numeral (legacyHero shows none for steps).
+                    HeroNumeral(valueText, suffix: nil, size: 60, theme: theme) {
+                        if todayFromApple {
+                            Text("Apple")
+                                .font(InstrumentoType.grotesk(11, weight: .semibold))
+                                .foregroundStyle(theme.paper)
+                                .heroCapsule(theme: theme)
+                        }
+                    }
+                }
+            },
+            verdict: {
+                if let text = heroSecondaryText {
+                    Text(text)
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        )
+    }
+
+    /// «Your story» for steps: period selector + GraficaRangos + 3-tile strip.
+    @ViewBuilder private func stepsHistoriaFinalContent(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if visibleBlocks.contains(.periodSelector) {
+                periodSelector(window)
+            }
+            if window.values.count > 1 {
+                graficaRangosBlock(window)
+                    .padding(.top, 6)
+                    .id(range)
+            } else if let only = window.values.first {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(fmt(only)) \(unit)")
+                        .font(StrandFont.bodyNumber)
+                        .foregroundStyle(metricHue)
+                    Text("Only one reading in this range: not enough to draw a line yet.")
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+            } else {
+                ChartWell(theme).empty(text: "No readings in this range.")
+            }
+            stepsTileStripFinal
+                .padding(.top, 4)
+        }
+    }
+
+    /// TODAY / 7-DAY AVG / STREAK as TileSurface tiles (Final). Display-only, not tappable.
+    @ViewBuilder private var stepsTileStripFinal: some View {
+        HStack(alignment: .top, spacing: 8) {
+            TileSurface(label: String(localized: "TODAY"),
+                        value: stepsToday.map(fmt) ?? "—",
+                        valueColor: metricHue, theme: theme)
+            TileSurface(label: String(localized: "7-DAY AVG"),
+                        value: stepsAvg7.map(fmt) ?? "—",
+                        theme: theme)
+            TileSurface(label: String(localized: "STREAK"),
+                        value: stepsStreak.map { "\($0)" } ?? "—",
+                        theme: theme)
+        }
+    }
+
+    /// Weekend/weekday pattern for steps, reheaded with QueLaMueveHeader.
+    @ViewBuilder private var stepsPatronFinalContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            QueLaMueveHeader("What moves your steps", chip: "trend, not cause", theme: theme)
+            if let m = stepsMovers {
+                let pctStr = "\(m.pct)%"
+                Text(m.weekendHigher
+                     ? "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) more than your weekdays."
+                     : "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) fewer than your weekdays.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    // MARK: - VO2max Final skeleton
+
+    /// Full-bleed Final body for VO₂max: HeroInvertido → Your story → Where you fall → PieMetodo.
+    @ViewBuilder private func vo2maxBodyFinal(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            vo2maxHeroFinal
+            if !loaded {
+                ChartWell(theme).loading(height: 160)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+            } else if series.isEmpty {
+                // Same sparseMeasured empty gate as legacyBody (vo2max is sparseMeasured).
+                sparseEmptyState
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+            } else {
+                SeccionBloque(String(localized: "Your story"), theme: theme) {
+                    vo2maxHistoriaFinalContent(window)
+                }
+                SeccionBloque(String(localized: "Where you fall"), theme: theme) {
+                    vo2maxDondeCaesFinalContent
+                }
+                pieMetodoFinal
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var vo2maxHeroFinal: some View {
+        let valueText = heroValue.map { fmt($0) } ?? "—"
+        let suffix: String? = (heroValue != nil && !unit.isEmpty) ? unit : nil
+        return HeroInvertido(
+            glyph: .vo2max,
+            title: "VO₂ Max",
+            hue: metricHue,
+            theme: theme,
+            onInfo: nil,
+            numeral: {
+                if heroValue == nil {
+                    Text(verbatim: "—")
+                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                } else {
+                    HeroNumeral(valueText, suffix: suffix, size: 60, theme: theme) {
+                        if todayFromApple {
+                            Text("Apple")
+                                .font(InstrumentoType.grotesk(11, weight: .semibold))
+                                .foregroundStyle(theme.paper)
+                                .heroCapsule(theme: theme)
+                        }
+                    }
+                }
+            },
+            verdict: {
+                if heroValue != nil {
+                    Text(vo2maxComparison)
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        )
+    }
+
+    /// Sparse measured readings chart + expected/measured-ago as BarraAncla captions.
+    @ViewBuilder private func vo2maxHistoriaFinalContent(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if visibleBlocks.contains(.periodSelector) {
+                periodSelector(window)
+            }
+            // chartBlock already handles sparseMeasured (raw points, "Measured values" caption).
+            // Do not route through graficaRangosBlock (no Media↔Rangos toggle for vo2max).
+            chartBlock(window)
+            // Resolve with String(localized:) + interpolation (same pattern as graficaRefLine etc.).
+            // Do NOT use plainLocalizedLabel on interpolated LocalizedStringKey — Mirror only yields
+            // the unresolved format template (e.g. "~%lld"), not the substituted value.
+            if let exp = vo2maxExpected {
+                BarraAncla(String(localized: "Expected for your age: ~\(Int(exp.rounded()))"),
+                           color: metricHue, theme: theme)
+            }
+            if let day = series.last?.day, let date = Repository.parseDayKey(day) {
+                let cal = Calendar.current
+                if let d = cal.dateComponents([.day],
+                                              from: cal.startOfDay(for: date),
+                                              to: cal.startOfDay(for: Date())).day,
+                   d >= 0 {
+                    let ago: String = {
+                        switch d {
+                        case 0:  return String(localized: "Measured today")
+                        case 1:  return String(localized: "Measured yesterday")
+                        default: return String(localized: "Measured \(d) days ago")
+                        }
+                    }()
+                    BarraAncla(ago, color: metricHue, theme: theme)
+                }
+            }
+        }
+    }
+
+    /// Fitness category + equivalent age tiles, plus the "why it matters" body (no DetailBlock chrome).
+    @ViewBuilder private var vo2maxDondeCaesFinalContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let v = heroValue, let profile = spec.vo2maxProfile {
+                let active = VO2maxReference.category(value: v, age: profile.age, sex: profile.sex)
+                let eq = VO2maxReference.equivalentAge(value: v, sex: profile.sex)
+                HStack(alignment: .top, spacing: 8) {
+                    TileSurface(label: String(localized: "FITNESS CATEGORY"),
+                                value: vo2maxCategoryWord(active),
+                                valueColor: metricHue, theme: theme)
+                    TileSurface(label: String(localized: "EQUIVALENT AGE"),
+                                value: "~\(eq)",
+                                valueColor: metricHue, theme: theme)
+                }
+            }
+            // Inner copy from vo2maxWhyBlock, without its DetailBlock title wrapper
+            // (SeccionBloque already frames the section as "Where you fall").
+            VStack(alignment: .leading, spacing: 6) {
+                Text("A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Mandsager 2018 (JAMA) · Kodama 2009")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
             }
         }
     }

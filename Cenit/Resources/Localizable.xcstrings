@@ -58819,6 +58819,23 @@
           }
         }
       }
+    },
+    "Where you fall": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where you fall"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dónde caes"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
