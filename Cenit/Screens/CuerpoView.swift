@@ -272,7 +272,6 @@ private struct CuerpoLanding: View {
                 longevityCard
                 connectNudge
                 footerActions
-                originLegend
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
@@ -540,27 +539,17 @@ private struct CuerpoLanding: View {
     /// value in its data hue (ink «—» when absent — never a hue), an optional inline unit and a footnote
     /// legend. `value == nil` is an honest empty state.
     private func statColumn(_ label: LocalizedStringKey, value: String?, unit: String? = nil,
-                            color: Color, origin: Color? = nil, legend: LocalizedStringKey? = nil, estimate: Bool = false,
+                            color: Color, legend: LocalizedStringKey? = nil, estimate: Bool = false,
                             fromApple: Bool = false, spark: [Double] = [], tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            // Columns left-aligned with an optional origin dot per stat (band / Apple Health / computed).
+            // Columns left-aligned; the metric name carries its own data hue. No per-stat origin dot —
+            // provenance now lives only on the detail's OriginStamp seal (FER-826 follow-up).
             VStack(alignment: .leading, spacing: 3) {
-                if let origin {
-                    HStack(spacing: 4) {
-                        Circle().fill(origin).frame(width: 7, height: 7)
-                        Text(label)
-                            .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
-                            .foregroundStyle(color)
-                            .multilineTextAlignment(.leading)
-                            .minimumScaleFactor(0.9)
-                    }
-                } else {
-                    Text(label)
-                        .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
-                        .foregroundStyle(color)
-                        .multilineTextAlignment(.leading)
-                        .minimumScaleFactor(0.9)
-                }
+                Text(label)
+                    .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1.4).textCase(.uppercase)
+                    .foregroundStyle(color)
+                    .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.9)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value ?? "—")
                         .font(StrandFont.number(21))
@@ -826,7 +815,6 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.totalSleepMin }
         let fromApple = r?.fromApple == true
         return statColumn("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
-                          origin: fromApple ? theme.originApple : theme.originBand,
                           fromApple: fromApple, spark: windowedSpark { $0.totalSleepMin }) {
             sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
                 days: repo.days,
@@ -848,7 +836,7 @@ private struct CuerpoLanding: View {
         let v = model.displayedDayStrain
         let estimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
         return statColumn(estimated ? "Day load" : "Day Strain", value: v.map { String(format: "%.1f", $0) },
-                          color: theme.dataStrain, origin: estimated ? theme.originApple : theme.originComputed,
+                          color: theme.dataStrain,
                           spark: windowedSpark { $0.strain }) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
             // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses
@@ -862,7 +850,7 @@ private struct CuerpoLanding: View {
         let s = stressModel?.score
         return statColumn("Stress", value: s.map { String(format: "%.1f", $0) },
                           unit: s == nil ? nil : "/ 3",
-                          color: s.map(stressDataColor) ?? theme.inkTertiary, origin: theme.originComputed,
+                          color: s.map(stressDataColor) ?? theme.inkTertiary,
                           spark: stressSpark) {
             stressDayMap = StressDayMapPresenter.make(
                 repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR)
@@ -880,7 +868,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.avgHrv }
         let fromApple = r?.fromApple == true
         return statColumn("HRV", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "ms"),
-                          color: theme.dataHrv, origin: fromApple ? theme.originApple : theme.originBand,
+                          color: theme.dataHrv,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.avgHrv }) {
             metricSpec = .hrv(r?.value)
@@ -891,7 +879,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.restingHr.map(Double.init) }
         let fromApple = r?.fromApple == true
         return statColumn("Resting HR", value: r.map { "\(Int($0.value.rounded()))" }, unit: String(localized: "bpm"),
-                          color: theme.dataHeart, origin: fromApple ? theme.originApple : theme.originBand,
+                          color: theme.dataHeart,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.restingHr.map(Double.init) }) {
             metricSpec = .restingHR(r.map { Int($0.value.rounded()) })
@@ -902,7 +890,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.spo2Pct }
         let fromApple = r?.fromApple == true
         return statColumn("Blood Oxygen", value: r.map { String(format: "%.0f", $0.value) }, unit: "%",
-                          color: theme.dataSpO2, origin: fromApple ? theme.originApple : theme.originBand,
+                          color: theme.dataSpO2,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.spo2Pct }) {
             metricSpec = .spo2(r?.value)
@@ -915,7 +903,7 @@ private struct CuerpoLanding: View {
         // dashboard series — its own detail has no period trend either (FER-253). A daily mean-HR series
         // doesn't exist in `displayDays`, so the honest landing read is the number alone. (FER-566)
         return statColumn("Heart Rate", value: avg.map { "\($0)" }, unit: String(localized: "bpm"),
-                          color: theme.dataHeart, origin: theme.originComputed,
+                          color: theme.dataHeart,
                           legend: "intraday, no daily series") {
             metricSpec = .heartRate(avg)
         }
@@ -925,7 +913,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.respRateBpm }
         let fromApple = r?.fromApple == true
         return statColumn("Respiratory", value: r.map { String(format: "%.1f", $0.value) }, unit: String(localized: "rpm"),
-                          color: theme.dataSpO2, origin: fromApple ? theme.originApple : theme.originBand,
+                          color: theme.dataSpO2,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.respRateBpm }) {
             metricSpec = .respiratory(r?.value)
@@ -936,7 +924,7 @@ private struct CuerpoLanding: View {
         let r = resolveMeasured { $0.skinTempDevC }
         let fromApple = r?.fromApple == true
         return statColumn("Skin temp", value: r.map { String(format: "%+.1f", $0.value) }, unit: "°C",
-                          color: theme.dataStrain, origin: fromApple ? theme.originApple : theme.originBand,
+                          color: theme.dataStrain,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.skinTempDevC }) {
             // Opens the rich light Detalle de Temperatura de la piel (FER-256) — built fresh from the
@@ -950,7 +938,7 @@ private struct CuerpoLanding: View {
         let steps = freshSteps
         let fromApple = steps != nil
         return statColumn("Steps", value: steps.map { intString(Double($0)) },
-                          color: theme.dataSteps, origin: fromApple ? theme.originApple : theme.originBand,
+                          color: theme.dataSteps,
                           fromApple: fromApple,
                           spark: windowedSpark { $0.steps.map(Double.init) }) {
             metricSpec = .steps(steps)
@@ -962,7 +950,7 @@ private struct CuerpoLanding: View {
     @ViewBuilder private var workoutsStat: some View {
         let n = recentWorkoutCount
         let col = statColumn("Workouts · 14d", value: n > 0 ? "\(n)" : nil,
-                             color: theme.dataStrain, origin: theme.originComputed,
+                             color: theme.dataStrain,
                              legend: n > 0 ? "\(weekWorkoutCount) this week" : nil) {
             showWorkouts = true
         }
@@ -979,7 +967,7 @@ private struct CuerpoLanding: View {
         let color = snap?.result.map(physicalAgeColor) ?? theme.inkTertiary
         return statColumn("Physical age",
                           value: snap?.result.map { "\(Int($0.fitnessAge.rounded()))" },
-                          color: color, origin: theme.originComputed,
+                          color: color,
                           legend: physicalAgeLegend(snap), estimate: estimate) {
             showFitnessAge = true
         }
@@ -1031,7 +1019,7 @@ private struct CuerpoLanding: View {
         // «Estimate» chip when a heaviest factor (HRV/RHR) is missing — same mechanism as Physical age
         // (FER-643), so the two longevity stats read consistently.
         return statColumn("Body age", value: r.map { "\(Int($0.bodyAge.rounded()))" },
-                          color: color, origin: theme.originComputed,
+                          color: color,
                           legend: r == nil ? nil : "vs your \(model.profile.age)",
                           estimate: r?.isPartialEstimate == true) {
             showBodyAge = true
@@ -1043,7 +1031,7 @@ private struct CuerpoLanding: View {
     private var vo2maxStat: some View {
         let v = latestAppleVO2max
         return statColumn("VO₂ Max", value: v.map { String(format: "%.0f", $0) },
-                          color: theme.dataSpO2, origin: theme.originComputed,
+                          color: theme.dataSpO2,
                           legend: "ml/kg·min", fromApple: v != nil) {
             metricSpec = .vo2max(value: v, age: model.profile.age, sex: model.profile.sex)
         }
@@ -1077,26 +1065,6 @@ private struct CuerpoLanding: View {
             actionRow("See all metrics", icon: "square.grid.2x2") { showExplore = true }
         }
         .instrumentoCard(.card, theme: theme)
-    }
-
-    /// Footer origin legend: band / Apple Health / computed (matches the per-stat origin dots).
-    private var originLegend: some View {
-        HStack(spacing: 16) {
-            HStack(spacing: 4) {
-                Circle().fill(theme.originBand).frame(width: 7, height: 7)
-                Text("band")
-            }
-            HStack(spacing: 4) {
-                Circle().fill(theme.originApple).frame(width: 7, height: 7)
-                Text("Apple Health")
-            }
-            HStack(spacing: 4) {
-                Circle().fill(theme.originComputed).frame(width: 7, height: 7)
-                Text("computed")
-            }
-        }
-        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func actionRow(_ label: LocalizedStringKey, icon: String, open: @escaping () -> Void) -> some View {

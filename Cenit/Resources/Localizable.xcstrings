@@ -52691,6 +52691,22 @@
         }
       }
     },
+    "Measured by Apple Health": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured by Apple Health"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medido por Apple Salud"
+          }
+        }
+      }
+    },
     "Computed on your phone": {
       "localizations": {
         "en": {
