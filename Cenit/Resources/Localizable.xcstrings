@@ -21979,6 +21979,22 @@
         }
       }
     },
+    "Measured with your band": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured with your band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medido con tu banda"
+          }
+        }
+      }
+    },
     "Measurement system": {
       "localizations": {
         "es": {
@@ -32385,6 +32401,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Origen"
+          }
+        }
+      }
+    },
+    "Source: measured with your band": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source: measured with your band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Origen: medido con tu banda"
           }
         }
       }
