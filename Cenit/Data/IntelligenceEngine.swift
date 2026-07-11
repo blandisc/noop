@@ -86,6 +86,10 @@ final class IntelligenceEngine: ObservableObject {
         let workouts: [ExerciseSession]
         let nightlySkin: Double?
         let spectral: HRVFreqDomain.Bands?
+        /// Whether this night was scored with strain over its own civil day only (FER-341) — true only
+        /// for the in-progress day (offset 0). A past day must use the full ~42h window, so a night
+        /// cached as in-progress can't be replayed once it becomes yesterday (FER-868 D1).
+        let strainCivilDayOnly: Bool
     }
 
     /// The engine's per-session memory between passes. Value type: `analyzeRecent` hands a copy into
@@ -334,8 +338,19 @@ final class IntelligenceEngine: ObservableObject {
             newSignatures[day] = sig
             if !AnalysisScheduler.isDirty(cached: cache.signatures[day], current: sig, isToday: offset == 0) {
                 // Clean: replay the cached night, or the cached "no night here" (skippedDays).
-                if let night = cache.nights[day] { scoredNights.append(night) }
-                continue
+                if let night = cache.nights[day] {
+                    // FER-868 D1: un día cacheado como en-progreso (civil-day-only) debe recomputarse una
+                    // vez al volverse pasado (ventana completa) — el flag lo detecta aunque la firma de
+                    // conteo no cambie.
+                    if night.strainCivilDayOnly == (offset == 0) {
+                        scoredNights.append(night)
+                        continue
+                    }
+                    // Flag mismatch (today→yesterday transition): fall through to recompute this night.
+                } else {
+                    // Cached "no night here" (skippedDays) — nothing to replay, stay clean.
+                    continue
+                }
             }
 
             // Read a generous window around the night that ends on `day`; the stager finds the span.
@@ -382,7 +397,7 @@ final class IntelligenceEngine: ObservableObject {
             analyzedDays += 1
             let night = NightResult(daily: res.daily, strain: res.strain, cachedSleep: res.cachedSleep,
                                     workouts: res.workouts, nightlySkin: res.nightlySkinTempC,
-                                    spectral: res.spectralBands)
+                                    spectral: res.spectralBands, strainCivilDayOnly: offset == 0)
             scoredNights.append(night)
             cache.nights[day] = night
             cache.skippedDays.remove(day)
