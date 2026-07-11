@@ -19,6 +19,8 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- Menos consumo de batería con la banda conectada: la app deja de re-dibujar todas las pantallas ~3 veces por segundo durante la sesión en vivo y durante el sync (FER-866).
+
 - El app instalado pesa ~8–10 MB menos: el catálogo de ejercicios ya no viaja duplicado dentro del app del Apple Watch (FER-865).
 
 - **El Detalle de Esfuerzo estrena la piel «Final» de Tendencias / The Strain detail debuts the final Trends skin.**

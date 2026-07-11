@@ -249,6 +249,10 @@ public final class BLEManager: NSObject, ObservableObject {
     /// Backfill ACKs can arrive hundreds or thousands of times in one offload. Keep the strap log
     /// readable and avoid forcing SwiftUI to auto-scroll on every ACK row.
     private var historicalAckLogCounter = 0
+    /// FER-866: coalesce per-chunk `syncChunksThisSession` publishes (hundreds/sec mid-offload).
+    /// Chunks land in `pendingChunkCount`; a single trailing flush every 0.5s writes the batch.
+    private var pendingChunkCount = 0
+    private var pendingChunkCountFlushTask: Task<Void, Never>?
     private var clockRequested = false
     /// FER-90 diagnostic: did the strap answer the GET_CLOCK we sent this connect? Reset when we send
     /// GET_CLOCK, set when its response lands — a deferred check logs "sin respuesta" if it never does.
@@ -669,7 +673,18 @@ public final class BLEManager: NSObject, ObservableObject {
         // Progress signal for the "Syncing strap history…" UI (#77). Same main-queue delegate path as
         // the other state mutations (e.g. lastSyncedAt in exitBackfilling). NOT historicalAckLogCounter
         // — that's a puffin-write log throttle that never increments on WHOOP 4.
-        state.syncChunksThisSession += 1
+        // FER-866: batch into pendingChunkCount and flush at most every 0.5s (trailing — last flush always runs).
+        pendingChunkCount += 1
+        if pendingChunkCountFlushTask == nil {
+            pendingChunkCountFlushTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                // Cancelled only on session reset — skip write so a stale batch can't land after zeroing.
+                guard !Task.isCancelled else { return }
+                state.syncChunksThisSession += pendingChunkCount
+                pendingChunkCount = 0
+                pendingChunkCountFlushTask = nil
+            }
+        }
     }
 
     /// FER-693 (#77 / #91): durably archive undecodable HISTORICAL_DATA frames BEFORE the trim ack. The
@@ -712,6 +727,10 @@ public final class BLEManager: NSObject, ObservableObject {
         sessionStartTrim = backfiller.lastAckedTrim   // FER-480: baseline to detect a trim advance this session
         backfilling = true
         state.backfilling = true
+        // FER-866: drop any in-flight coalesced chunk flush before zeroing the published counter.
+        pendingChunkCountFlushTask?.cancel()
+        pendingChunkCountFlushTask = nil
+        pendingChunkCount = 0
         state.syncChunksThisSession = 0
         state.syncReceipt = LiveState.SyncReceipt()   // fresh "received this sync" tally (FER-83)
         state.syncCompletedThisSession = false
@@ -1416,6 +1435,10 @@ extension BLEManager: CBCentralManagerDelegate {
         backfilling = false
         state.backfilling = false
         state.draining = false   // FER-480: drop the auto-continue bridge latch if the link died mid-decision
+        // FER-866: cancel coalesced chunk flush so a pending write can't resurrect the counter after disconnect.
+        pendingChunkCountFlushTask?.cancel()
+        pendingChunkCountFlushTask = nil
+        pendingChunkCount = 0
         state.syncChunksThisSession = 0
         backfillTimeout?.cancel()
         backfillTimeout = nil
