@@ -84,10 +84,10 @@ public extension Exercise {
 /// Source: **ExerciseDB OSS** (https://oss.exercisedb.dev), ~1500 exercises with native ids
 /// (FER-779). Baked offline by `Tools/bake-exercisedb/` into our schema (native id, name, derived
 /// `ExerciseType`, equipment, body parts, muscles normalized to our 17 canonical keys, offline
-/// instructions, and a remote `gifUrl`) and shipped as a package resource so it works fully
-/// offline. The es-MX overlay (name + instructions) is LLM-translated at bake into
-/// `exercises.es.json`. User-created exercises live in WhoopStore and are merged with this catalog
-/// by the app's library.
+/// instructions) and shipped as a zlib-compressed package resource so it works fully offline
+/// (FER-875). `gifUrl` is derived at load from the baked still presence, not stored in the JSON.
+/// The es-MX overlay (name + instructions) is LLM-translated at bake into `exercises.es.json.zlib`.
+/// User-created exercises live in WhoopStore and are merged with this catalog by the app's library.
 public enum ExerciseCatalog {
     /// Every bundled exercise, decoded once and cached.
     public static let all: [Exercise] = load()
@@ -110,13 +110,13 @@ public enum ExerciseCatalog {
     }
 
     private static func load() -> [Exercise] {
-        guard let url = Bundle.module.url(forResource: "exercises", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
+        guard let url = Bundle.module.url(forResource: "exercises.json", withExtension: "zlib"),
+              let compressed = try? Data(contentsOf: url),
+              let data = try? (compressed as NSData).decompressed(using: .zlib) as Data,
               let list = try? JSONDecoder().decode([Exercise].self, from: data)
         else { return [] }
         let es = loadSpanishOverlay()           // id → Spanish name + instructions
-        guard !es.isEmpty else { return list }
-        return list.map { ex in
+        let base = es.isEmpty ? list : list.map { ex -> Exercise in
             guard let entry = es[ex.id] else { return ex }
             return Exercise(id: ex.id, name: ex.name, nameES: entry.name, type: ex.type,
                             equipment: ex.equipment, bodyParts: ex.bodyParts,
@@ -124,18 +124,34 @@ public enum ExerciseCatalog {
                             instructions: ex.instructions, instructionsES: entry.instructions,
                             gifUrl: ex.gifUrl)
         }
+        return base.map(withDerivedGifURL)
+    }
+
+    /// The bundled catalog no longer ships `gifUrl` in the JSON (FER-875, saves bytes) — it's 100%
+    /// derivable from the ExerciseDB id for the exercises that actually have media. We use the baked
+    /// row-still (`exercise-stills/{id}.jpg`) as the source of truth for "has media": if it was baked,
+    /// this id had a valid gifUrl at bake time; if not, it was pruned (dead CDN) and stays nil, exactly
+    /// preserving pre-FER-875 behavior (see CatalogTests.testBakedStillsCoverExercisesWithMedia).
+    private static func withDerivedGifURL(_ ex: Exercise) -> Exercise {
+        guard stillURL(id: ex.id) != nil else { return ex }
+        return Exercise(id: ex.id, name: ex.name, nameES: ex.nameES, type: ex.type, equipment: ex.equipment,
+                        bodyParts: ex.bodyParts, primaryMuscles: ex.primaryMuscles,
+                        secondaryMuscles: ex.secondaryMuscles, instructions: ex.instructions,
+                        instructionsES: ex.instructionsES,
+                        gifUrl: "https://static.exercisedb.dev/media/\(ex.id).gif")
     }
 
     /// One Spanish-overlay entry, keyed by the catalog id: the Spanish name and, optionally, the
     /// Spanish instructions. Tolerant of extra fields for forward-compat.
     private struct SpanishEntry: Decodable { let id: String; let name: String?; let instructions: [String]? }
 
-    /// Load the bundled `exercises.es.json` overlay → id → (Spanish name, Spanish instructions). A
-    /// separate file (not inline in `exercises.json`) so the English catalog stays a clean mirror of
-    /// the upstream dataset and the Spanish diff is reviewable on its own. Missing/empty → English.
+    /// Load the bundled `exercises.es.json.zlib` overlay → id → (Spanish name, Spanish instructions).
+    /// A separate file (not inline in the English catalog) so the English catalog stays a clean mirror
+    /// of the upstream dataset and the Spanish diff is reviewable on its own. Missing/empty → English.
     private static func loadSpanishOverlay() -> [String: SpanishEntry] {
-        guard let url = Bundle.module.url(forResource: "exercises.es", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
+        guard let url = Bundle.module.url(forResource: "exercises.es.json", withExtension: "zlib"),
+              let compressed = try? Data(contentsOf: url),
+              let data = try? (compressed as NSData).decompressed(using: .zlib) as Data,
               let list = try? JSONDecoder().decode([SpanishEntry].self, from: data)
         else { return [:] }
         return Dictionary(list.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })

@@ -16,8 +16,8 @@ let package = Package(
         .target(
             name: "StrandTraining",
             resources: [
-                .process("Resources/exercises.json"),
-                .process("Resources/exercises.es.json"),       // Spanish overlay (FER-501/FER-779)
+                .copy("Resources/exercises.json.zlib"),        // zlib-compressed catalog (FER-875)
+                .copy("Resources/exercises.es.json.zlib"),     // Spanish overlay, zlib (FER-501/FER-779/FER-875)
                 .copy("Resources/exercise-stills"),            // baked row thumbnails, {id}.jpg (FER-800)
             ],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
