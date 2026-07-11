@@ -18,6 +18,8 @@ CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
+    "Night · %lld cycles": "Noche · %lld ciclos",
+    "Night": "Noche",
     # FER-878 — Pulido de «Hoy» al ADN §8.7 / handoff Detalle de Tendencias.
     # Regla de copy FER-642/836: toda comparación es «vs tu base»; sin em-dash (·, :, coma).
     "vs your baseline": "vs tu base",
