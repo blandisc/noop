@@ -58547,6 +58547,23 @@
           }
         }
       }
+    },
+    "Tends to rise with alcohol, fever, and ambient heat.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tends to rise with alcohol, fever, and ambient heat."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suele subir con alcohol, fiebre y calor ambiental."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

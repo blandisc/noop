@@ -436,7 +436,7 @@ struct SkinTempDetailScreen: View {
     private var patronFinalContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             QueLaMueveHeader("What moves it", chip: "trend, not cause", theme: theme)
-            Text("Tends to rise with alcohol, fever, ambient heat, and the days before your period.")
+            Text("Tends to rise with alcohol, fever, and ambient heat.")
                 .font(StrandFont.caption)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
