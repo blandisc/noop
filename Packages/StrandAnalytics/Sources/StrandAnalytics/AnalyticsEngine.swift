@@ -95,6 +95,15 @@ public enum AnalyticsEngine {
         return flooredLocal - tzOffsetSeconds
     }
 
+    /// Inclusive-exclusive unix-seconds range [start, end) of the civil day `day` ("yyyy-MM-dd") in a
+    /// fixed-offset wall clock `tzOffsetSeconds` east of UTC. Numeric equivalent of
+    /// `dayString(ts, tzOffsetSeconds:) == day` — same fixed-offset semantics, no Calendar/DST.
+    public static func dayRange(_ day: String, tzOffsetSeconds: Int = 0) -> Range<Int>? {
+        guard let d = isoDay.date(from: day) else { return nil }
+        let start = Int(d.timeIntervalSince1970) - tzOffsetSeconds
+        return start ..< (start + 86_400)
+    }
+
     /// Which `stored` day-keys fall strictly AFTER `today` (the device's local civil day) and were NOT
     /// (re)written this run — the spurious "future-in-local" rows the one-time UTC→local re-bucket
     /// prunes (FER-226). Pure so the prune's selection is testable without the app/store. Past and
@@ -177,11 +186,15 @@ public enum AnalyticsEngine {
                                   // (FER-341)
                                   strainCivilDayOnly: Bool = false) -> DayResult {
 
+        // Numeric [start, end) for `day` under fixed-offset `tzOffsetSeconds` — O(1) equivalent of
+        // dayString(ts) == day, computed once for the three civil-day filters below.
+        let dayRange = Self.dayRange(day, tzOffsetSeconds: tzOffsetSeconds)
+
         // ── Sleep detection + staging ─────────────────────────────────────────
         let allSessions = SleepStager.detectSleep(hr: hr, rr: rr, resp: resp, gravity: gravity,
                                                   tzOffsetSeconds: tzOffsetSeconds)
         // Sessions attributed to `day` = those whose end falls on `day` (local civil day per tzOffsetSeconds).
-        let matched = allSessions.filter { dayString($0.end, tzOffsetSeconds: tzOffsetSeconds) == day }
+        let matched = allSessions.filter { dayRange?.contains($0.end) ?? false }
 
         // ── Daily sleep aggregates (AASM, in-bed weighted) ────────────────────
         var deepS = 0.0, remS = 0.0, lightS = 0.0, tstS = 0.0
@@ -259,7 +272,7 @@ public enum AnalyticsEngine {
         // ── Strain (day cardiovascular load) ──────────────────────────────────
         // HR scoped to `day`'s own LOCAL civil day (the same filter the additive totals use below).
         // Computed once here and reused by the calorie estimate.
-        let dayHrFiltered = (dayHr ?? hr).filter { dayString($0.ts, tzOffsetSeconds: tzOffsetSeconds) == day }
+        let dayHrFiltered = (dayHr ?? hr).filter { dayRange?.contains($0.ts) ?? false }
         let effMaxHR: Double? = maxHROverride ?? (profile.age > 0 ? StrainScorer.tanakaHRmax(age: profile.age) : nil)
         let restForStrain = restingHRDaily.map(Double.init) ?? StrainScorer.defaultRestingHR
         // A past complete day scores strain over the full ~42h window centered on it. The IN-PROGRESS
@@ -296,7 +309,7 @@ public enum AnalyticsEngine {
         let stepsTotal: Int? = {
             // Prefer the full-calendar-day stream for the additive total; fall back to the
             // night-window stream when the caller didn't supply one (pure-function callers/tests).
-            let sorted = (daySteps ?? steps).filter { dayString($0.ts, tzOffsetSeconds: tzOffsetSeconds) == day }.sorted { $0.ts < $1.ts }
+            let sorted = (daySteps ?? steps).filter { dayRange?.contains($0.ts) ?? false }.sorted { $0.ts < $1.ts }
             if sorted.count < 2 { return nil }
             // A delta this large is a big time-gap / disconnect boundary between sync sessions (or a
             // firmware reboot, byte-indistinguishable from a wrap), NOT real steps — drop it so gaps
