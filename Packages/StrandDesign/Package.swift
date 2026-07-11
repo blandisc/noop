@@ -14,12 +14,21 @@ let package = Package(
             name: "StrandDesign",
             // Instrument Serif (OFL) — bundled so the «Instrumento» serif headlines render fully
             // offline; registered at runtime via CoreText (a package can't use Info.plist UIAppFonts).
-            resources: [.process("Resources")]
+            resources: [.process("Resources")],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         // Token-doc generator (FER-131 handoff · 01): emits docs/design-system/* from the canonical
         // Instrumento.swift values so the doc + JSON can never drift from code. Run with
         // `swift run StrandDesignTokens` from this package dir; CI re-runs it and fails on a diff.
-        .executableTarget(name: "StrandDesignTokens", dependencies: ["StrandDesign"]),
-        .testTarget(name: "StrandDesignTests", dependencies: ["StrandDesign"]),
+        .executableTarget(
+            name: "StrandDesignTokens",
+            dependencies: ["StrandDesign"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
+        .testTarget(
+            name: "StrandDesignTests",
+            dependencies: ["StrandDesign"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
+        ),
     ]
 )

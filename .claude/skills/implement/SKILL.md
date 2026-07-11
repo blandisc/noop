@@ -122,6 +122,15 @@ disparador pesado, súbelo a pesado.
    para el usuario; ver "La bitácora de producto" abajo) → push → PR hacia `iOS`
    (`Closes FER-NN`, criterios verificados en "How it was tested") →
    **squash-merge a `iOS`** → **borra la rama** (`--delete-branch`).
+   - **Gate de Design Lint (obligatorio, ambos carriles) antes del squash-merge.**
+     El repo es privado en plan Free: GitHub NO puede imponer required checks, así
+     que **tú eres el gate**. Corre
+     `python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal Cenit/Screens Cenit/Onboarding`
+     (más `no-hex` sobre todos los roots si tu diff toca UI) y confirma que sale ✅.
+     Si sale rojo, **no mergees**: promueve el valor a un token de `StrandDesign` o
+     anota `// token-exempt: <razón>`, y re-corre hasta verde. Esto ataja la deriva
+     que CI (solo `Packages/**`) no ve — es como se coló FER-857 (#872), arreglado
+     en #874. Verifica además con `gh pr checks <N>` que el job `lint` quedó verde.
 10. **Limpieza final.** Sincroniza el checkout de build: `git -C ~/code/noop fetch origin`
     y `git -C ~/code/noop merge --ff-only origin/iOS` (si no puede fast-forward, avísale
     al usuario en vez de forzar). Mueve el issue a `Done` con el link del PR. Reporta en

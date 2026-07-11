@@ -9,12 +9,12 @@ name: Swift Packages CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [iOS, main]
     paths:
       - 'Packages/**'
       - '.github/workflows/swift-packages.yml'
   push:
-    branches: [main]
+    branches: [iOS, main]
     paths:
       - 'Packages/**'
       - '.github/workflows/swift-packages.yml'
@@ -26,16 +26,30 @@ concurrency:
 
 jobs:
   test:
-    runs-on: macos-15
+    # Linux-safe packages run on ubuntu (1× billing / faster queue). The rest need macOS
+    # because of Apple-only frameworks unavailable on Linux:
+    #   - StrandDesign: SwiftUI / Charts / UIKit / AppKit
+    #   - WhoopStore:   Compression (RawOutbox.swift) — and its dependents inherit it:
+    #   - StrandAnalytics, StrandImport depend on WhoopStore, so they fail to build on
+    #     Linux transitively.
+    # Only WhoopProtocol and StrandTraining are pure and build/test cleanly on Linux.
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        package:
-          - WhoopProtocol
-          - WhoopStore
-          - StrandAnalytics
-          - StrandImport
-          - StrandDesign
+        include:
+          - package: WhoopProtocol
+            os: ubuntu-latest
+          - package: StrandTraining
+            os: ubuntu-latest
+          - package: WhoopStore
+            os: macos-15
+          - package: StrandAnalytics
+            os: macos-15
+          - package: StrandImport
+            os: macos-15
+          - package: StrandDesign
+            os: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
