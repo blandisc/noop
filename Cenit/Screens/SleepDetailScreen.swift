@@ -6,12 +6,6 @@ import WhoopStore
 import WhoopProtocol
 import Foundation
 
-/// Measured-width key for the 90-night calendar heat grid (FER-830).
-private struct SleepCalWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 // MARK: - SleepDetailScreen — el «Detalle de Sueño» en esqueleto «Tendencias Final» (FER-858)
 //
 // Hermana de `RecoveryDetailScreen` (FER-857): el mismo andamiaje del handoff «Detalle de
@@ -52,8 +46,7 @@ struct SleepDetailScreen: View {
     /// The 90-night heat grid, built ONCE in `.task` (90 `DateFormatter` passes) instead of on every
     /// body eval — the recompute was jank on open. (FER-878+)
     @State private var sleepHeatCache: [RecoveryDay] = []
-    /// Measured width so the 90-night heat grid fills it; the tapped night for the read-out. (FER-830)
-    @State private var calWidth: CGFloat = 0
+    /// The tapped night for the calendar read-out. (FER-830)
     @State private var selectedSleepNight: RecoveryDay? = nil
     /// The nocturnal HR-fall shape — loaded async; `nil` until loaded or when unreadable. (FER-832)
     @State private var nightShape: NightAutonomicShape.Result? = nil
@@ -955,24 +948,12 @@ struct SleepDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        // Dimensiona al número REAL de columnas dibujadas (como Recuperación/Esfuerzo) para llenar SIEMPRE
-        // el ancho de la tarjeta; con `max(14, …)` quedaba ~1 columna angosto. (FER · anchos iguales)
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: sleepHeatCache))
-        let spacing: CGFloat = 4
-        let gutter: CGFloat = 24
-        let cell: CGFloat = calWidth > 0
-            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-            : 14
-        return YearHeatStrip(
-            days: sleepHeatCache, cellSize: cell, spacing: spacing, showsScrub: false,
-            tint: sleepHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary, onSelect: { selectedSleepNight = $0 }, selectionColor: theme.ink
+        Calendario90(
+            days: sleepHeatCache,
+            tint: sleepHeatTint,
+            onSelect: { selectedSleepNight = $0 },
+            theme: theme
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: SleepCalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(SleepCalWidthKey.self) { calWidth = $0 }
     }
 
     @ViewBuilder private var heatReadout: some View {

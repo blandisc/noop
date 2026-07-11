@@ -55,8 +55,6 @@ struct RecoveryDetailScreen: View {
     /// The recovery series with each `day` string parsed to a `Date` exactly ONCE (not per slice / per
     /// render) — the window math reads `date` straight from here. Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
-    /// Measured available width for the calendar, so the heat grid can size its cells to fill it. (FER-225)
-    @State private var calWidth: CGFloat = 0
     /// The calendar day the user tapped, for the read-out below the grid (touch — FER-235).
     @State private var selectedHeatDay: RecoveryDay? = nil
     /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-857)
@@ -976,33 +974,12 @@ struct RecoveryDetailScreen: View {
     /// The 90-day heat strip, sized to fill the available width: measure the content width once, then
     /// pick a cell size so the week columns span it (re-tinted to warm paper). (FER-225)
     private var heatGrid: some View {
-        // Dimensiona la celda al número REAL de columnas que se dibujan (como Esfuerzo), no a un tope de 14:
-        // así el grid llena SIEMPRE el ancho de la tarjeta. Con `max(14, …)` la celda se medía para 14 pero
-        // se pintaban solo 13 en la mayoría de ventanas de 90 días → quedaba ~1 columna más angosto que la
-        // tarjeta, y Sueño/Estrés se veían más angostos que Recuperación según el día. (FER · anchos iguales)
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: model.heat))
-        let spacing: CGFloat = 4
-        let gutter: CGFloat = 24
-        let cell: CGFloat = calWidth > 0
-            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-            : 14
-        return YearHeatStrip(
+        Calendario90(
             days: model.heat,
-            cellSize: cell,
-            spacing: spacing,
-            showsScrub: false,
             tint: heatTint,
-            emptyFill: theme.hairline,
-            emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary,
             onSelect: { selectedHeatDay = $0 },
-            selectionColor: theme.ink
+            theme: theme
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: CalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(CalWidthKey.self) { calWidth = $0 }
     }
 
     /// The cell tint in «Instrumento» colors: the same three band roles the hero uses (green/amber/red),
@@ -1086,13 +1063,6 @@ struct RecoveryDetailScreen: View {
         f.setLocalizedDateFormatFromTemplate("EEEdMMM")
         return f
     }()
-}
-
-// MARK: - Width preference (size the calendar to fill the content width)
-
-private struct CalWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 // MARK: - Sheet item

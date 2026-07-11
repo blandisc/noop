@@ -5,12 +5,6 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
-/// Measured-width key for the 90-day calendar heat grid (FER-830).
-private struct StrainCalWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 // MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en «Instrumento» (FER-238 · FER-859)
 //
 // Hermana de `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto del handoff «Detalle de
@@ -41,8 +35,7 @@ struct StrainDetailScreen: View {
     /// The strain series with each `day` string parsed to a `Date` exactly ONCE (not per slice / per
     /// render) — the window math reads `date` straight from here. Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
-    /// Measured width so the 90-day heat grid fills it; the tapped day for the read-out. (FER-830)
-    @State private var calWidth: CGFloat = 0
+    /// The tapped day for the calendar read-out. (FER-830)
     @State private var selectedStrainDay: RecoveryDay? = nil
     /// Today's intraday curve, loaded in `.task` (loading well until then).
     @State private var curve: [TrendPoint] = []
@@ -462,29 +455,12 @@ struct StrainDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: strainHeat))
-        let spacing: CGFloat = 4
-        let gutter: CGFloat = 24
-        let cell: CGFloat = calWidth > 0
-            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-            : 14
-        return YearHeatStrip(
+        Calendario90(
             days: strainHeat,
-            cellSize: cell,
-            spacing: spacing,
-            showsScrub: false,
             tint: strainHeatTint,
-            emptyFill: theme.hairline,
-            emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary,
             onSelect: { selectedStrainDay = $0 },
-            selectionColor: theme.ink
+            theme: theme
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: StrainCalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(StrainCalWidthKey.self) { calWidth = $0 }
     }
 
     @ViewBuilder private var heatReadout: some View {

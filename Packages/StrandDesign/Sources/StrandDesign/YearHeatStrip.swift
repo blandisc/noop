@@ -49,6 +49,9 @@ public struct YearHeatStrip: View {
     /// Color of the tap-selection ring. Defaults to the dark `hairlineStrong`; the light detail passes
     /// warm ink. (FER-235)
     public var selectionColor: Color
+    /// Corner radius of each day cell. Defaults to 2.5 so the dark Trends caller is unchanged;
+    /// `Calendario90` (Instrumento detail screens) passes 5 for a rounder cell.
+    public var cellCornerRadius: CGFloat
     /// Formats a day's score for the tooltip's bold line.
     public var valueFormat: (Double) -> String
     /// The metric word in the `.help` / VoiceOver label («date · <word> 67»). Defaults to "recovery"; a
@@ -67,6 +70,7 @@ public struct YearHeatStrip: View {
         labelColor: Color = InstrumentoTheme.base.inkTertiary,
         onSelect: ((RecoveryDay) -> Void)? = nil,
         selectionColor: Color = InstrumentoTheme.base.hairlineStrong,
+        cellCornerRadius: CGFloat = 2.5,
         valueFormat: @escaping (Double) -> String = { "Recovery \(Int($0.rounded()))" },
         valueWord: String = "recovery"
     ) {
@@ -81,6 +85,7 @@ public struct YearHeatStrip: View {
         self.labelColor = labelColor
         self.onSelect = onSelect
         self.selectionColor = selectionColor
+        self.cellCornerRadius = cellCornerRadius
         self.valueFormat = valueFormat
         self.valueWord = valueWord
     }
@@ -183,7 +188,7 @@ public struct YearHeatStrip: View {
                     Color.clear.frame(width: gridOriginX - spacing, height: monthLabelHeight)
                     ForEach(weeks) { week in
                         Text(week.monthLabel ?? "")
-                            .font(.system(size: 8))
+                            .font(.system(size: 11))
                             .foregroundStyle(labelColor)
                             .frame(width: cellSize, alignment: .leading)
                     }
@@ -194,7 +199,7 @@ public struct YearHeatStrip: View {
                 VStack(alignment: .trailing, spacing: spacing) {
                     ForEach(0..<7, id: \.self) { r in
                         Text(rowLabels[r])
-                            .font(.system(size: 8))
+                            .font(.system(size: 11))
                             .foregroundStyle(labelColor)
                             .frame(width: gutterWidth, height: cellSize, alignment: .trailing)
                     }
@@ -296,7 +301,7 @@ public struct YearHeatStrip: View {
 
     @ViewBuilder
     private func cell(_ day: RecoveryDay?, isHovered: Bool) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 2.5)
+        let shape = RoundedRectangle(cornerRadius: cellCornerRadius)
         let isSelected = day.map { $0.id == selectedID } ?? false
         Group {
             if let day, let score = day.score {
@@ -369,6 +374,64 @@ private enum DateFormatterCache {
     static let day: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "EEE d MMM"; return f
     }()
+}
+
+// MARK: - Calendario90 (Instrumento detail screens)
+
+/// Measured-width wrapper around `YearHeatStrip` for the 90-day calendar on Recovery / Strain /
+/// Stress / Sleep detail screens: measures available width, sizes the cell (clamp 8…22), and wires
+/// Instrumento theme tokens. Trends keeps calling `YearHeatStrip` directly (cell corner 2.5).
+public struct Calendario90: View {
+    public var days: [RecoveryDay]
+    public var tint: (Double) -> Color
+    public var onSelect: (RecoveryDay) -> Void
+    public var theme: InstrumentoTheme
+    /// Cell corner radius. Default 5 — this component is only used by the "Instrumento diurno" detail
+    /// screens (Recovery/Strain/Stress/Sleep), which want a rounder cell than the legacy dark Trends
+    /// caller (which calls `YearHeatStrip` directly and keeps its 2.5 default).
+    public var cellCornerRadius: CGFloat
+
+    public init(days: [RecoveryDay], tint: @escaping (Double) -> Color, onSelect: @escaping (RecoveryDay) -> Void, theme: InstrumentoTheme, cellCornerRadius: CGFloat = 5) {
+        self.days = days
+        self.tint = tint
+        self.onSelect = onSelect
+        self.theme = theme
+        self.cellCornerRadius = cellCornerRadius
+    }
+
+    @State private var calWidth: CGFloat = 0
+
+    private struct CalWidthKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+    }
+
+    public var body: some View {
+        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: days))
+        let spacing: CGFloat = 4
+        let gutter: CGFloat = 24
+        let cell: CGFloat = calWidth > 0
+            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
+            : 14
+        YearHeatStrip(
+            days: days,
+            cellSize: cell,
+            spacing: spacing,
+            showsScrub: false,
+            tint: tint,
+            emptyFill: theme.hairline,
+            emptyStroke: theme.hairlineStrong,
+            labelColor: theme.inkTertiary,
+            onSelect: onSelect,
+            selectionColor: theme.ink,
+            cellCornerRadius: cellCornerRadius
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { g in
+            Color.clear.preference(key: CalWidthKey.self, value: g.size.width)
+        })
+        .onPreferenceChange(CalWidthKey.self) { calWidth = $0 }
+    }
 }
 
 #if DEBUG

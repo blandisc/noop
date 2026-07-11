@@ -5,12 +5,6 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
-/// Measured-width key for the 90-day calendar heat grid (handoff v2, FER-832 / FER-860).
-private struct StressCalWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 // MARK: - StressDetailScreen — el «Detalle de Estrés» en «Instrumento» (FER-241 · FER-860)
 //
 // Hermana de `StrainDetailScreen` (FER-859) y `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto
@@ -53,8 +47,6 @@ struct StressDetailScreen: View {
     @State private var patterns: [StressTimeOfDayPatterns.Pattern] = []
     /// Detected cross-day «by calendar-event» patterns (loaded in `.task`). Empty → no line. (FER-388)
     @State private var eventPatterns: [StressEventPatterns.Pattern] = []
-    /// Measured available width for the 90-day calendar, so the heat grid sizes its cells to fill it.
-    @State private var calWidth: CGFloat = 0
     /// The calendar day the user tapped, for the read-out below the grid. (FER-832)
     @State private var selectedStressDay: RecoveryDay? = nil
     /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-860)
@@ -535,31 +527,12 @@ struct StressDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        // Dimensiona al número REAL de columnas dibujadas (como Recuperación/Esfuerzo) para llenar SIEMPRE
-        // el ancho de la tarjeta; con `max(14, …)` quedaba ~1 columna angosto. (FER · anchos iguales)
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: stressHeatCache))
-        let spacing: CGFloat = 4
-        let gutter: CGFloat = 24
-        let cell: CGFloat = calWidth > 0
-            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-            : 14
-        return YearHeatStrip(
+        Calendario90(
             days: stressHeatCache,
-            cellSize: cell,
-            spacing: spacing,
-            showsScrub: false,
             tint: stressHeatTint,
-            emptyFill: theme.hairline,
-            emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary,
             onSelect: { selectedStressDay = $0 },
-            selectionColor: theme.ink
+            theme: theme
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: StressCalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(StressCalWidthKey.self) { calWidth = $0 }
     }
 
     @ViewBuilder private var heatReadout: some View {
