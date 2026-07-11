@@ -11,23 +11,23 @@ import StrandAnalytics
 // «Rutina de hoy» (FER-343) — both screens died here. Only the chrome changes per origin (mock 4a):
 //
 //   .today    → overline «Rutina de hoy · {día}» + CTA «Empezar»   (landing plan rows, empty-session fallback)
-//   .planDay  → overline «Editando · {día}»      + CTA «Guardar día» (weekly plan 1b)
-//   .routine  → overline «Rutina»                + CTA «Guardar»     (Mis rutinas 1c)
+//   .planDay  → overline «Editando · {día}»      (autosave on exit; no explicit Save CTA)
+//   .routine  → overline «Rutina»                (autosave on exit; no explicit Save CTA)
 //
 // The FER-A..G progression wiring survives the merge: the .today origin evaluates `ProgressionPlanner` per
 // opted-in slot (history + plates + today's recovery) and hands `raise` to the session's PlanSlots, exactly
-// like «Rutina de hoy» did. Guards: a `dirty` flag (discard confirmation on back for the save origins; the
-// .today origin keeps the footer promise «se guardan al salir o empezar» and saves silently), and a live
-// session locks every editing surface (cells, menus, swipes) — resuming is the only action then.
+// like «Rutina de hoy» did. Guards: Notes-style autosave on exit for every origin (dirty → persist on back),
+// a «Saved»/Undo chrome driven off the load-time `itemsSnapshot`, and a live session locks every editing
+// surface (cells, menus, swipes) — resuming is the only action then.
 
 /// Pushed onto the Entrenar stack to open «Rutina» with its origin chrome. One route type replaces the old
 /// `RoutineRoute`/`PlanDayRoute` pair (a distinct `Hashable` per FER-171 still holds: this is one type).
 enum RoutineEditorRoute: Hashable {
     /// Today's routine (nil id = resolve today's pick) — CTA «Empezar».
     case today(routineId: String?)
-    /// One weekday of the plan (Calendar convention, 1 = Sun … 7 = Sat) — CTA «Guardar día».
+    /// One weekday of the plan (Calendar convention, 1 = Sun … 7 = Sat) — autosave on exit.
     case planDay(weekday: Int)
-    /// A routine from «Mis rutinas» — CTA «Guardar».
+    /// A routine from «Mis rutinas» — autosave on exit.
     case routine(routineId: String)
 }
 
@@ -47,12 +47,13 @@ struct RoutineEditorScreen: View {
     @State private var items: [EditorItem] = []
     /// Every routine, for the .planDay header «Change routine» picker.
     @State private var allRoutines: [Routine] = []
-    /// Whether the prescription changed since load (drives save-on-exit / discard confirmation + CTA).
+    /// Whether the prescription changed since load (drives save-on-exit, «Saved» status, and Undo).
     @State private var dirty = false
+    /// Load-time copy of `items` — Undo restores this and re-persists so disk matches the reverted state.
+    @State private var itemsSnapshot: [EditorItem] = []
     @State private var restTarget: RestEditTarget? = nil
     /// Which exercise's progression plan is being edited (2c push); nil = none.
     @State private var progressionTarget: ProgressionTarget? = nil
-    @State private var showDiscardConfirm = false
     @State private var showLibrary = false
     /// nil = the library appends; an index = it replaces that exercise (keeping its sets).
     @State private var replaceIndex: Int? = nil
@@ -159,16 +160,6 @@ struct RoutineEditorScreen: View {
             }
             .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
-        .instrumentoConfirm(
-            isPresented: $showDiscardConfirm,
-            title: String(localized: "Discard changes?"),
-            context: String(localized: "ROUTINE · UNSAVED CHANGES"),
-            message: String(localized: "Your edits to this routine will be lost."),
-            actions: [
-                .init(String(localized: "Keep editing"), role: .primary),
-                .init(String(localized: "Discard changes"), role: .destructive) { dismiss() }
-            ]
-        )
         .task {
             guard !loaded else { return }
             await load()
@@ -187,17 +178,14 @@ struct RoutineEditorScreen: View {
     }
 
     private var ctaTitle: String {
-        switch origin {
-        case .today:   return locked ? String(localized: "Resume") : String(localized: "Empezar")
-        case .planDay: return String(localized: "Save day")
-        case .routine: return String(localized: "Save")
-        }
+        // Only `.today` still pins a CTA («Empezar»/«Resume»); other origins autosave on exit.
+        locked ? String(localized: "Resume") : String(localized: "Empezar")
     }
 
     private var startsSession: Bool { if case .today = origin { return true } else { return false } }
     private var isPlanDay: Bool { if case .planDay = origin { return true } else { return false } }
 
-    // MARK: - Header (own back + cancel, over the hidden nav bar)
+    // MARK: - Header (own back + Saved/Undo, over the hidden nav bar)
 
     private var header: some View {
         HStack(spacing: 8) {
@@ -210,12 +198,17 @@ struct RoutineEditorScreen: View {
             }
             .buttonStyle(.plain).accessibilityLabel(Text("Back"))
             Spacer()
-            if !startsSession {
-                Button { back() } label: {
-                    Text("Cancel").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+            if dirty {
+                Button { undo() } label: {
+                    Text(String(localized: "Undo")).font(StrandFont.body).foregroundStyle(theme.ink)
                         .frame(minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text(String(localized: "Undo")))
+            } else if loaded {
+                Text(String(localized: "Saved"))
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary)
             }
         }
         .padding(.horizontal, NoopMetrics.screenPadding)
@@ -233,7 +226,8 @@ struct RoutineEditorScreen: View {
         .background(theme.paper)
         .environment(\.defaultMinListRowHeight, 1)
         .environment(\.editMode, .constant(reordering ? .active : .inactive))
-        .safeAreaInset(edge: .bottom) { ctaBar }
+        // Only `.today` starts a guided session; `.routine`/`.planDay` rely on autosave + header status.
+        .safeAreaInset(edge: .bottom) { if startsSession { ctaBar } }
     }
 
     @ViewBuilder
@@ -264,12 +258,12 @@ struct RoutineEditorScreen: View {
                 if !locked { addSetRow(idx).plainRow(top: 4) }
             }
         if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: 4) }
-        if startsSession {
-            Text("Changes are saved to the routine when you leave or start.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .plainRow(top: 8, bottom: NoopMetrics.screenPadding)
-        }
+        Text(startsSession
+             ? String(localized: "Changes are saved to the routine when you leave or start.")
+             : String(localized: "Changes are saved to the routine when you leave."))
+            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .plainRow(top: 8, bottom: NoopMetrics.screenPadding)
     }
 
     // MARK: - Drag reorder (6a, FER-841)
@@ -674,10 +668,10 @@ struct RoutineEditorScreen: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Pinned CTA (per origin)
+    // MARK: - Pinned CTA (`.today` only — start / resume the guided session)
 
     private var ctaBar: some View {
-        Button { cta() } label: {
+        Button { start() } label: {
             Text(ctaTitle).font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                 .foregroundStyle(theme.paper).frame(maxWidth: .infinity).padding(.vertical, 15)
                 .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
@@ -687,10 +681,6 @@ struct RoutineEditorScreen: View {
         .padding(.top, 8)
         .padding(.bottom, 8)
         .background(theme.paper)
-    }
-
-    private func cta() {
-        if startsSession { start() } else { saveAndDismiss() }
     }
 
     // MARK: - Empty fallback (no routine resolved for this origin)
@@ -892,11 +882,20 @@ struct RoutineEditorScreen: View {
         }
     }
 
-    // MARK: - Navigation (footer promise: the .today origin saves on leave; save origins confirm discard)
+    // MARK: - Navigation (Notes-style: every origin autosaves on leave when dirty)
 
     private func back() {
-        if dirty && startsSession { persist(); dismiss(); return }
-        if dirty { showDiscardConfirm = true } else { dismiss() }
+        if dirty { persist() }
+        dismiss()
+    }
+
+    /// Restore the load-time prescription, clear dirty, and re-persist so disk matches the undo.
+    /// Stays on the editor — does not dismiss.
+    private func undo() {
+        items = itemsSnapshot
+        dirty = false
+        refreshTint()
+        persist()
     }
 
     // MARK: - Start the guided session (progression wiring, FER-E/G parity with «Rutina de hoy»)
@@ -916,7 +915,9 @@ struct RoutineEditorScreen: View {
     // MARK: - Load + save
 
     private func load() async {
-        guard let store = await repo.storeHandle() else { routine = nil; items = []; dirty = false; return }
+        guard let store = await repo.storeHandle() else {
+            routine = nil; items = []; itemsSnapshot = []; dirty = false; return
+        }
         allRoutines = (try? await store.routines()) ?? []
         let target: Routine?
         switch origin {
@@ -935,7 +936,9 @@ struct RoutineEditorScreen: View {
         case .routine(let id):
             target = allRoutines.first { $0.id == id }
         }
-        guard let r = target else { routine = nil; items = []; dirty = false; return }
+        guard let r = target else {
+            routine = nil; items = []; itemsSnapshot = []; dirty = false; return
+        }
         routine = r
         let res = await repo.routineExercises(routineId: r.id)
         let all = await repo.allExercises()
@@ -959,11 +962,8 @@ struct RoutineEditorScreen: View {
         items = built
         refreshTint()
         dirty = false
-    }
-
-    private func saveAndDismiss() {
-        persist()
-        dismiss()
+        // Capture the post-load prescription for Undo (value copy of Equatable structs).
+        itemsSnapshot = items
     }
 
     private func persist() {
