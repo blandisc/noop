@@ -1653,13 +1653,15 @@ final class AppModel: ObservableObject {
     private func applyIllnessEvaluation(_ days: [DailyMetric], context: IllnessSignalEngine.Context) {
         let previous = healthAlert
         func mean(_ vals: [Double]) -> Double? { vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count) }
-        // FER-543 / FER-641: the HRV and resting-HR terms score against a STRAP-ONLY history. Apple-only
-        // nights carry SDNN, not the band's RMSSD (not interchangeable, no published conversion; Shaffer &
-        // Ginsberg 2017), AND their resting HR is read from awake sedentary samples excluding sleep — so it
-        // sits a systematic ~10–13 bpm above the band's sleep-nadir RHR (Fenland Study; Gonzales et al. 2023,
-        // PLoS One 18(5):e0285272). Mixing either into the illness baseline contaminates it the same way
-        // FER-519 fixed for recovery. Respiration IS the same physical metric across sources (both measured
-        // during sleep, breaths/min) and Apple writes no skin temp, so those two terms keep the full history.
+        // FER-543 / FER-641 / FER-882: the HRV and resting-HR terms score against a STRAP-ONLY history.
+        // Apple-only nights carry SDNN, not the band's RMSSD (not interchangeable, no published conversion;
+        // Shaffer & Ginsberg 2017), AND their resting HR is read from awake sedentary samples excluding sleep
+        // — so it sits a systematic ~10–13 bpm above the band's sleep-nadir RHR (Fenland Study; Gonzales et
+        // al. 2023, PLoS One 18(5):e0285272). Mixing either into the illness baseline contaminates it the
+        // same way FER-519 fixed for recovery. Skin temp is now source-routed via `SourceLens.maskForBaseline`
+        // (band by default; Apple only in appleHealthOnly) so a band-Δ night never folds with an Apple-Δ
+        // night (each instrument has its own absolute-°C baseline). Respiration IS the same physical metric
+        // across sources (both measured during sleep, breaths/min) and still keeps the full merged history.
         // `appleHealthDays == []` ⇒ identity (whoopOnly / a strap-only user → no change).
         let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
 
@@ -1689,7 +1691,10 @@ final class AppModel: ObservableObject {
                 String(localized: "HRV −\(Int(((1 - $0 / $1) * 100).rounded()))%")
             }
         }
-        inputs.skinTemp = read("skinTemp", { $0.skinTempDevC }, higherIsWorse: true, from: days) { r, _ in
+        // FER-882: skin temp Δ is source-specific — route through the baseline lens.
+        let tempSource: SourceLens.Source = (repo.dataSourceMode == .appleHealthOnly) ? .apple : .band
+        let skinTempDays = SourceLens.maskForBaseline(days, keep: tempSource, appleDays: repo.appleHealthDays)
+        inputs.skinTemp = read("skinTemp", { $0.skinTempDevC }, higherIsWorse: true, from: skinTempDays) { r, _ in
             String(localized: "skin temp +\(String(format: "%.1f", r))°C")
         }
         inputs.respiration = read("respiration", { $0.respRateBpm }, higherIsWorse: true, from: days) { _, _ in

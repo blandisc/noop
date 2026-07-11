@@ -150,7 +150,8 @@ final class HealthKitBridge: ObservableObject {
     private static let quantityReadIds: [HKQuantityTypeIdentifier] = [
         .heartRate, .restingHeartRate, .heartRateVariabilitySDNN, .oxygenSaturation,
         .respiratoryRate, .stepCount, .activeEnergyBurned,
-        .basalEnergyBurned, .vo2Max
+        .basalEnergyBurned, .vo2Max,
+        .appleSleepingWristTemperature
     ]
     private static let quantityWriteIds: [HKQuantityTypeIdentifier] = [
         .restingHeartRate, .heartRateVariabilitySDNN, .oxygenSaturation, .respiratoryRate
@@ -283,10 +284,10 @@ final class HealthKitBridge: ObservableObject {
         var byDay: [String: DayAgg] = [:]
         func agg(_ day: String) -> DayAgg { byDay[day] ?? DayAgg() }
 
-        // 10 quantity collectors + sleep + workouts + workout HR (FER-883) + the store write = 14
+        // 11 quantity collectors + sleep + workouts + workout HR (FER-883) + the store write = 15
         // pipeline stages. Publishing the stage *before* running it turns the silent background pull
-        // into "Importing HRV… (4/14)" in the UI; `done` counts stages already finished. (FER-70)
-        let total = 14
+        // into "Importing HRV… (4/15)" in the UI; `done` counts stages already finished. (FER-70)
+        let total = 15
         func stage(_ done: Int, _ key: String) { syncProgress = SyncProgress(stageKey: key, done: done, total: total) }
 
         // Quantity aggregates per day.
@@ -330,9 +331,16 @@ final class HealthKitBridge: ObservableObject {
         await collect(.vo2Max, unit: HKUnit(from: "ml/kg*min"), start: start, end: end, op: .discreteAverage) { day, v in
             var a = agg(day); a.vo2max = v; byDay[day] = a
         }
+        // FER-882: Apple's sleeping wrist temperature (absolute °C) → nightly mean; deviation vs
+        // Apple's OWN rolling baseline is computed just before DailyMetric construction below.
+        stage(10, "skin_temp")
+        await collect(.appleSleepingWristTemperature, unit: .degreeCelsius(), start: start, end: end,
+                      op: .discreteAverage) { day, v in
+            var a = agg(day); a.skinTempC = v; byDay[day] = a
+        }
 
         // Sleep minutes per day (asleep stages summed; attributed to wake day).
-        stage(10, "sleep")
+        stage(11, "sleep")
         await collectSleep(start: start, end: end) { day, asleepMin, deepMin, remMin, coreMin in
             var a = agg(day)
             a.asleepMin = asleepMin; a.deepMin = deepMin; a.remMin = remMin; a.coreMin = coreMin
@@ -340,14 +348,14 @@ final class HealthKitBridge: ObservableObject {
         }
 
         // Workouts: fetched directly from HealthKit and stored alongside WHOOP sessions.
-        stage(11, "workouts")
+        stage(12, "workouts")
         let hkWorkouts = await collectHKWorkouts(start: start, end: end)
         let wkRows = Self.mapWorkouts(hkWorkouts)
 
         // FER-883: per-workout heart-rate samples (raw only — strain is scored at read time).
         // Skipped in whoopOnly so we never pull Apple HR into the store when the mode excludes Apple;
-        // the stage is still published so the progress bar stays 14-step consistent.
-        stage(12, "hr_apple_workouts")
+        // the stage is still published so the progress bar stays 15-step consistent.
+        stage(13, "hr_apple_workouts")
         let workoutHrSamples: [HRSample]
         if repo.dataSourceMode == .whoopOnly {
             workoutHrSamples = []
@@ -360,7 +368,7 @@ final class HealthKitBridge: ObservableObject {
         // (SleepHKDecoder, StrandImport); the idempotent upsert below keeps a re-sync from duplicating.
         let appleSleepSessions = SleepHKDecoder.sessions(from: await collectSleepSamples(start: start, end: end))
 
-        stage(13, "saving")
+        stage(14, "saving")
 
         // Build + upsert the store rows under the apple-health source.
         let appleRows = byDay.map { (day, a) in
@@ -369,12 +377,22 @@ final class HealthKitBridge: ObservableObject {
                        avgHr: a.avgHr.map { Int($0.rounded()) }, maxHr: a.maxHr.map { Int($0.rounded()) },
                        walkingHr: nil, weightKg: nil)
         }
+        // FER-882: Apple's OWN rolling skin-temp baseline over the sync window, then the same final
+        // state's deviation applied to every night (mirrors IntelligenceEngine.recomputeSkinTempDev —
+        // one fold, not a per-day incremental). Never mixed with the band's baseline.
+        let skinCfg = Baselines.metricCfg["skin_temp"]!   // minVal 20 / maxVal 42 °C absolute
+        let skinSeq: [(day: String, value: Double?)] = byDay.keys.sorted().map { (day: $0, value: byDay[$0]?.skinTempC) }
+        let appleSkinBase = Baselines.foldHistory(skinSeq, epoch: nil, cfg: skinCfg)
+        func appleSkinDev(_ v: Double?) -> Double? {
+            guard let v, appleSkinBase.usable else { return nil }
+            return (Baselines.deviation(v, state: appleSkinBase).delta * 100.0).rounded() / 100.0
+        }
         let dmRows = byDay.map { (day, a) in
             DailyMetric(day: day, totalSleepMin: a.asleepMin, efficiency: nil,
                         deepMin: a.deepMin, remMin: a.remMin, lightMin: a.coreMin, disturbances: nil,
                         restingHr: a.restingHr.map { Int($0.rounded()) }, avgHrv: a.hrv,
                         recovery: nil, strain: nil, exerciseCount: nil,
-                        spo2Pct: a.spo2, skinTempDevC: nil, respRateBpm: a.respRate,
+                        spo2Pct: a.spo2, skinTempDevC: appleSkinDev(a.skinTempC), respRateBpm: a.respRate,
                         steps: a.steps.map { Int($0) })
         }
         // Generic metricSeries points. The per-source pages (Apple Health, Explore, Compare) and the
@@ -621,6 +639,7 @@ final class HealthKitBridge: ObservableObject {
         var spo2: Double?; var respRate: Double?; var steps: Double?
         var activeKcal: Double?; var basalKcal: Double?; var vo2max: Double?
         var asleepMin: Double?; var deepMin: Double?; var remMin: Double?; var coreMin: Double?
+        var skinTempC: Double?   // FER-882: nightly mean absolute wrist temp (°C)
     }
 
     /// FER-872/881: a STABLE, order-independent fingerprint of the Apple rows a sync run would surface.
@@ -636,7 +655,7 @@ final class HealthKitBridge: ObservableObject {
         var s = ""
         for key in byDay.keys.sorted() {
             let a = byDay[key]!
-            s += "\(key):\(f(a.restingHr)),\(f(a.avgHr)),\(f(a.maxHr)),\(f(a.hrv)),\(f(a.spo2)),\(f(a.respRate)),\(f(a.steps)),\(f(a.activeKcal)),\(f(a.basalKcal)),\(f(a.vo2max)),\(f(a.asleepMin)),\(f(a.deepMin)),\(f(a.remMin)),\(f(a.coreMin));"
+            s += "\(key):\(f(a.restingHr)),\(f(a.avgHr)),\(f(a.maxHr)),\(f(a.hrv)),\(f(a.spo2)),\(f(a.respRate)),\(f(a.steps)),\(f(a.activeKcal)),\(f(a.basalKcal)),\(f(a.vo2max)),\(f(a.asleepMin)),\(f(a.deepMin)),\(f(a.remMin)),\(f(a.coreMin)),\(f(a.skinTempC));"
         }
         s += "|W:"
         for w in workouts.sorted(by: { ($0.startTs, $0.endTs, $0.sport) < ($1.startTs, $1.endTs, $1.sport) }) {
