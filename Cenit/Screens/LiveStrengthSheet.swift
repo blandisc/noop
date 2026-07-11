@@ -792,8 +792,12 @@ struct LiveStrengthSheet: View {
 
     /// The exercise + work weight (kg) the plate calculator was opened for (FER-720 · 3a).
     struct PlatesTarget: Identifiable { let id = UUID(); let ei: Int; let weightKg: Double }
-    /// A marker to present the share screen (FER-720 · 3c); the summary comes from `session.summary`.
-    struct ShareRef: Identifiable { let id = UUID() }
+    /// A marker to present the receipt printer (thermal ticket); carries the real session id for
+    /// barcode/order stability and set/HR loads. The summary comes from `session.summary`.
+    struct ShareRef: Identifiable {
+        let id = UUID()
+        let sessionId: String
+    }
 
     /// Identifies an editable inline cell: a weight or reps field at (exerciseIndex, setIndex).
     enum CellRef: Hashable { case weight(Int, Int), reps(Int, Int) }
@@ -892,12 +896,15 @@ struct LiveStrengthSheet: View {
             .presentationDragIndicator(.hidden)
             .presentationBackground(theme.paper)
         }
-        .sheet(item: $shareReceipt) { _ in
+        .fullScreenCover(item: $shareReceipt) { ref in
             if let summary = session.summary {
-                ShareReceiptScreen(theme: theme, summary: summary, onClose: { shareReceipt = nil })
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.hidden)
-                    .presentationBackground(theme.paper)
+                ReceiptPrinterScreen(
+                    theme: theme,
+                    summary: summary,
+                    sessionId: ref.sessionId,
+                    onClose: { shareReceipt = nil }
+                )
+                .environmentObject(model)
             }
         }
         // S-2 (FER-830) → FER-837: one destructive-confirmation pattern across the flow, now the
@@ -2256,7 +2263,7 @@ struct LiveStrengthSheet: View {
 
             if let band = s.costBand { receiptCost(band, tomorrowPct: s.costTomorrowPct) }
 
-            Button { shareReceipt = ShareRef() } label: {
+            Button { shareReceipt = ShareRef(sessionId: session.id) } label: {
                 Label("Share…", systemImage: "square.and.arrow.up")
                     .font(StrandFont.subhead).fontWeight(.medium)
                     .foregroundStyle(theme.ink)
