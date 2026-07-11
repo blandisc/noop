@@ -332,6 +332,8 @@ private struct EntrenarLanding: View {
     /// approximation (planned sets × ~40 s work + the slot's rest), rounded to 5 min — a glance, not a clock.
     private func metaText(_ rid: String) -> Text {
         var t = Text("\(exerciseCounts[rid] ?? 0) exercises")
+        let sets = todaySlots.reduce(0) { $0 + max(0, $1.re.targetSets) }
+        if sets > 0 { t = t + Text(verbatim: " · ") + Text("\(sets) sets") }
         let m = estMinutes
         if m > 0 { t = t + Text(verbatim: " · ") + Text("~\(m) min") }
         return t

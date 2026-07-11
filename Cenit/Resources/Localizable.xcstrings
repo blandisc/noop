@@ -21979,6 +21979,22 @@
         }
       }
     },
+    "Measured with your band": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured with your band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medido con tu banda"
+          }
+        }
+      }
+    },
     "Measurement system": {
       "localizations": {
         "es": {
@@ -32385,6 +32401,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Origen"
+          }
+        }
+      }
+    },
+    "Source: measured with your band": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source: measured with your band"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Origen: medido con tu banda"
           }
         }
       }
@@ -49150,6 +49182,23 @@
         }
       }
     },
+    "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu base todavía se está asentando. Un par de noches más de sueño con tu Apple Watch y el veredicto del día empieza a aparecer aquí."
+          }
+        }
+      }
+    },
     "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here.": {
       "extractionState": "manual",
       "localizations": {
@@ -49452,6 +49501,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ver patrón"
+          }
+        }
+      }
+    },
+    "We're syncing from Apple Health. As soon as it finishes, your day's verdict shows here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We're syncing from Apple Health. As soon as it finishes, your day's verdict shows here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estamos sincronizando con Apple Salud. En cuanto termine, el veredicto del día aparece aquí."
           }
         }
       }
@@ -53494,6 +53560,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu base se afina cada noche · vas en %lld."
+          }
+        }
+      }
+    },
+    "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El veredicto del día sale de cómo dormiste. Todavía no hay datos de anoche. Duerme con tu Apple Watch puesto y aparece aquí en la mañana."
           }
         }
       }
