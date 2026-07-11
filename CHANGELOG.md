@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El Detalle de Estrés estrena la piel «Final» de Tendencias / The Stress detail debuts the final Trends skin.**
+  **ES** — La pantalla de Estrés se rediseñó con el esqueleto estándar de los detalles de Tendencias: un héroe invertido que pinta todo su campo con el color de banda del día (semáforo a propósito: menos es mejor), mini-escala Calma·Base·Activado, el mapa del día como instrumento firma (antes de «qué lo mueve»), tiles de FC en reposo y VFC, patrones con la tarjeta «lo que vemos en tu historial», un historial siempre abierto con `GraficaRangos` (serie diaria cruda, Δ% verde al bajar), el calendario de 90 días en semáforo y el sello de origen. Nada del cálculo cambió: es el mismo estrés, contado mejor.
+  **EN** — The Stress screen was redesigned with the standard Trends-detail skeleton: an inverted hero that paints its whole field in the day's band color (a purposeful traffic light: less is better), the Calm·Base·Activated mini-scale, the day map as the signature instrument (before "what moves it"), resting-HR and HRV tiles, patterns with the "what we see in your history" card, an always-open history with `GraficaRangos` (raw daily series, green Δ% when stress falls), the 90-day calendar as a semaphore, and the origin seal. None of the math changed — it's the same stress, told better.
+  ([StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift), [StressDayMapView.swift](Cenit/Screens/StressDayMapView.swift))
+
 - Menos consumo de batería con la banda conectada: la app deja de re-dibujar todas las pantallas ~3 veces por segundo durante la sesión en vivo y durante el sync (FER-866).
 
 - El app instalado pesa ~8–10 MB menos: el catálogo de ejercicios ya no viaja duplicado dentro del app del Apple Watch (FER-865).

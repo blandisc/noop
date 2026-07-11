@@ -5,37 +5,23 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
-/// Measured-width key for the 90-day calendar heat grid (handoff v2, FER-832).
+/// Measured-width key for the 90-day calendar heat grid (handoff v2, FER-832 / FER-860).
 private struct StressCalWidthKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
-// MARK: - StressDetailScreen — el «Detalle de Estrés» en «Instrumento» (FER-241)
+// MARK: - StressDetailScreen — el «Detalle de Estrés» en «Instrumento» (FER-241 · FER-860)
 //
-// Hermana de `MetricDetailScreen` (FER-185), igual que `RecoveryDetailScreen` (FER-225) y
-// `SleepDetailScreen` (FER-212): REUSA su lenguaje visual (el scaffold `block(title:)`, el hero,
-// `InfoAccordion`, `theme: InstrumentoTheme` explícito, `sheetPaper`, `ScrollView`→`VStack`,
-// `methodDisclosure`, los wells) pero con su propio modelo. NO extiende `MetricDetailScreen`/`MetricDetailSpec`
-// (esos son para vitales de serie ESCALAR única — HRV/FC/Respiración); el estrés es un ÍNDICE DERIVADO 0–3
-// con BANDAS UNIVERSALES y bloques propios (qué lo mueve = RHR/HRV, tiempo en calma, placeholder de
-// calendario). Reemplaza, para el estrés, la vieja `MetricInfoSheet` ligera que abría Cuerpo.
+// Hermana de `StrainDetailScreen` (FER-859) y `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto
+// del handoff «Detalle de Tendencias Final» — héroe invertido (semáforo evaluativo) → mini-escala →
+// mapa del día (instrumento firma, FER-433) → qué lo mueve → patrones → historial siempre abierto
+// (`GraficaRangos`, serie diaria cruda) → calendario 90 días → método + sello. NO extiende
+// `MetricDetailScreen`/`MetricDetailSpec`.
 //
-// Se presenta desde Cuerpo Y desde Hoy vía `.sheet(item:)` (FER-452 unificó el detalle: el «ver más» de
-// Estrés en Hoy abre esta MISMA pantalla completa, con el «mapa del día» cableado por el factory compartido
-// `StressDayMapPresenter`), con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`, FER-162) y SIN
-// `NavigationStack` anidado (un stack anidado cruzando el path de la tab crasheaba SwiftUI, FER-171).
-//
-// Consume `StressModel` (de `StressView.swift`) TAL CUAL — no crea matemática nueva: el score/banda 0–3, la
-// explicación, los marcadores RHR/HRV vs base, la serie completa y el «tiempo en calma» ya los deriva el
-// modelo (z-score logístico; bandas 0–1/1–2/2–3). El hero muestra el VALOR DE HOY (no la media 7d) porque el
-// índice ya viene normalizado a la base de cada quien; las bandas son fijas por la misma razón.
-//
-// Bloques, cada uno con su ⓘ (`InfoAccordion`) salvo el método: 1) Hero (valor de hoy en color de banda) ·
-// 1.5) Estrés a lo largo del día — el «mapa del día» en «Momentos primero» (titular del pico + barras de
-// apoyo + momentos rankeados cruzados con el calendario, `StressDayMapBlock`, FER-433), ahora a PRIMER
-// NIVEL (antes vivía bajo «See your history») · 2) Qué lo mueve (RHR/HRV vs base) · 3) Tus patrones (tiempo
-// en calma + consistencia) · 4) Ver tu historial (Tendencia 0–3 sobre las bandas) · 5) Ver el método.
+// Se presenta desde Cuerpo Y desde Hoy vía `.sheet(item:)` (FER-452), con el tema vivo pasado
+// EXPLÍCITO (FER-162) y SIN `NavigationStack` anidado (FER-171). Consume `StressModel` TAL CUAL:
+// cero matemática nueva. El semáforo (verde/ámbar/rojo) es a propósito: menos estrés es mejor.
 
 /// Light «Instrumento» Detalle de Estrés. Built from a `StressModel` (the caller injects it so the screen
 /// stays DB-free), themed explicitly for the sheet boundary. `model == nil` → the honest empty state.
@@ -57,76 +43,67 @@ struct StressDetailScreen: View {
 
     /// The trend block's period window (W/M/3M/6M/1Y/ALL). Defaults to a month.
     @State private var range: ExploreRange = .month
-    /// «Media ⇄ Rangos» toggle for the history block (handoff v2, FER-803): the daily 0–3 line vs the
-    /// population lanes (Calm / Base / Activated with per-band counts). Starts on «Media» (the line).
-    @State private var historyMode: TrendMode = .media
-    /// The lane a user tapped in Rangos mode (highlights it), or nil. Tap again to clear. (FER-803)
-    @State private var activeStressLane: Int? = nil
-    /// The stress series with each point's `Date` already parsed (from `fullTrend`) — the window math reads
-    /// `date` straight from here (no string re-parsing). Built in `.task`. (FER-216 lesson)
+    /// The stress series with each point's `Date` already parsed (from `fullTrend`) — the window math
+    /// reads `date` straight from here. Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
-    @State private var methodExpanded = false
     /// Detected cross-day «moment of day» patterns (loaded in `.task`). Empty → no line. (FER-378)
     @State private var patterns: [StressTimeOfDayPatterns.Pattern] = []
     /// Detected cross-day «by calendar-event» patterns (loaded in `.task`). Empty → no line. (FER-388)
     @State private var eventPatterns: [StressEventPatterns.Pattern] = []
-    /// Measured available width for the 90-day calendar, so the heat grid sizes its cells to fill it. (FER-832)
+    /// Measured available width for the 90-day calendar, so the heat grid sizes its cells to fill it.
     @State private var calWidth: CGFloat = 0
     /// The calendar day the user tapped, for the read-out below the grid. (FER-832)
     @State private var selectedStressDay: RecoveryDay? = nil
+    /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-860)
+    @State private var infoOpen = false
+
+    // MARK: - Body — el esqueleto estándar del handoff «Detalle de Tendencias Final» (FER-860)
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 0) {
                 if let model {
-                    // Level 1 · the answer. The hero falls back to yesterday's reading (dated) when
-                    // today is still incomplete; if even that's missing it shows the empty hero — but
-                    // either way the history below still renders, so the screen is never blanked. (FER-397)
+                    // Level 1 · hero. Falls back to yesterday's reading (dated chip) when today is still
+                    // incomplete; never blanks the screen. (FER-397)
                     if model.heroIsFresh {
-                        hero(model)
-                        blockDivider
-                        whatMovesItBlock(model)
-                        blockDivider
+                        heroField(model)
+                        bandScale(model.score)
                     } else {
-                        noRecentHero
-                        blockDivider
+                        heroFlat(message: "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below.")
+                            .padding(NoopMetrics.screenPadding)
                     }
-                    // Level 1.5 · «Stress through the day» — the «Momentos primero» block, now FIRST-CLASS
-                    // (FER-433): promoted out of «See your history» so the day's most-activated moments and
-                    // the calendar cross are visible without expanding anything.
+                    if infoOpen { whatWeMeasureCard }
+                    // Level 1.5 · mapa del día BEFORE «qué lo mueve» (FER-433).
                     if let dayMap {
-                        StressDayMapBlock(model: dayMap, theme: theme)
-                        blockDivider
+                        seccion(String(localized: "Stress through the day")) {
+                            StressDayMapBlock(model: dayMap, theme: theme)
+                        }
                     }
-                    // Level 2 · «Your patterns»: calm time + consistency, fused to plain lines. The
-                    // former «Normal range» block is gone from the daily scroll — those Low/Mod/High
-                    // bands are already drawn behind the trend line as its legend (one dispersion read).
-                    patternsBlock(model)
-                    // Level 3 · «See your history»: the daily 0–3 trend over the fixed Low/Mod/High bands +
-                    // the handoff's «Media · periodo · valor · Δ% vs previo» caption (↓). The handoff's
-                    // Detalle · Estrés is a trend, not a tappable levels list — FER-596 restored it over the
-                    // F6c levels instrument FER-572 had swapped in. (The mapa del día moved up to Level 1.5.)
+                    if model.heroIsFresh {
+                        seccion(String(localized: "What moves it")) { whatMovesContent(model) }
+                    }
+                    if hasPatternsSection(model) {
+                        seccion(String(localized: "Your patterns")) { patternsContent(model) }
+                    }
                     if model.fullTrend.count >= 2 {
-                        blockDivider
-                        historySection(model)
+                        seccion(String(localized: "See your history")) { historyContent(model) }
                     }
-                    // Level 3 · the 90-day calendar (handoff v2, FER-832): the same heatmap Recovery /
-                    // Sleep / Strain carry, tinted by the evaluative Low/Mod/High band (green/amber/red).
                     if parsed.contains(where: { $0.value > 0 }) {
-                        blockDivider
-                        stressCalendarBlock
+                        seccion(String(localized: "Calendar · 90 days")) { calendarContent }
                     }
-                    blockDivider
-                    methodDisclosure(model)
-                    // Standardized origin seal (FER-803): stress is a score computed on-device.
-                    OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
+                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
+                    VStack(alignment: .leading, spacing: 10) {
+                        metodoBlock(model)
+                        OriginStamp(origin: .computed, when: originWhen(model), theme: theme)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 2)
+                    }
+                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
-                    emptyHero
+                    heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
+                        .padding(NoopMetrics.screenPadding)
                 }
             }
-            .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
@@ -142,54 +119,110 @@ struct StressDetailScreen: View {
         }
     }
 
-    /// A subtle 1px rule between blocks (token-only). Mirrors MetricDetailScreen's `blockDivider`.
-    private var blockDivider: some View {
-        Rectangle().fill(theme.hairline).frame(height: 1)
+    /// One skeleton section: a full-bleed `SeccionFranja` + content with handoff padding (14 · 20 · 22).
+    private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SeccionFranja(title, theme: theme)
+            content()
+                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
+        }
     }
 
-    // MARK: - 1. Hero — el valor de HOY en color de banda (+ palabra de banda + lectura)
+    // MARK: - 1. Héroe invertido — semáforo a propósito (evaluativo, menos es mejor)
 
-    private func hero(_ model: StressModel) -> some View {
-        // Serif in-screen title + ⓘ (the «Instrumento» detail identity, FER-581). Explanation stays behind
-        // the ⓘ exactly as the old InfoAccordion had it.
-        VStack(alignment: .leading, spacing: 14) {
-            InstrumentoScreenTitle("Stress", theme: theme,
-                explanation: "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). This number is your whole day against your baseline of the last ~30 days — a different lens from the day map below, which marks the moments you spiked. It's an estimate, not a diagnosis.",
-                glyph: .stress)
-            VStack(alignment: .leading, spacing: 14) {
-                // When the reading isn't today's (fell back to yesterday at the midnight boundary), date
-                // it so it's never passed off as today's. (FER-397)
-                if !model.anchorIsToday {
-                    heroDateChip(model.anchorDayKey)
+    /// The inverted hero: the ONE field saturated at 100% of the day's band hue. Overline + ⓘ,
+    /// 60pt Grotesk numeral (recRise), «/ 3», band-word capsule, two-tone verdict. Text is paper on hue.
+    private func heroField(_ model: StressModel) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: MetricGlyph.stress.sfSymbol)
+                    .font(StrandFont.glyph(.chevron))
+                    .foregroundStyle(theme.paper)
+                    .frame(width: 14, height: 14)
+                    .accessibilityHidden(true)
+                Text("Stress")
+                    .font(InstrumentoType.grotesk(12, weight: .bold))
+                    .tracking(2.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.paper)
+                Spacer()
+                Button {
+                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(StrandFont.glyph(.chevron, weight: .regular))
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
                 }
-                // The band WORD leads — you understand «Moderate» before «1.8/3». The 0–3 value backs it
-                // up, quiet, to the right. The saturated hue lives in the word (it's the datum). (Pase v2 #2)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(bandWord(model.band))
-                        .font(.system(size: 30, weight: .semibold)) // token-exempt: palabra-banda display 30pt (sin token)
-                        .foregroundStyle(bandColor(model.band))
-                    Spacer(minLength: 8)
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text(fmt(model.score)).font(StrandFont.bodyNumber)
-                        Text("/ 3").font(StrandFont.caption)
-                    }
+                .buttonStyle(.plain)
+                .accessibilityLabel("What we measure")
+            }
+            if !model.anchorIsToday {
+                heroDateChip(model.anchorDayKey)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(fmt(model.score))
+                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                    .tracking(-2)
+                    .foregroundStyle(theme.paper)
+                    .recRise()
+                Text(verbatim: "/ 3")
+                    .font(InstrumentoType.grotesk(13))
+                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                Text(bandWord(model.band))
+                    .font(InstrumentoType.grotesk(13, weight: .semibold))
+                    .foregroundStyle(theme.paper)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+            }
+            // Keep `model.explanation` as one localized sentence from StressModel (content source of
+            // truth). Two-tone mock split is secondary to not inventing new copy. (FER-860)
+            Text(verbatim: model.explanation)
+                .font(InstrumentoType.grotesk(15, weight: .semibold))
+                .foregroundStyle(theme.paper)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(bandColor(model.band))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The ⓘ card under the hero: what the score measures, in plain language (mock copy, English source).
+    private var whatWeMeasureCard: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("What we measure")
+                .font(InstrumentoType.grotesk(13, weight: .semibold))
+                .foregroundStyle(theme.ink)
+            Text(heroExplanation)
+                .font(InstrumentoType.grotesk(12))
+                .lineSpacing(3)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.control, theme: theme)
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+    }
+
+    /// Flat hero for empty / no-recent states: no inverted field without a number.
+    private func heroFlat(message: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            InstrumentoScreenTitle("Stress", theme: theme, explanation: heroExplanation, glyph: .stress)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(verbatim: "—")
+                    .instrumentoHero(46)
                     .foregroundStyle(theme.inkTertiary)
-                }
-                .accessibilityElement(children: .combine)
-                // Anchor the abstract 0–3 in something felt: a Calm·Base·Activated scale with a marker at
-                // today's value — the same «vs your base» idea as the other three sheets. (Pase v2 #1)
-                bandScale(model.score)
-                Text(model.explanation)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
+                Text(message)
+                    .font(StrandFont.headline)
+                    .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
-    /// A small dated qualifier for a fallback hero (always yesterday — freshness is capped there). Reads
-    /// "ayer · sáb 20 jun". Formatted in UTC to match the day key's zone so it never drifts a day at the
-    /// boundary. (FER-397)
+    /// Dated qualifier for a fallback hero (yesterday). UTC zone matches the day key. (FER-397)
     private func heroDateChip(_ dayKey: String) -> some View {
         let formatted = Self.dayParser.date(from: dayKey).map { Self.chipDateFormatter.string(from: $0) } ?? ""
         return HStack(spacing: 5) {
@@ -197,53 +230,21 @@ struct StressDetailScreen: View {
             Text("Yesterday · \(formatted)")
         }
         .font(StrandFont.footnote)
-        .foregroundStyle(theme.inkTertiary)
+        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
         .accessibilityElement(children: .combine)
     }
 
-    /// The cold-start empty hero: no usable signal anywhere. Honest "—" + how to get data.
-    private var emptyHero: some View {
-        emptyHeroShell("No stress reading yet. Wear your strap overnight and open this again after it syncs — or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
+    /// Hero ⓘ copy — autonomic load on 0–3 (mock wording; no em-dash).
+    private var heroExplanation: LocalizedStringKey {
+        "Your autonomic load for the day: how activated your body is. We compare today's resting heart rate and HRV with your own 30-day baseline and map the combined shift onto a 0–3 scale (0 calm, 1.5 your baseline, 3 highly activated). It's an estimate, not a diagnosis."
     }
 
-    /// Has history, but no reading in the last couple of days (anchor older than yesterday). Honest "—",
-    /// and the trend + patterns below STILL render — the screen is never blanked. (FER-397)
-    private var noRecentHero: some View {
-        emptyHeroShell("No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs — your history is below.")
-    }
-
-    /// Shared shell for the two empty-hero states: the «Stress» overline, a tertiary "—", and a line.
-    private func emptyHeroShell(_ message: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Stress").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("—").instrumentoHero(46).foregroundStyle(theme.inkTertiary)
-            Text(message)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// The band color: low → verdict (green), medium → warning (amber), high → critical (red). The band
-    /// word is the datum, so it's the element that carries saturated hue. (DESIGN.md: color in the datum)
-    ///
-    /// SEMANTIC TRAFFIC-LIGHT, ON PURPOSE (Pase v2 #5): stress is EVALUATIVE — less is better — so it
-    /// reads green→amber→red, unlike the other detail sheets, which tint by their METRIC's own hue
-    /// (HRV teal, heart rose). Don't "fix" this to a single hue when you see the sheets side by side:
-    /// the semaphore is what tells the user calm is good and activated is not.
-    private func bandColor(_ band: StressBand) -> Color {
-        band.dataColor(theme)
-    }
-
-    /// Sentence-case band word for the hero / legend — delegates to the single source on `StressBand`.
+    /// SEMANTIC TRAFFIC-LIGHT ON PURPOSE: stress is evaluative (less is better). low→verdict,
+    /// medium→warning, high→critical. Do not unify to a single hue. (Pase v2 #5 · FER-860)
+    private func bandColor(_ band: StressBand) -> Color { band.dataColor(theme) }
     private func bandWord(_ band: StressBand) -> LocalizedStringKey { band.displayWord }
 
-    // MARK: - Mini-escala Calma·Base·Activado (Pase v2 #1)
-    //
-    // A three-third semaphore gradient (calm→base→activated) with a marker at today's 0–3 value, so the
-    // abstract index sits on something the user can feel. No new math — the marker is `score / 3` across
-    // the track, the gradient is the same band colors the hero word already uses.
+    // MARK: - Mini-escala Calma · Base · Activado (bajo el héroe)
 
     private func bandScale(_ score: Double) -> some View {
         let frac = CGFloat(max(0, min(3, score)) / 3)
@@ -261,12 +262,15 @@ struct StressDetailScreen: View {
         return VStack(alignment: .leading, spacing: 7) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(gradient).opacity(0.85).frame(height: 8) // token-exempt: velo de gradiente >0.70
+                    RoundedRectangle(cornerRadius: 4, style: .continuous) // token-exempt: geometría de dato
+                        .fill(gradient)
+                        .opacity(0.85)
+                        .frame(height: 8)
                     RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
                         .fill(theme.ink)
                         .frame(width: 3, height: 16)
-                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: geometría de dato
-                            .strokeBorder(theme.surface, lineWidth: 2))
+                        .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .strokeBorder(theme.paper, lineWidth: 2))
                         .offset(x: geo.size.width * frac - 1.5)
                 }
                 .frame(height: 16)
@@ -279,163 +283,138 @@ struct StressDetailScreen: View {
                 Spacer(minLength: 6)
                 Text("Activated").foregroundStyle(theme.critical)
             }
-            .font(.system(size: 10, weight: .semibold)) // token-exempt: leyenda-eje 10pt semibold (micro es medium)
+            .font(InstrumentoType.grotesk(10, weight: .semibold))
+            .tracking(0.8)
             .textCase(.uppercase)
         }
+        .padding(EdgeInsets(top: 16, leading: 20, bottom: 6, trailing: 20))
         .accessibilityHidden(true)
     }
 
-    // MARK: - 2. Ver tu historial — la tendencia diaria 0–3 sobre las bandas fijas + «Media …»
+    // MARK: - 3. Qué lo mueve — FC reposo + VFC vs base
 
-    /// «See your history»: the daily 0–3 stress line over the fixed Low / Moderate / High zones (0–1 / 1–2 /
-    /// 2–3), with the period selector and the handoff's period-average caption below it. Restores the trend
-    /// the F6c levels instrument had replaced (FER-596) — the handoff's Detalle · Estrés is a trend, not a
-    /// tappable levels list. The bands behind the line are this metric's fixed zones (drawn as the legend);
-    /// the z-score / RMSSD jargon stays under «See the method».
-    private func historySection(_ model: StressModel) -> some View {
-        let window = MetricWindowMath.make(parsed, selected: range)
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center) {
-                Text("See your history").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                // «Media ⇄ Rangos» toggle (FER-803): the line vs the population lanes.
-                CompactTrendToggle(mode: $historyMode, theme: theme)
+    private func whatMovesContent(_ model: StressModel) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                markerTile(
+                    label: String(localized: "Resting HR"),
+                    value: model.rhrToday.map { "\($0)" } ?? "—",
+                    delta: model.rhrDelta,
+                    accent: theme.dataHeart,
+                    higherIsStress: true)
+                markerTile(
+                    label: String(localized: "HRV"),
+                    value: model.hrvToday.map { "\(Int($0.rounded()))" } ?? "—",
+                    delta: model.hrvDelta,
+                    accent: theme.dataHrv,
+                    higherIsStress: false)
             }
-            if historyMode == .media {
-                // The daily 0–3 line over the three fixed band zones (Low / Moderate / High), drawn by
-                // `MetricTrendChart`'s native bands with explicit Y ticks at 0/1/2/3. Raw daily values, not a
-                // moving average — the stress signal is read day to day.
-                MetricTrendChart(
-                    range: $range,
-                    window: window,
-                    theme: theme,
-                    style: .init(
-                        gradient: ChartWell.fillGradient(theme.inkSecondary),
-                        showsArea: false,
-                        valueRange: { _ in 0...3 },
-                        valueFormat: { String(format: "%.1f", $0) },
-                        bands: { stressBands(activeValue: $0) },
-                        bandColor: { bandColor(StressBand(score: $0)) },
-                        yAxisValues: [0, 1, 2, 3],
-                        accessibilityLabel: "Daily stress index, 0 to 3"
-                    )
-                ) {
-                    ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
-                }
-                averageCaption(window)   // handoff «Media · periodo · valor · Δ% vs previo» + rango (↓) (FER-587)
-            } else {
-                SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
-                stressLanes(window)
-            }
+            BarraAncla(whatMovesAnchor(model), color: theme.warning, theme: theme)
         }
     }
 
-    /// «Rangos» mode (FER-803): the three fixed stress zones as tappable population lanes — how many days
-    /// in the window fell in Calm (0–1) / Base (1–2) / Activated (2–3). Tap a lane to highlight it.
-    @ViewBuilder private func stressLanes(_ window: MetricWindow) -> some View {
-        let lanes: [(label: LocalizedStringKey, range: String, color: Color, count: Int)] = [
-            ("Calm",      "0–1", theme.verdict,  window.values.filter { $0 < 1 }.count),
-            ("Base",      "1–2", theme.warning,  window.values.filter { $0 >= 1 && $0 < 2 }.count),
-            ("Activated", "2–3", theme.critical, window.values.filter { $0 >= 2 }.count),
-        ]
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(lanes.enumerated()), id: \.offset) { i, lane in
-                let active = activeStressLane == i
-                Button {
-                    withAnimation(StrandMotion.interactive) { activeStressLane = active ? nil : i }
-                } label: {
-                    HStack(spacing: 10) {
-                        RoundedRectangle(cornerRadius: 2).fill(lane.color).frame(width: 9, height: 9) // token-exempt: geometría de dato
-                        Text(lane.label).font(StrandFont.subhead)
-                            .foregroundStyle(active ? theme.ink : theme.inkSecondary)
-                        Spacer(minLength: 8)
-                        Text(lane.range).font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
-                        Text(BandSummaryCopy.countLabel(lane.count, nightly: false))
-                            .font(StrandFont.captionNumber)
-                            .foregroundStyle(active ? lane.color : theme.inkTertiary.opacity(0.85)) // token-exempt: ink apagado >0.70
-                            .frame(minWidth: 50, alignment: .trailing)
-                    }
-                    .padding(.horizontal, 12).padding(.vertical, 11)
-                    .frame(maxWidth: .infinity)
-                    .background(active ? lane.color.opacity(0.10) : Color.clear, // token-exempt: fondo condicional
-                                in: RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
-                if i < lanes.count - 1 { Divider().overlay(theme.hairline).padding(.leading, 34) }
-            }
+    /// One marker as `TileSurface`: today's value in its data hue, signed delta tinted by whether the
+    /// move is toward stress (amber) or calm (`positiveText`). |Δ| < 0.5 → neutral «at your base»
+    /// (same threshold the previous presentation used — no new math).
+    private func markerTile(label: String, value: String, delta: Double?,
+                            accent: Color, higherIsStress: Bool) -> some View {
+        let deltaStr: String?
+        let deltaColor: Color?
+        let caption: String
+        if let delta, abs(delta) >= 0.5 {
+            let up = delta > 0
+            let isStressful = (up == higherIsStress)
+            let mag = Int(abs(delta).rounded())
+            deltaStr = up ? "▲ +\(mag)" : "▼ −\(mag)"
+            deltaColor = isStressful ? theme.warning : theme.positiveText
+            caption = up
+                ? String(localized: "above your base")
+                : String(localized: "below your base")
+        } else {
+            deltaStr = nil
+            deltaColor = nil
+            caption = String(localized: "at your base")
         }
+        return TileSurface(label: label, value: value, valueColor: accent, valueSize: 21,
+                           caption: caption, delta: deltaStr, deltaColor: deltaColor, theme: theme)
     }
 
-    /// The handoff's period-average caption + range, under the trend (FER-587). Stress good direction is
-    /// DOWN (lower is calmer); shown on the 0–3 scale, no unit. Reuses the `window` the trend already made.
-    @ViewBuilder private func averageCaption(_ window: MetricWindow) -> some View {
-        if window.values.count > 1 {
-            let s = ComparisonEngine.stat(window.values)
-            DynamicAverageCaption(
-                windowName: range.name,
-                average: fmt(s.mean),
-                pctChange: range.periodComparison(of: parsed.map { ($0.day, $0.value) })?.pctChange,
-                polarity: .lowerIsBetter,
-                rangeText: "\(fmt(s.min))–\(fmt(s.max))",
-                theme: theme)
+    /// Short anchor from the same RHR/HRV deltas the tiles already show (presentation only).
+    private func whatMovesAnchor(_ model: StressModel) -> String {
+        let rhrOff = (model.rhrDelta.map { abs($0) >= 0.5 } ?? false)
+        let hrvOff = (model.hrvDelta.map { abs($0) >= 0.5 } ?? false)
+        let rhrUp = (model.rhrDelta ?? 0) > 0
+        let hrvDn = (model.hrvDelta ?? 0) < 0
+        if rhrOff && hrvOff && rhrUp && hrvDn {
+            return String(localized: "Resting HR up and HRV down from your base: classic signs of activation.")
         }
+        if rhrOff || hrvOff {
+            return String(localized: "Markers vs your base: toward stress in amber, toward calm in green.")
+        }
+        return String(localized: "Both markers near your base today.")
     }
 
-    /// The three fixed stress zones as `TrendBand`s, with the one holding `activeValue` shaded as the bracket.
-    private func stressBands(activeValue v: Double) -> [TrendBand] {
-        [
-            TrendBand(label: "Low", lower: nil, upper: 1, isActive: v < 1),
-            TrendBand(label: "Moderate", lower: 1, upper: 2, isActive: v >= 1 && v < 2),
-            TrendBand(label: "High", lower: 2, upper: nil, isActive: v >= 2),
-        ]
+    // MARK: - 4. Tus patrones — calma + regularidad + observaciones (FER-378/388)
+
+    /// Calm time / steadiness always when the model has them; observations card only when a pattern
+    /// clears its sufficiency gate. If neither tiles nor observations have anything, the section hides.
+    private func hasPatternsSection(_ model: StressModel) -> Bool {
+        model.calmTimeValue != "—"
+            || consistency(model) != nil
+            || patterns.first != nil
+            || eventPatterns.first != nil
     }
 
-    // MARK: - Level 2 · «Your patterns» — calm time + consistency, fused to plain lines
-    //
-    // The re-sequencing (Detalles escalonados) folds «Calm time» and «Consistency» into one condensed
-    // strip, and drops the standalone «Normal range» block: the Low/Moderate/High bands are already the
-    // legend behind the trend line one level down, so the screen carries ONE dispersion read, not three.
-    // The CV jargon stays in the ⓘ; the face is plain. No new math — calm time and the CV come straight
-    // from the model.
-
-    private func patternsBlock(_ model: StressModel) -> some View {
-        // No ⓘ here (Pase v2 #4): the calm-time / steadiness (CV) jargon moved to «See the method».
-        DetailBlock("Your patterns", theme: theme) {
-            VStack(alignment: .leading, spacing: 12) {
-                patternLine(label: "Calm time",
+    private func patternsContent(_ model: StressModel) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 8) {
+                TileSurface(label: String(localized: "Calm time"),
                             value: model.calmTimeValue,
                             valueColor: theme.verdict,
-                            note: "of last month")
-                if let pct = consistency(model) {
-                    patternLine(label: "Steadiness",
-                                value: consistencyWord(pct),
-                                note: "week to week")
-                }
-                // Cross-day observational lines, their natural home under «Your patterns»: the moment
-                // of day (FER-378) and the recurring calendar event (FER-388). Non-causal; shown only
-                // when the stats clear the bar. Read-only — the «Explore it in the Coach» handoff was
-                // removed (Pase v2 #7): the insight stays a reading, not an entry point to a query.
-                if patterns.first != nil || eventPatterns.first != nil {
-                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.vertical, 2)
-                    if let p = patterns.first {
-                        patternSentence(p)
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if let e = eventPatterns.first {
-                        eventPatternSentence(e)
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+                            valueSize: 21,
+                            caption: String(localized: "of last month"),
+                            theme: theme)
+                TileSurface(label: String(localized: "Steadiness"),
+                            value: consistency(model).map { consistencyWord($0) } ?? "—",
+                            valueSize: 21,
+                            caption: String(localized: "week to week"),
+                            theme: theme)
+            }
+            if patterns.first != nil || eventPatterns.first != nil {
+                observationsCard
             }
         }
     }
 
-    /// The localized, NON-causal sentence for a «moment of day» pattern ("tends to run", never
-    /// "causes"). The structured `Pattern` is locale-free; the wording lives here. (FER-378)
+    /// Surface card: «LO QUE VEMOS EN TU HISTORIAL» + chip «TENDENCIA, NO CAUSA» + non-causal lines.
+    private var observationsCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                Text("What we see in your history")
+                    .font(InstrumentoType.grotesk(10, weight: .semibold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(theme.inkTertiary)
+                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
+            }
+            if let p = patterns.first {
+                patternSentence(p)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let e = eventPatterns.first {
+                eventPatternSentence(e)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .instrumentoCard(.card, theme: theme)
+    }
+
     private func patternSentence(_ p: StressTimeOfDayPatterns.Pattern) -> Text {
         switch p.family {
         case .partOfDay(let part):
@@ -461,28 +440,11 @@ struct StressDetailScreen: View {
         }
     }
 
-    /// The localized, NON-causal sentence for a recurring-event pattern ("tends to coincide with", never
-    /// "causes"). The event title is the user's own, interpolated verbatim. (FER-388)
     private func eventPatternSentence(_ e: StressEventPatterns.Pattern) -> Text {
         e.higher ? Text("«\(e.title)» tends to coincide with higher stress.")
                  : Text("«\(e.title)» tends to coincide with lower stress.")
     }
 
-    /// One «Your patterns» line: a quiet overline label, a plain value (the datum), an optional note.
-    private func patternLine(label: LocalizedStringKey, value: String,
-                             valueColor: Color? = nil, note: LocalizedStringKey?) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 8)
-            Text(value).font(StrandFont.bodyNumber).foregroundStyle(valueColor ?? theme.ink)
-            if let note {
-                Text(note).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// A plain word for steadiness from the CV percent (the number itself stays in the ⓘ).
     private func consistencyWord(_ pct: Int) -> String {
         switch pct {
         case ..<8:   return String(localized: "Very steady")
@@ -491,109 +453,89 @@ struct StressDetailScreen: View {
         }
     }
 
-    // MARK: - Qué lo mueve — RHR / HRV de hoy vs tu base
-
-    private func whatMovesItBlock(_ model: StressModel) -> some View {
-        // No ⓘ here (Pase v2 #4): the jargon (z-score, RMSSD) lives once under «See the method» at the
-        // foot; only the hero keeps an info button.
-        DetailBlock("What moves it", theme: theme) {
-            HStack(alignment: .top, spacing: NoopMetrics.gap) {
-                markerCard(
-                    label: "Resting HR",
-                    value: model.rhrToday.map { "\($0)" } ?? "—",
-                    delta: model.rhrDelta,
-                    accent: theme.dataHeart,
-                    higherIsStress: true)
-                markerCard(
-                    label: "HRV",
-                    value: model.hrvToday.map { "\(Int($0.rounded()))" } ?? "—",
-                    delta: model.hrvDelta,
-                    accent: theme.dataHrv,
-                    higherIsStress: false)
-            }
-        }
-    }
-
-    /// One marker as a surface card: today's value in its data hue, a signed delta vs baseline tinted by
-    /// whether the move is TOWARD stress (warning) or recovery (verdict), and a quiet caption.
-    private func markerCard(label: LocalizedStringKey, value: String,
-                            delta: Double?, accent: Color, higherIsStress: Bool) -> some View {
-        let deltaText: LocalizedStringKey
-        let deltaColor: Color
-        let caption: LocalizedStringKey
-        if let delta, abs(delta) >= 0.5 {
-            let up = delta > 0
-            let isStressful = (up == higherIsStress)
-            let mag = Int(abs(delta).rounded())
-            deltaText = up ? "▲ +\(mag)" : "▼ −\(mag)"
-            deltaColor = isStressful ? theme.warning : theme.verdict
-            caption = up ? "above your base" : "below your base"
-        } else {
-            deltaText = "at base"
-            deltaColor = theme.inkTertiary
-            caption = "at your base"
-        }
-        return VStack(alignment: .leading, spacing: 4) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text(value).font(StrandFont.number(22)).foregroundStyle(accent)
-                Text(deltaText).font(StrandFont.footnote).foregroundStyle(deltaColor)
-            }
-            Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(NoopMetrics.cardPadding)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: - Consistencia (coeficiente de variación) — folded into «Your patterns»
-
-    /// CV of the full stress series (nil when there aren't enough points). Feeds the «Your patterns»
-    /// steadiness line; the standalone «Consistency» block folded into it (Detalles escalonados).
     private func consistency(_ model: StressModel) -> Int? {
-        SeriesShape.coefficientOfVariation(model.fullTrend.map(\.value), window: 7).map { Int(($0 * 100).rounded()) }
+        SeriesShape.coefficientOfVariation(model.fullTrend.map(\.value), window: 7)
+            .map { Int(($0 * 100).rounded()) }
     }
 
-    // MARK: - Ver el método (DisclosureGroup, patrón de las otras pantallas)
+    // MARK: - 5. Ver tu historial — PeriodSelector + GraficaRangos (serie cruda) + tiles
 
-    private func methodDisclosure(_ model: StressModel) -> some View {
-        DisclosureGroup(isExpanded: $methodExpanded) {
-            VStack(alignment: .leading, spacing: 10) {
-                Divider().overlay(theme.hairline)
-                Text(model.usingStored
-                     ? "Today's value is your recorded daily stress score (0–3). The trend, bands and markers are derived the same way."
-                     : "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up — classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation — lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Combined resting-HR / HRV z-score through a logistic curve. HRV via RMSSD (Task Force, 1996). An estimate, not a diagnosis.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
+    private func historyContent(_ model: StressModel) -> some View {
+        let window = MetricWindowMath.make(parsed, selected: range)
+        let stat = ComparisonEngine.stat(window.values)
+        let seriesPairs = parsed.map { ($0.day, $0.value) }
+        let pct = range.periodComparison(of: seriesPairs)?.pctChange
+        // Lower is better: green when stress drops, amber when it rises.
+        let deltaHue: Color? = pct.map { $0 <= 0 ? theme.positiveText : theme.warning }
+        return VStack(alignment: .leading, spacing: 8) {
+            SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+            if window.values.count > 1 {
+                GraficaRangos(
+                    points: window.values, // raw daily, never smoothed
+                    bands: Self.stressBands(theme),
+                    ticks: [.init(v: 3, label: "3"), .init(v: 2, label: "2"),
+                            .init(v: 1, label: "1"), .init(v: 0, label: "0")],
+                    hue: theme.warning, ymin: 0, ymax: 3,
+                    startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    mediaValue: fmt(stat.mean),
+                    mediaNote: String(localized: "average of the \(range.name)"),
+                    mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
+                    deltaColor: deltaHue,
+                    countUnit: "d",
+                    anchorMedia: String(localized: "Raw daily values, no smoothing: stress is read day to day. Lower is better."),
+                    anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+                    scrub: true,
+                    labels: window.rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" },
+                    fmt: { String(format: "%.1f", $0) },
+                    theme: theme)
+                    .padding(.top, 6)
+                    .id(range)
+                HStack(alignment: .top, spacing: 8) {
+                    TileSurface(label: String(localized: "Average"),
+                                value: fmt(stat.mean),
+                                theme: theme)
+                    TileSurface(label: String(localized: "Range"),
+                                value: "\(fmt(stat.min))–\(fmt(stat.max))",
+                                theme: theme)
+                    TileSurface(label: String(localized: "Today"),
+                                value: model.heroIsFresh ? fmt(model.score) : "—",
+                                valueColor: model.heroIsFresh ? bandColor(model.band) : nil,
+                                theme: theme)
+                }
+                .padding(.top, 4)
+            } else {
+                ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
+                    .padding(.top, 6)
             }
-            .padding(.top, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Text("How it's calculated")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.ink)
         }
-        .tint(theme.inkTertiary)
-        .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
     }
 
-    // MARK: - Series + format
+    /// The three fixed stress lanes for `GraficaRangos` — same 0–1 / 1–2 / 2–3 cuts as `StressBand`.
+    static func stressBands(_ theme: InstrumentoTheme) -> [GraficaRangos.Banda] {
+        [
+            .init(label: String(localized: "Activated"), lo: 2, hi: nil,
+                  color: theme.critical, range: "2–3"),
+            .init(label: String(localized: "Base"), lo: 1, hi: 2,
+                  color: theme.warning, range: "1–2"),
+            .init(label: String(localized: "Low"), lo: 0, hi: 1,
+                  color: theme.verdict, range: "0–1"),
+        ]
+    }
 
-    // MARK: - Calendario · 90 días (handoff v2, FER-832) — heatmap evaluativo (verde/ámbar/rojo)
+    // MARK: - 6. Calendario · 90 días (semáforo evaluativo)
 
-    /// The trailing 90 days as `RecoveryDay` (score = daily stress 0–3, nil where there's no reading).
+    private var calendarContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            heatGrid
+            heatReadout
+            HeatLegend([(theme.critical, String(localized: "Activated").lowercased()),
+                        (theme.warning, String(localized: "Moderate").lowercased()),
+                        (theme.verdict, String(localized: "Calm").lowercased()),
+                        (theme.rangeBand, String(localized: "no data"))], theme: theme)
+        }
+    }
+
     private var stressHeat: [RecoveryDay] {
         var vals: [String: Double] = [:]
         for r in parsed { vals[r.day] = r.value }
@@ -601,63 +543,115 @@ struct StressDetailScreen: View {
         let today = cal.startOfDay(for: Date())
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
-            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: vals[Self.dayParser.string(from: date)])
+            return RecoveryDay(date: date.addingTimeInterval(12 * 3600),
+                               score: vals[Self.dayParser.string(from: date)])
         }
     }
 
-    /// Stress is evaluative, so the heat uses the band semaphore: low → verdict (green), moderate →
-    /// warning (amber), high → critical (red). Same thresholds as the hero band (0–1 / 1–2 / 2–3).
+    /// ≥2 critical · 1–2 warning · <1 verdict — same cuts as the hero band.
     private func stressHeatTint(_ v: Double) -> Color {
         if v >= 2 { return theme.critical }
         if v >= 1 { return theme.warning }
         return theme.verdict
     }
 
-    private var stressCalendarBlock: some View {
-        DetailBlock("Calendar · 90 days", theme: theme) {
-            VStack(alignment: .leading, spacing: 10) {
-                let cols = Swift.max(1, YearHeatStrip.weekColumns(for: stressHeat))
-                let spacing: CGFloat = 4
-                let cell: CGFloat = calWidth > 0
-                    ? Swift.max(8, Swift.min(22, (calWidth - 24 - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-                    : 14
-                YearHeatStrip(
-                    days: stressHeat, cellSize: cell, spacing: spacing, showsScrub: false,
-                    tint: stressHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
-                    labelColor: theme.inkTertiary, onSelect: { selectedStressDay = $0 }, selectionColor: theme.ink
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(GeometryReader { g in Color.clear
-                    .preference(key: StressCalWidthKey.self, value: g.size.width) })
-                .onPreferenceChange(StressCalWidthKey.self) { calWidth = $0 }
-                if let d = selectedStressDay {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(Self.chipDateFormatter.string(from: d.date)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        Spacer(minLength: 8)
-                        if let v = d.score {
-                            Text(String(format: "%.1f", v)).font(StrandFont.number(20)).foregroundStyle(stressHeatTint(v))
-                        } else {
-                            Text("—").font(StrandFont.number(20)).foregroundStyle(theme.inkTertiary)
-                            Text("no reading").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                        }
-                    }
-                    .accessibilityElement(children: .combine)
+    private var heatGrid: some View {
+        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: stressHeat))
+        let spacing: CGFloat = 4
+        let gutter: CGFloat = 24
+        let cell: CGFloat = calWidth > 0
+            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
+            : 14
+        return YearHeatStrip(
+            days: stressHeat,
+            cellSize: cell,
+            spacing: spacing,
+            showsScrub: false,
+            tint: stressHeatTint,
+            emptyFill: theme.hairline,
+            emptyStroke: theme.hairlineStrong,
+            labelColor: theme.inkTertiary,
+            onSelect: { selectedStressDay = $0 },
+            selectionColor: theme.ink
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { g in
+            Color.clear.preference(key: StressCalWidthKey.self, value: g.size.width)
+        })
+        .onPreferenceChange(StressCalWidthKey.self) { calWidth = $0 }
+    }
+
+    @ViewBuilder private var heatReadout: some View {
+        if let d = selectedStressDay {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(Self.chipDateFormatter.string(from: d.date))
+                    .instrumentoOverline()
+                    .foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                if let v = d.score {
+                    Text(String(format: "%.1f", v))
+                        .font(StrandFont.number(20))
+                        .foregroundStyle(stressHeatTint(v))
+                    Text(bandWord(StressBand(score: v)))
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
                 } else {
-                    Text("Tap a day to see its stress.").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    Text("—")
+                        .font(StrandFont.number(20))
+                        .foregroundStyle(theme.inkTertiary)
+                    Text("no reading")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkTertiary)
                 }
             }
+            .accessibilityElement(children: .combine)
+        } else {
+            Text("Tap a day to see its stress.")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    /// Format a 0–3 stress value at one decimal (the index's precision).
+    // MARK: - Método + sello
+
+    private func metodoBlock(_ model: StressModel) -> some View {
+        Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+            Text(model.usingStored
+                 ? "Today's value is your recorded daily stress score (0–3). The trend, bands and markers are derived the same way."
+                 : "We compare today's resting heart rate and HRV with your own 30-day baseline. A higher-than-usual resting HR and a lower-than-usual HRV both push the score up: classic signs the body is activated. The combined shift becomes a z-score sum, squashed onto 0–3 by a logistic curve: 0 calm, 1.5 at your baseline, 3 highly activated.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("«Calm time» is the share of the last month that sat in the Low band; «steadiness» is how much your daily index varies week to week (its coefficient of variation: lower is steadier). The Low / Moderate / High bands (0–1 / 1–2 / 2–3) are the same for everyone because the index is already adjusted to your own baseline. (Plews 2013)")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Combined resting-HR / HRV z-score through a logistic curve. HRV via RMSSD (Task Force, 1996). An estimate, not a diagnosis.")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Origin stamp «when» — the day's anchor the screen already computes (today / yesterday).
+    private func originWhen(_ model: StressModel) -> String {
+        if model.anchorIsToday {
+            return String(localized: "today")
+        }
+        let formatted = Self.dayParser.date(from: model.anchorDayKey)
+            .map { Self.chipDateFormatter.string(from: $0) } ?? ""
+        return String(localized: "Yesterday · \(formatted)")
+    }
+
+    // MARK: - Format
+
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
 
     /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
     static let dayParser = DayKey.utcFormatter
 
-    /// Short localized date for the fallback-hero chip ("sáb 20 jun"). UTC zone matches the day key so
-    /// the rendered day never drifts at the midnight boundary; the format template localizes per the
-    /// current locale. (FER-397)
+    /// Short localized date for the fallback-hero chip ("sáb 20 jun"). UTC zone matches the day key. (FER-397)
     static let chipDateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.timeZone = TimeZone(identifier: "UTC")
@@ -668,8 +662,7 @@ struct StressDetailScreen: View {
 
 // MARK: - Sheet item
 
-/// Identifiable wrapper so the light «Instrumento» Detalle de Estrés can ride `.sheet(item:)` (the model
-/// itself isn't Identifiable). Built fresh on tap in Cuerpo. (FER-241)
+/// Identifiable wrapper so the light «Instrumento» Detalle de Estrés can ride `.sheet(item:)`. (FER-241)
 struct StressDetailItem: Identifiable {
     let id = UUID()
     let model: StressModel?
@@ -682,7 +675,6 @@ private func sampleStressModel(score: Double) -> StressModel? {
     let cal = Calendar(identifier: .gregorian)
     let today = cal.startOfDay(for: Date())
     let f = StressDetailScreen.dayParser
-    // 60 days of stored 0–3 stress so the model takes the stored path deterministically.
     let stored: [(day: String, value: Double)] = (0..<60).map { i in
         let date = cal.date(byAdding: .day, value: -(59 - i), to: today)!
         let v = i == 59 ? score : 1.4 + 0.8 * sin(Double(i) / 3.0)
