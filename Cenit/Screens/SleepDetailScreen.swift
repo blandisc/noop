@@ -356,10 +356,10 @@ struct SleepDetailScreen: View {
     /// in the UI (not the engine's Spanish `note`) so it localizes with the app catalog. (FER-849)
     private func dcCopy(_ trend: NocturnalDC.Trend?) -> LocalizedStringKey {
         switch trend {
-        case .above:  return "Your heart had more room to ease off the gas than your normal tonight. A personal pattern — follow it over time."
-        case .below:  return "Your heart had less room to ease off the gas than your normal tonight. A personal pattern — follow it over time."
-        case .around: return "Your resting braking reserve was in your usual range tonight. A personal pattern — follow it over time."
-        case .none:   return "Your resting braking reserve tonight. It reads best as a personal trend — follow it over time."
+        case .above:  return "Your heart had more room to ease off the gas than your normal tonight. A personal pattern: follow it over time."
+        case .below:  return "Your heart had less room to ease off the gas than your normal tonight. A personal pattern: follow it over time."
+        case .around: return "Your resting braking reserve was in your usual range tonight. A personal pattern: follow it over time."
+        case .none:   return "Your resting braking reserve tonight. It reads best as a personal trend: follow it over time."
         }
     }
 
@@ -379,7 +379,7 @@ struct SleepDetailScreen: View {
     @ViewBuilder private func respirationBlock(_ r: RespirationTrendWatch.Result) -> some View {
         DetailBlock("Night breathing", theme: theme) {
             if !r.baselineTrusted {
-                Text("Still learning your normal breathing rate — keeping an eye on it.")
+                Text("Still learning your normal breathing rate: keeping an eye on it.")
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -429,15 +429,15 @@ struct SleepDetailScreen: View {
     private func respCopy(_ r: RespirationTrendWatch.Result) -> LocalizedStringKey {
         guard r.flagged else { return "Your breathing looks like your normal range." }
         return r.direction == .elevated
-            ? "Your breathing has run faster than your normal these nights. A pattern, not a diagnosis — worth crossing with your HRV and resting heart rate."
-            : "Your breathing has run slower than your normal these nights. A pattern, not a diagnosis — worth crossing with your HRV and resting heart rate."
+            ? "Your breathing has run faster than your normal these nights. A pattern, not a diagnosis: worth crossing with your HRV and resting heart rate."
+            : "Your breathing has run slower than your normal these nights. A pattern, not a diagnosis: worth crossing with your HRV and resting heart rate."
     }
 
     /// The honest, localized one-liner for the fall — a pattern, never a diagnosis. Composed in the UI
     /// (not from the engine's Spanish `note`) so it localizes with the app catalog. (FER-832)
     private func dipCopy(_ shape: NightAutonomicShape.DipShape) -> LocalizedStringKey {
         switch shape {
-        case .pronounced: return "A marked, early drop — a sign you settled into rest. It's a pattern, not a diagnosis."
+        case .pronounced: return "A marked, early drop: a sign you settled into rest. It's a pattern, not a diagnosis."
         case .moderate:   return "A moderate drop overnight. It's a pattern, not a diagnosis."
         case .blunted:    return "A gentler drop than a deep-rest night usually shows. It's a pattern, not a diagnosis."
         }
@@ -570,13 +570,13 @@ struct SleepDetailScreen: View {
         let perf = model.performancePct.map { Int(min(100, $0).rounded()) }
         let suff = sufficiencyWord(perf)
         if let r = model.regularity, let p = perf {
-            return String(localized: "\(suff) and \(scheduleWord(r.score)) — \(p)% of your need, \(regularityWordText(r.score)) timing.")
+            return String(localized: "\(suff) and \(scheduleWord(r.score)): \(p)% of your need, \(regularityWordText(r.score)) timing.")
         }
         if let r = model.regularity {
-            return String(localized: "\(scheduleWord(r.score)) — \(regularityWordText(r.score)) timing.")
+            return String(localized: "\(scheduleWord(r.score)): \(regularityWordText(r.score)) timing.")
         }
         if let p = perf {
-            return String(localized: "\(suff) — \(p)% of your need.")
+            return String(localized: "\(suff): \(p)% of your need.")
         }
         return String(localized: "Last night, logged.")
     }
@@ -586,11 +586,11 @@ struct SleepDetailScreen: View {
     private func heroContextLine() -> String {
         guard let r = model.regularity else {
             let missing = max(0, SleepRegularity.minNights - model.regularityNights)
-            return String(localized: "I'm still learning your schedule: \(missing) more nights and I'll know how regular your mid-sleep point is — the figure that predicts your health better than hours.")
+            return String(localized: "I'm still learning your schedule: \(missing) more nights and I'll know how regular your mid-sleep point is, the figure that predicts your health better than hours.")
         }
         var s = (r.score >= 80)
-            ? String(localized: "Your mid-sleep point is among your steadiest — it predicts your health better than total hours.")
-            : String(localized: "Your mid-sleep point still shifts night to night — it predicts your health better than total hours.")
+            ? String(localized: "Your mid-sleep point is among your steadiest: it predicts your health better than total hours.")
+            : String(localized: "Your mid-sleep point still shifts night to night: it predicts your health better than total hours.")
         if let shift = r.weekendShiftMinutes, shift >= 1 {
             s += " " + String(localized: "Weekend +\(hoursMinutes(shift)) later.")
         }
@@ -1136,7 +1136,7 @@ struct SleepDetailScreen: View {
         DisclosureGroup(isExpanded: $methodExpanded) {
             VStack(alignment: .leading, spacing: 10) {
                 Divider().overlay(theme.hairline)
-                Text("Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking) — a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.")
+                Text("Regularity is the night-to-night variability of your mid-sleep point (the midpoint between falling asleep and waking): a steadier schedule predicts health more strongly than how long you sleep. Naps don't count: only your main night (at least 3 h) feeds regularity. Stages are estimated from movement, heart rate and HRV, so they're approximate; deep sleep repairs the body, REM consolidates memory and emotion. \"Need\" is a 7–9 h population target, not a measurement of you.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1271,7 +1271,7 @@ struct SleepDetailScreen: View {
             Text("Sleep").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text("—").instrumentoHero(44).foregroundStyle(theme.inkTertiary)
             Text(model.loaded
-                 ? "No nights yet. Import your WHOOP export — or connect Apple Health — in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
+                 ? "No nights yet. Import your WHOOP export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
                  : "Loading your sleep history…")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
@@ -1297,9 +1297,9 @@ struct SleepDetailScreen: View {
     /// comes from `SleepMainNight`, so the copy never hardcodes 3 h.
     private var napNotice: LocalizedStringKey {
         if let minutes = model.excludedNapMinutes {
-            return "We didn't count your \(napDurationText(minutes)) nap — regularity uses only your main night."
+            return "We didn't count your \(napDurationText(minutes)) nap: regularity uses only your main night."
         }
-        return "We didn't count your naps (under \(napDurationText(Int(SleepMainNight.minDurationMinutes)))) — regularity uses only your main night."
+        return "We didn't count your naps (under \(napDurationText(Int(SleepMainNight.minDurationMinutes)))): regularity uses only your main night."
     }
 
     /// A minutes count as natural-language duration with no trailing zero minutes: "3 h", "1 h 30 min",
@@ -1411,7 +1411,7 @@ struct SleepStagesInfoSheet: View {
                 Text("Sleep stages")
                     .font(StrandFont.title2)
                     .foregroundStyle(theme.ink)
-                Text("Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate — it gets about 2 of 3 right.")
+                Text("Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)

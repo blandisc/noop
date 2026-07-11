@@ -577,7 +577,7 @@ struct ExerciseDetailScreen: View {
         case .readyToAdvance(let newKg):
             return Text("Cycle complete: your next session arrives with \(kg(newKg)).")
         case .deferred(let newKg):
-            return Text("The raise to \(kg(newKg)) waits for your next session — recovery ran low.")
+            return Text("The raise to \(kg(newKg)) waits for your next session: recovery ran low.")
         case .stalled(let sessions):
             return Text("\(sessions) sessions without hitting the goal at this weight.")
         case .deloading(let fromKg, let toKg):

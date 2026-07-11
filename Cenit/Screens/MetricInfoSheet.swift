@@ -100,7 +100,7 @@ extension MetricInfo {
         return MetricInfo(
             id: "strain",
             name: "Day Strain",
-            headline: "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum — a full day at peak intensity.",
+            headline: "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum: a full day at peak intensity.",
             displayValue: value.map { String(format: "%.1f", $0) } ?? "—",
             unit: nil,
             headerTint: value == nil ? .neutral : .metric,
@@ -160,7 +160,7 @@ extension MetricInfo {
             bands: [],
             note: value == nil
                 ? "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats."
-                : "HRV is personal. There are no universal good/bad thresholds — only your trend over time.",
+                : "HRV is personal. There are no universal good/bad thresholds: only your trend over time.",
             method: Method(
                 prose: "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.",
                 citation: "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score."
@@ -185,7 +185,7 @@ extension MetricInfo {
         return MetricInfo(
             id: "rhr",
             name: "Resting HR",
-            headline: "Your heart rate when your body is fully at rest — how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.",
+            headline: "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on.",
             displayValue: value.map { "\($0)" } ?? "—",
             unit: lpm,
             headerTint: value == nil ? .neutral : .metric,
@@ -285,7 +285,7 @@ extension MetricInfo {
         return MetricInfo(
             id: "sleep_restorative",
             name: "Restorative",
-            headline: "The share of your sleep spent in deep and REM — the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult.",
+            headline: "The share of your sleep spent in deep and REM: the stages that physically and mentally restore you. Around 40–50% is typical for a healthy adult.",
             displayValue: pct.map { "\(Int($0.rounded()))%" } ?? "—",
             unit: nil,
             headerTint: pct == nil ? .neutral : .metric,
@@ -300,7 +300,7 @@ extension MetricInfo {
         MetricInfo(
             id: "sleep_awakenings",
             name: "Awakenings",
-            headline: "How many times you briefly woke during the night. A few are completely normal — everyone surfaces between sleep cycles.",
+            headline: "How many times you briefly woke during the night. A few are completely normal: everyone surfaces between sleep cycles.",
             displayValue: count.map { "\($0)" } ?? "—",
             unit: nil,
             headerTint: count == nil ? .neutral : .metric,
@@ -343,10 +343,10 @@ extension MetricInfo {
             unit: "%",
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: "Blood oxygen comes from Apple Health. Wrist-based sensors have lower accuracy than medical pulse oximeters — treat values as a trend, not a clinical reading.",
+            note: "Blood oxygen comes from Apple Health. Wrist-based sensors have lower accuracy than medical pulse oximeters: treat values as a trend, not a clinical reading.",
             method: Method(
-                prose: "Cénit reads your blood oxygen from Apple Health — your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise — altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.",
-                citation: "Wrist optical sensors are less accurate than medical pulse oximeters — read this as a trend, not a clinical measurement. NOOP is not a medical device."),
+                prose: "Cénit reads your blood oxygen from Apple Health, your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise, altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.",
+                citation: "Wrist optical sensors are less accurate than medical pulse oximeters: read this as a trend, not a clinical measurement. NOOP is not a medical device."),
             levelsMetric: .bloodOxygen,
             levelsTodayValue: value
         )
@@ -386,15 +386,15 @@ extension MetricInfo {
         MetricInfo(
             id: "vo2max",
             name: "VO₂ Max",
-            headline: "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness — and one of the best-evidenced predictors of long-term health.",
+            headline: "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness, and one of the best-evidenced predictors of long-term health.",
             displayValue: value.map { String(format: "%.0f", $0) } ?? "—",
             unit: String(localized: "ml/kg/min"),
             headerTint: value == nil ? .neutral : .metric,
             bands: [],
-            note: "Measured by your Apple Watch during outdoor walks and runs — it isn't recorded by the WHOOP strap.",
+            note: "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the WHOOP strap.",
             method: Method(
-                prose: "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality — it's one of the best-evidenced markers of long-term health.",
-                citation: "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement — NOOP is not a medical device.")
+                prose: "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality: it's one of the best-evidenced markers of long-term health.",
+                citation: "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement: NOOP is not a medical device.")
         )
     }
 
@@ -412,7 +412,7 @@ extension MetricInfo {
         return MetricInfo(
             id: "steps",
             name: "Steps",
-            headline: "Daily step count. Consistent activity — even a 30-minute walk — supports cardiovascular health, mood, and recovery quality.",
+            headline: "Daily step count. Consistent activity, even a 30-minute walk, supports cardiovascular health, mood, and recovery quality.",
             displayValue: value.map { v in
                 let f = NumberFormatter(); f.numberStyle = .decimal
                 return f.string(from: NSNumber(value: v)) ?? "\(v)"
@@ -422,7 +422,7 @@ extension MetricInfo {
             bands: bands,
             note: "Steps come from Apple Health.",
             method: Method(
-                prose: "Steps come from Apple Health. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that — there is nothing magic about exactly 10,000.",
+                prose: "Steps come from Apple Health. The detail reads each day's total and smooths it into a 7-day trend, so weekday/weekend swings don't drown out the direction you're heading. Research links roughly 7,000–9,000 steps a day with lower mortality, with the benefit leveling off beyond that: there is nothing magic about exactly 10,000.",
                 citation: "Paluch et al. 2022, Lancet Public Health."),
             levelsMetric: .steps,
             levelsTodayValue: value.map(Double.init)
@@ -455,12 +455,12 @@ extension MetricInfo {
         return MetricInfo(
             id: "stress",
             name: "Stress",
-            headline: "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated.",
+            headline: "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up: classic signs your body is activated.",
             displayValue: score.map { String(format: "%.1f", $0) } ?? "—",
             unit: score == nil ? nil : "/ 3",
             headerTint: tint,
             bands: bands,
-            note: "Derived from your overnight resting heart rate and HRV — a transparent proxy for autonomic load, not a clinical stress measure.",
+            note: "Derived from your overnight resting heart rate and HRV: a transparent proxy for autonomic load, not a clinical stress measure.",
             method: Method(
                 prose: "We take today's resting heart rate and HRV and express each as how far it sits from your 30-day average (a z-score). A resting HR above your norm and an HRV below it both add to the load; the two are summed and squashed onto a 0–3 scale where 0 is calm, 1.5 is your baseline, and 3 is highly activated.",
                 citation: "Combined resting-HR / HRV z-score through a logistic curve; HRV via RMSSD (Task Force, 1996)."
@@ -485,7 +485,7 @@ extension MetricInfo {
             bands: [],
             note: nil,
             method: Method(
-                prose: "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate — the low while you sleep — is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%).",
+                prose: "We average your heart rate in 5-minute buckets across the day, from midnight. Your resting heart rate, the low while you sleep, is its own metric. The zones split the day by how hard your heart worked, as a percentage of your estimated maximum heart rate (zone 1 is 50–60%, zone 5 is 90–100%).",
                 citation: "Max HR estimated by Tanaka et al. (2001): 208 − 0.7 × age.")
         )
     }
@@ -529,7 +529,7 @@ extension MetricInfo {
         return MetricInfo(
             id: "recovery",
             name: "Recovery",
-            headline: "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night — your HRV above all — and compares them with your own average from recent weeks, not anyone else's.",
+            headline: "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's.",
             displayValue: score.map { "\($0)" } ?? "—",
             unit: nil,
             headerTint: tint,
@@ -537,7 +537,7 @@ extension MetricInfo {
             note: nil,
             impact: impact,
             method: Method(
-                prose: "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights — HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5% — and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.",
+                prose: "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights, HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5%, and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.",
                 citation: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."
             ),
             disclaimer: disclaimer,
@@ -1304,7 +1304,7 @@ struct MetricInfoSheet: View {
         } else if info.levelsRelative {
             // HRV with no personal baseline yet — an honest note, not an empty levels list.
             ChartWell(theme).empty(icon: "waveform.path.ecg",
-                                   text: "Your levels come from your own baseline — a few more nights and they'll appear.")
+                                   text: "Your levels come from your own baseline: a few more nights and they'll appear.")
         }
     }
 
@@ -2236,7 +2236,7 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
     }
 }
 
-#Preview("MetricInfoSheet — Strain (curve)") {
+#Preview("MetricInfoSheet: Strain (curve)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .strain(11.5),
                         strainCurveLoader: { sampleStrainCurve(score: 11.5) },
@@ -2245,49 +2245,49 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
     }
 }
 
-#Preview("MetricInfoSheet — Strain (no data)") {
+#Preview("MetricInfoSheet: Strain (no data)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .strain(3.9))
     }
 }
 
-#Preview("MetricInfoSheet — HRV") {
+#Preview("MetricInfoSheet: HRV") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .hrv(66))
     }
 }
 
-#Preview("MetricInfoSheet — HRV (no data)") {
+#Preview("MetricInfoSheet: HRV (no data)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .hrv(nil))
     }
 }
 
-#Preview("MetricInfoSheet — Steps (no permission)") {
+#Preview("MetricInfoSheet: Steps (no permission)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .steps(nil), appleConnectHint: true)
     }
 }
 
-#Preview("MetricInfoSheet — SpO₂") {
+#Preview("MetricInfoSheet: SpO₂") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .spo2(97))
     }
 }
 
-#Preview("MetricInfoSheet — Skin temp") {
+#Preview("MetricInfoSheet: Skin temp") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .skinTemp(0.3))
     }
 }
 
-#Preview("MetricInfoSheet — Skin temp (no data)") {
+#Preview("MetricInfoSheet: Skin temp (no data)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .skinTemp(nil))
     }
 }
 
-#Preview("MetricInfoSheet — Recovery") {
+#Preview("MetricInfoSheet: Recovery") {
     Color.clear.sheet(isPresented: .constant(true)) {
         // The 27-jun-2026 sick-day shape: HRV collapsed (the driver), resting HR way up, the rest quiet.
         MetricInfoSheet(info: .recovery(score: 12, calibrationNights: nil, nightsNeeded: 4,
@@ -2301,19 +2301,19 @@ private func sampleStrainCurve(score: Double) -> [TrendPoint] {
     }
 }
 
-#Preview("MetricInfoSheet — Recovery (calibrating)") {
+#Preview("MetricInfoSheet: Recovery (calibrating)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .recovery(score: nil, calibrationNights: 2, nightsNeeded: 4))
     }
 }
 
-#Preview("MetricInfoSheet — Stress (low)") {
+#Preview("MetricInfoSheet: Stress (low)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .stress(0.8))
     }
 }
 
-#Preview("MetricInfoSheet — Stress (high)") {
+#Preview("MetricInfoSheet: Stress (high)") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .stress(2.4))
     }

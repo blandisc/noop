@@ -297,7 +297,7 @@ struct DataSourcesView: View {
 
     private var whoopBlock: some View {
         block("WHOOP Export",
-              subtitle: "Import your full WHOOP history — recovery, strain, sleep, workouts — from a data export (.zip). Works for WHOOP 4.0, 5.0 and MG. Get one at app.whoop.com → Data Management.") {
+              subtitle: "Import your full WHOOP history, recovery, strain, sleep, workouts, from a data export (.zip). Works for WHOOP 4.0, 5.0 and MG. Get one at app.whoop.com → Data Management.") {
             let importingWhoop = model.isImporting(.whoop)
             HStack(spacing: 12) {
                 QuietButton(importingWhoop ? "Importing…" : "Choose export…") { presentImporter(.whoop) }
@@ -316,7 +316,7 @@ struct DataSourcesView: View {
 
     private var appleHealthImportBlock: some View {
         block("Apple Health Export",
-              subtitle: "Import an Apple Health export (Health app → profile → Export All Health Data → export.zip). 7 years of HR, HRV, sleep, SpO₂, steps and more — streamed locally. Large exports take a minute or two.") {
+              subtitle: "Import an Apple Health export (Health app → profile → Export All Health Data → export.zip). 7 years of HR, HRV, sleep, SpO₂, steps and more: streamed locally. Large exports take a minute or two.") {
             let importingAppleHealth = model.isImporting(.appleHealth)
             HStack(spacing: 12) {
                 QuietButton(importingAppleHealth ? "Working…" : "Choose export.zip…") { presentImporter(.appleHealth) }
@@ -362,7 +362,7 @@ struct DataSourcesView: View {
     @ViewBuilder
     private var appleHealthLiveBody: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in — nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)")
+            Text("Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in: nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -536,7 +536,7 @@ struct DataSourcesView: View {
                 }
             }
         } else {
-            Text("No Apple Health data imported yet — tap Sync now to pull your recent history.")
+            Text("No Apple Health data imported yet: tap Sync now to pull your recent history.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
     }
@@ -652,16 +652,16 @@ struct DataSourcesView: View {
             // on one screen and "Connected" on another (issue #8). Color rides the status datum (the dot
             // + label); the supporting copy stays ink.
             let (dot, label): (Color, LocalizedStringKey) =
-                live.bonded ? (theme.verdict, "Bonded — streaming.")
+                live.bonded ? (theme.verdict, "Bonded: streaming.")
                 : live.connected ? (theme.warning, "Connected.")
-                : (theme.critical, "Not connected — open Live to pair.")
+                : (theme.critical, "Not connected: open Live to pair.")
             HStack(spacing: 10) {
                 Circle().fill(dot).frame(width: 8, height: 8)
                 Text(label).font(StrandFont.subhead).foregroundStyle(dot)
                 Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)
-            Text("Pairs directly with your strap over Bluetooth — no WHOOP app, no cloud.")
+            Text("Pairs directly with your strap over Bluetooth: no WHOOP app, no cloud.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             divider
@@ -683,7 +683,7 @@ struct DataSourcesView: View {
                 Text("Connect your strap to run the sync diagnostic.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             } else if !live.encryptedBond {
-                Text("Complete secure pairing first — the strap won’t offload its history until the encrypted bond is set.")
+                Text("Complete secure pairing first: the strap won’t offload its history until the encrypted bond is set.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             } else {
                 strapRangeRow
@@ -779,9 +779,9 @@ struct DataSourcesView: View {
             case .nothingNew:
                 return ("circle", "The band has nothing new.", theme.inkSecondary)
             case .notStoringClock:
-                return ("clock.badge.exclamationmark.fill", "The band lost its clock and isn’t saving. Cénit is re-setting it — keep it connected. If it doesn’t recover, run it through the WHOOP app.", theme.warning)
+                return ("clock.badge.exclamationmark.fill", "The band lost its clock and isn’t saving. Cénit is re-setting it: keep it connected. If it doesn’t recover, run it through the WHOOP app.", theme.warning)
             case .arrivesButNoDecode:
-                return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode — please report.", theme.warning)
+                return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode: please report.", theme.warning)
             case .receivingAndStoring:
                 return ("checkmark.seal.fill", "Receiving and storing everything.", theme.verdict)
             }

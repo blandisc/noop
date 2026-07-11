@@ -185,7 +185,7 @@ private struct PatronesLanding: View {
             isPresented: $showResetConfirm,
             title: String(localized: "Start from scratch?"),
             context: String(localized: "PATTERNS · YOUR JOURNAL"),
-            message: String(localized: "This erases everything you contributed — your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported WHOOP history is untouched. This can't be undone."),
+            message: String(localized: "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported WHOOP history is untouched. This can't be undone."),
             actions: [
                 .init(String(localized: "Keep my journal"), role: .primary),
                 .init(String(localized: "Delete what I logged"), role: .destructive) {
@@ -449,7 +449,7 @@ private struct PatronesLanding: View {
     }
 
     private var pruebaIntro: LocalizedStringKey {
-        if genuineColdStart { return "You don't have to wait — an experiment speeds up what I learn about you." }
+        if genuineColdStart { return "You don't have to wait: an experiment speeds up what I learn about you." }
         if running != nil { return "Turn a hunch into a correlation of your own." }
         return "You don't have any experiment running right now."
     }
@@ -764,7 +764,7 @@ private struct PatronesLanding: View {
                        trailing: behaviorInsights.count > levers.count ? String(localized: "See all") : nil,
                        trailingAction: { showEfectos = true }) {
             if levers.isEmpty {
-                emptyBox("Nothing proven yet — your experiments will land here.")
+                emptyBox("Nothing proven yet: your experiments will land here.")
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(levers.enumerated()), id: \.offset) { _, insight in

@@ -103,7 +103,7 @@ struct PlanViajeSheet: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 Text("TU PLAN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     .padding(.top, NoopMetrics.screenPadding)
-                Text(verbatim: "Con un cambio tan chico tu reloj apenas se mueve — no necesitas un plan. Descansa como siempre.")
+                Text(verbatim: "Con un cambio tan chico tu reloj apenas se mueve: no necesitas un plan. Descansa como siempre.")
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 QuietButton("Entendido") { showingPlan = false }

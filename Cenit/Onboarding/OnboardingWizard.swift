@@ -406,7 +406,7 @@ private struct PrepareStep: View {
                 .padding(.top, NoopMetrics.space2)
 
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-                Checkline("Wear it snug — the sensor needs skin contact.")
+                Checkline("Wear it snug: the sensor needs skin contact.")
                 Checkline("Make sure it has charge.")
                 Checkline("Keep your iPhone's Bluetooth on.")
             }
@@ -505,11 +505,11 @@ private struct ScanStep: View {
             Text("Not showing up? That's normal.")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
-            Text("WHOOP straps don't show up in your iPhone's Settings › Bluetooth — they use a custom profile only apps like Cénit can see. There's nothing to pair there.")
+            Text("WHOOP straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Checkline("It's charged and worn — the sensor wakes with skin contact.")
+            Checkline("It's charged and worn: the sensor wakes with skin contact.")
             Checkline("The WHOOP app isn't holding it. Only one host at a time: close it or turn off its Bluetooth.")
             Checkline("It's within a metre of your iPhone.")
         }

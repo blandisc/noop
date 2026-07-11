@@ -95,7 +95,7 @@ struct WorkoutImportView: View {
                 QuietButton(copied ? "Copied" : "Copy prompt") { copyPrompt() }
             }
 
-            step(2, "Bring back the file it gives you — paste it or upload it.") {
+            step(2, "Bring back the file it gives you: paste it or upload it.") {
                 VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                     pasteField
                     HStack(spacing: NoopMetrics.gap) {
@@ -107,7 +107,7 @@ struct WorkoutImportView: View {
                 }
             }
 
-            Text("Your routines are created on your iPhone. NOOP never connects — you run the AI step yourself.")
+            Text("Your routines are created on your iPhone. NOOP never connects: you run the AI step yourself.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -495,9 +495,9 @@ struct WorkoutImportView: View {
         case .unsupportedSchema:
             return "That file isn't a NOOP workout plan. Make sure you used the prompt above."
         case .unsupportedIdioma:
-            return "The plan's language isn't supported — it must be Spanish or English."
+            return "The plan's language isn't supported: it must be Spanish or English."
         case .unsupportedUnidad:
-            return "The plan's unit isn't supported — it must be kg or lb."
+            return "The plan's unit isn't supported: it must be kg or lb."
         case .unsupportedTipo:
             return "One of the exercises has an unsupported type. Check the file and try again."
         case .noRoutines:

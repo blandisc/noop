@@ -385,7 +385,7 @@ struct TrainingLoadSheet: View {
     private func methodAccordion(acwr: Double?) -> some View {
         InfoAccordion(
             title: "Behind the number",
-            explanation: "The ratio compares your average load over the last ~7 days against your last ~28 — the acute:chronic workload ratio (ACWR). 1.0 means you trained exactly your usual; 0.8–1.3 reads as balanced (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).",
+            explanation: "The ratio compares your average load over the last ~7 days against your last ~28: the acute:chronic workload ratio (ACWR). 1.0 means you trained exactly your usual; 0.8–1.3 reads as balanced (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).",
             accessibilityLabel: "Information about the training-load method",
             theme: theme
         ) {
@@ -699,7 +699,7 @@ private func demoDays(strainCurve: (Int) -> Double) -> [DailyMetric] {
     }
 }
 
-#Preview("Carga — en equilibrio") {
+#Preview("Carga: en equilibrio") {
     TrainingLoadSheet(model: TrainingLoadModel(
         acwr: 1.09,
         series: (0..<28).map { (day: "d\($0)", value: 0.9 + 0.4 * sin(Double($0) / 5)) },
@@ -708,14 +708,14 @@ private func demoDays(strainCurve: (Int) -> Double) -> [DailyMetric] {
         onSeePattern: {}, onSeeTrends: {})
 }
 
-#Preview("Carga — disparada") {
+#Preview("Carga: disparada") {
     TrainingLoadSheet(model: TrainingLoadModel(
         acwr: 1.62,
         series: (0..<28).map { (day: "d\($0)", value: 1.0 + Double($0) * 0.025) },
         days: demoDays { 8 + Double($0) * 0.12 }))
 }
 
-#Preview("Carga — calibrando") {
+#Preview("Carga: calibrando") {
     TrainingLoadSheet(model: TrainingLoadModel(acwr: nil, series: []))
 }
 

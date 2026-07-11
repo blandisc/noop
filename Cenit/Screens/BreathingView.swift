@@ -418,7 +418,7 @@ struct BreathingView: View {
                 }
                 .frame(height: 10)
 
-                Text("Estimate only — a higher RMSSD while paced usually means your parasympathetic \"rest\" branch is engaging. It is not a clinical reading; trends over a session matter more than any single number.")
+                Text("Estimate only: a higher RMSSD while paced usually means your parasympathetic \"rest\" branch is engaging. It is not a clinical reading; trends over a session matter more than any single number.")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -457,7 +457,7 @@ struct BreathingView: View {
         HStack(spacing: 10) {
             Image(systemName: "applewatch.radiowaves.left.and.right")
                 .foregroundStyle(theme.warning)
-            Text("Connect your strap for haptic guidance — you'll feel one pulse on the inhale, two on the exhale, so you can breathe with your eyes closed.")
+            Text("Connect your strap for haptic guidance: you'll feel one pulse on the inhale, two on the exhale, so you can breathe with your eyes closed.")
                 .font(StrandFont.footnote)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)

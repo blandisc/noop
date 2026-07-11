@@ -90,7 +90,7 @@ struct RelojCorporalSheet: View {
 
     private func planFinished(total: Int) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-            Text(verbatim: "Listo — completaste tu reajuste de \(total) días. Ojalá tu reloj ya vaya a la par.")
+            Text(verbatim: "Listo: completaste tu reajuste de \(total) días. Ojalá tu reloj ya vaya a la par.")
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             QuietButton("Cerrar") { planJSON = "" }

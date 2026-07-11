@@ -206,7 +206,7 @@ struct ActivityRecoverySheet: View {
 // MARK: - Preview
 
 #if DEBUG
-#Preview("ActivityRecoverySheet — con datos") {
+#Preview("ActivityRecoverySheet: con datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         ActivityRecoverySheet(costs: [
             ActivityCost(sport: "Weight Training", delta: 8.2, nextMorningCenter: 54, baselineCenter: 62,
@@ -219,7 +219,7 @@ struct ActivityRecoverySheet: View {
     }
 }
 
-#Preview("ActivityRecoverySheet — juntando datos") {
+#Preview("ActivityRecoverySheet: juntando datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         ActivityRecoverySheet(costs: [], appleConnectHint: true)
     }

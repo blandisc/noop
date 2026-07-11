@@ -32,8 +32,8 @@ struct WhyVerdictSheet: View {
     /// referencia, así que «reubicar» no duplica el texto ni pierde una palabra del SDNN-vs-RMSSD.
     static func estimatedCaveat(coldStart: Bool) -> LocalizedStringKey {
         coldStart
-        ? "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep while your band is still calibrating its own baseline, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. It switches to your band automatically once it's calibrated. Not a diagnosis."
-        : "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy — read it as a guide, not a band reading. Not a diagnosis."
+        ? "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep while your band is still calibrating its own baseline, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy: read it as a guide, not a band reading. It switches to your band automatically once it's calibrated. Not a diagnosis."
+        : "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy: read it as a guide, not a band reading. Not a diagnosis."
     }
 
     /// Measured natural height of the content, so the sheet opens exactly as tall as it needs to be —
@@ -99,7 +99,7 @@ struct WhyVerdictSheet: View {
         let c = levelColor(readiness.level)
         return HStack(spacing: 8) {
             Circle().fill(c).frame(width: 11, height: 11)
-            Text("Today your day is \(colorName(readiness.level)) — \(readiness.headline)")
+            Text("Today your day is \(colorName(readiness.level)): \(readiness.headline)")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -138,7 +138,7 @@ struct WhyVerdictSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Image(systemName: "moon.zzz.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.warning)
-                Text("Confianza baja — noche corta")
+                Text("Confianza baja: noche corta")
                     .font(StrandFont.subhead).fontWeight(.semibold)
                     .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -157,10 +157,10 @@ struct WhyVerdictSheet: View {
     /// `LocalizedStringKey` so the hours interpolate into a `%@` placeholder the catalog can localize.
     private var shortNightExplanation: LocalizedStringKey {
         guard let mins = sleepMinutes, mins > 0 else {
-            return "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
+            return "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor: así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
         }
         let dur = "\(Int(mins) / 60) h \(Int(mins) % 60) min"
-        return "Anoche dormiste \(dur), por debajo de las 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor — así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
+        return "Anoche dormiste \(dur), por debajo de las 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor: así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza."
     }
 
     /// The full driver list — this is what was macOS-only before; FER-113 brings it to the phone.

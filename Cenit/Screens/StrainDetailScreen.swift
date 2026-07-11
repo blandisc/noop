@@ -222,7 +222,7 @@ struct StrainDetailScreen: View {
 
     /// The hero ⓘ copy — the standard day-strain explanation (Edwards/Banister).
     private var heroExplanation: LocalizedStringKey {
-        "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum — a full day at peak intensity. (Edwards 1993; Banister 1991)"
+        "Day Strain is your cardiovascular load on a 0–21 scale. Each second your heart rate is recorded, it's placed in an intensity zone (1–5); higher zones weigh more, and the total is compressed logarithmically so 21 is a theoretical maximum: a full day at peak intensity. (Edwards 1993; Banister 1991)"
     }
 
     /// A plain-language reading of today's strain by zone, or an honest "no strain yet" when there's no
@@ -232,14 +232,14 @@ struct StrainDetailScreen: View {
     /// Source strings are English; the es values live in `Localizable.xcstrings`.
     private var heroReading: LocalizedStringKey {
         guard let v = shownToday else {
-            if !model.series.isEmpty { return "No strain from today yet — your recent history is below." }
+            if !model.series.isEmpty { return "No strain from today yet: your recent history is below." }
             return "No strain yet. Wear your strap through the day and open this again after it syncs."
         }
         switch MetricInfo.strain(v).bands.firstIndex(where: \.isActive) ?? 0 {
-        case 0:  return "Light load today — plenty left in the tank."
+        case 0:  return "Light load today: plenty left in the tank."
         case 1:  return "Moderate effort today."
-        case 2:  return "Hard effort today — solid work."
-        default: return "All-out day — about as much strain as you carry."
+        case 2:  return "Hard effort today: solid work."
+        default: return "All-out day: about as much strain as you carry."
         }
     }
 
@@ -657,7 +657,7 @@ private func sampleCurve() -> [TrendPoint] {
     }
 }
 
-#Preview("Strain detail — con datos") {
+#Preview("Strain detail: con datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         StrainDetailScreen(
             model: StrainDetailModel(today: 14.2, series: sampleStrainSeries(), loaded: true,
@@ -667,7 +667,7 @@ private func sampleCurve() -> [TrendPoint] {
     }
 }
 
-#Preview("Strain detail — sin datos") {
+#Preview("Strain detail: sin datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         StrainDetailScreen(
             model: StrainDetailModel(today: nil, series: [], loaded: true, drivers: []),

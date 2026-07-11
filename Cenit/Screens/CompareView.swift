@@ -516,7 +516,7 @@ struct CompareView: View {
 
                 // Association, not cause: overlapping trends move together; that's not
                 // one causing the other. (FER-299)
-                Text("Association, not cause — moving together isn't one driving the other.")
+                Text("Association, not cause: moving together isn't one driving the other.")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -596,13 +596,13 @@ struct CompareView: View {
     private func insightSentence(_ p: PairResult) -> String {
         let head = String(localized: "\(p.a.metric.title) ↔ \(p.b.metric.title): r = \(signedR(p.r)) (\(strengthWord(p.r)) \(directionWord(p.r))) over \(p.n) shared days.")
         guard abs(p.r) >= 0.3 else {
-            return head + String(localized: " No clear relationship — they move largely independently.")
+            return head + String(localized: " No clear relationship: they move largely independently.")
         }
         let lower = p.r < 0
         let aT = p.a.metric.title.lowercased()
         let bT = p.b.metric.title.lowercased()
         let verb = lower ? String(localized: "tends to fall") : String(localized: "tends to rise")
-        return head + String(localized: " When \(aT) rises, \(bT) \(verb) — a \(strengthWord(p.r)) \(directionWord(p.r)) link.")
+        return head + String(localized: " When \(aT) rises, \(bT) \(verb): a \(strengthWord(p.r)) \(directionWord(p.r)) link.")
     }
 
     private func signedR(_ r: Double) -> String {

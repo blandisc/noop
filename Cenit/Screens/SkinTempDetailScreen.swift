@@ -108,7 +108,7 @@ struct SkinTempDetailScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Nightly thermal stability").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if t.stability == .learning {
-                Text("Still learning how consistent your nightly warming is — keep wearing it to bed.")
+                Text("Still learning how consistent your nightly warming is: keep wearing it to bed.")
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -159,7 +159,7 @@ struct SkinTempDetailScreen: View {
     /// with the app catalog. ASSOCIATION framing, never a 24-hour circadian-amplitude claim. (FER-850)
     private func thermalCopy(_ t: ThermalStabilityEngine.Result) -> LocalizedStringKey {
         switch t.stability {
-        case .consistent: return "Your body's warming as you fall asleep is steady night-to-night. A consistent wind-down — an association, not a full 24-hour rhythm."
+        case .consistent: return "Your body's warming as you fall asleep is steady night-to-night. A consistent wind-down: an association, not a full 24-hour rhythm."
         case .moderate:   return "Your nightly warming into sleep varies a moderate amount night-to-night. An association, not a full 24-hour rhythm."
         case .variable:   return "Your nightly warming into sleep swings a fair amount night-to-night. A steadier wind-down tends to settle it. An association, not a full 24-hour rhythm."
         case .learning:   return ""
@@ -250,7 +250,7 @@ struct SkinTempDetailScreen: View {
                 if openDisclosure == "band" {
                     inlineDisclosure(
                         label: "Your nightly baseline",
-                        text: "How far last night's skin temperature ran from your own recent baseline, in °C. We learn your normal over recent nights, so 0 is your usual and the number is the shift up or down. A single warm or cool night rarely means much — what's worth noticing is several nights in a row drifting the same way. It's a comfort signal, not a thermometer or a diagnosis."
+                        text: "How far last night's skin temperature ran from your own recent baseline, in °C. We learn your normal over recent nights, so 0 is your usual and the number is the shift up or down. A single warm or cool night rarely means much: what's worth noticing is several nights in a row drifting the same way. It's a comfort signal, not a thermometer or a diagnosis."
                     ).padding(.top, 9)
                 }
             }
@@ -315,7 +315,7 @@ struct SkinTempDetailScreen: View {
     /// Source strings are English; the es values live in `Localizable.xcstrings`.
     private var heroReading: LocalizedStringKey {
         guard let v = model.today else {
-            if !model.series.isEmpty { return "No reading from last night yet — your recent history is below." }
+            if !model.series.isEmpty { return "No reading from last night yet: your recent history is below." }
             return "No skin-temperature reading yet. Wear your strap overnight and open this again after it syncs."
         }
         if abs(v) < 0.3 { return "Right around your usual nighttime baseline." }
@@ -449,8 +449,8 @@ struct SkinTempDetailScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var EX_ST_TREND: LocalizedStringKey { "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0) — inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this period's average with the previous period of the same length, in °C." }
-    private var EX_ST_CONSIST: LocalizedStringKey { "The standard deviation of your nightly deviations — how much your skin temperature wanders around your baseline from night to night, in °C. A small number means steady thermoregulation; a larger one means more night-to-night swing. (We show the spread in °C rather than a percentage because the average sits near zero, where a percentage would be meaningless.)" }
+    private var EX_ST_TREND: LocalizedStringKey { "Each point is one night's deviation from your baseline. The shaded band is your own typical night-to-night swing (±1 SD around 0): inside it is business as usual; a run of nights poking out the same side is the signal. Average and the range come from the period you pick; the chip compares this period's average with the previous period of the same length, in °C." }
+    private var EX_ST_CONSIST: LocalizedStringKey { "The standard deviation of your nightly deviations: how much your skin temperature wanders around your baseline from night to night, in °C. A small number means steady thermoregulation; a larger one means more night-to-night swing. (We show the spread in °C rather than a percentage because the average sits near zero, where a percentage would be meaningless.)" }
 
     // MARK: - 3. Ver el método (DisclosureGroup, patrón de las otras pantallas)
 
@@ -458,7 +458,7 @@ struct SkinTempDetailScreen: View {
         DisclosureGroup(isExpanded: $methodExpanded) {
             VStack(alignment: .leading, spacing: 10) {
                 Divider().overlay(theme.hairline)
-                Text("Each night your strap records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C — so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation.")
+                Text("Each night your strap records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation.")
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -556,14 +556,14 @@ private func sampleSkinTempSeries(days: Int = 60) -> [(day: String, value: Doubl
     }
 }
 
-#Preview("Skin temp detail — con datos") {
+#Preview("Skin temp detail: con datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         SkinTempDetailScreen(
             model: SkinTempDetailModel.build(latest: 0.3, series: sampleSkinTempSeries(), loaded: true))
     }
 }
 
-#Preview("Skin temp detail — sin datos") {
+#Preview("Skin temp detail: sin datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         SkinTempDetailScreen(
             model: SkinTempDetailModel.build(latest: nil, series: [], loaded: true))
