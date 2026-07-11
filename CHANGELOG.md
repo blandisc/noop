@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Modo Apple: Hoy y Ajustes dejan de mostrar la banda / Apple mode: Today and Settings stop showing the strap.**
+  **ES** — En modo Solo-Apple (sin banda WHOOP) desaparecen las superficies que solo aplican a la banda: en Hoy, la batería del strap, el pulso en vivo / «sin señal» y el sello del dial de 24 h; en Ajustes, la sección «Tu strap» (batería, estado, bitácora de conexión). Además, cuando aún no hay veredicto, el texto de por qué está vacío habla de tu Apple Watch en vez de la banda. Con banda (Combinado o Solo-banda) todo queda idéntico.
+  **EN** — In Apple-only mode (no WHOOP strap) the surfaces that only apply to the strap disappear: on Today, the strap battery, the live pulse / «no signal» and the 24-hour dial seal; in Settings, the «Your strap» section (battery, status, connection log). And when there's no verdict yet, the empty-state explanation talks about your Apple Watch instead of the strap. With a strap (Combined or strap-only) everything is unchanged.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift), [AjustesView.swift](Cenit/Screens/AjustesView.swift))
+
 - **La «Carga del día» estimada explica su límite en el Detalle / The estimated «Day load» explains its limit in the detail.**
   **ES** — Cuando la carga del día es una estimación de tu Apple Watch (modo Solo-Apple), el Detalle de Esfuerzo ahora lo dice: sello de Apple Salud y una línea honesta — «Estimada a partir de la frecuencia cardiaca de tus entrenamientos del Apple Watch. No incluye la actividad fuera de esos entrenamientos, así que puede quedar un poco baja.» Con banda, el detalle no cambia.
   **EN** — When the day's load is an Apple Watch estimate (Apple-only mode), the Strain detail now says so: an Apple Health seal and an honest line — «Estimated from your Apple Watch workout heart rate. It doesn't include activity outside those workouts, so it can read a little low.» With a strap the detail is unchanged.
