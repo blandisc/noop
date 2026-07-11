@@ -424,12 +424,11 @@ public struct Calendario90: View {
     }
 
     public var body: some View {
-        let cols = Swift.max(1, YearHeatStrip.weekColumns(for: days))
+        // Celda a un número FIJO de columnas (14, el máximo de una ventana de 90 días), no al conteo vivo:
+        // mide LO MISMO en las cuatro pantallas y todos los días. `rollingCellSize` es la fuente única de
+        // esa fórmula (FER estable, wobble 13↔14). Antes esto usaba `weekColumns` vivo → oscilaba.
         let spacing: CGFloat = 4
-        let gutter: CGFloat = 24
-        let cell: CGFloat = calWidth > 0
-            ? Swift.max(8, Swift.min(22, (calWidth - gutter - spacing - CGFloat(cols - 1) * spacing) / CGFloat(cols)))
-            : 14
+        let cell: CGFloat = calWidth > 0 ? YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing) : 14
         YearHeatStrip(
             days: days,
             cellSize: cell,
