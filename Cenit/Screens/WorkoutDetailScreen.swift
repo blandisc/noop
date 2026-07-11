@@ -47,6 +47,10 @@ struct WorkoutDetailScreen: View {
     @State private var hrr: HRRState = .loading
     /// How many recent prior sessions back the personal HRR baseline — bounds the on-appear store reads.
     private let hrrMaxPriorSessions = 20
+    /// Drives the HRR block's staggered entrance (overline static; number → verdict → baseline →
+    /// disclaimer rise+fade, 70 ms apart, no bounce — handoff «HRR-60s»). Set true on the block's appear.
+    @State private var hrrRevealed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView {
@@ -385,25 +389,52 @@ struct WorkoutDetailScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         case let .reading(bpm, trend):
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Cardiac recovery · 60 s").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(bpm)").instrumentoHero(40).foregroundStyle(theme.dataHeart)
-                    Text("bpm in 60 s").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+            // Pink anchor bar (chrome, static) + a staggered column: the overline is fixed; the number,
+            // verdict, baseline and disclaimer rise+fade 70 ms apart. Color lives only on the bpm datum.
+            HStack(alignment: .top, spacing: 11) {
+                RoundedRectangle(cornerRadius: 2).fill(theme.dataHeart)
+                    .frame(width: 3).padding(.vertical, 3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Cardiac recovery · 60 s").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    hrrRise(0) {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text("\(bpm)").instrumentoHero(40).foregroundStyle(theme.dataHeart)
+                            Text("bpm in 60 s").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                        }
+                    }
+                    hrrRise(1) {
+                        Text(hrrNote(trend))
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let base = trend.baselineBpm, trend.nPrior >= 2 {
+                        hrrRise(2) {
+                            Text("vs your normal · ~\(Int(base.rounded())) bpm · \(trend.nPrior) sessions")
+                                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        }
+                    }
+                    hrrRise(3) {
+                        Text("Personal trend, not a clinical threshold. Experimental reading.")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                Text(hrrNote(trend))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let base = trend.baselineBpm, trend.nPrior >= 2 {
-                    Text("vs your normal · ~\(Int(base.rounded())) bpm · \(trend.nPrior) sessions")
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                }
-                Text("Personal trend, not a clinical threshold. Experimental reading.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .combine)
+            // Each element's own `.animation(value: hrrRevealed)` drives the staggered rise; just flip
+            // the flag on appear (once).
+            .onAppear { hrrRevealed = true }
         }
+    }
+
+    /// One staggered element of the HRR reading: rises 9 pt + fades in, ease-out 0.46 s, delayed 70 ms ·
+    /// `index`. No bounce; honors Reduce Motion (appears in place). The chrome/divider never animate.
+    @ViewBuilder private func hrrRise<Content: View>(_ index: Int, @ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .opacity(hrrRevealed ? 1 : 0)
+            .offset(y: (hrrRevealed || reduceMotion) ? 0 : 9)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.46).delay(Double(index) * 0.07),
+                       value: hrrRevealed)
     }
 
     /// es-MX copy mapped from the engine's TREND STATE (not the engine's raw English `note`), so the

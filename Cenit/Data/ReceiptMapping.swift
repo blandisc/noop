@@ -64,6 +64,55 @@ enum ReceiptMapping {
         )
     }
 
+    // MARK: - Reconstruct a summary for a REPRINT (saved-tickets grid)
+
+    /// Rebuild a minimal `StrengthSummary` from a stored session so a saved ticket can reprint the full
+    /// receipt. Honest for a reprint: **no PRs** (records aren't re-derived here, so no record tags) and
+    /// no comparison — just the itemized core the ticket needs. `strain`/`avgHr`/`energyKcal` come straight
+    /// from the stored session; the per-exercise lines are grouped from the session's work sets.
+    static func summary(session: StrengthSession, sets: [SetEntry],
+                        exerciseNames: [String: String], routineName: String) -> StrengthSummary {
+        let work = sets.filter { $0.kind == .work && $0.done }
+        let end = session.endTs ?? session.startTs
+        let volume = work.reduce(0.0) { $0 + ($1.weightKg ?? 0) * Double($1.reps ?? 0) }
+
+        var order: [String] = []
+        var byEx: [String: [SetEntry]] = [:]
+        for s in work.sorted(by: { $0.position < $1.position }) {
+            if byEx[s.exerciseId] == nil { order.append(s.exerciseId) }
+            byEx[s.exerciseId, default: []].append(s)
+        }
+        let exercises: [StrengthSummary.ExerciseLine] = order.map { id in
+            let es = byEx[id] ?? []
+            return StrengthSummary.ExerciseLine(
+                name: exerciseNames[id] ?? String(localized: "Exercise"),
+                setCount: es.count,
+                topWeightKg: es.compactMap(\.weightKg).max(),
+                topTimeS: es.compactMap(\.timeS).max().map { Int($0.rounded()) },
+                topDistanceM: es.compactMap(\.distanceM).max(),
+                trend: nil
+            )
+        }
+        return StrengthSummary(
+            routineName: routineName,
+            endTs: end,
+            durationS: max(0, end - session.startTs),
+            volumeKg: volume,
+            setCount: work.count,
+            strain: session.strain,
+            avgHr: session.avgHr,
+            costBand: nil,
+            costTomorrowPct: nil,
+            energyKcal: session.energyKcal,
+            energySource: session.energySource,
+            prs: [],
+            muscles: [],
+            isFirstTime: false,
+            comparison: nil,
+            exercises: exercises
+        )
+    }
+
     // MARK: - Order · date · type
 
     private static func orderNumber(for sessionId: String) -> String {
