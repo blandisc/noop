@@ -105,6 +105,50 @@ final class CircadianEngineTests: XCTestCase {
         XCTAssertEqual(plus1.first?.hour, 4)
     }
 
+    // MARK: - FER-868: hourlyMotionProfile ⟺ activityBins equivalence (the persistable split)
+
+    /// The engine now persists per-day hourly profiles (`act_hNN`) and pools them later; the pooled
+    /// result must be EXACTLY what the monolithic gravity path produces. Fixtures cover empty hours,
+    /// an hour with samples but zero motion, and a tz shift.
+    func testActivityBinsEquivalenceViaHourlyProfiles() {
+        var days: [CircadianEngine.DayGravity] = (0..<10).map {
+            syntheticDay(dayIndex: $0, mesor: 40, amp: 25, acrophase: 14, tzOffsetSeconds: -6 * 3600)
+        }
+        // A sparse day: only hours 2 and 9 observed; hour 2 has samples but ZERO motion.
+        let sparse = [GravitySample(ts: 100 * 86_400 + 2 * 3600, x: 1, y: 1, z: 1),
+                      GravitySample(ts: 100 * 86_400 + 2 * 3600 + 5, x: 1, y: 1, z: 1),
+                      GravitySample(ts: 100 * 86_400 + 9 * 3600, x: 0, y: 0, z: 0),
+                      GravitySample(ts: 100 * 86_400 + 9 * 3600 + 5, x: 7, y: 0, z: 0)]
+        days.append(.init(samples: sparse, tzOffsetSeconds: 0))
+        // A day whose samples straddle a positive-tz midnight (local hour wraps).
+        let wrap = [GravitySample(ts: 200 * 86_400 - 1800, x: 0, y: 0, z: 0),
+                    GravitySample(ts: 200 * 86_400 - 1790, x: 3, y: 0, z: 0)]
+        days.append(.init(samples: wrap, tzOffsetSeconds: 3600))
+        days.append(.init(samples: [], tzOffsetSeconds: 0))   // fully-empty day
+
+        let direct = CircadianEngine.activityBins(days)
+        let viaProfiles = CircadianEngine.activityBins(
+            hourlyProfiles: days.map { CircadianEngine.hourlyMotionProfile($0.samples, tzOffsetSeconds: $0.tzOffsetSeconds) })
+        XCTAssertEqual(direct.bins, viaProfiles.bins)
+        XCTAssertEqual(direct.daysObserved, viaProfiles.daysObserved)
+    }
+
+    func testHourlyMotionProfileSemantics() {
+        // nil = hour unobserved; present 0.0 = observed but still (single sample → zero delta).
+        let s = [GravitySample(ts: 5 * 3600 + 10, x: 1, y: 0, z: 0),          // hour 5: one sample → 0.0
+                 GravitySample(ts: 8 * 3600, x: 0, y: 0, z: 0),
+                 GravitySample(ts: 8 * 3600 + 1, x: 4, y: 3, z: 0)]           // hour 8: delta L2 = 5
+        let p = CircadianEngine.hourlyMotionProfile(s, tzOffsetSeconds: 0)
+        XCTAssertEqual(p.count, 24)
+        XCTAssertNil(p[0])
+        XCTAssertEqual(p[5], 0.0)
+        XCTAssertEqual(p[8]!, 5.0, accuracy: 1e-9)
+        // tz shift relocates the local hour.
+        let shifted = CircadianEngine.hourlyMotionProfile(s, tzOffsetSeconds: 3600)
+        XCTAssertNil(shifted[8])
+        XCTAssertEqual(shifted[9]!, 5.0, accuracy: 1e-9)
+    }
+
     func testActivityBinsEmptyInputIsNoFit() {
         let (bins, days) = CircadianEngine.activityBins([])
         XCTAssertTrue(bins.isEmpty)

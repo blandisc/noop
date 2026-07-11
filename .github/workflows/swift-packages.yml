@@ -32,7 +32,8 @@ jobs:
     #   - WhoopStore:   Compression (RawOutbox.swift) — and its dependents inherit it:
     #   - StrandAnalytics, StrandImport depend on WhoopStore, so they fail to build on
     #     Linux transitively.
-    # Only WhoopProtocol and StrandTraining are pure and build/test cleanly on Linux.
+    #   - StrandTraining: Compression (Exercise.swift — zlib-inflated catalog, FER-875).
+    # Only WhoopProtocol is pure and builds/tests cleanly on Linux.
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -41,7 +42,7 @@ jobs:
           - package: WhoopProtocol
             os: ubuntu-latest
           - package: StrandTraining
-            os: ubuntu-latest
+            os: macos-15
           - package: WhoopStore
             os: macos-15
           - package: StrandAnalytics

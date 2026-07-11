@@ -41,14 +41,14 @@ public enum StepsEstimateEngine {
     // MARK: - Types
 
     /// One calibration day: the strap's motion volume and the phone's measured step count for the SAME day.
-    public struct CalibrationPoint: Equatable {
+    public struct CalibrationPoint: Equatable, Sendable {
         public let motion: Double
         public let steps: Double
         public init(motion: Double, steps: Double) { self.motion = motion; self.steps = steps }
     }
 
     /// The fitted (or manually-set) personal model.
-    public struct Calibration: Equatable {
+    public struct Calibration: Equatable, Sendable {
         /// Steps per unit of motion.
         public let coefficient: Double
         /// How many days fed the auto-fit (0 when purely manual).
@@ -65,7 +65,7 @@ public enum StepsEstimateEngine {
 
     /// A readable read-out of the calibration state, for the steps tile and the Settings section.
     /// Pure value type — the UI renders the localized copy for each case.
-    public enum CalibrationStatus: Equatable {
+    public enum CalibrationStatus: Equatable, Sendable {
         /// A manual `k` is in force (the user set it by hand). `sampleDays` = the auto-fit days that exist
         /// alongside it (informational; the manual value still wins).
         case manual(coefficient: Double, sampleDays: Int)

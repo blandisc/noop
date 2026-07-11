@@ -75,6 +75,25 @@ extension WhoopStore {
         }
     }
 
+    /// Points for MULTIPLE `keys` on days in [from, to] in one read (day then key ascending) —
+    /// the batched sibling of the single-key accessor, so a caller assembling the 24 hourly
+    /// `act_hNN` keys (FER-868) doesn't issue 24 round-trips. Same index as the single-key read.
+    public func metricSeries(deviceId: String, keys: [String], from: String, to: String) async throws -> [MetricPoint] {
+        guard !keys.isEmpty else { return [] }
+        let placeholders = Array(repeating: "?", count: keys.count).joined(separator: ", ")
+        var args: [DatabaseValueConvertible?] = [deviceId]
+        args.append(contentsOf: keys)
+        args.append(contentsOf: [from, to])
+        return try syncRead { db in
+            try Row.fetchAll(db, sql: """
+                SELECT day, key, value FROM metricSeries
+                WHERE deviceId = ? AND key IN (\(placeholders)) AND day >= ? AND day <= ?
+                ORDER BY day ASC, key ASC
+                """, arguments: StatementArguments(args))
+                .map { MetricPoint(day: $0["day"], key: $0["key"], value: $0["value"]) }
+        }
+    }
+
     /// Distinct metric keys present for a device, sorted ascending.
     public func metricKeys(deviceId: String) async throws -> [String] {
         try syncRead { db in
