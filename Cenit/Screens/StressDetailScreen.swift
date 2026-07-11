@@ -5,12 +5,6 @@ import StrandAnalytics
 import WhoopStore
 import Foundation
 
-/// Measured-width key for the 90-day calendar heat grid (handoff v2, FER-832 / FER-860).
-private struct StressCalWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 // MARK: - StressDetailScreen — el «Detalle de Estrés» en «Instrumento» (FER-241 · FER-860)
 //
 // Hermana de `StrainDetailScreen` (FER-859) y `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto
@@ -53,8 +47,6 @@ struct StressDetailScreen: View {
     @State private var patterns: [StressTimeOfDayPatterns.Pattern] = []
     /// Detected cross-day «by calendar-event» patterns (loaded in `.task`). Empty → no line. (FER-388)
     @State private var eventPatterns: [StressEventPatterns.Pattern] = []
-    /// Measured available width for the 90-day calendar, so the heat grid sizes its cells to fill it.
-    @State private var calWidth: CGFloat = 0
     /// The calendar day the user tapped, for the read-out below the grid. (FER-832)
     @State private var selectedStressDay: RecoveryDay? = nil
     /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-860)
@@ -94,14 +86,13 @@ struct StressDetailScreen: View {
                     if parsed.contains(where: { $0.value > 0 }) {
                         seccion(String(localized: "Calendar · 90 days")) { calendarContent }
                     }
-                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
-                    VStack(alignment: .leading, spacing: 10) {
+                    PieMetodo(theme: theme) {
                         metodoBlock(model)
+                    } sello: {
                         OriginStamp(origin: .computed, when: originWhen(model), theme: theme)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.top, 2)
                     }
-                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
                     heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
                         .padding(NoopMetrics.screenPadding)
@@ -123,13 +114,9 @@ struct StressDetailScreen: View {
         }
     }
 
-    /// One skeleton section: a full-bleed `SeccionFranja` + content with handoff padding (14 · 20 · 22).
+    /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
     private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SeccionFranja(title, theme: theme)
-            content()
-                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
-        }
+        SeccionBloque(title, theme: theme, content: content)
     }
 
     // MARK: - 1. Héroe invertido — semáforo a propósito (evaluativo, menos es mejor)
@@ -137,78 +124,40 @@ struct StressDetailScreen: View {
     /// The inverted hero: the ONE field saturated at 100% of the day's band hue. Overline + ⓘ,
     /// 60pt Grotesk numeral (recRise), «/ 3», band-word capsule, two-tone verdict. Text is paper on hue.
     private func heroField(_ model: StressModel) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.stress.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Stress")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
+        HeroInvertido(
+            glyph: .stress,
+            title: "Stress",
+            hue: bandColor(model.band),
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                // Date chip sits above the numeral (same order as the pre-extract layout).
+                VStack(alignment: .leading, spacing: 8) {
+                    if !model.anchorIsToday {
+                        heroDateChip(model.anchorDayKey)
+                    }
+                    HeroNumeral(fmt(model.score), suffix: "/ 3", theme: theme) {
+                        Text(bandWord(model.band))
+                            .font(InstrumentoType.grotesk(13, weight: .semibold))
+                            .foregroundStyle(theme.paper)
+                            .heroCapsule(theme: theme)
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            if !model.anchorIsToday {
-                heroDateChip(model.anchorDayKey)
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(fmt(model.score))
-                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                    .tracking(-2)
+            },
+            verdict: {
+                // Keep `model.explanation` as one localized sentence from StressModel (content source of
+                // truth). Two-tone mock split is secondary to not inventing new copy. (FER-860)
+                Text(verbatim: model.explanation)
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .recRise()
-                Text(verbatim: "/ 3")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                Text(bandWord(model.band))
-                    .font(InstrumentoType.grotesk(13, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            // Keep `model.explanation` as one localized sentence from StressModel (content source of
-            // truth). Two-tone mock split is secondary to not inventing new copy. (FER-860)
-            Text(verbatim: model.explanation)
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundStyle(theme.paper)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(bandColor(model.band))
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the score measures, in plain language (mock copy, English source).
     private var whatWeMeasureCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("What we measure")
-                .font(InstrumentoType.grotesk(13, weight: .semibold))
-                .foregroundStyle(theme.ink)
-            Text(heroExplanation)
-                .font(InstrumentoType.grotesk(12))
-                .lineSpacing(3)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        // Aire estándar antes de la siguiente franja (igual que Recuperación). (FER-878+)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
+        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
     }
 
     /// Flat hero for empty / no-recent states: no inverted field without a number.
@@ -394,14 +343,7 @@ struct StressDetailScreen: View {
     /// Surface card: «LO QUE VEMOS EN TU HISTORIAL» + chip «TENDENCIA, NO CAUSA» + non-causal lines.
     private var observationsCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
-                Text("What we see in your history")
-                    .font(InstrumentoType.grotesk(10, weight: .semibold))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
-                InlineFlagChip("trend, not cause", color: theme.inkTertiary)
-            }
+            QueLaMueveHeader("What we see in your history", chip: "trend, not cause", theme: theme)
             if let p = patterns.first {
                 patternSentence(p)
                     .font(StrandFont.subhead)
@@ -534,9 +476,9 @@ struct StressDetailScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             heatGrid
             heatReadout
-            HeatLegend([(theme.critical, String(localized: "Activated").lowercased()),
+            HeatLegend([(theme.verdict, String(localized: "Low").lowercased()),
                         (theme.warning, String(localized: "Moderate").lowercased()),
-                        (theme.verdict, String(localized: "Calm").lowercased()),
+                        (theme.critical, String(localized: "High").lowercased()),
                         (theme.rangeBand, String(localized: "no data"))], theme: theme)
         }
     }
@@ -565,27 +507,12 @@ struct StressDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        // Celda dimensionada a 14 columnas FIJAS (helper compartido), no al conteo vivo, para que mida lo
-        // mismo en las cuatro pantallas y todos los días (ver YearHeatStrip.rollingCellSize). (FER estable)
-        let spacing: CGFloat = 4
-        let cell = YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing)
-        return YearHeatStrip(
+        Calendario90(
             days: stressHeatCache,
-            cellSize: cell,
-            spacing: spacing,
-            showsScrub: false,
             tint: stressHeatTint,
-            emptyFill: theme.hairline,
-            emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary,
             onSelect: { selectedStressDay = $0 },
-            selectionColor: theme.ink
+            theme: theme
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: StressCalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(StressCalWidthKey.self) { calWidth = $0 }
     }
 
     @ViewBuilder private var heatReadout: some View {

@@ -55,8 +55,6 @@ struct RecoveryDetailScreen: View {
     /// The recovery series with each `day` string parsed to a `Date` exactly ONCE (not per slice / per
     /// render) — the window math reads `date` straight from here. Built in `.task`. (FER-216 lesson)
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
-    /// Measured available width for the calendar, so the heat grid can size its cells to fill it. (FER-225)
-    @State private var calWidth: CGFloat = 0
     /// The calendar day the user tapped, for the read-out below the grid (touch — FER-235).
     @State private var selectedHeatDay: RecoveryDay? = nil
     /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-857)
@@ -112,12 +110,11 @@ struct RecoveryDetailScreen: View {
                         seccion(String(localized: "Trend")) { trendContent }
                     }
                     seccion(String(localized: "Calendar · 90 days")) { calendarContent }
-                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
-                    VStack(alignment: .leading, spacing: 10) {
+                    PieMetodo(theme: theme) {
                         metodoBlock
+                    } sello: {
                         sourceFooter
                     }
-                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else {
                     // Empty (loaded, no calibration, no data): the flat hero's reading says it.
                     heroFlat.padding(NoopMetrics.screenPadding)
@@ -134,14 +131,9 @@ struct RecoveryDetailScreen: View {
         }
     }
 
-    /// One skeleton section: a full-bleed `SeccionFranja` + its content with the handoff's standard
-    /// padding under a franja (14 · 20 · 22). The title arrives already localized.
+    /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
     private func seccion(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SeccionFranja(title, theme: theme)
-            content()
-                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
-        }
+        SeccionBloque(title, theme: theme, content: content)
     }
 
     // MARK: - 1. Héroe invertido — el estado pinta el campo (FER-857)
@@ -150,87 +142,39 @@ struct RecoveryDetailScreen: View {
     /// 60pt Grotesk numeral (recRise), «+N vs tu base» capsule, verdict line. Text is paper on hue.
     private var heroField: some View {
         let score = model.score ?? 0
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.recovery.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Recovery")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text("\(score)")
-                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
-                    .tracking(-2)
-                    .foregroundStyle(theme.paper)
-                    .recRise()
-                Text(verbatim: "/100")
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                if let base = baseValue {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(verbatim: (score - base) >= 0 ? "+\(score - base)" : "\(score - base)")
-                            .font(InstrumentoType.groteskNumber(13, weight: .semibold))
-                            .foregroundStyle(theme.paper)
-                        Text("vs your base")
-                            .font(InstrumentoType.grotesk(11))
-                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+        return HeroInvertido(
+            glyph: .recovery,
+            title: "Recovery",
+            hue: bandColor,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                HeroNumeral("\(score)", suffix: "/100", theme: theme) {
+                    if let base = baseValue {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text(verbatim: (score - base) >= 0 ? "+\(score - base)" : "\(score - base)")
+                                .font(InstrumentoType.groteskNumber(13, weight: .semibold))
+                                .foregroundStyle(theme.paper)
+                            Text("vs your base")
+                                .font(InstrumentoType.grotesk(11))
+                                .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                        }
+                        .heroCapsule(theme: theme)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(theme.paper.opacity(OnFieldOpacity.capsule), in: Capsule())
                 }
+            },
+            verdict: {
+                HeroVeredictoBicolor(word: heroVerdictWord, clause: heroVerdictClause, theme: theme)
+            },
+            trailing: {
+                if model.isEstimated { estimatedNoteOnField }
             }
-            (Text(heroVerdictWord)
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundColor(theme.paper)
-             + Text(verbatim: " · ")
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
-             + Text(heroVerdictClause)
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary)))
-                .fixedSize(horizontal: false, vertical: true)
-            if model.isEstimated { estimatedNoteOnField }
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(bandColor)
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the score measures, in plain language.
     private var whatWeMeasureCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("What we measure")
-                .font(InstrumentoType.grotesk(13, weight: .semibold))
-                .foregroundStyle(theme.ink)
-            Text(heroExplanation)
-                .font(InstrumentoType.grotesk(12))
-                .lineSpacing(3)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        // Deja aire antes de la franja «Hoy, vs tu normal» (antes 0 → la franja quedaba pegada). (FER-878+)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
+        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
     }
 
     /// The flat hero for score-less states (loading / calibrating / empty / offline-with-history):
@@ -996,29 +940,12 @@ struct RecoveryDetailScreen: View {
     /// The 90-day heat strip, sized to fill the available width: measure the content width once, then
     /// pick a cell size so the week columns span it (re-tinted to warm paper). (FER-225)
     private var heatGrid: some View {
-        // Dimensiona la celda a un número FIJO de columnas (14, el máximo de una ventana de 90 días), no al
-        // conteo vivo: así la celda mide LO MISMO en las cuatro pantallas y todos los días. Dimensionar al
-        // `weekColumns` vivo hacía que la celda oscilara 13↔14 columnas (≈19.3↔21.1pt) según en qué día de
-        // la semana arranca la ventana → se leía como "los calendarios son de distinto tamaño". (FER estable)
-        let spacing: CGFloat = 4
-        let cell = YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing)
-        return YearHeatStrip(
+        Calendario90(
             days: model.heat,
-            cellSize: cell,
-            spacing: spacing,
-            showsScrub: false,
             tint: heatTint,
-            emptyFill: theme.hairline,
-            emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary,
             onSelect: { selectedHeatDay = $0 },
-            selectionColor: theme.ink
+            theme: theme
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: CalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(CalWidthKey.self) { calWidth = $0 }
     }
 
     /// The cell tint in «Instrumento» colors: the same three band roles the hero uses (green/amber/red),
@@ -1102,13 +1029,6 @@ struct RecoveryDetailScreen: View {
         f.setLocalizedDateFormatFromTemplate("EEEdMMM")
         return f
     }()
-}
-
-// MARK: - Width preference (size the calendar to fill the content width)
-
-private struct CalWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 // MARK: - Sheet item

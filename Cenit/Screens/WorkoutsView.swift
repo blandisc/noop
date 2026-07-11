@@ -13,8 +13,12 @@ import Foundation
 // PUSHEA `WorkoutDetailScreen` (sin stack anidado, FER-171). El CRUD completo vive en el menú ••• del
 // detalle (reemplaza el `contextMenu` de escritorio, invisible en iPhone). Reusa `Repository` tal cual.
 //
-// Destilado a: héroe (conteo) · filtro de rango (+ auto-ampliación) · apoyos (tiempo/más frecuente) ·
-// «Por deporte» (lista quieta) · «Sesiones» (filas tap-eables). La barra de zonas agregada se movió al
+// Esqueleto Final (misma forma que `MetricDetailScreen.narrativeBodyFinal` / `SkinTempDetailScreen`):
+// HeroInvertido → range control on paper → SeccionBloque tiles / By sport / Sessions → PieMetodo.
+// Full-bleed (franjas edge-to-edge). Math and windowing are preserved; this is a reskin.
+//
+// Destilado a: héroe (conteo) · filtro de rango (+ auto-ampliación) · apoyos (horas/kcal) ·
+// «Por deporte» (lista quieta) · «Sesiones» (tarjetas tap-eables). La barra de zonas agregada se movió al
 // detalle de cada sesión (donde sí informa). Estados: cargando · vacío (onboarding) · con datos.
 
 struct WorkoutsView: View {
@@ -84,7 +88,7 @@ struct WorkoutsView: View {
         .onAppear { if loaded { range = defaultRange(for: allRows) } }
     }
 
-    // MARK: - Populated
+    // MARK: - Populated (Final skeleton)
 
     private var populated: some View {
         // Compute the windowed rows + per-sport groups ONCE per body (SwiftUI re-runs body on every
@@ -93,48 +97,56 @@ struct WorkoutsView: View {
         let windowRows = sessions(for: resolved)
         let groups = sportGroups(from: windowRows)
         return ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                heroBlock(rows: windowRows, effectiveRange: resolved)
-                supportsRow(rows: windowRows, groups: groups)
-                bySportSection(groups: groups)
-                sessionsSection(rows: windowRows)
-                healthHint
-                // Standardized origin seal (FER-805): the most recent session's source + when.
-                if let latest = allRows.max(by: { $0.startTs < $1.startTs }) {
-                    OriginStamp(origin: latest.source.lowercased().contains("apple") ? .apple : .computed,
-                                when: relativeAgo(Double(latest.startTs)), theme: theme)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 0) {
+                heroFinal(rows: windowRows, effectiveRange: resolved)
+                // Segmented range control lives on paper BELOW the inverted hero: HeroInvertido has no
+                // slot for an interactive @State binding control (same pattern as streak chip on SkinTemp).
+                SegmentedPillControl(Range.allCases, selection: $range, theme: theme) { $0.label }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+                    .padding(.bottom, 4)
+                totalsSection(rows: windowRows, effectiveRange: resolved)
+                // FER: no volumeByWeek / weeklyVolume series on WorkoutRow/Repository — section deferred.
+                SeccionBloque(String(localized: "By sport"), theme: theme) {
+                    bySportSection(groups: groups)
                 }
+                SeccionBloque(String(localized: "Sessions"),
+                              pista: "\(windowRows.count)",
+                              theme: theme) {
+                    sessionsSection(rows: windowRows)
+                }
+                healthHint
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                pieMetodoFinal
             }
-            .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    // MARK: - Hero (sessions in the period) + range control
+    // MARK: - Hero Final (HeroInvertido · dataStrain · session count)
 
-    private func heroBlock(rows: [WorkoutRow], effectiveRange: Range) -> some View {
+    private func heroFinal(rows: [WorkoutRow], effectiveRange: Range) -> some View {
         let fellBack = effectiveRange != range
         let n = rows.count
-        return VStack(alignment: .leading, spacing: 12) {
-            // Serif in-screen headline — the «Instrumento» detail-screen identity (FER-598), matching the
-            // sibling detail sheets. No ⓘ: this is a log, not a metric to explain. Replaces the old
-            // `navigationTitle("Workouts")` in the bar so the title isn't duplicated.
-            InstrumentoScreenTitle("My workouts", theme: theme, glyph: .workouts)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(verbatim: effectiveRange.caption).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("\(n)").instrumentoHero(64).foregroundStyle(theme.dataStrain)
-                    Text(n == 1 ? "session" : "sessions").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
-                }
-                .accessibilityElement(children: .combine)
+        return HeroInvertido(
+            glyph: .workouts,
+            title: "My workouts",
+            hue: theme.dataStrain,
+            theme: theme,
+            numeral: {
+                HeroNumeral("\(n)",
+                            suffix: n == 1 ? String(localized: "session") : String(localized: "sessions"),
+                            size: 60,
+                            theme: theme)
+            },
+            verdict: {
+                Text(rangeCaption(count: n, effectiveRange: effectiveRange, fellBack: fellBack))
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
+                    .foregroundStyle(fellBack ? theme.warning : theme.paper)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            SegmentedPillControl(Range.allCases, selection: $range, theme: theme) { $0.label }
-            Text(rangeCaption(count: n, effectiveRange: effectiveRange, fellBack: fellBack))
-                .font(StrandFont.footnote)
-                .foregroundStyle(fellBack ? theme.warning : theme.inkTertiary)
-        }
+        )
     }
 
     private func rangeCaption(count: Int, effectiveRange: Range, fellBack: Bool) -> String {
@@ -146,32 +158,46 @@ struct WorkoutsView: View {
         return "\(countUnit) · \(effectiveRange.caption)"
     }
 
-    // MARK: - Supports (active time · most frequent) — quiet, ink, hairline-separated
+    // MARK: - Totals (hours · volume placeholder · kcal) — TileSurface strip
 
-    private func supportsRow(rows: [WorkoutRow], groups: [SportGroup]) -> some View {
+    /// Window totals for the selected (effective) range. Replaces the old `supportsRow` pair; volume kg
+    /// is not on `WorkoutRow` so that tile stays a documented placeholder.
+    private func totalsSection(rows: [WorkoutRow], effectiveRange: Range) -> some View {
         let totalTimeH = rows.compactMap(\.durationS).reduce(0, +) / 3600.0
-        let modal = groups.first
-        return VStack(alignment: .leading, spacing: 16) {
-            Rectangle().fill(theme.hairline).frame(height: 1)
-            HStack(alignment: .top, spacing: 48) {
-                support("Active time", oneDecimal(totalTimeH) + "h")
-                if let modal { support("Most frequent", WorkoutSource.displaySport(modal.sport)) }
+        let kcalValues = rows.compactMap(\.energyKcal)
+        let totalKcal: String = {
+            guard !kcalValues.isEmpty else { return "—" }
+            return "\(Int(kcalValues.reduce(0, +).rounded()))"
+        }()
+        return SeccionBloque(String(localized: "This period"),
+                             pista: effectiveRange.caption,
+                             theme: theme) {
+            HStack(alignment: .top, spacing: 8) {
+                TileSurface(
+                    label: String(localized: "Hours"),
+                    value: oneDecimal(totalTimeH) + "h",
+                    theme: theme
+                )
+                // FER: no existe dato de volumen en WorkoutRow — placeholder
+                TileSurface(
+                    label: String(localized: "Volume"),
+                    value: "—",
+                    caption: String(localized: "kg"),
+                    theme: theme
+                )
+                TileSurface(
+                    label: String(localized: "Kcal"),
+                    value: totalKcal,
+                    theme: theme
+                )
             }
         }
     }
 
-    private func support(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.number(17)).foregroundStyle(theme.ink).lineLimit(1)
-        }
-    }
-
-    // MARK: - By sport (quiet list — no card-in-card)
+    // MARK: - By sport (quiet list — no card-in-card; markup preserved inside SeccionBloque)
 
     private func bySportSection(groups: [SportGroup]) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("By sport").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.bottom, 6)
             ForEach(Array(groups.enumerated()), id: \.element.id) { idx, g in
                 HStack(spacing: 12) {
                     Image(systemName: WorkoutSource.sfSymbol(for: g.sport))
@@ -192,62 +218,86 @@ struct WorkoutsView: View {
         }
     }
 
-    // MARK: - Sessions (tappable rows → detail)
+    // MARK: - Sessions (TarjetaSesion A → detail)
 
     private func sessionsSection(rows: [WorkoutRow]) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text("Sessions").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer()
-                Text("\(rows.count)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.bottom, 6)
-            ForEach(Array(rows.enumerated()), id: \.offset) { idx, row in
-                NavigationLink(value: row) { sessionRow(row) }
-                    .buttonStyle(.plain)
-                if idx != rows.count - 1 {
-                    Rectangle().fill(theme.hairline).frame(height: 1)
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                NavigationLink(value: row) {
+                    sessionCard(row)
                 }
+                .buttonStyle(.plain)
             }
         }
     }
 
-    private func sessionRow(_ row: WorkoutRow) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Image(systemName: WorkoutSource.sfSymbol(for: row.sport))
-                        .font(StrandFont.glyph(.chevron, weight: .medium)).foregroundStyle(theme.inkSecondary)
-                    Text(WorkoutSource.displaySport(row.sport)).font(StrandFont.body).foregroundStyle(theme.ink)
-                        .lineLimit(1)
-                }
-                Text("\(WorkoutFormat.date(row.startTs)) · \(WorkoutFormat.time(row.startTs))")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 4) {
-                sessionDatum(row)
-                workoutSourceBadge(for: row.source, theme: theme)
-            }
+    /// Variant-A session card. Volume column omitted: WorkoutRow has no kg load field (see totals tile).
+    /// Colored `workoutSourceBadge` does not map 1:1 onto TarjetaSesion chrome; source label goes in `chip`.
+    private func sessionCard(_ row: WorkoutRow) -> some View {
+        let duration = WorkoutFormat.duration(row.durationS ?? Double(max(0, row.endTs - row.startTs)))
+        var metrics: [TarjetaSesion.Metric] = [
+            .init(value: duration, label: String(localized: "Duration"))
+        ]
+        // FER: volumen omitido en la tarjeta — no hay campo de carga kg en WorkoutRow; un hueco por fila es peor.
+        if let s = row.strain, s > 0 {
+            metrics.append(.init(
+                value: String(format: "%.1f", s),
+                label: String(localized: "Effort"),
+                color: theme.dataStrain
+            ))
+        } else if let hr = row.avgHr {
+            metrics.append(.init(
+                value: "\(hr)",
+                unit: "bpm",
+                label: String(localized: "Avg HR"),
+                color: theme.dataStrain
+            ))
         }
-        .padding(.vertical, 11)
+        return TarjetaSesion(
+            titulo: WorkoutSource.displaySport(row.sport),
+            meta: "\(WorkoutFormat.date(row.startTs)) · \(WorkoutFormat.time(row.startTs))",
+            chip: sourceChipKey(for: row.source),
+            metrics: metrics,
+            theme: theme
+        )
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 
-    /// The per-session protagonist on the right: effort if the session carries it, else avg HR, else
-    /// duration. Effort/HR read in the ember effort hue; duration stays ink (not a saturated datum).
-    @ViewBuilder private func sessionDatum(_ row: WorkoutRow) -> some View {
-        if let s = row.strain, s > 0 {
-            Text(String(format: "%.1f", s)).font(StrandFont.number(17)).foregroundStyle(theme.dataStrain)
-        } else if let hr = row.avgHr {
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text("\(hr)").font(StrandFont.number(17)).foregroundStyle(theme.dataStrain)
-                Text("bpm").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+    /// Plain source label for `TarjetaSesion.chip` (same taxonomy as `workoutSourceBadge`, without tint).
+    private func sourceChipKey(for source: String) -> LocalizedStringKey {
+        switch WorkoutSource.classify(source) {
+        case .whoop:    return "Whoop"
+        case .apple:    return "Apple"
+        case .detected: return "Detected"
+        case .manual:   return "Manual"
+        }
+    }
+
+    // MARK: - PieMetodo (method + origin seal)
+
+    @ViewBuilder private var pieMetodoFinal: some View {
+        PieMetodo(theme: theme) {
+            Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty).")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-        } else {
-            Text(WorkoutFormat.duration(row.durationS ?? Double(max(0, row.endTs - row.startTs))))
-                .font(StrandFont.number(17)).foregroundStyle(theme.ink)
+        } sello: {
+            // Standardized origin seal (FER-805): the most recent session's source + when.
+            if let latest = allRows.max(by: { $0.startTs < $1.startTs }) {
+                OriginStamp(origin: latest.source.lowercased().contains("apple") ? .apple : .computed,
+                            when: relativeAgo(Double(latest.startTs)), theme: theme)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
+            }
         }
     }
 

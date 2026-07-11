@@ -5,19 +5,18 @@ import StrandAnalytics
 
 // MARK: - BodyAgeSheet — the «Edad corporal» longevity detail (FER-145)
 //
-// The light «Instrumento diurno» detail for `VitalityEngine`: Body Age (years) is the hero, tinted by
-// the SIGN of the delta (younger → green, at-your-age → ink, older → amber, far-older → red), the
-// same hue the Cuerpo row uses. The reading is a RANGE (`BodyAgeBand`, ±5), not a point. Vitality
+// The light «Instrumento diurno» detail for `VitalityEngine`: Body Age (years) is the hero via
+// HeroInvertido (longevity green), with an always-on ESTIMATE capsule; partial-estimate nuance
+// moves into the hero reading. The reading is a RANGE (`BodyAgeBand`, ±5), not a point. Vitality
 // 0–100 rides underneath as a quiet context strip — the SAME measure in another scale, never a second
-// hero or a toggle (a segmented control would re-materialise the "two ages?" confusion). The breakdown
-// is `ContributionBars` ("what's moving it"). A differentiator names how this isn't the cardio-only
-// Physical Age (FER-141), and two hard disclaimers keep it non-clinical.
+// hero. Breakdown is `ContributionBars` inside SeccionBloque «What's moving it». PieMetodo carries
+// the non-clinical disclaimer + computed origin seal.
 //
-// A sibling of `ActivityRecoverySheet` / `MetricInfoSheet` (same warm paper, header, surface blocks,
-// disclaimer) — not a `MetricInfo` case nor the vitals `MetricDetailScreen`, because its body is a
-// band + diverging bars, not a series chart. The theme is passed explicitly (it does NOT cross the
-// `.sheet` environment boundary). With no result yet (< 3 signals) it shows an honest checklist of
-// what it's built from instead of a fabricated number.
+// Esqueleto Final (misma forma que `MetricDetailScreen.narrativeBodyFinal` / `SkinTempDetailScreen`):
+// HeroInvertido → SeccionBloque… → PieMetodo. Full-bleed. Theme is passed explicitly (it does NOT
+// cross the `.sheet` environment boundary). Math and copy are preserved; this is a reskin. With no
+// result yet (< 3 signals) it shows an honest checklist of what it's built from instead of a
+// fabricated number.
 
 struct BodyAgeSheet: View {
     /// The computed Body Age + Vitality, or nil when fewer than `minFactors` signals are present.
@@ -27,27 +26,18 @@ struct BodyAgeSheet: View {
     /// The active «Instrumento diurno» theme, passed explicitly (doesn't cross the `.sheet` boundary).
     var theme: InstrumentoTheme = .base
 
+    /// Longevity green for the inverted hero field (`#2E7D57`).
+    private var longevityHue: Color { theme.dataRejuvenates }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                // Serif title, with a «Partial estimate» flag when a heaviest factor (HRV/RHR) is
-                // missing — mirrors Physical age's `Estimate` chip (FER-643). Same warm-amber role.
-                // §8.7 header (FER-805): metric icon + ALL-CAPS overline instead of serif.
-                HStack(alignment: .center, spacing: 7) {
-                    MetricOverline(.bodyAge, "Body age", theme: theme)
-                    if result?.isPartialEstimate == true {
-                        InlineFlagChip("Partial estimate", color: theme.warning)
-                    }
-                }
+            VStack(alignment: .leading, spacing: 0) {
                 if let r = result {
                     withData(r)
-                    // Standardized origin seal (FER-805): body age is computed on-device.
-                    OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
-                } else { emptyState }
+                } else {
+                    emptyState
+                }
             }
-            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
@@ -56,102 +46,166 @@ struct BodyAgeSheet: View {
         .sheetPaper(theme)
     }
 
-    // MARK: - With data
+    // MARK: - With data (Final skeleton)
 
     @ViewBuilder
     private func withData(_ r: VitalityEngine.Result) -> some View {
-        let tint = Self.tint(forDelta: r.deltaYears, theme: theme)
+        heroFinal(r)
+
+        SeccionBloque(String(localized: "Your band"), theme: theme) {
+            bandFinalContent(r)
+        }
+
+        SeccionBloque(String(localized: "What's moving it"), theme: theme) {
+            movesFinalContent(r)
+        }
+
+        pieMetodoFinal
+    }
+
+    // MARK: - Hero Final (HeroInvertido · dataRejuvenates · always-on Estimate capsule)
+
+    private func heroFinal(_ r: VitalityEngine.Result) -> some View {
         let bodyAge = Int(r.bodyAge.rounded())
+        return HeroInvertido(
+            glyph: .bodyAge,
+            title: "Body age",
+            hue: longevityHue,
+            theme: theme,
+            numeral: {
+                HeroNumeral("\(bodyAge)", suffix: String(localized: "years"), size: 60, theme: theme) {
+                    Text("Estimate")
+                        .font(InstrumentoType.grotesk(11, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .heroCapsule(theme: theme)
+                }
+            },
+            verdict: {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(deltaSentence(r))
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
+                    // Partial nuance lives in the hero reading (was a separate chip + caption).
+                    if r.isPartialEstimate {
+                        Text(Self.partialCaveat(r))
+                            .font(InstrumentoType.grotesk(14))
+                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        )
+    }
 
-        // Hero — the one dominant number, coloured by the sign of the delta.
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("\(bodyAge)").instrumentoHero(64).foregroundStyle(tint)
-            Text("years").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+    // MARK: - Your band (BodyAgeBand + vitality context)
+
+    private func bandFinalContent(_ r: VitalityEngine.Result) -> some View {
+        let tint = Self.tint(forDelta: r.deltaYears, theme: theme)
+        return VStack(alignment: .leading, spacing: 10) {
+            BodyAgeBand(bodyAge: r.bodyAge, chronoAge: r.chronoAge, bandYears: r.bandYears, color: tint,
+                        youLabel: String(localized: "you"),
+                        accessibilityLabelText: String(localized: "Body age"),
+                        accessibilityValueText: Self.bandAccessibility(r))
+            Text("The band, not the exact point, is the reading.")
+                .font(StrandFont.caption).italic().foregroundStyle(theme.inkTertiary)
+
+            // Vitality — the same measure on a 0–100 scale (quiet, in ink, never a second hero).
+            HStack(spacing: 8) {
+                Text("The same measure, 0–100:").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("\(Int(r.vitality.rounded()))").font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
+                Text("· 50 = typical").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+            .accessibilityElement(children: .combine)
         }
-        Text(deltaSentence(r)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            .fixedSize(horizontal: false, vertical: true)
+    }
 
-        // Honest confidence when a heaviest factor is absent (FER-643) — the band and number are
-        // unchanged, we just name what it's leaning without.
-        if r.isPartialEstimate {
-            Text(Self.partialCaveat(r)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    // MARK: - What's moving it (QueLaMueveHeader + ContributionBars + differentiator)
 
-        // The reading is the band, not the point.
-        BodyAgeBand(bodyAge: r.bodyAge, chronoAge: r.chronoAge, bandYears: r.bandYears, color: tint,
-                    youLabel: String(localized: "you"),
-                    accessibilityLabelText: String(localized: "Body age"),
-                    accessibilityValueText: Self.bandAccessibility(r))
-            .padding(.top, 2)
-        Text("The band, not the exact point, is the reading.")
-            .font(StrandFont.caption).italic().foregroundStyle(theme.inkTertiary)
-
-        // Vitality — the same measure on a 0–100 scale (quiet, in ink, never a second hero).
-        HStack(spacing: 8) {
-            Text("The same measure, 0–100:").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-            Text("\(Int(r.vitality.rounded()))").font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-            Text("· 50 = typical").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-        .accessibilityElement(children: .combine)
-
-        Divider().overlay(theme.hairline).padding(.vertical, 2)
-
-        // What's moving it — the diverging contribution breakdown.
+    private func movesFinalContent(_ r: VitalityEngine.Result) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("What's moving it").font(StrandFont.headline).foregroundStyle(theme.ink)
+            QueLaMueveHeader("What's moving it", chip: "trend, not cause", theme: theme)
             ContributionBars(items: Self.bars(r.contributions),
                              leftPole: String(localized: "← rejuvenates you"),
                              rightPole: String(localized: "ages you →"))
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
 
-        // Differentiator vs the cardio-only Physical Age (FER-141).
-        VStack(alignment: .leading, spacing: 4) {
-            Text("This isn't your Physical age").font(StrandFont.subhead).foregroundStyle(theme.ink)
-            Text("Physical age measures only the cardiorespiratory side. This one also weighs sleep, regularity, HRV and steps: so the two can differ.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            // Differentiator vs the cardio-only Physical Age (FER-141) — verbatim, wrapped as-is.
+            VStack(alignment: .leading, spacing: 4) {
+                Text("This isn't your Physical age").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Text("Physical age measures only the cardiorespiratory side. This one also weighs sleep, regularity, HRV and steps: so the two can differ.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+    }
 
-        disclaimers
+    // MARK: - PieMetodo (disclaimer + computed origin seal)
+
+    @ViewBuilder private var pieMetodoFinal: some View {
+        PieMetodo(theme: theme) {
+            Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+                Text("A wellness comparison, not a biological age or a clinical diagnosis. HRV is estimated from nighttime PPG; the reference norm is conservative.")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } sello: {
+            OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 2)
+        }
     }
 
     // MARK: - Empty (fewer than 3 signals)
 
     private var emptyState: some View {
         let present = presentFactors
-        return VStack(alignment: .leading, spacing: 18) {
-            Text("—").instrumentoHero(64).foregroundStyle(theme.inkSecondary)
-            Text("I need at least 3 signals to work this out without guessing. You have \(present.count).")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text("What it's built from").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.bottom, 8)
-                ForEach(Array(Self.factorChecklist.enumerated()), id: \.offset) { i, f in
-                    if i > 0 { Divider().overlay(theme.hairline) }
-                    checklistRow(f, ready: present.contains(f.key))
+        return VStack(alignment: .leading, spacing: 0) {
+            HeroInvertido(
+                glyph: .bodyAge,
+                title: "Body age",
+                hue: longevityHue,
+                theme: theme,
+                numeral: {
+                    Text(verbatim: "—")
+                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                },
+                verdict: {
+                    Text("I need at least 3 signals to work this out without guessing. You have \(present.count).")
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+            )
 
-            Text("Keep wearing the band a few nights and it appears on its own: we don't show a half-finished number.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            disclaimers
+            SeccionBloque(String(localized: "What it's built from"), theme: theme) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(Self.factorChecklist.enumerated()), id: \.offset) { i, f in
+                        if i > 0 { Divider().overlay(theme.hairline) }
+                        checklistRow(f, ready: present.contains(f.key))
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+
+                Text("Keep wearing the band a few nights and it appears on its own: we don't show a half-finished number.")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
+            }
+
+            pieMetodoFinal
         }
     }
 
@@ -167,13 +221,6 @@ struct BodyAgeSheet: View {
         }
         .padding(.vertical, 9)
         .accessibilityElement(children: .combine)
-    }
-
-    private var disclaimers: some View {
-        Text("A wellness comparison, not a biological age or a clinical diagnosis. HRV is estimated from nighttime PPG; the reference norm is conservative.")
-            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 2)
     }
 
     // MARK: - Copy helpers

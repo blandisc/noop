@@ -6,12 +6,6 @@ import WhoopStore
 import WhoopProtocol
 import Foundation
 
-/// Measured-width key for the 90-night calendar heat grid (FER-830).
-private struct SleepCalWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 // MARK: - SleepDetailScreen — el «Detalle de Sueño» en esqueleto «Tendencias Final» (FER-858)
 //
 // Hermana de `RecoveryDetailScreen` (FER-857): el mismo andamiaje del handoff «Detalle de
@@ -52,8 +46,7 @@ struct SleepDetailScreen: View {
     /// The 90-night heat grid, built ONCE in `.task` (90 `DateFormatter` passes) instead of on every
     /// body eval — the recompute was jank on open. (FER-878+)
     @State private var sleepHeatCache: [RecoveryDay] = []
-    /// Measured width so the 90-night heat grid fills it; the tapped night for the read-out. (FER-830)
-    @State private var calWidth: CGFloat = 0
+    /// The tapped night for the calendar read-out. (FER-830)
     @State private var selectedSleepNight: RecoveryDay? = nil
     /// The nocturnal HR-fall shape — loaded async; `nil` until loaded or when unreadable. (FER-832)
     @State private var nightShape: NightAutonomicShape.Result? = nil
@@ -94,12 +87,11 @@ struct SleepDetailScreen: View {
                     if durationParsed.contains(where: { $0.value > 0 }) {
                         seccion(String(localized: "Calendar · 90 nights")) { calendarContent }
                     }
-                    Rectangle().fill(theme.hairline).frame(height: 1).padding(.horizontal, 20)
-                    VStack(alignment: .leading, spacing: 10) {
+                    PieMetodo(theme: theme) {
                         metodoBlock
+                    } sello: {
                         sourceFooter
                     }
-                    .padding(EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20))
                 } else if !model.loaded {
                     Group {
                         heroFlat
@@ -136,133 +128,105 @@ struct SleepDetailScreen: View {
         }
     }
 
-    /// One skeleton section: full-bleed `SeccionFranja` + content with handoff padding (14 · 20 · 22).
+    /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
     private func seccion(_ title: String, pista: String? = nil,
                          @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SeccionFranja(title, pista: pista, theme: theme)
-            content()
-                .padding(EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20))
-        }
+        SeccionBloque(title, pista: pista, theme: theme, content: content)
     }
 
     // MARK: - 1. Héroe invertido — hue fijo `dataSleep` (no semáforo)
 
     /// Inverted hero: the ONE field at 100% indigo. Double datum (hours | regularity) + two-level verdict.
     private func heroField(_ night: SleepDetailModel.Night) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: MetricGlyph.sleep.sfSymbol)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.paper)
-                    .frame(width: 14, height: 14)
-                    .accessibilityHidden(true)
-                Text("Sleep")
-                    .font(InstrumentoType.grotesk(12, weight: .bold))
-                    .tracking(2.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.paper)
-                Spacer()
-                Button {
-                    withAnimation(StrandMotion.interactive) { infoOpen.toggle() }
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(StrandFont.glyph(.chevron, weight: .regular))
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("What we measure")
-            }
-            HStack(alignment: .center, spacing: 0) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(hoursOnly(night.stages.asleep))
-                        .font(InstrumentoType.groteskNumber(44, weight: .bold))
-                        .tracking(-1.2)
-                        .foregroundStyle(theme.paper)
-                        .monospacedDigit()
-                        .recRise()
-                    Text("hours")
-                        .font(InstrumentoType.grotesk(10, weight: .semibold))
-                        .tracking(1.2)
-                        .textCase(.uppercase)
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Rectangle()
-                    .fill(theme.paper.opacity(0.28))  // token-exempt: divisor sutil del héroe
-                    .frame(width: 1, height: 52)
-                VStack(alignment: .leading, spacing: 4) {
-                    if let r = model.regularity {
-                        HStack(alignment: .firstTextBaseline, spacing: 2) {
-                            Text("\(r.score)")
-                                .font(InstrumentoType.groteskNumber(44, weight: .bold))
-                                .tracking(-1.2)
-                                .foregroundStyle(theme.paper)
-                                .monospacedDigit()
-                                .recRise(second: true)
-                            Text(verbatim: "/100")
-                                .font(InstrumentoType.grotesk(13))
-                                .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                        }
-                    } else {
-                        Text(verbatim: "—")
+        HeroInvertido(
+            glyph: .sleep,
+            title: "Sleep",
+            hue: theme.dataSleep,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                // Dual 44pt datum (hours | regularity). Not HeroNumeral: compound layout.
+                HStack(alignment: .center, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(hoursOnly(night.stages.asleep))
                             .font(InstrumentoType.groteskNumber(44, weight: .bold))
+                            .tracking(-1.2)
+                            .foregroundStyle(theme.paper)
+                            .monospacedDigit()
+                            .recRise()
+                        Text("hours")
+                            .font(InstrumentoType.grotesk(10, weight: .semibold))
+                            .tracking(1.2)
+                            .textCase(.uppercase)
                             .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-                            .recRise(second: true)
                     }
-                    Text("regularity")
-                        .font(InstrumentoType.grotesk(10, weight: .semibold))
-                        .tracking(1.2)
-                        .textCase(.uppercase)
-                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Rectangle()
+                        .fill(theme.paper.opacity(0.28))
+                        .frame(width: 1, height: 52)
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let r = model.regularity {
+                            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                                Text("\(r.score)")
+                                    .font(InstrumentoType.groteskNumber(44, weight: .bold))
+                                    .tracking(-1.2)
+                                    .foregroundStyle(theme.paper)
+                                    .monospacedDigit()
+                                    .recRise(second: true)
+                                Text(verbatim: "/100")
+                                    .font(InstrumentoType.grotesk(13))
+                                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                            }
+                        } else {
+                            Text(verbatim: "—")
+                                .font(InstrumentoType.groteskNumber(44, weight: .bold))
+                                .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                                .recRise(second: true)
+                        }
+                        Text("regularity")
+                            .font(InstrumentoType.grotesk(10, weight: .semibold))
+                            .tracking(1.2)
+                            .textCase(.uppercase)
+                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 16)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 16)
-            }
-            (Text(verbatim: heroVerdictTitle(night))
-                .font(InstrumentoType.grotesk(15, weight: .semibold))
-                .foregroundColor(theme.paper)
-             + Text(verbatim: " · ")
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
-             + Text(verbatim: heroVerdictClause(night))
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary)))
-                .fixedSize(horizontal: false, vertical: true)
-            if model.excludedNapCount > 0 {
-                Text(napNotice)
-                    .font(InstrumentoType.grotesk(11))
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+            },
+            verdict: {
+                // Dynamic String (already localized via String(localized:)); HeroVeredictoBicolor
+                // takes LocalizedStringKey and would re-key lookup. Keep verbatim markup.
+                (Text(verbatim: heroVerdictTitle(night))
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
+                    .foregroundColor(theme.paper)
+                 + Text(verbatim: " · ")
+                    .font(InstrumentoType.grotesk(14))
+                    .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary))
+                 + Text(verbatim: heroVerdictClause(night))
+                    .font(InstrumentoType.grotesk(14))
+                    .foregroundColor(theme.paper.opacity(OnFieldOpacity.secondary)))
                     .fixedSize(horizontal: false, vertical: true)
+            },
+            trailing: {
+                VStack(alignment: .leading, spacing: 8) {
+                    if model.excludedNapCount > 0 {
+                        Text(napNotice)
+                            .font(InstrumentoType.grotesk(11))
+                            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let tier = model.confidence {
+                        tier.sello(theme: theme, onField: true)
+                            .padding(.top, 2)
+                    }
+                }
             }
-            if let tier = model.confidence {
-                tier.sello(theme: theme, onField: true)
-                    .padding(.top, 2)
-            }
-        }
-        .padding(EdgeInsets(top: 18, leading: 20, bottom: 22, trailing: 20))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.dataSleep)
-        .accessibilityElement(children: .combine)
+        )
     }
 
     /// The ⓘ card under the hero: what the score measures, in plain language (mock FER-858).
     private var whatWeMeasureCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("What we measure")
-                .font(InstrumentoType.grotesk(13, weight: .semibold))
-                .foregroundStyle(theme.ink)
-            Text(heroExplanation)
-                .font(InstrumentoType.grotesk(12))
-                .lineSpacing(3)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        // Aire estándar antes de la siguiente franja (igual que Recuperación). (FER-878+)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: 14, trailing: 20))
+        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
     }
 
     /// Flat hero for empty / loading: no inverted field without a night.
@@ -351,7 +315,15 @@ struct SleepDetailScreen: View {
                           height: 176,
                           showsStageAxis: true,
                           showsScrub: true,
-                          nightStart: night.onsetDate)
+                          nightStart: night.onsetDate,
+                          stageColor: { stage in
+                              switch stage {
+                              case .awake: return theme.dataSleepAwake
+                              case .rem:   return theme.dataSleepLight
+                              case .light: return theme.dataSleepLightest
+                              case .deep:  return theme.dataSleepDeep
+                              }
+                          })
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .instrumentoCard(.card, theme: theme)
@@ -440,7 +412,7 @@ struct SleepDetailScreen: View {
         switch stage {
         case .deep:  return theme.dataSleepDeep
         case .light: return theme.dataSleepLightest
-        case .rem:   return theme.dataSleep
+        case .rem:   return theme.dataSleepLight
         case .awake: return theme.dataSleepAwake
         }
     }
@@ -555,15 +527,13 @@ struct SleepDetailScreen: View {
     private func stagesVsTypicalContent(_ night: SleepDetailModel.Night) -> some View {
         let s = night.stages
         return VStack(alignment: .leading, spacing: 12) {
-            Text(verbatim: vsTypicalVerdict(s))
-                .font(InstrumentoType.grotesk(16, weight: .semibold))
-                .foregroundStyle(theme.ink)
+            vsTypicalVerdictText(s)
                 .fixedSize(horizontal: false, vertical: true)
             stageVsTypicalRow("Deep", lastMin: s.deep, total: s.total,
                               typicalPct: model.typicalDeepPct, color: theme.dataSleepDeep,
                               higherIsBetter: true, index: 0)
             stageVsTypicalRow("REM", lastMin: s.rem, total: s.total,
-                              typicalPct: model.typicalRemPct, color: theme.dataSleep,
+                              typicalPct: model.typicalRemPct, color: theme.dataSleepLight,
                               higherIsBetter: true, index: 1)
             stageVsTypicalRow("Light", lastMin: s.light, total: s.total,
                               typicalPct: model.typicalLightPct, color: theme.dataSleepLightest,
@@ -573,17 +543,84 @@ struct SleepDetailScreen: View {
         }
     }
 
-    private func vsTypicalVerdict(_ s: SleepDetailModel.Stages) -> String {
+    /// Stage-name portion(s) in `theme.dataSleep`; rest of the phrase in `theme.ink`.
+    /// Uses the same five localized full strings as before (no new copy keys).
+    private func vsTypicalVerdictText(_ s: SleepDetailModel.Stages) -> Text {
+        let font = InstrumentoType.grotesk(16, weight: .semibold)
         let deep = stageShareAbove(s.deep, s.total, model.typicalDeepPct)
         let rem = stageShareAbove(s.rem, s.total, model.typicalRemPct)
-        if deep && rem { return String(localized: "Deep and REM above your typical") }
-        if deep { return String(localized: "Deep above your typical") }
-        if rem { return String(localized: "REM above your typical") }
-        if let light = model.typicalLightPct {
+        let full: String
+        let stageNames: [String]
+        if deep && rem {
+            full = String(localized: "Deep and REM above your typical")
+            stageNames = [String(localized: "Deep"), String(localized: "REM")]
+        } else if deep {
+            full = String(localized: "Deep above your typical")
+            stageNames = [String(localized: "Deep")]
+        } else if rem {
+            full = String(localized: "REM above your typical")
+            stageNames = [String(localized: "REM")]
+        } else if let light = model.typicalLightPct {
             let last = s.total > 0 ? s.light / s.total * 100 : 0
-            if last > light + 1 { return String(localized: "More light sleep than your typical") }
+            if last > light + 1 {
+                full = String(localized: "More light sleep than your typical")
+                // EN source phrase uses "light sleep"; es-MX uses "sueño ligero".
+                let candidates = ["light sleep", "sueño ligero"]
+                stageNames = candidates.filter { full.range(of: $0, options: .caseInsensitive) != nil }
+            } else {
+                full = String(localized: "Close to your typical stage mix")
+                stageNames = []
+            }
+        } else {
+            full = String(localized: "Close to your typical stage mix")
+            stageNames = []
         }
-        return String(localized: "Close to your typical stage mix")
+        return coloredStageVerdict(full: full, stageNames: stageNames, font: font)
+    }
+
+    /// Walks `full` and paints each occurrence of a stage name in `theme.dataSleep`.
+    private func coloredStageVerdict(full: String, stageNames: [String], font: Font) -> Text {
+        guard !stageNames.isEmpty else {
+            return Text(verbatim: full)
+                .font(font)
+                .foregroundColor(theme.ink)
+        }
+        // Collect non-overlapping matches, left-to-right.
+        var matches: [(range: Range<String.Index>, name: String)] = []
+        for name in stageNames {
+            var searchFrom = full.startIndex
+            while searchFrom < full.endIndex,
+                  let r = full.range(of: name, options: .caseInsensitive, range: searchFrom..<full.endIndex) {
+                let overlaps = matches.contains { $0.range.overlaps(r) }
+                if !overlaps { matches.append((r, name)) }
+                searchFrom = r.upperBound
+            }
+        }
+        matches.sort { $0.range.lowerBound < $1.range.lowerBound }
+        guard !matches.isEmpty else {
+            return Text(verbatim: full)
+                .font(font)
+                .foregroundColor(theme.ink)
+        }
+        var result: Text?
+        var cursor = full.startIndex
+        for m in matches {
+            if cursor < m.range.lowerBound {
+                let plain = String(full[cursor..<m.range.lowerBound])
+                let t = Text(verbatim: plain).font(font).foregroundColor(theme.ink)
+                result = result.map { $0 + t } ?? t
+            }
+            let stage = String(full[m.range])
+            let t = Text(verbatim: stage).font(font).foregroundColor(theme.dataSleep)
+            result = result.map { $0 + t } ?? t
+            cursor = m.range.upperBound
+        }
+        if cursor < full.endIndex {
+            let plain = String(full[cursor...])
+            let t = Text(verbatim: plain).font(font).foregroundColor(theme.ink)
+            result = result.map { $0 + t } ?? t
+        }
+        return result ?? Text(verbatim: full).font(font).foregroundColor(theme.ink)
     }
 
     private func stageShareAbove(_ min: Double, _ total: Double, _ typical: Double?) -> Bool {
@@ -971,20 +1008,12 @@ struct SleepDetailScreen: View {
     }
 
     private var heatGrid: some View {
-        // Celda dimensionada a 14 columnas FIJAS (helper compartido), no al conteo vivo, para que mida lo
-        // mismo en las cuatro pantallas y todos los días (ver YearHeatStrip.rollingCellSize). (FER estable)
-        let spacing: CGFloat = 4
-        let cell = YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing)
-        return YearHeatStrip(
-            days: sleepHeatCache, cellSize: cell, spacing: spacing, showsScrub: false,
-            tint: sleepHeatTint, emptyFill: theme.hairline, emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary, onSelect: { selectedSleepNight = $0 }, selectionColor: theme.ink
+        Calendario90(
+            days: sleepHeatCache,
+            tint: sleepHeatTint,
+            onSelect: { selectedSleepNight = $0 },
+            theme: theme
         )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: SleepCalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(SleepCalWidthKey.self) { calWidth = $0 }
     }
 
     @ViewBuilder private var heatReadout: some View {

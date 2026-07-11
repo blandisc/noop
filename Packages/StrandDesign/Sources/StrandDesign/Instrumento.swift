@@ -58,6 +58,9 @@ public struct InstrumentoTheme: Equatable {
     public let dataHeart: Color
     /// Blood-oxygen trend hue. FER-147.
     public let dataSpO2: Color
+    /// Forest green for oxygen / SpO₂ identity when a deeper green is needed (distinct from
+    /// the blue `dataSpO2` metric hue and from recovery green). Does NOT re-map the SpO₂ metric.
+    public let dataOxygen: Color
     /// Steps trend hue. FER-147.
     public let dataSteps: Color
 
@@ -74,7 +77,8 @@ public struct InstrumentoTheme: Equatable {
         paper: Color, surface: Color, hairline: Color, hairlineStrong: Color,
         ink: Color, inkSecondary: Color, inkTertiary: Color,
         dataRecovery: Color, dataStrain: Color,
-        dataSleep: Color, dataHrv: Color, dataHeart: Color, dataSpO2: Color, dataSteps: Color,
+        dataSleep: Color, dataHrv: Color, dataHeart: Color, dataSpO2: Color,
+        dataOxygen: Color, dataSteps: Color,
         verdict: Color, warning: Color, critical: Color
     ) {
         self.paper = paper; self.surface = surface
@@ -82,7 +86,7 @@ public struct InstrumentoTheme: Equatable {
         self.ink = ink; self.inkSecondary = inkSecondary; self.inkTertiary = inkTertiary
         self.dataRecovery = dataRecovery; self.dataStrain = dataStrain
         self.dataSleep = dataSleep; self.dataHrv = dataHrv; self.dataHeart = dataHeart
-        self.dataSpO2 = dataSpO2; self.dataSteps = dataSteps
+        self.dataSpO2 = dataSpO2; self.dataOxygen = dataOxygen; self.dataSteps = dataSteps
         self.verdict = verdict; self.warning = warning; self.critical = critical
     }
 
@@ -104,6 +108,7 @@ public struct InstrumentoTheme: Equatable {
         dataHrv:        Color(hex: "#147C8C"),   // FER-206: cian, distinguible del verde-veredicto (4.33:1 AA)
         dataHeart:      Color(hex: "#B85068"),
         dataSpO2:       Color(hex: "#3B6FA0"),
+        dataOxygen:     Color(hex: "#3F7A5E"),
         dataSteps:      Color(hex: "#4C8998"),
         verdict:        Color(hex: "#0C8F62"),
         warning:        Color(hex: "#9C5E10"),
@@ -276,6 +281,10 @@ public extension InstrumentoTheme {
     /// The deep positive-lane green («Pleno», recovery ≥ 88) — the same deep green
     /// `positiveText` computes on `.base` paper, as a fixed lane fill.
     var verdictDeep: Color { Color(hex: "#00774B") }
+    /// Deep «rejuvenates» green for `ContributionBars` (and body-age poles): deeper than
+    /// `dataRecovery` (`#0C8F62`) so left-of-zero bars read as longevity, not recovery. No prior
+    /// fitness-age/longevity token existed at this hex.
+    var dataRejuvenates: Color { Color(hex: "#2E7D57") }
 
     // MARK: Handoff «Detalle de Tendencias Final» — Esfuerzo (FER-859)
 
@@ -445,7 +454,7 @@ public extension Text {
             swatches("Papel", [("paper", t.paper), ("surface", t.surface), ("hairline", t.hairline), ("strong", t.hairlineStrong)], t)
             swatches("Tinta", [("ink", t.ink), ("secondary", t.inkSecondary), ("tertiary", t.inkTertiary)], t)
             swatches("Dato / estado", [("recovery", t.dataRecovery), ("strain", t.dataStrain), ("warning", t.warning), ("critical", t.critical)], t)
-            swatches("Métricas", [("sleep", t.dataSleep), ("hrv", t.dataHrv), ("heart", t.dataHeart), ("spo2", t.dataSpO2), ("steps", t.dataSteps)], t)
+            swatches("Métricas", [("sleep", t.dataSleep), ("hrv", t.dataHrv), ("heart", t.dataHeart), ("spo2", t.dataSpO2), ("oxygen", t.dataOxygen), ("steps", t.dataSteps)], t)
         }
         .padding(28)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -127,6 +127,8 @@ struct MetricDetailScreen: View {
     /// «Tu HRV por frecuencia» starts collapsed — a deep, for-the-curious layer, not a hero. (FER-702)
     @State private var spectralExpanded = false
     @State private var loaded = false
+    /// The inverted hero's ⓘ toggles the «What we measure» card under the field (Final skeleton).
+    @State private var infoOpen = false
 
     /// Heart Rate routes through a separate, intraday path (today's curve at minute resolution) rather
     /// than the daily-series machinery the vitals use. (FER-253)
@@ -193,36 +195,20 @@ struct MetricDetailScreen: View {
         // history on every redraw. (FER-216)
         let window = MetricWindowMath.make(parsedSeries, selected: range)
         return ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                hero
-                if loaded {
-                    // Heart Rate's intraday path has no "N/7 nights" calibration — each block shows its
-                    // own honest empty state (no readings yet today). (FER-253)
-                    if isIntraday {
-                        content(window)
-                    } else if spec.sparseMeasured {
-                        // A sparsely-measured metric (VO₂max): one reading is enough to render; zero
-                        // readings show a dedicated explanatory empty state, not the nights-calibration. (FER-257)
-                        if series.isEmpty {
-                            sparseEmptyState
-                        } else {
-                            content(window)
-                        }
-                    } else if enoughHistory {
-                        content(window)
-                    } else {
-                        calibrationBlock
-                    }
-                } else {
-                    ChartWell(theme).loading(height: 160)
-                }
-                // Standardized origin seal at the foot (FER-804), once there's data to attribute.
-                if loaded, !series.isEmpty || !intradayCurve.isEmpty {
-                    originFooter
-                }
+            // Final skeleton for the four scalar narrative vitals (HRV / rhr / resp_rate / SpO₂).
+            // Heart Rate is narrative + intraday → its own Final path (narrativeIntradayFinal).
+            // Steps / VO₂max → their own Final skeletons; anything else falls back to legacyBody.
+            if isNarrative && !isIntraday {
+                narrativeBodyFinal(window)
+            } else if isIntraday {
+                narrativeIntradayFinal(window)
+            } else if spec.descriptor.key == "steps" {
+                stepsBodyFinal(window)
+            } else if spec.descriptor.key == "vo2max" {
+                vo2maxBodyFinal(window)
+            } else {
+                legacyBody(window)
             }
-            .padding(NoopMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
         .presentationDragIndicator(.visible)
@@ -244,6 +230,871 @@ struct MetricDetailScreen: View {
             }
             if let loader = spectralLoader { spectral = await loader() }
             loaded = true
+        }
+    }
+
+    /// Legacy body: Steps / VO₂max. Extracted VERBATIM from the pre-Final
+    /// `VStack(spacing: 22){ hero; content; originFooter }.padding(screenPadding)` — no behaviour change.
+    @ViewBuilder private func legacyBody(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 22) {
+            hero
+            if loaded {
+                if spec.sparseMeasured {
+                    // A sparsely-measured metric (VO₂max): one reading is enough to render; zero
+                    // readings show a dedicated explanatory empty state, not the nights-calibration. (FER-257)
+                    if series.isEmpty {
+                        sparseEmptyState
+                    } else {
+                        content(window)
+                    }
+                } else if enoughHistory {
+                    content(window)
+                } else {
+                    calibrationBlock
+                }
+            } else {
+                ChartWell(theme).loading(height: 160)
+            }
+            // Standardized origin seal at the foot (FER-804), once there's data to attribute.
+            if loaded, !series.isEmpty || !intradayCurve.isEmpty {
+                originFooter
+            }
+        }
+        .padding(NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Narrative Final skeleton (HRV / rhr / resp_rate / SpO₂)
+
+    /// Full-bleed Final body for the four scalar vitals: HeroInvertido → SeccionBloque… → PieMetodo.
+    /// No external screen padding (franjas go edge-to-edge); section content uses handoff padding.
+    @ViewBuilder private func narrativeBodyFinal(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            narrativeHeroFinal
+            if infoOpen { queMedimosCardFinal }
+            if !loaded {
+                ChartWell(theme).loading(height: 160)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+            } else if !enoughHistory {
+                calibrationBlock
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                if loaded, !series.isEmpty {
+                    pieMetodoFinal
+                }
+            } else {
+                SeccionBloque(String(localized: "Today, vs your normal"), theme: theme) {
+                    hoyVsRangoContent
+                }
+                SeccionBloque(String(localized: "Your story"), theme: theme) {
+                    historiaFinalContent(window)
+                }
+                if hasPatron {
+                    SeccionBloque(String(localized: "Your pattern"), theme: theme) {
+                        patronFinalContent
+                    }
+                }
+                if spec.descriptor.key == "hrv", let s = spectral {
+                    SeccionBloque(String(localized: "Your HRV by frequency"), theme: theme) {
+                        spectralFinalContent(s)
+                    }
+                }
+                pieMetodoFinal
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Inverted hero for the four scalar vitals (Final). Heart Rate keeps `narrativeHero` via legacyBody.
+    private var narrativeHeroFinal: some View {
+        let glyph = metricGlyph ?? .hrv
+        let valueText = heroTodayValue.map { fmt($0) } ?? "—"
+        let suffix: String? = (heroTodayValue != nil && !unit.isEmpty) ? unit : nil
+        return HeroInvertido(
+            glyph: glyph,
+            title: narrativeHeroTitle,
+            hue: metricHue,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                if heroTodayValue == nil {
+                    Text(verbatim: "—")
+                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                } else {
+                    HeroNumeral(valueText, suffix: suffix, size: 60, theme: theme) {
+                        if todayFromApple {
+                            Text("Apple")
+                                .font(InstrumentoType.grotesk(11, weight: .semibold))
+                                .foregroundStyle(theme.paper)
+                                .heroCapsule(theme: theme)
+                        }
+                    }
+                }
+            },
+            verdict: {
+                if let v = heroVerdict {
+                    if let level = sevenDayLevelText {
+                        HeroVeredictoBicolor(word: v.word, clause: level, theme: theme)
+                    } else {
+                        Text(v.word)
+                            .font(InstrumentoType.grotesk(15, weight: .semibold))
+                            .foregroundStyle(theme.paper)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else if let level = sevenDayLevelText {
+                    Text(level)
+                        .font(InstrumentoType.grotesk(14))
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                }
+            }
+        )
+    }
+
+    /// ⓘ card under the inverted hero — same header reading copy the old narrative kept always visible.
+    @ViewBuilder private var queMedimosCardFinal: some View {
+        if let reading = readingCopy(for: .header) {
+            QueMedimosCard(title: "What we measure", explanation: reading, theme: theme)
+        }
+    }
+
+    /// «Hoy, vs tu rango»: large coloured datum + in-range pill + position slider (moved out of the hero).
+    @ViewBuilder private var hoyVsRangoContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let today = heroTodayValue {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(fmt(today))
+                        .font(InstrumentoType.groteskNumber(28, weight: .bold))
+                        .foregroundStyle(metricHue)
+                    if !unit.isEmpty {
+                        Text(unit)
+                            .font(InstrumentoType.grotesk(13))
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                    if let v = heroVerdict {
+                        Text(v.word)
+                            .font(InstrumentoType.grotesk(11, weight: .semibold))
+                            .foregroundStyle(theme.inkSecondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(theme.patternBlock, in: Capsule())
+                    }
+                }
+            } else {
+                Text(verbatim: "—")
+                    .font(InstrumentoType.groteskNumber(28, weight: .bold))
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            if let b = inlineBandData {
+                positionSlider(b)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(b.disclosureTitle))
+                    .accessibilityValue(Text(b.markLabel))
+            }
+        }
+    }
+
+    /// «Tu historia»: period selector + GraficaRangos + TileSurface strip.
+    @ViewBuilder private func historiaFinalContent(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if visibleBlocks.contains(.periodSelector) {
+                periodSelector(window)
+            }
+            if window.values.count > 1 {
+                graficaRangosBlock(window)
+                    .padding(.top, 6)
+                    .id(range)
+            } else if let only = window.values.first {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(fmt(only)) \(unit)")
+                        .font(StrandFont.bodyNumber)
+                        .foregroundStyle(metricHue)
+                    Text("Only one reading in this range: not enough to draw a line yet.")
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+            } else {
+                ChartWell(theme).empty(text: "No readings in this range.")
+            }
+            tileStripFinal(window)
+                .padding(.top, 4)
+        }
+    }
+
+    /// GraficaRangos over the windowed series (Media ⇄ Rangos + scrub + BarraAncla captions).
+    @ViewBuilder private func graficaRangosBlock(_ window: MetricWindow) -> some View {
+        let rows = trendStatRows(window)
+        let raw = rows.map(\.value)
+        // SpO₂ (clinical) plots raw nights; personal vitals smooth the noisy overnight series (same as Strain).
+        let points: [Double] = spec.clinicalBands ? raw : SeriesShape.movingAverage(raw, window: 7)
+        let plot = points.isEmpty ? raw : points
+        let stat = ComparisonEngine.stat(plot)
+        let pct = window.range.periodComparison(of: trendComparisonSeries)?.pctChange
+        let domain = graficaDomain(plot: plot)
+        let bands = graficaRangosBands()
+        let mediaNote = spec.clinicalBands
+            ? String(localized: "average of the \(window.range.name)")
+            : String(localized: "7-day moving average")
+        let anchorMedia: String? = {
+            if spec.clinicalBands {
+                return String(localized: "Nightly values · the shaded band is the healthy range.")
+            }
+            if normalRange != nil {
+                return String(localized: "7-day moving average · the band is your normal range.")
+            }
+            return String(localized: "7-day moving average.")
+        }()
+        let labels = rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" }
+        GraficaRangos(
+            points: plot,
+            bands: bands,
+            ticks: graficaTicks(domain: domain),
+            wash: graficaWash,
+            refLine: graficaRefLine,
+            hue: metricHue,
+            ymin: domain.lowerBound,
+            ymax: domain.upperBound,
+            startLabel: rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+            endLabel: rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+            mediaValue: plot.count > 1 ? fmt(stat.mean) : "—",
+            mediaNote: mediaNote,
+            mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
+            deltaColor: pct.map { trendDeltaColor($0) },
+            countUnit: "n",
+            anchorMedia: anchorMedia,
+            anchorRangos: bands.isEmpty ? nil
+                : String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
+            scrub: true,
+            labels: labels,
+            fmt: { fmt($0) },
+            theme: theme
+        )
+    }
+
+    /// Y domain for GraficaRangos: clinical chartDomain, else personal band air, else data fit.
+    private func graficaDomain(plot: [Double]) -> ClosedRange<Double> {
+        if let domain = spec.chartDomain { return domain }
+        if let band = normalRange {
+            let span = band.upperBound - band.lowerBound
+            let pad = Swift.max(span * 0.6, 1)
+            let lo = Swift.min(band.lowerBound - pad, plot.min() ?? band.lowerBound)
+            let hi = Swift.max(band.upperBound + pad, plot.max() ?? band.upperBound)
+            return lo...hi
+        }
+        let bounds = spec.info.bands.flatMap { [$0.lower, $0.upper].compactMap { $0 } }
+        if let tLo = bounds.min(), let tHi = bounds.max(), tHi > tLo {
+            let lo = Swift.min(tLo, plot.min() ?? tLo)
+            let hi = Swift.max(tHi, plot.max() ?? tHi)
+            let pad = (hi - lo) * 0.1
+            return (lo - pad)...(hi + pad)
+        }
+        return chartRange(plot)
+    }
+
+    private func graficaTicks(domain: ClosedRange<Double>) -> [GraficaRangos.Tick] {
+        if let clinical = clinicalYAxisValues {
+            return clinical.map { .init(v: $0, label: fmt($0)) }
+        }
+        let lo = domain.lowerBound, hi = domain.upperBound
+        guard hi > lo else { return [] }
+        let mid = (lo + hi) / 2
+        return [
+            .init(v: hi, label: fmt(hi)),
+            .init(v: mid, label: fmt(mid)),
+            .init(v: lo, label: fmt(lo))
+        ]
+    }
+
+    /// Optional wash: SpO₂ healthy zone, or personal normal range for the media mode.
+    private var graficaWash: GraficaRangos.Wash? {
+        if spec.descriptor.key == "spo2", let floor = spec.lowThreshold, let domain = spec.chartDomain {
+            return .init(lo: floor, hi: domain.upperBound)
+        }
+        if let band = normalRange {
+            return .init(lo: band.lowerBound, hi: band.upperBound)
+        }
+        return nil
+    }
+
+    private var graficaRefLine: GraficaRangos.RefLine? {
+        guard let avg = SeriesShape.latestMovingAverage(allValues, window: 7) else { return nil }
+        let label = unit.isEmpty
+            ? String(localized: "7-day level · \(fmt(avg))")
+            : String(localized: "7-day level · \(fmt(avg)) \(unit)")
+        return .init(v: avg, label: label)
+    }
+
+    /// Lanes for Rangos mode. SpO₂ / rhr / resp from `spec.info.bands`; HRV from personal ±σ normal range.
+    private func graficaRangosBands() -> [GraficaRangos.Banda] {
+        switch spec.descriptor.key {
+        case "hrv":
+            guard let nr = normalRange else { return [] }
+            let lo = nr.lowerBound, hi = nr.upperBound
+            // Half-open lanes that cover the closed personal band: [lo, hi] → below / within / above.
+            return [
+                .init(label: String(localized: "Unusual for you"), lo: hi.nextUp, hi: nil,
+                      color: theme.warning, range: "≥ \(fmt(hi))"),
+                .init(label: String(localized: "Normal for you"), lo: lo, hi: hi.nextUp,
+                      color: metricHue, range: "\(fmt(lo))–\(fmt(hi))"),
+                .init(label: String(localized: "Unusual for you"), lo: nil, hi: lo,
+                      color: theme.warning, range: "< \(fmt(lo))")
+            ]
+        default:
+            return infoBandsAsGrafica()
+        }
+    }
+
+    /// Population / clinical bands from `spec.info.bands` (SpO₂, rhr, resp_rate). High → low for lanes.
+    private func infoBandsAsGrafica() -> [GraficaRangos.Banda] {
+        let banded = spec.info.bands.filter { $0.lower != nil || $0.upper != nil }
+        guard !banded.isEmpty else { return [] }
+        let colors = bandLaneColors(count: banded.count)
+        return banded.enumerated().reversed().map { i, b in
+            GraficaRangos.Banda(
+                label: plainLocalizedLabel(b.label),
+                lo: b.lower, hi: b.upper,
+                color: colors[Swift.min(i, colors.count - 1)],
+                range: b.range)
+        }
+    }
+
+    /// Resolve a `LocalizedStringKey` band label to a plain String for GraficaRangos lane copy.
+    private func plainLocalizedLabel(_ key: LocalizedStringKey) -> String {
+        let mirror = Mirror(reflecting: key)
+        for child in mirror.children {
+            if child.label == "key", let s = child.value as? String {
+                return String(localized: String.LocalizationValue(s))
+            }
+        }
+        return ""
+    }
+
+    /// Colour ramp for population lanes: low index = first band in factory order (often “best” or “normal”).
+    private func bandLaneColors(count: Int) -> [Color] {
+        switch spec.descriptor.key {
+        case "spo2":
+            // Normal / Borderline / Low
+            return [theme.verdict, theme.warning, theme.critical]
+        case "rhr":
+            // Athlete / Excellent / Normal / Elevated — lower is better
+            return [theme.verdictDeep, theme.verdict, theme.inkSecondary, theme.critical]
+        case "resp_rate":
+            // Low / Typical / Elevated / High
+            return [theme.inkSecondary, theme.verdict, theme.warning, theme.critical]
+        default:
+            return (0..<count).map { _ in metricHue }
+        }
+    }
+
+    /// Stat strip as TileSurface tiles (Final). Display-only: the old tappable disclosures (Average /
+    /// Trend / Consistency ⓘ panels) do not map 1:1 onto TileSurface, so they are not recreated here.
+    @ViewBuilder private func tileStripFinal(_ window: MetricWindow) -> some View {
+        let cells = statCells(window)
+        if !cells.isEmpty {
+            HStack(alignment: .top, spacing: 8) {
+                ForEach(cells) { cell in
+                    TileSurface(
+                        label: tileLabel(cell),
+                        value: cell.value,
+                        valueColor: cell.color == theme.ink ? nil : cell.color,
+                        caption: cell.unitSuffix ?? cell.note.map { plainLocalizedLabel($0) },
+                        theme: theme
+                    )
+                }
+            }
+        }
+    }
+
+    /// Known stat-slot labels → catalog keys (avoids fragile LocalizedStringKey → String reflection).
+    private func tileLabel(_ cell: StatCell) -> String {
+        switch cell.slot {
+        case "promedio":     return String(localized: "Average")
+        case "tendencia":    return String(localized: "Trend")
+        case "rango":        return String(localized: "Range")
+        case "consistencia": return String(localized: "Consistency")
+        case "lownights":    return String(localized: "Nights < 95%")
+        default:             return plainLocalizedLabel(cell.label)
+        }
+    }
+
+    /// «Tu patrón» content: QueLaMueveHeader + findings + night signals (hrv / resp_rate).
+    @ViewBuilder private var patronFinalContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if visibleBlocks.contains(.whatMovesIt), !series.isEmpty {
+                quemueveFinalView
+            }
+            if visibleBlocks.contains(.nightVitals),
+               nightVitals.respiration != nil || nightVitals.restingHR != nil {
+                nightSignalsView
+            }
+        }
+    }
+
+    private var quemueveFinalView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            QueLaMueveHeader("What moves it", chip: "trend, not cause", theme: theme)
+            if whatMovesItFindings.isEmpty {
+                Text("Not enough data yet: keep wearing your strap and check back in a few weeks.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ForEach(whatMovesItFindings) { f in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(Self.whatMovesArrow(f)).font(StrandFont.subhead).fontWeight(.semibold)
+                            .foregroundStyle(whatMovesColor(f))
+                        Text(f.phrase).font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Spectral HRV body without its own overline (SeccionBloque owns the franja title).
+    @ViewBuilder private func spectralFinalContent(_ s: SpectralHRV) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            spectralBandRow(title: "Respiratory", tag: "HF",
+                            subtitle: "your calm signal, tied to your breathing",
+                            band: s.hf, accent: theme.dataHrv)
+            if let lf = s.lf {
+                Divider().overlay(theme.hairline)
+                spectralBandRow(title: "Slow", tag: "LF",
+                                subtitle: "slow waves; a mix of signals",
+                                band: lf, accent: theme.ink)
+            }
+            Divider().overlay(theme.hairline)
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Total variation").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text("everything together, the “volume” of your HRV")
+                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                spectralValue(s.total, accent: theme.ink)
+            }
+            if s.lf == nil {
+                spectralNote("Last night's reading was short, so it only covers the respiratory part: not the slow waves.")
+            } else if s.hf.label == nil {
+                spectralNote("Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you.")
+            }
+            spectralNote("Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself: not a diagnosis or a “stress balance.”")
+        }
+    }
+
+    /// PieMetodo: method disclosure + origin seal (replaces free-floating methodDisclosure + originFooter).
+    @ViewBuilder private var pieMetodoFinal: some View {
+        PieMetodo(theme: theme) {
+            if visibleBlocks.contains(.method), let method = spec.info.method {
+                Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(method.prose)
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let citation = method.citation {
+                            Text(citation)
+                                .font(StrandFont.caption)
+                                .foregroundStyle(theme.inkTertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        } sello: {
+            if !series.isEmpty {
+                OriginStamp(origin: footerOrigin, when: String(localized: "today"), theme: theme)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
+            }
+        }
+    }
+
+    // MARK: - Steps Final skeleton
+
+    /// Full-bleed Final body for Steps: HeroInvertido → Your story → optional Your pattern → PieMetodo.
+    @ViewBuilder private func stepsBodyFinal(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            stepsHeroFinal
+            if infoOpen { queMedimosCardFinal }
+            if !loaded {
+                ChartWell(theme).loading(height: 160)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+            } else if !enoughHistory {
+                // Same gate as legacyBody for non-sparse metrics (steps is not sparseMeasured).
+                calibrationBlock
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+            } else {
+                SeccionBloque(String(localized: "Your story"), theme: theme) {
+                    stepsHistoriaFinalContent(window)
+                }
+                if stepsMovers != nil {
+                    SeccionBloque(String(localized: "Your pattern"), theme: theme) {
+                        stepsPatronFinalContent
+                    }
+                }
+                pieMetodoFinal
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var stepsHeroFinal: some View {
+        let valueText = stepsToday.map { fmt($0) } ?? "—"
+        return HeroInvertido(
+            glyph: .steps,
+            title: "Steps",
+            hue: metricHue,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                if stepsToday == nil {
+                    Text(verbatim: "—")
+                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                } else {
+                    // No unit suffix on the hero numeral (legacyHero shows none for steps).
+                    HeroNumeral(valueText, suffix: nil, size: 60, theme: theme) {
+                        if todayFromApple {
+                            Text("Apple")
+                                .font(InstrumentoType.grotesk(11, weight: .semibold))
+                                .foregroundStyle(theme.paper)
+                                .heroCapsule(theme: theme)
+                        }
+                    }
+                }
+            },
+            verdict: {
+                if let text = heroSecondaryText {
+                    Text(text)
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        )
+    }
+
+    /// «Your story» for steps: period selector + GraficaRangos + 3-tile strip.
+    @ViewBuilder private func stepsHistoriaFinalContent(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if visibleBlocks.contains(.periodSelector) {
+                periodSelector(window)
+            }
+            if window.values.count > 1 {
+                graficaRangosBlock(window)
+                    .padding(.top, 6)
+                    .id(range)
+            } else if let only = window.values.first {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(fmt(only)) \(unit)")
+                        .font(StrandFont.bodyNumber)
+                        .foregroundStyle(metricHue)
+                    Text("Only one reading in this range: not enough to draw a line yet.")
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+            } else {
+                ChartWell(theme).empty(text: "No readings in this range.")
+            }
+            stepsTileStripFinal
+                .padding(.top, 4)
+        }
+    }
+
+    /// TODAY / 7-DAY AVG / STREAK as TileSurface tiles (Final). Display-only, not tappable.
+    @ViewBuilder private var stepsTileStripFinal: some View {
+        HStack(alignment: .top, spacing: 8) {
+            TileSurface(label: String(localized: "TODAY"),
+                        value: stepsToday.map(fmt) ?? "—",
+                        valueColor: metricHue, theme: theme)
+            TileSurface(label: String(localized: "7-DAY AVG"),
+                        value: stepsAvg7.map(fmt) ?? "—",
+                        theme: theme)
+            TileSurface(label: String(localized: "STREAK"),
+                        value: stepsStreak.map { "\($0)" } ?? "—",
+                        theme: theme)
+        }
+    }
+
+    /// Weekend/weekday pattern for steps, reheaded with QueLaMueveHeader.
+    @ViewBuilder private var stepsPatronFinalContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            QueLaMueveHeader("What moves your steps", chip: "trend, not cause", theme: theme)
+            if let m = stepsMovers {
+                let pctStr = "\(m.pct)%"
+                Text(m.weekendHigher
+                     ? "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) more than your weekdays."
+                     : "Your weekends average about \(fmt(m.weekendAvg)) steps: roughly \(pctStr) fewer than your weekdays.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    // MARK: - VO2max Final skeleton
+
+    /// Full-bleed Final body for VO₂max: HeroInvertido → Your story → Where you fall → PieMetodo.
+    @ViewBuilder private func vo2maxBodyFinal(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            vo2maxHeroFinal
+            if infoOpen { queMedimosCardFinal }
+            if !loaded {
+                ChartWell(theme).loading(height: 160)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+            } else if series.isEmpty {
+                // Same sparseMeasured empty gate as legacyBody (vo2max is sparseMeasured).
+                sparseEmptyState
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+            } else {
+                SeccionBloque(String(localized: "Your story"), theme: theme) {
+                    vo2maxHistoriaFinalContent(window)
+                }
+                SeccionBloque(String(localized: "Where you fall"), theme: theme) {
+                    vo2maxDondeCaesFinalContent
+                }
+                pieMetodoFinal
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var vo2maxHeroFinal: some View {
+        let valueText = heroValue.map { fmt($0) } ?? "—"
+        let suffix: String? = (heroValue != nil && !unit.isEmpty) ? unit : nil
+        return HeroInvertido(
+            glyph: .vo2max,
+            title: "VO₂ Max",
+            hue: metricHue,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                if heroValue == nil {
+                    Text(verbatim: "—")
+                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                } else {
+                    HeroNumeral(valueText, suffix: suffix, size: 60, theme: theme) {
+                        if todayFromApple {
+                            Text("Apple")
+                                .font(InstrumentoType.grotesk(11, weight: .semibold))
+                                .foregroundStyle(theme.paper)
+                                .heroCapsule(theme: theme)
+                        }
+                    }
+                }
+            },
+            verdict: {
+                if heroValue != nil {
+                    Text(vo2maxComparison)
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        )
+    }
+
+    /// Sparse measured readings chart + expected/measured-ago as BarraAncla captions.
+    @ViewBuilder private func vo2maxHistoriaFinalContent(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if visibleBlocks.contains(.periodSelector) {
+                periodSelector(window)
+            }
+            // chartBlock already handles sparseMeasured (raw points, "Measured values" caption).
+            // Do not route through graficaRangosBlock (no Media↔Rangos toggle for vo2max).
+            chartBlock(window)
+            // Resolve with String(localized:) + interpolation (same pattern as graficaRefLine etc.).
+            // Do NOT use plainLocalizedLabel on interpolated LocalizedStringKey — Mirror only yields
+            // the unresolved format template (e.g. "~%lld"), not the substituted value.
+            if let exp = vo2maxExpected {
+                BarraAncla(String(localized: "Expected for your age: ~\(Int(exp.rounded()))"),
+                           color: metricHue, theme: theme)
+            }
+            if let day = series.last?.day, let date = Repository.parseDayKey(day) {
+                let cal = Calendar.current
+                if let d = cal.dateComponents([.day],
+                                              from: cal.startOfDay(for: date),
+                                              to: cal.startOfDay(for: Date())).day,
+                   d >= 0 {
+                    let ago: String = {
+                        switch d {
+                        case 0:  return String(localized: "Measured today")
+                        case 1:  return String(localized: "Measured yesterday")
+                        default: return String(localized: "Measured \(d) days ago")
+                        }
+                    }()
+                    BarraAncla(ago, color: metricHue, theme: theme)
+                }
+            }
+        }
+    }
+
+    /// Fitness category + equivalent age tiles, plus the "why it matters" body (no DetailBlock chrome).
+    @ViewBuilder private var vo2maxDondeCaesFinalContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let v = heroValue, let profile = spec.vo2maxProfile {
+                let active = VO2maxReference.category(value: v, age: profile.age, sex: profile.sex)
+                let eq = VO2maxReference.equivalentAge(value: v, sex: profile.sex)
+                HStack(alignment: .top, spacing: 8) {
+                    TileSurface(label: String(localized: "FITNESS CATEGORY"),
+                                value: vo2maxCategoryWord(active),
+                                valueColor: metricHue, theme: theme)
+                    TileSurface(label: String(localized: "EQUIVALENT AGE"),
+                                value: "~\(eq)",
+                                valueColor: metricHue, theme: theme)
+                }
+            }
+            // Inner copy from vo2maxWhyBlock, without its DetailBlock title wrapper
+            // (SeccionBloque already frames the section as "Where you fall").
+            VStack(alignment: .leading, spacing: 6) {
+                Text("A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.")
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Mandsager 2018 (JAMA) · Kodama 2009")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    // MARK: - Narrative Final skeleton — Heart Rate (intraday)
+
+    /// Full-bleed Final body for Heart Rate: HeroInvertido → SeccionBloque("Your day") → zones → PieMetodo.
+    /// No nights-calibration gate (each section owns its empty state). No period selector / GraficaRangos.
+    @ViewBuilder private func narrativeIntradayFinal(_ window: MetricWindow) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            narrativeHeroIntradayFinal
+            if infoOpen { queMedimosCardFinal }
+            if !loaded {
+                ChartWell(theme).loading(height: 160)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+            } else {
+                SeccionBloque(String(localized: "Your day"), theme: theme) {
+                    intradayCurveFinalContent
+                }
+                if let mins = cachedZoneMinutes, mins[1...].contains(where: { $0 > 0 }) {
+                    SeccionBloque(String(localized: "Time in zones · today"), theme: theme) {
+                        hrZonesBlockContent(mins)
+                    }
+                }
+                pieMetodoIntradayFinal
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Inverted hero for Heart Rate (intraday Final): today's average bpm + "in progress" capsule.
+    private var narrativeHeroIntradayFinal: some View {
+        let valueText = heroTodayValue.map { fmt($0) } ?? "—"
+        return HeroInvertido(
+            glyph: metricGlyph ?? .heartRate,
+            title: narrativeHeroTitle,
+            hue: metricHue,
+            theme: theme,
+            onInfo: { withAnimation(StrandMotion.interactive) { infoOpen.toggle() } },
+            numeral: {
+                if heroTodayValue == nil {
+                    Text(verbatim: "—")
+                        .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                } else {
+                    HeroNumeral(valueText, suffix: "bpm", size: 60, theme: theme) {
+                        Text("in progress")
+                            .font(InstrumentoType.grotesk(13, weight: .semibold))
+                            .foregroundStyle(theme.paper)
+                            .heroCapsule(theme: theme)
+                    }
+                }
+            },
+            verdict: {
+                if loaded, let ctx = intradayHeroContextLine {
+                    Text(ctx)
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        )
+    }
+
+    /// Today's minute curve + Min/Average/Max row (same math as `narrativeIntraday`, new SeccionBloque wrapper).
+    @ViewBuilder private var intradayCurveFinalContent: some View {
+        if intradayCurve.count > 1 {
+            let v = intradayCurve.map(\.value)
+            VStack(alignment: .leading, spacing: 12) {
+                TrendChart(
+                    points: intradayCurve,
+                    gradient: chartGradient,
+                    valueRange: Self.hrRange(v, resting: restingHR),
+                    showsArea: true,
+                    height: 240,
+                    showsScrub: true,
+                    valueFormat: { "\(Int($0.rounded())) \(unit)" },
+                    dateFormat: { Self.hrClock.string(from: $0) },
+                    axisLabelColor: theme.inkTertiary,
+                    gridLineColor: theme.hairline,
+                    referenceLine: restingHR,
+                    referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
+                    markedPoint: peakPoint,
+                    tightTrailing: true
+                )
+                .accessibilityElement()
+                .accessibilityLabel(Text("Today's heart rate, 5-minute averages"))
+                peakRestingCaption
+                HStack(spacing: 9) {
+                    hrStatCell("Min", "\(Int((v.min() ?? 0).rounded()))")
+                    hrStatCell("Average", "\(Int((v.reduce(0, +) / Double(max(v.count, 1))).rounded()))")
+                    hrStatCell("Max", "\(Int((v.max() ?? 0).rounded()))")
+                }
+            }
+        } else {
+            ChartWell(theme).empty(text: "No readings yet today.")
+        }
+    }
+
+    /// PieMetodo for Heart Rate: method disclosure + in-progress origin seal (hollow ring).
+    @ViewBuilder private var pieMetodoIntradayFinal: some View {
+        PieMetodo(theme: theme) {
+            if visibleBlocks.contains(.method), let method = spec.info.method {
+                Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(method.prose)
+                            .font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let citation = method.citation {
+                            Text(citation)
+                                .font(StrandFont.caption)
+                                .foregroundStyle(theme.inkTertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        } sello: {
+            if intradayCurve.count > 1 {
+                OriginStamp(origin: footerOrigin, when: String(localized: "today, in progress"), inProgress: true, theme: theme)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
+            }
         }
     }
 
@@ -530,6 +1381,9 @@ struct MetricDetailScreen: View {
             return "Your step count for today. Steady activity, even a short walk, supports your heart, your mood and your recovery."
         case ("steps", .trend):
             return "Where your steps are headed this month compared with last month."
+
+        case ("vo2max", .header):
+            return "Your Apple Watch's estimate of your aerobic fitness: how well your body uses oxygen. Higher usually means better cardio shape; it's an estimate, not a lab test."
 
         default:
             return nil
@@ -1219,41 +2073,47 @@ struct MetricDetailScreen: View {
     }
 
     private func hrZonesBlock(_ mins: [Double]) -> some View {
+        DetailBlock("Time in zones · today", theme: theme) {
+            hrZonesBlockContent(mins)
+        }
+    }
+
+    /// Inner content of the HR zones block — shared by `hrZonesBlock` (legacy DetailBlock wrapper)
+    /// and `narrativeIntradayFinal` (SeccionBloque wrapper supplies its own title/divider).
+    @ViewBuilder private func hrZonesBlockContent(_ mins: [Double]) -> some View {
         let elevated = Int((mins[3] + mins[4] + mins[5]).rounded())
         let total = Swift.max(mins.reduce(0, +), 1)
-        return DetailBlock("Time in zones · today", theme: theme) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(elevated)").instrumentoHero(30).foregroundStyle(metricHue)
-                    Text("min elevated (zone 3+)")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                }
-                GeometryReader { geo in
-                    HStack(spacing: 0) {
-                        ForEach(0..<6, id: \.self) { i in
-                            Rectangle()
-                                .fill(zoneFill(i))
-                                .frame(width: geo.size.width * CGFloat(mins[i] / total))
-                        }
-                    }
-                }
-                .frame(height: 10)
-                .clipShape(Capsule())
-                VStack(alignment: .leading, spacing: 7) {
-                    ForEach((1...5).filter { mins[$0] >= 1 }, id: \.self) { i in
-                        HStack(spacing: 8) {
-                            Circle().fill(zoneFill(i)).frame(width: 8, height: 8)
-                            Text(zoneLabel(i)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                            Spacer()
-                            Text("\(Int(mins[i].rounded())) min")
-                                .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
-                        }
-                    }
-                }
-                Text("Zones as a percentage of your max heart rate (\(Int(hrMax.rounded())) bpm, Tanaka). The rest of the day you were resting or very light.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(elevated)").instrumentoHero(30).foregroundStyle(metricHue)
+                Text("min elevated (zone 3+)")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    ForEach(0..<6, id: \.self) { i in
+                        Rectangle()
+                            .fill(zoneFill(i))
+                            .frame(width: geo.size.width * CGFloat(mins[i] / total))
+                    }
+                }
+            }
+            .frame(height: 10)
+            .clipShape(Capsule())
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach((1...5).filter { mins[$0] >= 1 }, id: \.self) { i in
+                    HStack(spacing: 8) {
+                        Circle().fill(zoneFill(i)).frame(width: 8, height: 8)
+                        Text(zoneLabel(i)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        Spacer()
+                        Text("\(Int(mins[i].rounded())) min")
+                            .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                    }
+                }
+            }
+            Text("Zones as a percentage of your max heart rate (\(Int(hrMax.rounded())) bpm, Tanaka). The rest of the day you were resting or very light.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -2417,7 +3277,7 @@ struct MetricDetailScreen: View {
         case "hrv":               return theme.dataHrv
         case "rhr":               return theme.dataHeart
         case "resp_rate":         return theme.dataSpO2
-        case "spo2":              return theme.dataSpO2
+        case "spo2":              return theme.dataOxygen
         case "heart_rate":        return theme.dataHeart
         case "steps":             return theme.dataSteps
         case "vo2max":            return theme.dataSpO2

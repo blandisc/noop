@@ -8,14 +8,14 @@ import StrandAnalytics
 // The light «Instrumento diurno» sheet you reach by tapping the «Edad física» row in Cuerpo. It
 // presents the headline number honestly in all three states the engine distinguishes:
 //
-//   • ready / estimate — the dominant numeral (tinted by DIRECTION: verde when younger, ámbar when
-//     older, ink when even), the delta vs chronological age, the ±band, an inviolable "fitness
-//     comparison, not a diagnosis" disclaimer, the two levers that move it (resting HR · activity),
-//     a transparency checklist of what we're using, and the method footnote.
+//   • ready / estimate — HeroInvertido (longevity green) with always-on ESTIMATE capsule, delta +
+//     non-clinical disclaimer as the verdict, «What moves it» tiles, measured VO₂max (Apple), and
+//     PieMetodo with the transparency checklist + Nes/HUNT method.
 //   • notReady — no made-up number: an honest empty well + the checklist of what's still missing.
 //
-// Visual vocabulary mirrors `MetricInfoSheet` (surface blocks separated by space, color only on the
-// datum, paper background). The theme is passed EXPLICITLY — it does not propagate through `.sheet`.
+// Esqueleto Final (misma forma que `MetricDetailScreen.narrativeBodyFinal` / `SkinTempDetailScreen`):
+// HeroInvertido → SeccionBloque… → PieMetodo. Full-bleed (franjas edge-to-edge). The theme is passed
+// EXPLICITLY — it does not propagate through `.sheet`. Math and copy are preserved; this is a reskin.
 // The VO₂max block (FER-215) shows Apple Health's MEASURED VO₂max (when present) as a complementary,
 // source-labeled datum — it does NOT feed the Nes Fitness Age (that stays the model's own comparison).
 
@@ -32,6 +32,8 @@ struct FitnessAgeDetailView: View {
     var appleConnectHint: Bool = false
     /// The fitness TRAJECTORY over weeks (rising / stable / falling) from `VO2maxTrend` (FER-679), plus
     /// the raw VO₂max series for the context sparkline. `nil` below the data minimum → block hidden. (FER-833)
+    /// Kept on the API so call sites are unchanged; the Final «Edad física» layout does not surface the
+    /// trend block (see `vo2TrendBlock` retirement note in the reskin report).
     var vo2Trend: VO2maxTrend.Result? = nil
     /// The raw measured VO₂max series (values only, oldest→newest) behind the trend, for the context line.
     var vo2Series: [Double] = []
@@ -40,16 +42,18 @@ struct FitnessAgeDetailView: View {
 
     @State private var contentHeight: CGFloat = 0
 
+    /// Longevity green for the inverted hero field (`#2E7D57`).
+    private var longevityHue: Color { theme.dataRejuvenates }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 0) {
                 if let result = snapshot.result {
                     readyBody(result)
                 } else {
                     notReadyBody
                 }
             }
-            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { g in
                 Color.clear.preference(key: FitnessAgeSheetHeightKey.self, value: g.size.height)
@@ -62,117 +66,233 @@ struct FitnessAgeDetailView: View {
         .sheetPaper(theme)
     }
 
-    // MARK: - Ready / estimate
+    // MARK: - Ready / estimate (Final skeleton)
 
     @ViewBuilder private func readyBody(_ result: FitnessAgeResult) -> some View {
-        let estimate = snapshot.readiness.confidence == .estimate
-        overline(estimate: estimate)
-        hero(result)
-        disclaimerStrip
-        vo2maxSection
-        leversSection
-        usingSection
-        methodFootnote
-        // Standardized origin seal (FER-805): fitness age is computed on-device.
-        OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 2)
-    }
-
-    private func overline(estimate: Bool) -> some View {
-        // §8.7 header (FER-805): metric icon + ALL-CAPS overline instead of serif.
-        HStack(alignment: .center, spacing: 7) {
-            MetricOverline(.fitnessAge, "Physical age", theme: theme)
-            if estimate { InlineFlagChip("Estimate", color: theme.warning) }
+        heroFinal(result)
+        SeccionBloque(String(localized: "What moves it"), theme: theme) {
+            leversFinalContent
         }
-    }
-
-    private func hero(_ result: FitnessAgeResult) -> some View {
-        let ageNum = Int(result.fitnessAge.rounded())
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(ageNum)").instrumentoHero(64).foregroundStyle(directionColor(result.direction))
-                Text("years").font(StrandFont.title2).foregroundStyle(theme.inkTertiary)
+        if showsVO2maxSection {
+            SeccionBloque(String(localized: "VO₂max"), pista: String(localized: "Apple"), theme: theme) {
+                vo2maxFinalContent
             }
-            Text(deltaSubtitle(result))
-                .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("An estimate with a ±\(Int(result.bandYears.rounded()))-year margin.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
+        pieMetodoFinal
+    }
+
+    // MARK: - Hero Final (HeroInvertido · dataRejuvenates · always-on Estimate capsule)
+
+    private func heroFinal(_ result: FitnessAgeResult) -> some View {
+        let ageNum = Int(result.fitnessAge.rounded())
+        return HeroInvertido(
+            glyph: .fitnessAge,
+            title: "Physical age",
+            hue: longevityHue,
+            theme: theme,
+            numeral: {
+                HeroNumeral("\(ageNum)", suffix: String(localized: "years"), size: 60, theme: theme) {
+                    Text("Estimate")
+                        .font(InstrumentoType.grotesk(11, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .heroCapsule(theme: theme)
+                }
+            },
+            verdict: {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(deltaSubtitle(result))
+                        .font(InstrumentoType.grotesk(15, weight: .semibold))
+                        .foregroundStyle(theme.paper)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("An estimate with a ±\(Int(result.bandYears.rounded()))-year margin.")
+                        .font(InstrumentoType.grotesk(14))
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                        .fixedSize(horizontal: false, vertical: true)
+                    // Non-clinical disclaimer lives in the hero reading (moved from disclaimerStrip).
+                    Text("It's a comparison of your fitness, not your biological age or a medical diagnosis.")
+                        .font(InstrumentoType.grotesk(14))
+                        .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        )
+    }
+
+    // MARK: - What moves it (QueLaMueveHeader + TileSurface × 2 + BarraAncla)
+
+    private var leversFinalContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            QueLaMueveHeader("What moves it", chip: "trend, not cause", theme: theme)
+            HStack(alignment: .top, spacing: 8) {
+                TileSurface(
+                    label: String(localized: "Resting heart rate"),
+                    value: snapshot.restingHR.map { "\(Int($0.rounded())) bpm" } ?? "—",
+                    valueColor: theme.dataHeart,
+                    caption: String(localized: "The lower it is, the younger."),
+                    swatch: theme.dataHeart,
+                    theme: theme
+                )
+                TileSurface(
+                    label: String(localized: "Recent activity"),
+                    value: "\(snapshot.activeDays) / 7 days",
+                    valueColor: theme.dataStrain,
+                    caption: String(localized: "More active days also bring it down."),
+                    swatch: theme.dataStrain,
+                    theme: theme
+                )
+            }
+            BarraAncla(String(localized: "Nes/HUNT model (2011)"), color: longevityHue, theme: theme)
+        }
+    }
+
+    // MARK: - VO₂max (Apple Health, measured · FER-215) — simple SeccionBloque
+
+    private var showsVO2maxSection: Bool {
+        appleVO2max != nil || appleConnectHint
+    }
+
+    @ViewBuilder private var vo2maxFinalContent: some View {
+        if let vo2 = appleVO2max {
+            vo2maxSimple(vo2)
+        } else if appleConnectHint {
+            vo2maxConnectNudgeContent
+        }
+    }
+
+    private func vo2maxSimple(_ vo2: Double) -> some View {
+        let expected = Int(VO2maxReference.expected(age: chronoAge, sex: sex).rounded())
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(verbatim: "\(Int(vo2.rounded()))")
+                    .font(InstrumentoType.groteskNumber(28, weight: .bold))
+                    .foregroundStyle(theme.dataSpO2)
+                Text(verbatim: "ml/kg/min")
+                    .font(InstrumentoType.grotesk(13))
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            Text("Measured by your Apple Watch during exercise.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            BarraAncla(
+                String(localized: "The average for your age is around \(expected)."),
+                color: theme.dataSpO2,
+                theme: theme
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 
-    /// The inviolable disclaimer — a quiet surface strip, never fine print. Icon is chrome (ink), not
-    /// color. Clones `MetricInfoSheet.appleConnectLine`.
-    private var disclaimerStrip: some View {
+    /// No Apple reading + not connected: a quiet, no-number invite. No action button — connecting lives in Today / Settings.
+    private var vo2maxConnectNudgeContent: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: "info.circle")
-                .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
-            Text("It's a comparison of your fitness, not your biological age or a medical diagnosis.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            Image(systemName: "heart.fill")
+                .font(StrandFont.glyph(.chevron))
+                .foregroundStyle(theme.dataHeart)
+            Text("Connect Apple Health to see your VO₂max.")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: theme.hairline, lineWidth: 0.5)
     }
 
-    // MARK: "What moves it" — the two levers (resting HR drives, activity supports)
+    // MARK: - PieMetodo (checklist + disclaimer + Nes/HUNT prose + origin seal)
 
-    // Handoff v2 (reconciliación): «Qué la mueve» en DOS tiles separados (no dos filas en un contenedor).
-    private var leversSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("What moves it").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .top, spacing: 8) {
-                leverTile(icon: "heart", label: "Resting heart rate",
-                          note: "The lower it is, the younger.",
-                          value: snapshot.restingHR.map { "\(Int($0.rounded()))" } ?? "—",
-                          unit: "bpm", hue: theme.dataHeart)
-                leverTile(icon: "flame", label: "Recent activity",
-                          note: "More active days also bring it down.",
-                          value: "\(snapshot.activeDays)", unit: "/ 7 days", hue: theme.dataStrain)
+    @ViewBuilder private var pieMetodoFinal: some View {
+        PieMetodo(theme: theme) {
+            Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+                VStack(alignment: .leading, spacing: 12) {
+                    // Transparency checklist (was usingSection) — preserved verbatim inside method.
+                    Text("What we're using")
+                        .font(InstrumentoType.grotesk(10, weight: .semibold))
+                        .tracking(1.2)
+                        .textCase(.uppercase)
+                        .foregroundStyle(theme.inkTertiary)
+                    VStack(spacing: 0) {
+                        usingRow(status: profileStatus, label: "Age and sex", detail: ageSexDetail)
+                        Divider().overlay(theme.hairline).padding(.leading, 38)
+                        usingRow(status: status("rhr"), label: "Resting heart rate",
+                                 detail: "\(snapshot.rhrNights) of 7 nights")
+                        Divider().overlay(theme.hairline).padding(.leading, 38)
+                        usingRow(status: status("activity"), label: "Recent activity",
+                                 detail: "\(snapshot.activeDays) of 7 days")
+                    }
+                    .instrumentoCard(.control, theme: theme, fill: theme.surface)
+
+                    Text("Based on the Nes/HUNT model (2011): it estimates your aerobic capacity from your resting heart rate and activity, and compares it with the average for your age.")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    // disclaimerStrip content (moved into method for calculation transparency).
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: "info.circle")
+                            .font(StrandFont.glyph(.chevron))
+                            .foregroundStyle(theme.inkTertiary)
+                        Text("It's a comparison of your fitness, not your biological age or a medical diagnosis.")
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
+        } sello: {
+            OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 2)
         }
     }
 
-    /// One «what moves it» tile (icon + label · value·unit · note) — the handoff's two-tile layout.
-    private func leverTile(icon: String, label: LocalizedStringKey, note: LocalizedStringKey,
-                           value: String, unit: LocalizedStringKey, hue: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: icon).font(StrandFont.glyph(.chevron)).foregroundStyle(hue).frame(width: 16)
-                Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+    // MARK: - Not ready (no number — honest empty state, Final wrappers)
+
+    @ViewBuilder private var notReadyBody: some View {
+        HeroInvertido(
+            glyph: .fitnessAge,
+            title: "Physical age",
+            hue: longevityHue,
+            theme: theme,
+            numeral: {
+                Text(verbatim: "—")
+                    .font(InstrumentoType.groteskNumber(60, weight: .bold))
+                    .tracking(-2)
+                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
+            },
+            verdict: {
+                Text("We can't calculate your physical age yet.")
+                    .font(InstrumentoType.grotesk(15, weight: .semibold))
+                    .foregroundStyle(theme.paper)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value).font(InstrumentoType.groteskNumber(21)).foregroundStyle(theme.ink)
-                Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        )
+
+        SeccionBloque(String(localized: "What we need"), theme: theme) {
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(spacing: 0) {
+                    usingRow(status: profileStatus, label: "Age and sex", detail: ageSexDetail)
+                    Divider().overlay(theme.hairline).padding(.leading, 38)
+                    usingRow(status: status("rhr"), label: "Resting heart rate",
+                             detail: "\(snapshot.rhrNights) of 4 nights needed")
+                }
+                .instrumentoCard(.control, theme: theme, fill: theme.surface)
+                Text("Keep wearing your band overnight and this fills in on its own.")
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(note).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme, fill: theme.surface)
+
+        if showsVO2maxSection {
+            SeccionBloque(String(localized: "VO₂max"), pista: String(localized: "Apple"), theme: theme) {
+                vo2maxFinalContent
+            }
+        }
+
+        pieMetodoFinal
     }
 
-    // MARK: "What we're using" — transparency checklist (drivesAge items only; VO₂max is out of scope)
-
-    private var usingSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("What we're using").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(spacing: 0) {
-                usingRow(status: profileStatus, label: "Age and sex", detail: ageSexDetail)
-                Divider().overlay(theme.hairline).padding(.leading, 38)
-                usingRow(status: status("rhr"), label: "Resting heart rate",
-                         detail: "\(snapshot.rhrNights) of 7 nights")
-                Divider().overlay(theme.hairline).padding(.leading, 38)
-                usingRow(status: status("activity"), label: "Recent activity",
-                         detail: "\(snapshot.activeDays) of 7 days")
-            }
-            .instrumentoCard(.control, theme: theme, fill: theme.surface)
-        }
-    }
+    // MARK: - Checklist rows (shared ready / not-ready / method)
 
     private func usingRow(status: FitnessReadinessStatus, label: LocalizedStringKey,
                           detail: LocalizedStringKey) -> some View {
@@ -189,181 +309,7 @@ struct FitnessAgeDetailView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var methodFootnote: some View {
-        Text("Based on the Nes/HUNT model (2011): it estimates your aerobic capacity from your resting heart rate and activity, and compares it with the average for your age.")
-            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    // MARK: - Not ready (no number — an honest empty state)
-
-    @ViewBuilder private var notReadyBody: some View {
-        Text("Physical age").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-        VStack(spacing: 10) {
-            Image(systemName: "hourglass").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkTertiary)
-            Text("We can't calculate your physical age yet.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity).padding(.vertical, 28)
-        .instrumentoCard(.control, theme: theme, fill: theme.surface)
-
-        VStack(alignment: .leading, spacing: 8) {
-            Text("What we need").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(spacing: 0) {
-                usingRow(status: profileStatus, label: "Age and sex", detail: ageSexDetail)
-                Divider().overlay(theme.hairline).padding(.leading, 38)
-                usingRow(status: status("rhr"), label: "Resting heart rate",
-                         detail: "\(snapshot.rhrNights) of 4 nights needed")
-            }
-            .instrumentoCard(.control, theme: theme, fill: theme.surface)
-            Text("Keep wearing your band overnight and this fills in on its own.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        disclaimerStrip
-        vo2maxSection
-    }
-
-    // MARK: - VO₂max (Apple Health, measured · FER-215)
-
-    /// Apple's MEASURED VO₂max, as a complementary source-labeled block. Independent of the Nes Fitness
-    /// Age. Hidden entirely when there's no reading and Apple Health is already connected.
-    @ViewBuilder private var vo2maxSection: some View {
-        if let vo2 = appleVO2max {
-            vo2maxCard(vo2)
-        } else if appleConnectHint {
-            vo2maxConnectNudge
-        }
-        if let trend = vo2Trend {
-            vo2TrendBlock(trend)
-        }
-    }
-
-    // MARK: - VO₂max · tendencia (FER-833) — la trayectoria, no el punto
-
-    /// The «VO₂max · tendencia» block: the direction word as the coloured datum (subordinate to the age
-    /// hero), the raw measured series as a quiet context line, and honest copy. Direction, never a
-    /// longevity claim. Rendered only when the trend cleared its data minimum. (FER-833)
-    @ViewBuilder private func vo2TrendBlock(_ trend: VO2maxTrend.Result) -> some View {
-        let color = trendColor(trend.direction)
-        VStack(alignment: .leading, spacing: 12) {
-            Text("VO₂max · trend").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-
-            HStack(spacing: 8) {
-                Image(systemName: trendSymbol(trend.direction))
-                    .font(StrandFont.number(26, weight: .semibold))
-                    .foregroundStyle(color)
-                Text(trendWord(trend.direction))
-                    .font(StrandFont.number(30, weight: .semibold))
-                    .foregroundStyle(color)
-            }
-
-            if vo2Series.count >= 2 {
-                Sparkline(values: vo2Series,
-                          gradient: Gradient(colors: [theme.inkMuted, theme.inkMuted]),
-                          lineWidth: 2, showsArea: false, showsHead: false, showsScrub: false)
-                    .frame(height: 44)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityHidden(true)
-            }
-
-            Text("We show you the direction, not an exact number: the estimate jumps day to day, the trend is more honest.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: theme.hairline, lineWidth: 0.5)
-    }
-
-    private func trendColor(_ dir: VO2maxTrend.Direction) -> Color {
-        switch dir {
-        case .rising:  return theme.dataRecovery   // verde — mejora
-        case .falling: return theme.critical        // rojo ladrillo — baja
-        case .stable:  return theme.ink             // sin color — sin cambio distinguible
-        }
-    }
-
-    private func trendSymbol(_ dir: VO2maxTrend.Direction) -> String {
-        switch dir {
-        case .rising:  return "arrow.up.right"
-        case .falling: return "arrow.down.right"
-        case .stable:  return "arrow.right"
-        }
-    }
-
-    private func trendWord(_ dir: VO2maxTrend.Direction) -> LocalizedStringKey {
-        switch dir {
-        case .rising:  return "Rising"
-        case .falling: return "Falling"
-        case .stable:  return "Steady"
-        }
-    }
-
-    private func vo2maxCard(_ vo2: Double) -> some View {
-        let expected = Int(VO2maxReference.expected(age: chronoAge, sex: sex).rounded())
-        return VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 7) {
-                Text(verbatim: "VO₂max").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                appleSourceBadge
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(verbatim: "\(Int(vo2.rounded()))")
-                    .font(StrandFont.number(28)).foregroundStyle(theme.dataSpO2)
-                Text(verbatim: "ml/kg/min").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            Text("Measured by your Apple Watch during exercise.")
-                .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("The average for your age is around \(expected).")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: theme.hairline, lineWidth: 0.5)
-        .accessibilityElement(children: .combine)
-    }
-
-    /// Tiny "Apple Health" source chip (heart glyph + label), mirroring the fromApple flag elsewhere.
-    private var appleSourceBadge: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "heart.fill").font(.system(size: 8)) // token-exempt: microtexto <10pt
-            Text("Apple Health").textCase(.uppercase)
-        }
-        .font(.system(size: 8.5, weight: .semibold)).tracking(0.3) // token-exempt: microtexto <10pt
-        .foregroundStyle(theme.dataHeart)
-        .padding(.horizontal, 4).padding(.vertical, 1)
-        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(theme.dataHeart.opacity(0.4), lineWidth: 1)) // token-exempt: geometría de dato (radio 4) + opacidad 0.40 fuera de banda
-    }
-
-    /// No Apple reading + not connected: a quiet, no-number invite (mirrors MetricInfoSheet's
-    /// appleConnectLine). No action button — connecting lives in Today / Settings.
-    private var vo2maxConnectNudge: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(verbatim: "VO₂max").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataHeart)
-                Text("Connect Apple Health to see your VO₂max.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .instrumentoCard(.control, theme: theme, fill: theme.surface, stroke: theme.hairline, lineWidth: 0.5)
-        }
-    }
-
     // MARK: - Direction + copy
-
-    private func directionColor(_ dir: FitnessAgeResult.Direction) -> Color {
-        switch dir {
-        case .younger: return theme.dataRecovery   // verde
-        case .older:   return theme.warning         // ámbar
-        case .even:    return theme.ink
-        }
-    }
 
     private func deltaSubtitle(_ result: FitnessAgeResult) -> LocalizedStringKey {
         let yrs = Int(abs(result.deltaYears).rounded())
