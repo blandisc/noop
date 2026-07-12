@@ -77,11 +77,30 @@ struct PlatesScreen: View {
             }
             Text(perSideCaption).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             if loading.shortfallKg > 0.01 {
-                Text("\(kg(loading.shortfallKg)) kg short of \(kg(targetKg)) with your plates")
-                    .font(StrandFont.caption).foregroundStyle(theme.warning)
+                shortfallNotice
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Amber strip under the dominant number when the rack can't hit the target exactly.
+    private var shortfallNotice: some View {
+        Text("Your plates can't hit \(kg(targetKg)) kg exactly — closest is \(kg(loading.achievedKg)) kg")
+            .font(StrandFont.caption)
+            .foregroundStyle(theme.inkSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .background(
+                theme.tint(theme.warning),
+                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                    .strokeBorder(theme.softStroke(theme.warning), lineWidth: 1)
+            )
+            .overlay(alignment: .leading) { Rectangle().fill(theme.warning).frame(width: 2.5) }
+            .padding(.top, 4)
     }
 
     /// «20 + 15 + 1,25 · barra 20 kg» — the per-side breakdown, heaviest first.
@@ -127,26 +146,81 @@ struct PlatesScreen: View {
     private var inventorySection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("My plates").groteskOverline().foregroundStyle(theme.inkTertiary)
+                Text("YOUR INVENTORY · PER SIDE").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Button(action: { withAnimation(.snappy) { editingInventory.toggle() } }) {
                     Text(editingInventory ? "Done" : "Edit")
-                        .font(StrandFont.caption).foregroundStyle(theme.dataStrain)
+                        .font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
                 }
             }
-            barStepper
-            PlateChips(items: chipItems)
+            if editingInventory {
+                inventoryEditor
+            } else {
+                PlateChips(items: chipItems)
+            }
         }
     }
 
+    /// Read-mode chips: owned denominations with their pair counts («20 ×1», «10 ×2»).
     private var chipItems: [PlateChips.Chip] {
-        PlatesStore.selectableKg.map { kg in
-            let owned = store.owns(kg)
-            let visible = editingInventory || owned
-            return PlateChips.Chip(id: kg, label: plate(kg), owned: owned, visible: visible) {
-                if editingInventory { store.toggle(kg) }
+        PlatesStore.selectableKg.compactMap { kg in
+            let count = store.pairs(for: kg)
+            guard count > 0 else { return nil }
+            return PlateChips.Chip(
+                id: kg,
+                label: "\(plate(kg)) ×\(count)",
+                owned: true
+            )
+        }
+    }
+
+    /// Edit mode: a stepper row per denomination, then the bar weight.
+    private var inventoryEditor: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(PlatesStore.selectableKg, id: \.self) { kg in
+                pairRow(kg)
+                Rectangle().fill(theme.hairline).frame(height: 1)
+            }
+            barStepper
+        }
+    }
+
+    private func pairRow(_ kg: Double) -> some View {
+        let count = store.pairs(for: kg)
+        return HStack(spacing: 12) {
+            Text("\(plate(kg)) kg")
+                .font(StrandFont.subhead)
+                .foregroundStyle(count > 0 ? theme.ink : theme.inkTertiary)
+            Spacer()
+            pairStepper(system: "minus") {
+                store.setPairs(count - 1, for: kg)
+            }
+            .disabled(count <= 0)
+            .opacity(count <= 0 ? 0.4 : 1)
+            Text("\(count)")
+                .font(StrandFont.subhead).monospacedDigit()
+                .foregroundStyle(theme.ink)
+                .frame(minWidth: 24, alignment: .center)
+            pairStepper(system: "plus") {
+                store.setPairs(count + 1, for: kg)
             }
         }
+        .padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("\(plate(kg)) kg, \(count) pairs"))
+    }
+
+    /// Circular − / + control (bordered circle, hairline stroke) — matches the session stepper vocabulary.
+    private func pairStepper(system: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: system)
+                .font(StrandFont.glyph(.inline, weight: .semibold))
+                .foregroundStyle(theme.inkSecondary)
+                .frame(width: 34, height: 34)
+                .background(theme.surface, in: Circle())
+                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private var barStepper: some View {
@@ -154,10 +228,9 @@ struct PlatesScreen: View {
             Text("Bar").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             Spacer()
             Text("\(kg(store.barKg)) kg").font(StrandFont.subhead).monospacedDigit().foregroundStyle(theme.ink)
-            if editingInventory {
-                Stepper("", value: $store.barKg, in: 5...25, step: 5).labelsHidden()
-            }
+            Stepper("", value: $store.barKg, in: 5...25, step: 5).labelsHidden()
         }
+        .padding(.vertical, 10)
     }
 
     // MARK: Warm-up
@@ -224,15 +297,13 @@ struct PlatesScreen: View {
 
 // MARK: - Inventory chips (a small wrapping row)
 
-/// A simple wrapping chip row for the plate inventory — owned chips read in ink, un-owned (edit mode)
-/// read as a muted outline. Kept local to this screen (single use).
+/// A simple wrapping chip row for the plate inventory — owned chips read in ink. Kept local to this
+/// screen (single use); the edit mode uses per-denomination steppers instead.
 struct PlateChips: View {
     struct Chip: Identifiable {
         let id: Double
         let label: String
         let owned: Bool
-        let visible: Bool
-        let tap: () -> Void
     }
     let items: [Chip]
     @Environment(\.instrumentoTheme) private var theme
@@ -240,17 +311,14 @@ struct PlateChips: View {
     var body: some View {
         // A lazy grid wraps naturally at this width without a custom layout.
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 54), spacing: 6)], alignment: .leading, spacing: 6) {
-            ForEach(items.filter(\.visible)) { chip in
-                Button(action: chip.tap) {
-                    Text(chip.label)
-                        .font(StrandFont.subhead).monospacedDigit()
-                        .foregroundStyle(chip.owned ? theme.ink : theme.inkTertiary)
-                        .padding(.horizontal, 12).frame(height: 34)
-                        .background(Capsule().fill(chip.owned ? theme.surface : Color.clear))
-                        .overlay(Capsule().strokeBorder(chip.owned ? theme.hairlineStrong : theme.hairline,
-                                                        style: StrokeStyle(lineWidth: 1, dash: chip.owned ? [] : [3, 3])))
-                }
-                .buttonStyle(.plain)
+            ForEach(items) { chip in
+                Text(chip.label)
+                    .font(StrandFont.subhead).monospacedDigit()
+                    .foregroundStyle(chip.owned ? theme.ink : theme.inkTertiary)
+                    .padding(.horizontal, 12).frame(height: 34)
+                    .background(Capsule().fill(chip.owned ? theme.surface : Color.clear))
+                    .overlay(Capsule().strokeBorder(chip.owned ? theme.hairlineStrong : theme.hairline,
+                                                    style: StrokeStyle(lineWidth: 1, dash: chip.owned ? [] : [3, 3])))
             }
         }
     }
