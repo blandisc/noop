@@ -347,15 +347,29 @@ struct WeeklyPlanEditorView: View {
                 divider
                 // The mock folds templates / import / folders into one row; the menu keeps all three
                 // functions (decision A: conserve plantillas, import, carpetas behind this row).
-                actionMenuRow("rectangle.stack", "Templates · Import · Folders", isPresented: $showToolsMenu, items: [
-                    .init(String(localized: "Start from a template"), systemImage: "square.stack.3d.up") { showTemplates = true },
-                    .init(String(localized: "Import plan"), systemImage: "square.and.arrow.down") { showImport = true },
-                    .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
-                ])
+                actionMenuRow("rectangle.stack", "Templates · Import · Folders", isPresented: $showToolsMenu, items: toolsMenuItems)
                 divider
                 actionRow("book", "Exercise library", action: openLibrary)
             }
         }
+    }
+
+    /// Items for the «Templates · Import · Folders» menu. Folders are degraded (decision A): they're not
+    /// shown as headers in the body, but each existing folder keeps Rename/Delete here so full folder
+    /// management stays reachable (FER-890 QA D1 — they used to hang off the removed folder headers).
+    private var toolsMenuItems: [PaperMenuItem] {
+        var items: [PaperMenuItem] = [
+            .init(String(localized: "Start from a template"), systemImage: "square.stack.3d.up") { showTemplates = true },
+            .init(String(localized: "Import plan"), systemImage: "square.and.arrow.down") { showImport = true },
+            .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
+        ]
+        for f in folders {
+            items.append(.init(f.name, systemImage: "folder", children: [
+                .init(String(localized: "Rename folder…"), systemImage: "pencil") { startRename(f) },
+                .init(String(localized: "Delete folder"), systemImage: "trash", isDestructive: true) { deleteFolder(f) }
+            ]))
+        }
+        return items
     }
 
     private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
@@ -584,6 +598,14 @@ struct WeeklyPlanEditorView: View {
         Task {
             guard let store = await repo.storeHandle() else { return }
             try? await store.saveFolder(RoutineFolder(id: f.id, name: name, sortOrder: f.sortOrder))
+            await load()
+        }
+    }
+
+    private func deleteFolder(_ f: RoutineFolder) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.deleteFolder(id: f.id)
             await load()
         }
     }
