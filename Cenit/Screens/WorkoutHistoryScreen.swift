@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
+import StrandAnalytics
 import StrandTraining
 
 // WorkoutHistoryScreen.swift — «Mis entrenamientos» (FER-504): the completed strength sessions, newest
@@ -55,6 +56,10 @@ struct WorkoutHistoryScreen: View {
     @State private var sessions: [StrengthSession] = []
     @State private var routineNames: [String: String] = [:]
     @State private var volumes: [String: (volumeKg: Double, setCount: Int)] = [:]
+    /// Trailing-30-day muscle set events for the compact «Volume per muscle» summary (FER-719 math).
+    @State private var muscleEvents: [MuscleFatigueMap.MuscleSetEvent] = []
+    /// Progression signals (raised / waiting / stalled) for exercises with progression enabled.
+    @State private var progressionRows: [ProgressionRow] = []
     @State private var loaded = false
 
     var body: some View {
@@ -67,6 +72,8 @@ struct WorkoutHistoryScreen: View {
                     } else {
                         monthlyTotal
                         weeklyBars
+                        muscleVolumeInline
+                        progressionBlock
                         list
                         savedTicketsEntry
                     }
@@ -89,8 +96,8 @@ struct WorkoutHistoryScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            InstrumentoFlowTitle(Text("My workouts"))
-            Text("The strength sessions you've finished.")
+            InstrumentoFlowTitle(Text("On the rise"))
+            Text("\(monthAggregate.count) sessions this month")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             // «Volumen por músculo» (Entrenar v3 · 3d, FER-719) — the history's stats view.
@@ -139,7 +146,19 @@ struct WorkoutHistoryScreen: View {
         if weeks.contains(where: { $0.volumeKg > 0 }) {
             let peak = max(weeks.map(\.volumeKg).max() ?? 1, 1)
             VStack(alignment: .leading, spacing: 8) {
-                Text("Volume per week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Volume per week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    if let delta = monthVolumeDeltaPercent {
+                        let up = delta >= 0
+                        let n = Int(delta.rounded())
+                        HStack(spacing: 3) {
+                            Image(systemName: up ? "arrow.up.right" : "arrow.down.right")
+                            Text("\(up ? "+" : "")\(n)% vs last month")
+                        }
+                        .font(StrandFont.caption)
+                        .foregroundStyle(up ? theme.dataRecovery : theme.warning)
+                    }
+                }
                 HStack(alignment: .bottom, spacing: 6) {
                     ForEach(weeks) { w in
                         RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: geometría de dato
@@ -151,6 +170,97 @@ struct WorkoutHistoryScreen: View {
                 .frame(height: 54)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text("Volume over the last 8 weeks"))
+            }
+        }
+    }
+
+    // MARK: - Volume per muscle (compact inline summary, trailing 30 d)
+
+    @ViewBuilder
+    private var muscleVolumeInline: some View {
+        let volumes = MuscleFatigueMap.weeklyVolumes(events: muscleEvents, days: 30)
+        if !volumes.isEmpty {
+            let railTop = MuscleFatigueMap.weeklyVolumeRailTop
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Volume per muscle").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                VStack(spacing: 0) {
+                    ForEach(volumes, id: \.muscle) { v in
+                        let below = v.band == .below
+                        HStack(spacing: 12) {
+                            Text(MuscleAtlas.name(v.muscle))
+                                .font(StrandFont.body).foregroundStyle(theme.ink)
+                                .lineLimit(1).minimumScaleFactor(0.85)
+                                .frame(width: 96, alignment: .leading)
+                            GeometryReader { geo in
+                                let w = geo.size.width
+                                let lo = MuscleFatigueMap.weeklyBandLow / railTop
+                                let hi = MuscleFatigueMap.weeklyBandHigh / railTop
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 3).fill(theme.hairline)  // token-exempt: geometría de dato
+                                        .frame(width: w * (hi - lo), height: 14)
+                                        .offset(x: w * lo)
+                                    RoundedRectangle(cornerRadius: 3)  // token-exempt: geometría de dato
+                                        .fill(below ? theme.warning : theme.ink)
+                                        .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
+                                }
+                                .frame(height: 14, alignment: .leading)
+                            }
+                            .frame(height: 14)
+                            Text(MuscleFatigueMap.formattedSets(v.setsPerWeek))
+                                .font(StrandFont.captionNumber)
+                                .fontWeight(below ? .semibold : .regular)
+                                .foregroundStyle(below ? theme.warning : theme.ink)
+                                .frame(width: 34, alignment: .trailing)
+                        }
+                        .frame(minHeight: 40)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(MuscleAtlas.name(v.muscle)))
+                        .accessibilityValue(Text("\(MuscleFatigueMap.formattedSets(v.setsPerWeek)) sets per week"))
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Your progression (raised / waiting / stalled signals)
+
+    @ViewBuilder
+    private var progressionBlock: some View {
+        if !progressionRows.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Your progression").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                ForEach(progressionRows) { row in
+                    HStack(spacing: 10) {
+                        Text(row.name)
+                            .font(StrandFont.body).foregroundStyle(theme.ink)
+                            .lineLimit(1).minimumScaleFactor(0.85)
+                        Spacer(minLength: 8)
+                        switch row.kind {
+                        case .raised(let kg):
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.up")
+                                Text(StrengthDisplay.weight(kg, system: system))
+                            }
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.dataRecovery)
+                            .monospacedDigit()
+                        case .deferred(let kg):
+                            HStack(spacing: 4) {
+                                Text("…")
+                                Text(StrengthDisplay.weight(kg, system: system))
+                            }
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkTertiary)
+                            .monospacedDigit()
+                        case .stalled:
+                            Text("=")
+                                .font(StrandFont.caption)
+                                .foregroundStyle(theme.warning)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    .accessibilityElement(children: .combine)
+                }
             }
         }
     }
@@ -305,13 +415,41 @@ struct WorkoutHistoryScreen: View {
 
     private struct MonthAggregate { let count: Int; let hours: Double; let volumeKg: Double; let energyKcal: Double? }
 
+    /// One row in «Your progression»: an exercise whose cycle is raised, deferred, or stalled.
+    private struct ProgressionRow: Identifiable {
+        enum Kind {
+            case raised(newKg: Double)
+            case deferred(newKg: Double)
+            case stalled
+        }
+        let id: String
+        let name: String
+        let kind: Kind
+    }
+
     /// This calendar month's totals across finished sessions. kcal sums only sessions that carry it; nil
     /// when none do (so the cell is omitted rather than showing a partial or zero total).
-    private var monthAggregate: MonthAggregate {
+    private var monthAggregate: MonthAggregate { aggregate(forMonthOf: Date()) }
+
+    /// Previous calendar month's totals — same pattern as `monthAggregate`, one month back.
+    private var previousMonthAggregate: MonthAggregate {
         let cal = Calendar.current
-        let now = Date()
+        let prev = cal.date(byAdding: .month, value: -1, to: Date()) ?? Date.distantPast
+        return aggregate(forMonthOf: prev)
+    }
+
+    /// Percent volume change this month vs last. nil when either side has no volume (avoids ÷0 / ∞%).
+    private var monthVolumeDeltaPercent: Double? {
+        let this = monthAggregate.volumeKg
+        let prev = previousMonthAggregate.volumeKg
+        guard prev > 0, this > 0 else { return nil }
+        return (this - prev) / prev * 100
+    }
+
+    private func aggregate(forMonthOf reference: Date) -> MonthAggregate {
+        let cal = Calendar.current
         let inMonth = sessions.filter {
-            cal.isDate(Date(timeIntervalSince1970: TimeInterval($0.startTs)), equalTo: now, toGranularity: .month)
+            cal.isDate(Date(timeIntervalSince1970: TimeInterval($0.startTs)), equalTo: reference, toGranularity: .month)
         }
         var seconds = 0
         var kcal = 0.0
@@ -400,11 +538,56 @@ struct WorkoutHistoryScreen: View {
         async let s = repo.recentSessions()
         async let r = repo.routines()
         async let v = repo.sessionVolumes()
-        let (sessions, routines, volumes) = await (s, r, v)
+        // Compact muscle summary: trailing 30 days (not the full year the dedicated screen fetches).
+        let cal = Calendar.current
+        let muscleSinceTs: Int = {
+            guard let d = cal.date(byAdding: .day, value: -30, to: cal.startOfDay(for: Date())) else { return 0 }
+            return Int(d.timeIntervalSince1970)
+        }()
+        async let muscle = repo.muscleSetEvents(sinceTs: muscleSinceTs)
+        let (sessions, routines, volumes, muscleEvents) = await (s, r, v, muscle)
         self.sessions = sessions
         self.routineNames = Dictionary(routines.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
         self.volumes = volumes
+        self.muscleEvents = muscleEvents
         self.loaded = true
+        // Progression can take a beat (routines × exercises); paint the rest of the screen first.
+        self.progressionRows = await loadProgressionRows()
+    }
+
+    /// Exercises with progression enabled (deduped by exerciseId, first routine slot wins — same rule as
+    /// ExerciseDetailScreen), classified into raised / deferred / stalled. Cap ~6 rows.
+    private func loadProgressionRows() async -> [ProgressionRow] {
+        let inventory = await MainActor.run { PlatesStore().inventory }
+        let recovery = repo.today?.recovery
+        let routines = await repo.routines()
+        var seen = Set<String>()
+        var slots: [RoutineExercise] = []
+        for r in routines {
+            let exs = await repo.routineExercises(routineId: r.id)
+            for re in exs where re.progressionEnabled {
+                if seen.insert(re.exerciseId).inserted { slots.append(re) }
+            }
+        }
+        var rows: [ProgressionRow] = []
+        for re in slots {
+            let ex = await repo.resolvedExercise(re.exerciseId)
+            let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, recovery: recovery)
+            guard let eval = seed.evaluation else { continue }
+            let name = ex.map(StrengthDisplay.name) ?? re.exerciseId
+            switch eval.state {
+            case .readyToAdvance(let newKg):
+                rows.append(.init(id: re.exerciseId, name: name, kind: .raised(newKg: newKg)))
+            case .deferred(let newKg):
+                rows.append(.init(id: re.exerciseId, name: name, kind: .deferred(newKg: newKg)))
+            case .stalled(_), .deloading(_, _):
+                rows.append(.init(id: re.exerciseId, name: name, kind: .stalled))
+            case .inCycle:
+                break
+            }
+            if rows.count >= 6 { break }
+        }
+        return rows
     }
 }
 
