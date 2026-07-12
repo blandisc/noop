@@ -147,7 +147,7 @@ struct ReceiptPrinterScreen: View {
                 ThermalTicketShape(topRadius: 7, toothWidth: 11, toothHeight: 7)
                     .fill(ThermalPalette.paper)
                     .frame(width: ticketWidth, height: 18)
-                    .shadow(color: .black.opacity(0.08), radius: 2, y: 1)
+                    .shadow(color: .black.opacity(0.08), radius: 2, y: 1)   // token-exempt: recibo térmico, el único objeto no-Instrumento (sombra de la impresora)
                     .offset(y: 2)
             }
 
