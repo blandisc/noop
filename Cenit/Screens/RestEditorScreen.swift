@@ -131,7 +131,7 @@ struct RestEditorScreen: View {
             Text("Rest ends when your pulse drops to the threshold. The strap buzzes when you're ready.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
             SegmentedPillControl([HRRestReference.restingMargin, .karvonenReserve], selection: $hrRef, theme: theme, inkThumb: true) {
-                $0 == .restingMargin ? String(localized: "Over your rest") : String(localized: "Reserve")
+                $0 == .restingMargin ? String(localized: "Over your rest") : String(localized: "Karvonen")
             }
             if hrRef == .restingMargin { marginBody } else { reserveBody }
         }
@@ -239,9 +239,9 @@ struct RestEditorScreen: View {
 
     private var scopeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Apply to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Scope").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             SegmentedPillControl([false, true], selection: $applyToAll, theme: theme, inkThumb: true) {
-                $0 ? String(localized: "All sets") : String(localized: "This set only")
+                $0 ? String(localized: "All sets") : String(localized: "This set")
             }
         }
     }
