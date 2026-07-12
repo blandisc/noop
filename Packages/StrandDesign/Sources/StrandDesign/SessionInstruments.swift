@@ -62,8 +62,9 @@ public struct SessionProgressBar: View {
     let segments: [Segment]
     let hue: Color
     var track: Color
-    public init(segments: [Segment], hue: Color, track: Color) {
-        self.segments = segments; self.hue = hue; self.track = track
+    var height: CGFloat
+    public init(segments: [Segment], hue: Color, track: Color, height: CGFloat = 5) {
+        self.segments = segments; self.hue = hue; self.track = track; self.height = height
     }
     public var body: some View {
         GeometryReader { geo in
@@ -83,7 +84,7 @@ public struct SessionProgressBar: View {
                 }
             }
         }
-        .frame(height: 5)
+        .frame(height: height)
     }
 }
 

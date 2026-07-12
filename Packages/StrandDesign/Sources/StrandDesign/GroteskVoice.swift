@@ -116,6 +116,10 @@ public extension InstrumentoType {
     static let groteskSessionClock = groteskNumber(27)
     static let groteskSessionClockTracking: CGFloat = -1
 
+    /// The compact v21 header clock — the same running datum sat inline beside the BPM in the 2-row
+    /// header (Sesión v21), one size down from the dominant clock — 22/700 tabular, shares the −1 tracking.
+    static let groteskSessionClockInline = groteskNumber(22)
+
     /// The rest card's live datum — the pulse dropping toward the threshold, or the time countdown
     /// («116» / «1:12») — 38/600 tabular, tracking −0.8. FIXED.
     static let groteskRestPulse = groteskNumber(38, weight: .semibold)

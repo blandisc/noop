@@ -1097,53 +1097,54 @@ struct LiveStrengthSheet: View {
             }
             .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
 
-            // Row 2: per-exercise progress, filled by how done each exercise is.
-            SessionProgressBar(segments: progressSegments,
-                               hue: session.paused ? theme.inkDim : theme.dataStrain,   // FER-823: no hue while paused
-                               track: theme.hairline)
-                .accessibilityLabel(Text("Session progress"))
-                .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
-
-            // Row 3: the big running clock (the session's dominant datum in the header). FER-823: it counts
-            // ACTIVE time (excludes pauses), so it naturally freezes while paused and dims to `inkDim`.
-            TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                let elapsed = session.elapsedSeconds(now: ctx.date)
-                Text(Self.clock(elapsed))
-                    .font(InstrumentoType.groteskSessionClock)
-                    .tracking(InstrumentoType.groteskSessionClockTracking)
-                    .foregroundStyle(session.paused ? theme.inkDim : theme.ink)
-                    .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
-                                                             : "Elapsed \(Self.clock(elapsed))"))
-            }
-            if session.paused {
-                Text("Paused").font(StrandFont.caption).textCase(.uppercase).tracking(0.8)
-                    .foregroundStyle(theme.inkTertiary)
-                    .accessibilityHidden(true)   // the clock already announces the paused state
-            }
-
-            // Row 4: quiet counters — volume · sets · (kcal only when the strap is streaming, no dashes).
-            Text(counterLine).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
-                .accessibilityElement(children: .combine)
-
-            // Row 5: live BPM with the one always-on pulse of the app — hidden (not dashed) with no strap.
-            // PulseReader: only this row re-evaluates per heartbeat, including its presence (FER-755).
-            PulseReader(model.live.pulse) { p in
-                if let bpm = p.smoothedBpm {
-                    HStack(spacing: 6) {
-                        BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
-                        Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
+            // Row 2 (Sesión v21): Rows 2–6 collapsed into ONE compact band. The running clock with the BPM
+            // fused right beside it, the volume·series counter to the right, and the per-exercise progress as
+            // a 3px filete underneath. FER-823: the clock counts ACTIVE time (freezes + dims while paused).
+            // kcal rides inside `counterLine` only while the strap streams (no dashes). The BPM/pulse and the
+            // filete keep every datum the old rows carried — only their arrangement changes.
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                        let elapsed = session.elapsedSeconds(now: ctx.date)
+                        Text(Self.clock(elapsed))
+                            .font(InstrumentoType.groteskSessionClockInline)
+                            .tracking(InstrumentoType.groteskSessionClockTracking)
+                            .foregroundStyle(session.paused ? theme.inkDim : theme.ink)
+                            .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
+                                                                     : "Elapsed \(Self.clock(elapsed))"))
                     }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(Text("Heart rate \(bpm)"))
-                } else if let rec = recovery {
-                    // No strap: keep the «push / hold / ease» autoregulation line (F6), discreet, in place of BPM.
-                    Text(recoveryLine(rec)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    // BPM fused to the clock — the app's one always-on pulse. Hidden (not dashed) with no strap.
+                    // PulseReader: only this fragment re-evaluates per heartbeat, including its presence (FER-755).
+                    PulseReader(model.live.pulse) { p in
+                        if let bpm = p.smoothedBpm {
+                            HStack(spacing: 6) {
+                                BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
+                                Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(Text("Heart rate \(bpm)"))
+                        }
+                    }
+                    if session.paused {
+                        Text("Paused").font(StrandFont.caption).textCase(.uppercase).tracking(0.8)
+                            .foregroundStyle(theme.inkTertiary)
+                            .accessibilityHidden(true)   // the clock already announces the paused state
+                    }
+                    Spacer(minLength: 8)
+                    // Quiet counters — volume · series · (kcal only when the strap is streaming, no dashes).
+                    Text(counterLine).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
+                        .accessibilityElement(children: .combine)
                 }
+                // Per-exercise progress, now a 3px filete under the metrics band (FER-823: no hue while paused).
+                SessionProgressBar(segments: progressSegments,
+                                   hue: session.paused ? theme.inkDim : theme.dataStrain,
+                                   track: theme.hairline, height: 3)
+                    .accessibilityLabel(Text("Session progress"))
+                    .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
             }
 
-            // Row 6: the Apple Watch mirror status (FER-742) — one tertiary line, silent unless the watch
-            // is recording or failed to answer. Never competes with the session; never blocks it.
+            // The Apple Watch mirror status (FER-742) — v21: drawn ONLY when the watch fails (didn't respond /
+            // no watch this session). The normal recording state costs no row. Never competes with the session.
             watchStatusLine
 
             // Focus mode entry (mock v21): full-screen capture/rest; does not replace the inline table.
@@ -1595,18 +1596,8 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Today's recovery score (nil while calibrating) — drives the header's autoregulation line (F2/F6).
+    /// Today's recovery score (nil while calibrating) — feeds the muscle-fatigue readiness map.
     private var recovery: Double? { model.repo.today?.recovery }
-
-    /// The compact «push / hold / ease» implication of today's recovery, same copy as the landing hero
-    /// (cited rule: `TrainingRegulation`, StrandAnalytics). Reused strings — no new catalog keys.
-    private func recoveryLine(_ rec: Double) -> String {
-        switch TrainingRegulation.suggest(recovery: rec)?.reason {
-        case .recoveryHigh: return String(localized: "Recovery high for you · you can take on your full plan.")
-        case .recoveryLow:  return String(localized: "Recovery low for you · maybe ease the volume today.")
-        default:            return String(localized: "Recovery in your range · train at your usual load.")
-        }
-    }
 
     /// The Apple Watch mirror line (FER-742): «Reloj grabando» when the watch confirms; «El reloj no
     /// respondió» + «Reintentar» on a first miss; «Sin reloj esta sesión» once the retry is spent. Nothing
@@ -1614,13 +1605,12 @@ struct LiveStrengthSheet: View {
     @ViewBuilder
     private var watchStatusLine: some View {
         switch model.watchSessionStatus {
-        case .recording:
-            watchLine("applewatch", "Watch recording", retry: false)
         case .notResponding:
             watchLine("applewatch.slash", "The watch didn't respond", retry: true)
         case .unavailable:
             watchLine("applewatch.slash", "No watch this session", retry: false)
-        case .inactive, .waiting:
+        case .recording, .inactive, .waiting:
+            // v21: normal states (including a healthy «recording» mirror) cost no row — silent unless it fails.
             EmptyView()
         }
     }
@@ -1668,6 +1658,7 @@ struct LiveStrengthSheet: View {
                 .accessibilityLabel(Text(run.name))
                 .accessibilityHint(Text("View exercise detail"))
                 }
+                reorderHandle(ei: ei, run: run)
             }
             // FER-E · 2b: the earned raise, named where you train. «↑ hoy 102,5 · por qué» toggles the
             // arithmetic card; green because the raise IS the datum.
@@ -1679,6 +1670,48 @@ struct LiveStrengthSheet: View {
             if !reflow { columnHeader(run.type) }
         }
         .padding(.top, first ? NoopMetrics.gap : NoopMetrics.sectionGap)
+    }
+
+    /// The always-on, tenue reorder affordance (Sesión v21): a «≡» handle on each exercise header. Dragging
+    /// it up/down reorders the exercise directly, riding the existing swap logic (`moveExerciseEarlier`,
+    /// which keeps the focused exercise focused) — the same reorder the plan navigator exposes, now with a
+    /// visible grab. VoiceOver gets explicit move-earlier / move-later actions since a drag isn't reachable.
+    private func reorderHandle(ei: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
+        Image(systemName: "line.3.horizontal")
+            .font(StrandFont.glyph(.chevron))
+            .foregroundStyle(theme.inkTertiary)
+            .frame(width: 30, height: 44)
+            .contentShape(Rectangle())
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 6)
+                    .onEnded { value in
+                        // Translate the vertical drag into whole-slot moves (~one exercise row per step).
+                        let step: CGFloat = 56
+                        let steps = Int((value.translation.height / step).rounded())
+                        if steps != 0 { withAnimation(.snappy) { reorderExercise(ei, by: steps) } }
+                    }
+            )
+            .accessibilityLabel(Text("Reorder \(run.name)"))
+            .accessibilityHint(Text("Drag to change the order"))
+            .accessibilityAction(named: Text("Move earlier")) {
+                withAnimation(.snappy) { reorderExercise(ei, by: -1) }
+            }
+            .accessibilityAction(named: Text("Move later")) {
+                withAnimation(.snappy) { reorderExercise(ei, by: 1) }
+            }
+    }
+
+    /// Move the exercise at `ei` by `steps` slots (negative = earlier, positive = later), one swap at a time.
+    /// Both directions ride the existing `moveExerciseEarlier` swap (moving a slot later == pulling the next
+    /// one earlier), so the session engine and its focus tracking stay the single source of truth.
+    private func reorderExercise(_ ei: Int, by steps: Int) {
+        guard steps != 0 else { return }
+        var idx = ei
+        if steps < 0 {
+            for _ in 0..<(-steps) where idx > 0 { session.moveExerciseEarlier(idx); idx -= 1 }
+        } else {
+            for _ in 0..<steps where idx < session.runs.count - 1 { session.moveExerciseEarlier(idx + 1); idx += 1 }
+        }
     }
 
     // MARK: Proposed raise (FER-E)
