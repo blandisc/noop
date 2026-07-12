@@ -815,7 +815,7 @@ final class IntelligenceEngine: ObservableObject {
     /// `Baselines.minNightsSeed` (4) with headroom yet stay under `minNightsTrust` (14), so the seeded
     /// baseline lands PROVISIONAL — confidence-shrunk — not fully trusted. This is the lever for "how
     /// much to trust Apple Health before the strap has accrued its own nights".
-    static let applePriorMaxNights = 7
+    nonisolated static let applePriorMaxNights = 7
 
     /// The capped set of most-recent Apple Health nights usable as a baseline prior: the nights that
     /// carry a usable HRV, newest `maxNights`. `store.dailyMetrics(...)` returns rows day-ascending, so

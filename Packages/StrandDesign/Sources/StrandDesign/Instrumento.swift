@@ -25,7 +25,7 @@ import SwiftUI
 /// The semantic color roles of the «Instrumento diurno» language, in one
 /// instance so the hour engine (FER-132) can vary them. Inject with
 /// `.instrumentoTheme(_:)`; read with `@Environment(\.instrumentoTheme)`.
-public struct InstrumentoTheme: Equatable {
+public struct InstrumentoTheme: Equatable, Sendable {
 
     // MARK: Surfaces — warm paper
     /// App canvas — warm bone paper (never pure white).
