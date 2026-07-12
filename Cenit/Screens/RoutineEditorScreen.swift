@@ -257,13 +257,7 @@ struct RoutineEditorScreen: View {
                 }
                 if !locked { addSetRow(idx).plainRow(top: 4) }
             }
-        if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: 4) }
-        Text(startsSession
-             ? String(localized: "Changes are saved to the routine when you leave or start.")
-             : String(localized: "Changes are saved to the routine when you leave."))
-            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .plainRow(top: 8, bottom: NoopMetrics.screenPadding)
+        if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: NoopMetrics.screenPadding) }
     }
 
     // MARK: - Drag reorder (6a, FER-841)
@@ -506,9 +500,7 @@ struct RoutineEditorScreen: View {
     private func exerciseMenuItems(_ idx: Int) -> [PaperMenuItem] {
         let item = items[idx]
         var rows: [PaperMenuItem] = []
-        if !hasWarmups(idx) {
-            rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") { addWarmupRamp(idx) })
-        }
+        // «Add warm-up» is a visible button next to «Add set» when none exist yet — not in the menu.
         let res = items.map(\.re)
         if idx < items.count - 1 && !RoutineSetEditing.sameGroup(res, idx, idx + 1) {
             rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
@@ -649,15 +641,29 @@ struct RoutineEditorScreen: View {
     }
 
     private func addSetRow(_ idx: Int) -> some View {
-        Button { addSet(idx) } label: {
-            HStack(spacing: 7) {
-                Image(systemName: "plus").font(StrandFont.glyph(.chevron, weight: .semibold))
-                Text("Add set")
+        HStack(spacing: 16) {
+            Button { addSet(idx) } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "plus").font(StrandFont.glyph(.chevron, weight: .semibold))
+                    Text("Add set")
+                }
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .frame(minHeight: 30).contentShape(Rectangle())
             }
-            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading).frame(minHeight: 30).contentShape(Rectangle())
+            .buttonStyle(.plain)
+            if !hasWarmups(idx) {
+                Button { addWarmupRamp(idx) } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "flame").font(StrandFont.glyph(.chevron, weight: .semibold))
+                        Text("Add warm-up")
+                    }
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .frame(minHeight: 30).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
     }
 
     private var addExerciseRow: some View {
