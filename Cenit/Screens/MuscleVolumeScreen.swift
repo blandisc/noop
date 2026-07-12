@@ -66,6 +66,7 @@ struct MuscleVolumeScreen: View {
                         emptyState.padding(.top, 28)
                     } else {
                         rows.padding(.top, 6)
+                        railAxisMarks.padding(.top, 4)
                         insight.padding(.top, 14)
                         methodNote.padding(.top, 12)
                     }
@@ -138,6 +139,41 @@ struct MuscleVolumeScreen: View {
         case .within: return "within the band"
         case .above:  return "above the band"
         }
+    }
+
+    // MARK: - Rail axis marks — 0 / railTop/3 / 2·railTop/3 / railTop, under the bars only
+
+    /// Tick labels aligned to the flexible rail column (same 96 + 12 + rail + 12 + 34 layout as `row`).
+    private var railAxisMarks: some View {
+        // Derived from `railTop` so a future band-rail change keeps the ticks honest (today 0 / 10 / 20 / 30).
+        let marks: [Double] = [0, railTop / 3, 2 * railTop / 3, railTop]
+        return HStack(spacing: 12) {
+            Color.clear.frame(width: 96)
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                ZStack {
+                    // Edge ticks: "0" flush leading, top mark flush trailing (inside the rail width).
+                    HStack {
+                        Text("\(Int(marks[0].rounded()))")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        Spacer(minLength: 0)
+                        Text("\(Int(marks[marks.count - 1].rounded()))")
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    }
+                    // Mid ticks centered on their proportional positions along the rail.
+                    ForEach(Array(marks.dropFirst().dropLast().enumerated()), id: \.offset) { _, mark in
+                        Text("\(Int(mark.rounded()))")
+                            .font(StrandFont.footnote)
+                            .foregroundStyle(theme.inkTertiary)
+                            .position(x: w * CGFloat(mark / railTop), y: h / 2)
+                    }
+                }
+            }
+            .frame(height: 14)
+            Color.clear.frame(width: 34)
+        }
+        .accessibilityHidden(true)
     }
 
     // MARK: - Insight foot — names the below-band muscles, actionably

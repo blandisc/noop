@@ -121,7 +121,19 @@ struct WorkoutHistoryScreen: View {
     private var monthlyTotal: some View {
         let m = monthAggregate
         return VStack(alignment: .leading, spacing: 8) {
-            Text("This month").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("This month").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                if let delta = monthVolumeDeltaPercent {
+                    let up = delta >= 0
+                    let n = Int(delta.rounded())
+                    HStack(spacing: 3) {
+                        Image(systemName: up ? "arrow.up.right" : "arrow.down.right")
+                        Text("\(up ? "+" : "")\(n)% vs last month")
+                    }
+                    .font(StrandFont.caption)
+                    .foregroundStyle(up ? theme.dataRecovery : theme.warning)
+                }
+            }
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .top, spacing: 20) { monthCells(m) }
                 VStack(alignment: .leading, spacing: 10) { monthCells(m) }
@@ -146,19 +158,7 @@ struct WorkoutHistoryScreen: View {
         if weeks.contains(where: { $0.volumeKg > 0 }) {
             let peak = max(weeks.map(\.volumeKg).max() ?? 1, 1)
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Volume per week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    if let delta = monthVolumeDeltaPercent {
-                        let up = delta >= 0
-                        let n = Int(delta.rounded())
-                        HStack(spacing: 3) {
-                            Image(systemName: up ? "arrow.up.right" : "arrow.down.right")
-                            Text("\(up ? "+" : "")\(n)% vs last month")
-                        }
-                        .font(StrandFont.caption)
-                        .foregroundStyle(up ? theme.dataRecovery : theme.warning)
-                    }
-                }
+                Text("Volume per week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .bottom, spacing: 6) {
                     ForEach(weeks) { w in
                         RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: geometría de dato
