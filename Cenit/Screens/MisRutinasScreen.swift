@@ -25,6 +25,9 @@ struct MisRutinasScreen: View {
     @State private var exerciseCounts: [String: Int] = [:]
     /// Top primary muscles per routine (Spanish labels) for the one-line metadata (mock 1c).
     @State private var routineMuscles: [String: [String]] = [:]
+    /// The classified region per routine (`RoutineClassifier`, FER-775 / C2) — the SINGLE source of a
+    /// routine's hue, shared with `EntrenarView`, so the same routine never changes color between screens.
+    @State private var routineRegion: [String: RoutineRegion] = [:]
     /// The weekly split (`weekday → routineId`), so today's routine reads «hoy».
     @State private var schedule: [Int: String] = [:]
     /// Days since each routine was last trained (`routineId → whole days`), for the «hace N d» column.
@@ -111,15 +114,17 @@ struct MisRutinasScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The handoff's per-routine tint (mock 1c/1a): push → ember, pull → teal, leg → indigo, keyed off the
-    /// routine name's split keyword with a stable fallback so each routine keeps one consistent dot.
-    private func routineTint(_ name: String) -> Color {
-        let n = name.lowercased()
-        if n.contains("empuj") || n.contains("push") || n.contains("pecho") { return theme.dataStrain }
-        if n.contains("tir") || n.contains("pull") || n.contains("espalda") { return theme.dataHrv }
-        if n.contains("pierna") || n.contains("leg") || n.contains("quad") || n.contains("glúteo") { return theme.dataSleep }
-        let tints = [theme.dataStrain, theme.dataHrv, theme.dataSleep]
-        return tints[abs(name.hashValue) % tints.count]
+    /// The handoff's per-routine tint (mock 1c/1a), resolved through the shared `RoutineClassifier`
+    /// (FER-775 / C2) by the routine's own exercises — never the name's `hashValue` — so a routine keeps
+    /// the SAME hue here, in the hub and in the editor. push → ember, pull → teal, leg/full → indigo;
+    /// unclassifiable → default ember (matches `EntrenarView.routineTint`).
+    private func routineTint(_ r: Routine) -> Color {
+        switch routineRegion[r.id] {
+        case .push:            return theme.dataStrain
+        case .pull:            return theme.dataHrv
+        case .legs, .fullBody: return theme.dataSleep
+        case nil:              return theme.dataStrain
+        }
     }
 
     // MARK: - The list
@@ -296,7 +301,7 @@ struct MisRutinasScreen: View {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 7) {
                                 RoundedRectangle(cornerRadius: 3, style: .continuous)   // token-exempt: geometría de dato (punto 8pt)
-                                    .fill(routineTint(r.name)).frame(width: 8, height: 8)
+                                    .fill(routineTint(r)).frame(width: 8, height: 8)
                                 Text(r.name).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
                             }
                             Text(metadataLine(r)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -545,16 +550,20 @@ struct MisRutinasScreen: View {
         let byId = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         var counts: [String: Int] = [:]
         var muscles: [String: [String]] = [:]
+        var regions: [String: RoutineRegion] = [:]
         for r in rs {
             let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
             counts[r.id] = exs.count
             muscles[r.id] = Self.topMuscles(exs, byId: byId)
+            let perExercise = exs.compactMap { byId[$0.exerciseId]?.primaryMuscles }
+            regions[r.id] = RoutineClassifier.classify(primaryMusclesPerExercise: perExercise)
         }
         let sched = (try? await store.routineSchedule()) ?? []
         let sessions = (try? await store.recentSessions(limit: 200)) ?? []
         routines = rs
         exerciseCounts = counts
         routineMuscles = muscles
+        routineRegion = regions
         schedule = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
         lastTrainedDays = Self.daysSinceLast(sessions)
         folders = (try? await store.routineFolders()) ?? []
