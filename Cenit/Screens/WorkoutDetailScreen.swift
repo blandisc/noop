@@ -404,7 +404,7 @@ struct WorkoutDetailScreen: View {
             // Pink anchor bar (chrome, static) + a staggered column: the overline is fixed; the number,
             // verdict, baseline and disclaimer rise+fade 70 ms apart. Color lives only on the bpm datum.
             HStack(alignment: .top, spacing: 11) {
-                RoundedRectangle(cornerRadius: 2).fill(theme.dataHeart)
+                RoundedRectangle(cornerRadius: 2).fill(theme.dataHeart) // token-exempt: geometría de dato (barra ancla HRR)
                     .frame(width: 3).padding(.vertical, 3)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Cardiac recovery · 60 s").instrumentoOverline().foregroundStyle(theme.inkTertiary)
