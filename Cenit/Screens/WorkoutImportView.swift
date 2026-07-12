@@ -90,6 +90,7 @@ struct WorkoutImportView: View {
 
     private var captureFlow: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            stepper(current: .capture)
             header("Import plan", "Bring your plan from your AI")
 
             step(1, "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).") {
@@ -150,6 +151,7 @@ struct WorkoutImportView: View {
 
     private var mappingFlow: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            stepper(current: .mapping)
             header("Import plan", "\(unmatched.count) exercises to set up")
             Text("These aren't in your library. Match each one to an exercise you have, or create it.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -255,6 +257,7 @@ struct WorkoutImportView: View {
 
     private func confirmFlow(_ program: WorkoutProgram) -> some View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            stepper(current: .confirm)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Import plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 nameText(program.name, fallback: "Your program").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -308,6 +311,7 @@ struct WorkoutImportView: View {
 
     private var doneFlow: some View {
         VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            stepper(current: .done)
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 40, weight: .regular)).foregroundStyle(theme.verdict)   // token-exempt: glifo de éxito 40pt (empty token es 34)
@@ -322,6 +326,44 @@ struct WorkoutImportView: View {
     }
 
     // MARK: - Shared pieces
+
+    /// 4-step progress strip: Capture → Map → Confirm → Done. Current + past steps use the strain/ember
+    /// accent; future steps stay hairline. Labels dim except the active step.
+    private func stepper(current: Phase) -> some View {
+        let labels: [LocalizedStringKey] = ["Capture", "Map", "Confirm", "Done"]
+        let currentIndex = phaseIndex(current)
+        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            HStack(spacing: NoopMetrics.space2) {
+                ForEach(0..<labels.count, id: \.self) { i in
+                    Capsule()
+                        .fill(i <= currentIndex ? theme.dataStrain : theme.hairline)
+                        .frame(height: 3)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            HStack(spacing: NoopMetrics.space2) {
+                ForEach(0..<labels.count, id: \.self) { i in
+                    Text(labels[i])
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(i == currentIndex ? theme.ink : theme.inkTertiary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Step \(currentIndex + 1) of 4"))
+    }
+
+    private func phaseIndex(_ phase: Phase) -> Int {
+        switch phase {
+        case .capture: return 0
+        case .mapping: return 1
+        case .confirm: return 2
+        case .done:    return 3
+        }
+    }
 
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 4) {

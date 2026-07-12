@@ -96,6 +96,8 @@ struct ProgressionSetupScreen: View {
                 .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
                 .padding(.top, 16)
 
+                consequence.padding(.top, 14)
+
                 Group {
                     row(title: Text("Rep goal"),
                         subtitle: Text("applies to all \(workSetCount) work sets")) {
@@ -123,8 +125,7 @@ struct ProgressionSetupScreen: View {
                 }
                 .disabled(!enabled)
                 .opacity(enabled ? 1 : StrandPalette.disabledOpacity)
-
-                consequence.padding(.top, 14)
+                .padding(.top, 14)
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.top, 12).padding(.bottom, NoopMetrics.screenPadding)
