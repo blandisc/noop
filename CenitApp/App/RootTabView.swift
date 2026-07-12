@@ -96,7 +96,7 @@ struct RootTabView: View {
                     openDiet: { trainStack.append(SecondaryScreen.dieta) },
                     openHistory: { trainStack.append(SecondaryScreen.workoutHistory) },
                     openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
-                    openRoutines: { trainStack.append(SecondaryScreen.misRutinas) },
+                    openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
                     openRestDay: { trainStack.append(SecondaryScreen.restDay) },
                     openOtherWays: { trainStack.append(SecondaryScreen.otherWays) },
                     openWorkoutSession: { trainStack.append($0) }
@@ -342,10 +342,13 @@ struct RootTabView: View {
         case .workoutHistory: WorkoutHistoryScreen()
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
-        case .weeklyPlan:   WeeklyPlanEditorView(openRoutines: { trainStack.append(SecondaryScreen.misRutinas) },
-                                                 openDay: { wd in trainStack.append(RoutineEditorRoute.planDay(weekday: wd)) })
-        case .misRutinas:   MisRutinasScreen(openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) },
-                                             openLibrary: { trainStack.append(SecondaryScreen.library) })
+        // FER-890: «Tu Plan» is one unified screen (week + routines). Both routes resolve to it — the old
+        // `.misRutinas` key stays so DEBUG screenshot-nav still reaches the routines home (now unified).
+        case .weeklyPlan, .misRutinas:
+            WeeklyPlanEditorView(
+                openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) },
+                openLibrary: { trainStack.append(SecondaryScreen.library) },
+                openDay: { wd in trainStack.append(RoutineEditorRoute.planDay(weekday: wd)) })
         case .restDay:      RestDayScreen(
                                 openIntervals: { trainStack.append(SecondaryScreen.intervals) },
                                 openBreathe: { trainStack.append(SecondaryScreen.breathe) },
