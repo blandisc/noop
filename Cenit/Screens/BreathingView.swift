@@ -59,9 +59,9 @@ struct BreathingView: View {
 
         var tagline: String {
             switch self {
-            case .relax:     return String(localized: "Long exhale · downshift to rest")
-            case .coherence: return String(localized: "Equal breath · ~5.5 br/min coherence")
-            case .box:       return String(localized: "Square breath · steady focus")
+            case .relax:     return String(localized: "Long exhale · winds down")
+            case .coherence: return String(localized: "Even breathing · ~5.5/min")
+            case .box:       return String(localized: "Square · steady focus")
             }
         }
     }
@@ -99,6 +99,7 @@ struct BreathingView: View {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                 header
                 statusRow
+                paceSelector
                 orbCard
                 controlRow
                 readoutRow
@@ -202,6 +203,61 @@ struct BreathingView: View {
                 .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
+    // MARK: - Pace selector
+
+    private var paceSelector: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("BREATHE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Choose a pace")
+                    .font(StrandFont.title1)
+                    .foregroundStyle(theme.ink)
+            }
+
+            VStack(spacing: NoopMetrics.gap) {
+                ForEach(Pace.allCases, id: \.self) { option in
+                    paceRow(option)
+                }
+            }
+        }
+    }
+
+    private func paceRow(_ option: Pace) -> some View {
+        let selected = pace == option
+        return Button {
+            pace = option
+        } label: {
+            HStack(alignment: .center, spacing: NoopMetrics.gap) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(option.label)
+                        .font(StrandFont.headline)
+                        .foregroundStyle(theme.ink)
+                    Text(option.tagline)
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkSecondary)
+                }
+                Spacer(minLength: 0)
+                Text(String(format: "%.1f br/min", option.bpm))
+                    .font(StrandFont.captionNumber)
+                    .foregroundStyle(selected ? theme.dataHrv : theme.inkSecondary)
+            }
+            .padding(NoopMetrics.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                selected
+                    ? theme.tint(theme.dataHrv)
+                    : theme.surface,
+                in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                    .strokeBorder(selected ? theme.softStroke(theme.dataHrv) : theme.hairline, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+    }
+
     // MARK: - The orb
 
     private var orbCard: some View {
@@ -224,9 +280,6 @@ struct BreathingView: View {
                     .foregroundStyle(running ? theme.dataRecovery : theme.inkSecondary)
                     .animation(.easeInOut(duration: 0.2), value: phaseWord)
                     .animation(.easeInOut(duration: 0.2), value: running)
-
-                SegmentedPillControl(Pace.allCases, selection: $pace) { $0.label }
-                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
     }
@@ -335,7 +388,7 @@ struct BreathingView: View {
             Button {
                 running ? stop() : start()
             } label: {
-                Label(running ? "Stop session" : "Start session",
+                Label(running ? "Stop session" : "Start · 3 min",
                       systemImage: running ? "stop.fill" : "play.fill")
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.paper)
