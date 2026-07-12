@@ -419,7 +419,7 @@ public struct Calendario90: View {
     @State private var calWidth: CGFloat = 0
 
     private struct CalWidthKey: PreferenceKey {
-        static var defaultValue: CGFloat = 0
+        static let defaultValue: CGFloat = 0
         static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
     }
 
