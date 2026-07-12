@@ -177,7 +177,7 @@ struct WorkoutHistoryScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             NavigationLink(value: SavedTicketsRoute()) {
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous)
                         .fill(theme.hairline)
                         .frame(width: 38, height: 38)
                         .overlay(
