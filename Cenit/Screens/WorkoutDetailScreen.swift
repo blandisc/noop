@@ -56,6 +56,9 @@ struct WorkoutDetailScreen: View {
     /// Strength-tracker volume (kg) for a session that time-overlaps this workout row, if any.
     /// 0 means no match / no volume — the tile is gated on `volumeKg > 0` so we never paint a false 0.
     @State private var volumeKg: Double = 0
+    /// The matched strength session's routine name («Día A — Empuje»), resolved by the same time-overlap
+    /// join as the volume tile. `nil` (ad-hoc session, deleted routine, non-strength) falls back to the sport.
+    @State private var routineTitle: String? = nil
 
     var body: some View {
         ScrollView {
@@ -94,7 +97,7 @@ struct WorkoutDetailScreen: View {
             await loadVolume()
         }
         .background(theme.paper.ignoresSafeArea())
-        .navigationTitle(Text(WorkoutSource.displaySport(row.sport)))
+        .navigationTitle(Text(routineTitle ?? WorkoutSource.displaySport(row.sport)))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .primaryAction) { actionMenu } }
         .toolbarBackground(theme.paper, for: .navigationBar)
@@ -182,7 +185,7 @@ struct WorkoutDetailScreen: View {
             .fixedSize(horizontal: false, vertical: true)
     }
     private var contextText: String {
-        "\(WorkoutSource.displaySport(row.sport)) · \(WorkoutFormat.date(row.startTs)) · \(WorkoutFormat.time(row.startTs)) · \(WorkoutFormat.duration(sessionDuration))"
+        "\(routineTitle ?? WorkoutSource.displaySport(row.sport)) · \(WorkoutFormat.date(row.startTs)) · \(WorkoutFormat.time(row.startTs)) · \(WorkoutFormat.duration(sessionDuration))"
     }
 
     // MARK: - Zonas de FC (solo si la sesión las trae)
@@ -508,6 +511,9 @@ struct WorkoutDetailScreen: View {
         }
         guard let matched = matches.min(by: { abs($0.startTs - rowStart) < abs($1.startTs - rowStart) })
         else { return }
+        if let rid = matched.routineId, let store = await repo.storeHandle() {
+            routineTitle = ((try? await store.routines()) ?? []).first(where: { $0.id == rid })?.name
+        }
         let volumes = await repo.sessionVolumes()
         if let vol = volumes[matched.id]?.volumeKg, vol > 0 {
             volumeKg = vol
