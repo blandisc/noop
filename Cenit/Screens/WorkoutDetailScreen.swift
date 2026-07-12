@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
+import StrandTraining
 import WhoopStore
 import Foundation
 
@@ -52,6 +53,10 @@ struct WorkoutDetailScreen: View {
     @State private var hrrRevealed = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Strength-tracker volume (kg) for a session that time-overlaps this workout row, if any.
+    /// 0 means no match / no volume — the tile is gated on `volumeKg > 0` so we never paint a false 0.
+    @State private var volumeKg: Double = 0
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -69,7 +74,7 @@ struct WorkoutDetailScreen: View {
                     blockDivider
                     hrrBlock
                 }
-                if row.distanceM != nil || row.energyKcal != nil {
+                if row.distanceM != nil || row.energyKcal != nil || volumeKg > 0 {
                     blockDivider
                     supportsBlock
                 }
@@ -84,7 +89,10 @@ struct WorkoutDetailScreen: View {
             .padding(NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .task(id: row.startTs) { if experimentalMetrics { await loadHRR() } }
+        .task(id: row.startTs) {
+            if experimentalMetrics { await loadHRR() }
+            await loadVolume()
+        }
         .background(theme.paper.ignoresSafeArea())
         .navigationTitle(Text(WorkoutSource.displaySport(row.sport)))
         .navigationBarTitleDisplayMode(.inline)
@@ -226,7 +234,7 @@ struct WorkoutDetailScreen: View {
         }
     }
 
-    // MARK: - Distancia / energía (apoyos en ink, con disclaimer si no es WHOOP)
+    // MARK: - Distancia / energía / volumen (apoyos en ink, con disclaimer si no es WHOOP)
 
     private var supportsBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -236,6 +244,10 @@ struct WorkoutDetailScreen: View {
                 }
                 if let k = row.energyKcal, k > 0 {
                     stat("Energy", grouped(k), unit: String(localized: "kcal"), color: theme.ink)
+                }
+                // Strength-tracker volume when a logged session overlaps this workout (time join only).
+                if volumeKg > 0 {
+                    stat("Volume", StrengthHistoryFormat.volume(volumeKg, system: unitSystem), unit: nil, color: theme.ink)
                 }
             }
             if WorkoutSource.classify(row.source) != .whoop {
@@ -478,6 +490,28 @@ struct WorkoutDetailScreen: View {
         }
         hrr = .reading(bpm: Int(drop.rounded()),
                        trend: HeartRateRecovery.trend(latest: drop, priorHRR: priorHRR))
+    }
+
+    // MARK: - Strength volume (time-overlap join to StrengthSession — no FK)
+
+    /// Match this journal `WorkoutRow` to an in-app strength session by interval overlap (same style as
+    /// `IntelligenceEngine` real-workout skip: `a.start < b.end && b.start < a.end`). Closest `startTs`
+    /// wins when several overlap. Volume comes from `sessionVolumes()`; leave 0 when nothing real.
+    private func loadVolume() async {
+        volumeKg = 0
+        let sessions = await repo.recentSessions()
+        let rowStart = row.startTs
+        let rowEnd = row.endTs
+        let matches = sessions.filter { s in
+            let sEnd = s.endTs ?? s.startTs
+            return s.startTs < rowEnd && rowStart < sEnd
+        }
+        guard let matched = matches.min(by: { abs($0.startTs - rowStart) < abs($1.startTs - rowStart) })
+        else { return }
+        let volumes = await repo.sessionVolumes()
+        if let vol = volumes[matched.id]?.volumeKg, vol > 0 {
+            volumeKg = vol
+        }
     }
 }
 
