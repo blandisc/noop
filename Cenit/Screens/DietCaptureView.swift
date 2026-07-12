@@ -443,6 +443,10 @@ struct DietCaptureView: View {
         let slots = activeParsed.map { DietReminderScheduler.reminderSlots($0.meals) } ?? []
         VStack(alignment: .leading, spacing: NoopMetrics.gap) {
             HStack(alignment: .top, spacing: NoopMetrics.gap) {
+                Image(systemName: "bell")
+                    .font(StrandFont.body)
+                    .foregroundStyle(theme.inkSecondary)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: NoopMetrics.space1) {
                     Text("Meal reminders").font(StrandFont.body).foregroundStyle(theme.ink)
                     Text(reminderSubtitle(hasTimes: !slots.isEmpty, count: slots.count))
@@ -481,7 +485,7 @@ struct DietCaptureView: View {
         if !hasTimes { return "Your plan has no suggested times." }
         if reminderAuthDenied { return "Notifications are turned off." }
         if remindersOn { return "On · \(count) meals with a time." }
-        return "We'll remind you at each meal's time. All on your iPhone."
+        return "We'll remind you at each one's suggested time."
     }
 
     /// Reflect the saved opt-in + current authorization, and rebuild the schedule from the active plan.
@@ -595,6 +599,9 @@ struct DietCaptureView: View {
             }
             if meal.options.count > 1 {
                 optionPicker(meal, status: status)
+                if status == .sustitui {
+                    swappedEquivalentsHint(meal)
+                }
             } else {
                 if let foods = meal.options.first?.foods, !foods.isEmpty {
                     Text(foods.joined(separator: " · "))
@@ -609,6 +616,25 @@ struct DietCaptureView: View {
             }
         }
         .padding(.vertical, NoopMetrics.gap)
+    }
+
+    /// Hint chip for multi-option meals marked Swapped — surfaces the second equivalent quietly.
+    @ViewBuilder
+    private func swappedEquivalentsHint(_ meal: DietMeal) -> some View {
+        if meal.options.count > 1 {
+            let foods = meal.options[1].foods.joined(separator: " + ")
+            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                Text(verbatim: "Option 2 · \(foods)")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.dataHrv)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(theme.tint(theme.dataHrv), in: Capsule())
+                Text("or see equivalents")
+                    .font(StrandFont.footnote)
+                    .foregroundStyle(theme.inkTertiary)
+            }
+        }
     }
 
     /// A meal with ≥2 equivalent options: pick which one you ate (= cumplí, recording which), or mark

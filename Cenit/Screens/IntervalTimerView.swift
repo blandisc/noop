@@ -42,6 +42,7 @@ struct IntervalTimerView: View {
     @State private var remaining: Int = 30          // seconds left in the current phase
     @State private var running: Bool = false
     @State private var elapsed: Int = 0             // total elapsed seconds across the session
+    @State private var configuring: Bool = true
 
     // 1Hz tick.
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -86,11 +87,14 @@ struct IntervalTimerView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                header
-                statusRow
-                stageCard
-                overviewCard
-                configCard
+                if configuring {
+                    configureScreen
+                } else {
+                    header
+                    statusRow
+                    stageCard
+                    overviewCard
+                }
             }
             .padding(.horizontal, NoopMetrics.screenPadding)
             .padding(.top, 18)
@@ -118,6 +122,51 @@ struct IntervalTimerView: View {
             Text("Silent haptic HIIT: the strap buzzes the transitions")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
+        }
+    }
+
+    // MARK: Configure screen (pre-session)
+
+    private var configureScreen: some View {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("INTERVALS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Build your HIIT")
+                    .font(StrandFont.title1)
+                    .foregroundStyle(theme.ink)
+            }
+
+            card {
+                VStack(alignment: .leading, spacing: 14) {
+                    configStepper(title: "Work", unit: "sec", value: $workSeconds,
+                                  range: 5...600, step: 5, tint: theme.dataStrain)
+                    Divider().overlay(theme.hairline)
+                    configStepper(title: "Rest", unit: "sec", value: $restSeconds,
+                                  range: 5...600, step: 5, tint: theme.dataHrv)
+                    Divider().overlay(theme.hairline)
+                    configStepper(title: "Rounds", unit: nil, value: $rounds,
+                                  range: 1...30, step: 1, tint: theme.ink)
+                }
+            }
+
+            HStack {
+                Text("Total \(timeString(totalPlanned))")
+                    .font(StrandFont.headline)
+                    .foregroundStyle(theme.ink)
+                Spacer()
+            }
+
+            Button {
+                startFromConfigure()
+            } label: {
+                Text("Start")
+                    .font(StrandFont.headline)
+                    .foregroundStyle(theme.paper)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -191,6 +240,9 @@ struct IntervalTimerView: View {
                     }
                 }
 
+                // One bar per round — completed amber, current phase hue, future hairline.
+                roundIndicators
+
                 // The ring + countdown
                 ZStack {
                     intervalRing
@@ -236,6 +288,35 @@ struct IntervalTimerView: View {
                 .animation(.linear(duration: 0.9), value: intervalProgress)
         }
         .frame(width: 240, height: 240)
+    }
+
+    /// Compact round progress bars above the ring (one capsule per planned round).
+    private var roundIndicators: some View {
+        HStack(spacing: 4) {
+            ForEach(1...max(1, rounds), id: \.self) { index in
+                Capsule()
+                    .fill(roundIndicatorFill(index))
+                    .frame(height: 6)
+                    .frame(maxWidth: .infinity)
+                    .overlay {
+                        if index > currentRound && phase != .done {
+                            Capsule().strokeBorder(theme.hairline, lineWidth: 1)
+                        }
+                    }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Round \(min(currentRound, rounds)) of \(rounds)"))
+    }
+
+    private func roundIndicatorFill(_ index: Int) -> Color {
+        if phase == .done || index < currentRound {
+            return theme.dataStrain
+        }
+        if index == currentRound {
+            return phase == .rest ? theme.dataHrv : theme.dataStrain
+        }
+        return theme.hairline
     }
 
     private var controls: some View {
@@ -320,25 +401,7 @@ struct IntervalTimerView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: Config card
-
-    private var configCard: some View {
-        card {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Configure").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                configStepper(title: "Work", unit: "sec", value: $workSeconds,
-                              range: 5...600, step: 5, tint: theme.dataStrain)
-                Divider().overlay(theme.hairline)
-                configStepper(title: "Rest", unit: "sec", value: $restSeconds,
-                              range: 5...600, step: 5, tint: theme.dataHrv)
-                Divider().overlay(theme.hairline)
-                configStepper(title: "Rounds", unit: nil, value: $rounds,
-                              range: 1...30, step: 1, tint: theme.ink)
-            }
-            .disabled(running)
-            .opacity(running ? StrandPalette.disabledOpacity : 1)
-        }
-    }
+    // MARK: Config steppers (configure screen only)
 
     private func configStepper(title: LocalizedStringKey, unit: String?, value: Binding<Int>,
                                range: ClosedRange<Int>, step: Int, tint: Color) -> some View {
@@ -431,9 +494,18 @@ struct IntervalTimerView: View {
         }
     }
 
+    /// Leave the configure screen and start a fresh session (opening WORK buzz).
+    private func startFromConfigure() {
+        resetToStart()
+        configuring = false
+        running = true
+        buzz(loops: 3)
+    }
+
     private func stopAndReset() {
         running = false
         resetToStart()
+        configuring = true
     }
 
     /// Reset run state back to round 1 / start of work, using current config.
