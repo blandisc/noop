@@ -11,9 +11,10 @@ import StrandTraining
 /// NOOP never calls the network — the user runs the LLM step.
 ///
 /// «Instrumento diurno»: there's no measured datum here, so the screen is all-ink on warm paper; the
-/// only color is `critical` on a parse error and `verdict` (green) on a just-resolved exercise. The one
-/// piece the format can't carry is the catalog identity of each exercise, so unmatched names get a
-/// mapping step (map to an existing exercise or create it) before the routines are written.
+/// Confirm step accents each routine with its type's hue (owner decision, Jul 2026), and the rest of
+/// the screen remains all-ink — `critical` on a parse error and `verdict` (green) on a just-resolved
+/// exercise. The one piece the format can't carry is the catalog identity of each exercise, so unmatched
+/// names get a mapping step (map to an existing exercise or create it) before the routines are written.
 struct WorkoutImportView: View {
 
     /// Called after routines are created, so the hub can reload «Mis rutinas».
@@ -274,8 +275,19 @@ struct WorkoutImportView: View {
     }
 
     private func routinePreview(_ routine: WorkoutRoutine) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        let muscles = routine.exercises.compactMap { resolution[norm($0.name)]?.primaryMuscles }
+        let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
+        let accent: Color = {
+            switch region {
+            case .push:            return theme.dataStrain
+            case .pull:            return theme.dataHrv
+            case .legs, .fullBody: return theme.dataSleep
+            case nil:              return theme.dataStrain
+            }
+        }()
+        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Circle().fill(accent).frame(width: 8, height: 8)
                 nameText(routine.name, fallback: "Routine").font(StrandFont.body).foregroundStyle(theme.ink)
                 if let tag = routine.tag {
                     Text(verbatim: "· \(tag)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
