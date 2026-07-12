@@ -439,9 +439,62 @@ private struct EntrenarLanding: View {
                 .buttonStyle(.plain)
             }
             .padding(.bottom, 4)
+            weekStrip
             ForEach(otherPlanRoutines, id: \.routineId) { row in
                 planRoutineRow(row)
             }
+        }
+    }
+
+    /// Mon→Sun strip of the weekly split under «Also in your plan»: one equal cell per weekday, tinted
+    /// when a routine is assigned, muted on rest days, and today marked with the same ring language as
+    /// Constancia. Tapping an assigned day opens that routine.
+    private var weekStrip: some View {
+        HStack(spacing: 0) {
+            ForEach(orderedWeekdays, id: \.self) { wd in
+                weekStripCell(wd)
+            }
+        }
+        .padding(.vertical, NoopMetrics.space2)
+    }
+
+    @ViewBuilder
+    private func weekStripCell(_ wd: Int) -> some View {
+        let routineId = split[wd]
+        let region = routineId.flatMap { routineCategory[$0] }
+        let isToday = wd == todayWeekday
+        let hasRoutine = routineId != nil
+        let cell = VStack(spacing: NoopMetrics.space1) {
+            Text(weekdayLetter(wd))
+                .font(StrandFont.overline)
+                .foregroundStyle(isToday ? theme.ink : (hasRoutine ? routineTint(region) : theme.inkTertiary))
+            ZStack {
+                if hasRoutine {
+                    Circle()
+                        .fill(routineFill(region))
+                        .frame(width: 9, height: 9)
+                } else {
+                    Circle()
+                        .fill(theme.hairlineStrong)
+                        .frame(width: 9, height: 9)
+                }
+                if isToday {
+                    // Same «hoy» ring affordance as Constancia's dayCell.
+                    Circle()
+                        .strokeBorder(todayRingTint, lineWidth: 1.5)
+                        .frame(width: 14, height: 14)
+                }
+            }
+            .frame(width: 14, height: 14)
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+
+        if let routineId {
+            Button { openRoutine(routineId) } label: { cell }
+                .buttonStyle(.plain)
+        } else {
+            cell
         }
     }
 
