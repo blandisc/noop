@@ -197,7 +197,7 @@ struct ExerciseLibraryScreen: View {
                 ForEach(Array(libraryGroups.enumerated()), id: \.element.key) { index, group in
                     Text(group.key.isEmpty
                          ? String(localized: "Other")
-                         : StrengthDisplay.muscle(group.key))
+                         : StrengthDisplay.muscle(group.key) + " · " + String(localized: "FROM THE LIBRARY"))
                         .instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .padding(.top, index == 0 && mine.isEmpty ? 4 : 18).padding(.bottom, 6)
                     ForEach(group.items) { ex in
@@ -222,7 +222,7 @@ struct ExerciseLibraryScreen: View {
                         .multilineTextAlignment(.leading)
                     // Best mark for a history row; the muscle subtitle otherwise.
                     if showsHistory, let kg = bestKg[ex.id] {
-                        Text("Best \(StrengthDisplay.weight(kg, system: system))")
+                        Text("your record \(StrengthDisplay.weight(kg, system: system))")
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     } else {
                         Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)

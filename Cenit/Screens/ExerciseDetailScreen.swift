@@ -33,8 +33,8 @@ struct ExerciseDetailScreen: View {
     @State private var prs: [PersonalRecord] = []
     /// Where this exercise's progression cycle stands (FER-F); nil = no slot opted in.
     @State private var cycleState: ProgressionState? = nil
-    /// Which series the progress chart shows (FER-505).
-    @State private var metric: ProgressMetric = .weight
+    /// Which series the progress chart shows (FER-505). Est. 1RM is the default hero trend.
+    @State private var metric: ProgressMetric = .oneRM
     /// The v3 · 1g/1h segmented view: Guide (muscles + how-to) / Progress (trend + records) / History (per-day sets).
     @State private var tab: DetailTab = .guide
     @State private var loaded = false
@@ -497,6 +497,11 @@ struct ExerciseDetailScreen: View {
             }
             .padding(.top, 2)
 
+            StatTile(label: String(localized: "VOLUME"),
+                     value: weeklyVolumeText,
+                     unit: String(localized: "/ WEEK"),
+                     theme: theme)
+
             if values.count >= 2 {
                 if metric == .weight {
                     // FER-F · 2d: the working weight moves in JUMPS — a step render is the honest shape.
@@ -507,13 +512,24 @@ struct ExerciseDetailScreen: View {
                         .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
                     weightStrip(values)
                 } else {
-                    Sparkline(values: values,
-                              gradient: ChartWell.fillGradient(theme.dataStrain),
-                              bandColor: theme.hairlineStrong,
-                              showsScrub: true,
-                              valueFormat: { latestText($0) })
+                    // Quiet axis grid + month/TODAY labels — local to this screen only (shared Sparkline stays bare).
+                    ZStack(alignment: .leading) {
+                        VStack(spacing: 0) {
+                            ForEach(0..<4, id: \.self) { i in
+                                Rectangle().fill(theme.hairline).frame(height: 1)
+                                if i < 3 { Spacer(minLength: 0) }
+                            }
+                        }
                         .frame(height: 64)
-                        .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
+                        Sparkline(values: values,
+                                  gradient: ChartWell.fillGradient(theme.dataStrain),
+                                  bandColor: theme.hairlineStrong,
+                                  showsScrub: true,
+                                  valueFormat: { latestText($0) })
+                            .frame(height: 64)
+                    }
+                    .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
+                    progressAxisLabels
                 }
             }
             cycleBlock
@@ -521,6 +537,43 @@ struct ExerciseDetailScreen: View {
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// Total volume (weight × reps) logged in the last 7 days, for the VOLUME / WEEK tile.
+    private var weeklyVolumeText: String {
+        let cutoff = Int(Date().timeIntervalSince1970) - 7 * 24 * 3600
+        let total = history
+            .filter { $0.startTs >= cutoff }
+            .reduce(0.0) { $0 + $1.weightKg * Double($1.reps) }
+        return StrengthHistoryFormat.volume(total, system: system)
+    }
+
+    /// Three quiet captions under the 1RM/volume sparkline: first month · middle month · TODAY.
+    @ViewBuilder private var progressAxisLabels: some View {
+        // Chronological (oldest→newest) so left→right matches the sparkline series.
+        let days = historyDays.sorted { $0.ts < $1.ts }
+        if days.count >= 3 {
+            let first = Self.monthAbbrev(days.first!.ts)
+            let middle = Self.monthAbbrev(days[days.count / 2].ts)
+            HStack(spacing: 0) {
+                Text(first)
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(middle)
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Text("TODAY")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+    }
+
+    private static func monthAbbrev(_ ts: Int) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "MMM"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f.string(from: Date(timeIntervalSince1970: TimeInterval(ts))).uppercased()
     }
 
     // MARK: Weight strip + current cycle (FER-F · 2d)
