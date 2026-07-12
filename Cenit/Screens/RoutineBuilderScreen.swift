@@ -204,6 +204,44 @@ struct RoutineBuilderScreen: View {
             Text("New routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             TextField("Routine name", text: $name)
                 .font(StrandFont.title1).foregroundStyle(theme.ink)
+            if !items.isEmpty {
+                if let region = builderRegion {
+                    HStack(spacing: 6) {
+                        Circle().fill(builderRegionTint(region)).frame(width: 8, height: 8)
+                        Text(builderRegionLabel(region))
+                            .font(StrandFont.caption).foregroundStyle(builderRegionTint(region))
+                    }
+                    .padding(.top, 2)
+                }
+                Text("\(items.count) exercises · \(builderTotalSets) sets")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+        }
+    }
+
+    /// Content-derived region for the in-progress routine (same classifier as Entrenar's tints).
+    private var builderRegion: RoutineRegion? {
+        RoutineClassifier.classify(primaryMusclesPerExercise: items.map { $0.exercise.primaryMuscles })
+    }
+
+    private var builderTotalSets: Int {
+        items.reduce(0) { $0 + $1.re.sets.count }
+    }
+
+    private func builderRegionTint(_ region: RoutineRegion) -> Color {
+        switch region {
+        case .push:            return theme.dataStrain
+        case .pull:            return theme.dataHrv
+        case .legs, .fullBody: return theme.dataSleep
+        }
+    }
+
+    private func builderRegionLabel(_ region: RoutineRegion) -> String {
+        switch region {
+        case .push: return "push"
+        case .pull: return "pull"
+        case .legs: return "legs"
+        case .fullBody: return "full body"
         }
     }
 

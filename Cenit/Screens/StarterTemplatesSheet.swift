@@ -64,7 +64,7 @@ struct StarterTemplatesSheet: View {
                 Text("Start from a template")
                     .font(StrandFont.title1).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Begin with a proven base and edit it to taste.")
+                Text("Begin with a proven base and edit it to taste. Everything works offline.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

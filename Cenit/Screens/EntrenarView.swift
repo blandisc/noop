@@ -353,8 +353,32 @@ private struct EntrenarLanding: View {
 
     /// The one solid button per screen (F8): a day with a routine fills it («Empezar {rutina}»); a rest
     /// day leaves it open but quiet (outline). Both route through `startToday`.
-    private var empezarButton: some View {
-        StrandCTAButton("Empezar", kind: todayRoutine != nil ? .solid : .outline) { startToday() }
+    @ViewBuilder private var empezarButton: some View {
+        if todayRoutine != nil {
+            tintedEmpezarButton
+        } else {
+            StrandCTAButton("Empezar", kind: .outline) { startToday() }
+        }
+    }
+
+    /// Routine-day CTA: same chrome as `StrandCTAButton` solid, but fill uses the routine's region tint
+    /// instead of `theme.ink` (shared component stays ink-only for other screens).
+    private var tintedEmpezarButton: some View {
+        let tint = routineTint(region(name: todayRoutine?.name ?? ""))
+        return Button(action: startToday) {
+            Text("Empezar")
+                .font(InstrumentoType.grotesk(15, weight: .bold))
+                .tracking(0.3)
+                .foregroundStyle(theme.paperHi)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 15)
+                .background(
+                    RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous)
+                        .fill(tint)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// F1: a day with a routine starts the guided session in one tap (slots prefetched on load); an empty
@@ -512,8 +536,7 @@ private struct EntrenarLanding: View {
         var id: String { icon }
     }
 
-    /// The six training doors, in row order. Each keeps its existing action; the tint follows the flow's
-    /// data tokens (strain for «Rápido», hrv for the live/timed forms, recovery for «Dieta»).
+    /// The five training doors in the icon grid. Diet sits as a quiet full-width row below (not a chip).
     private var formOptions: [FormOption] {
         [
             FormOption(icon: "bolt.fill", label: "Quick", tint: theme.dataStrain) { startQuickStrength() },
@@ -521,7 +544,6 @@ private struct EntrenarLanding: View {
             FormOption(icon: "timer", label: "Interval", tint: theme.dataHrv) { openIntervals() },
             FormOption(icon: "figure.flexibility", label: "Mobility", tint: theme.dataHrv) { model.startMobilityOneOff() },
             FormOption(icon: "wind", label: "Breathe", tint: theme.dataHrv) { openBreathe() },
-            FormOption(icon: "fork.knife", label: "Diet", tint: theme.dataRecovery) { openDiet() },
         ]
     }
 
@@ -533,6 +555,22 @@ private struct EntrenarLanding: View {
                     formChip(opt)
                 }
             }
+            // Diet as a quiet standalone row under the five training doors.
+            Button { openDiet() } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "fork.knife")
+                        .font(StrandFont.glyph(.lead))
+                        .foregroundStyle(theme.inkSecondary)
+                    Text("Diet")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(theme.inkSecondary)
+                    Spacer(minLength: 8)
+                }
+                .padding(.vertical, NoopMetrics.gap)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 
