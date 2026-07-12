@@ -505,6 +505,49 @@ final class StrengthSessionModel: ObservableObject {
         if index == currentIndex { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
     }
 
+    /// Swap the exercise at `ei` for a different movement mid-session (FER-894 · «Cómo llego a Cambiar»),
+    /// KEEPING the sets already marked `done` (they're real logged work) and re-seeding only the not-yet-done
+    /// sets with the new exercise's prescription. The run keeps its slot, its rest configuration and its id
+    /// (so the table row and focus are undisturbed); it takes on the new exercise's identity (exerciseId /
+    /// name / type). Any pending raise proposal is dropped — that plan belonged to the old movement. Self-
+    /// contained: it only rewrites this one run, leaving the rest of the session engine untouched.
+    func replaceExercise(at ei: Int, with exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        guard runs.indices.contains(ei) else { return }
+        let old = runs[ei]
+        let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
+        let seedWeight = lastWeightKg ?? 0
+        let seedReps = usesReps ? (lastReps ?? 8) : 0
+        // Keep the done sets verbatim; re-seed the pending ones (same count) with the new prescription.
+        let doneSets = old.sets.filter { $0.done }
+        let pendingCount = max(old.sets.count - doneSets.count, doneSets.isEmpty ? 1 : 0)
+        let reseeded = (0..<pendingCount).map { _ in
+            WorkingSet(id: UUID().uuidString, weightKg: seedWeight, reps: seedReps, done: false)
+        }
+        let newSets = doneSets + reseeded
+        runs[ei] = ExerciseRun(
+            id: old.id, exerciseId: exercise.id,
+            name: StrengthDisplay.name(exercise), type: exercise.type,
+            restSeconds: old.restSeconds, restMode: old.restMode,
+            hrRestReference: old.hrRestReference, hrRestValue: old.hrRestValue,
+            lastWeightKg: lastWeightKg, lastReps: lastReps,
+            lastTimeS: nil, lastDistanceM: nil,
+            sets: newSets, currentSet: min(doneSets.count, max(0, newSets.count - 1)),
+            skipped: false)
+        if ei == currentIndex { phase = .capturing; clearRest(); timerStart = nil }
+    }
+
+    /// Remove an exercise from the session entirely (FER-894 menu «Remove from session»). Unlike
+    /// `skipExercise` (which keeps it, greyed, in the plan), this drops the run. Never empties the session —
+    /// the last remaining exercise can only be skipped, not removed. Re-focuses if the current one went.
+    func removeExercise(at ei: Int) {
+        guard runs.indices.contains(ei), runs.count > 1 else { return }
+        let wasCurrent = ei == currentIndex
+        runs.remove(at: ei)
+        if ei < currentIndex { currentIndex -= 1 }
+        currentIndex = min(currentIndex, runs.count - 1)
+        if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
+    }
+
     /// Move an exercise one slot earlier in the plan (reorder), keeping the current exercise focused.
     func moveExerciseEarlier(_ index: Int) {
         guard runs.indices.contains(index), index > 0 else { return }
@@ -779,6 +822,20 @@ struct LiveStrengthSheet: View {
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
     /// without ending the session (mock v21 handoff). Additive only; does not replace `inlineSession`.
     @State private var focusMode = false
+    /// Which exercise's «···» paper menu is open (FER-894 · «Cómo llego a Cambiar»), by run index. nil = closed.
+    @State private var menuExerciseIndex: Int?
+    /// The exercise whose «Change {exercise}» sheet is open (FER-894). nil = closed.
+    @State private var changeExercise: ChangeTarget?
+    /// The terminal «Nothing to save» result card for discarding an empty session (FER-894 · Estados 2).
+    @State private var nothingToSave = false
+
+    /// Identifies which exercise the «Change» sheet is swapping (FER-894); carries the run for its header
+    /// and same-muscle shortlist. `id` is the run id so `.sheet(item:)` re-presents cleanly per exercise.
+    struct ChangeTarget: Identifiable {
+        let ei: Int
+        let run: StrengthSessionModel.ExerciseRun
+        var id: String { run.id }
+    }
 
     /// One «Sugeridos · músculos frescos hoy» row: an exercise for a fresh muscle, with its last logged set.
     struct QuickSuggestion: Identifiable {
@@ -829,7 +886,9 @@ struct LiveStrengthSheet: View {
 
     var body: some View {
         Group {
-            if let summary = session.summary {
+            if nothingToSave {
+                nothingToSaveCard
+            } else if let summary = session.summary {
                 ScrollView {
                     VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
                         summaryPhase(summary)
@@ -857,6 +916,26 @@ struct LiveStrengthSheet: View {
                     .toolbarBackground(theme.paper, for: .navigationBar)
             }
             .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+        }
+        .sheet(item: $changeExercise) { target in
+            ChangeExerciseSheet(
+                theme: theme, run: target.run, repo: model.repo,
+                onUse: { ex in
+                    changeExercise = nil
+                    Task {
+                        let last = await model.repo.exerciseHistory(exerciseId: ex.id).last
+                        await MainActor.run {
+                            withAnimation(.snappy) {
+                                session.replaceExercise(at: target.ei, with: ex,
+                                                        lastWeightKg: last?.weightKg, lastReps: last?.reps)
+                            }
+                        }
+                    }
+                },
+                onClose: { changeExercise = nil }
+            )
+            .instrumentoTheme(theme).preferredColorScheme(.light)
+            .presentationBackground(theme.paper)
         }
         .sheet(item: $restEdit) { edit in
             if session.runs.indices.contains(edit.id) {
@@ -1658,6 +1737,7 @@ struct LiveStrengthSheet: View {
                 .accessibilityLabel(Text(run.name))
                 .accessibilityHint(Text("View exercise detail"))
                 }
+                exerciseMenuButton(ei: ei, run: run)
                 reorderHandle(ei: ei, run: run)
             }
             // FER-E · 2b: the earned raise, named where you train. «↑ hoy 102,5 · por qué» toggles the
@@ -1670,6 +1750,44 @@ struct LiveStrengthSheet: View {
             if !reflow { columnHeader(run.type) }
         }
         .padding(.top, first ? NoopMetrics.gap : NoopMetrics.sectionGap)
+    }
+
+    /// The «···» exercise menu (FER-894 · «Cómo llego a Cambiar»): a themed paper menu (spec 4b) with
+    /// View / Change / Skip / Remove. Reorder stays the drag handle (`reorderHandle`), never duplicated here.
+    @ViewBuilder private func exerciseMenuButton(ei: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
+        Button { menuExerciseIndex = ei } label: {
+            Image(systemName: "ellipsis")
+                .font(StrandFont.glyph(.inline, weight: .semibold))
+                .foregroundStyle(theme.inkTertiary)
+                .frame(width: 30, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("More options for \(run.name)"))
+        .paperMenu(
+            isPresented: Binding(get: { menuExerciseIndex == ei },
+                                 set: { if !$0 { menuExerciseIndex = nil } }),
+            items: exerciseMenuItems(ei: ei, run: run)
+        )
+    }
+
+    private func exerciseMenuItems(ei: Int, run: StrengthSessionModel.ExerciseRun) -> [PaperMenuItem] {
+        var rows: [PaperMenuItem] = [
+            .init(String(localized: "View exercise"), systemImage: "info.circle") { openDetail(run) },
+            .init(String(localized: "Change exercise"), systemImage: "arrow.triangle.2.circlepath") {
+                changeExercise = ChangeTarget(ei: ei, run: run)
+            },
+            .init(String(localized: "Skip exercise"), systemImage: "forward.end") {
+                withAnimation(.snappy) { session.skipExercise(ei) }
+            }
+        ]
+        // Never leave the session empty — the last exercise can only be skipped, not removed.
+        if session.runs.count > 1 {
+            rows.append(.init(String(localized: "Remove from session"), systemImage: "trash", isDestructive: true) {
+                withAnimation(.snappy) { session.removeExercise(at: ei) }
+            })
+        }
+        return rows
     }
 
     /// The always-on, tenue reorder affordance (Sesión v21): a «≡» handle on each exercise header. Dragging
@@ -1963,15 +2081,17 @@ struct LiveStrengthSheet: View {
                     }
                 }
                 Spacer(minLength: 8)
-                PulseReader(model.live.pulse) { p in
-                    if let hr = p.smoothedBpm { compactZone(hr) }
-                }
                 startStopButton(running: running)
                 checkButton(ei: ei, si: si, set: set)
             }
+            // The live intensity scale: the whole Z1–Z5 ramp with the current zone lit, «N% of your max»
+            // beneath (FER-894 · Estados 2). Only appears with a strap reading — no dashes, no empty ramp.
+            PulseReader(model.live.pulse) { p in
+                if let hr = p.smoothedBpm { hrZoneRampRow(hr) }
+            }
             if run.type == .distance { distanceStepperRow(set.distanceM ?? 0) }
         }
-        .frame(minHeight: run.type == .distance ? 96 : 64)
+        .frame(minHeight: run.type == .distance ? 150 : 118)
         .accessibilityElement(children: .contain)
     }
 
@@ -1998,20 +2118,38 @@ struct LiveStrengthSheet: View {
         .accessibilityLabel(Text(running ? "Stop and register set" : "Start timer"))
     }
 
-    /// Compact live HR zone (♥ bpm · Zn) in the zone hue — hidden when there's no strap (no dashes).
-    private func compactZone(_ hr: Int) -> some View {
+    /// The live HR intensity as a full Z1–Z5 ramp (FER-894 · Estados 2): five segments, the current zone lit
+    /// in its `hrZoneRamp` hue, with «♥ bpm · N% of your max» beneath. Replaces the single-zone chip so the
+    /// whole scale — and how far into it you are — is legible at a glance. Hidden when there's no strap.
+    private func hrZoneRampRow(_ hr: Int) -> some View {
         let zone = hrZone(hr)
-        let hue = theme.hrZoneRamp[max(0, min(theme.hrZoneRamp.count - 1, zone - 1))]
-        return HStack(spacing: 5) {
-            Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(hue)
-            Text("\(hr)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(hue)
-            Text("Z\(zone)").font(StrandFont.caption).foregroundStyle(hue)
-                .padding(.horizontal, 6).padding(.vertical, 2)
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 1))
+        let maxHR = Double(model.profile.hrMax)
+        let pct = maxHR > 0 ? Int((Double(hr) / maxHR * 100).rounded()) : 0
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                ForEach(1...5, id: \.self) { z in
+                    let hue = theme.hrZoneRamp[z - 1]
+                    let lit = z == zone
+                    Text("Z\(z)")
+                        .font(StrandFont.caption).monospacedDigit()
+                        .foregroundStyle(lit ? theme.paper : theme.inkTertiary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 5)
+                        .background(lit ? hue : theme.surface,
+                                    in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                            .strokeBorder(theme.hairline, lineWidth: lit ? 0 : 1))
+                }
+            }
+            HStack(spacing: 5) {
+                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.hrZoneRamp[zone - 1])
+                Text("\(hr)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(theme.ink)
+                Text("·").foregroundStyle(theme.inkTertiary)
+                Text("\(pct)% of your max").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Heart rate \(hr), zone \(zone)"))
+        .accessibilityLabel(Text("Heart rate \(hr), zone \(zone), \(pct) percent of your maximum"))
     }
 
     private func distanceStepperRow(_ meters: Double) -> some View {
@@ -2535,10 +2673,35 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Discard the empty ad-hoc session (its «Descartar» pill, FER-762) — nothing logged yet, so no
-    /// confirmation is needed (unlike `discardFooter`, which guards a session with real data).
+    /// Discard the empty ad-hoc session (its «Descartar» pill, FER-762). Nothing was logged, so instead of a
+    /// destructive confirmation this shows a calm terminal result — «Nothing to save» (FER-894 · Estados 2) —
+    /// and only ends the session when the user taps «Got it». A result state, not a warning.
     private func discardEmptySession() {
-        model.endStrengthSession(save: false)
+        withAnimation(.snappy) { nothingToSave = true }
+    }
+
+    /// The «Nothing to save · your history stays clean» result card (FER-894). Terminal state for an
+    /// empty-session discard: no numbers to celebrate, just reassurance that nothing was recorded.
+    private var nothingToSaveCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Image(systemName: "checkmark.seal")
+                .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkSecondary)
+                .accessibilityHidden(true)
+            Text("Nothing to save").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Your history stays clean — no sets were logged this session.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button { model.endStrengthSession(save: false) } label: {
+                Text("Got it")
+                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            }
+            .buttonStyle(.plain).padding(.top, 4)
+            .accessibilityLabel(Text("Got it, close the session"))
+        }
+        .padding(.horizontal, NoopMetrics.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     // MARK: Complete + discard footers
@@ -3201,6 +3364,111 @@ struct LiveStrengthSheet: View {
     private func massText(_ kg: Double) -> String { massString(kg, units: units) }
 
     static func clock(_ seconds: Int) -> String { SessionClock.format(seconds) }
+}
+
+/// The «Change {exercise}» sheet (FER-894 · «Cómo llego a Cambiar»): a search field over the library plus a
+/// shortlist of alternatives for the SAME primary muscle as the exercise being replaced. Picking «Use» swaps
+/// it into the live run, keeping the sets already done. Self-contained so the session stays lean; it only
+/// reads the catalog (`allExercises` / `resolvedExercise`) — the actual swap is the caller's `onUse`.
+struct ChangeExerciseSheet: View {
+    let theme: InstrumentoTheme
+    let run: StrengthSessionModel.ExerciseRun
+    let repo: Repository
+    let onUse: (Exercise) -> Void
+    let onClose: () -> Void
+
+    @State private var query = ""
+    @State private var all: [Exercise] = []
+    @State private var primaryMuscle: String?
+    @State private var loaded = false
+
+    /// Same-muscle shortlist when the field is empty; a name search over the whole library otherwise. The
+    /// current exercise is always excluded (you don't replace it with itself).
+    private var filtered: [Exercise] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if q.isEmpty {
+            guard let m = primaryMuscle else { return [] }
+            return Array(all.filter { $0.id != run.exerciseId && $0.primaryMuscles.contains(m) }.prefix(12))
+        }
+        return Array(all.filter { $0.id != run.exerciseId && StrengthDisplay.name($0).lowercased().contains(q) }.prefix(20))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                    searchField
+                    if !filtered.isEmpty {
+                        if query.isEmpty, let m = primaryMuscle {
+                            (Text("Suggested · ") + Text(MuscleAtlas.name(m)))
+                                .instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, 4)
+                        }
+                        ForEach(filtered) { row($0) }
+                    } else if loaded {
+                        Text(query.isEmpty ? "No alternatives for this muscle — search the library."
+                                           : "No matches.")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                            .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
+                    }
+                }
+                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.vertical, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(theme.paper)
+            .navigationTitle(Text("Change \(run.name)"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(theme.paper, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { onClose() }.foregroundStyle(theme.ink)
+                }
+            }
+        }
+        .task {
+            guard !loaded else { return }
+            async let exercisesTask = repo.allExercises()
+            async let currentTask = repo.resolvedExercise(run.exerciseId)
+            all = await exercisesTask
+            primaryMuscle = await currentTask?.primaryMuscles.first
+            loaded = true
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 9) {
+            Image(systemName: "magnifyingglass").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+            TextField("Search the library…", text: $query)
+                .font(StrandFont.body).foregroundStyle(theme.ink).tint(theme.ink)
+                .autocorrectionDisabled()
+        }
+        .padding(.horizontal, 13).padding(.vertical, 11)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    private func row(_ ex: Exercise) -> some View {
+        HStack(spacing: 12) {
+            SessionRunThumb(exerciseId: ex.id)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
+                if let m = ex.primaryMuscles.first {
+                    Text(MuscleAtlas.name(m)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+            }
+            Spacer(minLength: 8)
+            Button { onUse(ex) } label: {
+                Text("Use").font(StrandFont.caption).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Use \(StrengthDisplay.name(ex))"))
+        }
+        .padding(.vertical, 8)
+        .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
+    }
 }
 
 /// Strips a `List` row down to the warm-paper language: one screen margin, no native background, no native
