@@ -229,11 +229,7 @@ struct RoutineBuilderScreen: View {
     }
 
     private func builderRegionTint(_ region: RoutineRegion) -> Color {
-        switch region {
-        case .push:            return theme.dataStrain
-        case .pull:            return theme.dataHrv
-        case .legs, .fullBody: return theme.dataSleep
-        }
+        return region.tint(theme)
     }
 
     private func builderRegionLabel(_ region: RoutineRegion) -> String {

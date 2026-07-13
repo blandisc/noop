@@ -280,14 +280,7 @@ struct WorkoutImportView: View {
     private func routinePreview(_ routine: WorkoutRoutine) -> some View {
         let muscles = routine.exercises.compactMap { resolution[norm($0.name)]?.primaryMuscles }
         let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
-        let accent: Color = {
-            switch region {
-            case .push:            return theme.dataStrain
-            case .pull:            return theme.dataHrv
-            case .legs, .fullBody: return theme.dataSleep
-            case nil:              return theme.dataStrain
-            }
-        }()
+        let accent = region.tint(theme)
         return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Circle().fill(accent).frame(width: 8, height: 8)

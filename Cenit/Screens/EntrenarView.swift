@@ -304,12 +304,7 @@ private struct EntrenarLanding: View {
     /// «Rápido» without a routine) falls back to `dataStrain`, the screen's default hue. Used for the SOLID
     /// marks (text, borders); full body reads as indigo here and only becomes a gradient in `routineFill`.
     private func routineTint(_ region: RoutineRegion?) -> Color {
-        switch region {
-        case .push:            return theme.dataStrain
-        case .pull:            return theme.dataHrv
-        case .legs, .fullBody: return theme.dataSleep
-        case nil:              return theme.dataStrain   // no classifiable exercises → default hue
-        }
+        return region.tint(theme)
     }
 
     /// The FILL for a routine's dot/square. Same as `routineTint` except full body reads as the mock's

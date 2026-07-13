@@ -318,12 +318,7 @@ struct WeeklyPlanEditorView: View {
     /// routine's own exercises — never the name's `hashValue` — so a routine keeps the SAME hue here, in the
     /// hub and in the editor. push → ember, pull → teal, leg/full → indigo; unclassifiable → default ember.
     private func routineTint(_ r: Routine) -> Color {
-        switch routineRegion[r.id] {
-        case .push:            return theme.dataStrain
-        case .pull:            return theme.dataHrv
-        case .legs, .fullBody: return theme.dataSleep
-        case nil:              return theme.dataStrain
-        }
+        return routineRegion[r.id].tint(theme)
     }
 
     private var routinesSection: some View {
