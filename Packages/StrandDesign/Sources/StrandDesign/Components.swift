@@ -108,7 +108,7 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 Button { withAnimation(StrandMotion.interactive) { selection = item } } label: {
                     segment(item, sel)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(InstrumentoPressStyle())
                 // VoiceOver announces which segment is active (FER-914).
                 .accessibilityAddTraits(sel ? [.isSelected] : [])
             }

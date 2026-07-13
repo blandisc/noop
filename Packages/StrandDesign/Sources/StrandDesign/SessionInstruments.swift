@@ -149,7 +149,7 @@ public struct SessionPill: View {
             .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
             .floatShadow(theme, radius: 9, y: 6, opacity: 0.12)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(InstrumentoPressStyle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint(accessibilityHint)

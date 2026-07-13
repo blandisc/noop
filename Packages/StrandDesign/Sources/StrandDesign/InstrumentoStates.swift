@@ -242,7 +242,7 @@ public struct QuietButton: View {
                 .background(theme.surface, in: Capsule(style: .continuous))
                 .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(InstrumentoPressStyle())
     }
 }
 
