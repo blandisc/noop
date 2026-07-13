@@ -279,14 +279,17 @@ public struct SetEntry: Codable, Sendable, Identifiable, Equatable {
     public var distanceM: Double?
     public var done: Bool
     public var ts: Int
+    /// Perceived effort (RPE), 6-10 scale with half-steps (FER-930). Optional: nil means "not captured",
+    /// never a default of 0 — marking a set done never requires an RPE.
+    public var rpe: Double?
 
     public init(id: String = UUID().uuidString, sessionId: String, exerciseId: String,
                 position: Int, kind: SetKind = .work, weightKg: Double? = nil,
                 reps: Int? = nil, timeS: Double? = nil, distanceM: Double? = nil,
-                done: Bool = false, ts: Int) {
+                done: Bool = false, ts: Int, rpe: Double? = nil) {
         self.id = id; self.sessionId = sessionId; self.exerciseId = exerciseId
         self.position = position; self.kind = kind; self.weightKg = weightKg; self.reps = reps
-        self.timeS = timeS; self.distanceM = distanceM; self.done = done; self.ts = ts
+        self.timeS = timeS; self.distanceM = distanceM; self.done = done; self.ts = ts; self.rpe = rpe
     }
 }
 
@@ -308,13 +311,16 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         public var doneTs: Int?
         public var rest: RestConfig?
         public var kind: SetKind
+        /// Perceived effort (RPE), 6-10 with half-steps (FER-930). Legacy JSON without the key decodes
+        /// to nil (Codable default via the memberwise init below, not a `decode(forKey:)` path).
+        public var rpe: Double?
 
         public init(id: String, weightKg: Double, reps: Int, timeS: Int? = nil,
                     distanceM: Double? = nil, done: Bool = false, doneTs: Int? = nil,
-                    rest: RestConfig? = nil, kind: SetKind = .work) {
+                    rest: RestConfig? = nil, kind: SetKind = .work, rpe: Double? = nil) {
             self.id = id; self.weightKg = weightKg; self.reps = reps; self.timeS = timeS
             self.distanceM = distanceM; self.done = done; self.doneTs = doneTs
-            self.rest = rest; self.kind = kind
+            self.rest = rest; self.kind = kind; self.rpe = rpe
         }
     }
     /// One exercise's run within the session.

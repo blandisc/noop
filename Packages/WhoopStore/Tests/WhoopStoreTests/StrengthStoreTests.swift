@@ -523,6 +523,32 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(prsAfter.first { $0.metric == .maxWeight }?.valueKg, 62.5)
     }
 
+    /// RPE (FER-930) round-trips through save → read, and is opt-in per set: a set with no RPE reads
+    /// back nil, never 0.
+    func testRPERoundTrip() async throws {
+        let store = try await WhoopStore.inMemory()
+        let session = StrengthSession(id: "s1", routineId: "rt1", startTs: 1000)
+        let sets = [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001, rpe: 8.5),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 1, kind: .work,
+                     weightKg: 62.5, reps: 6, done: true, ts: 1002, rpe: nil),
+        ]
+        try await store.saveSession(session, sets: sets)
+
+        let back = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(back.first { $0.id == "a" }?.rpe, 8.5)
+        XCTAssertNil(back.first { $0.id == "b" }?.rpe, "no RPE captured must read back nil, never 0")
+
+        // updateSession (editing a saved session) preserves the rpe.
+        try await store.updateSession(session, sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001, rpe: 9)
+        ])
+        let afterEdit = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(afterEdit.first { $0.id == "a" }?.rpe, 9)
+    }
+
     // MARK: - Delete session + PR recompute (FER-527)
 
     /// Two bench sessions: s1 holds the 62.5 kg PR, s2 a lighter 50 kg. Deleting s1 drops the maxWeight PR

@@ -420,6 +420,25 @@ final class StrengthSessionModelTests: XCTestCase {
                                             exercise: ex("bench", "Bench"), lastSets: [])])
     }
 
+    /// FER-930: RPE is written by its own setter, independent of marking a set, and is optional:
+    /// registering a set never fills it (it stays nil until the user picks a value).
+    func testSetRPEWritesAndClears() {
+        let s = oneSlot()
+        let run = s.runs[0].id
+        let set = s.runs[0].sets[0].id
+        s.setRPE(exercise: run, set: set, rpe: 8)
+        XCTAssertEqual(s.runs[0].sets[0].rpe, 8, "RPE written to the set")
+        s.setRPE(exercise: run, set: set, rpe: nil)
+        XCTAssertNil(s.runs[0].sets[0].rpe, "RPE cleared")
+    }
+
+    func testMarkingSetLeavesRPENil() {
+        let s = oneSlot()
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        XCTAssertTrue(s.runs[0].sets[0].done)
+        XCTAssertNil(s.runs[0].sets[0].rpe, "marking a set never fills RPE; it stays optional")
+    }
+
     func testElapsedFreezesWhilePaused() {
         let s = oneSlot()   // startTs = 100
         XCTAssertEqual(s.elapsedSeconds(now: Date(timeIntervalSince1970: 200)), 100)

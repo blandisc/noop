@@ -129,6 +129,9 @@ final class StrengthSessionModel: ObservableObject {
         /// `insertWarmup` sets `.warmup`. Persisted through to `SetEntry.kind`, so warm-ups are excluded
         /// from volume/PRs (which already filter `kind == .work`) without any other change.
         var kind: SetKind = .work
+        /// Perceived effort (RPE), 6-10 with half-steps (FER-930). Optional: marking a set done never
+        /// requires it. Set from the RPE sheet, independent of `done`.
+        var rpe: Double? = nil
     }
 
     /// One exercise's run: its plan, the editable sets, which set the Foco is on, and whether it was skipped.
@@ -425,6 +428,15 @@ final class StrengthSessionModel: ObservableObject {
         computeRestTarget(rest: rest, doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
         startRest(seconds: rest.seconds, now: now)
         advanceToNextPending()
+    }
+
+    /// Record (or clear, passing nil) the perceived-effort rating for one set (FER-930). Entirely
+    /// independent of `registerCurrentSet`/`done` — the RPE sheet is opened from the table's RPE cell,
+    /// never blocks marking a set, and can be set on a set that isn't done yet.
+    func setRPE(exercise runId: String, set setId: String, rpe: Double?) {
+        guard let runIdx = runs.firstIndex(where: { $0.id == runId }),
+              let setIdx = runs[runIdx].sets.firstIndex(where: { $0.id == setId }) else { return }
+        runs[runIdx].sets[setIdx].rpe = rpe
     }
 
     /// Resolve the HR rest target once on entry (FER-495/506), for a set's effective `RestConfig`. The set
@@ -729,7 +741,7 @@ final class StrengthSessionModel: ObservableObject {
                 entries.append(SetEntry(id: set.id, sessionId: id, exerciseId: run.exerciseId,
                                         position: position, kind: set.kind,
                                         weightKg: f.weightKg, reps: f.reps, timeS: f.timeS, distanceM: f.distanceM,
-                                        done: true, ts: set.doneTs ?? endTs))
+                                        done: true, ts: set.doneTs ?? endTs, rpe: set.rpe))
                 position += 1
             }
         }
@@ -754,7 +766,7 @@ final class StrengthSessionModel: ObservableObject {
                         StrengthSessionSnapshot.SetSnapshot(
                             id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                             distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
-                            rest: s.rest, kind: s.kind)
+                            rest: s.rest, kind: s.kind, rpe: s.rpe)
                     },
                     currentSet: run.currentSet, skipped: run.skipped,
                     raiseOptedOut: run.raiseOptedOut ? true : nil,
@@ -779,7 +791,7 @@ final class StrengthSessionModel: ObservableObject {
                         sets: r.sets.map { s in
                             WorkingSet(id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                                        distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
-                                       rest: s.rest, kind: s.kind)
+                                       rest: s.rest, kind: s.kind, rpe: s.rpe)
                         },
                         currentSet: r.currentSet, skipped: r.skipped,
                         raiseOptedOut: r.raiseOptedOut ?? false,
@@ -892,6 +904,8 @@ struct LiveStrengthSheet: View {
     @State private var platesTarget: PlatesTarget?
     /// The share-receipt screen (FER-720 · 3c), opened from the 1l receipt. nil = closed.
     @State private var shareReceipt: ShareRef?
+    /// The set whose RPE sheet is open (FER-930), tapped from the table's RPE cell. nil = closed.
+    @State private var rpeTarget: RPETarget?
 
     /// The empty «Rápido de fuerza» state (FER-762): no routine, no exercises added yet. Its search field
     /// opens `ExerciseLibraryScreen` in ADD mode; the freshness suggestions load once when this state
@@ -933,6 +947,17 @@ struct LiveStrengthSheet: View {
 
     /// The exercise + work weight (kg) the plate calculator was opened for (FER-720 · 3a).
     struct PlatesTarget: Identifiable { let id = UUID(); let ei: Int; let weightKg: Double }
+
+    /// Identifies which set's RPE sheet is open (FER-930): the exercise's run id + the set id (stable
+    /// across re-renders, unlike an index), plus the header context (set number, weight, reps).
+    struct RPETarget: Identifiable {
+        let id: String   // setId — unique across the session
+        let runId: String
+        let setNumber: Int
+        let weightKg: Double
+        let reps: Int
+        let currentRPE: Double?
+    }
     /// A marker to present the receipt printer (thermal ticket); carries the real session id for
     /// barcode/order stability and set/HR loads. The summary comes from `session.summary`.
     struct ShareRef: Identifiable {
@@ -1058,6 +1083,18 @@ struct LiveStrengthSheet: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
             .presentationBackground(theme.paper)
+        }
+        .sheet(item: $rpeTarget) { target in
+            RPESheet(theme: theme, target: target,
+                     onPick: { rpe in
+                         session.setRPE(exercise: target.runId, set: target.id, rpe: rpe)
+                         rpeTarget = nil
+                     },
+                     onClose: { rpeTarget = nil })
+                .presentationDetents([.height(560)])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
         }
         .fullScreenCover(item: $shareReceipt) { ref in
             if let summary = session.summary {
@@ -2311,8 +2348,8 @@ struct LiveStrengthSheet: View {
 
     private func columnTitles(_ type: ExerciseType) -> [LocalizedStringKey] {
         switch type {
-        case .weightReps: return [massUnitTitle, "REPS"]
-        case .bodyweight: return ["+LOAD", "REPS"]
+        case .weightReps: return [massUnitTitle, "REPS", "RPE"]
+        case .bodyweight: return ["+LOAD", "REPS", "RPE"]
         case .time:       return ["TIME"]
         case .distance:   return [imperial ? "MI" : "KM", "TIME"]
         }
@@ -2663,6 +2700,7 @@ struct LiveStrengthSheet: View {
         case .weightReps:
             numberCell(.weight(ei, si), value: displayWeight(set.weightKg), isInt: false, done: set.done, type: run.type)
             numberCell(.reps(ei, si), value: Double(set.reps), isInt: true, done: set.done, type: run.type)
+            rpeCell(ei: ei, si: si, run: run, set: set)
         case .bodyweight:
             HStack(spacing: 1) {
                 Text("+").font(StrandFont.body).foregroundStyle(set.done ? theme.inkSecondary : theme.inkTertiary)
@@ -2670,6 +2708,7 @@ struct LiveStrengthSheet: View {
             }
             .frame(width: reflow ? nil : cellWidth(run.type), alignment: reflow ? .leading : .center)
             numberCell(.reps(ei, si), value: Double(set.reps), isInt: true, done: set.done, type: run.type)
+            rpeCell(ei: ei, si: si, run: run, set: set)
         case .time:
             capturedCell(ei: ei, si: si, run: run,
                          text: (set.timeS ?? 0) > 0 ? Self.clock(set.timeS ?? 0) : nil)
@@ -2764,6 +2803,40 @@ struct LiveStrengthSheet: View {
     }
     /// Re-seed the buffer from the model after a mutation that didn't come from typing (± / copy last).
     private func syncBufferFromModel(_ cell: CellRef) { buffer = currentCellString(cell); bufferTyped = false }
+
+    /// The RPE cell (FER-930): tap opens the RPE sheet for this set. Shows the captured value in
+    /// `dataEffort` (the datum's own color) when set, else a tenue «RPE» placeholder — never a nag, never
+    /// blocking the check button next to it. Entirely independent of `done`.
+    private func rpeCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
+                         set: StrengthSessionModel.WorkingSet) -> some View {
+        Button {
+            rpeTarget = RPETarget(id: set.id, runId: run.id, setNumber: si + 1,
+                                  weightKg: displayWeight(set.weightKg), reps: set.reps, currentRPE: set.rpe)
+        } label: {
+            Group {
+                if let rpe = set.rpe {
+                    Text(Self.formatRPE(rpe))
+                        .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
+                        .foregroundStyle(theme.dataEffort)
+                } else {
+                    Text("RPE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .frame(width: reflow ? nil : cellWidth(run.type), height: 44)
+            .contentShape(Rectangle())
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(theme.hairline).frame(height: 1).padding(.bottom, 6)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("RPE"))
+        .accessibilityValue(Text(set.rpe.map(Self.formatRPE) ?? String(localized: "Not recorded")))
+    }
+
+    /// es-MX RPE formatting: comma decimal, no trailing zero on whole numbers (8, not 8,0; 8,5).
+    static func formatRPE(_ v: Double) -> String {
+        v.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", v) : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
+    }
 
     /// A captured (non-typed) time / distance cell — tap to select the row, which expands it inline with the
     /// stopwatch (FER-716: the Foco is gone). Shows «—» until set.
@@ -3685,6 +3758,150 @@ struct LiveStrengthSheet: View {
 /// shortlist of alternatives for the SAME primary muscle as the exercise being replaced. Picking «Use» swaps
 /// it into the live run, keeping the sets already done. Self-contained so the session stays lean; it only
 /// reads the catalog (`allExercises` / `resolvedExercise`) — the actual swap is the caller's `onUse`.
+// MARK: - RPE sheet (FER-930)
+//
+// Estilo Hevy, aprobado en el preview v3 del handoff: número héroe grande + descriptor + una escala
+// horizontal de pills (6…10, medios pasos) + «Ok ✓» verde. Tocar la celda RPE de una serie abre esto;
+// el RPE es SIEMPRE opcional — no hay ningún estado que lo exija para marcar la serie.
+
+struct RPESheet: View {
+    let theme: InstrumentoTheme
+    let target: LiveStrengthSheet.RPETarget
+    let onPick: (Double?) -> Void
+    let onClose: () -> Void
+
+    /// The scale offered (FER-930 spec §3): 8 stops, half-steps from 8 up.
+    private static let scale: [Double] = [6, 7, 7.5, 8, 8.5, 9, 9.5, 10]
+
+    @State private var selected: Double
+
+    init(theme: InstrumentoTheme, target: LiveStrengthSheet.RPETarget,
+         onPick: @escaping (Double?) -> Void, onClose: @escaping () -> Void) {
+        self.theme = theme; self.target = target; self.onPick = onPick; self.onClose = onClose
+        _selected = State(initialValue: target.currentRPE ?? 8)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            ScrollView {
+                VStack(spacing: 28) {
+                    hero
+                    scale
+                }
+                .padding(.top, 12)
+            }
+            okButton
+        }
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.bottom, CenitMetrics.screenPadding)
+        .background(theme.paper.ignoresSafeArea())
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text("RPE LOG").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                Button(action: onClose) {
+                    StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                        .foregroundStyle(theme.inkSecondary)
+                }
+                .accessibilityLabel(Text("Close"))
+            }
+            Text("Set \(target.setNumber) · \(Self.weight(target.weightKg)) kg × \(target.reps) reps")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+    }
+
+    private var hero: some View {
+        VStack(spacing: 6) {
+            Text(LiveStrengthSheet.formatRPE(selected))
+                .font(InstrumentoType.grotesk(84, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(theme.ink)
+            Text(Self.descriptor(selected)).font(StrandFont.headline).foregroundStyle(theme.ink)
+            Text(Self.subtitle(selected)).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var scale: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Self.scale, id: \.self) { value in
+                    let sel = value == selected
+                    Button {
+                        withAnimation(StrandMotion.interactive) { selected = value }
+                    } label: {
+                        Text(LiveStrengthSheet.formatRPE(value))
+                            .font(StrandFont.number(15, weight: sel ? .bold : .regular)).monospacedDigit()
+                            .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+                            .frame(width: 48, height: 44)
+                            .background {
+                                if sel { Capsule(style: .continuous).fill(theme.dataEffort) }
+                                else { Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1) }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(sel ? [.isSelected] : [])
+                }
+            }
+            .padding(.horizontal, 2)
+        }
+    }
+
+    private var okButton: some View {
+        VStack(spacing: 8) {
+            Button {
+                onPick(selected)
+            } label: {
+                Text("Ok ✓")
+                    .font(InstrumentoType.grotesk(17, weight: .semibold))
+                    .foregroundStyle(theme.paper)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(theme.verdictDeep, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            Text("RPE is optional · tap the set's RPE cell")
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        }
+        .padding(.top, 12)
+    }
+
+    private static func weight(_ kg: Double) -> String {
+        kg.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", kg) : String(format: "%.1f", kg).replacingOccurrences(of: ".", with: ",")
+    }
+
+    /// Descriptors (FER-930 spec §3, es-MX in the xcstrings catalog), no prescriptive coaching.
+    private static func descriptor(_ v: Double) -> LocalizedStringKey {
+        switch v {
+        case 6:   return "Moderate effort"
+        case 7:   return "Comfortable"
+        case 8:   return "Hard effort"
+        case 9:   return "Very hard"
+        case 9.5: return "Near failure"
+        case 10:  return "Maximum"
+        default:  return ""   // 7.5 / 8.5: no descriptor of their own, just the subtitle
+        }
+    }
+    private static func subtitle(_ v: Double) -> LocalizedStringKey {
+        switch v {
+        case 6:   return "You could've done 4+ more reps"
+        case 7:   return "~3 more reps"
+        case 7.5: return "~2-3 more reps"
+        case 8:   return "You had ~2 reps left"
+        case 8.5: return "~1-2 more reps"
+        case 9:   return "~1 more rep"
+        case 9.5: return "Near failure"
+        case 10:  return "To failure"
+        default:  return ""
+        }
+    }
+}
+
 struct ChangeExerciseSheet: View {
     let theme: InstrumentoTheme
     let run: StrengthSessionModel.ExerciseRun
