@@ -1,8 +1,8 @@
 # Donations (optional)
 
-**NOOP is free, and it stays free. Nothing here is a paywall.**
+**Cénit is free, and it stays free. Nothing here is a paywall.**
 
-NOOP is a standalone, fully offline companion app for WHOOP straps (4.0 and
+Cénit is a standalone, fully offline companion app for WHOOP straps (4.0 and
 5.0). It pairs directly with the strap over Bluetooth, stores everything on your
 own device in SQLite, imports your existing WHOOP CSV and Apple Health history,
 and computes recovery, strain, HRV, and sleep locally, with no WHOOP account and
@@ -16,7 +16,7 @@ to you and you *want* to, you can. If you don't, nothing changes, and you'll
 never be asked twice. The same addresses are shown in-app
 under the **Support** screen, each with a scan-to-donate QR code.
 
-**Honestly, though — if you can, please do.** Keeping NOOP free, anonymous, and
+**Honestly, though — if you can, please do.** Keeping Cénit free, anonymous, and
 off the cloud means there's no company and no investor behind it, just one person
 covering the bills out of pocket. A little support genuinely
 decides whether the Windows and iOS builds get finished, and it's the
@@ -25,10 +25,10 @@ only way to contribute, on purpose:** staying anonymous rules out PayPal,
 Patreon, or anything with a name attached. That's not a hurdle — it's quick,
 global, and private for both of us.
 
-> **Not affiliated with WHOOP.** NOOP is an independent, unofficial
+> **Not affiliated with WHOOP.** Cénit is an independent, unofficial
 > interoperability project. It is not affiliated with, endorsed by, or connected
-> to WHOOP, Inc. "WHOOP" is used only to identify the hardware NOOP talks to.
-> **NOOP is not a medical device** — derived metrics are approximations, not
+> to WHOOP, Inc. "WHOOP" is used only to identify the hardware Cénit talks to.
+> **Cénit is not a medical device** — derived metrics are approximations, not
 > clinical data. See [`../DISCLAIMER.md`](../DISCLAIMER.md).
 
 ---
@@ -124,9 +124,9 @@ rpvijHi2nVY9WWAJhojsAX5tJmHdmLtFhq
 
 - **Not a subscription.** One-off, whenever you like, never recurring.
 - **Not required.** Every feature works fully without paying anything.
-- **Not a license.** You don't owe anything to use, fork, or build NOOP — see
+- **Not a license.** You don't owe anything to use, fork, or build Cénit — see
   [`../ATTRIBUTION.md`](../ATTRIBUTION.md) for the upstream community work it stands on.
-- **Not tied to your data.** NOOP has no server and no account. There is nothing
+- **Not tied to your data.** Cénit has no server and no account. There is nothing
   to "unlock" and no record of who has or hasn't donated.
 
 If you'd rather contribute without money, that's just as welcome: open an issue,
@@ -139,7 +139,7 @@ help moves the project forward as much as anything.
 
 ## A note on the project
 
-NOOP is built on prior community reverse-engineering — chiefly
+Cénit is built on prior community reverse-engineering — chiefly
 [`johnmiddleton12/my-whoop`](https://github.com/johnmiddleton12/my-whoop) (WHOOP
 4.0 protocol) and [`b-nnett/goose`](https://github.com/b-nnett/goose) (WHOOP 5.0
 protocol). It exists so that someone who owns a WHOOP strap can read their own

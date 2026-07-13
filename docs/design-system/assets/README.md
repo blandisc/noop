@@ -1,6 +1,6 @@
 # Assets
 
-Brand and icon assets for the Strand / NOOP design system. Copied from the app's
+Brand and icon assets for the Strand / Cénit design system. Copied from the app's
 asset catalogs and `docs/assets/`.
 
 ## `brand/`
@@ -12,7 +12,7 @@ asset catalogs and `docs/assets/`.
 
 ## `app-icon/`
 
-NOOP ships on **iOS only**, where the app icon is a single 1024×1024 image (iOS renders
+Cénit ships on **iOS only**, where the app icon is a single 1024×1024 image (iOS renders
 every smaller size from it):
 
 | File | Size | Source |

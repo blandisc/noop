@@ -1,4 +1,4 @@
-# Strand / NOOP — Design System
+# Strand / Cénit — Design System
 
 > **One language: «Instrumento diurno».** Every screen reads like a precision instrument on warm
 > day paper: one dominant number, **color only on the datum**, hierarchy by space (not boxes),
@@ -11,9 +11,11 @@
 
 - **Source of truth:** the `StrandDesign` Swift package — `Packages/StrandDesign/Sources/StrandDesign/`
 - **Package version:** `0.1.0` (`StrandDesign.version`)
-- **Token entry points:** `StrandPalette` (color), `StrandFont` (type), `StrandMotion` (motion), `NoopMetrics` (spacing/sizing)
+- **Token entry points:** `StrandPalette` (color), `StrandFont` (type), `StrandMotion` (motion), `CenitMetrics` (spacing/sizing), `StrandElevation` (shadow), `StrandLayer` (z-index), `StrandIcon` (icons)
 - **Machine-readable tokens:** [`tokens/design-tokens.json`](tokens/design-tokens.json) (W3C Design Tokens format)
 - **Assets:** [`assets/`](assets/) — app icons + brand marks
+- **Voz y contenido:** [`LENGUAJE.md`](LENGUAJE.md) — cómo suena el sistema: tono, escritura es-MX, microcopy y glosario canónico (compañero de este doc)
+- **Guías compañeras:** [`ACCESIBILIDAD.md`](ACCESIBILIDAD.md) (contraste, Dynamic Type, VoiceOver, reduce-motion, 44pt) · [`I18N.md`](I18N.md) (locales, plurales, formato) · [`ICONOGRAFIA.md`](ICONOGRAFIA.md) (catálogo `StrandIcon`, glifos, naming)
 
 > ⚠️ This document is **generated from code**. The Swift package is canonical — if a
 > value here disagrees with `Palette.swift` / `Typography.swift` / `Motion.swift` /
@@ -135,7 +137,7 @@ Helpers:
 
 ---
 
-## 3. Spacing & sizing (`NoopMetrics`)
+## 3. Spacing & sizing (`CenitMetrics`)
 
 The **one** spacing scale. Every screen composes from these — fixed dimensions are
 what guarantee the uniform, instrument-grade look. Do not invent ad-hoc values.

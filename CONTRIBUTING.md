@@ -1,6 +1,6 @@
-# Contributing to NOOP
+# Contributing to Cénit
 
-Thanks for your interest in contributing. NOOP is a standalone, fully **offline**
+Thanks for your interest in contributing. Cénit is a standalone, fully **offline**
 companion app for WHOOP 4.0 and 5.0 / MG straps — it pairs over Bluetooth, stores
 everything on-device in SQLite, and computes recovery / strain / HRV / sleep
 locally. No servers, no accounts, no data leaving the device — with exactly two
@@ -14,7 +14,7 @@ metric / screen / command / migration, and the commit conventions — lives in
 [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md). Read that before opening a
 non-trivial PR.
 
-> NOOP is not affiliated with, endorsed by, or connected to WHOOP, Inc., and is
+> Cénit is not affiliated with, endorsed by, or connected to WHOOP, Inc., and is
 > not a medical device. See [`DISCLAIMER.md`](DISCLAIMER.md).
 
 ---
@@ -86,7 +86,7 @@ terms as the project — see [`LICENSE`](LICENSE).
 ## Reporting issues
 
 - **Bugs and feature requests:** open an issue using the templates in
-  [`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE). NOOP is on-device, so please
+  [`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE). Cénit is on-device, so please
   leave out anything that identifies you.
 - **Security issues:** see [`SECURITY.md`](SECURITY.md).
 

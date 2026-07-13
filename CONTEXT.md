@@ -1,4 +1,4 @@
-# Cénit (NOOP)
+# Cénit (Cénit)
 
 Companion offline y on-device para straps WHOOP: captura biometría por BLE, la guarda local y computa recuperación/esfuerzo/HRV/sueño en el dispositivo. Este glosario cubre el lenguaje del dominio, empezando por el motor de coaching proactivo (en diseño).
 

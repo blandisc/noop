@@ -1,18 +1,18 @@
 # WHOOP BLE Protocol
 
-This document specifies the Bluetooth Low Energy (BLE) wire protocol that NOOP uses to talk
+This document specifies the Bluetooth Low Energy (BLE) wire protocol that Cénit uses to talk
 **directly to a WHOOP strap you own** (4.0 and 5.0/MG). It is a reverse-engineering reference:
 frame envelope, checksums, packet/command/event enumerations, the bond handshake, and the
 historical-data offload state machine.
 
-NOOP is a standalone, fully offline companion. It pairs over BLE, decodes the strap's own
+Cénit is a standalone, fully offline companion. It pairs over BLE, decodes the strap's own
 streams on-device, and stores everything locally in SQLite. There is no cloud or account
 involved in any of the exchanges described here.
 
 > **Interoperability & safety note.** This describes interoperation with the user's *own*
-> device and the data it already holds. NOOP is **not affiliated with, authorized by, or
+> device and the data it already holds. Cénit is **not affiliated with, authorized by, or
 > endorsed by WHOOP**, and it is **not a medical device** — nothing here is intended for
-> diagnosis or treatment. The command set NOOP sends is deliberately a *safe subset*;
+> diagnosis or treatment. The command set Cénit sends is deliberately a *safe subset*;
 > destructive opcodes are documented only so they can be explicitly avoided
 > (see [Destructive commands — do not send](#destructive-commands--do-not-send)).
 
@@ -71,7 +71,7 @@ The 5.0 transport ("puffin") adds a fifth characteristic (`…0007`). UUID strin
 The `0x2A37` channel is the BLE-standard Heart Rate Measurement and is parsed by the pure
 `StandardHeartRate.parse(_:)` (`Cenit/BLE/StandardHeartRate.swift`): flag byte, 8- or 16-bit
 HR, optional Energy-Expended skip, then R-R intervals in 1/1024 s converted to milliseconds.
-NOOP treats this as the *reliable* HR/R-R source (the custom `REALTIME_DATA` stream usually
+Cénit treats this as the *reliable* HR/R-R source (the custom `REALTIME_DATA` stream usually
 reports `rr_count = 0`). `0x2A19` is read as a raw percent (`state.setBattery(Double(pct))`).
 
 `DeviceFamily` keeps CoreBluetooth out of the protocol package: it exposes UUIDs as **strings**;
@@ -241,7 +241,7 @@ comes from the schema's `packets` table; `REALTIME_RAW_DATA` is keyed by payload
 ## 4. EventNumber (`EVENT`, type 48, value at `[6]`)
 
 `EVENT` frames carry an `EventNumber` at `[6]` and a `u32` `event_timestamp` at `[8]`. A
-strap-pushed event is WHOOP's "strap-as-clock" signal: NOOP treats any event as "I may have new
+strap-pushed event is WHOOP's "strap-as-clock" signal: Cénit treats any event as "I may have new
 data" and kicks a rate-limited sync (`FrameRouter.onSyncTrigger` → `requestSync(.strap)`).
 Selected, frequently-used values (full table in `whoop_protocol.json`):
 
@@ -272,7 +272,7 @@ The `BATTERY_LEVEL` event has a fixed decoded layout (see the `event` post-hook)
 ## 5. Bond handshake & connect lifecycle (WHOOP 4.0)
 
 The custom channels only flow once the link is bonded. CoreBluetooth performs *just-works*
-bonding the moment a confirmed (`.withResponse`) write succeeds, so NOOP bonds by sending one
+bonding the moment a confirmed (`.withResponse`) write succeeds, so Cénit bonds by sending one
 benign command and waiting for the write acknowledgement.
 
 ```
@@ -316,7 +316,7 @@ link) are then started. The `GET_CLOCK` response is decoded by `ClockCorrelation
 
 ## 6. CommandNumber (sending) — the safe subset
 
-NOOP exposes a curated, **safe** command set in `WhoopCommand` (`Cenit/BLE/Commands.swift`).
+Cénit exposes a curated, **safe** command set in `WhoopCommand` (`Cenit/BLE/Commands.swift`).
 The raw value is the on-wire command byte at `[6]` (inside a type-35 `COMMAND` frame). Commands
 are built by `WhoopCommand.frame(seq:payload:)` and written to `…0002`.
 
@@ -359,7 +359,7 @@ public func frame(seq: UInt8, payload: [UInt8] = [0x00]) -> [UInt8] {
 | 100 | `CALIBRATE_CAPSENSE` | — | recalibrate cap-touch |
 | 105 / 106 | `TOGGLE_IMU_MODE_HISTORICAL` / `TOGGLE_IMU_MODE` | `[0x01]` | IMU stream mode |
 | 107 | `ENABLE_OPTICAL_DATA` | — | optical (PPG) data |
-| 120 | `SET_CONFIG` | `[0x01]+key(32 B ASCII, 0-pad)+[value]+0-pad` (65 B) | enable named firmware data streams (`enable_r19_packets`, `…_v2…v6`, `write_r24/r25`, `capsense_wear_detect`, …). **FER-156 / FER-93b hypothesis:** the official app sends a burst of these; NOOP (re-)asserts them once per connect so a power-reset 4.0 resumes persisting biometry to flash. Builder: `SetConfig.payload(key:value:)`. Safe/reversible. |
+| 120 | `SET_CONFIG` | `[0x01]+key(32 B ASCII, 0-pad)+[value]+0-pad` (65 B) | enable named firmware data streams (`enable_r19_packets`, `…_v2…v6`, `write_r24/r25`, `capsense_wear_detect`, …). **FER-156 / FER-93b hypothesis:** the official app sends a burst of these; Cénit (re-)asserts them once per connect so a power-reset 4.0 resumes persisting biometry to flash. Builder: `SetConfig.payload(key:value:)`. Safe/reversible. |
 | 122 | `STOP_HAPTICS` | `[0x00]` | stop an in-progress haptic |
 | 123 | `SELECT_WRIST` | — | set strap wrist |
 
@@ -379,7 +379,7 @@ public func frame(seq: UInt8, payload: [UInt8] = [0x00]) -> [UInt8] {
 ### Destructive commands — *do not send*
 
 These exist on the wire but are **deliberately excluded** from `WhoopCommand`. They can wipe
-data, brick, or power-cycle the strap. NOOP must never send them.
+data, brick, or power-cycle the strap. Cénit must never send them.
 
 | Code | Command | Hazard |
 |-----:|---------|--------|
@@ -410,7 +410,7 @@ wire format is *known and avoidable*, not so it can be sent). The opcodes are sh
 
 ## 7. Historical-data offload (backfill)
 
-The type-47 store is the strap's rolling ~14-day biometric history and is NOOP's **primary**
+The type-47 store is the strap's rolling ~14-day biometric history and is Cénit's **primary**
 metric source (it is re-offloaded every 15 minutes while connected, mirroring WHOOP). An offload
 is bracketed by `METADATA` (type 49) control frames and acknowledged chunk-by-chunk so the strap
 can safely trim what it has handed over.
@@ -490,7 +490,7 @@ waiting on a network.
   via the durable cursor. The live type-43 flood is dropped during offload so it cannot starve
   chunk acks.
 - **Stuck detector** (`StuckStrapDetector`): after an offload, if the strap reports records newer
-  than NOOP's frontier (from `GET_DATA_RANGE`, parsed by `dataRangeNewestUnix(from:)`) **and**
+  than Cénit's frontier (from `GET_DATA_RANGE`, parsed by `dataRangeNewestUnix(from:)`) **and**
   that frontier has been frozen for the detector window, it flags `strapNeedsReboot` and attempts
   a defensive recovery (`EXIT_HIGH_FREQ_SYNC` + `SET_CLOCK`). Off-wrist / caught-up (strap not
   ahead) is **not** treated as stuck.
