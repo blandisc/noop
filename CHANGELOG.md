@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El número protagonista habla en una sola voz (Space Grotesk) / The protagonist numeral speaks in one voice (Space Grotesk).**
+  **ES** — El «número dominante» de cada pantalla (recuperación, esfuerzo, sueño, etc.) se unifica en **Space Grotesk**, la misma voz del héroe de «Hoy». Antes convivían dos tipografías para el mismo rol (SF Mono en los detalles, Grotesk en «Hoy»), así que el numeral cambiaba de cara según la pantalla; ahora es consistente en toda la app. Sin cambio de tamaños ni de layout.
+  **EN** — Every screen's dominant number (recovery, strain, sleep, …) unifies on **Space Grotesk**, the same voice as the «Hoy» hero. Two typefaces used to fill the same role (SF Mono in the details, Grotesk on «Hoy»), so the numeral changed face by screen; it's now consistent across the app. No size or layout change.
+  ([GroteskVoice.swift](Packages/StrandDesign/Sources/StrandDesign/GroteskVoice.swift), [Instrumento.swift](Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift))
+
 - **Recibo desde los tickets guardados + entrada del HRR-60s más viva / Receipt from saved tickets + livelier HRR-60s entrance.**
   **ES** — (a) En «Tickets guardados», tocar un recibo ahora **reimprime el ticket** (abre la impresora térmica) en vez de mandarte al detalle de la sesión; el resumen se reconstruye de la sesión guardada (sin récords falsos en una reimpresión). (b) El bloque de **recuperación cardiaca (HRR-60s)** del detalle de fuerza gana su **barra rosa de ancla** y una **entrada escalonada** (número → veredicto → línea base → aviso, sin rebote; el overline no anima), fiel al handoff; respeta Reduce Motion.
   **EN** — (a) In «Saved tickets», tapping a receipt now **reprints the ticket** (opens the thermal printer) instead of pushing the session detail; the summary is rebuilt from the stored session (no fake records on a reprint). (b) The strength detail's **cardiac-recovery (HRR-60s)** block gains its **pink anchor bar** and a **staggered entrance** (number → verdict → baseline → disclaimer, no bounce; the overline doesn't animate), faithful to the handoff; honors Reduce Motion.

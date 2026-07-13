@@ -360,19 +360,11 @@ public extension View {
 
 public enum InstrumentoType {
 
-    /// The protagonist numeral — large, semibold, monospaced (SF Mono, inherently
-    /// tabular) so the dominant figure reads like an instrument read-out. Pair with
-    /// `heroTracking(_:)` so big figures read tight, not loose.
-    public static func hero(_ size: CGFloat = 72) -> Font {
-        .system(size: size, weight: .semibold, design: .monospaced)
-    }
-
-    /// Negative tracking for a hero numeral. Large type set at default spacing
-    /// reads loose; pulling it in (~-1.6pt at 72) makes the figure feel like one
-    /// machined object. Scales with size; ~0 below 28pt.
-    public static func heroTracking(_ size: CGFloat) -> CGFloat {
-        size >= 28 ? -size * 0.022 : 0
-    }
+    // The protagonist numeral now speaks in Space Grotesk, not SF Mono: FER-900 canonized the
+    // evolved voice as the single hero-numeral identity across the app. The old SF Mono `hero(_:)` /
+    // `heroTracking(_:)` were retired here; `instrumentoHero(_:)` below routes to
+    // `InstrumentoType.groteskHeroNumeral(_:)` (GroteskVoice.swift), so every existing call site keeps
+    // its size and gains the Grotesk face with no edit.
 
     /// A moderate overline — medium (not semibold), gentler tracking than the
     /// legacy 0.8. Loud enough to label, quiet enough not to compete with data.
@@ -390,13 +382,12 @@ public enum InstrumentoType {
 // MARK: - Text helpers
 
 public extension Text {
-    /// The dominant numeral: tabular hero font + size-aware negative tracking.
-    /// Color it with a *data* role (`dataRecovery` / `dataStrain` / `verdict`);
-    /// leave everything else in ink.
+    /// The dominant numeral: tabular hero font + size-aware negative tracking. Now set in Space
+    /// Grotesk — the single hero-numeral voice (FER-900) — via `groteskHeroNumeral(_:)`. Color it
+    /// with a *data* role (`dataRecovery` / `dataStrain` / `verdict`); leave everything else in ink.
     func instrumentoHero(_ size: CGFloat = 72) -> Text {
-        self.font(InstrumentoType.hero(size))
-            .tracking(InstrumentoType.heroTracking(size))
-            .monospacedDigit()
+        self.font(InstrumentoType.groteskHeroNumeral(size))
+            .tracking(InstrumentoType.groteskHeroTrackingScaled(size))
     }
 
     /// A moderate, uppercased overline. Tertiary ink by default — pass a tint
