@@ -27,8 +27,9 @@ public struct TendenciasGlyph: View {
     private static let nodeRadii: [CGFloat] = [1.6, 1.6, 1.6, 2.1]
 
     public var body: some View {
-        GeometryReader { geo in
-            let s = min(geo.size.width, geo.size.height) / 24
+        // Shares the 24×24 scaled, decorative scaffold with `PatronesGlyph` via `AuthoredGlyph` (FER-903);
+        // the two-pass stroke+fill drawing below is this glyph's own.
+        AuthoredGlyph { s in
             ZStack {
                 // The reading line connecting the nodes.
                 Path { p in
@@ -46,7 +47,6 @@ public struct TendenciasGlyph: View {
                 .fill(color)
             }
         }
-        .accessibilityHidden(true)
     }
 }
 

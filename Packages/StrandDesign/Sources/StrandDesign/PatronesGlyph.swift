@@ -20,8 +20,9 @@ public struct PatronesGlyph: View {
     }
 
     public var body: some View {
-        GeometryReader { geo in
-            let s = min(geo.size.width, geo.size.height) / 24
+        // Shares the 24×24 scaled, decorative scaffold with `TendenciasGlyph` via `AuthoredGlyph` (FER-903);
+        // the single circles-and-elbow stroke below is this glyph's own.
+        AuthoredGlyph { s in
             Path { p in
                 // Top-left node (r3 @ 7,7) and bottom-right node (r3 @ 17,17).
                 p.addEllipse(in: CGRect(x: 4 * s, y: 4 * s, width: 6 * s, height: 6 * s))
@@ -34,7 +35,6 @@ public struct PatronesGlyph: View {
             }
             .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
         }
-        .accessibilityHidden(true)
     }
 }
 
