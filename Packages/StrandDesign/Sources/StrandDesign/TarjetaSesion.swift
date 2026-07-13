@@ -155,7 +155,7 @@ public struct TarjetaSesion: View {
                             .minimumScaleFactor(0.8)
                         if let unit = metric.unit {
                             Text(unit)
-                                .font(.system(size: 11))
+                                .font(StrandFont.scaled(11))
                                 .foregroundStyle(theme.inkTertiary)
                         }
                     }
@@ -184,7 +184,7 @@ public struct TarjetaSesion: View {
                     .minimumScaleFactor(0.7)
                 if let barValueTail {
                     Text(barValueTail)
-                        .font(.system(size: 12))
+                        .font(StrandFont.scaled(12))
                         .foregroundStyle(theme.inkTertiary)
                 }
             }
@@ -201,7 +201,7 @@ public struct TarjetaSesion: View {
             .frame(height: 6)
             if let barNota {
                 Text(barNota)
-                    .font(.system(size: 11))
+                    .font(StrandFont.scaled(11))
                     .foregroundStyle(theme.inkTertiary)
             }
         }

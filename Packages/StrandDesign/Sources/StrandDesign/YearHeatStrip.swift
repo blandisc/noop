@@ -205,7 +205,7 @@ public struct YearHeatStrip: View {
                     Color.clear.frame(width: gridOriginX - spacing, height: monthLabelHeight)
                     ForEach(weeks) { week in
                         Text(week.monthLabel ?? "")
-                            .font(.system(size: 11))
+                            .font(StrandFont.scaled(11))
                             .foregroundStyle(labelColor)
                             .frame(width: cellSize, alignment: .leading)
                     }
@@ -216,7 +216,7 @@ public struct YearHeatStrip: View {
                 VStack(alignment: .trailing, spacing: spacing) {
                     ForEach(0..<7, id: \.self) { r in
                         Text(rowLabels[r])
-                            .font(.system(size: 11))
+                            .font(StrandFont.scaled(11))
                             .foregroundStyle(labelColor)
                             .frame(width: gutterWidth, height: cellSize, alignment: .trailing)
                     }

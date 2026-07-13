@@ -148,7 +148,7 @@ public struct GraficaRangos: View {
                 .font(InstrumentoType.groteskNumber(20, weight: .bold))
                 .foregroundColor(hue)
              + Text(verbatim: " · \(mediaNote)")
-                .font(.system(size: 12))
+                .font(StrandFont.scaled(12))
                 .foregroundColor(theme.inkTertiary)
              + Text(verbatim: mediaDelta.map { " \($0)" } ?? "")
                 .font(InstrumentoType.grotesk(12, weight: .semibold))
@@ -287,7 +287,7 @@ public struct GraficaRangos: View {
                 .offset(x: Self.gutter, y: top)
             if let label = wash.label {
                 Text(label)
-                    .font(.system(size: 9))
+                    .font(StrandFont.scaled(9))
                     .foregroundStyle(theme.inkTertiary)
                     .offset(x: Self.gutter + 4, y: top + 3)
             }
@@ -314,7 +314,7 @@ public struct GraficaRangos: View {
                     .stroke(theme.baseMark, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 if let label = ref.label {
                     Text(label)
-                        .font(.system(size: 9))
+                        .font(StrandFont.scaled(9))
                         .foregroundStyle(theme.inkTertiary)
                         .offset(x: Self.gutter + 4, y: y(ref.v) - 14)
                 }
@@ -454,7 +454,7 @@ public struct GraficaRangos: View {
                     .fill(b.color)
                     .frame(width: 9, height: 9)
                 Text(b.label)
-                    .font(.system(size: 14, weight: active ? .semibold : .regular))
+                    .font(StrandFont.scaled(14, weight: active ? .semibold : .regular))
                     .foregroundStyle(active ? theme.ink : theme.inkSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(b.range)

@@ -36,3 +36,5 @@ jobs:
         run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal Cenit/Screens Cenit/Onboarding
       - name: Design-drift linter — no em-dash in copy (FER-879, app-wide)
         run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding
+      - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)
+        run: python3 Tools/check-design-drift.py --rules no-raw-shadow Cenit/Screens
