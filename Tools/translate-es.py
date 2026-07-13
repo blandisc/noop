@@ -97,7 +97,7 @@ ES: dict[str, str] = {
     # «%lld of the last %lld days/nights in this range» y «%lld days» ya existen en el catálogo.
     "%lld day": "%lld día",
     "%lld night": "%lld noche",
-    "%lld nights": "%lld noches",
+    # "%lld nights": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
     # FER-763 — Temperatura de piel reemplaza a Oxígeno en sangre en la retícula de SEÑALES + su hoja.
     "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness.":
         "La temperatura de tu piel, medida en la muñeca mientras duermes. Cambia con tu ritmo circadiano y tu recuperación. Lo que importa no es el número en sí, sino qué tan lejos queda de tu propia base. Una subida sostenida puede ser una señal temprana de inflamación o de que te estás enfermando.",
@@ -1496,7 +1496,7 @@ ES: dict[str, str] = {
     "%lld %@ · sparse — widened to %@": "%lld %@ · pocos datos, ampliado a %@",
     "%lld readings · %@": "%lld lecturas · %@",
     "Sparse — widened to %@ · %lld readings": "Pocos datos, ampliado a %@ · %lld lecturas",
-    "%lld days": "%lld días",
+    # "%lld days": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
     "as of %@": "al %@",
     "vs prev %@": "vs. %@ anterior",
     "no prior %@": "sin %@ anterior",
