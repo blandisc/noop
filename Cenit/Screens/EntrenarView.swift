@@ -601,15 +601,15 @@ private struct EntrenarLanding: View {
                 .foregroundStyle(isToday ? theme.ink : (hasRoutine ? routineTint(region) : theme.inkTertiary))
             ZStack {
                 if let doneTint {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(doneTint)
+                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(doneTint)
                     StrandIcon.confirm.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.paper)
                 } else if isToday {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(theme.surface)
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.surface)
+                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                         .strokeBorder(todayRingTint, lineWidth: 1.5)
                 } else {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(theme.patternBlock)
+                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.patternBlock)
                 }
             }
             .frame(width: 26, height: 26)
