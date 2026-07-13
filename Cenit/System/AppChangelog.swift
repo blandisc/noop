@@ -24,23 +24,23 @@ enum AppChangelog {
             title: "Journal logging + an Imperial/Metric units toggle",
             date: "June 2026",
             items: [
-                "New (Mac and Android): log how you're living — a journal card on the Insights screen with quick yes/no chips for behaviours (caffeine, alcohol, a late meal, screen time, and your own custom questions). Your entries stay on-device and are never overwritten by an import.",
-                "New (Mac and Android): an Imperial / Metric units toggle in Settings — distance (km / mi), weight (kg / lb), height (cm / ft-in) and temperature (°C / °F), with a separate temperature override. Everything stays stored the same; this only changes how it's shown.",
+                "New (Mac and Android): log how you're living: a journal card on the Insights screen with quick yes/no chips for behaviours (caffeine, alcohol, a late meal, screen time, and your own custom questions). Your entries stay on-device and are never overwritten by an import.",
+                "New (Mac and Android): an Imperial / Metric units toggle in Settings: distance (km / mi), weight (kg / lb), height (cm / ft-in) and temperature (°C / °F), with a separate temperature override. Everything stays stored the same; this only changes how it's shown.",
             ]),
         Release(
             version: "1.79",
             title: "Manual workouts, edit/dismiss auto-detected ones, and CSV export",
             date: "June 2026",
             items: [
-                "New (Mac and Android): add a workout by hand, and edit, re-label, or dismiss the ones Cénit auto-detects — so a misread bout or a duplicate no longer sticks around with no way to remove it. Dismissals are remembered, so a re-detected session stays hidden.",
-                "New (Mac and Android): export all your data as a WHOOP-format CSV bundle (cycles, sleeps, workouts, journal) from Settings — yours to keep, and it imports straight back into Cénit.",
+                "New (Mac and Android): add a workout by hand, and edit, re-label, or dismiss the ones Cénit auto-detects: so a misread bout or a duplicate no longer sticks around with no way to remove it. Dismissals are remembered, so a re-detected session stays hidden.",
+                "New (Mac and Android): export all your data as a WHOOP-format CSV bundle (cycles, sleeps, workouts, journal) from Settings: yours to keep, and it imports straight back into Cénit.",
             ]),
         Release(
             version: "1.78",
             title: "Fewer false daytime sleeps + an Android sync button",
             date: "June 2026",
             items: [
-                "Fixed (Mac and Android): a long sedentary daytime stretch — at your desk, on the couch, in a long meeting — no longer gets logged as sleep. Daytime periods now need a longer, genuinely low-heart-rate window before they count, while overnight sleep and real naps are unchanged.",
+                "Fixed (Mac and Android): a long sedentary daytime stretch, at your desk, on the couch, in a long meeting, no longer gets logged as sleep. Daytime periods now need a longer, genuinely low-heart-rate window before they count, while overnight sleep and real naps are unchanged.",
                 "New (Android): a manual “Sync now” button on the Live screen, plus an honest progress indicator while your strap’s history is offloading.",
             ]),
         Release(
@@ -48,7 +48,7 @@ enum AppChangelog {
             title: "First-run terms acknowledgment + an Explore chart fix",
             date: "June 2026",
             items: [
-                "New (Mac and Android): a one-time, plain-English terms acknowledgment on first launch — what Cénit is, that it's independent of WHOOP and that using it may breach WHOOP's Terms of Service, that it's not a medical device, and that you use it at your own risk. Standard for an independent, on-device tool — you accept once. The full terms ship in TERMS.md.",
+                "New (Mac and Android): a one-time, plain-English terms acknowledgment on first launch, what Cénit is, that it's independent of WHOOP and that using it may breach WHOOP's Terms of Service, that it's not a medical device, and that you use it at your own risk. Standard for an independent, on-device tool, you accept once. The full terms ship in TERMS.md.",
                 "Fixed (Mac): the Explore metric charts no longer flicker to a straight line when the cursor crosses into or out of the graph.",
             ]),
         Release(
@@ -56,8 +56,8 @@ enum AppChangelog {
             title: "Robust Apple Health import, marginal-radio HR mode, live HR graph",
             date: "June 2026",
             items: [
-                "Improved (Mac and Android): a very large Apple Health export no longer fails to import because of a single malformed byte. Cénit now skips the bad spans and imports everything else, and tells you how many it skipped — so multi-year exports that errored out before should come in fine now.",
-                "New (Mac): if your Bluetooth radio can't sustain WHOOP 4's full realtime stream (older Macs, OpenCore setups), Cénit now automatically falls back to a low-bandwidth standard heart-rate mode — so live HR keeps working instead of the connection looping on a drop.",
+                "Improved (Mac and Android): a very large Apple Health export no longer fails to import because of a single malformed byte. Cénit now skips the bad spans and imports everything else, and tells you how many it skipped: so multi-year exports that errored out before should come in fine now.",
+                "New (Mac): if your Bluetooth radio can't sustain WHOOP 4's full realtime stream (older Macs, OpenCore setups), Cénit now automatically falls back to a low-bandwidth standard heart-rate mode: so live HR keeps working instead of the connection looping on a drop.",
                 "Fixed (Mac): the Health tab's live heart-rate graph now builds a continuous trace over time, instead of getting stuck showing only two points.",
             ]),
         Release(
@@ -65,8 +65,8 @@ enum AppChangelog {
             title: "Personal vital baselines + Mac analytics parity",
             date: "June 2026",
             items: [
-                "New (Mac and Android): the Health Monitor now judges each vital — HRV, resting heart rate, respiratory rate, skin temperature — against YOUR own learned baseline (after about 14 nights), not just a one-size-fits-all population range. So a personal normal that happens to sit outside the textbook band — say a naturally lower HRV — stops reading as \"off\" when it's perfectly fine for you. Until your baseline is established it falls back to the typical range.",
-                "New (Mac): macOS now computes steps, respiratory rate, daily calories and nightly skin temperature on-device, matching what Android already did — and nightly respiration now feeds into the recovery score on both platforms. Existing recoveries are unchanged when respiration isn't available.",
+                "New (Mac and Android): the Health Monitor now judges each vital, HRV, resting heart rate, respiratory rate, skin temperature, against YOUR own learned baseline (after about 14 nights), not just a one-size-fits-all population range. So a personal normal that happens to sit outside the textbook band, say a naturally lower HRV, stops reading as \"off\" when it's perfectly fine for you. Until your baseline is established it falls back to the typical range.",
+                "New (Mac): macOS now computes steps, respiratory rate, daily calories and nightly skin temperature on-device, matching what Android already did: and nightly respiration now feeds into the recovery score on both platforms. Existing recoveries are unchanged when respiration isn't available.",
             ]),
         Release(
             version: "1.74",
@@ -74,35 +74,35 @@ enum AppChangelog {
             date: "June 2026",
             items: [
                 "Android now matches the Mac: if your WHOOP 5.0 / MG can't connect after a firmware update (a Bluetooth pairing reset), Cénit detects it and shows the forget-and-re-pair steps right in the app, instead of silently retrying. (Mac got this in 1.73.)",
-                "Fixed (Android): a rare startup crash on some fast devices (e.g. Galaxy S24+) — the app could crash once on launch when a strap was already connected, then open fine on the second try. (Mac was never affected.)",
+                "Fixed (Android): a rare startup crash on some fast devices (e.g. Galaxy S24+): the app could crash once on launch when a strap was already connected, then open fine on the second try. (Mac was never affected.)",
             ]),
         Release(
             version: "1.73",
             title: "Reconnect help for WHOOP 5.0 / MG after a firmware update",
             date: "June 2026",
             items: [
-                "If your WHOOP 5.0 / MG stopped connecting after a WHOOP firmware update, that's a Bluetooth pairing reset — not a lockout, and Cénit works fine on the new firmware. To reconnect: quit the official WHOOP app, forget the strap in your Bluetooth settings, put it in pairing mode (tap the band until the LEDs flash blue), then reconnect. On Mac, Cénit now detects this automatically and shows you these exact steps in-app instead of silently retrying. WHOOP 4.0 is unaffected.",
+                "If your WHOOP 5.0 / MG stopped connecting after a WHOOP firmware update, that's a Bluetooth pairing reset: not a lockout, and Cénit works fine on the new firmware. To reconnect: quit the official WHOOP app, forget the strap in your Bluetooth settings, put it in pairing mode (tap the band until the LEDs flash blue), then reconnect. On Mac, Cénit now detects this automatically and shows you these exact steps in-app instead of silently retrying. WHOOP 4.0 is unaffected.",
             ]),
         Release(
             version: "1.72",
             title: "GPS workout crash fix (Android)",
             date: "June 2026",
             items: [
-                "Fixed (Android): starting a GPS-tracked workout could crash the app on Android 12 and newer. GPS needs location permission, which Cénit never requested — and it was capped to older Android versions — so route tracking failed the instant it began. Cénit now asks for location permission right before a GPS workout and fails safe if it's unavailable: the workout still records heart rate and strain, just without a route. If you don't use GPS workouts, nothing changes. (Mac: version bump only.)",
+                "Fixed (Android): starting a GPS-tracked workout could crash the app on Android 12 and newer. GPS needs location permission, which Cénit never requested, and it was capped to older Android versions, so route tracking failed the instant it began. Cénit now asks for location permission right before a GPS workout and fails safe if it's unavailable: the workout still records heart rate and strain, just without a route. If you don't use GPS workouts, nothing changes. (Mac: version bump only.)",
             ]),
         Release(
             version: "1.71",
             title: "GPS-tracked workouts (Android)",
             date: "June 2026",
             items: [
-                "New (Android): when you start a workout you now pick a sport (searchable), and your phone's GPS records the route, distance and pace as you go. Live distance + pace show on the workout card; at the end the route draws right on the Live screen — entirely offline, no maps are fetched. The session can also write to Health Connect (opt-in, under Data Sources). Builds on the manual workout tracking from v1.67. A community request. (Mac: version bump only.)",
+                "New (Android): when you start a workout you now pick a sport (searchable), and your phone's GPS records the route, distance and pace as you go. Live distance + pace show on the workout card; at the end the route draws right on the Live screen: entirely offline, no maps are fetched. The session can also write to Health Connect (opt-in, under Data Sources). Builds on the manual workout tracking from v1.67. A community request. (Mac: version bump only.)",
             ]),
         Release(
             version: "1.70",
             title: "Clearer sync status + a responsive Compare screen",
             date: "June 2026",
             items: [
-                "Improved (Android): the Live screen now says \"Syncing your strap history…\" plainly while the strap is offloading, so it's obvious it's working — the brief status-pill change was easy to miss. (Mac already showed this clearly.)",
+                "Improved (Android): the Live screen now says \"Syncing your strap history…\" plainly while the strap is offloading, so it's obvious it's working: the brief status-pill change was easy to miss. (Mac already showed this clearly.)",
                 "Fixed (Mac): the Compare screen's time-range controls now stack instead of overflowing when the window is narrow.",
             ]),
         Release(
@@ -110,107 +110,107 @@ enum AppChangelog {
             title: "Cleaner Live status + better sync diagnostics",
             date: "June 2026",
             items: [
-                "Fixed (Mac and Android): the \"Last Event\" line on the Live screen no longer shows an internal name when live heart rate starts (it used to read \"BLE_REALTIME_HR…\"). It now only shows meaningful strap events — wrist on/off, double-tap, battery, and so on.",
-                "Diagnostics (Mac and Android): when the strap sends history that Cénit can't decode, the strap log now prints a short hex sample of the dropped records — not just the count. If your WHOOP 4 is on a firmware whose record layout we haven't mapped yet (history syncs but no data appears), turning on Debug logging and sharing the strap log now gives us the exact bytes we need to add support. Chasing one of these now (#91).",
+                "Fixed (Mac and Android): the \"Last Event\" line on the Live screen no longer shows an internal name when live heart rate starts (it used to read \"BLE_REALTIME_HR…\"). It now only shows meaningful strap events: wrist on/off, double-tap, battery, and so on.",
+                "Diagnostics (Mac and Android): when the strap sends history that Cénit can't decode, the strap log now prints a short hex sample of the dropped records: not just the count. If your WHOOP 4 is on a firmware whose record layout we haven't mapped yet (history syncs but no data appears), turning on Debug logging and sharing the strap log now gives us the exact bytes we need to add support. Chasing one of these now (#91).",
             ]),
         Release(
             version: "1.68",
-            title: "Sleep figures, HR zones, charging & calibration — a big community-driven update",
+            title: "Sleep figures, HR zones, charging & calibration: a big community-driven update",
             date: "June 2026",
             items: [
-                "New (Mac and Android): your workouts now show an HR Zones card — time spent in each heart-rate zone for imported sessions, with a duration-weighted summary.",
+                "New (Mac and Android): your workouts now show an HR Zones card: time spent in each heart-rate zone for imported sessions, with a duration-weighted summary.",
                 "New (Mac and Android): a \"· Charging\" indicator on the battery pill when your strap is on the charger.",
-                "Improved (Mac and Android): sleep tiles now prefer WHOOP's own imported figures (sleep performance, consistency, need, debt) when available, falling back to Cénit's on-device estimate otherwise — and Android now imports those four figures too.",
+                "Improved (Mac and Android): sleep tiles now prefer WHOOP's own imported figures (sleep performance, consistency, need, debt) when available, falling back to Cénit's on-device estimate otherwise: and Android now imports those four figures too.",
                 "New (Android): the sleep screen draws a real hypnogram from the per-epoch stages, not just a summary.",
-                "New (Mac): recovery shows \"Calibrating — N of 4 nights\" while it learns your baseline, instead of a misleading empty ring.",
+                "New (Mac): recovery shows \"Calibrating: N of 4 nights\" while it learns your baseline, instead of a misleading empty ring.",
                 "New (Mac): \"History synced N ago\" in Today and the menu bar, so you can see at a glance when your strap last offloaded.",
                 "New (Mac): the illness early-warning can post a system notification when it first flags a day (opt-in, off by default, once per day); Android already did this.",
-                "New (Mac): a firmware wake-up alarm for WHOOP 5/MG — experimental: arming is confirmed, but a strap-driven wake hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.",
-                "Most of this release came from a generous community contribution — thank you.",
+                "New (Mac): a firmware wake-up alarm for WHOOP 5/MG: experimental: arming is confirmed, but a strap-driven wake hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.",
+                "Most of this release came from a generous community contribution: thank you.",
             ]),
         Release(
             version: "1.67",
             title: "Track a workout manually",
             date: "June 2026",
             items: [
-                "New (Mac and Android): start and stop a workout yourself, instead of waiting for Cénit to detect one. Tap Start workout on the Live screen and you get a live card — elapsed time, heart rate, and strain building in real time; tap End and it's scored and saved to your Workouts, contributing to the day. Perfect for a session Cénit might not auto-detect, or when you just want a clean start/stop. Needs a connected strap streaming live heart rate. A community request — thanks for the nudge.",
+                "New (Mac and Android): start and stop a workout yourself, instead of waiting for Cénit to detect one. Tap Start workout on the Live screen and you get a live card, elapsed time, heart rate, and strain building in real time; tap End and it's scored and saved to your Workouts, contributing to the day. Perfect for a session Cénit might not auto-detect, or when you just want a clean start/stop. Needs a connected strap streaming live heart rate. A community request, thanks for the nudge.",
             ]),
         Release(
             version: "1.66",
             title: "Android: WHOOP 4 on newer firmware now records data",
             date: "June 2026",
             items: [
-                "Fixed (Android): a WHOOP 4.0 on a firmware version Cénit hadn't mapped recorded NOTHING — the history sync finished but every record was silently dropped, so heart rate, sleep and recovery all stayed empty. Mac already handled this (it falls back to the standard record layout for unknown firmware); Android didn't, so it dropped the data entirely. Android now does the same fallback, accepting an unmapped firmware's records only when they decode to physically-real data (so it can never store garbage). If your WHOOP 4 was syncing but showing no data, update and it should start filling in. Investigating exactly this on a Samsung report (#77). Mac: version bump only.",
+                "Fixed (Android): a WHOOP 4.0 on a firmware version Cénit hadn't mapped recorded NOTHING: the history sync finished but every record was silently dropped, so heart rate, sleep and recovery all stayed empty. Mac already handled this (it falls back to the standard record layout for unknown firmware); Android didn't, so it dropped the data entirely. Android now does the same fallback, accepting an unmapped firmware's records only when they decode to physically-real data (so it can never store garbage). If your WHOOP 4 was syncing but showing no data, update and it should start filling in. Investigating exactly this on a Samsung report (#77). Mac: version bump only.",
             ]),
         Release(
             version: "1.65",
             title: "Sync diagnostics: surfacing silently-dropped history",
             date: "June 2026",
             items: [
-                "Diagnostics (Mac and Android): if a chunk of history arrives from the strap but none of it can be decoded — frames failing their checksum, an unrecognised firmware layout, or out-of-range timestamps — Cénit now says so plainly in the strap log instead of quietly moving on. Until now a sync like that looked completely healthy (\"history synced\") while the data went nowhere, which made a rare \"I wore it but got no data\" report almost impossible to diagnose. This release changes no behaviour — it just makes that case visible — so if your history isn't showing up, turning on Debug logging and sharing your strap log will now point straight at the cause. Investigating a report along these lines (#77).",
+                "Diagnostics (Mac and Android): if a chunk of history arrives from the strap but none of it can be decoded, frames failing their checksum, an unrecognised firmware layout, or out-of-range timestamps, Cénit now says so plainly in the strap log instead of quietly moving on. Until now a sync like that looked completely healthy (\"history synced\") while the data went nowhere, which made a rare \"I wore it but got no data\" report almost impossible to diagnose. This release changes no behaviour, it just makes that case visible, so if your history isn't showing up, turning on Debug logging and sharing your strap log will now point straight at the cause. Investigating a report along these lines (#77).",
             ]),
         Release(
             version: "1.64",
             title: "Android: faster sync, skin temp, sync status, alarm groundwork",
             date: "June 2026",
             items: [
-                "New (Android): a batch of WHOOP 5/MG improvements, with thanks to a community contributor. Sync is faster and more reliable — Cénit now negotiates a larger Bluetooth packet size on connect, so a full history record rides one packet instead of being chopped into fragments. The Live screen now tells you the honest truth about syncing: \"History synced N ago,\" or a clear note if a sync stalled — no more silent guessing for a cloud-free app. Skin-temperature deviation now builds offline from the strap's own nights (wear-gated, in-bed only, baseline-seeded like recovery — APPROXIMATE), which also re-arms the illness early-warning signal. And the recovery ring now shows \"Calibrating — N of 4 nights\" while it learns your baseline, instead of a blank \"No Data.\" Also groundwork for a 5/MG firmware wake alarm — it's behind the Experimental toggle and UNCONFIRMED (help us verify it actually wakes you before relying on it). Mac: version bump only.",
+                "New (Android): a batch of WHOOP 5/MG improvements, with thanks to a community contributor. Sync is faster and more reliable, Cénit now negotiates a larger Bluetooth packet size on connect, so a full history record rides one packet instead of being chopped into fragments. The Live screen now tells you the honest truth about syncing: \"History synced N ago,\" or a clear note if a sync stalled, no more silent guessing for a cloud-free app. Skin-temperature deviation now builds offline from the strap's own nights (wear-gated, in-bed only, baseline-seeded like recovery, APPROXIMATE), which also re-arms the illness early-warning signal. And the recovery ring now shows \"Calibrating, N of 4 nights\" while it learns your baseline, instead of a blank \"No Data.\" Also groundwork for a 5/MG firmware wake alarm, it's behind the Experimental toggle and UNCONFIRMED (help us verify it actually wakes you before relying on it). Mac: version bump only.",
             ]),
         Release(
             version: "1.63",
             title: "Mac: strap-computed nights show in Sleep",
             date: "June 2026",
             items: [
-                "Fixed (Mac): nights computed from the strap alone were missing from the Sleep tab entirely — Intelligence scored them, but Sleep showed nothing (#77). The strap's on-device analysis stores its stage data in a different shape than a WHOOP import, and the Sleep tab only knew how to read the imported one. Bonus of the fix: Bluetooth-only nights now draw their REAL stage timeline in the hypnogram (imported nights still use an approximate reconstruction, since the export carries totals only). The usual honesty note applies: on-device stages are approximations from heart rate, HRV and movement — not PSG-validated. Android already handled both shapes; version bump only there.",
+                "Fixed (Mac): nights computed from the strap alone were missing from the Sleep tab entirely, Intelligence scored them, but Sleep showed nothing (#77). The strap's on-device analysis stores its stage data in a different shape than a WHOOP import, and the Sleep tab only knew how to read the imported one. Bonus of the fix: Bluetooth-only nights now draw their REAL stage timeline in the hypnogram (imported nights still use an approximate reconstruction, since the export carries totals only). The usual honesty note applies: on-device stages are approximations from heart rate, HRV and movement, not PSG-validated. Android already handled both shapes; version bump only there.",
             ]),
         Release(
             version: "1.62",
             title: "WHOOP 5/MG history: the missing clock",
             date: "June 2026",
             items: [
-                "New (Mac and Android, experimental): Cénit now sets the clock on a WHOOP 5.0/MG before asking for its history — and that matters more than it sounds: an un-clocked WHOOP 5 doesn't save sensor data at all, so history syncs were \"succeeding\" with nothing in them. A fellow developer's work on real 5/MG hardware found this (history went from 0 to hundreds of frames once clocked) along with several smaller protocol fixes Cénit now carries: the history request waits for the strap to acknowledge a range query first (with a retry if it stays silent), an Android 5/MG connects directly to the strap your phone already paired instead of re-scanning, fresh history is scored within seconds instead of at the next 15-minute tick, and the strap's own diagnostic messages now appear in the strap log. Also new (Android, opt-in, default OFF): \"Record 5/MG raw capture\" in Settings → Experimental writes each history sync's raw frames to a shareable file — if you have a 5/MG, sharing one capture is the single most useful thing you can do to help Cénit learn to decode 5/MG sleep, recovery and strain. With thanks to tajchert, whose hardware-validated fork drove this release.",
+                "New (Mac and Android, experimental): Cénit now sets the clock on a WHOOP 5.0/MG before asking for its history, and that matters more than it sounds: an un-clocked WHOOP 5 doesn't save sensor data at all, so history syncs were \"succeeding\" with nothing in them. A fellow developer's work on real 5/MG hardware found this (history went from 0 to hundreds of frames once clocked) along with several smaller protocol fixes Cénit now carries: the history request waits for the strap to acknowledge a range query first (with a retry if it stays silent), an Android 5/MG connects directly to the strap your phone already paired instead of re-scanning, fresh history is scored within seconds instead of at the next 15-minute tick, and the strap's own diagnostic messages now appear in the strap log. Also new (Android, opt-in, default OFF): \"Record 5/MG raw capture\" in Settings → Experimental writes each history sync's raw frames to a shareable file, if you have a 5/MG, sharing one capture is the single most useful thing you can do to help Cénit learn to decode 5/MG sleep, recovery and strain. With thanks to tajchert, whose hardware-validated fork drove this release.",
             ]),
         Release(
             version: "1.61",
             title: "Android: the widget now actually updates",
             date: "June 2026",
             items: [
-                "Fixed (Android): the home-screen widget could freeze on \"—\" for heart rate and battery while the app itself streamed live HR perfectly well (#82, second find). The widget update was being cancelled mid-write every time a new heart-rate sample arrived — and with samples landing every second, no update ever finished once streaming started. Updates now run to completion, and the first heart-rate sample after connecting shows on the widget immediately instead of waiting out a refresh window. Thanks to the reporter whose precise symptoms — live HR fine in the app, widget stuck with \"Connected\" underneath — pointed straight at it. Mac: version bump only.",
+                "Fixed (Android): the home-screen widget could freeze on \"—\" for heart rate and battery while the app itself streamed live HR perfectly well (#82, second find). The widget update was being cancelled mid-write every time a new heart-rate sample arrived, and with samples landing every second, no update ever finished once streaming started. Updates now run to completion, and the first heart-rate sample after connecting shows on the widget immediately instead of waiting out a refresh window. Thanks to the reporter whose precise symptoms, live HR fine in the app, widget stuck with \"Connected\" underneath, pointed straight at it. Mac: version bump only.",  // token-exempt: refiere al glifo «—» de sin-dato literalmente, no es conector de copy
             ]),
         Release(
             version: "1.60",
             title: "Android: notification recovery fix + widget armour",
             date: "June 2026",
             items: [
-                "Fixed (Android): the background notification now actually shows today's Recovery % — v1.56 announced it, but the value was computed and never drawn. Also: armour for the home-screen widget — if it ever fails to draw it shows a small fallback message and heals on its next update, the background notification now survives database hiccups instead of taking the connection down, and the widget's internal scheduler library was brought up to the current Android-14-era version. We investigated a reported \"app keeps stopping\" crash (#82) with a fresh-install reproduction on a clean Android 14 device and could not trigger it — if you ever see it, please report your device model and Android version. Mac: version bump only.",
+                "Fixed (Android): the background notification now actually shows today's Recovery %, v1.56 announced it, but the value was computed and never drawn. Also: armour for the home-screen widget, if it ever fails to draw it shows a small fallback message and heals on its next update, the background notification now survives database hiccups instead of taking the connection down, and the widget's internal scheduler library was brought up to the current Android-14-era version. We investigated a reported \"app keeps stopping\" crash (#82) with a fresh-install reproduction on a clean Android 14 device and could not trigger it, if you ever see it, please report your device model and Android version. Mac: version bump only.",
             ]),
         Release(
             version: "1.59",
             title: "Android: share back to Health Connect",
             date: "June 2026",
             items: [
-                "New (Android, opt-in): Cénit can now write the nightly metrics it computes from your strap — resting heart rate, HRV, SpO₂ and respiratory rate — into Health Connect, so other apps can use them. Off by default; flip \"Share back to Health Connect\" in Data Sources and grant the write permissions. Only Cénit's own computed values are written (imported data is never echoed back), and re-writes update in place rather than stacking duplicates. Mac: version bump only.",
+                "New (Android, opt-in): Cénit can now write the nightly metrics it computes from your strap, resting heart rate, HRV, SpO₂ and respiratory rate, into Health Connect, so other apps can use them. Off by default; flip \"Share back to Health Connect\" in Data Sources and grant the write permissions. Only Cénit's own computed values are written (imported data is never echoed back), and re-writes update in place rather than stacking duplicates. Mac: version bump only.",
             ]),
         Release(
             version: "1.58",
             title: "Android: bottom tab bar",
             date: "June 2026",
             items: [
-                "New (Android): a bottom tab bar — Today, Trends, Live and Sleep are now one thumb-tap away, with a More tab that opens the full grouped list of screens. Nothing moved: the hamburger menu still works exactly as before, every screen is reachable from both, and your back button behaves the same. Mac: version bump only.",
+                "New (Android): a bottom tab bar: Today, Trends, Live and Sleep are now one thumb-tap away, with a More tab that opens the full grouped list of screens. Nothing moved: the hamburger menu still works exactly as before, every screen is reachable from both, and your back button behaves the same. Mac: version bump only.",
             ]),
         Release(
             version: "1.57",
             title: "Android home-screen widget",
             date: "June 2026",
             items: [
-                "New (Android): a home-screen widget. Today's recovery — coloured green, amber or red by the usual bands — plus live heart rate and strap battery, at a glance without opening the app. It updates from the background connection (or while the app is open), shows when it last heard from the strap, and tapping it opens Cénit. Long-press your home screen → Widgets → Cénit to add it. Honest-blank until Cénit has learned enough nights to score you. Mac: version bump only.",
+                "New (Android): a home-screen widget. Today's recovery, coloured green, amber or red by the usual bands, plus live heart rate and strap battery, at a glance without opening the app. It updates from the background connection (or while the app is open), shows when it last heard from the strap, and tapping it opens Cénit. Long-press your home screen → Widgets → Cénit to add it. Honest-blank until Cénit has learned enough nights to score you. Mac: version bump only.",
             ]),
         Release(
             version: "1.56",
             title: "Shortcuts on Mac, recovery in the Android notification",
             date: "June 2026",
             items: [
-                "New (Mac): Cénit now offers two Shortcuts actions — \"Buzz Strap\" and \"Mark a Moment\" — so you can vibrate your connected strap or drop a timestamped marker from Shortcuts, Spotlight, or a menu-bar/keyboard trigger without opening the app's window. They act on the strap Cénit is already bonded to; if Cénit isn't running, or the strap isn't connected, you get a clear \"open Cénit\" / \"connect your strap\" message instead of a silent no-op. No new permissions — just the strap you already paired.",
+                "New (Mac): Cénit now offers two Shortcuts actions, \"Buzz Strap\" and \"Mark a Moment\", so you can vibrate your connected strap or drop a timestamped marker from Shortcuts, Spotlight, or a menu-bar/keyboard trigger without opening the app's window. They act on the strap Cénit is already bonded to; if Cénit isn't running, or the strap isn't connected, you get a clear \"open Cénit\" / \"connect your strap\" message instead of a silent no-op. No new permissions, just the strap you already paired.",
                 "New (Android): the ongoing background notification now shows today's recovery % alongside live heart rate and strap battery, so a glance at your shade tells you how recovered you are without opening the app. It updates itself when the on-device analysis recomputes (about every 15 minutes), and stays absent until Cénit has learned enough nights to score you honestly.",
             ]),
         Release(
@@ -218,58 +218,58 @@ enum AppChangelog {
             title: "Mac: recovery builds from your strap alone",
             date: "June 2026",
             items: [
-                "New (Mac): recovery now builds from the strap's own offloaded nights, no WHOOP export needed — the same fix Android got in v1.53. The recovery baseline previously only learned from imported history, so a Bluetooth-only Mac user never crossed the \"learn your baseline\" threshold and recovery stayed blank. Cénit now seeds the baseline from the nights it computes on-device too, so after about four nights recovery lights up on its own. Honest-blank until then; a real import still wins per day. Also: the WHOOP 5.0/MG step counter now persists on Mac (parity with Android — surfaced later, still APPROXIMATE). Android: version bump only (it already had both).",
+                "New (Mac): recovery now builds from the strap's own offloaded nights, no WHOOP export needed, the same fix Android got in v1.53. The recovery baseline previously only learned from imported history, so a Bluetooth-only Mac user never crossed the \"learn your baseline\" threshold and recovery stayed blank. Cénit now seeds the baseline from the nights it computes on-device too, so after about four nights recovery lights up on its own. Honest-blank until then; a real import still wins per day. Also: the WHOOP 5.0/MG step counter now persists on Mac (parity with Android, surfaced later, still APPROXIMATE). Android: version bump only (it already had both).",
             ]),
         Release(
             version: "1.54",
             title: "French WHOOP exports now import",
             date: "June 2026",
             items: [
-                "Fixed: French WHOOP CSV exports now import. Like German and Spanish before it, a French export translates both the column headers (Score de récupération, Variabilité de la fréquence cardiaque, …) and the sleep/workout filenames (sommeil.csv, entrainements.csv), so it used to match nothing and reported \"0 items.\" Cénit now maps every French column — including the full workout set with HR zones — and recognises the French filenames, so recovery, strain, sleep, HRV and workouts all import. Mac and Android. Thanks to a reporter who supplied a real export's headers (#79).",
+                "Fixed: French WHOOP CSV exports now import. Like German and Spanish before it, a French export translates both the column headers (Score de récupération, Variabilité de la fréquence cardiaque, …) and the sleep/workout filenames (sommeil.csv, entrainements.csv), so it used to match nothing and reported \"0 items.\" Cénit now maps every French column, including the full workout set with HR zones, and recognises the French filenames, so recovery, strain, sleep, HRV and workouts all import. Mac and Android. Thanks to a reporter who supplied a real export's headers (#79).",
             ]),
         Release(
             version: "1.53",
             title: "Recovery builds from your strap alone (Android)",
             date: "June 2026",
             items: [
-                "New (Android): recovery now builds from the strap's own offloaded nights — no WHOOP export needed. Before, the recovery baseline only ever learned from imported history, so a Bluetooth-only user never crossed the \"learn your baseline\" threshold and recovery stayed blank forever. Cénit now seeds the baseline from the nights it computes on-device too, so after about four nights of wear recovery lights up on its own. It stays honestly blank until then, and a real WHOOP import still wins per day. The natural payoff of the v1.52 offload work. Thanks to a community contribution (#78). (macOS recovery-seeding parity is a follow-up; version bump only this release.)",
+                "New (Android): recovery now builds from the strap's own offloaded nights: no WHOOP export needed. Before, the recovery baseline only ever learned from imported history, so a Bluetooth-only user never crossed the \"learn your baseline\" threshold and recovery stayed blank forever. Cénit now seeds the baseline from the nights it computes on-device too, so after about four nights of wear recovery lights up on its own. It stays honestly blank until then, and a real WHOOP import still wins per day. The natural payoff of the v1.52 offload work. Thanks to a community contribution (#78). (macOS recovery-seeding parity is a follow-up; version bump only this release.)",
             ]),
         Release(
             version: "1.52",
             title: "WHOOP 5.0/MG history offload (Android)",
             date: "June 2026",
             items: [
-                "New (Android, experimental): a WHOOP 5.0/MG can now offload its stored history, not just stream live HR — the same thing the Mac already did. The 5/MG Bluetooth envelope shifts every field by 4 bytes and its end-of-history marker is a different type than the 4.0's, so the app was silently dropping every \"history finished\" frame and the strap never released its records. Cénit now reads those frames at the right place (matching the Mac), so history can download and feed recovery, strain and sleep. If you have a 5.0/MG, please report whether your history populates — it's experimental until confirmed on more straps. Thanks to a community contribution (#78). (macOS: version bump only — it already had this.)",
+                "New (Android, experimental): a WHOOP 5.0/MG can now offload its stored history, not just stream live HR, the same thing the Mac already did. The 5/MG Bluetooth envelope shifts every field by 4 bytes and its end-of-history marker is a different type than the 4.0's, so the app was silently dropping every \"history finished\" frame and the strap never released its records. Cénit now reads those frames at the right place (matching the Mac), so history can download and feed recovery, strain and sleep. If you have a 5.0/MG, please report whether your history populates, it's experimental until confirmed on more straps. Thanks to a community contribution (#78). (macOS: version bump only, it already had this.)",
             ]),
         Release(
             version: "1.51",
             title: "True battery %, a sync indicator, and HR on imported workouts",
             date: "June 2026",
             items: [
-                "Fixed: the battery flashing 100% before correcting to the real value (and sometimes reverting to 100%). A WHOOP 4.0's standard Bluetooth battery characteristic is a stub that always says 100 — the real charge comes from the proprietary battery command — and Cénit read both. It now uses only the real source per strap model. Mac and Android (#77).",
-                "New: a pulsing \"Syncing strap history…\" indicator on Today, Sleep and Intelligence while the strap's history is offloading — with a live chunk count — so a half-loaded screen (\"No nights here yet\") reads as in-progress, not final. The Live pill shows \"Bonded · syncing\" too. Mac and Android (#77).",
-                "Fixed (Android): imported workouts showed no heart rate. Health Connect sessions carry no summary HR, so avg/max were stored empty — the importer now derives them from the heart-rate samples inside each workout's window, and the Workouts/Today lists also fall back to the strap's own recorded HR for any imported session it was worn through (#77).",
+                "Fixed: the battery flashing 100% before correcting to the real value (and sometimes reverting to 100%). A WHOOP 4.0's standard Bluetooth battery characteristic is a stub that always says 100, the real charge comes from the proprietary battery command, and Cénit read both. It now uses only the real source per strap model. Mac and Android (#77).",
+                "New: a pulsing \"Syncing strap history…\" indicator on Today, Sleep and Intelligence while the strap's history is offloading, with a live chunk count, so a half-loaded screen (\"No nights here yet\") reads as in-progress, not final. The Live pill shows \"Bonded · syncing\" too. Mac and Android (#77).",
+                "Fixed (Android): imported workouts showed no heart rate. Health Connect sessions carry no summary HR, so avg/max were stored empty: the importer now derives them from the heart-rate samples inside each workout's window, and the Workouts/Today lists also fall back to the strap's own recorded HR for any imported session it was worn through (#77).",
             ]),
         Release(
             version: "1.50",
             title: "Steadier Bluetooth on congested Android phones",
             date: "June 2026",
             items: [
-                "Fixed (Android): on phones whose Bluetooth stack gets congested (a Pixel 7 on Android 16 logged dozens of \"busy\" command retries and a few dropped commands in 10 minutes), Cénit now retries a busy command more times with an escalating wait so nothing hard-drops, and re-subscribes the live channels at most once per quiet spell instead of every 30 seconds — that repeated re-subscribing was flooding the link with writes that collide with commands on phones that only allow one Bluetooth operation at a time. Steadier live HR and fewer dropped commands as a result. macOS: version bump only (it uses CoreBluetooth's own queue and isn't affected).",
+                "Fixed (Android): on phones whose Bluetooth stack gets congested (a Pixel 7 on Android 16 logged dozens of \"busy\" command retries and a few dropped commands in 10 minutes), Cénit now retries a busy command more times with an escalating wait so nothing hard-drops, and re-subscribes the live channels at most once per quiet spell instead of every 30 seconds: that repeated re-subscribing was flooding the link with writes that collide with commands on phones that only allow one Bluetooth operation at a time. Steadier live HR and fewer dropped commands as a result. macOS: version bump only (it uses CoreBluetooth's own queue and isn't affected).",
             ]),
         Release(
             version: "1.49",
             title: "Spanish WHOOP exports now import",
             date: "June 2026",
             items: [
-                "Fixed: Spanish WHOOP CSV exports now import. A Spanish export translates both the column headers (Puntuación de recuperación, Variabilidad de la frecuencia cardíaca, and so on) and some filenames (sueño.csv, entrenamientos.csv), so it used to match nothing and reported \"Imported 0 items.\" Cénit now maps the Spanish columns to their canonical fields and recognises the Spanish filenames, so recovery, strain, sleep, HRV and the rest come through correctly. Mac and Android. Thanks to a reporter who supplied a real export's headers (#76) — the same way German was added.",
+                "Fixed: Spanish WHOOP CSV exports now import. A Spanish export translates both the column headers (Puntuación de recuperación, Variabilidad de la frecuencia cardíaca, and so on) and some filenames (sueño.csv, entrenamientos.csv), so it used to match nothing and reported \"Imported 0 items.\" Cénit now maps the Spanish columns to their canonical fields and recognises the Spanish filenames, so recovery, strain, sleep, HRV and the rest come through correctly. Mac and Android. Thanks to a reporter who supplied a real export's headers (#76): the same way German was added.",
             ]),
         Release(
             version: "1.48",
             title: "More reliable Bluetooth on newer Android phones",
             date: "June 2026",
             items: [
-                "Fixed (Android): on some phones — especially newer ones on Android 13+, and worst on Android 16 — Cénit could silently drop a Bluetooth command when the phone's Bluetooth stack was momentarily busy, instead of retrying it. The dropped command was often the one that starts live heart rate, sets the strap clock, or acknowledges a chunk of history — so live HR sometimes never started and overnight data didn't come through, even though the strap and pairing were fine. Cénit now retries a rejected command and paces the writes so the stack keeps up. Thanks to a detailed strap log from a Pixel 7 on Android 16 (#77). (macOS: version bump only — it uses CoreBluetooth's own write queue and was never affected.)",
+                "Fixed (Android): on some phones, especially newer ones on Android 13+, and worst on Android 16, Cénit could silently drop a Bluetooth command when the phone's Bluetooth stack was momentarily busy, instead of retrying it. The dropped command was often the one that starts live heart rate, sets the strap clock, or acknowledges a chunk of history, so live HR sometimes never started and overnight data didn't come through, even though the strap and pairing were fine. Cénit now retries a rejected command and paces the writes so the stack keeps up. Thanks to a detailed strap log from a Pixel 7 on Android 16 (#77). (macOS: version bump only, it uses CoreBluetooth's own write queue and was never affected.)",
             ]),
         Release(
             version: "1.47",
@@ -283,72 +283,72 @@ enum AppChangelog {
             title: "History dates fixed for revived straps, gestures during sync, clearer pairing",
             date: "June 2026",
             items: [
-                "Fixed: if your strap sat unused for a while its clock drifts, and your offloaded history was landing months in the past — live HR worked but nothing else showed up as \"today.\" Cénit now corrects the timestamps when the strap's clock is clearly stale, so your history lands on the right days. Mac and Android. Thanks to a detailed bug report (#72).",
-                "Fixed: double-tap (and wrist on/off) now keep working during a history sync. They were being swallowed while the strap offloaded its backlog — very noticeable on a WHOOP 5.0/MG, where that sync runs for minutes. Mac and Android (#69).",
-                "New: the Live screen now tells you whether you have a real encrypted pairing (\"Bonded\") or just live heart rate over the open profile (\"Live HR — not fully paired\"). The encrypted bond is what unlocks buzz, alarms, double-tap and history sync, so it's now obvious when those are available. Plus a tip on entering 5.0/MG pairing mode (tap the band). Mac and Android (#69).",
+                "Fixed: if your strap sat unused for a while its clock drifts, and your offloaded history was landing months in the past: live HR worked but nothing else showed up as \"today.\" Cénit now corrects the timestamps when the strap's clock is clearly stale, so your history lands on the right days. Mac and Android. Thanks to a detailed bug report (#72).",
+                "Fixed: double-tap (and wrist on/off) now keep working during a history sync. They were being swallowed while the strap offloaded its backlog: very noticeable on a WHOOP 5.0/MG, where that sync runs for minutes. Mac and Android (#69).",
+                "New: the Live screen now tells you whether you have a real encrypted pairing (\"Bonded\") or just live heart rate over the open profile (\"Live HR: not fully paired\"). The encrypted bond is what unlocks buzz, alarms, double-tap and history sync, so it's now obvious when those are available. Plus a tip on entering 5.0/MG pairing mode (tap the band). Mac and Android (#69).",
             ]),
         Release(
             version: "1.45",
             title: "Clearer pairing guidance for WHOOP 5.0/MG",
             date: "June 2026",
             items: [
-                "Improved (Mac): live heart rate on a WHOOP 5.0/MG streams even before the strap is fully paired — but buzz, alarms, double-tap and full history sync all need that real pairing. Cénit now keeps the \"free the strap from the WHOOP app\" guidance visible (in clearer wording) whenever the strap isn't fully paired, so it's obvious what to do to unlock the rest. Thanks to a 5.0/MG report (#69).",
+                "Improved (Mac): live heart rate on a WHOOP 5.0/MG streams even before the strap is fully paired: but buzz, alarms, double-tap and full history sync all need that real pairing. Cénit now keeps the \"free the strap from the WHOOP app\" guidance visible (in clearer wording) whenever the strap isn't fully paired, so it's obvious what to do to unlock the rest. Thanks to a 5.0/MG report (#69).",
             ]),
         Release(
             version: "1.44",
             title: "Fixes a false \"pairing refused\" warning (Mac)",
             date: "June 2026",
             items: [
-                "Fixed (Mac): the \"Pairing refused\" banner could stay up on the Live screen even after your strap had bonded and live heart rate was streaming — a stale warning on a connection that was actually fine. It now clears the moment the link bonds. Thanks to a 5.0/MG report (#69).",
+                "Fixed (Mac): the \"Pairing refused\" banner could stay up on the Live screen even after your strap had bonded and live heart rate was streaming: a stale warning on a connection that was actually fine. It now clears the moment the link bonds. Thanks to a 5.0/MG report (#69).",
             ]),
         Release(
             version: "1.43",
             title: "Your whole day's heart rate, on the dashboard",
             date: "June 2026",
             items: [
-                "New: Control Center now shows a 24-hour heart-rate trend — your continuous heart rate across today, read straight from the strap's own history (so it's there even for the hours the app was closed, not just while it's open). It plots 5-minute averages with the day's low, average and high underneath. Mac and Android. Thanks to the requests on Reddit.",
+                "New: Control Center now shows a 24-hour heart-rate trend: your continuous heart rate across today, read straight from the strap's own history (so it's there even for the hours the app was closed, not just while it's open). It plots 5-minute averages with the day's low, average and high underneath. Mac and Android. Thanks to the requests on Reddit.",
             ]),
         Release(
             version: "1.42",
             title: "Reconnects automatically after an update (Android)",
             date: "June 2026",
             items: [
-                "New (Android): Cénit now reconnects to your strap automatically when the app starts — so after an app update (or any restart) you don't have to tap Connect again. It reconnects straight to the strap you last paired, as soon as it's in range, with no re-scan. Respects \"Keep connected in the background\" (turn that off if you'd rather connect by hand). Thanks to a community report (#67).",
+                "New (Android): Cénit now reconnects to your strap automatically when the app starts: so after an app update (or any restart) you don't have to tap Connect again. It reconnects straight to the strap you last paired, as soon as it's in range, with no re-scan. Respects \"Keep connected in the background\" (turn that off if you'd rather connect by hand). Thanks to a community report (#67).",
             ]),
         Release(
             version: "1.41",
             title: "Update check shows what's new",
             date: "June 2026",
             items: [
-                "Small follow-up: when Check for updates finds a newer version, it now shows what's new in it right there in Settings → About — so you can see what you're getting before you tap Download.",
+                "Small follow-up: when Check for updates finds a newer version, it now shows what's new in it right there in Settings → About: so you can see what you're getting before you tap Download.",
             ]),
         Release(
             version: "1.40",
             title: "Check for updates",
             date: "June 2026",
             items: [
-                "New: a Check for updates button in Settings → About. It asks GitHub for the latest version and, if there's a newer one, links you straight to the download — so you're not stuck on an old build. It runs ONLY when you tap it: no background checks, no auto-updating, and nothing about you is sent — it just reads the latest version number. Manual, and in your control. (On Mac this is the first thing that touches the network; it stays dormant until you tap the button.)",
+                "New: a Check for updates button in Settings → About. It asks GitHub for the latest version and, if there's a newer one, links you straight to the download, so you're not stuck on an old build. It runs ONLY when you tap it: no background checks, no auto-updating, and nothing about you is sent, it just reads the latest version number. Manual, and in your control. (On Mac this is the first thing that touches the network; it stays dormant until you tap the button.)",
             ]),
         Release(
             version: "1.39",
             title: "Wrist alerts for incoming calls (Android)",
             date: "June 2026",
             items: [
-                "New (Android): buzz your strap when a call comes in — regular phone calls and supported VoIP apps — with its own Calls section in Notifications settings, separate from app alerts. The call buzz repeats a few times then stops, so you won't miss it. Privacy-first as always: Cénit never reads the number, the caller, or any notification content — only that a call is ringing; the Phone-calls permission is requested only when you turn that toggle on. Thanks to a community contributor (#66).",
+                "New (Android): buzz your strap when a call comes in, regular phone calls and supported VoIP apps, with its own Calls section in Notifications settings, separate from app alerts. The call buzz repeats a few times then stops, so you won't miss it. Privacy-first as always: Cénit never reads the number, the caller, or any notification content, only that a call is ringing; the Phone-calls permission is requested only when you turn that toggle on. Thanks to a community contributor (#66).",
             ]),
         Release(
             version: "1.38",
             title: "Smoother during long history syncs (Mac)",
             date: "June 2026",
             items: [
-                "Improved (Mac): Cénit stays responsive while your strap syncs a long stretch of history and while the dashboard recomputes. Sync data is now handled as bulk traffic — drained in small batches and kept out of the live UI parser — the strap log no longer floods with a line for every sync acknowledgement, and the heavy recovery/strain/sleep analysis runs off the main thread. So the app no longer hitches during a big offload. Thanks to a community contributor (#64, #65).",
+                "Improved (Mac): Cénit stays responsive while your strap syncs a long stretch of history and while the dashboard recomputes. Sync data is now handled as bulk traffic, drained in small batches and kept out of the live UI parser, the strap log no longer floods with a line for every sync acknowledgement, and the heavy recovery/strain/sleep analysis runs off the main thread. So the app no longer hitches during a big offload. Thanks to a community contributor (#64, #65).",
             ]),
         Release(
             version: "1.37",
             title: "New first-run onboarding (Mac + Android)",
             date: "June 2026",
             items: [
-                "A proper guided setup the first time you open Cénit — the same flow on Mac and Android: what Cénit is and what to expect, then Bluetooth, putting your strap on, connecting, a little celebration when it bonds, your profile, optional history import, and wrist alerts. Permissions are now asked only on the step that explains them (nothing fires at launch), and the background-connection service is only promoted once you finish. Cleaner, calmer, and consistent across platforms. Thanks to a community contributor (#36/#63).",
+                "A proper guided setup the first time you open Cénit: the same flow on Mac and Android: what Cénit is and what to expect, then Bluetooth, putting your strap on, connecting, a little celebration when it bonds, your profile, optional history import, and wrist alerts. Permissions are now asked only on the step that explains them (nothing fires at launch), and the background-connection service is only promoted once you finish. Cleaner, calmer, and consistent across platforms. Thanks to a community contributor (#36/#63).",
                 "Live heart-rate zones and %-of-max now use the real max heart rate from your profile (your manual override, or the age-based estimate) instead of a fixed default.",
             ]),
         Release(
@@ -356,114 +356,114 @@ enum AppChangelog {
             title: "Android: reliable reconnect after a dropout",
             date: "June 2026",
             items: [
-                "Fixed (Android): if your strap dropped — out of range, or after a while in the background — Cénit could get stuck \"disconnected\" and never reconnect, no matter how many times it rescanned; the only fix was forcing the strap into pairing mode. The cause: a bonded strap that isn't advertising can't be found by a Bluetooth scan, and reconnect was scan-only. It now reconnects DIRECTLY to your known strap (the OS reconnects as soon as it's back in range, no scan needed), so it recovers on its own. (The Mac already reconnected this way.)",
+                "Fixed (Android): if your strap dropped, out of range, or after a while in the background, Cénit could get stuck \"disconnected\" and never reconnect, no matter how many times it rescanned; the only fix was forcing the strap into pairing mode. The cause: a bonded strap that isn't advertising can't be found by a Bluetooth scan, and reconnect was scan-only. It now reconnects DIRECTLY to your known strap (the OS reconnects as soon as it's back in range, no scan needed), so it recovers on its own. (The Mac already reconnected this way.)",
             ]),
         Release(
             version: "1.35",
-            title: "WHOOP 5.0/MG buzz — the real command (matched byte-for-byte)",
+            title: "WHOOP 5.0/MG buzz: the real command (matched byte-for-byte)",
             date: "June 2026",
             items: [
-                "WHOOP 5.0/MG: the buzz now sends the exact haptics command a working 5.0 app uses — the right command number (0x13), the right 12-byte payload (the \"notify\" vibration pattern), and a framing fix (4-byte padding) that the longer payload needs. Cénit's command is now byte-for-byte identical to the working app's, verified by a test. So Test buzz, wrist alerts and the smart-alarm buzz should now actually vibrate a bonded 5.0/MG. (This supersedes the v1.34 attempt, which had the command number but not the payload.) WHOOP 4.0 buzz is unchanged. If you have a 5.0/MG, please confirm on issue #48.",
+                "WHOOP 5.0/MG: the buzz now sends the exact haptics command a working 5.0 app uses: the right command number (0x13), the right 12-byte payload (the \"notify\" vibration pattern), and a framing fix (4-byte padding) that the longer payload needs. Cénit's command is now byte-for-byte identical to the working app's, verified by a test. So Test buzz, wrist alerts and the smart-alarm buzz should now actually vibrate a bonded 5.0/MG. (This supersedes the v1.34 attempt, which had the command number but not the payload.) WHOOP 4.0 buzz is unchanged. If you have a 5.0/MG, please confirm on issue #48.",
             ]),
         Release(
             version: "1.34",
-            title: "WHOOP 5.0/MG buzz — trying the right command (experimental)",
+            title: "WHOOP 5.0/MG buzz: trying the right command (experimental)",
             date: "June 2026",
             items: [
-                "Experimental (WHOOP 5.0/MG only): the buzz now uses the 5/MG-specific haptics command (opcode 0x13) instead of the WHOOP 4.0 one — a capture from a real MG showed the strap rejecting the old command, and a working third-party app uses 0x13. The exact vibration pattern is still being finalised, so if your 5/MG doesn't buzz yet, that's expected — please share a strap log on issue #48 so we can confirm the strap now accepts the command. WHOOP 4.0 buzz is completely unchanged.",
+                "Experimental (WHOOP 5.0/MG only): the buzz now uses the 5/MG-specific haptics command (opcode 0x13) instead of the WHOOP 4.0 one, a capture from a real MG showed the strap rejecting the old command, and a working third-party app uses 0x13. The exact vibration pattern is still being finalised, so if your 5/MG doesn't buzz yet, that's expected, please share a strap log on issue #48 so we can confirm the strap now accepts the command. WHOOP 4.0 buzz is completely unchanged.",
             ]),
         Release(
             version: "1.33",
             title: "Smart alarm: the time you set is the time that fires",
             date: "June 2026",
             items: [
-                "Fixed: the Smart alarm wake time didn't always reach the strap. If you changed the time while the strap wasn't actively connected, the new time silently never transmitted — so the strap kept its old time (you set 07:15, but it still buzzed at 07:00). Cénit now re-sends the alarm time every time the strap reconnects, so the time you set is the time that fires. Mac and Android.",
+                "Fixed: the Smart alarm wake time didn't always reach the strap. If you changed the time while the strap wasn't actively connected, the new time silently never transmitted: so the strap kept its old time (you set 07:15, but it still buzzed at 07:00). Cénit now re-sends the alarm time every time the strap reconnects, so the time you set is the time that fires. Mac and Android.",
             ]),
         Release(
             version: "1.32",
             title: "Today trends stay within their window (Mac)",
             date: "June 2026",
             items: [
-                "Fixed (Mac): the Today screen's metric sparklines are labelled a \"14-day trend\", but if a metric had fewer than two readings in that window it quietly fell back to your entire history — so an old import could draw months-old data as if it were a current trend. The sparklines now stay strictly within their window, and a metric whose latest reading is older than the window shows \"—\" rather than a stale number. Thanks to a community contributor (#49). (Android already windowed these correctly.)",
+                "Fixed (Mac): the Today screen's metric sparklines are labelled a \"14-day trend\", but if a metric had fewer than two readings in that window it quietly fell back to your entire history: so an old import could draw months-old data as if it were a current trend. The sparklines now stay strictly within their window, and a metric whose latest reading is older than the window shows \"—\" rather than a stale number. Thanks to a community contributor (#49). (Android already windowed these correctly.)",  // token-exempt: refiere al glifo «—» de sin-dato literalmente, no es conector de copy
             ]),
         Release(
             version: "1.31",
             title: "No more HR spike when you reopen the app",
             date: "June 2026",
             items: [
-                "Fixed: when you reopened Cénit or returned to the Live screen, your heart rate could briefly show a high stale number (around 100) and then drift back down over several seconds. The strap was fine — the app was re-showing the last smoothed value from before the gap, until fresh readings refilled the averaging window. The hero number now blanks to \"—\" on resume and shows your real heart rate the instant the first fresh reading arrives. Both Mac and Android.",
+                "Fixed: when you reopened Cénit or returned to the Live screen, your heart rate could briefly show a high stale number (around 100) and then drift back down over several seconds. The strap was fine: the app was re-showing the last smoothed value from before the gap, until fresh readings refilled the averaging window. The hero number now blanks to \"—\" on resume and shows your real heart rate the instant the first fresh reading arrives. Both Mac and Android.",  // token-exempt: refiere al glifo «—» de sin-dato literalmente, no es conector de copy
             ]),
         Release(
             version: "1.30",
             title: "Workouts: correct source pill for Health Connect (Android)",
             date: "June 2026",
             items: [
-                "Fixed (Android): on the Workouts page, sessions imported from Health Connect showed an \"Apple\" pill in the Src column. The badge only knew \"Whoop or Apple\", so anything that wasn't a WHOOP workout was labelled Apple. It now shows a distinct \"HC\" (Health Connect) pill in its own colour, alongside \"Whoop\" and \"Apple\". Follow-up to #53 — the Today page was fixed in 1.28; this is the Workouts list.",
+                "Fixed (Android): on the Workouts page, sessions imported from Health Connect showed an \"Apple\" pill in the Src column. The badge only knew \"Whoop or Apple\", so anything that wasn't a WHOOP workout was labelled Apple. It now shows a distinct \"HC\" (Health Connect) pill in its own colour, alongside \"Whoop\" and \"Apple\". Follow-up to #53: the Today page was fixed in 1.28; this is the Workouts list.",
             ]),
         Release(
             version: "1.29",
             title: "Re-scan actually scans on Android",
             date: "June 2026",
             items: [
-                "Fixed (Android): tapping Re-scan in Settings — or Connect on the Live screen — could do nothing at all. On Android 12 and newer a Bluetooth scan needs the Nearby devices permission, and if you'd dismissed or revoked it the button failed silently with no prompt (the Pixel 9 report in #1). Both buttons now ask for the permission first, so the scan actually starts, and they show a clear \"Searching…\" state while looking for your strap (and can't be re-tapped mid-scan). The Live control buttons also stay on one line on narrow phones. Thanks to the reporter (#1) and to a community contributor (#54/#55).",
+                "Fixed (Android): tapping Re-scan in Settings, or Connect on the Live screen, could do nothing at all. On Android 12 and newer a Bluetooth scan needs the Nearby devices permission, and if you'd dismissed or revoked it the button failed silently with no prompt (the Pixel 9 report in #1). Both buttons now ask for the permission first, so the scan actually starts, and they show a clear \"Searching…\" state while looking for your strap (and can't be re-tapped mid-scan). The Live control buttons also stay on one line on narrow phones. Thanks to the reporter (#1) and to a community contributor (#54/#55).",
             ]),
         Release(
             version: "1.28",
             title: "Health Connect: correct labels + workout types (Android)",
             date: "June 2026",
             items: [
-                "Fixed (Android): two Health Connect issues. On the Today page, Health Connect data was shown under an \"Apple Health\" pill — it now has its own \"Health Connect\" row in the Data Sources footer, matching the Data Sources screen. And workout types were mislabelled (a walking workout could show as swimming) because the exercise-type code map had the wrong numbers; it now uses Health Connect's own constants, so walking is walking, swimming is swimming, and so on. New imports are right immediately; re-import your Health Connect data to relabel any that came in before.",
+                "Fixed (Android): two Health Connect issues. On the Today page, Health Connect data was shown under an \"Apple Health\" pill: it now has its own \"Health Connect\" row in the Data Sources footer, matching the Data Sources screen. And workout types were mislabelled (a walking workout could show as swimming) because the exercise-type code map had the wrong numbers; it now uses Health Connect's own constants, so walking is walking, swimming is swimming, and so on. New imports are right immediately; re-import your Health Connect data to relabel any that came in before.",
             ]),
         Release(
             version: "1.27",
             title: "Wrist alerts work on Android",
             date: "June 2026",
             items: [
-                "Fixed (Android): you couldn't turn wrist alerts on — Cénit didn't show up in your phone's Notification Access list, so there was nothing to grant. Cénit now registers a notification listener (so it appears there); grant access and enable wrist alerts, and your strap buzzes when your chosen apps notify you — respecting your per-app patterns, quiet hours, and only-when-worn. Privacy: it reads only WHICH app notified, never the message content, and nothing leaves your phone. (The buzz works on WHOOP 4.0; 5.0/MG haptics are still being decoded.)",
+                "Fixed (Android): you couldn't turn wrist alerts on, Cénit didn't show up in your phone's Notification Access list, so there was nothing to grant. Cénit now registers a notification listener (so it appears there); grant access and enable wrist alerts, and your strap buzzes when your chosen apps notify you, respecting your per-app patterns, quiet hours, and only-when-worn. Privacy: it reads only WHICH app notified, never the message content, and nothing leaves your phone. (The buzz works on WHOOP 4.0; 5.0/MG haptics are still being decoded.)",
             ]),
         Release(
             version: "1.26",
             title: "Smart alarm actually works on Android",
             date: "June 2026",
             items: [
-                "Fixed (Android): the Smart alarm in Automations didn't work — the toggle reset the moment you left the screen, and the wake time was stuck at 07:00 with no way to change it. It's now a real, saved setting with a proper time picker, and on WHOOP 4.0 it arms the strap's own firmware alarm, so your wrist buzzes at your wake time even if your phone is asleep or Cénit is closed (matching the Mac). Connect the strap to arm it. (On 5.0/MG the alarm command isn't verified yet — same situation as the buzz.)",
+                "Fixed (Android): the Smart alarm in Automations didn't work, the toggle reset the moment you left the screen, and the wake time was stuck at 07:00 with no way to change it. It's now a real, saved setting with a proper time picker, and on WHOOP 4.0 it arms the strap's own firmware alarm, so your wrist buzzes at your wake time even if your phone is asleep or Cénit is closed (matching the Mac). Connect the strap to arm it. (On 5.0/MG the alarm command isn't verified yet, same situation as the buzz.)",
             ]),
         Release(
             version: "1.25",
             title: "WHOOP 5.0/MG history download (experimental) + pairing help (Mac)",
             date: "June 2026",
             items: [
-                "Experimental (Mac): once your WHOOP 5.0/MG is properly paired (see below), Cénit now attempts to download the strap's stored history — the missing piece for on-device 5.0 recovery, strain and sleep. It's brand-new and needs real-hardware testing; if it works you'll see the offload run in the strap log. WHOOP 4.0 is completely unaffected.",
-                "Clearer 5.0/MG pairing: you can't just scan for a 5.0/MG — it has to be in pairing mode and freed from the official WHOOP app first (otherwise pairing is refused with \"Encryption is insufficient\"). The \"free your strap\" tip now shows right on the Live screen (it was hidden in Settings), and the README has a step-by-step pairing guide.",
+                "Experimental (Mac): once your WHOOP 5.0/MG is properly paired (see below), Cénit now attempts to download the strap's stored history: the missing piece for on-device 5.0 recovery, strain and sleep. It's brand-new and needs real-hardware testing; if it works you'll see the offload run in the strap log. WHOOP 4.0 is completely unaffected.",
+                "Clearer 5.0/MG pairing: you can't just scan for a 5.0/MG: it has to be in pairing mode and freed from the official WHOOP app first (otherwise pairing is refused with \"Encryption is insufficient\"). The \"free your strap\" tip now shows right on the Live screen (it was hidden in Settings), and the README has a step-by-step pairing guide.",
             ]),
         Release(
             version: "1.24",
             title: "Switch between your WHOOP 4 and 5.0 (Mac + Android)",
             date: "June 2026",
             items: [
-                "Fixed: if you own both a WHOOP 4 and a 5.0/MG, you couldn't switch between them — the strap picker on the Live screen disappeared after your first pairing and never came back. It now stays available whenever you're not actively streaming, and choosing the other model cleanly drops the old strap so the new one connects fresh. Pick your strap, hit Scan & Connect, done.",
+                "Fixed: if you own both a WHOOP 4 and a 5.0/MG, you couldn't switch between them: the strap picker on the Live screen disappeared after your first pairing and never came back. It now stays available whenever you're not actively streaming, and choosing the other model cleanly drops the old strap so the new one connects fresh. Pick your strap, hit Scan & Connect, done.",
             ]),
         Release(
             version: "1.23",
             title: "WHOOP 5.0 history decoding comes to Android",
             date: "June 2026",
             items: [
-                "Decoding progress (WHOOP 5.0, Android): Android now decodes the same WHOOP 5.0/MG history the Mac learned to read in 1.21 — heart rate, R-R, motion, wrist-contact and skin temperature — each verified against real captured data and only kept when it's physically sensible. This brings Android to parity with the Mac on 5.0 history decoding; it's the groundwork that lights up when the strap's history download lands for 5.0.",
+                "Decoding progress (WHOOP 5.0, Android): Android now decodes the same WHOOP 5.0/MG history the Mac learned to read in 1.21, heart rate, R-R, motion, wrist-contact and skin temperature, each verified against real captured data and only kept when it's physically sensible. This brings Android to parity with the Mac on 5.0 history decoding; it's the groundwork that lights up when the strap's history download lands for 5.0.",
             ]),
         Release(
             version: "1.22",
             title: "Battery refresh on WHOOP 5.0/MG (Mac + Android)",
             date: "June 2026",
             items: [
-                "Fixed: the \"Refresh battery\" button did nothing on WHOOP 5.0/MG. It was sending a WHOOP 4-only command the 5.0 ignores, so the battery only updated on its own schedule. Both apps now read the strap's standard battery level directly the moment you tap refresh — and once more as soon as you connect, so a fresh reading shows up right away. WHOOP 4 is unchanged.",
+                "Fixed: the \"Refresh battery\" button did nothing on WHOOP 5.0/MG. It was sending a WHOOP 4-only command the 5.0 ignores, so the battery only updated on its own schedule. Both apps now read the strap's standard battery level directly the moment you tap refresh: and once more as soon as you connect, so a fresh reading shows up right away. WHOOP 4 is unchanged.",
             ]),
         Release(
             version: "1.21",
             title: "Reading more from your WHOOP 5.0 (Mac)",
             date: "June 2026",
             items: [
-                "Decoding progress (WHOOP 5.0): Cénit now reads skin temperature, motion/activity and wrist-contact from your 5.0's stored history — each verified against real data (e.g. ~30.6 °C on the wrist, dropping to room temperature off it) and only stored when it's physically sensible. These are building blocks toward on-device 5.0 sleep and recovery; nothing changes on screen yet.",
-                "Fixed (Mac): corrected which byte Cénit reads the 5.0's optical-pulse channel from — a community reverse-engineering report, cross-checked against our own captured frames, showed it was a counter byte, not the channel. The pulse waveform itself was always decoded correctly; this only affects the channel label.",
+                "Decoding progress (WHOOP 5.0): Cénit now reads skin temperature, motion/activity and wrist-contact from your 5.0's stored history: each verified against real data (e.g. ~30.6 °C on the wrist, dropping to room temperature off it) and only stored when it's physically sensible. These are building blocks toward on-device 5.0 sleep and recovery; nothing changes on screen yet.",
+                "Fixed (Mac): corrected which byte Cénit reads the 5.0's optical-pulse channel from: a community reverse-engineering report, cross-checked against our own captured frames, showed it was a counter byte, not the channel. The pulse waveform itself was always decoded correctly; this only affects the channel label.",
             ]),
         Release(
             version: "1.20",
@@ -477,15 +477,15 @@ enum AppChangelog {
             title: "Import polish (Mac) + WHOOP 5 optical decode",
             date: "June 2026",
             items: [
-                "Changed (Mac): while an import is running, both Data Sources buttons now lock and only the source that's actually importing shows a spinner — so you can't start a WHOOP and an Apple Health import at the same time, and the loading state always points at the right card. Follow-up to the 1.18 status-message fix.",
-                "Decoding progress (WHOOP 5.0): Cénit now reads the strap's raw optical pulse (PPG) waveform from its stored history — a 24 Hz trace verified against your own heart rate, with no external reference. Nothing changes on screen yet; it's a building block toward 5.0 recovery and strain.",
+                "Changed (Mac): while an import is running, both Data Sources buttons now lock and only the source that's actually importing shows a spinner: so you can't start a WHOOP and an Apple Health import at the same time, and the loading state always points at the right card. Follow-up to the 1.18 status-message fix.",
+                "Decoding progress (WHOOP 5.0): Cénit now reads the strap's raw optical pulse (PPG) waveform from its stored history: a 24 Hz trace verified against your own heart rate, with no external reference. Nothing changes on screen yet; it's a building block toward 5.0 recovery and strain.",
             ]),
         Release(
             version: "1.18",
-            title: "Import fixes — both sources, all data types",
+            title: "Import fixes: both sources, all data types",
             date: "June 2026",
             items: [
-                "Fixed (Mac): importing an Apple Health export overwrote your WHOOP import's status message in Data Sources — the two shared one status line, so it looked like Apple Health replaced your WHOOP data. Each source now keeps its own status and result (and the Apple Health card shows its own). Your data was always stored separately; only the on-screen message was wrong.",
+                "Fixed (Mac): importing an Apple Health export overwrote your WHOOP import's status message in Data Sources: the two shared one status line, so it looked like Apple Health replaced your WHOOP data. Each source now keeps its own status and result (and the Apple Health card shows its own). Your data was always stored separately; only the on-screen message was wrong.",
                 "Fixed (Android): a single Health Connect data type failing (e.g. \"count must not be less than 1\" on some devices) aborted the entire import. Each data type is now read independently, so one quirky type is skipped and everything else still imports.",
             ]),
         Release(
@@ -493,57 +493,57 @@ enum AppChangelog {
             title: "Sleep from WHOOP 4 on more firmware (Mac)",
             date: "June 2026",
             items: [
-                "Fixed (Mac): no sleep recorded from a WHOOP 4 on certain firmware. Cénit stages your sleep from the strap's overnight motion data — but historical records from firmware versions it hadn't mapped were being silently dropped, so the offload finished yet produced no motion → no sleep. Cénit now falls back to the standard record layout for unmapped firmware, accepting it only when it decodes to physically-real data (so it can never store garbage), and surfaces a genuinely-unknown firmware version in the strap log. If your WHOOP 4 wasn't recording sleep, update and wear it overnight while connected.",
+                "Fixed (Mac): no sleep recorded from a WHOOP 4 on certain firmware. Cénit stages your sleep from the strap's overnight motion data: but historical records from firmware versions it hadn't mapped were being silently dropped, so the offload finished yet produced no motion → no sleep. Cénit now falls back to the standard record layout for unmapped firmware, accepting it only when it decodes to physically-real data (so it can never store garbage), and surfaces a genuinely-unknown firmware version in the strap log. If your WHOOP 4 wasn't recording sleep, update and wear it overnight while connected.",
             ]),
         Release(
             version: "1.16",
             title: "Health Connect shows as Health Connect",
             date: "June 2026",
             items: [
-                "Fixed (Android): data imported from Health Connect was being shown as \"Apple Health.\" It's now filed under its own Health Connect source and counted on the Health Connect card. Nothing was ever lost — it was a labelling bug — and your already-imported data refiles itself automatically the next time you import from Health Connect.",
+                "Fixed (Android): data imported from Health Connect was being shown as \"Apple Health.\" It's now filed under its own Health Connect source and counted on the Health Connect card. Nothing was ever lost, it was a labelling bug, and your already-imported data refiles itself automatically the next time you import from Health Connect.",
             ]),
         Release(
             version: "1.15",
             title: "WHOOP 5/MG: the buzz works",
             date: "June 2026",
             items: [
-                "The wrist buzz now works on WHOOP 5.0/MG (experimental). Now that live heart rate confirmed a 5/MG strap acts on Cénit's commands, the haptic buzz — Test buzz, the smart alarm — is wired through the same path. Try Test buzz in Notifications; if it doesn't fire on your 5/MG strap, let us know. (Battery already worked on 5/MG via the standard profile.) WHOOP 4.0 is unchanged.",
+                "The wrist buzz now works on WHOOP 5.0/MG (experimental). Now that live heart rate confirmed a 5/MG strap acts on Cénit's commands, the haptic buzz, Test buzz, the smart alarm, is wired through the same path. Try Test buzz in Notifications; if it doesn't fire on your 5/MG strap, let us know. (Battery already worked on 5/MG via the standard profile.) WHOOP 4.0 is unchanged.",
             ]),
         Release(
             version: "1.14",
             title: "Android Today: clearer empty states",
             date: "June 2026",
             items: [
-                "Android Today now reads honestly when you don't have data for the actual day yet: missing metrics show a clear \"No Data\" instead of blank dashes, and the recovery ring no longer shows a depleted 0% when there's simply no score for today. Added a Today footer with your recent workouts and Data Sources counts, so imported history is clearly labelled as history — matching the Mac. Completes the stale-import cleanup from the last few releases.",
+                "Android Today now reads honestly when you don't have data for the actual day yet: missing metrics show a clear \"No Data\" instead of blank dashes, and the recovery ring no longer shows a depleted 0% when there's simply no score for today. Added a Today footer with your recent workouts and Data Sources counts, so imported history is clearly labelled as history: matching the Mac. Completes the stale-import cleanup from the last few releases.",
             ]),
         Release(
             version: "1.13",
             title: "WHOOP 5/MG heart rate on Android",
             date: "June 2026",
             items: [
-                "WHOOP 5.0/MG live heart rate now works on Android. Once the strap bonds, Cénit subscribes to its realtime data channels and decodes the heart-rate stream the same way the Mac does — before, Android only listened on the standard profile, which a 5/MG strap doesn't stream, so it bonded but showed no HR. Still experimental: 5/MG owners, update and share a strap log if it doesn't come through. WHOOP 4.0 is unaffected.",
+                "WHOOP 5.0/MG live heart rate now works on Android. Once the strap bonds, Cénit subscribes to its realtime data channels and decodes the heart-rate stream the same way the Mac does: before, Android only listened on the standard profile, which a 5/MG strap doesn't stream, so it bonded but showed no HR. Still experimental: 5/MG owners, update and share a strap log if it doesn't come through. WHOOP 4.0 is unaffected.",
             ]),
         Release(
             version: "1.12",
             title: "WHOOP 5/MG heart rate on Mac + a Readiness fix",
             date: "June 2026",
             items: [
-                "WHOOP 5.0/MG on Mac: the secure pairing now completes and live heart rate comes through. Cénit waits for the strap to bond before subscribing to its data channels — subscribing too early was the silent failure — then asks it to start streaming with the right framing. If the strap won't bond on first connect, Cénit now tells you to close the official WHOOP app and put the strap in pairing mode (blue LEDs flashing), which is what lets it pair. Still experimental on 5/MG; built from a 5/MG owner's verified flow. (Android 5/MG bonding landed in v1.10; WHOOP 4.0 is untouched.)",
-                "Readiness now reflects today, not a stale import. After importing months-old WHOOP history, the \"Should you push today?\" card was still reading off the newest imported day. It now anchors to your real calendar day on both Mac and Android — completing the v1.11 dashboard fix — so an old import no longer drives today's readiness.",
+                "WHOOP 5.0/MG on Mac: the secure pairing now completes and live heart rate comes through. Cénit waits for the strap to bond before subscribing to its data channels, subscribing too early was the silent failure, then asks it to start streaming with the right framing. If the strap won't bond on first connect, Cénit now tells you to close the official WHOOP app and put the strap in pairing mode (blue LEDs flashing), which is what lets it pair. Still experimental on 5/MG; built from a 5/MG owner's verified flow. (Android 5/MG bonding landed in v1.10; WHOOP 4.0 is untouched.)",
+                "Readiness now reflects today, not a stale import. After importing months-old WHOOP history, the \"Should you push today?\" card was still reading off the newest imported day. It now anchors to your real calendar day on both Mac and Android, completing the v1.11 dashboard fix, so an old import no longer drives today's readiness.",
             ]),
         Release(
             version: "1.11",
             title: "Today reflects today (not stale imports)",
             date: "June 2026",
             items: [
-                "Fixed the dashboard treating the newest imported day as \"today\" after a historical import — so months-old data showed as today's recovery/readiness. Today now shows only a row for your actual calendar date, and the 14-day sparklines and Trends W/M/3M windows are anchored to today. Older imports stay visible under the wider ranges / All history. Fixed on both Mac and Android.",
+                "Fixed the dashboard treating the newest imported day as \"today\" after a historical import: so months-old data showed as today's recovery/readiness. Today now shows only a row for your actual calendar date, and the 14-day sparklines and Trends W/M/3M windows are anchored to today. Older imports stay visible under the wider ranges / All history. Fixed on both Mac and Android.",
             ]),
         Release(
             version: "1.10",
             title: "5/MG bonding on Android + Health Monitor fix",
             date: "June 2026",
             items: [
-                "WHOOP 5.0/MG on Android: fixed the strap connecting but never bonding (it wrote the opening message unacknowledged, which didn't trigger the encrypted pairing the strap needs before it will stream). It's now a confirmed write that triggers bonding, so live heart rate can come through. Still experimental — 5/MG owners, please update and share a strap log.",
+                "WHOOP 5.0/MG on Android: fixed the strap connecting but never bonding (it wrote the opening message unacknowledged, which didn't trigger the encrypted pairing the strap needs before it will stream). It's now a confirmed write that triggers bonding, so live heart rate can come through. Still experimental: 5/MG owners, please update and share a strap log.",
                 "Fixed the Health Monitor heart-rate freezing when you opened it from the Live page. Leaving Live was switching the live HR stream off entirely; the stream now stays on while any live-HR screen is open.",
             ]),
         Release(
@@ -551,14 +551,14 @@ enum AppChangelog {
             title: "Fix: bonded but no live data (Android)",
             date: "June 2026",
             items: [
-                "Fixed an Android bug where the strap would connect and bond but show no live data at all — heart rate, battery, worn and events all blank — on some phones (it shows up reliably on newer Android). A Bluetooth callback-threading race let the pairing write starve the data-stream subscriptions; Cénit now pins all Bluetooth callbacks to one thread and retries a momentarily-busy subscription, so the stream comes up reliably. Reported, diagnosed and hardware-verified by a community contributor.",
+                "Fixed an Android bug where the strap would connect and bond but show no live data at all, heart rate, battery, worn and events all blank, on some phones (it shows up reliably on newer Android). A Bluetooth callback-threading race let the pairing write starve the data-stream subscriptions; Cénit now pins all Bluetooth callbacks to one thread and retries a momentarily-busy subscription, so the stream comes up reliably. Reported, diagnosed and hardware-verified by a community contributor.",
             ]),
         Release(
             version: "1.8",
             title: "Strap-log export on Mac + a Health Monitor fix",
             date: "June 2026",
             items: [
-                "Mac: you can now export the strap log — Copy / Save… on the Live screen's strap log — so Mac users can attach it to a bug report too (Android has had this since 1.6).",
+                "Mac: you can now export the strap log, Copy / Save… on the Live screen's strap log, so Mac users can attach it to a bug report too (Android has had this since 1.6).",
                 "Fixed the Health Monitor heart-rate chart sitting on a flat line: it now plots your live heart rate over time instead of deriving from sparse R-R data.",
             ]),
         Release(
@@ -566,7 +566,7 @@ enum AppChangelog {
             title: "WHOOP 5/MG frame capture",
             date: "June 2026",
             items: [
-                "New opt-in “Record puffin frames” under Settings → Experimental. While connected to a WHOOP 5/MG strap it logs the raw frames — each stamped with your live heart rate as a cross-check — to a file you can export, so 5/MG owners can contribute the data we need to decode recovery, strain and sleep. Read-only, off by default; WHOOP 4.0 is unaffected. Built on community contributions toward the 5/MG protocol.",
+                "New opt-in “Record puffin frames” under Settings → Experimental. While connected to a WHOOP 5/MG strap it logs the raw frames, each stamped with your live heart rate as a cross-check, to a file you can export, so 5/MG owners can contribute the data we need to decode recovery, strain and sleep. Read-only, off by default; WHOOP 4.0 is unaffected. Built on community contributions toward the 5/MG protocol.",
             ]),
         Release(
             version: "1.6",
@@ -581,14 +581,14 @@ enum AppChangelog {
             title: "WHOOP 5/MG: secure-pairing fix",
             date: "June 2026",
             items: [
-                "WHOOP 5.0/MG: fixed connecting getting stuck at “Finishing the secure pairing handshake.” Cénit now establishes the encrypted pairing first, then subscribes — so live heart rate can come through instead of hanging. Still experimental on 5/MG: if you have one, please try it and share your strap log on GitHub so we can keep improving it.",
+                "WHOOP 5.0/MG: fixed connecting getting stuck at “Finishing the secure pairing handshake.” Cénit now establishes the encrypted pairing first, then subscribes: so live heart rate can come through instead of hanging. Still experimental on 5/MG: if you have one, please try it and share your strap log on GitHub so we can keep improving it.",
             ]),
         Release(
             version: "1.4",
             title: "Live heart rate that doesn't freeze",
             date: "June 2026",
             items: [
-                "Fixed live heart rate freezing on a stale number mid-session. Cénit now keeps the strap's realtime stream re-armed and, if the link goes quiet, quietly reconnects on its own — no more disconnect-and-reconnect by hand to un-stick it. (Android now matches how the Mac app already behaved.)",
+                "Fixed live heart rate freezing on a stale number mid-session. Cénit now keeps the strap's realtime stream re-armed and, if the link goes quiet, quietly reconnects on its own: no more disconnect-and-reconnect by hand to un-stick it. (Android now matches how the Mac app already behaved.)",
                 "Hardened the Bluetooth frame reader so a single corrupt packet can't wedge the live stream until you reconnect.",
             ]),
         Release(
@@ -605,7 +605,7 @@ enum AppChangelog {
             title: "Readiness, and the start of WHOOP 5/MG",
             date: "June 2026",
             items: [
-                "New Readiness card on Today — a “should you push today?” read from your own history: HRV vs your baseline, resting-heart-rate drift, sleeping respiratory rate, training-load balance and training variety, rolled into one headline.",
+                "New Readiness card on Today: a “should you push today?” read from your own history: HRV vs your baseline, resting-heart-rate drift, sleeping respiratory rate, training-load balance and training variety, rolled into one headline.",
                 "WHOOP 5/MG: live heart rate now works. Deeper 5/MG metrics (recovery, strain, sleep) are still experimental and being worked on.",
                 "Opt-in WHOOP 5/MG protocol probes under Settings → Experimental, for 5/MG owners who want to help map the protocol.",
                 "German and other localized WHOOP exports now import with real values, not blanks.",
@@ -625,7 +625,7 @@ enum AppChangelog {
             title: "First release",
             date: "June 2026",
             items: [
-                "Pair directly with a WHOOP strap over Bluetooth — no WHOOP account, no cloud.",
+                "Pair directly with a WHOOP strap over Bluetooth: no WHOOP account, no cloud.",
                 "Compute recovery, strain, HRV and sleep locally on your own device.",
                 "Bring your history: import a WHOOP export, an Apple Health export, or Android Health Connect.",
             ]),
@@ -644,7 +644,7 @@ enum AppChangelog {
         Expectation(
             icon: "flask",
             title: "Independent, and experimental",
-            body: "Cénit is a personal, open project — not the WHOOP app, and not affiliated with WHOOP. It reads a strap you own, on your own device. Treat it as a capable work-in-progress rather than a finished product."),
+            body: "Cénit is a personal, open project: not the WHOOP app, and not affiliated with WHOOP. It reads a strap you own, on your own device. Treat it as a capable work-in-progress rather than a finished product."),
         Expectation(
             icon: "checkmark.seal",
             title: "WHOOP 4.0 is the supported path",

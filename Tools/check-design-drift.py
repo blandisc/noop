@@ -26,7 +26,7 @@ Exits non-zero on any hit.
 """
 import re, sys, os
 
-DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "CenitWidgets", "CenitWatch"]
+DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/AI", "Cenit/App", "CenitWidgets", "CenitWatch"]
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
@@ -50,8 +50,10 @@ def _emdash_string_hit(line):
 
 # no-hex: any Color(hex: … outside the design package.
 RE_HEX = re.compile(r"Color\(hex:")
-# no-adhoc-font: a font built from a literal point size.
-RE_FONT = re.compile(r"\.font\(\.system\(size:")
+# no-adhoc-font: a font built from a *literal* point size. Like no-radius-literal / no-opacity-literal,
+# it only flags a bare digit — `.font(.system(size: WidgetMetrics.hero))` / `.system(size: M.name)` source
+# the size from a design token and pass; `.font(.system(size: 13))` is the magic number it's meant to catch.
+RE_FONT = re.compile(r"\.font\(\.system\(size:\s*[0-9]")
 # no-radius-literal: cornerRadius: followed by a bare number (a token ref like NoopMetrics.cardRadius,
 # radius.value, or M.foo is a name, not a digit, so it's allowed).
 RE_RADIUS = re.compile(r"cornerRadius:\s*[0-9]")
