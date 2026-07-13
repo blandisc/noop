@@ -406,7 +406,7 @@ private struct EntrenarLanding: View {
                     Text(suggestionLabel(alt)).font(StrandFont.subhead).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 .padding(.horizontal, 15).padding(.vertical, 13)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -613,7 +613,7 @@ private struct EntrenarLanding: View {
                         .padding(.leading, 15)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline, weight: .semibold))
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(routineTint(region(name: row.name)))
             }
             .contentShape(Rectangle())
@@ -784,7 +784,7 @@ private struct EntrenarLanding: View {
                             .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))  // token-exempt: chevron de fila fuera de banda
+                    StrandIcon.disclosure.image.font(.system(size: 14, weight: .semibold))  // token-exempt: chevron de fila fuera de banda
                         .foregroundStyle(theme.inkDim)
                 }
                 .padding(.vertical, 11).contentShape(Rectangle())
@@ -1136,7 +1136,7 @@ struct RestDayScreen: View {
                 Image(systemName: icon).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary).frame(width: 26)
                 Text(title).font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkDim)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkDim)
             }
             .padding(.vertical, 14).contentShape(Rectangle())
         }
@@ -1220,7 +1220,7 @@ struct OtherWaysScreen: View {
                     Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkDim)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkDim)
             }
             .padding(.vertical, 18).contentShape(Rectangle())
         }

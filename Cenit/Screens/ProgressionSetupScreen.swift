@@ -139,7 +139,7 @@ struct ProgressionSetupScreen: View {
         HStack {
             // Saves on back — the Instrumento editor convention (no «OK»); RestEditorScreen's chevron.
             Button(action: saveAndClose) {
-                Image(systemName: "chevron.left")
+                StrandIcon.back.image
                     .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }

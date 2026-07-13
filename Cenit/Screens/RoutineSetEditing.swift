@@ -121,7 +121,7 @@ struct RestChip: View {
             HStack(spacing: 5) {
                 Text(RoutineSetEditing.restChipLabel(cfg)).font(StrandFont.caption).monospacedDigit()
                     .foregroundStyle(isHR ? theme.dataRecovery : timeColor).lineLimit(1)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 9).padding(.vertical, 5)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))

@@ -97,7 +97,7 @@ struct ReceiptPrinterScreen: View {
         }
         .overlay(alignment: .topTrailing) {
             Button(action: onClose) {
-                Image(systemName: "xmark")
+                StrandIcon.close.image
                     .font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkSecondary)
                     .padding(12)

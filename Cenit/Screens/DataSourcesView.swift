@@ -179,7 +179,7 @@ struct DataSourcesView: View {
                 }
                 Spacer(minLength: 8)
                 if isActive {
-                    Image(systemName: "checkmark")
+                    StrandIcon.confirm.image
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.verdict)
                         .accessibilityHidden(true)
@@ -391,7 +391,7 @@ struct DataSourcesView: View {
                 HStack(spacing: 12) {
                     Text("View imported data").font(StrandFont.body).foregroundStyle(theme.ink)
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 .frame(minHeight: 40)

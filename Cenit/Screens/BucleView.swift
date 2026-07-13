@@ -335,7 +335,7 @@ private struct PatronesLanding: View {
             Button { detail = InsightItem(insight: insight) } label: {
                 HStack(spacing: 4) {
                     Text("See why").font(StrandFont.subhead)
-                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 }
                 .foregroundStyle(theme.inkSecondary)
                 .frame(minHeight: 44)
@@ -415,7 +415,7 @@ private struct PatronesLanding: View {
                         .foregroundStyle(strong ? theme.positiveText : theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.vertical, 13)
             .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
@@ -579,7 +579,7 @@ private struct PatronesLanding: View {
             HStack(spacing: 6) {
                 Text(leading).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 Spacer()
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, 12)
@@ -612,7 +612,7 @@ private struct PatronesLanding: View {
                 HStack(spacing: 9) {
                     Button { dismissVerdict(exp) } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "checkmark").font(StrandFont.glyph(.inline, weight: .semibold))
+                            StrandIcon.confirm.image.font(StrandFont.glyph(.inline, weight: .semibold))
                             Text("Save to Confirmed").font(StrandFont.headline)
                         }
                         .foregroundStyle(theme.paper)
@@ -715,7 +715,7 @@ private struct PatronesLanding: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "plus").font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 14).padding(.vertical, 13)
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
@@ -780,7 +780,7 @@ private struct PatronesLanding: View {
         let good = BucleFormat.isGood(insight)
         return Button { detail = InsightItem(insight: insight) } label: {
             HStack(spacing: 12) {
-                Image(systemName: "checkmark").font(StrandFont.glyph(.inline, weight: .bold))
+                StrandIcon.confirm.image.font(StrandFont.glyph(.inline, weight: .bold))
                     .foregroundStyle(theme.dataRecovery).frame(width: 18)
                 Text(heroLeverHeadline(insight)).font(StrandFont.body).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -825,7 +825,7 @@ private struct PatronesLanding: View {
                     }
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             }
             .surfaceRow(theme)
         }
@@ -843,7 +843,7 @@ private struct PatronesLanding: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             }
             .surfaceRow(theme)
         }
@@ -870,7 +870,7 @@ private struct PatronesLanding: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             Spacer()
-                            Image(systemName: "chevron.right").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+                            StrandIcon.disclosure.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
                         }
                         .padding(16)
                         Rectangle().fill(theme.hairline).frame(height: 0.5)
@@ -975,7 +975,7 @@ private struct PatronesLanding: View {
                     Button(action: trailingAction) {
                         HStack(spacing: 2) {
                             Text(trailing).font(StrandFont.footnote)
-                            Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron))
+                            StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron))
                         }
                         .foregroundStyle(theme.inkTertiary)
                         .padding(.vertical, 6)

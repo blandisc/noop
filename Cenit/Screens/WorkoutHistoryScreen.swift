@@ -105,7 +105,7 @@ struct WorkoutHistoryScreen: View {
                 HStack(spacing: 6) {
                     Image(systemName: "chart.bar.xaxis").font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Volume per muscle").font(StrandFont.caption).fontWeight(.semibold)
-                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 }
                 .foregroundStyle(theme.inkSecondary)
                 .padding(.horizontal, 12).padding(.vertical, 7)
@@ -301,7 +301,7 @@ struct WorkoutHistoryScreen: View {
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     }
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary)
                 }
@@ -343,7 +343,7 @@ struct WorkoutHistoryScreen: View {
                 Text(name(for: session)).font(StrandFont.title2).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, 3)
@@ -927,7 +927,7 @@ struct WorkoutSessionDetailScreen: View {
             Button { detailExercise = ex } label: {
                 HStack(spacing: 6) {
                     Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 0)
                 }

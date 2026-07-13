@@ -220,7 +220,7 @@ struct MisRutinasScreen: View {
                     .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                 Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 44).contentShape(Rectangle())
         }

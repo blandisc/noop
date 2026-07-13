@@ -2088,7 +2088,7 @@ struct MetricInfoSheet: View {
                     HStack(spacing: 4) {
                         Text("See more")
                             .font(StrandFont.subhead.weight(.medium))
-                        Image(systemName: "chevron.right")
+                        StrandIcon.disclosure.image
                             .font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .foregroundStyle(metricHue)

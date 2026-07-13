@@ -83,7 +83,7 @@ private struct DetailChrome<Content: View>: View {
             HStack(spacing: 6) {
                 Button { onClose() } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
+                        StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
                         Text("Tendencias").font(StrandFont.body)
                     }
                     .foregroundStyle(theme.ink)
@@ -667,7 +667,7 @@ private struct CuerpoLanding: View {
                     // Provisional placement here, pending a product decision on its permanent home (likely
                     // Entrenar / Patrones). (FER-566 / handoff «DE MOMENTO»)
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 Text("What to train today")
@@ -1052,7 +1052,7 @@ private struct CuerpoLanding: View {
                     Text("Connect Apple Health to fill steps and more.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 6)
-                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())
             }
@@ -1076,7 +1076,7 @@ private struct CuerpoLanding: View {
                     .foregroundStyle(theme.inkSecondary).frame(width: 22)
                 Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 16).padding(.vertical, 15)
@@ -1102,7 +1102,7 @@ private struct CuerpoLanding: View {
                     if activityCosts.isEmpty {
                         Text("Gathering data").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 if !activityCosts.isEmpty {

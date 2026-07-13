@@ -58,7 +58,7 @@ struct PlatesScreen: View {
             Text(exerciseName.uppercased()).groteskOverline().foregroundStyle(theme.inkTertiary)
             Spacer()
             Button(action: onClose) {
-                Image(systemName: "xmark").font(StrandFont.glyph(.inline, weight: .semibold))
+                StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkSecondary)
             }
             .accessibilityLabel(Text("Close"))

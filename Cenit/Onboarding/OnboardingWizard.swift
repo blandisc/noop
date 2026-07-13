@@ -97,7 +97,7 @@ public struct OnboardingWizard: View {
             } else {
                 Button(action: back) {
                     HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
+                        StrandIcon.back.image
                         Text("Back")
                     }
                     .font(StrandFont.subhead)
@@ -803,7 +803,7 @@ private struct Checkline: View {
     init(_ text: LocalizedStringKey) { self.text = text }
     var body: some View {
         HStack(alignment: .top, spacing: CenitMetrics.space2) {
-            Image(systemName: "checkmark")
+            StrandIcon.confirm.image
                 .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
                 .padding(.top, 2)
@@ -844,7 +844,7 @@ private struct ImportRow: View {
                     .frame(width: 18)
                 Text(title).font(StrandFont.subhead.weight(.semibold))
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .bold))
                     .foregroundStyle(theme.inkTertiary)
             }

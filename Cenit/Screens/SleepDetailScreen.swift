@@ -1064,7 +1064,7 @@ struct SleepDetailScreen: View {
             Button { showStages = true } label: {
                 HStack(spacing: 6) {
                     Text("Sleep stages in detail")
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold))
                 }
                 .font(StrandFont.subhead)
