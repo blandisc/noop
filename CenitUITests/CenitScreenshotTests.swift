@@ -67,8 +67,14 @@ final class CenitScreenshotTests: XCTestCase {
     func test_today_empty()       throws { captureToday(state: "empty") }
     func test_today_primed()      throws { captureToday(state: "primed") }
     func test_today_strained()    throws { captureToday(state: "strained") }
+    func test_today_balanced()    throws { captureToday(state: "balanced") }
+    func test_today_rundown()     throws { captureToday(state: "rundown") }
+    /// Numeral en TINTA + «Not enough context for a verdict»: hay número de hoy, sin historia.
+    func test_today_insufficient() throws { captureToday(state: "insufficient") }
     /// FER-711 · the `··` calibrating state (numeral never lies): a strap seen, base not yet seeded.
     func test_today_calibrating() throws { captureToday(state: "calibrating") }
+    /// FER-286 · «Downloading / your night is on its way»: offload en curso, sin recovery de hoy aún.
+    func test_today_downloading() throws { captureToday(state: "downloading") }
 
     // MARK: - All screens (empty/default state)
 
