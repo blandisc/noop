@@ -1863,35 +1863,31 @@ struct LiveStrengthSheet: View {
     /// phrase, and the two text actions. «Volver a X» is the per-session opt-out: it reseeds the undone
     /// cells back to the old weight and drops the proposal — it never counts as a cycle failure.
     private func whyRaiseCard(_ raise: ProgressionPlanner.Raise, ei: Int) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("WHY \(massText(raise.toKg))")
-                .instrumentoOverline().foregroundStyle(theme.dataRecovery)
-            Text(verbatim: raise.phrase)
-                .font(StrandFont.caption).foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("Goal today: \(session.runs[ei].sets.count)×\(session.runs[ei].sets.first?.reps ?? 0) with the new weight. Losing a rep or two on a raise is normal; you win them back in 1 or 2 sessions.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 18) {
-                Button { withAnimation(StrandMotion.interactive) { _ = whyRaiseOpen.remove(session.runs[ei].id) } } label: {
-                    Text("Keep \(massText(raise.toKg))")
-                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataRecovery)
+        NoteStrip(style: .info, theme: theme) {
+            VStack(alignment: .leading, spacing: 7) {
+                Text("WHY \(massText(raise.toKg))")
+                    .instrumentoOverline().foregroundStyle(theme.dataRecovery)
+                Text(verbatim: raise.phrase)
+                    .font(StrandFont.caption).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Goal today: \(session.runs[ei].sets.count)×\(session.runs[ei].sets.first?.reps ?? 0) with the new weight. Losing a rep or two on a raise is normal; you win them back in 1 or 2 sessions.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 18) {
+                    Button { withAnimation(StrandMotion.interactive) { _ = whyRaiseOpen.remove(session.runs[ei].id) } } label: {
+                        Text("Keep \(massText(raise.toKg))")
+                            .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataRecovery)
+                    }
+                    .buttonStyle(.plain)
+                    Button { revertRaise(ei: ei) } label: {
+                        Text("Back to \(massText(raise.fromKg))")
+                            .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.inkSecondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                Button { revertRaise(ei: ei) } label: {
-                    Text("Back to \(massText(raise.fromKg))")
-                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.inkSecondary)
-                }
-                .buttonStyle(.plain)
+                .padding(.top, 2)
             }
-            .padding(.top, 2)
         }
-        .padding(.horizontal, 13).padding(.vertical, 11)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface)
-        .overlay(alignment: .leading) { Rectangle().fill(theme.dataRecovery).frame(width: 2.5) }
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
-                                          bottomTrailingRadius: 8, topTrailingRadius: 8))
     }
 
     /// The per-session opt-out («Volver a X»): undone cells go back to the old weight; done sets keep

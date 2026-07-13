@@ -85,22 +85,13 @@ struct PlatesScreen: View {
 
     /// Amber strip under the dominant number when the rack can't hit the target exactly.
     private var shortfallNotice: some View {
-        Text("Your plates can't hit \(kg(targetKg)) kg exactly, closest is \(kg(loading.achievedKg)) kg")
-            .font(StrandFont.caption)
-            .foregroundStyle(theme.inkSecondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(
-                theme.tint(theme.warning),
-                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
-                    .strokeBorder(theme.softStroke(theme.warning), lineWidth: 1)
-            )
-            .overlay(alignment: .leading) { Rectangle().fill(theme.warning).frame(width: 2.5) }
-            .padding(.top, 4)
+        NoteStrip(style: .warning, theme: theme) {
+            Text("Your plates can't hit \(kg(targetKg)) kg exactly, closest is \(kg(loading.achievedKg)) kg")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 4)
     }
 
     /// «20 + 15 + 1,25 · barra 20 kg» — the per-side breakdown, heaviest first.
@@ -212,15 +203,8 @@ struct PlatesScreen: View {
 
     /// Circular − / + control (bordered circle, hairline stroke) — matches the session stepper vocabulary.
     private func pairStepper(system: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: system)
-                .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.inkSecondary)
-                .frame(width: 34, height: 34)
-                .background(theme.surface, in: Circle())
-                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
+        StepperButton(system: system, size: 34, shape: .circle,
+                      glyph: StrandFont.glyph(.inline, weight: .semibold), theme: theme, action: action)
     }
 
     private var barStepper: some View {

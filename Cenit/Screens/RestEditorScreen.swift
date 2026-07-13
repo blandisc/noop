@@ -215,14 +215,8 @@ struct RestEditorScreen: View {
     }
 
     private func stepper(_ system: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: system).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
-                .frame(width: 44, height: 44)
-                .background(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous).fill(theme.surface))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
-                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
+        StepperButton(system: system, size: 44, shape: .roundedControl,
+                      glyph: StrandFont.glyph(.lead), theme: theme, action: action)
     }
     private func secondsPreset(_ label: String, _ s: Int) -> some View {
         let sel = seconds == s

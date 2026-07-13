@@ -229,11 +229,7 @@ struct RoutineBuilderScreen: View {
     }
 
     private func builderRegionTint(_ region: RoutineRegion) -> Color {
-        switch region {
-        case .push:            return theme.dataStrain
-        case .pull:            return theme.dataHrv
-        case .legs, .fullBody: return theme.dataSleep
-        }
+        return region.tint(theme)
     }
 
     private func builderRegionLabel(_ region: RoutineRegion) -> String {
@@ -271,16 +267,7 @@ struct RoutineBuilderScreen: View {
                     .buttonStyle(.plain)
                     // Progression chip under the name — same destination as «···» → Progression.
                     if item.re.progressionEnabled {
-                        Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: "arrow.up")
-                                    .font(StrandFont.glyph(.chevron, weight: .semibold))
-                                Text(progressionSummary(item.re))
-                                    .font(StrandFont.caption)
-                            }
-                            .foregroundStyle(theme.dataRecovery)
-                        }
-                        .buttonStyle(.plain)
+                        ProgressionChip(re: item.re, system: system, theme: theme, action: { progressionTarget = ProgressionTarget(ei: idx) })
                     }
                 }
                 Spacer(minLength: 8)
@@ -430,16 +417,6 @@ struct RoutineBuilderScreen: View {
         }
         rows.append(.init(String(localized: "Remove"), systemImage: "trash", isDestructive: true) { deleteExercise(idx) })
         return rows
-    }
-
-    /// «+2,5 kg cada 2 ✓» — the active plan named under the exercise (and in the ··· menu when on).
-    private func progressionSummary(_ re: RoutineExercise) -> String {
-        guard let inc = re.progressionIncrementKg else {
-            return String(localized: "Progression · on")
-        }
-        let unit = StrengthDisplay.weightUnit(system).lowercased()
-        return "+\(StrengthDisplay.weightNumber(inc, system: system)) \(unit) "
-            + String(localized: "every \(re.progressionSessions)") + " ✓"
     }
 
     private func addWarmup(_ idx: Int) {
