@@ -12,8 +12,6 @@ import SwiftUI
 //   • `SolarWindow` — the injected sunrise/sunset value the dial consumes for its day arc
 //     (the app computes it from `StrandAnalytics.SolarClock`; injected, never imported, so
 //     `StrandDesign` stays the dependency-free leaf of the package graph).
-//   • `InstrumentoThemeEngine.localHour(of:calendar:)` — the pure clock-hour helper the
-//     dial uses to place its «now» dot.
 //   • `OKLab` — the perceptual colour space used across StrandDesign: the «Hoy» paper
 //     gradient (`paperHi`/`paperLo`/`inkDim`), `DiurnalDial.dayGold`, `ReferenceRange`,
 //     and `positiveText`/`negativeText`.
@@ -34,18 +32,6 @@ public struct SolarWindow: Equatable, Sendable {
     public init(sunrise: Double, sunset: Double) {
         self.sunrise = sunrise
         self.sunset = sunset
-    }
-}
-
-// MARK: - Clock helper
-
-public enum InstrumentoThemeEngine {
-    /// Local clock hour (0...24, fractional) of `date` in `calendar`'s time zone. Pure and
-    /// deterministic — the caller passes the clock in; this never reads `Date()` itself, so it
-    /// is fully testable. Used by the `DiurnalDial` to place its «now» dot.
-    static func localHour(of date: Date, calendar: Calendar) -> Double {
-        let c = calendar.dateComponents([.hour, .minute, .second], from: date)
-        return Double(c.hour ?? 0) + Double(c.minute ?? 0) / 60.0 + Double(c.second ?? 0) / 3600.0
     }
 }
 
