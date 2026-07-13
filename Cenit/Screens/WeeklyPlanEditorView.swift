@@ -149,10 +149,11 @@ struct WeeklyPlanEditorView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Train").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("Your plan").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("This week").font(StrandFont.title1).foregroundStyle(theme.ink)
             if loaded && !routines.isEmpty {
-                Text(balanceOpinion)
+                // Handoff v4b: a terse count («4 días · 3 rutinas»), not an opinion.
+                Text("\(assignedCount) days · \(routines.count) routines")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -166,25 +167,21 @@ struct WeeklyPlanEditorView: View {
         return out
     }
 
-    /// The sub that opines on the week's balance (mock 1b): how many training days, and whether the big
-    /// three (push/pull/legs) are each covered.
-    private var balanceOpinion: String {
-        let days = assignedCount
-        if days == 0 { return String(localized: "No training days yet · assign a routine to a day.") }
-        let uncovered = [MuscleGroup.push, .pull, .legs].contains { (weeklyVolume[$0] ?? 0) == 0 }
-        let daysText = days == 1 ? String(localized: "1 training day") : String(localized: "\(days) training days")
-        return uncovered
-            ? String(localized: "\(daysText) · some groups are still uncovered.")
-            : String(localized: "\(daysText) · push, pull and legs each covered.")
-    }
-
     // MARK: - The week (one row per day)
 
     private var weekSection: some View {
-        VStack(spacing: 0) {
-            ForEach(weekdays, id: \.self) { wd in
-                dayRow(wd)
-                if wd != weekdays.last { divider }
+        VStack(alignment: .leading, spacing: 10) {
+            // Section header, matching the volume / routines overlines — with the handoff's «tap a day» hint.
+            HStack(alignment: .firstTextBaseline) {
+                Text("The week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                Text("tap a day to edit it").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            VStack(spacing: 0) {
+                ForEach(weekdays, id: \.self) { wd in
+                    dayRow(wd)
+                    if wd != weekdays.last { divider }
+                }
             }
         }
     }
