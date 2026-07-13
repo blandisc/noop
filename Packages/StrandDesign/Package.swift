@@ -12,8 +12,8 @@ let package = Package(
     targets: [
         .target(
             name: "StrandDesign",
-            // Instrument Serif (OFL) — bundled so the «Instrumento» serif headlines render fully
-            // offline; registered at runtime via CoreText (a package can't use Info.plist UIAppFonts).
+            // Space Grotesk (OFL) — bundled so the «Instrumento» type voice renders fully offline;
+            // registered at runtime via CoreText (a package can't use Info.plist UIAppFonts).
             resources: [.process("Resources")],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),

@@ -870,7 +870,7 @@ struct MetricInfoSheet: View {
                     // FER-607 (migrated metric): the title leads in serif (headline role only), with the
                     // ⓘ beside it and the source chip trailing — the handoff header.
                     Text(info.name)
-                        .font(StrandFont.serif(23))
+                        .font(InstrumentoType.groteskHeadline(23))
                         .foregroundStyle(theme.ink)
                     infoButton
                     Spacer()

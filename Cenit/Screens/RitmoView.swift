@@ -115,7 +115,7 @@ private struct ConsentView: View {
                 .padding(.bottom, 22)
 
             Text(RhythmCopy.consentTitle)
-                .font(StrandFont.serif(27))
+                .font(InstrumentoType.groteskHeadline(27))
                 .foregroundStyle(theme.ink)
                 .padding(.bottom, 14)
 
@@ -185,7 +185,7 @@ private struct RhythmReadingView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(RhythmCopy.label(nr.summary.overall))
-                    .font(StrandFont.serifVerdict).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
                 Text(RhythmCopy.confidence(beats: nr.readableBeats, tier: nr.bestConfidence))
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
@@ -240,7 +240,7 @@ private struct CalibratingView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(RhythmCopy.calibratingLabel)
-                    .font(StrandFont.serifVerdict).foregroundStyle(theme.inkSecondary)
+                    .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.inkSecondary)
                 Text(RhythmCopy.confidence(beats: nr.readableBeats, tier: .calibrating))
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
@@ -267,7 +267,7 @@ private struct MessageState: View {
                 .foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
             Text(title)
-                .font(StrandFont.serif(22)).foregroundStyle(theme.ink)
+                .font(InstrumentoType.groteskHeadline(22)).foregroundStyle(theme.ink)
                 .multilineTextAlignment(.center)
             Text(message)
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

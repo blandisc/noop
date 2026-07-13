@@ -98,8 +98,8 @@ struct RestEditorScreen: View {
                 }
                 cta
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 12).padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.top, 12).padding(.bottom, NoopMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -215,14 +215,8 @@ struct RestEditorScreen: View {
     }
 
     private func stepper(_ system: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: system).font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
-                .frame(width: 44, height: 44)
-                .background(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous).fill(theme.surface))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
+        StepperButton(system: system, size: 44, shape: .roundedControl,
+                      glyph: StrandFont.glyph(.lead), theme: theme, action: action)
     }
     private func secondsPreset(_ label: String, _ s: Int) -> some View {
         let sel = seconds == s
@@ -253,8 +247,8 @@ struct RestEditorScreen: View {
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 

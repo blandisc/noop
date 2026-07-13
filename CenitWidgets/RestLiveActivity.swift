@@ -125,7 +125,7 @@ private struct IdentityRow: View {
                 .accessibilityHidden(true)
         } else {
             Text(initials)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 .foregroundStyle(stale ? theme.inkDim : theme.inkSecondary)
                 .frame(width: M.thumb, height: M.thumb)
                 .background(theme.surface)
@@ -579,14 +579,14 @@ private enum SessionDynamicIsland {
         switch s.resolvedPhase {
         case .active:
             Text("\(s.setNumber)/\(s.setTotal)")
-                .font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                .font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 .foregroundStyle(theme.ink)
         case .paused:
-            Image(systemName: "pause.fill").font(.system(size: 12)).foregroundStyle(theme.inkSecondary)
+            Image(systemName: "pause.fill").font(.system(size: 12)).foregroundStyle(theme.inkSecondary)  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
         case .resting where s.isHRMode:
             HStack(spacing: 2) {
-                Image(systemName: "heart.fill").font(.system(size: 10))
-                Text("\(s.bpm ?? 0)").font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                Image(systemName: "heart.fill").font(.system(size: 10))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+                Text("\(s.bpm ?? 0)").font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
             }.foregroundStyle(theme.dataHeart)
         case .resting:
             RestTimerText(state: s, size: 15).foregroundStyle(theme.dataStrain)
@@ -596,12 +596,12 @@ private enum SessionDynamicIsland {
     // Compact trailing: pulse chip (or the «→ target» in HR mode); nothing without band data.
     @ViewBuilder private static func compactTrailing(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
         if s.isHRRest, let target = s.hrTarget {
-            Text("→ \(target)").font(.system(size: 13, weight: .semibold)).monospacedDigit()
+            Text("→ \(target)").font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 .foregroundStyle(theme.inkSecondary)
         } else if let bpm = s.bpm {
             HStack(spacing: 2) {
-                Image(systemName: "heart.fill").font(.system(size: 10))
-                Text("\(bpm)").font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                Image(systemName: "heart.fill").font(.system(size: 10))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+                Text("\(bpm)").font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
             }.foregroundStyle(theme.dataHeart)
         }
     }
@@ -609,12 +609,12 @@ private enum SessionDynamicIsland {
     @ViewBuilder private static func minimal(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
         switch s.resolvedPhase {
         case .active:
-            Text("\(s.setNumber)/\(s.setTotal)").font(.system(size: 12, weight: .semibold)).monospacedDigit()
+            Text("\(s.setNumber)/\(s.setTotal)").font(.system(size: 12, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 .foregroundStyle(theme.ink)
         case .paused:
-            Image(systemName: "pause.fill").font(.system(size: 11)).foregroundStyle(theme.inkSecondary)
+            Image(systemName: "pause.fill").font(.system(size: 11)).foregroundStyle(theme.inkSecondary)  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
         case .resting where s.isHRMode:
-            Text("\(s.bpm ?? 0)").font(.system(size: 12, weight: .semibold)).monospacedDigit()
+            Text("\(s.bpm ?? 0)").font(.system(size: 12, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 .foregroundStyle(theme.dataHeart)
         case .resting:
             RestTimerText(state: s, size: 12).foregroundStyle(theme.dataStrain)
@@ -625,25 +625,25 @@ private enum SessionDynamicIsland {
     @ViewBuilder private static func expandedLeading(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
         switch s.resolvedPhase {
         case .active:
-            (Text("\(s.setNumber)").font(.system(size: 26, weight: .semibold, design: .rounded))
+            (Text("\(s.setNumber)").font(.system(size: 26, weight: .semibold, design: .rounded))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 .foregroundColor(theme.ink)
-                + Text(" / \(s.setTotal)").font(.system(size: 16, weight: .medium, design: .rounded))
+                + Text(" / \(s.setTotal)").font(.system(size: 16, weight: .medium, design: .rounded))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                     .foregroundColor(theme.inkTertiary))
                 .monospacedDigit()
         case .paused:
-            Text("On pause").font(.system(size: 20, weight: .semibold, design: .rounded))
+            Text("On pause").font(.system(size: 20, weight: .semibold, design: .rounded))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 .foregroundStyle(theme.inkSecondary)
         case .resting where s.isHRMode:
             HStack(spacing: 4) {
-                Image(systemName: "heart.fill").font(.system(size: 14))
-                Text("\(s.bpm ?? 0)").font(.system(size: 26, weight: .semibold, design: .rounded)).monospacedDigit()
+                Image(systemName: "heart.fill").font(.system(size: 14))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+                Text("\(s.bpm ?? 0)").font(.system(size: 26, weight: .semibold, design: .rounded)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 if let target = s.hrTarget {
-                    Text("→ \(target)").font(.system(size: 15, weight: .medium)).foregroundStyle(theme.inkTertiary).monospacedDigit()
+                    Text("→ \(target)").font(.system(size: 15, weight: .medium)).foregroundStyle(theme.inkTertiary).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 }
             }.foregroundStyle(theme.dataHeart)
         case .resting:
             HStack(spacing: 6) {
-                Image(systemName: "timer").font(.system(size: 13, weight: .semibold))
+                Image(systemName: "timer").font(.system(size: 13, weight: .semibold))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 RestTimerText(state: s, size: 26)
             }.foregroundStyle(theme.dataStrain)
         }
@@ -653,13 +653,13 @@ private enum SessionDynamicIsland {
     @ViewBuilder private static func expandedTrailing(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
         if s.isHRRest {
             VStack(alignment: .trailing, spacing: 2) {
-                Text(String(localized: "Cap").uppercased()).font(.system(size: 9, weight: .semibold)).tracking(1).foregroundStyle(theme.inkTertiary)
+                Text(String(localized: "Cap").uppercased()).font(.system(size: 9, weight: .semibold)).tracking(1).foregroundStyle(theme.inkTertiary)  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 RestTimerText(state: s, size: 14, alignment: .trailing).foregroundStyle(theme.inkSecondary)
             }
         } else if let bpm = s.bpm {
             HStack(spacing: 4) {
-                Image(systemName: "heart.fill").font(.system(size: 13))
-                Text("\(bpm)").font(.system(size: 16, weight: .semibold, design: .rounded)).monospacedDigit()
+                Image(systemName: "heart.fill").font(.system(size: 13))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+                Text("\(bpm)").font(.system(size: 16, weight: .semibold, design: .rounded)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
             }.foregroundStyle(theme.dataHeart)
         }
     }
@@ -667,7 +667,7 @@ private enum SessionDynamicIsland {
     // Expanded bottom: the «¿qué sigue?» caption for rest/pause; the exercise name in the active set.
     @ViewBuilder private static func expandedBottom(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
         Text(bottomCaption(s))
-            .font(.system(size: 12, weight: .medium))
+            .font(.system(size: 12, weight: .medium))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
             .foregroundStyle(theme.inkSecondary)
             .lineLimit(1).minimumScaleFactor(0.7)
             .frame(maxWidth: .infinity, alignment: .leading)

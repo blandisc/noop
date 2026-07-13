@@ -19,6 +19,21 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los títulos dejan la serif y hablan en Space Grotesk / Titles drop the serif and speak in Space Grotesk.**
+  **ES** — La voz de títulos y frases-veredicto de las pantallas de detalle (Fase del ciclo, Ritmo, Bucle, Reloj corporal, y las hojas de métrica) migra de la serif *Instrument Serif* a **Space Grotesk** —Medium para los encabezados, Bold para las frases-veredicto—, la misma familia que ya usaban los numerales y «Hoy». La serif se retira por completo (fuera del bundle), dejando una sola identidad tipográfica. Sin cambios de tamaño ni de layout.
+  **EN** — The title and verdict-phrase voice of the detail screens (Cycle phase, Ritmo, Bucle, Body clock, and the metric sheets) moves from the *Instrument Serif* serif to **Space Grotesk** —Medium for headlines, Bold for verdict phrases— the same family the numerals and «Hoy» already use. The serif is retired entirely (out of the bundle), leaving a single type identity. No size or layout change.
+  ([Typography.swift](Packages/StrandDesign/Sources/StrandDesign/Typography.swift), [GroteskVoice.swift](Packages/StrandDesign/Sources/StrandDesign/GroteskVoice.swift), [Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift))
+
+- **Copy sin em-dash y guardia de diseño ampliada / Em-dash-free copy and a wider design guard.**
+  **ES** — Barrido de deriva de diseño: se normaliza la puntuación de la copy que quedaba fuera del linter (Términos, avisos de salud, «Qué hay de nuevo») quitando los em-dash «—» a favor de «:» o coma (regla de casa FER-878), y se amplía el linter a `Cenit/System`, `Cenit/AI` y `Cenit/App` para que la deriva tipográfica no se cuele fuera del gate. Sin cambios funcionales.
+  **EN** — Design-drift sweep: the copy that lived outside the linter (Terms, health warnings, «What's New») has its punctuation normalized, dropping em-dashes «—» for «:» or a comma (house rule FER-878), and the linter now covers `Cenit/System`, `Cenit/AI` and `Cenit/App` so type drift can't slip past the gate. No functional change.
+  ([Terms.swift](Cenit/App/Terms.swift), [check-design-drift.py](Tools/check-design-drift.py))
+
+- **El número protagonista habla en una sola voz (Space Grotesk) / The protagonist numeral speaks in one voice (Space Grotesk).**
+  **ES** — El «número dominante» de cada pantalla (recuperación, esfuerzo, sueño, etc.) se unifica en **Space Grotesk**, la misma voz del héroe de «Hoy». Antes convivían dos tipografías para el mismo rol (SF Mono en los detalles, Grotesk en «Hoy»), así que el numeral cambiaba de cara según la pantalla; ahora es consistente en toda la app. Sin cambio de tamaños ni de layout.
+  **EN** — Every screen's dominant number (recovery, strain, sleep, …) unifies on **Space Grotesk**, the same voice as the «Hoy» hero. Two typefaces used to fill the same role (SF Mono in the details, Grotesk on «Hoy»), so the numeral changed face by screen; it's now consistent across the app. No size or layout change.
+  ([GroteskVoice.swift](Packages/StrandDesign/Sources/StrandDesign/GroteskVoice.swift), [Instrumento.swift](Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift))
+
 - **Recibo desde los tickets guardados + entrada del HRR-60s más viva / Receipt from saved tickets + livelier HRR-60s entrance.**
   **ES** — (a) En «Tickets guardados», tocar un recibo ahora **reimprime el ticket** (abre la impresora térmica) en vez de mandarte al detalle de la sesión; el resumen se reconstruye de la sesión guardada (sin récords falsos en una reimpresión). (b) El bloque de **recuperación cardiaca (HRR-60s)** del detalle de fuerza gana su **barra rosa de ancla** y una **entrada escalonada** (número → veredicto → línea base → aviso, sin rebote; el overline no anima), fiel al handoff; respeta Reduce Motion.
   **EN** — (a) In «Saved tickets», tapping a receipt now **reprints the ticket** (opens the thermal printer) instead of pushing the session detail; the summary is rebuilt from the stored session (no fake records on a reprint). (b) The strength detail's **cardiac-recovery (HRR-60s)** block gains its **pink anchor bar** and a **staggered entrance** (number → verdict → baseline → disclaimer, no bounce; the overline doesn't animate), faithful to the handoff; honors Reduce Motion.

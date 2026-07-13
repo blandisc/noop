@@ -84,12 +84,10 @@ public struct SegmentedPillControl<T: Hashable>: View {
     let items: [T]
     let label: (T) -> String
     @Binding var selection: T
-    /// Optional «Instrumento diurno» theme. When `nil` (the default) the control renders the
-    /// legacy dark `StrandPalette` look used by the 9 shipped screens — UNCHANGED. When a theme
-    /// is passed (the light Detalle de Métrica, FER-211), it renders an iOS-native segmented look
-    /// on warm paper: a quiet track, an active segment that's a subtle ink-tinted capsule (no
-    /// bright green), and ink labels. (FER-211)
-    var theme: InstrumentoTheme?
+    /// The «Instrumento diurno» theme. Renders an iOS-native segmented look on warm paper: a quiet
+    /// track, an active segment that's a subtle ink capsule (no bright green), and ink labels. (FER-211;
+    /// FER-902 retired the legacy dark `theme == nil` branch — every live screen passes a theme.)
+    let theme: InstrumentoTheme
     /// «Ink thumb» variant (FER-716 handoff «Entrenar»): a `patternBlock` track with an `ink` active
     /// capsule and `paper` Grotesk label — the bolder segmented look the session's editor uses. Only
     /// meaningful with a `theme`; the default (`false`) keeps the quiet surface-thumb look.
@@ -98,7 +96,7 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// (iOS HIG minimum) instead of the compact 28pt — used for the Tendencias landing selector. Only
     /// meaningful with a `theme`; default keeps the compact height.
     var tall: Bool = false
-    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme? = nil,
+    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme,
                 inkThumb: Bool = false, tall: Bool = false, label: @escaping (T) -> String) {
         self.items = items; self._selection = selection; self.theme = theme
         self.inkThumb = inkThumb; self.tall = tall; self.label = label
@@ -124,48 +122,29 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// the equal-width tap segment) but FILLS the track's HEIGHT — the capsule wraps a fixed-height frame, so
     /// it no longer floats small inside a taller groove. The thumb is 28pt tall, inset 3pt from the track
     /// edge like a slim iOS segmented control — a quiet secondary control, deliberately tighter than the
-    /// 44pt min (the full segment width stays the tap target). Legacy (theme == nil) keeps the exact
-    /// dark-palette look — UNCHANGED. (FER-439 / Detalle de Vital fix)
+    /// 44pt min (the full segment width stays the tap target). (FER-439 / Detalle de Vital fix)
     @ViewBuilder private func segment(_ item: T, _ sel: Bool) -> some View {
-        if let theme {
-            // Handoff v2 PeriodSelector: the active thumb is an INK capsule with PAPER text (Grotesk),
-            // not the old quiet surface thumb — the bolder look the CompactTrendToggle already uses. The
-            // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
-            // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
-            Text(label(item))
-                .font(InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
-                .tracking(1.6)
-                .lineLimit(1).minimumScaleFactor(0.85)
-                .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
-                .padding(.horizontal, 12)
-                .frame(height: tall ? 44 : 34)
-                .background {
-                    if sel { Capsule(style: .continuous).fill(theme.ink) }
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-        } else {
-            Text(label(item))
-                .font(StrandFont.captionNumber)
-                .lineLimit(1).minimumScaleFactor(0.8)
-                .foregroundStyle(sel ? InstrumentoTheme.base.paper : InstrumentoTheme.base.inkSecondary)
-                .frame(minWidth: 32)
-                .padding(.vertical, 6).padding(.horizontal, 11)
-                .background(Capsule(style: .continuous).fill(sel ? StrandPalette.accent : Color.clear))
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
-        }
+        // Handoff v2 PeriodSelector: the active thumb is an INK capsule with PAPER text (Grotesk),
+        // not the old quiet surface thumb — the bolder look the CompactTrendToggle already uses. The
+        // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
+        // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
+        Text(label(item))
+            .font(InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
+            .tracking(1.6)
+            .lineLimit(1).minimumScaleFactor(0.85)
+            .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
+            .padding(.horizontal, 12)
+            .frame(height: tall ? 44 : 34)
+            .background {
+                if sel { Capsule(style: .continuous).fill(theme.ink) }
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
     }
 
-    // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); legacy
-    // keeps its original fill. The border stays for both.
-    private var trackFill: Color {
-        guard let theme else { return InstrumentoTheme.base.hairline }
-        return theme.patternBlock
-    }
-    private var trackStroke: Color {
-        theme == nil ? InstrumentoTheme.base.hairline : .clear
-    }
+    // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); the border stays.
+    private var trackFill: Color { theme.patternBlock }
+    private var trackStroke: Color { .clear }
 }
 
 // MARK: - Badges
@@ -182,20 +161,20 @@ public struct SourceBadge: View {
     }
 }
 
-// MARK: - In-screen serif title + ⓘ (FER-581 · «Instrumento» detail-screen identity)
+// MARK: - In-screen title + ⓘ (FER-581 · «Instrumento» detail-screen identity)
 
-/// The detail-screen headline: an `Instrument Serif` title (the handoff reserves serif for in-screen
-/// headlines, never numbers or tab names) with an optional ⓘ that toggles an inline plain-language
-/// explanation. One source of truth so every detail sheet titles identically. The numeral, range bar
-/// and blocks live BELOW this, unchanged. (FER-581)
+/// The detail-screen headline: a Grotesk headline title (`groteskHeadline`, Medium — the serif voice
+/// was retired in FER-901) with an optional ⓘ that toggles an inline plain-language explanation. One
+/// source of truth so every detail sheet titles identically. The numeral, range bar and blocks live
+/// BELOW this, unchanged. (FER-581)
 public struct InstrumentoScreenTitle: View {
     let title: LocalizedStringKey
     var size: CGFloat
     var theme: InstrumentoTheme
     var explanation: LocalizedStringKey?
     /// When set, the title renders as the §8.7 overline (metric icon in its hue + ALL-CAPS grotesk)
-    /// instead of the legacy serif — the standardized «Tendencias v2» header. Provenance is NOT here;
-    /// it lives in the `OriginStamp` at the foot.
+    /// instead of the plain Grotesk headline — the standardized «Tendencias v2» header. Provenance is
+    /// NOT here; it lives in the `OriginStamp` at the foot.
     var glyph: MetricGlyph?
     @State private var open = false
 
@@ -227,7 +206,7 @@ public struct InstrumentoScreenTitle: View {
                     Spacer(minLength: 6)
                 } else {
                     Text(title)
-                        .font(StrandFont.serif(size))
+                        .font(InstrumentoType.groteskHeadline(size))
                         .foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -248,69 +227,6 @@ public struct InstrumentoScreenTitle: View {
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-// MARK: - Dynamic period-average caption (FER-587 · handoff «Media · … vs previo»)
-
-/// The handoff's one-line period average under a trend: «Average · {window} · {value} · {Δ%} vs previous»,
-/// with the Δ coloured by the metric's good direction, plus an optional small «Range {lo–hi}» line so the
-/// min–max stays visible (the owner's option ii). The host computes the figures (it owns the full series);
-/// this is presentation only. Hidden Δ when `pctChange` is nil (no previous period). (FER-587)
-public struct DynamicAverageCaption: View {
-    let windowName: String
-    let average: String
-    let unit: String?
-    let pctChange: Double?
-    let polarity: TrendStatSummary.Polarity
-    let rangeText: String?
-    let theme: InstrumentoTheme
-
-    public init(windowName: String, average: String, unit: String? = nil, pctChange: Double?,
-                polarity: TrendStatSummary.Polarity, rangeText: String? = nil, theme: InstrumentoTheme) {
-        self.windowName = windowName
-        self.average = average
-        self.unit = unit
-        self.pctChange = pctChange
-        self.polarity = polarity
-        self.rangeText = rangeText
-        self.theme = theme
-    }
-
-    private var deltaColor: Color {
-        guard let v = pctChange, Int(abs(v).rounded()) != 0 else { return theme.inkSecondary }
-        switch polarity {
-        case .neutral:        return theme.inkSecondary
-        case .higherIsBetter: return v > 0 ? theme.verdict : theme.warning
-        case .lowerIsBetter:  return v < 0 ? theme.verdict : theme.warning
-        }
-    }
-
-    public var body: some View {
-        let unitSuffix = unit.map { " \($0)" } ?? ""
-        let head = Text("Average") + Text(verbatim: " · \(windowName) · \(average)\(unitSuffix)")
-        return VStack(alignment: .leading, spacing: 3) {
-            Group {
-                if let pct = pctChange {
-                    let rounded = Int(abs(pct).rounded())
-                    let arrow = rounded == 0 ? "" : (pct >= 0 ? "▲ " : "▼ ")
-                    head
-                        + Text(verbatim: " · \(arrow)\(rounded)% ").foregroundColor(deltaColor)
-                        + Text("vs previous")
-                } else {
-                    head
-                }
-            }
-            .font(StrandFont.footnote)
-            .foregroundStyle(theme.inkTertiary)
-            .fixedSize(horizontal: false, vertical: true)
-            if let rangeText {
-                (Text("Range") + Text(verbatim: " \(rangeText)"))
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

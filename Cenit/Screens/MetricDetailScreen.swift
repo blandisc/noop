@@ -1665,6 +1665,7 @@ struct MetricDetailScreen: View {
 
     /// Rest (below Zone 1) reads in quiet ink; the five training zones grade up the metric hue so a
     /// harder zone reads darker. The bar segments ARE the datum, so hue is allowed here. (FER-253)
+    /// Rampa DELIBERADA de opacidad del `metricHue` (NO la paleta compartida `hrZoneRamp`): esta es su propia geometría de zonas, 1 de 3 superficies HR distintas — no se unifican (FER-908).
     private func zoneFill(_ i: Int) -> Color {
         switch i {
         case 0:  return theme.hairlineStrong

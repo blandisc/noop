@@ -15,7 +15,7 @@ import WhoopStore
 
 /// One-line privacy note the UI should display verbatim near the composer / settings.
 public let aiCoachPrivacyNote =
-    "Private by default: nothing is sent until you add your own key and ask a question — only a short text summary of your metrics goes to the provider you pick."
+    "Private by default: nothing is sent until you add your own key and ask a question. Only a short text summary of your metrics goes to the provider you pick."
 
 // MARK: - Provider
 
@@ -176,7 +176,7 @@ enum AICoachError: LocalizedError {
         case .rateLimited:
             return String(localized: "The provider is rate-limiting requests right now. Wait a moment and try again.")
         case .server(let code, let detail):
-            let extra = detail.isEmpty ? "" : " — \(detail)"
+            let extra = detail.isEmpty ? "" : ": \(detail)"
             return String(localized: "The provider returned an error (\(code))\(extra).")
         case .network(let detail):
             return String(localized: "Network problem: \(detail). The coach is the only feature that needs the internet.")
@@ -619,7 +619,7 @@ final class AICoachEngine: ObservableObject {
         // Last ~14 days, newest first for readability.
         let recent = Array(days.suffix(14)).reversed()
         lines.append("")
-        lines.append("Recent days (newest first) — recovery%, strain(0-21), sleep(h), HRV(ms), RHR(bpm):")
+        lines.append("Recent days (newest first) — recovery%, strain(0-21), sleep(h), HRV(ms), RHR(bpm):")  // token-exempt: LLM prompt context, not on-screen copy
         for d in recent {
             lines.append("  " + dayLine(d))
         }

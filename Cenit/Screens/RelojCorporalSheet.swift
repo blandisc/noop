@@ -66,7 +66,7 @@ struct RelojCorporalSheet: View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(verbatim: "Día \(dayIndex)")
-                    .font(StrandFont.serif(40, relativeTo: .largeTitle)).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskHeadline(40)).foregroundStyle(theme.ink)
                 Text(verbatim: "de \(total)")
                     .font(StrandFont.title2).foregroundStyle(theme.inkTertiary)
             }
@@ -135,7 +135,7 @@ struct RelojCorporalSheet: View {
                     .foregroundStyle(theme.dataHrv)
                     .accessibilityHidden(true)
                 Text(verbatim: t.word)
-                    .font(StrandFont.serif(48, relativeTo: .largeTitle))
+                    .font(InstrumentoType.groteskHeadline(48))
                     .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }

@@ -1433,7 +1433,7 @@ final class AppModel: ObservableObject {
         if rmssd < hrvBaseline * 0.6, now.timeIntervalSince(lastStressBuzzAt) > 900 {
             lastStressBuzzAt = now
             buzz(loops: 1)
-            live.append(log: "Stress nudge — take a paced breath")
+            live.append(log: "Stress nudge: take a paced breath")
         }
     }
 
@@ -1512,7 +1512,7 @@ final class AppModel: ObservableObject {
         guard InactivityPrefs.isEnabled() else { return }
         let body = minutes > 0
             ? String(localized: "You've been seated about \(minutes) min. Time to move.")
-            : String(localized: "Time to move — you've been seated a while.")
+            : String(localized: "Time to move: you've been seated a while.")
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             guard settings.authorizationStatus == .authorized else { return }
             let content = UNMutableNotificationContent()
@@ -1712,7 +1712,7 @@ final class AppModel: ObservableObject {
 
         let result = IllnessSignalEngine.evaluate(inputs, context: context, firedLabels: labels)
         healthAlert = result.level == .raised
-            ? String(localized: "Your body looks strained — \(result.firedSignals.joined(separator: ", ")). Consider taking it easy.")
+            ? String(localized: "Your body looks strained: \(result.firedSignals.joined(separator: ", ")). Consider taking it easy.")
             : nil
         // Banner transition (clear → raised): surface it as a system notification so the
         // early-warning reaches the user when the window is closed. IllnessNotifier rate-limits to

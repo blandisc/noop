@@ -70,10 +70,10 @@ private struct CyclePhaseConsentBody: View {
     @State private var acked = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("EXPERIMENT").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Cycle phase").font(StrandFont.serif(28)).foregroundStyle(theme.ink)
+                Text("Cycle phase").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
             }
             Text("This is a self-knowledge tool: it looks for a pattern in your own body's temperature while you sleep. Before turning it on, read calmly what it does and what it doesn't.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -107,7 +107,7 @@ private struct CyclePhaseConsentBody: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(NoopMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -162,7 +162,7 @@ private struct CyclePhaseStateBody: View {
     private var usableCount: Int { days.compactMap(\.skinTempDevC).count }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
             content
             Divider().overlay(theme.hairline)
             HStack(spacing: 16) {
@@ -177,15 +177,15 @@ private struct CyclePhaseStateBody: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(NoopMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showInfo) {
             ScrollView {
-                VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                    Text("Cycle phase").font(StrandFont.serif(28)).foregroundStyle(theme.ink)
+                VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                    Text("Cycle phase").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
                     CyclePhaseWhatItIs(theme: theme)
                 }
-                .padding(CenitMetrics.screenPadding)
+                .padding(NoopMetrics.screenPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(theme.paper.ignoresSafeArea())
@@ -227,7 +227,7 @@ private struct CyclePhaseStateBody: View {
     private func learning(soFar: Int, needed: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("LEARNING").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("I'm learning your pattern.").font(StrandFont.serif(24)).foregroundStyle(theme.ink)
+            Text("I'm learning your pattern.").font(InstrumentoType.groteskHeadline(24)).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Text("I need several weeks of nights with your band on to read the rhythm of your temperature. Still watching.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -253,7 +253,7 @@ private struct CyclePhaseStateBody: View {
         }()
         return VStack(alignment: .leading, spacing: 8) {
             Text("APPROXIMATE READING").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(phaseText).font(StrandFont.serif(24)).foregroundStyle(theme.verdict)   // color only in the datum
+            Text(phaseText).font(InstrumentoType.groteskVerdict).foregroundStyle(theme.verdict)   // color only in the datum
                 .fixedSize(horizontal: false, vertical: true)
             Text(confText).font(StrandFont.subhead).foregroundStyle(theme.ink)
             Text("Temperature confirms the phase one to three days after the change, so this reflects your recent nights, not this instant.")
@@ -268,7 +268,7 @@ private struct CyclePhaseStateBody: View {
     private func card(overline: LocalizedStringKey, title: LocalizedStringKey, body: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(title).font(StrandFont.serif(24)).foregroundStyle(theme.ink)
+            Text(title).font(InstrumentoType.groteskHeadline(24)).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Text(body).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)

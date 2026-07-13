@@ -606,17 +606,13 @@ struct ExerciseDetailScreen: View {
     /// Only renders when some routine slot opted into progression for this exercise.
     @ViewBuilder private var cycleBlock: some View {
         if let line = cycleLine {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Current cycle").instrumentoOverline().foregroundStyle(theme.dataRecovery)
-                line.font(StrandFont.caption).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+            NoteStrip(style: .info, theme: theme) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Current cycle").instrumentoOverline().foregroundStyle(theme.dataRecovery)
+                    line.font(StrandFont.caption).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-            .padding(.horizontal, 13).padding(.vertical, 11)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface)
-            .overlay(alignment: .leading) { Rectangle().fill(theme.dataRecovery).frame(width: 2.5) }
-            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
-                                              bottomTrailingRadius: 8, topTrailingRadius: 8))
         }
     }
 

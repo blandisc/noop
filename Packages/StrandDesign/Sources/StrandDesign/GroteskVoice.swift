@@ -68,6 +68,19 @@ public extension InstrumentoType {
     /// Tracking for the hero numeral.
     static let groteskHeroTracking: CGFloat = -4.5
 
+    /// The dominant numeral at an *arbitrary* size — the evolved-voice successor to the retired
+    /// SF Mono `hero(_:)` (FER-900: Space Grotesk canonized as the protagonist-numeral voice).
+    /// Detail screens set their hero at many sizes (26…90); pair with `groteskHeroTrackingScaled(_:)`.
+    static func groteskHeroNumeral(_ size: CGFloat = 72, weight: GroteskWeight = .bold) -> Font {
+        groteskNumber(size, weight: weight)
+    }
+    /// Size-aware negative tracking for `groteskHeroNumeral(_:)`. Grotesk sets tighter than Mono, so the
+    /// fixed 102pt hero uses −4.5 (≈ −0.044·size); this mirrors that ratio and, like the old
+    /// `heroTracking`, relaxes to ~0 below 28pt so small figures don't crowd. (FER-900)
+    static func groteskHeroTrackingScaled(_ size: CGFloat) -> CGFloat {
+        size >= 28 ? -size * 0.044 : 0
+    }
+
     /// A sheet's hero numeral — 56/700, tracking −2. FIXED.
     static let groteskSheetNumeral = groteskNumber(56)
     /// Tracking for the 56pt sheet numeral.
@@ -81,6 +94,14 @@ public extension InstrumentoType {
 
     /// The verdict word next to the hero («Equilibrado») — 22/700, scales with `.title3`.
     static let groteskVerdict = grotesk(22, weight: .bold, relativeTo: .title3)
+
+    /// An in-screen headline — the Grotesk successor to the retired `StrandFont.serif(_:)` (FER-901:
+    /// the serif title voice retires). Medium (500), not bold, so it keeps the airy editorial presence
+    /// the serif had rather than reading as a loud datum; scales with Dynamic Type relative to `.title2`.
+    /// Verdict *phrases* (the datum) stay on `groteskVerdict` (Bold). (FER-901)
+    static func groteskHeadline(_ size: CGFloat) -> Font {
+        grotesk(size, weight: .medium, relativeTo: .title2)
+    }
 
     /// A sheet title — 12/700, tracking 2.4, ALL-CAPS (`groteskSheetTitle(_: )` on `Text` bakes
     /// the case + tracking in). FIXED chrome.
