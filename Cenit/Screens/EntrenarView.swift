@@ -65,6 +65,7 @@ private struct EntrenarLanding: View {
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
 
     @State private var loaded = false
+    @State private var loadFailed = false   // store couldn't be read — a real error, NOT «no plan yet»
     @State private var routines: [Routine] = []
     @State private var exerciseCounts: [String: Int] = [:]
     /// Exercises whose earned raise seeds today's session (FER-G): name + proposed kg for the hero's «Hoy subes» line.
@@ -120,7 +121,9 @@ private struct EntrenarLanding: View {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if loaded {
-                    if split.isEmpty {
+                    if loadFailed {
+                        loadErrorState       // store couldn't be read — «No pudimos leer tus rutinas · Reintentar»
+                    } else if split.isEmpty {
                         emptyStateB          // hero «Empecemos por tu plan» + «Crear mi plan» (mock 5a)
                         plantillaRow         // «O empieza sin plan» → Rutinas de plantilla (the one kept row)
                         formasSection        // the same six «Formas de entrenar» doors as the planned state
@@ -226,7 +229,7 @@ private struct EntrenarLanding: View {
             .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Recovery \(Int(rec.rounded())). See details."))
+        .accessibilityLabel(Text("Recuperación \(Int(rec.rounded())). Ver detalle."))
     }
 
     // MARK: - ① Today + «Empezar» (the single door — now a one-tap start, F1)
@@ -348,11 +351,21 @@ private struct EntrenarLanding: View {
 
     /// The one solid button per screen (F8): a day with a routine fills it («Empezar {rutina}»); a rest
     /// day leaves it open but quiet (outline). Both route through `startToday`.
+    /// The CTA verb: a live session in progress makes this «Continuar» (tapping re-opens it — `startToday`
+    /// ends in `startStrengthSession`, whose guard re-presents the existing session, AppModel), otherwise
+    /// «Empezar». Spanish literals, matching the rest of this screen.
+    private var empezarLabel: LocalizedStringKey { model.strengthSession != nil ? "Continuar" : "Empezar" }
+
+    /// Re-open the live session if one is running (any day, incl. rest days), otherwise start today's.
+    private func startOrResume() {
+        if model.strengthSession != nil { model.resumeStrengthSession() } else { startToday() }
+    }
+
     @ViewBuilder private var empezarButton: some View {
         if todayRoutine != nil {
             tintedEmpezarButton
         } else {
-            StrandCTAButton("Empezar", kind: .outline) { startToday() }
+            StrandCTAButton(empezarLabel, kind: .outline) { startOrResume() }
         }
     }
 
@@ -360,8 +373,8 @@ private struct EntrenarLanding: View {
     /// instead of `theme.ink` (shared component stays ink-only for other screens).
     private var tintedEmpezarButton: some View {
         let tint = routineTint(region(name: todayRoutine?.name ?? ""))
-        return Button(action: startToday) {
-            Text("Empezar")
+        return Button(action: startOrResume) {
+            Text(empezarLabel)
                 .font(InstrumentoType.grotesk(15, weight: .bold))
                 .tracking(0.3)
                 .foregroundStyle(theme.paperHi)
@@ -534,11 +547,11 @@ private struct EntrenarLanding: View {
     /// The five training doors in the icon grid. Diet sits as a quiet full-width row below (not a chip).
     private var formOptions: [FormOption] {
         [
-            FormOption(icon: "bolt.fill", label: "Quick", tint: theme.dataStrain) { startQuickStrength() },
-            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live", tint: theme.dataHrv) { startLive() },
-            FormOption(icon: "timer", label: "Interval", tint: theme.dataHrv) { openIntervals() },
+            FormOption(icon: "bolt", label: "Quick", tint: theme.dataStrain) { startQuickStrength() },
+            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live", tint: theme.dataHeart) { startLive() },
+            FormOption(icon: "timer", label: "Interval", tint: theme.dataSleep) { openIntervals() },
             FormOption(icon: "figure.flexibility", label: "Mobility", tint: theme.dataHrv) { model.startMobilityOneOff() },
-            FormOption(icon: "wind", label: "Breathe", tint: theme.dataHrv) { openBreathe() },
+            FormOption(icon: "wind", label: "Breathe", tint: theme.dataRecovery) { openBreathe() },
         ]
     }
 
@@ -550,23 +563,32 @@ private struct EntrenarLanding: View {
                     formChip(opt)
                 }
             }
-            // Diet as a quiet standalone row under the five training doors.
-            Button { openDiet() } label: {
-                HStack(spacing: 9) {
-                    Image(systemName: "fork.knife")
-                        .font(StrandFont.glyph(.lead))
-                        .foregroundStyle(theme.inkSecondary)
-                    Text("Diet")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                    Spacer(minLength: 8)
-                }
-                .padding(.vertical, CenitMetrics.gap)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            // Quiet standalone foot rows under the five training doors: history + diet, each with a verb of
+            // its own («consultar» / «registrar»), distinct from the doors' «empezar» (mock 1a / v4b).
+            utilityRow(icon: "chart.line.uptrend.xyaxis", label: "Mis entrenamientos y progreso") { openHistory() }
+            utilityRow(icon: "fork.knife", label: "Dieta · registro de hoy") { openDiet() }
         }
+    }
+
+    /// One quiet full-width foot row (history / diet): leading glyph, label, trailing disclosure chevron.
+    private func utilityRow(icon: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: icon)
+                    .font(StrandFont.glyph(.lead))
+                    .foregroundStyle(theme.inkSecondary)
+                Text(label)
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(theme.inkSecondary)
+                Spacer(minLength: 8)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                    .foregroundStyle(theme.inkDim)
+            }
+            .padding(.vertical, CenitMetrics.gap)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// One icon chip in the always-visible «Formas de entrenar» row: a tinted glyph on a paper circle over a
@@ -575,19 +597,24 @@ private struct EntrenarLanding: View {
         Button {
             opt.action()
         } label: {
-            VStack(spacing: 5) {
+            VStack(spacing: CenitMetrics.space2) {
+                // «Troquel en papel»: solid data-token disc, glyph knocked out in paper (the paper is seen
+                // THROUGH the disc), rimmed with the same hue a step deeper (`dataEdge`) so it reads as a
+                // die-cut token rather than a colored sticker. Color lands on the datum (the modality).
                 Image(systemName: opt.icon).font(StrandFont.glyph(.lead, weight: .semibold))
-                    .foregroundStyle(opt.tint)
-                    .frame(width: 42, height: 42)
-                    .background(theme.surface, in: Circle())
-                    .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    .foregroundStyle(theme.paper)
+                    .frame(width: 38, height: 38)
+                    .background(opt.tint, in: Circle())
+                    .overlay(Circle().strokeBorder(theme.dataEdge(opt.tint), lineWidth: 1))
+                    .accessibilityHidden(true)
                 Text(opt.label).font(StrandFont.overline).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.75)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 44)   // HIG: keep the whole chip a ≥44pt tap target
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(opt.label)
     }
 
     /// «En vivo» from the expanded pill: start (or resume) the live HR workout and present its sheet — the
@@ -793,6 +820,23 @@ private struct EntrenarLanding: View {
         }
     }
 
+    // MARK: - Error state · store couldn't be read (distinct from «no plan yet»)
+    //
+    // When `repo.storeHandle()` returns nil the read failed — the user likely HAS a plan we just couldn't
+    // open. Showing the onboarding empty state here would wrongly push them to rebuild their week, so we
+    // surface a plain error with a retry that re-runs `load()`.
+    private var loadErrorState: some View {
+        card {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                Text("No pudimos leer tus rutinas").font(StrandFont.title3).foregroundStyle(theme.ink)
+                Text("Algo falló al abrir tus datos.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                StrandCTAButton("Reintentar", kind: .outline) { Task { await load() } }
+            }
+        }
+    }
+
     /// Start the mobility session «Empezar» queued from the TRAINING-day template sheet (FER-560).
     private func startPendingMobility() {
         guard let p = pendingMobility else { return }
@@ -916,7 +960,8 @@ private struct EntrenarLanding: View {
     // MARK: - Data
 
     private func load() async {
-        guard let store = await repo.storeHandle() else { loaded = true; return }
+        loadFailed = false   // clear on every (re)try
+        guard let store = await repo.storeHandle() else { loadFailed = true; loaded = true; return }
         let rs = (try? await store.routines()) ?? []
         let customAll = (try? await store.customExercises()) ?? []
         let customAllByID = Dictionary(customAll.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
