@@ -2815,7 +2815,7 @@ struct LiveStrengthSheet: View {
         } label: {
             Group {
                 if let rpe = set.rpe {
-                    Text(Self.formatRPE(rpe))
+                    Text(Self.formatDecimalComma(rpe))
                         .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
                         .foregroundStyle(theme.dataEffort)
                 } else {
@@ -2830,11 +2830,12 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("RPE"))
-        .accessibilityValue(Text(set.rpe.map(Self.formatRPE) ?? String(localized: "Not recorded")))
+        .accessibilityValue(Text(set.rpe.map(Self.formatDecimalComma) ?? String(localized: "Not recorded")))
     }
 
-    /// es-MX RPE formatting: comma decimal, no trailing zero on whole numbers (8, not 8,0; 8,5).
-    static func formatRPE(_ v: Double) -> String {
+    /// es-MX decimal formatting: comma decimal, no trailing zero on whole numbers (8, not 8,0; 8,5).
+    /// Shared by RPE values and, in `RPESheet`, the set's weight (FER-930).
+    static func formatDecimalComma(_ v: Double) -> String {
         v.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", v) : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
     }
 
@@ -3809,7 +3810,7 @@ struct RPESheet: View {
                 }
                 .accessibilityLabel(Text("Close"))
             }
-            Text("Set \(target.setNumber) · \(Self.weight(target.weightKg)) kg × \(target.reps) reps")
+            Text("Set \(target.setNumber) · \(LiveStrengthSheet.formatDecimalComma(target.weightKg)) kg × \(target.reps) reps")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
         }
         .padding(.top, 12)
@@ -3818,7 +3819,7 @@ struct RPESheet: View {
 
     private var hero: some View {
         VStack(spacing: 6) {
-            Text(LiveStrengthSheet.formatRPE(selected))
+            Text(LiveStrengthSheet.formatDecimalComma(selected))
                 .font(InstrumentoType.grotesk(84, weight: .semibold)).monospacedDigit()
                 .foregroundStyle(theme.ink)
             Text(Self.descriptor(selected)).font(StrandFont.headline).foregroundStyle(theme.ink)
@@ -3836,7 +3837,7 @@ struct RPESheet: View {
                     Button {
                         withAnimation(StrandMotion.interactive) { selected = value }
                     } label: {
-                        Text(LiveStrengthSheet.formatRPE(value))
+                        Text(LiveStrengthSheet.formatDecimalComma(value))
                             .font(StrandFont.number(15, weight: sel ? .bold : .regular)).monospacedDigit()
                             .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
                             .frame(width: 48, height: 44)
@@ -3869,10 +3870,6 @@ struct RPESheet: View {
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
         .padding(.top, 12)
-    }
-
-    private static func weight(_ kg: Double) -> String {
-        kg.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", kg) : String(format: "%.1f", kg).replacingOccurrences(of: ".", with: ",")
     }
 
     /// Descriptors (FER-930 spec §3, es-MX in the xcstrings catalog), no prescriptive coaching.
