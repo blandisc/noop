@@ -41,9 +41,9 @@ struct PlatesScreen: View {
                 Rectangle().fill(theme.hairline).frame(height: 1)
                 warmupSection
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -261,7 +261,7 @@ struct PlatesScreen: View {
                 .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                 .foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         }
         .buttonStyle(.plain).padding(.top, 6)
     }
