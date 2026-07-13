@@ -938,4 +938,94 @@ final class MigrationTests: XCTestCase {
         rows = try await store.dailyMetrics(deviceId: "dev1", from: "2026-07-02", to: "2026-07-02")
         XCTAssertEqual(rows.first?.restConfidence, "solid", "a non-nil upsert overwrites")
     }
+
+    /// v33 (FER-923): the exercise-catalog remap. Seed history at v32 referencing three kinds of old id —
+    /// one WITH a new-catalog match, one legacy id with NO match, one unknown/custom id — then migrate to
+    /// v33 and assert: matched refs are rewritten to the new slug across every table (incl. personalRecord's
+    /// composite id), the no-match legacy id is materialized as a customExercise (so its refs still resolve),
+    /// and the unknown id is left untouched. Invariant: zero orphans — every in-use id resolves.
+    func testV33Remap() async throws {
+        // Old ExerciseDB ids drawn from the shipped remap/legacy resources:
+        let matched = "2gPfomN"        // → "3_4_Sit-Up" (in exercise-id-remap, exists in new catalog)
+        let matchedNew = "3_4_Sit-Up"
+        let legacy = "Hy9D21L"         // "45° side bend" — in legacy-exercise-data, no new-catalog match
+        let unknown = "user-custom-xyz" // in neither map → left as-is (e.g. a user-created custom)
+
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v32")
+        try await dbQueue.write { db in
+            // The unknown id is a genuine user-created custom exercise (the only way it reaches history).
+            try db.execute(sql: """
+                INSERT INTO customExercise
+                    (id, name, type, equipment, primaryMuscles, secondaryMuscles, cues, bodyParts, gifUrl)
+                VALUES (?, 'Mi ejercicio', 'weightReps', NULL, '[]', '[]', '[]', '[]', NULL)
+                """, arguments: [unknown])
+            for id in [matched, legacy, unknown] {
+                try db.execute(sql: """
+                    INSERT INTO routineExercise
+                        (id, routineId, exerciseId, position, targetSets, warmupPercents, restMode, restSeconds)
+                    VALUES (?, 'rt1', ?, 0, 3, '[]', 'fixed', 90)
+                    """, arguments: ["re-\(id)", id])
+                try db.execute(sql: """
+                    INSERT INTO setEntry (id, sessionId, exerciseId, position, kind, ts)
+                    VALUES (?, 's1', ?, 0, 'work', 0)
+                    """, arguments: ["se-\(id)", id])
+                try db.execute(sql: """
+                    INSERT INTO personalRecord (id, exerciseId, metric, ts)
+                    VALUES (?, ?, 'maxWeight', 0)
+                    """, arguments: ["\(id):maxWeight", id])
+                try db.execute(sql: """
+                    INSERT INTO learnedExerciseAlias (name, exerciseId, ts) VALUES (?, ?, 0)
+                    """, arguments: ["alias-\(id)", id])
+                try db.execute(sql: """
+                    INSERT INTO exerciseTypeOverride (exerciseId, type, ts) VALUES (?, 'time', 0)
+                    """, arguments: [id])
+                try db.execute(sql: """
+                    INSERT INTO progressionOptOut (sessionId, exerciseId) VALUES ('s1', ?)
+                    """, arguments: [id])
+            }
+        }
+
+        try migrator.migrate(dbQueue)   // → v33
+        try await dbQueue.read { db in
+            // Matched id rewritten to the new slug in every plain table.
+            for table in ["routineExercise", "setEntry", "learnedExerciseAlias",
+                          "exerciseTypeOverride", "progressionOptOut"] {
+                XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM \(table) WHERE exerciseId = ?",
+                                                arguments: [matched]), 0, "\(table): old id must be gone")
+                XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM \(table) WHERE exerciseId = ?",
+                                                arguments: [matchedNew]), 1, "\(table): new slug must be present")
+            }
+            // personalRecord: exerciseId AND composite id rebuilt.
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT id FROM personalRecord WHERE exerciseId = ?",
+                                               arguments: [matchedNew]), "\(matchedNew):maxWeight")
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM personalRecord WHERE exerciseId = ?",
+                                            arguments: [matched]), 0)
+
+            // Legacy no-match id materialized as a customExercise; its refs left pointing at the same id.
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT name FROM customExercise WHERE id = ?",
+                                               arguments: [legacy]), "45° side bend")
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM setEntry WHERE exerciseId = ?",
+                                            arguments: [legacy]), 1, "legacy ref stays, now resolves to custom")
+
+            // Unknown (pre-existing custom) id left untouched — refs kept, custom row not clobbered.
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM setEntry WHERE exerciseId = ?",
+                                            arguments: [unknown]), 1)
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT name FROM customExercise WHERE id = ?",
+                                               arguments: [unknown]), "Mi ejercicio")
+
+            // Zero-orphan invariant: every in-use id resolves to the catalog OR a customExercise row.
+            let customIds = Set(try String.fetchAll(db, sql: "SELECT id FROM customExercise"))
+            var inUse = Set<String>()
+            for table in ["routineExercise", "setEntry", "personalRecord",
+                          "learnedExerciseAlias", "exerciseTypeOverride", "progressionOptOut"] {
+                inUse.formUnion(try String.fetchAll(db, sql: "SELECT DISTINCT exerciseId FROM \(table)"))
+            }
+            for id in inUse {
+                XCTAssertTrue(ExerciseCatalog.byID(id) != nil || customIds.contains(id),
+                              "orphan: \(id) resolves to neither catalog nor custom")
+            }
+        }
+    }
 }

@@ -711,6 +711,71 @@ extension WhoopStore {
                 $0.add(column: "restConfidence", .text)
             }
         }
+        // v33 (FER-923): the exercise catalog moved from ExerciseDB (~1500, non-commercial license) to
+        // free-exercise-db (873, public domain) — and the catalog ids CHANGED. The user's saved history
+        // references those ids across six tables (routineExercise, setEntry, personalRecord,
+        // learnedExerciseAlias, exerciseTypeOverride, progressionOptOut), so a straight swap would orphan
+        // every logged set. Two bundled maps (see `loadExerciseRemapResources`) drive a zero-orphan remap:
+        //   • exercise-id-remap:   old ExerciseDB id → new free-exercise-db slug (exact-name match, 132).
+        //   • legacy-exercise-data: old id → its {name,type,equipment,muscles} for the ids with NO match
+        //                           in the new catalog — materialized as a `customExercise` (id kept) so a
+        //                           saved set still resolves a name.
+        // For every id ACTUALLY in use: in the remap → rewrite the reference to the new slug; else in
+        // legacy (and not already a custom) → INSERT a `customExercise` carrying the old id; else (already
+        // a new slug, a user custom, or unknown) → leave it. Invariant: every in-use exerciseId resolves
+        // (catalog or custom) after the migration. Idempotent: re-running finds nothing left in the remap.
+        migrator.registerMigration("v33") { db in
+            let (remap, legacy) = WhoopStore.loadExerciseRemapResources()
+            guard !remap.isEmpty || !legacy.isEmpty else { return }   // resources absent → safe no-op
+
+            // Every table whose `exerciseId` points at the catalog. `routineSet` keys off `routineExerciseId`
+            // (a routineExercise row id), not the catalog, so it is remapped transitively and not listed here.
+            let tables = ["routineExercise", "setEntry", "personalRecord",
+                          "learnedExerciseAlias", "exerciseTypeOverride", "progressionOptOut"]
+
+            var inUse = Set<String>()
+            for table in tables {
+                inUse.formUnion(try String.fetchAll(db, sql: "SELECT DISTINCT exerciseId FROM \(table)"))
+            }
+
+            // 1) Materialize legacy exercises that are in use but have no new-catalog match, as customExercise
+            //    rows carrying the OLD id (so their references, left untouched below, keep resolving).
+            let existingCustom = Set(try String.fetchAll(db, sql: "SELECT id FROM customExercise"))
+            for id in inUse where remap[id] == nil && !existingCustom.contains(id) {
+                guard let e = legacy[id] else { continue }
+                try db.execute(sql: """
+                    INSERT OR IGNORE INTO customExercise
+                        (id, name, type, equipment, primaryMuscles, secondaryMuscles, cues, bodyParts, gifUrl)
+                    VALUES (?, ?, ?, ?, ?, ?, '[]', '[]', NULL)
+                    """, arguments: [id, e.name, e.type, e.equipment,
+                                     WhoopStore.jsonArrayText(e.primaryMuscles),
+                                     WhoopStore.jsonArrayText(e.secondaryMuscles)])
+            }
+
+            // 2) Rewrite the references for ids that DO have a new-catalog slug. A temp table lets SQLite do
+            //    the join set-based. `UPDATE OR REPLACE` absorbs the rare case where two old ids collapse onto
+            //    one new slug and would collide on a PK/unique key (dedup rather than crash).
+            try db.execute(sql: "CREATE TEMP TABLE _exRemap (old TEXT PRIMARY KEY, new TEXT NOT NULL)")
+            for (old, new) in remap {
+                try db.execute(sql: "INSERT INTO _exRemap (old, new) VALUES (?, ?)", arguments: [old, new])
+            }
+            for table in ["routineExercise", "setEntry",
+                          "learnedExerciseAlias", "exerciseTypeOverride", "progressionOptOut"] {
+                try db.execute(sql: """
+                    UPDATE OR REPLACE \(table)
+                    SET exerciseId = (SELECT new FROM _exRemap WHERE old = \(table).exerciseId)
+                    WHERE exerciseId IN (SELECT old FROM _exRemap)
+                    """)
+            }
+            // personalRecord's PK is the composite "<exerciseId>:<metric>" — rebuild it alongside exerciseId.
+            try db.execute(sql: """
+                UPDATE OR REPLACE personalRecord
+                SET exerciseId = (SELECT new FROM _exRemap WHERE old = personalRecord.exerciseId),
+                    id = (SELECT new FROM _exRemap WHERE old = personalRecord.exerciseId) || ':' || metric
+                WHERE exerciseId IN (SELECT old FROM _exRemap)
+                """)
+            try db.execute(sql: "DROP TABLE _exRemap")
+        }
         return migrator
     }
 
