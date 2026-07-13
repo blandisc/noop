@@ -447,17 +447,7 @@ struct RoutineEditorScreen: View {
                     .accessibilityHint(Text("Opens the exercise"))
                     // Progression chip under the name (mock v8) — same destination as «···» → Progression.
                     if item.re.progressionEnabled {
-                        Button { progressionTarget = ProgressionTarget(ei: idx) } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: "arrow.up")
-                                    .font(StrandFont.glyph(.chevron, weight: .semibold))
-                                Text(progressionSummary(item.re))
-                                    .font(StrandFont.caption)
-                            }
-                            .foregroundStyle(theme.dataRecovery)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(locked)
+                        ProgressionChip(re: item.re, system: system, theme: theme, disabled: locked, action: { progressionTarget = ProgressionTarget(ei: idx) })
                     }
                 }
                 Spacer(minLength: 8)
@@ -513,7 +503,7 @@ struct RoutineEditorScreen: View {
         })
         if item.exercise.type == .weightReps {
             rows.append(.init(String(localized: "Progression"),
-                              subtitle: item.re.progressionEnabled ? progressionSummary(item.re) : nil,
+                              subtitle: item.re.progressionEnabled ? ProgressionChip.summary(item.re, system: system) : nil,
                               systemImage: "chart.line.uptrend.xyaxis") {
                 progressionTarget = ProgressionTarget(ei: idx)
             })
@@ -528,17 +518,6 @@ struct RoutineEditorScreen: View {
             deleteExercise(idx)
         })
         return rows
-    }
-
-    /// «+2,5 kg cada 2 ✓» — the active plan named in the menu row (mock 4b). Without an explicit
-    /// increment (auto from plates), the row just marks the plan as on.
-    private func progressionSummary(_ re: RoutineExercise) -> String {
-        guard let inc = re.progressionIncrementKg else {
-            return String(localized: "Progression · on")
-        }
-        let unit = StrengthDisplay.weightUnit(system).lowercased()
-        return "+\(StrengthDisplay.weightNumber(inc, system: system)) \(unit) "
-            + String(localized: "every \(re.progressionSessions)") + " ✓"
     }
 
     @ViewBuilder

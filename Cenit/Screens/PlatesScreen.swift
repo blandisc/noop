@@ -85,22 +85,13 @@ struct PlatesScreen: View {
 
     /// Amber strip under the dominant number when the rack can't hit the target exactly.
     private var shortfallNotice: some View {
-        Text("Your plates can't hit \(kg(targetKg)) kg exactly, closest is \(kg(loading.achievedKg)) kg")
-            .font(StrandFont.caption)
-            .foregroundStyle(theme.inkSecondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(
-                theme.tint(theme.warning),
-                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
-                    .strokeBorder(theme.softStroke(theme.warning), lineWidth: 1)
-            )
-            .overlay(alignment: .leading) { Rectangle().fill(theme.warning).frame(width: 2.5) }
-            .padding(.top, 4)
+        NoteStrip(style: .warning, theme: theme) {
+            Text("Your plates can't hit \(kg(targetKg)) kg exactly, closest is \(kg(loading.achievedKg)) kg")
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 4)
     }
 
     /// «20 + 15 + 1,25 · barra 20 kg» — the per-side breakdown, heaviest first.
