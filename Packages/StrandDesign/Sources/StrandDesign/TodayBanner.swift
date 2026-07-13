@@ -87,7 +87,7 @@ public struct TodayBanner: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
-        .shadow(color: theme.ink.opacity(0.08), radius: 12, y: 6)
+        .strandElevation(.floating, ink: theme.ink)
 
         if let action {
             Button(action: action) { content.contentShape(Rectangle()) }

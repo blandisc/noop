@@ -1699,7 +1699,7 @@ struct TodayView: View {
         .background {
             RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .fill(theme.surface)
-                .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1) // token-exempt: sombra sutil <0.10
+                .strandElevation(.hairline, ink: theme.ink)
         }
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
@@ -2291,7 +2291,7 @@ struct TodayView: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
-        .shadow(color: theme.ink.opacity(0.08), radius: 8, y: 3) // token-exempt: sombra sutil <0.10
+        .strandElevation(.raised, ink: theme.ink)
     }
 
     private func sourceRow(icon: String, tint: Color, title: LocalizedStringKey,
@@ -2810,7 +2810,7 @@ struct TodayView: View {
             .background {
                 RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
                     .fill(theme.surface)
-                    .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1) // token-exempt: sombra sutil <0.10
+                    .strandElevation(.hairline, ink: theme.ink)
             }
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))

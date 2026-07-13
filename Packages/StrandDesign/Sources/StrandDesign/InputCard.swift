@@ -140,7 +140,7 @@ public struct InputCard: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(theme.surface)
-                .shadow(color: theme.ink.opacity(0.2), radius: 25, y: 18)
+                .strandElevation(.modal, ink: theme.ink)
         )
         .onAppear { focused = true }
     }
