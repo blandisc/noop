@@ -770,7 +770,7 @@ struct TodayView: View {
             .overlay(alignment: .top) {
                 if showsSyncHint { syncHint }
             }
-            .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
+            .strandAnimation(StrandMotion.fade, value: showsSyncHint)
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
             .padding(.horizontal, CenitMetrics.screenPadding)
             // Margen inferior compacto (FER-475): los page dots (último elemento) quedan pegados al dock,
@@ -1769,7 +1769,7 @@ struct TodayView: View {
                     .frame(width: 14, height: 14)
                     .scaleEffect(briefDotPulse ? 1.3 : 0.92)
                     .opacity(briefDotPulse ? 0.05 : 0.20)
-                    .animation(reduceMotion ? nil : StrandMotion.breathe, value: briefDotPulse)
+                    .strandAnimation(StrandMotion.breathe, value: briefDotPulse)
             }
             Circle().fill(c).frame(width: 6, height: 6)
         }
@@ -1982,7 +1982,7 @@ struct TodayView: View {
         // Anima el alto al CAMBIAR de página (valor discreto y estable), NUNCA con `activeHeight`:
         // ese alto se mide en el layout y tiembla sub-punto en cada pasada, así que animarlo implícito
         // reactiva el layout en bucle infinito → main thread al 99% y la pantalla se congela.
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: pagerPage)
+        .strandAnimation(.easeInOut(duration: 0.25), value: pagerPage)
     }
 
     /// Una página del pager (FER-725): ancho COMPLETO de pantalla con su contenido re-insetado por
@@ -2008,7 +2008,7 @@ struct TodayView: View {
             tabButton("Brief", page: 1)
             Spacer(minLength: 0)
         }
-        .animation(reduceMotion ? nil : StrandMotion.interactive, value: pagerPage)
+        .strandAnimation(StrandMotion.interactive, value: pagerPage)
     }
 
     private func tabButton(_ title: LocalizedStringKey, page: Int) -> some View {
@@ -2076,7 +2076,7 @@ struct TodayView: View {
         .frame(maxWidth: .infinity, alignment: .center)
         // Sin padding superior propio: el `Spacer(minLength: space2)` que precede a los dots ya da esa
         // separación. Sumar aquí otro `space2` duplicaba el gap (8 + 8) y empujaba ~8pt de scroll fantasma.
-        .animation(reduceMotion ? nil : StrandMotion.interactive, value: pagerPage)
+        .strandAnimation(StrandMotion.interactive, value: pagerPage)
     }
 
     /// Muestra la pista del pull-to-refresh (FER-293): en reposo (sin tirón en curso) y mientras NO se

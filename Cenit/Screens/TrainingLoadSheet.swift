@@ -139,7 +139,7 @@ struct TrainingLoadStrip: View {
                         .overlay(Circle().strokeBorder(theme.ink, lineWidth: 3))
                         .frame(width: 12, height: 12)
                         .offset(x: w * x - 6, y: 0)
-                        .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.8), value: acwr)
+                        .strandAnimation(.spring(response: 0.5, dampingFraction: 0.8), value: acwr)
                 }
             }
         }

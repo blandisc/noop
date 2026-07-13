@@ -77,8 +77,8 @@ struct InstrumentTabBar<Tag: Hashable>: View {
             }
             .ignoresSafeArea(edges: .bottom)
         }
-        .animation(reduceMotion ? nil : StrandMotion.interactive, value: isLight)
-        .animation(reduceMotion ? nil : StrandMotion.interactive, value: selection)
+        .strandAnimation(StrandMotion.interactive, value: isLight)
+        .strandAnimation(StrandMotion.interactive, value: selection)
     }
 
     private func tab(_ item: Item) -> some View {
