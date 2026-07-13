@@ -66,6 +66,12 @@ public struct SessionProgressBar: View {
     public init(segments: [Segment], hue: Color, track: Color, height: CGFloat = 5) {
         self.segments = segments; self.hue = hue; self.track = track; self.height = height
     }
+    /// Overall completion 0…100, weighted by each segment's set count (FER-915, VoiceOver value).
+    private var completionPercent: Int {
+        let total = max(segments.reduce(0) { $0 + $1.sets }, 1)
+        let done = segments.reduce(0.0) { $0 + Double($1.sets) * min($1.done, 1) }
+        return Int((done / Double(total)) * 100)
+    }
     public var body: some View {
         GeometryReader { geo in
             let gap: CGFloat = 3
@@ -85,6 +91,9 @@ public struct SessionProgressBar: View {
             }
         }
         .frame(height: height)
+        .accessibilityElement()
+        .accessibilityLabel(Text("Session progress"))
+        .accessibilityValue(Text("\(completionPercent)% complete"))
     }
 }
 

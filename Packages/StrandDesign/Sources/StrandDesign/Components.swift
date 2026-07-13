@@ -111,6 +111,8 @@ public struct SegmentedPillControl<T: Hashable>: View {
                     segment(item, sel)
                 }
                 .buttonStyle(.plain)
+                // VoiceOver announces which segment is active (FER-914).
+                .accessibilityAddTraits(sel ? [.isSelected] : [])
             }
         }
         .padding(3)
