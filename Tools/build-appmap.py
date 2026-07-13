@@ -62,7 +62,7 @@ def _anchors(x, y):
     return {"r": (x+NODE_W, cy), "l": (x, cy)}
 
 def node_html(nid, png, title, cond, x, y, src):
-    return (f'<figure class="node" style="left:{x}px;top:{y}px;width:{NODE_W}px">'
+    return (f'<figure class="node" data-state="{esc(title)}" style="left:{x}px;top:{y}px;width:{NODE_W}px">'
             f'<div class="phone"><img loading="lazy" src="{src}" alt="{esc(title)}"></div>'
             f'<figcaption><b>{esc(title)}</b><span>{esc(cond)}</span></figcaption></figure>')
 
@@ -129,26 +129,195 @@ html,body{height:100%;overflow:hidden;background:#1E1C1B;font-family:'Space Grot
 figcaption{margin-top:12px}
 figcaption b{display:block;font-size:14px;font-weight:600;color:#fff}
 figcaption span{display:block;font-size:11.5px;color:#948D82;margin-top:5px;line-height:1.45}
+
+/* --- Anotaciones (FER-927) --- */
+#annotate-btn{display:flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:10px;
+  border:1px solid #3C3833;background:#2A2724;color:#CFC9BD;font-size:12px;font-weight:600;cursor:pointer}
+#annotate-btn:hover{background:#38342F}
+#annotate-btn.on{background:#0C8F62;border-color:#0C8F62;color:#fff}
+body.annotating #vp{cursor:crosshair}
+body.annotating .node{cursor:crosshair}
+.pin{position:absolute;width:22px;height:22px;margin-left:-11px;margin-top:-11px;border-radius:50%;
+  background:#0C8F62;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.15);cursor:pointer;z-index:5}
+.pin:hover{transform:scale(1.12)}
+.pin .pin-note{display:none;position:absolute;left:26px;top:-6px;min-width:160px;max-width:240px;
+  background:#2A2724;border:1px solid #38342F;border-radius:8px;padding:8px 10px;font-size:11.5px;
+  line-height:1.4;color:#EDE9DF;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:6;white-space:normal}
+.pin:hover .pin-note,.pin.open .pin-note{display:block}
+.pin .pin-note button{margin-top:6px;background:transparent;border:1px solid #4A443D;color:#B7C3BD;
+  font-size:10.5px;border-radius:6px;padding:2px 8px;cursor:pointer}
+
+#annot-panel{position:fixed;top:58px;right:0;bottom:0;width:280px;z-index:45;background:rgba(24,22,21,.94);
+  border-left:1px solid #38342F;backdrop-filter:blur(10px);display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .18s ease}
+#annot-panel.open{transform:translateX(0)}
+#annot-panel .ap-head{padding:14px 16px;border-bottom:1px solid #38342F;display:flex;align-items:center;gap:8px}
+#annot-panel .ap-head h3{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#EDE9DF;flex:1}
+#annot-panel .ap-head button{background:transparent;border:0;color:#8C857A;font-size:16px;cursor:pointer}
+#annot-list{flex:1;overflow:auto;padding:6px 10px}
+.ap-item{padding:9px 8px;border-bottom:1px solid #302C28;font-size:11.5px;color:#CFC9BD}
+.ap-item b{color:#fff;font-size:11px}
+.ap-item .ap-state{display:block;color:#0C8F62;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.ap-item .ap-head{display:flex;align-items:center;gap:8px}
+.ap-item .ap-head .ap-state{flex:1;margin-bottom:0}
+.ap-item .ap-del{background:transparent;border:0;color:#948D82;cursor:pointer;font-size:14px;order:2}
+.ap-item .ap-note{width:100%;margin-top:7px;background:#1E1C1B;border:1px solid #3C3833;border-radius:7px;
+  padding:7px 9px;color:#EDE9DF;font-size:11.5px;font-family:inherit;outline:none}
+.ap-item .ap-note:focus{border-color:#0C8F62}
+#annot-panel .ap-actions{padding:10px 14px;border-top:1px solid #38342F;display:flex;gap:8px}
+#annot-panel .ap-actions button{flex:1;background:#2A2724;border:1px solid #3C3833;color:#CFC9BD;
+  border-radius:8px;padding:8px 6px;font-size:11px;font-weight:600;cursor:pointer}
+#annot-panel .ap-actions button:hover{background:#38342F}
+#annot-toggle-tab{position:fixed;top:70px;right:0;z-index:44;background:#2A2724;border:1px solid #38342F;
+  border-right:0;border-radius:8px 0 0 8px;color:#CFC9BD;font-size:11px;padding:8px 6px;cursor:pointer;writing-mode:vertical-rl}
 """
 
 PANZOOM_JS = """
 const vp=document.getElementById('vp'),world=document.getElementById('world');
-let s=0.62,tx=80,ty=40,down=false,px=0,py=0;
+let s=0.62,tx=80,ty=40,down=false,px=0,py=0,movedPx=0;
 function apply(){world.style.transform=`translate(${tx}px,${ty}px) scale(${s})`}
 function zoomAt(cx,cy,ns){ns=Math.min(2.2,Math.max(0.12,ns));const wx=(cx-tx)/s,wy=(cy-ty)/s;s=ns;tx=cx-wx*s;ty=cy-wy*s;apply()}
 vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect();
   if(e.ctrlKey||e.metaKey){zoomAt(e.clientX-r.left,e.clientY-r.top,s*(e.deltaY<0?1.1:0.9))}
   else{tx-=e.deltaX;ty-=e.deltaY;apply()}},{passive:false});
-vp.addEventListener('pointerdown',e=>{down=true;px=e.clientX;py=e.clientY;vp.classList.add('drag');vp.setPointerCapture(e.pointerId)});
-vp.addEventListener('pointermove',e=>{if(!down)return;tx+=e.clientX-px;ty+=e.clientY-py;px=e.clientX;py=e.clientY;apply()});
+vp.addEventListener('pointerdown',e=>{
+  // En modo Anotar, un pointerdown sobre un frame es para clavar un pin (lo maneja ANNOT_JS en el
+  // node), NO para hacer pan — no arranques el arrastre del lienzo.
+  if(document.body.classList.contains('annotating')&&e.target.closest('.node'))return;
+  down=true;px=e.clientX;py=e.clientY;movedPx=0;vp.classList.add('drag');vp.setPointerCapture(e.pointerId)});
+vp.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-px,dy=e.clientY-py;movedPx+=Math.abs(dx)+Math.abs(dy);
+  tx+=dx;ty+=dy;px=e.clientX;py=e.clientY;apply()});
 vp.addEventListener('pointerup',e=>{down=false;vp.classList.remove('drag')});
-function fit(){const b=world.getBoundingClientRect(),r=vp.getBoundingClientRect();
-  const cw=world.scrollWidth,ch=world.scrollHeight;s=Math.min(r.width/cw,r.height/ch)*0.92;
+function fit(){const r=vp.getBoundingClientRect();
+  const cw=world.scrollWidth,ch=world.scrollHeight;
+  // Guard contra la carrera de layout: si el viewport o el mundo aún miden 0 (fit disparado antes
+  // de que el navegador termine el layout), reintenta en el próximo frame en vez de fijar scale(0).
+  if(!r.width||!r.height||!cw||!ch){return requestAnimationFrame(fit)}
+  s=Math.max(0.12,Math.min(r.width/cw,r.height/ch)*0.92);
   tx=(r.width-cw*s)/2;ty=(r.height-ch*s)/2;apply()}
 document.getElementById('zin').onclick=()=>{const r=vp.getBoundingClientRect();zoomAt(r.width/2,r.height/2,s*1.2)};
 document.getElementById('zout').onclick=()=>{const r=vp.getBoundingClientRect();zoomAt(r.width/2,r.height/2,s*0.83)};
 document.getElementById('fit').onclick=fit;
-window.addEventListener('load',()=>setTimeout(fit,60));apply();
+window.addEventListener('resize',fit);
+window.addEventListener('load',fit);
+if(document.readyState==='complete')fit();
+apply();
+"""
+
+ANNOT_JS = """
+(function(){
+  const STORAGE_KEY='appmap-annotations';
+  let annotating=false;
+  let dragStart=null; // {x,y} en pointerdown sobre un node, para distinguir clic de arrastre
+  const btn=document.getElementById('annotate-btn');
+  const panel=document.getElementById('annot-panel');
+  const tab=document.getElementById('annot-toggle-tab');
+  const list=document.getElementById('annot-list');
+  const copyBtn=document.getElementById('annot-copy');
+  const clearBtn=document.getElementById('annot-clear');
+  const closeBtn=document.getElementById('annot-close');
+
+  function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch(e){return []}}
+  function save(list){localStorage.setItem(STORAGE_KEY,JSON.stringify(list))}
+  let annots=load();
+
+  function nextId(){return annots.reduce((m,a)=>Math.max(m,a.id),0)+1}
+
+  function renderPins(){
+    document.querySelectorAll('.pin').forEach(p=>p.remove());
+    annots.forEach(a=>{
+      const node=document.querySelector(`.node[data-state="${CSS.escape(a.state)}"]`);
+      if(!node) return;
+      const pin=document.createElement('div');
+      pin.className='pin';
+      pin.style.left=(a.xPct*100)+'%';
+      pin.style.top=(a.yPct*100)+'%';
+      pin.textContent=a.id;
+      const note=document.createElement('div');
+      note.className='pin-note';
+      note.innerHTML=`<div>${a.note.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</div>`;
+      const delBtn=document.createElement('button');
+      delBtn.textContent='Borrar';
+      delBtn.onclick=(e)=>{e.stopPropagation();removeAnnot(a.id)};
+      note.appendChild(delBtn);
+      pin.appendChild(note);
+      pin.addEventListener('click',(e)=>{e.stopPropagation();pin.classList.toggle('open')});
+      node.appendChild(pin);
+    });
+  }
+
+  function renderList(){
+    list.innerHTML='';
+    if(annots.length===0){list.innerHTML='<div class="ap-item" style="color:#6E675E">Sin anotaciones aún. Activa «✎ Anotar» y haz clic sobre un frame.</div>';return}
+    annots.forEach(a=>{
+      const row=document.createElement('div');
+      row.className='ap-item';
+      row.innerHTML=`<div class="ap-head"><button class="ap-del" title="Borrar">×</button><span class="ap-state">${a.id} · ${a.state}</span></div>`;
+      const inp=document.createElement('input');
+      inp.className='ap-note';inp.value=a.note;inp.placeholder='escribe la instrucción… («sube esto 2pt»)';
+      inp.addEventListener('input',()=>{a.note=inp.value;save(annots);renderPins()});
+      row.appendChild(inp);
+      row.querySelector('.ap-del').onclick=()=>removeAnnot(a.id);
+      list.appendChild(row);
+    });
+  }
+
+  function renderAll(){renderPins();renderList()}
+
+  function removeAnnot(id){annots=annots.filter(a=>a.id!==id);save(annots);renderAll()}
+
+  // Clic sobre un frame → cae el pin de inmediato (nota vacía); la instrucción se escribe en el
+  // panel (input inline). Sin prompt() bloqueante — mejor UX y funciona en cualquier navegador.
+  function addAnnot(state,xPct,yPct){
+    annots.push({id:nextId(),state,xPct,yPct,note:''});
+    save(annots);renderAll();
+    panel.classList.add('open');
+    requestAnimationFrame(()=>{const inp=list.querySelector('.ap-item:last-child .ap-note');if(inp)inp.focus()});
+  }
+
+  btn.addEventListener('click',()=>{
+    annotating=!annotating;
+    document.body.classList.toggle('annotating',annotating);
+    btn.classList.toggle('on',annotating);
+    btn.textContent=annotating?'✎ Anotando…':'✎ Anotar';
+  });
+
+  document.querySelectorAll('.node').forEach(node=>{
+    node.addEventListener('pointerdown',(e)=>{
+      if(!annotating) return;
+      dragStart={x:e.clientX,y:e.clientY,node};
+    });
+    node.addEventListener('pointerup',(e)=>{
+      if(!annotating||!dragStart) return;
+      const moved=Math.abs(e.clientX-dragStart.x)+Math.abs(e.clientY-dragStart.y);
+      dragStart=null;
+      if(moved>=5) return; // fue un drag, no un clic
+      if(e.target.closest('.pin')) return;
+      const r=node.getBoundingClientRect();
+      const xPct=(e.clientX-r.left)/r.width, yPct=(e.clientY-r.top)/r.height;
+      addAnnot(node.dataset.state,xPct,yPct);
+    });
+  });
+  // (El pan de #vp ya se abstiene solo cuando anotas sobre un node — ver PANZOOM_JS.)
+
+  tab.addEventListener('click',()=>panel.classList.toggle('open'));
+  closeBtn.addEventListener('click',()=>panel.classList.remove('open'));
+  clearBtn.addEventListener('click',()=>{
+    if(annots.length===0) return;
+    if(!confirm('¿Borrar todas las anotaciones?')) return;
+    annots=[];save(annots);renderAll();
+  });
+  copyBtn.addEventListener('click',()=>{
+    const lines=[`# Anotaciones del mapa (${annots.length})`];
+    annots.forEach(a=>lines.push(`[${a.state}] @ (${Math.round(a.xPct*100)}%, ${Math.round(a.yPct*100)}%) — "${a.note}"`));
+    const text=lines.join('\\n');
+    if(navigator.clipboard && navigator.clipboard.writeText){navigator.clipboard.writeText(text)}
+    copyBtn.textContent='¡Copiado!';setTimeout(()=>copyBtn.textContent='⧉ Copiar para Claude',1400);
+  });
+
+  renderAll();
+})();
 """
 
 def render(src_of, font_css="", total_note=""):
@@ -161,10 +330,21 @@ def render(src_of, font_css="", total_note=""):
 <div class="topbar"><h1>Cénit · Mapa de estados</h1>
 <span class="sub">capturas reales del simulador · {total} estados{total_note}</span>
 <span class="spacer"></span>
+<button id="annotate-btn">✎ Anotar</button>
 <div class="zoom"><button id="zout">−</button><button id="zin">+</button><button class="fit" id="fit">Ajustar</button></div></div>
 <div id="vp"><div id="world">{boards}</div></div>
 <div class="hint">Arrastra para mover · rueda para desplazar · ⌘/Ctrl + rueda para zoom</div>
-<script>{PANZOOM_JS}</script></body></html>"""
+<button id="annot-toggle-tab">Anotaciones</button>
+<div id="annot-panel">
+  <div class="ap-head"><h3>Anotaciones</h3><button id="annot-close">×</button></div>
+  <div id="annot-list"></div>
+  <div class="ap-actions">
+    <button id="annot-copy">⧉ Copiar para Claude</button>
+    <button id="annot-clear">Borrar todo</button>
+  </div>
+</div>
+<script>{PANZOOM_JS}</script>
+<script>{ANNOT_JS}</script></body></html>"""
 
 # --- Puente captura→shots: nombre del PNG en shots/ -> nombre crudo que escribe el harness ---
 # (el harness usa today_<estado>.png; el muro usa hoy-<estado>.png). Extender por pantalla.
