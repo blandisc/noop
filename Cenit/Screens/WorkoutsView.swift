@@ -72,7 +72,7 @@ struct WorkoutsView: View {
                 Button("Done") { dismiss() }.foregroundStyle(theme.ink)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button { addWorkout() } label: { Image(systemName: "plus") }
+                Button { addWorkout() } label: { StrandIcon.add.image }
                     .foregroundStyle(theme.ink)
                     .accessibilityLabel("Add a workout")
             }
@@ -389,11 +389,11 @@ struct WorkoutsView: View {
         if notConnected && noAppleSessions {
             Button { showDataSources = true } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
+                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Connect Apple Health to bring in your workouts from there.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 6)
-                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())
             }
@@ -416,7 +416,7 @@ struct WorkoutsView: View {
             QuietButton("Add workout") { addWorkout() }.padding(.top, 4)
             QuietButton("Data Sources") { showDataSources = true }
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

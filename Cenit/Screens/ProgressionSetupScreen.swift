@@ -127,8 +127,8 @@ struct ProgressionSetupScreen: View {
                 .opacity(enabled ? 1 : StrandPalette.disabledOpacity)
                 .padding(.top, 14)
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, 12).padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.top, 12).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -139,7 +139,7 @@ struct ProgressionSetupScreen: View {
         HStack {
             // Saves on back — the Instrumento editor convention (no «OK»); RestEditorScreen's chevron.
             Button(action: saveAndClose) {
-                Image(systemName: "chevron.left")
+                StrandIcon.back.image
                     .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }

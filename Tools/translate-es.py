@@ -97,7 +97,7 @@ ES: dict[str, str] = {
     # «%lld of the last %lld days/nights in this range» y «%lld days» ya existen en el catálogo.
     "%lld day": "%lld día",
     "%lld night": "%lld noche",
-    "%lld nights": "%lld noches",
+    # "%lld nights": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
     # FER-763 — Temperatura de piel reemplaza a Oxígeno en sangre en la retícula de SEÑALES + su hoja.
     "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness.":
         "La temperatura de tu piel, medida en la muñeca mientras duermes. Cambia con tu ritmo circadiano y tu recuperación. Lo que importa no es el número en sí, sino qué tan lejos queda de tu propia base. Una subida sostenida puede ser una señal temprana de inflamación o de que te estás enfermando.",
@@ -877,7 +877,7 @@ ES: dict[str, str] = {
     "%@, range %@ to %@": "%@, rango de %@ a %@",
     "%@: %@ last night%@": "%@: %@ anoche%@",
     "%lld app%@ on": "%lld app%@ en uso",
-    "%lld breaths": "%lld respiraciones",
+    # "%lld breaths": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
     "%lld chunks pulled": "%lld bloques descargados",
     "%lld days · %lld sleeps stored": "%lld días · %lld noches guardadas",
     # Plural-safe: Spanish can't inflect "capturado/s" off the bare "s" argument,
@@ -1400,7 +1400,7 @@ ES: dict[str, str] = {
     "Your body looks strained — %@. Consider taking it easy.": "Tu cuerpo se ve exigido, %@. Considera tomártelo con calma.",
 
     # Apple Health import progress.
-    "%lld records": "%lld registros",
+    # "%lld records": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
 
     # App Intents (Atajos / Shortcuts).
     "Connect your WHOOP strap in NOOP, then try again.": "Conecta tu banda WHOOP en NOOP y vuelve a intentarlo.",
@@ -1496,7 +1496,7 @@ ES: dict[str, str] = {
     "%lld %@ · sparse — widened to %@": "%lld %@ · pocos datos, ampliado a %@",
     "%lld readings · %@": "%lld lecturas · %@",
     "Sparse — widened to %@ · %lld readings": "Pocos datos, ampliado a %@ · %lld lecturas",
-    "%lld days": "%lld días",
+    # "%lld days": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
     "as of %@": "al %@",
     "vs prev %@": "vs. %@ anterior",
     "no prior %@": "sin %@ anterior",
@@ -1780,7 +1780,7 @@ ES: dict[str, str] = {
     "Connect your strap to run the sync diagnostic.": "Conecta tu banda para ejecutar el diagnóstico de sincronización.",
     "Complete secure pairing first: the strap won’t offload its history until the encrypted bond is set.": "Primero completa el emparejamiento seguro, la banda no descargará su historial hasta que se establezca el vínculo cifrado.",
     "On the band:": "En la banda:",
-    "%lld pieces": "%lld piezas",
+    # "%lld pieces": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
     "Received this sync": "Recibido en esta sincronización",
     "R-R": "R-R",
     "The band has nothing new.": "La banda no tiene nada nuevo.",

@@ -89,7 +89,7 @@ struct MuscleMapScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 header
                 if loaded {
                     if loads.isEmpty && !hasHistory {
@@ -101,9 +101,9 @@ struct MuscleMapScreen: View {
                     }
                 }
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 20)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -228,8 +228,8 @@ struct MuscleMapScreen: View {
         }
         .padding(EdgeInsets(top: 16, leading: 10, bottom: 12, trailing: 10))
         .frame(maxWidth: .infinity)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
         .instrumentoConfirm(
             isPresented: $showResetConfirm,
@@ -261,7 +261,7 @@ struct MuscleMapScreen: View {
             Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
         }
         .padding(.horizontal, 11).padding(.vertical, 5)
-        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
@@ -290,7 +290,7 @@ struct MuscleMapScreen: View {
                     }
                     .frame(height: 6)
                 }
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 11).padding(.vertical, 9)
             .instrumentoCard(.inset, theme: theme, fill: theme.paper, stroke: theme.hairlineStrong)
@@ -326,7 +326,7 @@ struct MuscleMapScreen: View {
             }
             .foregroundStyle(theme.inkSecondary)
             .padding(.horizontal, 14).padding(.vertical, 8)
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityHint(Text("Marks every muscle as recovered"))
@@ -612,7 +612,7 @@ private struct MuscleDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text(MuscleAtlas.name(muscle)).instrumentoOverlineProminent().foregroundStyle(theme.inkSecondary)
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -627,9 +627,9 @@ private struct MuscleDetailView: View {
                 if !hits.isEmpty { exercises }
                 recommendation
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 24)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { proxy in
                 Color.clear.onAppear { contentHeight = proxy.size.height }
@@ -754,10 +754,10 @@ private struct MuscleDetailView: View {
         return Text(recommendationText(readiness))
             .font(StrandFont.headline).foregroundStyle(theme.ink)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(NoopMetrics.cardPadding)
+            .padding(CenitMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
     }
 

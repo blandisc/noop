@@ -64,7 +64,7 @@ struct WorkoutHistoryScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if loaded {
                     if sessions.isEmpty {
@@ -80,8 +80,8 @@ struct WorkoutHistoryScreen: View {
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -105,7 +105,7 @@ struct WorkoutHistoryScreen: View {
                 HStack(spacing: 6) {
                     Image(systemName: "chart.bar.xaxis").font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Volume per muscle").font(StrandFont.caption).fontWeight(.semibold)
-                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 }
                 .foregroundStyle(theme.inkSecondary)
                 .padding(.horizontal, 12).padding(.vertical, 7)
@@ -238,7 +238,7 @@ struct WorkoutHistoryScreen: View {
                         switch row.kind {
                         case .raised(let kg):
                             HStack(spacing: 4) {
-                                Image(systemName: "arrow.up")
+                                StrandIcon.up.image
                                 Text(StrengthDisplay.weight(kg, system: system))
                             }
                             .font(StrandFont.caption)
@@ -287,7 +287,7 @@ struct WorkoutHistoryScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             NavigationLink(value: SavedTicketsRoute()) {
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                         .fill(theme.hairline)
                         .frame(width: 38, height: 38)
                         .overlay(
@@ -301,14 +301,14 @@ struct WorkoutHistoryScreen: View {
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     }
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary)
                 }
-                .padding(NoopMetrics.cardPadding)
+                .padding(CenitMetrics.cardPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -343,7 +343,7 @@ struct WorkoutHistoryScreen: View {
                 Text(name(for: session)).font(StrandFont.title2).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.top, 3)
@@ -355,10 +355,10 @@ struct WorkoutHistoryScreen: View {
             }
             .padding(.top, 12)
         }
-        .padding(NoopMetrics.cardPadding)
+        .padding(CenitMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -524,8 +524,8 @@ struct WorkoutHistoryScreen: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 18).padding(.vertical, 14)
-        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .padding(.horizontal, NoopMetrics.screenPadding)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .task(id: d.id) {
@@ -651,7 +651,7 @@ struct WorkoutSessionDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 heading
                 hero
                 Divider().overlay(theme.hairline)
@@ -666,8 +666,8 @@ struct WorkoutSessionDetailScreen: View {
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -927,7 +927,7 @@ struct WorkoutSessionDetailScreen: View {
             Button { detailExercise = ex } label: {
                 HStack(spacing: 6) {
                     Text(g.name).font(StrandFont.headline).foregroundStyle(theme.ink)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 0)
                 }

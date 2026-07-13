@@ -271,7 +271,7 @@ public struct TrendChart: View {
     /// default inset that leaves room for the last X-axis label. (FER-244 · FER-460)
     private var trailingInset: CGFloat {
         if !(bands.isEmpty || bandLabelsHidden) { return 64 }
-        return tightTrailing ? 8 : NoopMetrics.chartXTrailingInset
+        return tightTrailing ? 8 : CenitMetrics.chartXTrailingInset
     }
 
     /// The x-position the cursor is hovering, in chart-local coordinates.
@@ -404,7 +404,7 @@ public struct TrendChart: View {
         .animation(.none, value: points)
         // Reserve a clean band below the fill for the X-axis labels (startPadding on the Y-scale's
         // bottom), and inset the X-scale's trailing edge so the last label isn't clipped. (FER-82)
-        .chartYScale(domain: valueRange, range: .plotDimension(startPadding: NoopMetrics.chartXLabelBand, endPadding: 0))
+        .chartYScale(domain: valueRange, range: .plotDimension(startPadding: CenitMetrics.chartXLabelBand, endPadding: 0))
         // Trailing inset: a wide gutter for labelled bands, the default inset for band-less charts, or a
         // thin breath when the caller opts into `tightTrailing` so the curve reaches the edge. (FER-244 · FER-460)
         .chartXScale(range: .plotDimension(startPadding: 0, endPadding: trailingInset))

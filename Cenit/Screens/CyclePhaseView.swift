@@ -70,7 +70,7 @@ private struct CyclePhaseConsentBody: View {
     @State private var acked = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("EXPERIMENT").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Cycle phase").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
@@ -107,7 +107,7 @@ private struct CyclePhaseConsentBody: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -137,7 +137,7 @@ private struct CyclePhaseWhatItIs: View {
                     "It doesn't tell you which day your next period starts.",
                 ], id: \.self) { line in
                     HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "xmark").font(StrandFont.glyph(.chevron, weight: .semibold))
+                        StrandIcon.close.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                             .foregroundStyle(theme.inkTertiary).padding(.top, 3)
                         Text(LocalizedStringKey(line)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -162,7 +162,7 @@ private struct CyclePhaseStateBody: View {
     private var usableCount: Int { days.compactMap(\.skinTempDevC).count }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             content
             Divider().overlay(theme.hairline)
             HStack(spacing: 16) {
@@ -177,15 +177,15 @@ private struct CyclePhaseStateBody: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showInfo) {
             ScrollView {
-                VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                     Text("Cycle phase").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
                     CyclePhaseWhatItIs(theme: theme)
                 }
-                .padding(NoopMetrics.screenPadding)
+                .padding(CenitMetrics.screenPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(theme.paper.ignoresSafeArea())

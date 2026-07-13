@@ -71,7 +71,7 @@ public struct OnboardingWizard: View {
                 .frame(maxWidth: 560, maxHeight: .infinity)
                 .transition(stepTransition)
                 .id(step)
-                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.horizontal, CenitMetrics.screenPadding)
                 .padding(.bottom, 28)
             }
         }
@@ -97,7 +97,7 @@ public struct OnboardingWizard: View {
             } else {
                 Button(action: back) {
                     HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
+                        StrandIcon.back.image
                         Text("Back")
                     }
                     .font(StrandFont.subhead)
@@ -169,7 +169,7 @@ private struct StepShell<Content: View>: View {
                     content()
                 }
                 .frame(maxWidth: .infinity, minHeight: geo.size.height, alignment: .topLeading)
-                .padding(.vertical, NoopMetrics.space2)
+                .padding(.vertical, CenitMetrics.space2)
             }
         }
     }
@@ -190,20 +190,20 @@ private struct WelcomeStep: View {
     @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         StepShell {
-            Spacer(minLength: NoopMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.sectionGap)
             Text("Cénit")
                 .instrumentoHero(56)
                 .foregroundStyle(theme.ink)
             Text("Your data, none of the cloud.")
                 .font(StrandFont.title2)
                 .foregroundStyle(theme.inkSecondary)
-                .padding(.top, NoopMetrics.space1)
+                .padding(.top, CenitMetrics.space1)
             Text("Cénit reads your recovery, sleep and strain and keeps them only on your iPhone. No account, no servers. Give it a few days of data and you'll start to see your patterns.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, NoopMetrics.sectionGap)
-            Spacer(minLength: NoopMetrics.sectionGap)
+                .padding(.top, CenitMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.sectionGap)
             InkButton("Get started", action: onContinue)
         }
     }
@@ -238,20 +238,20 @@ private struct AppleHealthStep: View {
             Text("Conecta Apple Health")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
             Text("It's the base of your data in Cénit.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
             Text("Cénit reads your sleep, steps, workouts, weight and heart rate from Apple Health to give you an honest read of your body.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, NoopMetrics.sectionGap)
+                .padding(.top, CenitMetrics.sectionGap)
 
             Rectangle().fill(theme.hairline).frame(height: 1)
-                .padding(.top, NoopMetrics.sectionGap)
-            HStack(alignment: .top, spacing: NoopMetrics.space2) {
+                .padding(.top, CenitMetrics.sectionGap)
+            HStack(alignment: .top, spacing: CenitMetrics.space2) {
                 Image(systemName: "lock.fill")
                     .font(StrandFont.glyph(.chevron))
                     .foregroundStyle(theme.inkTertiary)
@@ -261,9 +261,9 @@ private struct AppleHealthStep: View {
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, NoopMetrics.gap)
+            .padding(.top, CenitMetrics.gap)
 
-            Spacer(minLength: NoopMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.sectionGap)
             InkButton(requesting ? "Connecting…" : "Conectar Apple Health") {
                 guard !requesting else { return }
                 requesting = true
@@ -337,8 +337,8 @@ private struct CenteredState<Buttons: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: NoopMetrics.sectionGap)
-            VStack(spacing: NoopMetrics.gap) {
+            Spacer(minLength: CenitMetrics.sectionGap)
+            VStack(spacing: CenitMetrics.gap) {
                 Image(systemName: glyph)
                     .font(.system(size: 48, weight: .regular)) // token-exempt: glifo hero 48pt fuera de banda
                     .foregroundStyle(glyphColor)
@@ -357,8 +357,8 @@ private struct CenteredState<Buttons: View>: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            Spacer(minLength: NoopMetrics.sectionGap)
-            VStack(spacing: NoopMetrics.gap) { buttons() }
+            Spacer(minLength: CenitMetrics.sectionGap)
+            VStack(spacing: CenitMetrics.gap) { buttons() }
         }
     }
 }
@@ -375,13 +375,13 @@ private struct WhoopQuestionStep: View {
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
             Text("It sits on top of Apple Health and sharpens the signal: continuous HRV and strap-grade recovery.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, NoopMetrics.gap)
-            Spacer(minLength: NoopMetrics.sectionGap)
+                .padding(.top, CenitMetrics.gap)
+            Spacer(minLength: CenitMetrics.sectionGap)
             InkButton("Yes, I have a WHOOP") { onChoose(true) }
             OutlineButton("I don't have one") { onChoose(false) }
         }
@@ -399,22 +399,22 @@ private struct PrepareStep: View {
             Text("Get your strap ready")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
             Text("A moment before connecting.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
 
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Checkline("Wear it snug: the sensor needs skin contact.")
                 Checkline("Make sure it has charge.")
                 Checkline("Keep your iPhone's Bluetooth on.")
             }
-            .padding(.top, NoopMetrics.sectionGap)
+            .padding(.top, CenitMetrics.sectionGap)
 
             Rectangle().fill(theme.hairline).frame(height: 1)
-                .padding(.top, NoopMetrics.sectionGap)
-            HStack(alignment: .top, spacing: NoopMetrics.space2) {
+                .padding(.top, CenitMetrics.sectionGap)
+            HStack(alignment: .top, spacing: CenitMetrics.space2) {
                 Image(systemName: "wave.3.right")
                     .font(StrandFont.glyph(.chevron))
                     .foregroundStyle(theme.inkTertiary)
@@ -424,9 +424,9 @@ private struct PrepareStep: View {
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, NoopMetrics.gap)
+            .padding(.top, CenitMetrics.gap)
 
-            Spacer(minLength: NoopMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.sectionGap)
             InkButton("Find my strap", action: onContinue)
         }
     }
@@ -453,11 +453,11 @@ private struct ScanStep: View {
             Text("Looking for your strap…")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
             statusLine
-                .padding(.top, NoopMetrics.gap)
+                .padding(.top, CenitMetrics.gap)
 
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 Text("Which strap?").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 Picker("Which strap?", selection: Binding(
                     get: { selectedModel },
@@ -470,11 +470,11 @@ private struct ScanStep: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             }
-            .padding(.top, NoopMetrics.sectionGap)
+            .padding(.top, CenitMetrics.sectionGap)
 
-            if showHelp { reassurance.padding(.top, NoopMetrics.gap) }
+            if showHelp { reassurance.padding(.top, CenitMetrics.gap) }
 
-            Spacer(minLength: NoopMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.sectionGap)
             OutlineButton(scanning ? "Searching…" : "Search again") { startScan() }
                 .disabled(scanning)
             OutlineButton("Continue without pairing", action: onContinue)
@@ -501,7 +501,7 @@ private struct ScanStep: View {
     }
 
     private var reassurance: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             Text("Not showing up? That's normal.")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
@@ -513,10 +513,10 @@ private struct ScanStep: View {
             Checkline("The WHOOP app isn't holding it. Only one host at a time: close it or turn off its Bluetooth.")
             Checkline("It's within a metre of your iPhone.")
         }
-        .padding(NoopMetrics.cardPadding)
+        .padding(CenitMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 
@@ -597,20 +597,20 @@ private struct ProfileStep: View {
             Text("About you")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
             Text("To compute your heart-rate zones and your baselines.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
 
-            VStack(spacing: NoopMetrics.gap) {
+            VStack(spacing: CenitMetrics.gap) {
                 Stepper(value: $profile.age, in: 13...100) {
                     FieldRow(label: "Age", value: "\(profile.age)")
                 }
                 .tint(theme.inkSecondary)
                 Divider().overlay(theme.hairline)
-                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                     Overline(text: "Sex")
                     Picker("Sex", selection: $profile.sex) {
                         ForEach(sexes, id: \.0) { key, label in Text(label).tag(key) }
@@ -629,30 +629,30 @@ private struct ProfileStep: View {
                 }
                 .tint(theme.inkSecondary)
             }
-            .padding(NoopMetrics.cardPadding)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-            .padding(.top, NoopMetrics.sectionGap)
+            .padding(CenitMetrics.cardPadding)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+            .padding(.top, CenitMetrics.sectionGap)
 
             if !fromHealth.isEmpty {
-                HStack(spacing: NoopMetrics.space2) {
-                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
+                HStack(spacing: CenitMetrics.space2) {
+                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("From Apple Health · editable")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
                 .accessibilityElement(children: .combine)
             }
 
-            HStack(spacing: NoopMetrics.space2) {
+            HStack(spacing: CenitMetrics.space2) {
                 Image(systemName: "bolt.heart").foregroundStyle(theme.inkTertiary)
                 Text("Estimated max heart rate · \(profile.hrMax) bpm")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
             }
-            .padding(.top, NoopMetrics.gap)
+            .padding(.top, CenitMetrics.gap)
 
-            Spacer(minLength: NoopMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.sectionGap)
             InkButton("Continue", action: onContinue)
         }
         .task { await autoFill() }
@@ -689,18 +689,18 @@ private struct ImportStep: View {
             Text("Bring your history")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
             Text("Optional. Fill your dashboard from day one.")
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
-                .padding(.top, NoopMetrics.space2)
+                .padding(.top, CenitMetrics.space2)
             Text("A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, NoopMetrics.gap)
+                .padding(.top, CenitMetrics.gap)
 
-            VStack(spacing: NoopMetrics.gap) {
+            VStack(spacing: CenitMetrics.gap) {
                 ImportRow(title: model.isImporting(.whoop) ? "Importing…" : "Import WHOOP export",
                           systemImage: "tray.and.arrow.down",
                           disabled: model.hasActiveImport) { presentImporter(.whoop) }
@@ -708,10 +708,10 @@ private struct ImportStep: View {
                           systemImage: "heart.fill",
                           disabled: model.hasActiveImport) { presentImporter(.appleHealth) }
             }
-            .padding(.top, NoopMetrics.sectionGap)
+            .padding(.top, CenitMetrics.sectionGap)
 
             if model.hasActiveImport {
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     ProgressView().controlSize(.small).tint(theme.inkSecondary)
                     if let n = model.appleHealthImportProgress {
                         Text("\(n) registros")
@@ -720,7 +720,7 @@ private struct ImportStep: View {
                             .monospacedDigit()
                     }
                 }
-                .padding(.top, NoopMetrics.gap)
+                .padding(.top, CenitMetrics.gap)
             }
 
             if let summary = lastSummary {
@@ -728,10 +728,10 @@ private struct ImportStep: View {
                     .font(StrandFont.subhead)
                     .foregroundStyle(model.importFailed(importKind) ? theme.critical : theme.verdict)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, NoopMetrics.gap)
+                    .padding(.top, CenitMetrics.gap)
             }
 
-            Spacer(minLength: NoopMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.sectionGap)
             OutlineButton("Not now", action: onContinue)
         }
         .fileImporter(
@@ -802,8 +802,8 @@ private struct Checkline: View {
     @Environment(\.instrumentoTheme) private var theme
     init(_ text: LocalizedStringKey) { self.text = text }
     var body: some View {
-        HStack(alignment: .top, spacing: NoopMetrics.space2) {
-            Image(systemName: "checkmark")
+        HStack(alignment: .top, spacing: CenitMetrics.space2) {
+            StrandIcon.confirm.image
                 .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
                 .padding(.top, 2)
@@ -838,22 +838,22 @@ private struct ImportRow: View {
     @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         Button(action: action) {
-            HStack(spacing: NoopMetrics.gap) {
+            HStack(spacing: CenitMetrics.gap) {
                 Image(systemName: systemImage)
                     .font(StrandFont.glyph(.inline, weight: .semibold))
                     .frame(width: 18)
                 Text(title).font(StrandFont.subhead.weight(.semibold))
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .bold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .foregroundStyle(theme.ink)
             .padding(.vertical, 12)
-            .padding(.horizontal, NoopMetrics.cardPadding)
+            .padding(.horizontal, CenitMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         }
         .buttonStyle(.plain)
         .disabled(disabled)

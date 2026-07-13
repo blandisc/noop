@@ -21,6 +21,7 @@ public struct StrandCTAButton: View {
     public enum Kind { case solid, outline }
 
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.isEnabled) private var isEnabled
     private let title: LocalizedStringKey
     private let systemImage: String?
     private let kind: Kind
@@ -43,7 +44,7 @@ public struct StrandCTAButton: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15)
                 .background {
-                    let shape = RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous)
+                    let shape = RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
                     switch kind {
                     case .solid:
                         shape.fill(theme.ink)
@@ -53,6 +54,8 @@ public struct StrandCTAButton: View {
                     }
                 }
                 .contentShape(Rectangle())
+                // Disabled: dim to the shared dim value; the Button already blocks the tap (FER-916).
+                .opacity(isEnabled ? 1 : StrandOpacity.dim)
         }
         .buttonStyle(InstrumentoPressStyle())
     }
@@ -64,11 +67,12 @@ public struct StrandCTAButton: View {
 
 #if DEBUG
 #Preview("Instrumento · StrandCTAButton") {
-    VStack(spacing: NoopMetrics.gap) {
+    VStack(spacing: CenitMetrics.gap) {
         StrandCTAButton("Empezar", action: {})
         StrandCTAButton("Descartar", kind: .outline, action: {})
+        StrandCTAButton("Guardar", action: {}).disabled(true)
     }
-    .padding(NoopMetrics.screenPadding)
+    .padding(CenitMetrics.screenPadding)
     .frame(width: 390)
     .background(InstrumentoTheme.base.paper)
     .instrumentoTheme(.base)

@@ -42,7 +42,7 @@ final class VerdictHeroSnapshotTests: XCTestCase {
 
     @MainActor private func render<V: View>(_ content: V, to name: String, width: CGFloat = 390) throws {
         let view = content
-            .padding(width == 390 ? NoopMetrics.screenPadding : 0)
+            .padding(width == 390 ? CenitMetrics.screenPadding : 0)
             .frame(width: width)
             .background(InstrumentoTheme.base.paper)
             .environment(\.colorScheme, .dark)
@@ -109,8 +109,8 @@ private struct VerdictHeroPreview: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(levelColor.opacity(0.08), in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(levelColor.opacity(0.08), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(levelColor.opacity(0.30), lineWidth: 1))
     }
 

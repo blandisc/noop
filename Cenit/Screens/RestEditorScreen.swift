@@ -98,8 +98,8 @@ struct RestEditorScreen: View {
                 }
                 cta
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, 12).padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.top, 12).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -247,8 +247,8 @@ struct RestEditorScreen: View {
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 

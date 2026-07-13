@@ -693,7 +693,7 @@ struct MetricInfoSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 header
                 if isRecoverySummary {
                     // F2 (FER-710): the redesigned recovery summary — verdict word + zone meter under the
@@ -853,7 +853,7 @@ struct MetricInfoSheet: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(alignment: .firstTextBaseline) {
                 if isRedesignedHeader {
                     // F2 (FER-710): recovery / strain / the six vitals / sleep share the Grotesk uppercase
@@ -885,7 +885,7 @@ struct MetricInfoSheet: View {
             }
             // The rich sleep summary replaces the single numeral with its own doble-dato (in the body). (FER-710)
             if !isSleepSummary {
-            HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
                 if isCalculatedSummary || isVitalTemplate {
                     // Grotesk 56 numeral + suffix: «/ 100» (recovery, scored) · «/ 21» (strain, scored) ·
                     // the unit (a vital). (FER-710)
@@ -1050,7 +1050,7 @@ struct MetricInfoSheet: View {
                 Spacer(minLength: 0)
             }
             .background(theme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
         }
     }
 
@@ -1159,7 +1159,7 @@ struct MetricInfoSheet: View {
             Spacer(minLength: 0)
         }
         .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
     private var sleepTonightText: LocalizedStringKey {
         if let r = sleepDetail?.regularity, r.score >= 80 {
@@ -1229,7 +1229,7 @@ struct MetricInfoSheet: View {
         Button {
             withAnimation(StrandMotion.interactive) { headlineExpanded.toggle() }
         } label: {
-            Image(systemName: "info.circle")
+            StrandIcon.info.image
                 .font(StrandFont.glyph(.inline))
                 .foregroundStyle(headlineExpanded ? metricHue : theme.inkTertiary)
         }
@@ -1260,7 +1260,7 @@ struct MetricInfoSheet: View {
     /// closing the sheet leaves it one tap away. (FER-162)
     private var appleConnectLine: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: "heart.fill")
+            StrandIcon.heart.image
                 .font(StrandFont.glyph(.chevron))
                 .foregroundStyle(theme.dataHeart)
             Text("This reading can come from Apple Health. Connect it from Today to see it here.")
@@ -1278,7 +1278,7 @@ struct MetricInfoSheet: View {
     /// Today tile's Apple badge. Shown only when `appleSource` — resolved per reading by the caller.
     private var appleSourceLine: some View {
         HStack(spacing: 6) {
-            Image(systemName: "heart.fill")
+            StrandIcon.heart.image
                 .font(StrandFont.glyph(.chevron))
                 .foregroundStyle(theme.dataHeart)
             Text("Apple Health")
@@ -1352,7 +1352,7 @@ struct MetricInfoSheet: View {
                 }
             }
         }
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     /// One reference-band row. `count` (when the trend has loaded) shows how many of the windowed
@@ -1448,7 +1448,7 @@ struct MetricInfoSheet: View {
     @ViewBuilder private var heartRateSection: some View {
         if heartRateCurve.count > 1 {
             let v = heartRateCurve.map(\.value)
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Beats per minute")
@@ -1528,7 +1528,7 @@ struct MetricInfoSheet: View {
     /// clear curve instead of a flat line pinned to 0–200. Line/area use the metric hue. (FER-115 /
     /// FER-162)
     @ViewBuilder private var trendSection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text("Last 14 days")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
@@ -1688,7 +1688,7 @@ struct MetricInfoSheet: View {
     /// curve once loaded, a quiet placeholder while loading, and a short message when there isn't
     /// enough of today's activity to chart.
     @ViewBuilder private var strainSection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text("How today added up")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
@@ -1738,7 +1738,7 @@ struct MetricInfoSheet: View {
     /// training window (`TrainingHabit`, an amber band); each is omitted when its source is absent, so the
     /// curve stays exactly as it was when neither is available. (§5, FER-732)
     @ViewBuilder private var strainIntradaySection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text("Today, hour by hour").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if strainCurve.count > 1 {
                 StrainIntradayCurve(points: strainCurve, hue: theme.dataStrain, theme: theme,
@@ -1822,7 +1822,7 @@ struct MetricInfoSheet: View {
     // MARK: - Shared chart wells (loading / empty), themed for warm paper
 
     private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+        RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
             .fill(theme.surface)
             .frame(height: height)
             .overlay { ProgressView().tint(theme.inkTertiary) }
@@ -1840,7 +1840,7 @@ struct MetricInfoSheet: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Recovery weight breakdown + method disclosure (FER-108)
@@ -1868,7 +1868,7 @@ struct MetricInfoSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: «Qué la movió hoy» (FER-628)
@@ -1899,7 +1899,7 @@ struct MetricInfoSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     /// The plain-language headline names the signal with the LARGEST contribution to today's score
@@ -2052,7 +2052,7 @@ struct MetricInfoSheet: View {
         }
         .tint(theme.inkTertiary)
         .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     /// Trailing "Ver más" link at the foot of the sheet: drills from this summary into the metric's rich
@@ -2074,7 +2074,7 @@ struct MetricInfoSheet: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 13)
                 .overlay(
-                    RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                         .strokeBorder(theme.ink, lineWidth: 1.5)
                 )
             }
@@ -2088,7 +2088,7 @@ struct MetricInfoSheet: View {
                     HStack(spacing: 4) {
                         Text("See more")
                             .font(StrandFont.subhead.weight(.medium))
-                        Image(systemName: "chevron.right")
+                        StrandIcon.disclosure.image
                             .font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .foregroundStyle(metricHue)

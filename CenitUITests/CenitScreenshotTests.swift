@@ -8,11 +8,11 @@ import XCTest
 ///     -project Cenit.xcodeproj -scheme Cenit \
 ///     -destination 'platform=iOS Simulator,name=iPhone 16' \
 ///     CODE_SIGNING_ALLOWED=NO \
-///     -only-testing CenitUITests/NOOPScreenshotTests
+///     -only-testing CenitUITests/CenitScreenshotTests
 ///
 /// Maintenance: when you add/remove/rename a state in a *View.swift, add/update the
 /// corresponding case here and re-run to regenerate the fixtures in the same PR.
-final class NOOPScreenshotTests: XCTestCase {
+final class CenitScreenshotTests: XCTestCase {
 
     var app: XCUIApplication!
 

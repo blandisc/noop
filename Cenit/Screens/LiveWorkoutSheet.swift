@@ -72,7 +72,7 @@ struct LiveWorkoutHubRow: View {
                     Text(Self.elapsed(from: w.start, to: ctx.date))
                         .font(StrandFont.bodyNumber).foregroundStyle(theme.inkSecondary)
                 }
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 48).contentShape(Rectangle())
@@ -88,7 +88,7 @@ struct LiveWorkoutHubRow: View {
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 48).contentShape(Rectangle())
@@ -143,7 +143,7 @@ struct LiveWorkoutSheet: View {
         // ScrollView so the clock + stats never clip at large Dynamic Type / small screens (the same
         // graceful-degradation Live uses); at normal sizes it all sits within the medium detent.
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 HStack(spacing: 7) {
                     Circle().fill(theme.dataRecovery).frame(width: 9, height: 9)
                     Text("Recording").instrumentoOverline().foregroundStyle(theme.dataRecovery)
@@ -180,9 +180,9 @@ struct LiveWorkoutSheet: View {
                 .instrumentoCard(.card, theme: theme, fill: theme.surface, stroke: theme.critical.opacity(StrandOpacity.strokeSoft))
                 .padding(.top, 8)
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 28)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())

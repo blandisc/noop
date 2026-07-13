@@ -82,7 +82,7 @@ public struct FiveRulesView: View {
 
     @ViewBuilder
     private func ruleRow(_ row: Row, visibleLit: Int, maxMarks: Int) -> some View {
-        HStack(spacing: NoopMetrics.space2) {
+        HStack(spacing: CenitMetrics.space2) {
             Text(row.label)
                 .font(InstrumentoType.grotesk(9, weight: .bold))
                 .tracking(1.4)

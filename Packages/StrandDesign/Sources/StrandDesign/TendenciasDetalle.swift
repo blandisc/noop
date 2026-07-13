@@ -63,7 +63,7 @@ public struct SeccionFranja: View {
             if let pista {
                 Spacer(minLength: 10)
                 Text(pista)
-                    .font(.system(size: 11))
+                    .font(StrandFont.scaled(11))
                     .foregroundStyle(theme.inkTertiary)
             }
         }
@@ -260,7 +260,7 @@ public struct TileSurface: View {
             }
             if let caption {
                 Text(caption)
-                    .font(.system(size: 10))
+                    .font(StrandFont.scaled(10))
                     .foregroundStyle(theme.inkTertiary)
                     .lineLimit(2)
             }
@@ -292,7 +292,7 @@ public struct BarraAncla: View {
         // La barra (rect 2pt) abarca TODA la altura del texto — no una raya de 10pt: en captions de dos
         // renglones cubría solo el primero. Overlay a la izquierda del texto: su alto lo fija el texto.
         Text(texto)
-            .font(.system(size: 11))
+            .font(StrandFont.scaled(11))
             .lineSpacing(2.5)
             .foregroundStyle(theme.inkTertiary)
             .fixedSize(horizontal: false, vertical: true)
@@ -333,7 +333,7 @@ public struct Metodo<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
             Text(title)
-                .font(.system(size: 13))
+                .font(StrandFont.scaled(13))
                 .foregroundStyle(theme.ink)
         }
         .tint(theme.inkTertiary)
@@ -403,7 +403,7 @@ public struct HeatLegend: View {
                         .fill(item.color)
                         .frame(width: 8, height: 8)
                     Text(item.label)
-                        .font(.system(size: 10))
+                        .font(StrandFont.scaled(10))
                         .foregroundStyle(theme.inkTertiary)
                 }
                 .accessibilityElement(children: .combine)
@@ -442,7 +442,7 @@ public struct HeatLegend: View {
         BarraAncla("El pronóstico es una proyección, no una garantía.", color: t.verdict, theme: t)
         Metodo(title: "Cómo se calcula", theme: t) {
             Text("Cada señal se compara con tu propia base de 30 días.")
-                .font(.system(size: 13))
+                .font(StrandFont.scaled(13))
                 .foregroundStyle(t.inkSecondary)
         }
         HeatLegend([(t.verdict, "listo"), (t.warning, "recuperando"),
@@ -461,7 +461,7 @@ public struct HeatLegend: View {
                            theme: t)
             SeccionBloque("HOY, VS TU NORMAL", theme: t) {
                 Text("Contenido de la sección")
-                    .font(.system(size: 13))
+                    .font(StrandFont.scaled(13))
                     .foregroundStyle(t.inkSecondary)
             }
             SeccionBloque("CALENDARIO · 90 DÍAS", pista: "últimos 3 meses", theme: t) {
@@ -470,7 +470,7 @@ public struct HeatLegend: View {
             PieMetodo(theme: t) {
                 Metodo(title: "How it's calculated", theme: t) {
                     Text("Each signal is compared to your own 30-day base.")
-                        .font(.system(size: 13))
+                        .font(StrandFont.scaled(13))
                         .foregroundStyle(t.inkSecondary)
                 }
             } sello: {

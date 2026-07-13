@@ -26,7 +26,7 @@ private struct SupportContent: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("About & support").font(StrandFont.title1).foregroundStyle(theme.ink)
                     Text("\(ProjectInfo.appName): all your data, none of the cloud.")
@@ -42,8 +42,8 @@ private struct SupportContent: View {
                 disclaimer
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -84,7 +84,7 @@ private struct SupportContent: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             ForEach(ProjectInfo.attributions, id: \.repo) { a in
                 HStack(spacing: 8) {
-                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
+                    StrandIcon.disclosure.image.font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
                         .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
                     Text(a.repo).font(StrandFont.mono(12)).foregroundStyle(theme.ink)
                     Text("· \(a.note)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)

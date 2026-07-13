@@ -86,7 +86,7 @@ struct IntervalTimerView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 if configuring {
                     configureScreen
                 } else {
@@ -96,9 +96,9 @@ struct IntervalTimerView: View {
                     overviewCard
                 }
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -128,7 +128,7 @@ struct IntervalTimerView: View {
     // MARK: Configure screen (pre-session)
 
     private var configureScreen: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("INTERVALS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Build your HIIT")
@@ -164,7 +164,7 @@ struct IntervalTimerView: View {
                     .foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
-                    .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                    .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
             .buttonStyle(.plain)
         }
@@ -210,10 +210,10 @@ struct IntervalTimerView: View {
     @ViewBuilder
     private func card<V: View>(@ViewBuilder _ content: () -> V) -> some View {
         content()
-            .padding(NoopMetrics.cardPadding)
+            .padding(CenitMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -331,7 +331,7 @@ struct IntervalTimerView: View {
                     .foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
             .buttonStyle(.plain)
 
@@ -343,8 +343,8 @@ struct IntervalTimerView: View {
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                         .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)

@@ -118,7 +118,7 @@ public struct ConfirmCard: View {
 
             if let message {
                 Text(message)
-                    .font(.system(size: 13))
+                    .font(StrandFont.scaled(13))
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 6)
@@ -146,6 +146,7 @@ public struct ConfirmCard: View {
         .background(
             UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20)
                 .fill(theme.surface)
+                // token-exempt: hoja inferior que proyecta hacia ARRIBA (y negativa); StrandElevation solo modela sombras hacia abajo.
                 .shadow(color: theme.ink.opacity(0.18), radius: 20, y: -12)
                 .ignoresSafeArea(edges: .bottom)
         )

@@ -56,7 +56,7 @@ struct DataSourcesView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Sources").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Text("Data Sources").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -78,8 +78,8 @@ struct DataSourcesView: View {
                 #endif
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -98,7 +98,7 @@ struct DataSourcesView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .patternBlock(theme, bar: backupAlertIsError ? theme.critical : theme.verdict)
-                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.horizontal, CenitMetrics.screenPadding)
                 .onTapGesture { showBackupAlert = false }
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .task {
@@ -179,7 +179,7 @@ struct DataSourcesView: View {
                 }
                 Spacer(minLength: 8)
                 if isActive {
-                    Image(systemName: "checkmark")
+                    StrandIcon.confirm.image
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.verdict)
                         .accessibilityHidden(true)
@@ -391,7 +391,7 @@ struct DataSourcesView: View {
                 HStack(spacing: 12) {
                     Text("View imported data").font(StrandFont.body).foregroundStyle(theme.ink)
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 .frame(minHeight: 40)
@@ -1062,7 +1062,7 @@ struct DataSourcesView: View {
                 }
                 if let err = autoBackup.lastError {
                     HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.warning)
+                        StrandIcon.warning.image.foregroundStyle(theme.warning)
                             .font(StrandFont.glyph(.chevron)).accessibilityHidden(true)
                         Text(verbatim: err).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)

@@ -139,7 +139,7 @@ struct WorkoutEditSheet: View {
     // MARK: - List
 
     private var rowInsets: EdgeInsets {
-        EdgeInsets(top: 0, leading: NoopMetrics.screenPadding, bottom: 0, trailing: NoopMetrics.screenPadding)
+        EdgeInsets(top: 0, leading: CenitMetrics.screenPadding, bottom: 0, trailing: CenitMetrics.screenPadding)
     }
 
     private var listBody: some View {
@@ -229,7 +229,7 @@ struct WorkoutEditSheet: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.paperHi, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .background(theme.paperHi, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         }
     }
 
@@ -249,7 +249,7 @@ struct WorkoutEditSheet: View {
         Button { reassignGroup = ReassignTarget(index: gi) } label: {
             HStack(spacing: 6) {
                 Text(exerciseName(groups[gi].exerciseId)).font(StrandFont.headline).foregroundStyle(theme.ink)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 0)
             }
@@ -264,7 +264,7 @@ struct WorkoutEditSheet: View {
     private func addSetRow(_ gi: Int) -> some View {
         Button { addSet(gi) } label: {
             HStack(spacing: 6) {
-                Image(systemName: "plus").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Add set").font(StrandFont.subhead)
             }
             .foregroundStyle(theme.inkSecondary)

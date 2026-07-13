@@ -44,16 +44,16 @@ struct RitmoView: View {
     private var readingSheet: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                     Text(RhythmCopy.screenOverline)
                         .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        .padding(.top, NoopMetrics.screenPadding)
+                        .padding(.top, CenitMetrics.screenPadding)
 
                     content
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, NoopMetrics.screenPadding)
-                .padding(.bottom, NoopMetrics.screenPadding)
+                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.bottom, CenitMetrics.screenPadding)
             }
             if showsDisclaimer { disclaimerFooter }
         }
@@ -95,7 +95,7 @@ struct RitmoView: View {
                 .font(StrandFont.footnote)
                 .foregroundStyle(theme.inkTertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.horizontal, CenitMetrics.screenPadding)
                 .padding(.vertical, 12)
         }
         .background(theme.paper)
@@ -143,9 +143,9 @@ private struct ConsentView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, NoopMetrics.screenPadding)
-        .padding(.top, NoopMetrics.screenPadding + 8)
-        .padding(.bottom, NoopMetrics.screenPadding)
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.top, CenitMetrics.screenPadding + 8)
+        .padding(.bottom, CenitMetrics.screenPadding)
     }
 
     private func bullet(_ text: String) -> some View {
@@ -165,7 +165,7 @@ private struct RhythmReadingView: View {
     let theme: InstrumentoTheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 12) {
                 PoincareCloud(points: nr.cloudPoints,
                               summary: "\(RhythmCopy.label(nr.summary.overall)) · \(nr.readableBeats) latidos")
@@ -176,7 +176,7 @@ private struct RhythmReadingView: View {
                 if !expanded {
                     HStack(spacing: 4) {
                         Text(RhythmCopy.tapHint).font(StrandFont.footnote)
-                        Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                        StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -233,7 +233,7 @@ private struct CalibratingView: View {
     let theme: InstrumentoTheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             PoincareCloud(points: nr.cloudPoints, faded: true,
                           summary: RhythmCopy.calibratingLabel)
                 .frame(maxWidth: .infinity)

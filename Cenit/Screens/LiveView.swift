@@ -124,10 +124,10 @@ struct LiveView: View {
                     disconnectedState
                 }
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             // Breathing room below the sheet's grabber so the title isn't cramped against it (FER-192).
             .padding(.top, monitorOnly ? 28 : 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             // Measure the content height so the sheet detent fits it exactly (FER-196).
             .background(GeometryReader { proxy in
@@ -246,7 +246,7 @@ struct LiveView: View {
                         .font(StrandFont.captionNumber).foregroundStyle(theme.dataHeart)
                         .contentTransition(.numericText())
                         .animation(.snappy, value: live.beatsThisSession)
-                    Image(systemName: "arrow.up").font(StrandFont.caption).foregroundStyle(theme.dataHeart)
+                    StrandIcon.up.image.font(StrandFont.caption).foregroundStyle(theme.dataHeart)
                     Text("beats").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 .fixedSize()
@@ -345,7 +345,7 @@ struct LiveView: View {
             withAnimation(.snappy) { signalsExpanded.toggle() }
         } label: {
             HStack(spacing: 9) {
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.caption).fontWeight(.semibold)
                     .foregroundStyle(theme.inkTertiary)
                     .rotationEffect(.degrees(signalsExpanded ? 90 : 0))
@@ -718,7 +718,7 @@ struct LiveView: View {
 
     private func reconnectGuideBanner(_ guide: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            StrandIcon.warning.image
                 .foregroundStyle(theme.warning)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
@@ -738,7 +738,7 @@ struct LiveView: View {
 
     private func pairingHintBanner(_ hint: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            StrandIcon.warning.image
                 .foregroundStyle(theme.warning)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {

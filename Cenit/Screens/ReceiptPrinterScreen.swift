@@ -77,8 +77,8 @@ struct ReceiptPrinterScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 actionBar
-                    .padding(.horizontal, NoopMetrics.screenPadding)
-                    .padding(.bottom, NoopMetrics.screenPadding)
+                    .padding(.horizontal, CenitMetrics.screenPadding)
+                    .padding(.bottom, CenitMetrics.screenPadding)
             }
         }
         .instrumentoTheme(theme)
@@ -97,7 +97,7 @@ struct ReceiptPrinterScreen: View {
         }
         .overlay(alignment: .topTrailing) {
             Button(action: onClose) {
-                Image(systemName: "xmark")
+                StrandIcon.close.image
                     .font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkSecondary)
                     .padding(12)
@@ -126,7 +126,7 @@ struct ReceiptPrinterScreen: View {
                 StrandCTAButton("REIMPRIMIR", kind: .outline) { reprint() }
                     .frame(maxWidth: 220)
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
         } else if let receipt {
             ticketStage(receipt)
         } else if loadFailed {

@@ -24,7 +24,7 @@ struct PalancaDetailSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(BucleFormat.kindLabel(insight.kind).uppercased())
                         .instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -72,29 +72,29 @@ struct PalancaDetailSheet: View {
                 }
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .stroke(theme.hairlineStrong, lineWidth: 1))
 
                 // Probar esta idea — only for a candidate lever, only when nothing is in flight (FER-307).
                 if canStartExperiment, let onProbar {
                     Button(action: onProbar) {
                         HStack(spacing: 7) {
-                            Image(systemName: "flask").font(StrandFont.glyph(.inline))
+                            StrandIcon.experiment.image.font(StrandFont.glyph(.inline))
                             Text("Try this idea for a week").font(StrandFont.headline)
                             Image(systemName: "arrow.right").font(StrandFont.glyph(.inline))
                         }
                         .foregroundStyle(theme.ink)
                         .frame(maxWidth: .infinity)
                         .padding(15)
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                             .stroke(theme.hairlineStrong, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -211,7 +211,7 @@ struct EfectosExplorerSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Habit effects").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Text("How each habit moves a metric, across your whole history. Associations, not cause.")
@@ -235,7 +235,7 @@ struct EfectosExplorerSheet: View {
                             }
                             Spacer()
                             effectBadge(insight)
-                            Image(systemName: "chevron.right").font(StrandFont.glyph(.inline))
+                            StrandIcon.disclosure.image.font(StrandFont.glyph(.inline))
                                 .foregroundStyle(theme.inkTertiary).padding(.leading, 10)
                         }
                         .padding(.vertical, 12)
@@ -244,7 +244,7 @@ struct EfectosExplorerSheet: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { g in
                 Color.clear.preference(key: EfectosSheetHeightKey.self, value: g.size.height)
@@ -301,7 +301,7 @@ struct AnotaTuDiaSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Log your day").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
@@ -335,7 +335,7 @@ struct AnotaTuDiaSheet: View {
                     .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
                 }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -373,8 +373,8 @@ struct AnotaTuDiaSheet: View {
             }
             .frame(minWidth: 38)
             .padding(.horizontal, 9).padding(.vertical, 7)
-            .background(sel ? theme.ink : Color.clear, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))   // token-exempt: fondo condicional
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+            .background(sel ? theme.ink : Color.clear, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))   // token-exempt: fondo condicional
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                 .stroke(sel ? theme.ink : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -645,7 +645,7 @@ struct StartExperimentSheet: View {
                 } label: {
                     Text("Start").font(StrandFont.headline).foregroundStyle(theme.paper)
                         .frame(maxWidth: .infinity).padding(15)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                 }
                 .buttonStyle(.plain).padding(.top, 18)
 
@@ -655,7 +655,7 @@ struct StartExperimentSheet: View {
                 }
                 .buttonStyle(.plain).padding(.top, 13)
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -721,7 +721,7 @@ struct BucleInfoSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -747,7 +747,7 @@ struct ExperimentDetailSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if let p = progress {
                     dayProgress(p)
@@ -758,7 +758,7 @@ struct ExperimentDetailSheet: View {
                 meta
                 cancel
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -798,7 +798,7 @@ struct ExperimentDetailSheet: View {
                     Text("Your streak").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     HStack(spacing: 4) {
-                        Image(systemName: "flame").font(StrandFont.glyph(.chevron, weight: .medium))
+                        StrandIcon.flame.image.font(StrandFont.glyph(.chevron, weight: .medium))
                         Text("Best: \(p.streakBest)").font(StrandFont.captionNumber)
                     }
                     .foregroundStyle(theme.inkTertiary)
@@ -884,7 +884,7 @@ struct ExperimentDetailSheet: View {
 
     private var meta: some View {
         HStack(spacing: 8) {
-            Image(systemName: "calendar").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+            StrandIcon.calendar.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             Text("Verdict on ").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 + Text(progress?.verdictDate ?? "—").font(StrandFont.subhead).foregroundStyle(theme.ink).bold()
         }
@@ -960,7 +960,7 @@ struct DisenaExperimentoSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("New experiment").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Text("Design your own experiment")
@@ -1023,8 +1023,8 @@ struct DisenaExperimentoSheet: View {
                         .foregroundStyle(behavior == nil ? theme.inkTertiary : theme.paper)
                         .frame(maxWidth: .infinity).padding(15)
                         .background(behavior == nil ? theme.surface : theme.ink,
-                                    in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                                    in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                             .stroke(theme.hairlineStrong, lineWidth: behavior == nil ? 1 : 0))
                 }
                 .buttonStyle(.plain).disabled(behavior == nil)
@@ -1035,7 +1035,7 @@ struct DisenaExperimentoSheet: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())

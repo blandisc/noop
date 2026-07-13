@@ -153,7 +153,7 @@ struct RoutineBuilderScreen: View {
 
     private var emptyBody: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 nameField
                 VStack(spacing: 11) {
                     Image(systemName: "square.stack.3d.up").font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
@@ -166,7 +166,7 @@ struct RoutineBuilderScreen: View {
                 QuietButton("Add exercise") { showLibrary = true }
                     .frame(maxWidth: .infinity)
             }
-            .padding(.top, 20).padding(.horizontal, NoopMetrics.screenPadding).padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.top, 20).padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.screenPadding)
         }
     }
 
@@ -180,9 +180,9 @@ struct RoutineBuilderScreen: View {
             ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 if firstOfGroup(idx) {
                     Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        .plainRow(top: NoopMetrics.sectionGap, bottom: 2)
+                        .plainRow(top: CenitMetrics.sectionGap, bottom: 2)
                 }
-                exerciseHeader(idx).plainRow(top: firstOfGroup(idx) || idx == 0 ? NoopMetrics.gap : NoopMetrics.sectionGap)
+                exerciseHeader(idx).plainRow(top: firstOfGroup(idx) || idx == 0 ? CenitMetrics.gap : CenitMetrics.sectionGap)
                 ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
                     setRow(idx: idx, si: si).plainRow(top: 0, bottom: 0)
                         .swipeActions(edge: .trailing) {
@@ -191,7 +191,7 @@ struct RoutineBuilderScreen: View {
                 }
                 addSetRow(idx).plainRow(top: 4)
             }
-            addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: NoopMetrics.screenPadding)
+            addExerciseRow.plainRow(top: CenitMetrics.sectionGap, bottom: CenitMetrics.screenPadding)
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -245,7 +245,7 @@ struct RoutineBuilderScreen: View {
 
     private func exerciseHeader(_ idx: Int) -> some View {
         let item = items[idx]
-        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack(spacing: 11) {
                 // Tapping the thumb/name opens the exercise info sheet (parity with the library, FER-776).
                 Button { detail = item.exercise } label: {
@@ -337,14 +337,14 @@ struct RoutineBuilderScreen: View {
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
             .frame(width: 76, height: 34)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline))
     }
 
     private func addSetRow(_ idx: Int) -> some View {
         Button { addSet(idx) } label: {
             HStack(spacing: 8) {
-                Image(systemName: "plus")
+                StrandIcon.add.image
                 Text("Add set")
             }
             .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
@@ -503,8 +503,8 @@ private extension View {
         self
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: top, leading: NoopMetrics.screenPadding,
-                                      bottom: bottom, trailing: NoopMetrics.screenPadding))
+            .listRowInsets(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
+                                      bottom: bottom, trailing: CenitMetrics.screenPadding))
     }
 }
 #endif

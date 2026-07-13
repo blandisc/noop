@@ -6,7 +6,7 @@ import SwiftUI
 // tintado) + borde hairline con un radio semántico. Antes de esto el patrón
 // `.background(theme.surface, in: RoundedRectangle(cornerRadius: N)) + .overlay(stroke)`
 // se redibujaba a mano ~80 veces con radios literales (6/8/9/10/11/12/13/14/18) que
-// conviven con los tokens de `NoopMetrics`. Este modifier elimina el literal del call
+// conviven con los tokens de `CenitMetrics`. Este modifier elimina el literal del call
 // site: el radio se elige por ROL, nunca por CGFloat.
 //
 // El tema viaja por environment (`\.instrumentoTheme`), así que el call site NO pasa
@@ -16,21 +16,21 @@ import SwiftUI
 
 /// El rol del radio de una tarjeta «Instrumento diurno». Nunca un `CGFloat` literal.
 public enum InstrumentoCardRadius {
-    /// `NoopMetrics.cardRadius` (16) — tarjetas de sección.
+    /// `CenitMetrics.cardRadius` (16) — tarjetas de sección.
     case card
-    /// `NoopMetrics.ctaRadius` (14) — tarjetas destacadas / CTA.
+    /// `CenitMetrics.ctaRadius` (14) — tarjetas destacadas / CTA.
     case cta
-    /// `NoopMetrics.controlRadius` (12) — tarjetas estándar (el caso más común). Absorbe 13.
+    /// `CenitMetrics.controlRadius` (12) — tarjetas estándar (el caso más común). Absorbe 13.
     case control
-    /// `NoopMetrics.insetRadius` (10) — sub-tarjetas anidadas. Absorbe 9/11.
+    /// `CenitMetrics.insetRadius` (10) — sub-tarjetas anidadas. Absorbe 9/11.
     case inset
 
     public var value: CGFloat {
         switch self {
-        case .card:    return NoopMetrics.cardRadius
-        case .cta:     return NoopMetrics.ctaRadius
-        case .control: return NoopMetrics.controlRadius
-        case .inset:   return NoopMetrics.insetRadius
+        case .card:    return CenitMetrics.cardRadius
+        case .cta:     return CenitMetrics.ctaRadius
+        case .control: return CenitMetrics.controlRadius
+        case .inset:   return CenitMetrics.insetRadius
         }
     }
 }
@@ -84,14 +84,14 @@ public extension View {
                 .font(StrandFont.caption)
                 .foregroundStyle(t.inkSecondary)
                 .frame(maxWidth: .infinity, minHeight: 56)
-                .padding(NoopMetrics.cardPadding)
+                .padding(CenitMetrics.cardPadding)
                 .instrumentoCard(r)
         }
         Text("tintada")
             .font(StrandFont.caption)
             .foregroundStyle(t.warning)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .padding(NoopMetrics.cardPadding)
+            .padding(CenitMetrics.cardPadding)
             .instrumentoCard(.control, fill: t.warning.opacity(StrandOpacity.tintFill), stroke: t.warning.opacity(StrandOpacity.strokeSoft))
     }
     .padding(24)

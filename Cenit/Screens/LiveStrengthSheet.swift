@@ -890,12 +890,12 @@ struct LiveStrengthSheet: View {
                 nothingToSaveCard
             } else if let summary = session.summary {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+                    VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                         summaryPhase(summary)
                     }
-                    .padding(.horizontal, NoopMetrics.screenPadding)
+                    .padding(.horizontal, CenitMetrics.screenPadding)
                     .padding(.top, 18)
-                    .padding(.bottom, NoopMetrics.screenPadding)
+                    .padding(.bottom, CenitMetrics.screenPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else if isEmptyAdHoc {
@@ -1058,8 +1058,8 @@ struct LiveStrengthSheet: View {
                     addSetButton(ei).plainRow(top: 4)
                 }
             }
-            if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: NoopMetrics.sectionGap) }
-            discardFooter.plainRow(top: NoopMetrics.gap, bottom: NoopMetrics.screenPadding)
+            if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
+            discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -1118,11 +1118,11 @@ struct LiveStrengthSheet: View {
     // MARK: Session header (title + Finish + live counters)
 
     private var sessionHeader: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             // Row 1: minimize «‹» (session stays alive, the pill re-opens it) · routine name · «Terminar».
             HStack(spacing: 10) {
                 Button { model.strengthSheetPresented = false } label: {
-                    Image(systemName: "chevron.left")
+                    StrandIcon.back.image
                         .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
@@ -1232,7 +1232,7 @@ struct LiveStrengthSheet: View {
                     Label("Focus mode", systemImage: "scope")
                         .font(StrandFont.subhead).foregroundStyle(theme.ink)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, NoopMetrics.gap)
+                        .padding(.vertical, CenitMetrics.gap)
                         .background(theme.surface, in: Capsule())
                         .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
@@ -1241,7 +1241,7 @@ struct LiveStrengthSheet: View {
                 .accessibilityHint(Text("Opens a full-screen set logger"))
             }
         }
-        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, 14)
         .padding(.bottom, 12)
         .background(theme.paper)
@@ -1252,11 +1252,11 @@ struct LiveStrengthSheet: View {
 
     /// Full-screen capture/rest surface. Closing returns to the inline table; session state is unchanged.
     private var focusModeView: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             HStack {
                 Spacer(minLength: 0)
                 Button { focusMode = false } label: {
-                    Image(systemName: "xmark")
+                    StrandIcon.close.image
                         .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
                         .frame(width: 38, height: 38)
                         .background(theme.surface, in: Circle())
@@ -1273,9 +1273,9 @@ struct LiveStrengthSheet: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, NoopMetrics.screenPadding)
-        .padding(.top, NoopMetrics.sectionGap)
-        .padding(.bottom, NoopMetrics.screenPadding)
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.top, CenitMetrics.sectionGap)
+        .padding(.bottom, CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
@@ -1284,8 +1284,8 @@ struct LiveStrengthSheet: View {
 
     @ViewBuilder private var focusCapturePhase: some View {
         if let run = session.current {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
-                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                     Text(run.name).font(StrandFont.title1).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Set \(run.currentSet + 1) of \(run.sets.count)")
@@ -1308,7 +1308,7 @@ struct LiveStrengthSheet: View {
                 }
             }
         } else {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("All done").font(StrandFont.title1).foregroundStyle(theme.ink)
                 Text("No pending set. Close focus mode to finish from the list.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -1321,14 +1321,14 @@ struct LiveStrengthSheet: View {
         HStack {
             stepper(system: "minus") { session.bumpWeight(byKg: -weightStepKg) }
                 .accessibilityLabel(Text("Decrease weight"))
-            Spacer(minLength: NoopMetrics.gap)
+            Spacer(minLength: CenitMetrics.gap)
             VStack(spacing: 0) {
                 Text(plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)))
                     .instrumentoHero(76).foregroundStyle(theme.dataStrain)
                     .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
                 Text(UnitFormatter.massUnit(units)).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
             }
-            Spacer(minLength: NoopMetrics.gap)
+            Spacer(minLength: CenitMetrics.gap)
             stepper(system: "plus") { session.bumpWeight(byKg: weightStepKg) }
                 .accessibilityLabel(Text("Increase weight"))
         }
@@ -1339,14 +1339,14 @@ struct LiveStrengthSheet: View {
         HStack {
             stepper(system: "minus") { session.bumpReps(-1) }
                 .accessibilityLabel(Text("Decrease reps"))
-            Spacer(minLength: NoopMetrics.gap)
+            Spacer(minLength: CenitMetrics.gap)
             VStack(spacing: 0) {
                 Text("\(session.currentSet?.reps ?? 0)")
                     .instrumentoHero(76).foregroundStyle(theme.dataStrain)
                     .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
                 Text("reps").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
             }
-            Spacer(minLength: NoopMetrics.gap)
+            Spacer(minLength: CenitMetrics.gap)
             stepper(system: "plus") { session.bumpReps(1) }
                 .accessibilityLabel(Text("Increase reps"))
         }
@@ -1357,7 +1357,7 @@ struct LiveStrengthSheet: View {
         HStack {
             Text("Reps").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
             Spacer()
-            HStack(spacing: NoopMetrics.sectionGap) {
+            HStack(spacing: CenitMetrics.sectionGap) {
                 stepper(system: "minus", size: 34) { session.bumpReps(-1) }
                     .accessibilityLabel(Text("Decrease reps"))
                 Text("\(session.currentSet?.reps ?? 0)")
@@ -1379,7 +1379,7 @@ struct LiveStrengthSheet: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             Spacer()
-            HStack(spacing: NoopMetrics.sectionGap) {
+            HStack(spacing: CenitMetrics.sectionGap) {
                 stepper(system: "minus", size: 34) { session.bumpWeight(byKg: -weightStepKg) }
                     .accessibilityLabel(Text("Decrease added weight"))
                 Text("+\(plateNumber(displayWeight(kg))) \(UnitFormatter.massUnit(units))")
@@ -1401,8 +1401,8 @@ struct LiveStrengthSheet: View {
             Label("Register set", systemImage: "checkmark")
                 .font(StrandFont.headline).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, NoopMetrics.sectionGap)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                .padding(.vertical, CenitMetrics.sectionGap)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1431,8 +1431,8 @@ struct LiveStrengthSheet: View {
                   systemImage: running ? "stop.fill" : "play.fill")
                 .font(StrandFont.headline).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, NoopMetrics.sectionGap)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                .padding(.vertical, CenitMetrics.sectionGap)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1449,18 +1449,18 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private var focusDistanceControls: some View {
         let dist = session.currentSet?.distanceM ?? 0
         let running = session.timerStart != nil
-        VStack(spacing: NoopMetrics.gap) {
+        VStack(spacing: CenitMetrics.gap) {
             HStack {
                 stepper(system: "minus") { session.bumpDistance(byMeters: -distanceStepM) }
                     .accessibilityLabel(Text("Decrease distance"))
-                Spacer(minLength: NoopMetrics.gap)
+                Spacer(minLength: CenitMetrics.gap)
                 VStack(spacing: 0) {
                     Text(distanceNumber(dist))
                         .instrumentoHero(76).foregroundStyle(theme.dataStrain)
                         .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
                     Text(imperial ? "mi" : "km").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
                 }
-                Spacer(minLength: NoopMetrics.gap)
+                Spacer(minLength: CenitMetrics.gap)
                 stepper(system: "plus") { session.bumpDistance(byMeters: distanceStepM) }
                     .accessibilityLabel(Text("Increase distance"))
             }
@@ -1476,7 +1476,7 @@ struct LiveStrengthSheet: View {
                     .foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity)
             }
-            HStack(spacing: NoopMetrics.gap) {
+            HStack(spacing: CenitMetrics.gap) {
                 Button {
                     withAnimation(StrandMotion.gentle) {
                         running ? session.stopSetTimer() : session.startSetTimer()
@@ -1485,9 +1485,9 @@ struct LiveStrengthSheet: View {
                     Text(running ? "Stop" : "Start")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, NoopMetrics.gap)
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                        .padding(.vertical, CenitMetrics.gap)
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                             .strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
@@ -1503,8 +1503,8 @@ struct LiveStrengthSheet: View {
             Label("Register set", systemImage: "checkmark")
                 .font(StrandFont.headline).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, NoopMetrics.sectionGap)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                .padding(.vertical, CenitMetrics.sectionGap)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!captured)
@@ -1513,7 +1513,7 @@ struct LiveStrengthSheet: View {
 
     /// Rest phase scaled to full-screen; reuses the inline card's readiness/time evaluation patterns.
     private var focusRestPhase: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
 
             if session.currentRestMode == .heartRate, let started = session.restStartedAt {
@@ -1536,14 +1536,14 @@ struct LiveStrengthSheet: View {
                 }
             }
 
-            HStack(spacing: NoopMetrics.gap) {
+            HStack(spacing: CenitMetrics.gap) {
                 focusRestAdjust("−15") { session.extendRest(byseconds: -15) }
                 Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
                     Label("Skip", systemImage: "forward.fill")
                         .font(StrandFont.headline).foregroundStyle(theme.paper)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, NoopMetrics.sectionGap)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                        .padding(.vertical, CenitMetrics.sectionGap)
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Skip rest"))
@@ -1557,7 +1557,7 @@ struct LiveStrengthSheet: View {
         let target = session.currentRestTarget
         let ready = v.ready
         let hue = ready ? theme.dataRecovery : theme.dataHeart
-        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack {
                 Text("Resting · by HR").font(StrandFont.caption).fontWeight(.semibold)
                     .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
@@ -1569,7 +1569,7 @@ struct LiveStrengthSheet: View {
                 Text("Ready")
                     .instrumentoHero(76).foregroundStyle(theme.dataRecovery)
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.gap) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                     Text("\(bpm)").instrumentoHero(90).monospacedDigit().foregroundStyle(theme.dataHeart)
                     Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
                 }
@@ -1585,7 +1585,7 @@ struct LiveStrengthSheet: View {
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
             ECGWave(color: hue, animate: true, bpm: model.bpm)
-                .frame(height: NoopMetrics.sectionGap + NoopMetrics.gap)
+                .frame(height: CenitMetrics.sectionGap + CenitMetrics.gap)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -1596,7 +1596,7 @@ struct LiveStrengthSheet: View {
             ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300))
             : end
         let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
-        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack {
                 Text(noStrapFallback ? "Resting · by time" : "Resting")
                     .font(StrandFont.caption).fontWeight(.semibold)
@@ -1621,9 +1621,9 @@ struct LiveStrengthSheet: View {
         Button(action: action) {
             Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkSecondary)
                 .frame(width: 56)
-                .padding(.vertical, NoopMetrics.sectionGap)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .padding(.vertical, CenitMetrics.sectionGap)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -1714,7 +1714,7 @@ struct LiveStrengthSheet: View {
     /// One exercise's header: a type overline (for non-weight×reps), the name, and the column header.
     /// Grouped by whitespace + hairlines — a registration sheet, not a grid.
     private func exerciseHeader(_ run: StrengthSessionModel.ExerciseRun, ei: Int, first: Bool) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack(spacing: 12) {
                 SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
                 VStack(alignment: .leading, spacing: 2) {
@@ -1728,7 +1728,7 @@ struct LiveStrengthSheet: View {
                         Text(run.name).font(StrandFont.headline).foregroundStyle(theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Image(systemName: "chevron.right")
+                        StrandIcon.disclosure.image
                             .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     }
                     .contentShape(Rectangle())
@@ -1749,7 +1749,7 @@ struct LiveStrengthSheet: View {
             restChip(run, ei: ei)
             if !reflow { columnHeader(run.type) }
         }
-        .padding(.top, first ? NoopMetrics.gap : NoopMetrics.sectionGap)
+        .padding(.top, first ? CenitMetrics.gap : CenitMetrics.sectionGap)
     }
 
     /// The «···» exercise menu (FER-894 · «Cómo llego a Cambiar»): a themed paper menu (spec 4b) with
@@ -1842,7 +1842,7 @@ struct LiveStrengthSheet: View {
             }
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: "arrow.up")
+                StrandIcon.up.image
                     .font(StrandFont.glyph(.chevron, weight: .bold))
                 Text("today \(massText(raise.toKg))")
                     .font(InstrumentoType.grotesk(12, weight: .bold)).monospacedDigit()
@@ -1910,9 +1910,9 @@ struct LiveStrengthSheet: View {
     private func restChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         Button { openRestEditor(ei: ei) } label: {
             HStack(spacing: 6) {
-                Image(systemName: "clock").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.clock.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 Text(restChipLabel(run)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 9).padding(.vertical, 4)
             .background(theme.surface, in: Capsule())
@@ -2025,7 +2025,7 @@ struct LiveStrengthSheet: View {
         .padding(.vertical, reflow ? 8 : 2)
         .padding(.horizontal, active ? 6 : 0)
         .background(active ? theme.surface : .clear,
-                    in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
         .overlay(alignment: .bottom) {
             if !last { Rectangle().fill(theme.hairline).frame(height: 1) }
         }
@@ -2133,13 +2133,13 @@ struct LiveStrengthSheet: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 5)
                         .background(lit ? hue : theme.surface,
-                                    in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                             .strokeBorder(theme.hairline, lineWidth: lit ? 0 : 1))
                 }
             }
             HStack(spacing: 5) {
-                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.hrZoneRamp[zone - 1])
+                StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.hrZoneRamp[zone - 1])
                 Text("\(hr)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(theme.ink)
                 Text("·").foregroundStyle(theme.inkTertiary)
                 Text("\(pct)% of your max").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
@@ -2198,8 +2198,8 @@ struct LiveStrengthSheet: View {
             restCardPills
         }
         .padding(.horizontal, 17).padding(.vertical, 15)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         .floatShadow(theme)
         .padding(.horizontal, -4).padding(.vertical, 10)
@@ -2495,8 +2495,8 @@ struct LiveStrengthSheet: View {
             Label("Add set", systemImage: "plus")
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 9)
-                .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -2507,20 +2507,20 @@ struct LiveStrengthSheet: View {
 
     private var emptyAdHocSession: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("No routine: add exercises as you go. Rest defaults to 2 min, change it set by set.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Button { showLibraryPicker = true } label: {
                     HStack(spacing: 9) {
-                        Image(systemName: "magnifyingglass").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+                        StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
                         Text("Search the library…").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 13).padding(.vertical, 11)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                         .strokeBorder(theme.hairline, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
@@ -2540,8 +2540,8 @@ struct LiveStrengthSheet: View {
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 13).padding(.vertical, 11)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                                 .strokeBorder(theme.hairline, lineWidth: 1))
                             .padding(.top, 3)
                     }
@@ -2554,9 +2554,9 @@ struct LiveStrengthSheet: View {
                     .multilineTextAlignment(.center)
                     .padding(.top, 10)
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 16)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
@@ -2576,9 +2576,9 @@ struct LiveStrengthSheet: View {
 
     private func suggestionRow(_ s: QuickSuggestion) -> some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                 .fill(theme.surface).frame(width: 48, height: 48)
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
             VStack(alignment: .leading, spacing: 1) {
                 Text(StrengthDisplay.name(s.exercise)).font(StrandFont.body).foregroundStyle(theme.ink)
                 (Text(MuscleAtlas.name(s.muscle)) + Text(verbatim: " · ") + Text("fresh")
@@ -2692,12 +2692,12 @@ struct LiveStrengthSheet: View {
                 Text("Got it")
                     .font(StrandFont.headline).foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, 4)
             .accessibilityLabel(Text("Got it, close the session"))
         }
-        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.horizontal, CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
@@ -2821,7 +2821,7 @@ struct LiveStrengthSheet: View {
                 Label("Finish", systemImage: "checkmark")
                     .font(StrandFont.headline).foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, 4)
             // Keep the way back: tapping an exercise re-focuses its rows to edit (or add sets).
@@ -2864,7 +2864,7 @@ struct LiveStrengthSheet: View {
                     .font(StrandFont.subhead).fontWeight(.medium)
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
-                    .background(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
                         .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain).padding(.top, 6)
@@ -2874,7 +2874,7 @@ struct LiveStrengthSheet: View {
                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                     .foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain)
         }
@@ -3116,8 +3116,8 @@ struct LiveStrengthSheet: View {
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -3158,7 +3158,7 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {
         switch trend {
         case .some(1):
-            Image(systemName: "arrow.up").font(StrandFont.glyph(.chevron, weight: .semibold))
+            StrandIcon.up.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.positiveText)
                 .accessibilityLabel(Text("Up vs last time"))
         case .some(-1):
@@ -3219,8 +3219,8 @@ struct LiveStrengthSheet: View {
                     Button { openFatigueMap() } label: {
                         Text(m).font(StrandFont.subhead).foregroundStyle(theme.ink)
                             .padding(.horizontal, 11).padding(.vertical, 6)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                                 .strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
@@ -3286,8 +3286,8 @@ struct LiveStrengthSheet: View {
                 }
             }
             .padding(.horizontal, 14)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
         }
     }
@@ -3315,7 +3315,7 @@ struct LiveStrengthSheet: View {
                 HStack(spacing: 14) {
                     if !isFirst {
                         Button { withAnimation(.snappy) { session.moveExerciseEarlier(index) } } label: {
-                            Image(systemName: "arrow.up").font(StrandFont.glyph(.inline, weight: .semibold))
+                            StrandIcon.up.image.font(StrandFont.glyph(.inline, weight: .semibold))
                                 .foregroundStyle(theme.inkSecondary)
                         }
                         .buttonStyle(.plain).accessibilityLabel(Text("Move \(run.name) earlier"))
@@ -3339,8 +3339,8 @@ struct LiveStrengthSheet: View {
             Image(systemName: system).font(.system(size: size > 38 ? 22 : 18, weight: .regular)) // token-exempt: tamaño de glifo condicional
                 .foregroundStyle(theme.inkSecondary)
                 .frame(width: size, height: size)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -3393,7 +3393,7 @@ struct ChangeExerciseSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                     searchField
                     if !filtered.isEmpty {
                         if query.isEmpty, let m = primaryMuscle {
@@ -3408,7 +3408,7 @@ struct ChangeExerciseSheet: View {
                             .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
                     }
                 }
-                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.horizontal, CenitMetrics.screenPadding)
                 .padding(.vertical, 16)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -3434,14 +3434,14 @@ struct ChangeExerciseSheet: View {
 
     private var searchField: some View {
         HStack(spacing: 9) {
-            Image(systemName: "magnifyingglass").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+            StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             TextField("Search the library…", text: $query)
                 .font(StrandFont.body).foregroundStyle(theme.ink).tint(theme.ink)
                 .autocorrectionDisabled()
         }
         .padding(.horizontal, 13).padding(.vertical, 11)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -3473,8 +3473,8 @@ struct ChangeExerciseSheet: View {
 private extension View {
     func plainRow(top: CGFloat = 0, bottom: CGFloat = 0) -> some View {
         self
-            .listRowInsets(EdgeInsets(top: top, leading: NoopMetrics.screenPadding,
-                                      bottom: bottom, trailing: NoopMetrics.screenPadding))
+            .listRowInsets(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
+                                      bottom: bottom, trailing: CenitMetrics.screenPadding))
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
     }

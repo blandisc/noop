@@ -1,0 +1,95 @@
+# Iconografía
+
+> Compañero de [`DESIGN.md`](DESIGN.md). Define cómo se eligen, nombran y usan los iconos en Cénit:
+> el catálogo `StrandIcon`, los glifos dibujados a mano, el tamaño ligado a la rejilla, la
+> accesibilidad y qué reservar. Aterrizado en el uso real (76 nombres SF distintos, `chevron.right`
+> solo = 52 usos).
+
+---
+
+## 1. Principio: nombra por propósito, no por forma
+
+Un icono se nombra por **lo que hace**, no por cómo se ve (misma regla que el copy en
+[`LENGUAJE.md §4`](LENGUAJE.md)). El triángulo de reproducir es `play`, no `triangle`. Esto evita que
+dos pantallas usen iconos distintos para la misma acción, o el mismo icono para cosas distintas.
+
+## 2. Catálogo `StrandIcon`
+
+El set de alta frecuencia + semántico vive en `StrandIcon` (`Packages/StrandDesign/Sources/StrandDesign/StrandIcon.swift`).
+Úsalo con `StrandIcon.disclosure.image` en vez de `Image(systemName: "chevron.right")`.
+
+| Caso | SF Symbol | Propósito |
+|---|---|---|
+| `disclosure` | `chevron.right` | Abrir/entrar a un detalle (afordancia de fila). **52 usos hoy.** |
+| `back` | `chevron.left` | Volver |
+| `close` | `xmark` | Cerrar hoja/modal |
+| `confirm` | `checkmark` | Confirmar / hecho |
+| `add` | `plus` | Agregar (serie, entrenamiento…) |
+| `more` | `ellipsis` | Más acciones |
+| `info` | `info.circle` | Información / explicación |
+| `warning` | `exclamationmark.triangle.fill` | Alerta / atención |
+| `search` | `magnifyingglass` | Buscar |
+| `up` | `arrow.up` | Sube / mejora |
+| `down` | `chevron.down` | Colapsar / bajar |
+| `heart` | `heart.fill` | Frecuencia cardíaca |
+| `sleep` | `moon.zzz` | Sueño |
+| `flame` | `flame` | Esfuerzo / calorías |
+| `experiment` | `flask` | Experimento N-of-1 |
+| `clock` | `clock` | Tiempo / duración |
+| `calendar` | `calendar` | Fecha / calendario |
+
+El resto de símbolos SF (cola larga de usos únicos) puede seguir inline; si uno empieza a repetirse
+(≥3 veces) o es una acción común, se promueve al catálogo — misma regla que los componentes.
+
+## 3. Iconos reservados
+
+Estos representan acciones comunes y **no deben usarse para otra cosa**:
+`disclosure` (navegar a detalle) · `close` (cerrar) · `confirm` (confirmar) · `add` (agregar) ·
+`back` (volver). Reservarlos hace la app predecible.
+
+## 4. Glifos dibujados a mano (custom)
+
+Cuando ningún SF Symbol dice lo que necesitamos, dibujamos el glifo (CoreGraphics/Path) en
+`StrandDesign`. Los que existen:
+
+| Glifo | Uso |
+|---|---|
+| `DialTabGlyph` | Icono de la pestaña «Hoy» (dial 24h) |
+| `PatronesGlyph` | Pestaña «Patrones» / Coach |
+| `TendenciasGlyph` | Pestaña «Tendencias» |
+| `InsightGlyph` | Marcador de insight |
+| `BarcodeGlyph`, `ThermalDialGlyph` | Recibo térmico (skeuomorfo) |
+
+Los cuatro primeros forman el set de la barra de pestañas; se envuelven en `AuthoredGlyph`. Un glifo
+custom se justifica solo cuando la familia SF no cubre el significado con el estilo del sistema.
+
+## 5. Estilo y tamaño
+
+- **Estilo:** SF Symbols en su estilo por defecto; los glifos custom son de **línea** (coherentes con
+  el instrumento). No mezclar filled/outlined al azar en una misma superficie.
+- **Tamaño ligado a texto/rejilla:** usa `StrandFont.GlyphSize` (chevron/inline/lead/empty) y
+  `StrandFont.glyph(_:)` para que el icono case con el texto y el grid (no `.font(.system(size:))`
+  suelto). Un icono pareado a texto vive en su caja para alinear con la línea base.
+
+## 6. Accesibilidad
+
+- **Con significado → nombre hablado.** Si el icono comunica o es accionable, dale
+  `accessibilityLabel` con ese significado. Ver [`ACCESIBILIDAD.md §3`](ACCESIBILIDAD.md).
+- **Decorativo → oculto.** `accessibilityHidden(true)` en glifos puramente estéticos (ya es el patrón
+  consistente en `StatePill`, `ThermalTicket`, estados vacíos…).
+- Los glifos custom (`PatronesGlyph`, etc.) deben traer label si actúan como control (p. ej. tab).
+
+## 7. Gobernanza
+
+| Regla | Estado |
+|---|---|
+| Set frecuente en `StrandIcon`, nombrado por propósito | **Token** (este release) |
+| Nombrar por propósito, reservados, custom vs SF | **Convención** (este doc) |
+| Sin `Image(systemName:)` crudo en pantallas | **Fase 2** (posible regla de lint incremental, como las actuales) |
+
+---
+
+### Ver también
+- [`DESIGN.md`](DESIGN.md) — sistema visual.
+- [`ACCESIBILIDAD.md`](ACCESIBILIDAD.md) §3 — labels de VoiceOver.
+- [`LENGUAJE.md`](LENGUAJE.md) §4 — nombrar por propósito (mismo principio que el copy).

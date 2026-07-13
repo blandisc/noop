@@ -217,7 +217,7 @@ struct MetricLevelsExplorer: View {
             .padding(.horizontal, 12).padding(.vertical, 11)
             .frame(maxWidth: .infinity)
             .background(isHighlight ? hue.opacity(StrandOpacity.tintFill) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

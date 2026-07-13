@@ -1,6 +1,6 @@
 # bake-exercisedb — regenerar el catálogo de ejercicios
 
-NOOP es **offline**: el catálogo de ejercicios se **hornea** (predescarga) en tiempo de _build_,
+Cénit es **offline**: el catálogo de ejercicios se **hornea** (predescarga) en tiempo de _build_,
 nunca en runtime. Este pipeline toma el dataset abierto de **ExerciseDB OSS**
 (`oss.exercisedb.dev`, sin llave) y produce los dos recursos que ship la app (FER-779):
 

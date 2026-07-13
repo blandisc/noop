@@ -12,7 +12,7 @@ struct WatchSummaryView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 Text("Session").instrumentoOverline().foregroundStyle(t.inkTertiary).accessibilityHidden(true)
 
                 Text(verbatim: durationText)
@@ -33,7 +33,7 @@ struct WatchSummaryView: View {
                 // FER-810 — handoff to the rich receipt on the phone (volume, PRs, diet). The wrist summary
                 // stays minimal; this opens the saved workout's history detail on the iPhone.
                 Button { manager.openReceiptFromWrist() } label: {
-                    HStack(spacing: NoopMetrics.space1) {
+                    HStack(spacing: CenitMetrics.space1) {
                         Text("See receipt on iPhone")
                         Image(systemName: "chevron.right").font(StrandFont.footnote).accessibilityHidden(true)
                     }
@@ -47,13 +47,13 @@ struct WatchSummaryView: View {
                 }
                 .tint(t.ink)
             }
-            .padding(.horizontal, NoopMetrics.gap)
-            .padding(.vertical, NoopMetrics.space2)
+            .padding(.horizontal, CenitMetrics.gap)
+            .padding(.vertical, CenitMetrics.space2)
         }
     }
 
     private func stat(_ label: LocalizedStringKey, _ value: Text?) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Text(label).font(StrandFont.footnote).foregroundStyle(t.inkTertiary)
             (value ?? Text(verbatim: "--"))
                 .font(StrandFont.bodyNumber)
@@ -64,14 +64,14 @@ struct WatchSummaryView: View {
     @ViewBuilder private var saveLine: some View {
         switch summary.saveState {
         case .saved:
-            HStack(spacing: NoopMetrics.space1) {
+            HStack(spacing: CenitMetrics.space1) {
                 Image(systemName: "checkmark")
                 Text("Saved to Health")
             }
             .font(StrandFont.caption)
             .foregroundStyle(t.verdict)
         case .failed:
-            HStack(spacing: NoopMetrics.space1) {
+            HStack(spacing: CenitMetrics.space1) {
                 Image(systemName: "exclamationmark.triangle")
                 Text("Couldn't save to Health")
             }

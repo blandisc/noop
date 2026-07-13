@@ -89,7 +89,7 @@ struct WorkoutDetailScreen: View {
                 originBlock
                 methodNote
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .task(id: row.startTs) {
@@ -208,7 +208,7 @@ struct WorkoutDetailScreen: View {
                 }
             }
             .frame(height: 34)
-            .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(zonesA11y(percents))
             HStack(spacing: 0) {
@@ -449,8 +449,7 @@ struct WorkoutDetailScreen: View {
         content()
             .opacity(hrrRevealed ? 1 : 0)
             .offset(y: (hrrRevealed || reduceMotion) ? 0 : 9)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.46).delay(Double(index) * 0.07),
-                       value: hrrRevealed)
+            .strandAnimation(.easeOut(duration: 0.46).delay(Double(index) * 0.07), value: hrrRevealed)
     }
 
     /// es-MX copy mapped from the engine's TREND STATE (not the engine's raw English `note`), so the

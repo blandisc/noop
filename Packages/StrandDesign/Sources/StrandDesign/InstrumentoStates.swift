@@ -32,7 +32,7 @@ public struct ScreenScaffold<Content: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             if title != nil || overline != nil {
                 VStack(alignment: .leading, spacing: 4) {
                     if let overline {
@@ -47,7 +47,7 @@ public struct ScreenScaffold<Content: View>: View {
             }
             content()
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
     }
@@ -214,7 +214,7 @@ private struct StateContainer<Content: View>: View {
         VStack(spacing: 14) {
             content()
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.paper)
     }
@@ -242,7 +242,7 @@ public struct QuietButton: View {
                 .background(theme.surface, in: Capsule(style: .continuous))
                 .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(InstrumentoPressStyle())
     }
 }
 

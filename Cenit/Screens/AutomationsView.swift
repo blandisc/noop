@@ -26,7 +26,7 @@ private struct AutomationsContent: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Automations").font(StrandFont.title1).foregroundStyle(theme.ink)
                     Text("Make the strap do things: tap to act, train by feel, wake to a buzz.")
@@ -48,8 +48,8 @@ private struct AutomationsContent: View {
                 illnessSection
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())

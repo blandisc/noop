@@ -1,6 +1,6 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
-  "$description": "Strand / NOOP design tokens. The app speaks one visual language — «Instrumento diurno» (FER-131): light warm paper, color only on the datum — under color.instrumento. The dark legacy system was retired in FER-430. Besides instrumento, what remains are the shared data scales (recovery / strain / sleep / hrZone / status / metric) and the chrome accent. Extracted from the StrandDesign Swift package. Hex values are exact; do not substitute.",
+  "$description": "Strand / Cénit design tokens. The app speaks one visual language — «Instrumento diurno» (FER-131): light warm paper, color only on the datum — under color.instrumento. The dark legacy system was retired in FER-430. Besides instrumento, what remains are the shared data scales (recovery / strain / sleep / hrZone / status / metric) and the chrome accent. Extracted from the StrandDesign Swift package. Hex values are exact; do not substitute.",
   "color": {
     "$type": "color",
     "accent": {

@@ -306,7 +306,7 @@ siembra la *base* y alimenta gráficas de respaldo — ver FER-149 y
 barra "1 de 14" es un **modificador** que se cuelga del héroe de veredicto y
 **desaparece sola** a las 14 noches propias, sin salto de layout.
 
-**A confirmar en código al implementar:** que NOOP **no** calcula veredicto con solo
+**A confirmar en código al implementar:** que Cénit **no** calcula veredicto con solo
 Apple Health (que el score sale de la banda). Es lo que indican los cambios de
 FER-149, pero verificar en `Repository`/`IntelligenceEngine` antes de cerrar el copy:
 si algún día se diera veredicto desde Apple Health, el estado §7-6 cambiaría a

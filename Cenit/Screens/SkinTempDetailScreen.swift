@@ -304,7 +304,7 @@ struct SkinTempDetailScreen: View {
             .frame(height: 46)
             HStack(spacing: 5) {
                 Text("typical swing · 0 = your baseline").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                Image(systemName: "info.circle").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.info.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
         }
         .padding(4)
@@ -453,8 +453,8 @@ struct SkinTempDetailScreen: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         // Fade in place (no slide) — smoother than flying in from the top. (Detalle de Vital fix)
         .transition(.opacity)
     }

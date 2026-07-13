@@ -1,19 +1,19 @@
-# NOOP — Feature Guide
+# Cénit — Feature Guide
 
-NOOP is a standalone, fully **offline** companion app for WHOOP straps (4.0 and 5.0). It pairs
+Cénit is a standalone, fully **offline** companion app for WHOOP straps (4.0 and 5.0). It pairs
 directly with the strap over Bluetooth Low Energy — **no WHOOP account, no
 cloud** — stores everything on-device in SQLite, imports your WHOOP and Apple Health exports,
-and computes recovery, strain, HRV and sleep locally. NOOP is the iOS app (`Cenit`); its UI and
+and computes recovery, strain, HRV and sleep locally. Cénit is the iOS app (`Cenit`); its UI and
 collection code live in the shared app layer under `Cenit/`, on top of the cross-platform Swift
 packages.
 
-> **Not affiliated with WHOOP.** NOOP is independent interoperability software for *your own*
-> device and *your own* data. "WHOOP" is used only to identify the hardware NOOP talks to.
-> **NOOP is not a medical device** — every metric (HR, HRV, recovery, strain, sleep, SpO₂,
+> **Not affiliated with WHOOP.** Cénit is independent interoperability software for *your own*
+> device and *your own* data. "WHOOP" is used only to identify the hardware Cénit talks to.
+> **Cénit is not a medical device** — every metric (HR, HRV, recovery, strain, sleep, SpO₂,
 > respiration, skin temperature) is an approximation, not a clinical reading, and must not be
 > used to diagnose, treat or make health decisions.
 
-NOOP is built on community reverse-engineering work, with thanks to:
+Cénit is built on community reverse-engineering work, with thanks to:
 
 | Project | Contribution |
 | --- | --- |
@@ -25,7 +25,7 @@ NOOP is built on community reverse-engineering work, with thanks to:
 
 ## At a glance
 
-NOOP is a **tab bar** app. Five tabs sit along the bottom — **Today**, **Trends**, **Live**
+Cénit is a **tab bar** app. Five tabs sit along the bottom — **Today**, **Trends**, **Live**
 and **Sleep**, plus a **More** tab that opens a grouped list of every remaining screen
 (*Insights*, *Body*, *Data*, *App*). The live connection state and battery % (bonded /
 connecting / disconnected) surface inside the **Today** and **Live** screens, not in a global
@@ -37,7 +37,7 @@ Screens are grouped below by whether they need a connected strap:
 | --- | --- |
 | Live, Breathe (for haptics), Intervals (for haptics), Health Monitor (live HR), Automations (to act) | Control Center, Explore, Compare, Insights, Sleep, Trends, Workouts, Stress, Apple Health, Data Sources |
 
-Most of NOOP works the moment you import an export. The strap adds the *live* layer — real-time
+Most of Cénit works the moment you import an export. The strap adds the *live* layer — real-time
 heart rate, haptic cues, and physical-input automations.
 
 ---
@@ -51,7 +51,7 @@ Throughout the app the strap reports one of three states:
 - **Bonded** — paired and streaming; haptics and live HR are available (positive / green).
 
 > WHOOP straps do **not** appear in *Settings → Bluetooth*. They advertise on a custom
-> profile that only apps like NOOP can find — so there's nothing to pair in iOS Settings.
+> profile that only apps like Cénit can find — so there's nothing to pair in iOS Settings.
 
 Commands that drive the strap motor (any wrist buzz) and the live realtime stream require a
 **bonded** connection. Where a feature needs this, it is noted below and the button is disabled
@@ -66,7 +66,7 @@ The onboarding wizard (`OnboardingWizard.swift`) appears on first launch and run
 "thread" along the bottom and a Back button always available:
 
 1. **Welcome** — "all your data, none of the cloud".
-2. **What NOOP does** — three value slides: the recovery ring, live heart, offline ownership.
+2. **What Cénit does** — three value slides: the recovery ring, live heart, offline ownership.
 3. **Bluetooth priming** — explains *before* the iOS Bluetooth prompt that nothing leaves
    your phone; the connection is local BLE with no server in the middle.
 4. **Wear & wake** — put the strap on (snug, sensor on skin), charge it, keep it within ~1 m.
@@ -111,7 +111,7 @@ The home dashboard (`TodayView.swift`, titled "Control Center"). A tight, gaples
 
 `LiveView.swift` is the real-time heart-rate screen and the pairing/diagnostics surface:
 
-- A large **smoothed heart rate** (BPM) — NOOP shows a spike-filtered median over a ~10 s
+- A large **smoothed heart rate** (BPM) — Cénit shows a spike-filtered median over a ~10 s
   window, not the raw per-beat value, so it's stable. Recent **R-R intervals** (ms) are listed
   beneath.
 - **Status grid** — battery %, last decoded frame type, last decoded event.
@@ -131,8 +131,8 @@ stops the realtime stream (the lightweight standard HR keeps recording).
 
 **More › Body: Breathe · works visually without a strap; needs a bonded strap for haptic cues.**
 
-`BreathingView.swift` — an **HRV haptic breathing biofeedback** trainer, and NOOP's flagship
-novel feature. Because the strap both *measures* HRV (from R-R intervals) and *buzzes*, NOOP can
+`BreathingView.swift` — an **HRV haptic breathing biofeedback** trainer, and Cénit's flagship
+novel feature. Because the strap both *measures* HRV (from R-R intervals) and *buzzes*, Cénit can
 pace your breath with a felt cue and watch your HRV respond in real time.
 
 - **Pick a pace**: Relax 4-6 (4 s inhale / 6 s exhale), Coherence 5.5 (equal ~5.5 breaths/min),
@@ -221,7 +221,7 @@ Sparse series auto-widen so they still overlay against dense ones.
    plain-English sentence, the with/without means and group counts, a **SIGNIFICANT / EXPLORATORY**
    pill, and an effect size (**Cohen's d**) with a magnitude word. Tint is sign-aware: a behaviour
    that moves the outcome the "good" way reads positive/green, the "bad" way reads red. Without
-   journal data, NOOP explains how to start logging.
+   journal data, Cénit explains how to start logging.
 2. **Metric Relationships** — a curated set of **Pearson** correlations: Sleep performance ↔
    Recovery, HRV ↔ Recovery, Resting HR ↔ Recovery, and Recovery → next-day recovery (1-day lag).
    Each is a one-line insight with r, a significance pill, an r-bar, and a strength/direction reading.
@@ -244,7 +244,7 @@ Sparse series auto-widen so they still overlay against dense ones.
   at your personal mean, so highs and lows pop.
 - **Asleep duration** — a trailing-30-night hours trend with avg / min / max.
 
-If no sleep sessions are imported, NOOP points you to Data Sources.
+If no sleep sessions are imported, Cénit points you to Data Sources.
 
 ---
 
@@ -287,13 +287,13 @@ Windows are taken relative to your latest recorded day and auto-widen on sparse 
 `HealthView.swift` — live vitals:
 
 - **Live heart rate hero** — a streaming HR sparkline tinted by zone, with a zone pill, "% Max",
-  your Max HR (from Settings) and a streaming/idle state. When the strap reports HR as 0, NOOP
+  your Max HR (from Settings) and a streaming/idle state. When the strap reports HR as 0, Cénit
   derives it from the latest R-R interval and notes "from R-R".
 - **Vital Signs** — a tile grid from your most recent imported day: Respiratory Rate, Blood O₂,
   Resting HR, HRV and Skin Temp, each colored by whether it sits in a healthy range ("In range" /
   "Out of range").
 
-With no live HR and no imported day, NOOP prompts you to connect or import.
+With no live HR and no imported day, Cénit prompts you to connect or import.
 
 ---
 
@@ -304,7 +304,7 @@ With no live HR and no imported day, NOOP prompts you to connect or import.
 `StressView.swift` — a clear, single-number **Stress Monitor** (0–3) with a LOW / MEDIUM / HIGH
 band and one plain-English line on *why*:
 
-- Today's value is your **recorded daily stress score** if one exists; otherwise NOOP **derives**
+- Today's value is your **recorded daily stress score** if one exists; otherwise Cénit **derives**
   it transparently — comparing today's resting HR and HRV to your own 30-day baseline (higher RHR
   and lower HRV both push stress up), combining two z-scores and squashing onto 0–3 with a logistic
   curve (0 calm · 1.5 baseline · 3 high).
@@ -344,12 +344,12 @@ a single reading is shown as a "Latest reading" value rather than an empty chart
 ### WHOOP Export (CSV)
 Import your full WHOOP history — recovery, strain, sleep, workouts — from a WHOOP data export
 (`.zip` or unzipped folder). Works for WHOOP 4.0, 5.0 and MG. Get one from
-*app.whoop.com → Data Management*. NOOP reports the records imported and the date span, and shows
+*app.whoop.com → Data Management*. Cénit reports the records imported and the date span, and shows
 how many days and sleeps are stored.
 
 ### Apple Health
 Import an Apple Health export (`export.zip`) from *Health app → profile → Export All Health Data*.
-NOOP **streams and aggregates** it locally — years of HR, HRV, sleep, SpO₂, steps, body
+Cénit **streams and aggregates** it locally — years of HR, HRV, sleep, SpO₂, steps, body
 composition and more. Large exports take a minute or two.
 
 ### WHOOP Strap (Live BLE)
@@ -387,21 +387,21 @@ A **Test action** button runs it without the strap. Recent moments are listed an
   15 minutes**, off by default.
 
 ### Smart alarm
-Wake to a wrist buzz. This arms the strap's **own firmware alarm**, so it still fires even if NOOP
-is closed. Set your wake time — the strap buzzes at exactly that time. NOOP does not currently do
+Wake to a wrist buzz. This arms the strap's **own firmware alarm**, so it still fires even if Cénit
+is closed. Set your wake time — the strap buzzes at exactly that time. Cénit does not currently do
 light-sleep early wake.
 
 ---
 
 ## Illness early-warning
 
-NOOP watches for the classic early-illness/strain signature on-device. It compares your last ~2
+Cénit watches for the classic early-illness/strain signature on-device. It compares your last ~2
 days against a ~28-day baseline (ending 3 days ago) for resting HR, HRV, skin-temperature
 deviation and respiration. When **two or more** anomalies appear — e.g. resting HR up ≥5 bpm,
 HRV down ≥20%, skin temp up ≥0.6 °C, respiration up — a banner appears on **Control Center**:
 *"Your body looks strained — … Consider taking it easy."*
 
-On a banner transition from clear to raised, NOOP also posts a **system notification** (at most
+On a banner transition from clear to raised, Cénit also posts a **system notification** (at most
 once per local day) so the warning reaches you when the window is closed. The toggle lives in
 **Automations → Illness early-warning** and is **opt-in** (off by default — enabling it triggers
 the notification-permission prompt). Needs at least 14 days
@@ -419,17 +419,17 @@ of history. On-device and approximate — informational only, **not** a diagnosi
   manual override). These power your zones, calorie estimates and recovery baselines.
 - **Strap** — connection status, battery, and Re-scan / Disconnect controls.
 - **About** — version, the "all your data, none of the cloud" note, a **medical disclaimer**, and
-  attribution to the community protocols NOOP is built on.
+  attribution to the community protocols Cénit is built on.
 
 ---
 
 ## Support
 
-**More › App: Support · always available. NOOP is free and always will be.**
+**More › App: Support · always available. Cénit is free and always will be.**
 
 `SupportView.swift`:
 
-- **Built on** — credit to the community reverse-engineering projects NOOP stands on.
+- **Built on** — credit to the community reverse-engineering projects Cénit stands on.
 - **Donate (optional)** — never a paywall; the whole app works without it. Copy-to-clipboard
   crypto addresses (Bitcoin, Cardano, Ethereum, XRP) for anyone who wants to chip in toward
   future work (Windows, the iOS port, new features). The app never asks again.
@@ -440,7 +440,7 @@ of history. On-device and approximate — informational only, **not** a diagnosi
 
 ## Privacy & data ownership
 
-- **Offline by design.** NOOP talks to your strap directly over Bluetooth Low Energy — there is
+- **Offline by design.** Cénit talks to your strap directly over Bluetooth Low Energy — there is
   no server in the middle. No account, no sync, no cloud.
 - **On-device storage.** All history (imported and live-captured) is stored locally in SQLite
   via GRDB.

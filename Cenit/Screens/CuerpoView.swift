@@ -83,7 +83,7 @@ private struct DetailChrome<Content: View>: View {
             HStack(spacing: 6) {
                 Button { onClose() } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
+                        StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
                         Text("Tendencias").font(StrandFont.body)
                     }
                     .foregroundStyle(theme.ink)
@@ -256,7 +256,7 @@ private struct CuerpoLanding: View {
     var body: some View {
         ZStack {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 titleBlock
                 periodSelector
                 // §8.7 landing micro-legend: today's values vs last month's trends (period selector above).
@@ -273,9 +273,9 @@ private struct CuerpoLanding: View {
                 connectNudge
                 footerActions
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(PaperBackground())
@@ -531,8 +531,8 @@ private struct CuerpoLanding: View {
         }
         .padding(.vertical, 16).padding(.horizontal, 20)
         .frame(maxWidth: .infinity)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -667,7 +667,7 @@ private struct CuerpoLanding: View {
                     // Provisional placement here, pending a product decision on its permanent home (likely
                     // Entrenar / Patrones). (FER-566 / handoff «DE MOMENTO»)
                     Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 Text("What to train today")
@@ -1048,11 +1048,11 @@ private struct CuerpoLanding: View {
         if notConnected && freshSteps == nil {
             Button { darkSheet = .screen(.dataSources) } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
+                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Connect Apple Health to fill steps and more.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 6)
-                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())
             }
@@ -1076,7 +1076,7 @@ private struct CuerpoLanding: View {
                     .foregroundStyle(theme.inkSecondary).frame(width: 22)
                 Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 16).padding(.vertical, 15)
@@ -1102,7 +1102,7 @@ private struct CuerpoLanding: View {
                     if activityCosts.isEmpty {
                         Text("Gathering data").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 if !activityCosts.isEmpty {
