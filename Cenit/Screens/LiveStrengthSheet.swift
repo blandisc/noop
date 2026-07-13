@@ -2117,6 +2117,7 @@ struct LiveStrengthSheet: View {
     /// The live HR intensity as a full Z1–Z5 ramp (FER-894 · Estados 2): five segments, the current zone lit
     /// in its `hrZoneRamp` hue, with «♥ bpm · N% of your max» beneath. Replaces the single-zone chip so the
     /// whole scale — and how far into it you are — is legible at a glance. Hidden when there's no strap.
+    /// Paleta compartida: `InstrumentoTheme.hrZoneRamp`. 1 de 3 superficies de zonas HR distintas (aquí = intensidad ahora; WorkoutDetailScreen = %-tiempo; MetricDetailScreen = minutos) — NO se unifican, solo comparten la paleta (FER-908).
     private func hrZoneRampRow(_ hr: Int) -> some View {
         let zone = hrZone(hr)
         let maxHR = Double(model.profile.hrMax)
