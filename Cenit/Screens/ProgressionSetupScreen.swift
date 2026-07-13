@@ -185,14 +185,8 @@ struct ProgressionSetupScreen: View {
     }
 
     private func incrementStep(_ system: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: system).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                .frame(width: 32, height: 32)
-                .background(Circle().fill(theme.surface))
-                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
+        StepperButton(system: system, size: 32, shape: .circle,
+                      glyph: StrandFont.caption, theme: theme, action: action)
     }
 
     // MARK: Consequence

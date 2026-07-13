@@ -212,15 +212,8 @@ struct PlatesScreen: View {
 
     /// Circular − / + control (bordered circle, hairline stroke) — matches the session stepper vocabulary.
     private func pairStepper(system: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: system)
-                .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.inkSecondary)
-                .frame(width: 34, height: 34)
-                .background(theme.surface, in: Circle())
-                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
+        StepperButton(system: system, size: 34, shape: .circle,
+                      glyph: StrandFont.glyph(.inline, weight: .semibold), theme: theme, action: action)
     }
 
     private var barStepper: some View {
