@@ -20,7 +20,7 @@ LOG="$(mktemp -t capture-appmap).log"
 if [ "$#" -gt 0 ]; then TESTS=("$@"); else
   TESTS=(test_today_empty test_today_calibrating test_today_downloading test_today_insufficient \
          test_today_primed test_today_balanced test_today_strained test_today_rundown); fi
-ONLY=(); for t in "${TESTS[@]}"; do ONLY+=(-only-testing "CenitUITests/NOOPScreenshotTests/$t"); done
+ONLY=(); for t in "${TESTS[@]}"; do ONLY+=(-only-testing "CenitUITests/CenitScreenshotTests/$t"); done
 
 echo "▸ Regenerando proyecto…"
 GIT_CONFIG=/dev/null xcodegen generate >/dev/null
