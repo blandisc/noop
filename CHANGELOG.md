@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Mis entrenamientos» reordena su mes y suma las subidas de carga / «Your workouts» reorders its month and counts load raises.**
+  **ES** — «Mis entrenamientos» alinea su orden al handoff: el volumen por semana va antes que los totales del mes, y **Tu progresión** sube por encima de **Volumen por músculo**. El subtítulo del héroe añade **«· N subidas de carga»** junto a las sesiones del mes cuando hay subidas.
+  **EN** — «Your workouts» aligns its order to the handoff: weekly volume now sits above the month totals, and **Your progression** rises above **Volume per muscle**. The hero subtitle gains **«· N load raises»** next to the month's sessions when any exercise raised.
+  ([WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift))
+
 - **«Tu Plan» estrena héroe «Tu semana» y encabeza su semana / «Your plan» gets a «This week» hero and a labeled week.**
   **ES** — El héroe de Tu Plan pasa a **«Tu semana»** con un subtítulo escueto **«N días · N rutinas»** (antes «Tu plan» + una frase de balance), y la lista de días estrena su encabezado **«La semana · toca un día para editarlo»**, al mismo estilo que Volumen y Mis rutinas. Alinea la pantalla al handoff sin tocar su lógica.
   **EN** — The Your-plan hero becomes **«Tu semana»** with a terse **«N days · N routines»** subtitle (was «Your plan» + a balance sentence), and the day list gains a **«The week · tap a day to edit it»** header matching the Volume and My-routines sections. Aligns the screen to the handoff with no logic change.

@@ -59443,6 +59443,40 @@
           }
         }
       }
+    },
+    "%lld sessions this month": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sessions this month"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sesiones este mes"
+          }
+        }
+      }
+    },
+    "%lld sessions this month · %lld load raises": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sessions this month · %lld load raises"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sesiones este mes · %lld subidas de carga"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
