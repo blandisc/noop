@@ -25,6 +25,14 @@ ONLY=(); for t in "${TESTS[@]}"; do ONLY+=(-only-testing "CenitUITests/CenitScre
 echo "▸ Regenerando proyecto…"
 GIT_CONFIG=/dev/null xcodegen generate >/dev/null
 
+# FER-924: capturas deterministas — Reduce Motion del SISTEMA (congela todo el movimiento
+# repeatForever de forma uniforme) + status bar canónico (9:41, batería llena, wifi).
+xcrun simctl boot "$SIM_NAME" >/dev/null 2>&1 || true
+xcrun simctl spawn "$SIM_NAME" defaults write com.apple.Accessibility ReduceMotionEnabled -bool true >/dev/null 2>&1 || true
+xcrun simctl status_bar "$SIM_NAME" override --time "9:41" \
+  --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 --dataNetwork wifi \
+  >/dev/null 2>&1 || echo "  (aviso: no se pudo fijar el status bar — sigue con el reloj real)"
+
 echo "▸ Corriendo harness en '$SIM_NAME' (${#TESTS[@]} estados; tarda unos minutos)…"
 set +e
 GIT_CONFIG=/dev/null xcodebuild test \

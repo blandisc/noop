@@ -24,6 +24,17 @@ T0=$SECONDS
 GIT_CONFIG=/dev/null xcodegen generate >/dev/null
 T_GEN=$((SECONDS - T0))
 
+# FER-924: capturas deterministas.
+xcrun simctl boot "$SIM_NAME" >/dev/null 2>&1 || true
+# (a) Reduce Motion a nivel SISTEMA — SwiftUI lo lee del trait en cada frontera UIKit, así que
+#     congela TODO el movimiento repeatForever (chevron, punto de la tab, latidos, spinner) de forma
+#     uniforme. Un override por-vista NO basta (el trait se re-inyecta en TabView/hosting).
+xcrun simctl spawn "$SIM_NAME" defaults write com.apple.Accessibility ReduceMotionEnabled -bool true >/dev/null 2>&1 || true
+# (b) Status bar canónico (9:41, batería llena, wifi) — el reloj real metía ruido al diff.
+xcrun simctl status_bar "$SIM_NAME" override --time "9:41" \
+  --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 --dataNetwork wifi \
+  >/dev/null 2>&1 || echo "  (aviso: no se pudo fijar el status bar — sigue con el reloj real)"
+
 echo "▸ Build incremental + $TEST en '$SIM_NAME'…"
 T1=$SECONDS
 set +e

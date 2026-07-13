@@ -1077,6 +1077,12 @@ struct TodayView: View {
 
     /// La hora reloj actual (0…24) para el punto «ahora» del sello.
     private var clockHourNow: Double {
+        #if DEBUG
+        // FER-924: en modo fixture el «ahora» del sello se congela a las 9:41 — su POSICIÓN depende del
+        // reloj real (no es animación, así que Reduce Motion no lo cubre); congelarlo hace que dos
+        // capturas del mismo estado salgan idénticas (gate de diff / regresión visual del canvas).
+        if ScreenshotFixtures.activeState() != nil { return 9.0 + 41.0 / 60.0 }
+        #endif
         let c = Calendar.current.dateComponents([.hour, .minute], from: Date())
         return Double(c.hour ?? 0) + Double(c.minute ?? 0) / 60.0
     }

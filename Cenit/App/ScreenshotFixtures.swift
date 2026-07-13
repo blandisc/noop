@@ -43,7 +43,9 @@ enum ScreenshotFixtures {
         // is «··» (never a fake number). Seed a short strap history with usable HRV and NO recovery on
         // any row (recovery stays nil until the baseline seeds), and mark the strap as seen.
         if state == "calibrating" {
-            model.live.lastSyncedAt = Date().timeIntervalSince1970   // strapSeen == true
+            // FER-924: anclado a −125 s para que la línea de frescura muestre «hace 2 min» estable
+            // (granularidad de minuto) — con `now` mostraba «hace 4 s» y variaba por corrida.
+            model.live.lastSyncedAt = Date().timeIntervalSince1970 - 125   // strapSeen == true
             let nights = 2
             var days: [DailyMetric] = []
             for ago in stride(from: nights, through: 0, by: -1) {
@@ -210,6 +212,9 @@ enum ScreenshotFixtures {
             out.append(HRSample(ts: ts, bpm: Int(bpm.rounded())))
             ts += 300; k += 1
         }
+        // FER-924: el BPM del header muestra el último bucket — se fija a 62 constante para que
+        // dos capturas del mismo estado salgan idénticas (la sinusoide variaba con la hora real).
+        if let last = out.last { out[out.count - 1] = HRSample(ts: last.ts, bpm: 62) }
         return out
     }
 }
