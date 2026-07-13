@@ -84,12 +84,10 @@ public struct SegmentedPillControl<T: Hashable>: View {
     let items: [T]
     let label: (T) -> String
     @Binding var selection: T
-    /// Optional «Instrumento diurno» theme. When `nil` (the default) the control renders the
-    /// legacy dark `StrandPalette` look used by the 9 shipped screens — UNCHANGED. When a theme
-    /// is passed (the light Detalle de Métrica, FER-211), it renders an iOS-native segmented look
-    /// on warm paper: a quiet track, an active segment that's a subtle ink-tinted capsule (no
-    /// bright green), and ink labels. (FER-211)
-    var theme: InstrumentoTheme?
+    /// The «Instrumento diurno» theme. Renders an iOS-native segmented look on warm paper: a quiet
+    /// track, an active segment that's a subtle ink capsule (no bright green), and ink labels. (FER-211;
+    /// FER-902 retired the legacy dark `theme == nil` branch — every live screen passes a theme.)
+    let theme: InstrumentoTheme
     /// «Ink thumb» variant (FER-716 handoff «Entrenar»): a `patternBlock` track with an `ink` active
     /// capsule and `paper` Grotesk label — the bolder segmented look the session's editor uses. Only
     /// meaningful with a `theme`; the default (`false`) keeps the quiet surface-thumb look.
@@ -98,7 +96,7 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// (iOS HIG minimum) instead of the compact 28pt — used for the Tendencias landing selector. Only
     /// meaningful with a `theme`; default keeps the compact height.
     var tall: Bool = false
-    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme? = nil,
+    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme,
                 inkThumb: Bool = false, tall: Bool = false, label: @escaping (T) -> String) {
         self.items = items; self._selection = selection; self.theme = theme
         self.inkThumb = inkThumb; self.tall = tall; self.label = label
@@ -122,48 +120,29 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// the equal-width tap segment) but FILLS the track's HEIGHT — the capsule wraps a fixed-height frame, so
     /// it no longer floats small inside a taller groove. The thumb is 28pt tall, inset 3pt from the track
     /// edge like a slim iOS segmented control — a quiet secondary control, deliberately tighter than the
-    /// 44pt min (the full segment width stays the tap target). Legacy (theme == nil) keeps the exact
-    /// dark-palette look — UNCHANGED. (FER-439 / Detalle de Vital fix)
+    /// 44pt min (the full segment width stays the tap target). (FER-439 / Detalle de Vital fix)
     @ViewBuilder private func segment(_ item: T, _ sel: Bool) -> some View {
-        if let theme {
-            // Handoff v2 PeriodSelector: the active thumb is an INK capsule with PAPER text (Grotesk),
-            // not the old quiet surface thumb — the bolder look the CompactTrendToggle already uses. The
-            // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
-            // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
-            Text(label(item))
-                .font(InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
-                .tracking(1.6)
-                .lineLimit(1).minimumScaleFactor(0.85)
-                .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
-                .padding(.horizontal, 12)
-                .frame(height: tall ? 44 : 34)
-                .background {
-                    if sel { Capsule(style: .continuous).fill(theme.ink) }
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-        } else {
-            Text(label(item))
-                .font(StrandFont.captionNumber)
-                .lineLimit(1).minimumScaleFactor(0.8)
-                .foregroundStyle(sel ? InstrumentoTheme.base.paper : InstrumentoTheme.base.inkSecondary)
-                .frame(minWidth: 32)
-                .padding(.vertical, 6).padding(.horizontal, 11)
-                .background(Capsule(style: .continuous).fill(sel ? StrandPalette.accent : Color.clear))
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
-        }
+        // Handoff v2 PeriodSelector: the active thumb is an INK capsule with PAPER text (Grotesk),
+        // not the old quiet surface thumb — the bolder look the CompactTrendToggle already uses. The
+        // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
+        // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
+        Text(label(item))
+            .font(InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
+            .tracking(1.6)
+            .lineLimit(1).minimumScaleFactor(0.85)
+            .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
+            .padding(.horizontal, 12)
+            .frame(height: tall ? 44 : 34)
+            .background {
+                if sel { Capsule(style: .continuous).fill(theme.ink) }
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
     }
 
-    // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); legacy
-    // keeps its original fill. The border stays for both.
-    private var trackFill: Color {
-        guard let theme else { return InstrumentoTheme.base.hairline }
-        return theme.patternBlock
-    }
-    private var trackStroke: Color {
-        theme == nil ? InstrumentoTheme.base.hairline : .clear
-    }
+    // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); the border stays.
+    private var trackFill: Color { theme.patternBlock }
+    private var trackStroke: Color { .clear }
 }
 
 // MARK: - Badges
