@@ -1028,4 +1028,51 @@ final class MigrationTests: XCTestCase {
             }
         }
     }
+
+    /// v34 (FER-930): setEntry.rpe added append-only, nullable with no default — an existing row must
+    /// survive the migration untouched and the new column must read back as NULL, never 0.
+    func testV34AddsRpeToSetEntryAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v33")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                INSERT INTO setEntry (id, sessionId, exerciseId, position, kind, weightKg, reps, done, ts)
+                VALUES ('se1', 's1', 'bench-press', 0, 'work', 60, 8, 1, 0)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v34
+
+        try await dbQueue.read { db in
+            let cols = try db.columns(in: "setEntry").map(\.name)
+            XCTAssertTrue(cols.contains("rpe"), "v34 must add setEntry.rpe")
+            let row = try Row.fetchOne(db, sql: "SELECT * FROM setEntry WHERE id='se1'")
+            XCTAssertNotNil(row, "the pre-v34 row must survive")
+            XCTAssertNil(row?["rpe"] as Double?, "new column defaults to NULL, never 0")
+            XCTAssertEqual(row?["weightKg"] as Double?, 60, "existing columns untouched")
+        }
+    }
+
+    /// v34 must be idempotent (FER-791 discipline): column already present but v34 unrecorded →
+    /// re-running records it without a "duplicate column" crash.
+    func testV34IsIdempotentWhenColumnsAlreadyExist() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v33")
+
+        try await dbQueue.write { db in
+            try db.alter(table: "setEntry") { t in
+                t.add(column: "rpe", .double)
+            }
+        }
+
+        try migrator.migrate(dbQueue)   // → v34; must not throw
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v34"),
+                          "v34 must be recorded so it never re-runs and wedges startup")
+        }
+    }
 }

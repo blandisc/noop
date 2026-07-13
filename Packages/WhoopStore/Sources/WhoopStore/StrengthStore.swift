@@ -432,12 +432,12 @@ extension WhoopStore {
             for s in sets {
                 let args: [DatabaseValueConvertible?] = [
                     s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
-                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts
+                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe
                 ]
                 try db.execute(sql: """
                     INSERT INTO setEntry
-                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
             }
             // Replace this session's opt-out rows (delete-first keeps a re-save idempotent, like setEntry).
@@ -484,12 +484,12 @@ extension WhoopStore {
             for s in sets {
                 let args: [DatabaseValueConvertible?] = [
                     s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
-                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts
+                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe
                 ]
                 try db.execute(sql: """
                     INSERT INTO setEntry
-                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
             }
 
@@ -628,7 +628,8 @@ extension WhoopStore {
     private static func setEntry(_ r: Row) -> SetEntry {
         SetEntry(id: r["id"], sessionId: r["sessionId"], exerciseId: r["exerciseId"], position: r["position"],
                  kind: SetKind(rawValue: r["kind"]) ?? .work, weightKg: r["weightKg"], reps: r["reps"],
-                 timeS: r["timeS"], distanceM: r["distanceM"], done: (r["done"] as Int) != 0, ts: r["ts"])
+                 timeS: r["timeS"], distanceM: r["distanceM"], done: (r["done"] as Int) != 0, ts: r["ts"],
+                 rpe: r["rpe"])
     }
 
     private static func personalRecord(_ r: Row) -> PersonalRecord {

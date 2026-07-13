@@ -296,6 +296,15 @@ public extension InstrumentoTheme {
     /// Esfuerzo deep lane fill («Extremo», strain ≥18) — one step darker than `dataStrain`.
     var strainDeep: Color { Color(hex: "#8F4413") }
 
+    // MARK: RPE al registrar (FER-930)
+
+    /// Perceived-effort (RPE) datum — violet, distinct from `dataStrain`'s ember so the two "how hard
+    /// was it" families never collide. The raw handoff violet (`#7A4FB5`) reads ~5.1:1 on `paper` but
+    /// thins out at small text sizes; darkened here to `#6B3FA8` for a safer ~6.4:1 (AA, ≥4.5:1) at the
+    /// RPE sheet's hero number and the table's selected-cell text. Color ONLY on the datum (the entered
+    /// value / the selected pill), never the "RPE" label or overline — those stay ink.
+    var dataEffort: Color { Color(hex: "#6B3FA8") }
+
     // MARK: Tinte por opacidad — helpers de la escala `StrandOpacity` (auditoría jul-2026, H4)
     //
     // Azúcar sobre `StrandOpacity` para el patrón más común: modular un color de dato/estado a
@@ -453,6 +462,7 @@ public extension Text {
             swatches("Tinta", [("ink", t.ink), ("secondary", t.inkSecondary), ("tertiary", t.inkTertiary)], t)
             swatches("Dato / estado", [("recovery", t.dataRecovery), ("strain", t.dataStrain), ("warning", t.warning), ("critical", t.critical)], t)
             swatches("Métricas", [("sleep", t.dataSleep), ("hrv", t.dataHrv), ("heart", t.dataHeart), ("spo2", t.dataSpO2), ("oxygen", t.dataOxygen), ("steps", t.dataSteps)], t)
+            swatches("Entrenar", [("effort (RPE)", t.dataEffort)], t)
         }
         .padding(28)
         .frame(maxWidth: .infinity, alignment: .leading)

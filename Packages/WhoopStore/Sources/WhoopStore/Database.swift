@@ -776,6 +776,13 @@ extension WhoopStore {
                 """)
             try db.execute(sql: "DROP TABLE _exRemap")
         }
+        // v34 (FER-930): perceived effort (RPE, 6-10 with half-steps) captured per set, optional — marking
+        // a set done never requires it. Nullable with NO default: NULL means "not captured", never 0.
+        migrator.registerMigration("v34") { db in
+            try addColumnIfMissing(db, "rpe", on: "setEntry") {
+                $0.add(column: "rpe", .double)
+            }
+        }
         return migrator
     }
 

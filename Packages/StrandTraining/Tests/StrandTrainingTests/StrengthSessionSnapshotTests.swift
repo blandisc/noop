@@ -10,7 +10,7 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         let set1 = StrengthSessionSnapshot.SetSnapshot(
             id: "s1", weightKg: 60, reps: 8, done: true, doneTs: 1000,
             rest: RestConfig(mode: .fixed, seconds: 90, hrReference: .restingMargin, hrValue: 0),
-            kind: .work)
+            kind: .work, rpe: 7)
         let set2 = StrengthSessionSnapshot.SetSnapshot(
             id: "s2", weightKg: 60, reps: 8, done: false, kind: .warmup)
         let run = StrengthSessionSnapshot.RunSnapshot(
@@ -80,5 +80,23 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("supersetGroup"))
         let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
         XCTAssertNil(decoded.runs.first?.supersetGroup)
+    }
+
+    /// FER-930: RPE rides the snapshot so a crash mid-set doesn't lose an already-entered value.
+    func testPreservesRPE() throws {
+        let decoded = try JSONDecoder().decode(
+            StrengthSessionSnapshot.self, from: try JSONEncoder().encode(sample()))
+        XCTAssertEqual(decoded.runs.first?.sets.first?.rpe, 7)
+    }
+
+    /// FER-930: a snapshot persisted BEFORE the field existed (no `rpe` key) still decodes — absent
+    /// means "not captured" (nil), never a fabricated 0.
+    func testPreFer930SnapshotDecodesWithoutRPE() throws {
+        var snap = sample()
+        snap.runs[0].sets[0].rpe = nil
+        let data = try JSONEncoder().encode(snap)   // optional nil → key absent, like a pre-930 snapshot
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("\"rpe\""))
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertNil(decoded.runs.first?.sets.first?.rpe)
     }
 }
