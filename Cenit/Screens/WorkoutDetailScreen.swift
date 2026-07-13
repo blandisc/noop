@@ -190,6 +190,7 @@ struct WorkoutDetailScreen: View {
 
     // MARK: - Zonas de FC (solo si la sesión las trae)
 
+    /// Zonas HR vía la paleta compartida `theme.hrZoneRamp`. 1 de 3 superficies de zonas HR distintas (intensidad/%-tiempo/minutos) — NO se unifican, solo comparten la paleta (FER-908).
     private func zonesBlock(_ percents: [Double]) -> some View {
         // Normalize the bar to the recorded zone time so it fills the width (WHOOP omits sub-Z1 time, so
         // the raw percents can sum to < 100); the % labels below show the raw share. Same shape as the
