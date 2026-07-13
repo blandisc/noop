@@ -10,15 +10,15 @@ enum Terms {
     /// The load-bearing points the user must accept on first launch — the plain-English summary of
     /// `TERMS.md` §1–§6. Kept identical to the Android `Terms.points`. Each is (headline, body).
     static let points: [(String, String)] = [
-        ("Independent — not affiliated with WHOOP",
-         "Cénit is an unofficial project — not affiliated with, endorsed by, or sponsored by WHOOP, Inc. \"WHOOP\" is their trademark, used only to name the hardware Cénit works with."),
+        ("Independent: not affiliated with WHOOP",
+         "Cénit is an unofficial project, not affiliated with, endorsed by, or sponsored by WHOOP, Inc. \"WHOOP\" is their trademark, used only to name the hardware Cénit works with."),
         ("Using Cénit may breach WHOOP's Terms of Service",
-         "Use it only with a device you own, to read your own data. Whether to use it — and any effect on your WHOOP account, subscription, device, or warranty — is your decision, and your risk alone."),
-        ("Experimental — at your own risk",
+         "Use it only with a device you own, to read your own data. Whether to use it, and any effect on your WHOOP account, subscription, device, or warranty, is your decision, and your risk alone."),
+        ("Experimental: at your own risk",
          "Cénit talks to your strap's firmware over an unofficial, reverse-engineered protocol. There is a residual risk to the device, its data, and its connection to official services. You assume that risk."),
         ("Not a medical device, not medical advice",
          "Every metric is an unvalidated approximation. Don't use Cénit to diagnose, treat, or make any health decision. Always consult a qualified professional."),
         ("No warranty; liability limited",
-         "Cénit is free and provided \"as is\", with no warranty. Liability is limited to the maximum extent the law that applies to you allows — and nothing here removes protections your local law won't let us remove."),
+         "Cénit is free and provided \"as is\", with no warranty. Liability is limited to the maximum extent the law that applies to you allows, and nothing here removes protections your local law won't let us remove."),
     ]
 }

@@ -197,7 +197,7 @@ private struct WatchFaceMetrics: View {
                 .foregroundStyle(t.inkSecondary)
                 .padding(.horizontal, NoopMetrics.space1)
                 .padding(.vertical, 1)
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(t.inkTertiary, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(t.inkTertiary, lineWidth: 1))  // token-exempt: watch face geometry (fixed 4pt inset stroke)
                 .accessibilityLabel(Text("Effort zone \(z)"))
         }
     }

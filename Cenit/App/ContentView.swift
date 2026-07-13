@@ -77,7 +77,7 @@ struct ContentView: View {
             Button("Restore from backup…") { Task { await runRestore() } }
             Button("Not now", role: .cancel) { }
         } message: {
-            Text("It looks like there's no data on this device. If you've used Cénit before — on this phone or another — restore your strap history and settings from an iCloud Drive backup.")
+            Text("It looks like there's no data on this device. If you've used Cénit before, on this phone or another, restore your strap history and settings from an iCloud Drive backup.")
         }
         // FER-837: the restore RESULT is an inline banner (the offer above stays a native alert — the
         // honest exception: it fires before the app visually exists).
