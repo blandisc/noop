@@ -166,6 +166,37 @@ def render(src_of, font_css="", total_note=""):
 <div class="hint">Arrastra para mover · rueda para desplazar · ⌘/Ctrl + rueda para zoom</div>
 <script>{PANZOOM_JS}</script></body></html>"""
 
+# --- Puente captura→shots: nombre del PNG en shots/ -> nombre crudo que escribe el harness ---
+# (el harness usa today_<estado>.png; el muro usa hoy-<estado>.png). Extender por pantalla.
+SHOT_SRC = {
+    "hoy-vacio.png":        "today.png",
+    "hoy-calibrando.png":   "today_calibrating.png",
+    "hoy-descargando.png":  "today_downloading.png",
+    "hoy-insufficient.png": "today_insufficient.png",
+    "hoy-apunto.png":       "today_primed.png",
+    "hoy-equilibrado.png":  "today_balanced.png",
+    "hoy-exigido.png":      "today_strained.png",
+    "hoy-desgastado.png":   "today_rundown.png",
+}
+SHOT_W = 800   # ancho al que se reescalan las capturas para el repo/muro (nítido, ligero)
+
+def sync_shots(staging_dir):
+    """Copia+reescala los PNG crudos del harness (staging_dir) a docs/appmap/shots/ con el
+    nombre del muro y a SHOT_W de ancho. Devuelve (copiados, faltantes)."""
+    import shutil, subprocess
+    dst = os.path.join(APPMAP, "shots"); os.makedirs(dst, exist_ok=True)
+    copied, missing = [], []
+    for shot, raw in SHOT_SRC.items():
+        src = os.path.join(staging_dir, raw)
+        if not os.path.exists(src): missing.append(raw); continue
+        out = os.path.join(dst, shot)
+        shutil.copyfile(src, out)
+        subprocess.run(["sips", "--resampleWidth", str(SHOT_W), out],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        copied.append(shot)
+    print(f"sync_shots: {len(copied)} copiados a {SHOT_W}px" + (f" · faltan {missing}" if missing else ""))
+    return copied, missing
+
 def build_served():
     css=('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">')
