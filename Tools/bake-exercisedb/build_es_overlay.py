@@ -9,13 +9,20 @@ reports coverage so misses can be re-translated.
 
 Usage:  python3 build_es_overlay.py <trans_dir> [<trans_dir> ...]
 """
-import json, glob, os, sys
+import json, glob, os, sys, zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.abspath(os.path.join(
     HERE, "..", "..", "Packages", "StrandTraining", "Sources", "StrandTraining", "Resources"))
 PENDING = os.path.join(HERE, "cache", "pending-es.json")
 OUT = os.path.join(RES, "exercises.es.json")
+OUT_ZLIB = os.path.join(RES, "exercises.es.json.zlib")
+
+
+def write_zlib(path, obj):
+    data = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    co = zlib.compressobj(9, zlib.DEFLATED, -15)   # raw DEFLATE == Apple Compression .zlib
+    open(path, "wb").write(co.compress(data) + co.flush())
 
 
 def load_en2es(dirs):
@@ -67,7 +74,8 @@ def main():
     overlay.sort(key=lambda e: e["id"])
     with open(OUT, "w") as f:
         json.dump(overlay, f, ensure_ascii=False, indent=1)
-    print(f"overlay: {len(overlay)} exercises -> {OUT}")
+    write_zlib(OUT_ZLIB, overlay)   # the app reads the .zlib; the .json stays for review
+    print(f"overlay: {len(overlay)} exercises -> {OUT} (+ .zlib {os.path.getsize(OUT_ZLIB)} B)")
     print(f"strings: {total}, untranslated (fell back to EN): {miss} ({100*(total-miss)//total}% translated)")
 
 

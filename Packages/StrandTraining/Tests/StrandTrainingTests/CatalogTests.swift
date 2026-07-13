@@ -4,9 +4,9 @@ import XCTest
 final class CatalogTests: XCTestCase {
 
     func testCatalogLoadsFromBundle() {
-        // The bundled ExerciseDB catalog decodes via Bundle.module (FER-779: ~1500 exercises).
-        XCTAssertGreaterThan(ExerciseCatalog.all.count, 1400,
-                             "Seed catalog should hold ~1500 exercises")
+        // The bundled catalog decodes via Bundle.module (FER-923: free-exercise-db, 873 exercises).
+        XCTAssertGreaterThan(ExerciseCatalog.all.count, 800,
+                             "Seed catalog should hold ~873 exercises")
     }
 
     func testEveryEntryIsWellFormed() {
@@ -57,21 +57,19 @@ final class CatalogTests: XCTestCase {
     }
 
     func testBakedStillsCoverExercisesWithMedia() {
-        // FER-800: every exercise that still has a gifUrl must have a baked row still on disk, and
-        // every pruned (gifUrl == nil) exercise must have NONE — so rows are offline-complete and
-        // dead media is never re-GET'd. A user-created exercise (not in the catalog) has no still.
-        var withStill = 0
+        // FER-800 invariant: gifUrl != nil ⟺ a baked row still exists on disk — so rows are
+        // offline-complete and dead media is never re-GET'd. FER-923 moved the catalog to
+        // free-exercise-db, which ships NO media; the ExerciseDB stills were dropped and Cénit's
+        // own art lands per-id in FER-919. Until then the invariant holds trivially (both empty):
+        // every exercise has gifUrl == nil AND no still, and the negative lookup still resolves nil.
         for e in ExerciseCatalog.all {
             let still = ExerciseCatalog.stillURL(id: e.id)
             if e.gifUrl != nil {
                 XCTAssertNotNil(still, "\(e.id) has gifUrl but no baked still")
-                withStill += 1
             } else {
                 XCTAssertNil(still, "\(e.id) was pruned (nil gifUrl) but still has a baked still")
             }
         }
-        // Sanity floor: the vast majority of the catalog ships a still (measured ~1324 of ~1500).
-        XCTAssertGreaterThan(withStill, 1200, "too few baked stills — the bake probably didn't run")
         XCTAssertNil(ExerciseCatalog.stillURL(id: "definitely-not-a-real-id"))
     }
 

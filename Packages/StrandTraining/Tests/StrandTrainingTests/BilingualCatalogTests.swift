@@ -19,13 +19,14 @@ final class BilingualCatalogTests: XCTestCase {
     func testKnownExerciseIsTranslated() {
         // Resolve by English name (ids are opaque ExerciseDB ids), then assert the localized name is a
         // non-empty Spanish string distinct from the English.
-        guard let bench = ExerciseCatalog.all.first(where: { $0.name == "barbell bench press" }) else {
-            return XCTFail("expected 'barbell bench press' in the catalog")
+        let englishName = "Barbell Bench Press - Medium Grip"
+        guard let bench = ExerciseCatalog.all.first(where: { $0.name == englishName }) else {
+            return XCTFail("expected '\(englishName)' in the catalog")
         }
-        XCTAssertEqual(bench.displayName(localized: false), "barbell bench press")
+        XCTAssertEqual(bench.displayName(localized: false), englishName)
         let es = bench.displayName(localized: true)
         XCTAssertFalse(es.isEmpty)
-        XCTAssertNotEqual(es, "barbell bench press", "Spanish mode should show the translated name")
+        XCTAssertNotEqual(es, englishName, "Spanish mode should show the translated name")
     }
 
     func testDisplayNameFallsBackToEnglishWithoutOverlay() {

@@ -66,7 +66,7 @@ final class StarterTemplatesTests: XCTestCase {
         XCTAssertNotNil(t, "the mobility template must exist for the planner's softer suggestion")
         XCTAssertEqual(t?.group, .mobility)
         XCTAssertEqual(t?.slots.map(\.exerciseId), [
-            "Uto7l43", "K9VL0Jq", "JbC2iaV", "IZVHb27", "RJgzwny", "99rWm7w",
+            "Chest_And_Front_Of_Shoulder_Stretch", "Worlds_Greatest_Stretch", "Cat_Stretch", "Bodyweight_Walking_Lunge", "Mountain_Climbers", "Hamstring_Stretch",
         ])
         XCTAssertEqual(StarterTemplates.inGroup(.mobility).map(\.id), ["mobility"])
     }
