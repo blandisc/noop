@@ -85,7 +85,7 @@ struct ContentView: View {
             if showRestoreResult {
                 let theme = InstrumentoTheme.base
                 Text(restoreMessage)
-                    .font(.system(size: 13))
+                    .font(StrandFont.subhead)
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: restoreSucceeded ? theme.verdict : theme.critical)
