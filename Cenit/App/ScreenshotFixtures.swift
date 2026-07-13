@@ -5,7 +5,7 @@ import WhoopStore
 import StrandAnalytics
 
 /// Deterministic synthetic data that forces TodayView into a specific readiness verdict, for the
-/// screenshot UI test (`CenitUITests/NOOPScreenshotTests`). DEBUG-only — never compiled into a
+/// screenshot UI test (`CenitUITests/CenitScreenshotTests`). DEBUG-only — never compiled into a
 /// Release build, and gated at the call site (`AppModel.init`) on the `-noop.fixture` launch argument.
 ///
 /// The values are reverse-engineered against `ReadinessEngine` + `Baselines` so each state lands

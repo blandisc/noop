@@ -1,12 +1,12 @@
-# NOOP — System Architecture
+# Cénit — System Architecture
 
-NOOP is a standalone, fully **offline** companion app for WHOOP straps (4.0, 5.0, and MG). It talks
+Cénit is a standalone, fully **offline** companion app for WHOOP straps (4.0, 5.0, and MG). It talks
 directly to the strap over Bluetooth Low Energy, stores everything on-device in SQLite, and computes
 recovery, strain, HRV, and sleep locally. There is no WHOOP cloud, no account —
 the app interoperates with **your own device and your own data**. It can also import data you already
 own: WHOOP CSV exports and Apple Health exports.
 
-> **Not affiliated with WHOOP.** NOOP is an independent, interoperability project built on
+> **Not affiliated with WHOOP.** Cénit is an independent, interoperability project built on
 > community reverse-engineering of the strap's Bluetooth protocol. It is **not a medical device**
 > and produces **approximate** physiological estimates that must not be used for diagnosis or
 > treatment. See [`DISCLAIMER.md`](../DISCLAIMER.md) and [`ATTRIBUTION.md`](../ATTRIBUTION.md).
@@ -22,7 +22,7 @@ off-device.
 
 ```
                           ┌─────────────────────────────────────────────────────────┐
-   WHOOP strap (4.0/5.0)  │                     NOOP (on-device)                     │
+   WHOOP strap (4.0/5.0)  │                     Cénit (on-device)                     │
    ────────────────────   │                                                          │
         BLE GATT           │   CoreBluetooth          WhoopProtocol (pure decode)    │
    ┌──────────────┐  notify│  ┌────────────┐  bytes  ┌──────────────────────────┐    │
@@ -110,7 +110,7 @@ Tools/Backfill/                 CLI offload/replay tool
 
 The app target is **`Cenit`** (Swift module `Cenit`, product `Cenit.app`): its shell (scene, HealthKit,
 widgets, intents) lives in **`CenitApp/`**, and it compiles the app-layer under **`Cenit/`** (CoreBluetooth,
-the live/decode seam, screens, data). The user-visible name stays **NOOP** (`CFBundleDisplayName`); the
+the live/decode seam, screens, data). The user-visible name stays **Cénit** (`CFBundleDisplayName`); the
 visible rebrand to "Cénit" is tracked separately. The macOS app and its `Strand`/`StrandTests` targets were
 retired (FER-143) and the dead `#if os(macOS)`/`AppKit` branches removed (FER-144); the app-layer unit tests
 run as **`CenitUnitTests`** in the simulator. The packages keep their `Strand*`/`Whoop*` names. The
@@ -157,7 +157,7 @@ StrandImport ───────▶ WhoopProtocol + WhoopStore + ZIPFoundation
 
 > **Exercise type override (FER-541).** The user can override an exercise's `ExerciseType` — including a catalog entry's (e.g. mark a "Plank" as time-based). The override is *user data*, so it lives in WhoopStore (`exerciseTypeOverride`, migration v24), **not** in the read-only bundled catalog. Precedence (user override > custom > catalog) is decided by the pure `ExerciseTypeResolver` and applied at a single resolver in `Cenit/Data/Repository+Strength.swift` (`resolvedExercise` / `allExercises`), which materializes the effective type into `Exercise.type`. Every downstream reader (guided session, builder, detail) sees the resolved type without bespoke logic; the catalog JSON is never mutated, so reverting is a plain delete.
 
-> **Catalog adoption (FER-779).** The seed catalog is **ExerciseDB OSS** (~1500 exercises, native ids), baked offline by `Tools/bake-exercisedb/` into `exercises.json` (+ a `exercises.es.json` es-MX overlay, LLM-translated at bake). The bake normalizes ExerciseDB's ~50 muscle names down to NOOP's 17 canonical `MuscleAtlas` keys (so `MuscleAtlas`/`MuscleVocabulary`/`MuscleFatigueMap` are untouched), derives `ExerciseType` from equipment/bodyParts/name, and strips the `Step:N ` instruction prefixes. `Exercise.id` is the native ExerciseDB id, so media/data resolve **by id, without name matching** — the runtime name lookup (media, FER-722) and the curated synonym table (import, FER-522) are retired. The model renamed `cues`→`instructions` and gained `bodyParts`/`gifUrl`; custom exercises persist those via migration **v27** (append-only; the v13 `cues` column is reused for `instructions`). There is **no history migration** — catalog ids were never a DB foreign key — so old routines pointing at retired free-exercise-db slugs simply resolve to "unknown" (accepted: fresh start, owner-confirmed).
+> **Catalog adoption (FER-779).** The seed catalog is **ExerciseDB OSS** (~1500 exercises, native ids), baked offline by `Tools/bake-exercisedb/` into `exercises.json` (+ a `exercises.es.json` es-MX overlay, LLM-translated at bake). The bake normalizes ExerciseDB's ~50 muscle names down to Cénit's 17 canonical `MuscleAtlas` keys (so `MuscleAtlas`/`MuscleVocabulary`/`MuscleFatigueMap` are untouched), derives `ExerciseType` from equipment/bodyParts/name, and strips the `Step:N ` instruction prefixes. `Exercise.id` is the native ExerciseDB id, so media/data resolve **by id, without name matching** — the runtime name lookup (media, FER-722) and the curated synonym table (import, FER-522) are retired. The model renamed `cues`→`instructions` and gained `bodyParts`/`gifUrl`; custom exercises persist those via migration **v27** (append-only; the v13 `cues` column is reused for `instructions`). There is **no history migration** — catalog ids were never a DB foreign key — so old routines pointing at retired free-exercise-db slugs simply resolve to "unknown" (accepted: fresh start, owner-confirmed).
 
 ### Multi-generation protocol support
 
@@ -251,7 +251,7 @@ them to wall time with the linear `(device, wall)` offset captured at connect by
 
 ### Historical path (offload / backfill)
 
-The strap holds a ~14-day on-device biometric store. NOOP re-offloads it the way the official client
+The strap holds a ~14-day on-device biometric store. Cénit re-offloads it the way the official client
 syncs — once per connect and then every `backfillIntervalSeconds` (900s) while connected+bonded — so
 the periodic **type-47 historical offload is the primary metric source**, not the live stream.
 
@@ -431,7 +431,7 @@ Supporting machinery, all on the main run loop:
   notification has arrived for >120s** — bounces the link; the auto-rescan on disconnect re-bonds and
   resumes streaming.
 - **Stuck-strap watchdog:** after each offload, `StuckStrapDetector` compares the strap's newest
-  record (`GET_DATA_RANGE`) against NOOP's data frontier (`latestHRSampleTs`). Strap-ahead **and**
+  record (`GET_DATA_RANGE`) against Cénit's data frontier (`latestHRSampleTs`). Strap-ahead **and**
   frontier-frozen ⇒ a reboot hint banner; off-wrist / caught-up is *not* flagged.
 - **Auto-reconnect:** an unintentional disconnect flushes the `Collector` and rescans after 3s.
 
@@ -567,7 +567,7 @@ reader so multi-hundred-MB files don't blow up memory.
 The prescribed-diet path is a third producer on the same parse-only principle: `DietPlanImporter`
 validates a `noop.diet.v1` payload — from the BYO-LLM "copy prompt" flow, a future on-device parse,
 or manual entry — into a `DietPlan`, which the app maps to a `dietPlan` row (FER-370). The user
-brings the JSON in, so NOOP still makes no network call.
+brings the JSON in, so Cénit still makes no network call.
 
 Apple-Health sleep STAGES are the live-sync counterpart of the import path (FER-486): `HealthKitBridge`
 reads `sleepAnalysis` category samples, and the pure `SleepHKDecoder` (`StrandImport`, the inverse of
@@ -625,7 +625,7 @@ night), which is what the ring, the verdict and the recovery-detail hero read. `
   so the result is labelled «estimado» with a `ScoreConfidence` grade, never equated to a band recovery
   (Task Force 1996; Shaffer & Ginsberg 2017). Pure + DB-free; surfaced read-time (see §8), not persisted.
 - **`CyclePhaseEngine`** (FER-672) estimates the current menstrual-cycle phase (follicular-lean vs
-  luteal-lean) from the nightly `skinTempDevC` NOOP already persists (+ resting HR corroboration; HRV as
+  luteal-lean) from the nightly `skinTempDevC` Cénit already persists (+ resting HR corroboration; HRV as
   conditional confidence only, decision H1). Robust z-index over the trailing window (median centre,
   IllnessWatch robust σ), ≥42-night gate, states `.learning` / `.noClearPattern` / `.estimated`. Pure,
   DB-free, **on-the-fly — no persistence, no migration, no new decode**. Opt-in, surfaced only in the
@@ -759,7 +759,7 @@ computed locally.
 
 ### Network exceptions (opt-in, off by default)
 
-NOOP is offline by construction (§11.1) with exactly **two** deliberate, user-controlled exceptions,
+Cénit is offline by construction (§11.1) with exactly **two** deliberate, user-controlled exceptions,
 both living in `Cenit/` (never in `Packages/`, which stays 100% offline so `swift test` over packages
 is hermetic in CI):
 
@@ -815,19 +815,19 @@ never imported — `StrandDesign` remains the dependency-free leaf of the packag
    documented in §10.
 2. **Decoded-first durability.** Metrics are committed before raw is queued; the raw outbox is a
    prunable convenience, never the source of truth.
-3. **Resumable safe-trim.** The strap forgets historical data only after NOOP has it durably and has
+3. **Resumable safe-trim.** The strap forgets historical data only after Cénit has it durably and has
    confirmed the ack; a durable cursor makes every offload resumable.
 4. **Pure cores, thin shell.** `WhoopProtocol`, `WhoopStore`, `StrandAnalytics`, and `StrandImport`
    are platform-pure and testable in isolation; the app target is the only CoreBluetooth/SwiftUI
    surface.
-5. **Interoperability, not impersonation.** NOOP reads your strap and your exports for your own use.
+5. **Interoperability, not impersonation.** Cénit reads your strap and your exports for your own use.
    It is independent of WHOOP and is not a medical device.
 
 ---
 
 ## Attribution
 
-NOOP's BLE protocol work builds on community reverse-engineering of the WHOOP straps:
+Cénit's BLE protocol work builds on community reverse-engineering of the WHOOP straps:
 
 - **johnmiddleton12/my-whoop** — WHOOP 4.0 protocol.
 - **b-nnett/goose** — WHOOP 5.0 protocol.

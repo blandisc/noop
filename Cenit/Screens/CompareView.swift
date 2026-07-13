@@ -149,16 +149,16 @@ struct CompareView: View {
         ScrollView {
             // Rhythm by space: sections breathe on `sectionGap`, no rule between them — hierarchy by
             // space, not boxes (DESIGN.md §8). Color lives only on the overlay lines and the r value.
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 metricSection
 
                 if selected.count < minSelection {
-                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: NoopMetrics.cardRadius, bordered: true).empty(text: "Compare needs at least two metrics with history. Import your WHOOP export in Data Sources first.")
+                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: CenitMetrics.cardRadius, bordered: true).empty(text: "Compare needs at least two metrics with history. Import your WHOOP export in Data Sources first.")
                 } else {
                     let series = activeSeries
                     if series.allSatisfy({ $0.rows.isEmpty }) {
-                        ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: NoopMetrics.cardRadius, bordered: true).empty(text: loadedOnce
+                        ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: CenitMetrics.cardRadius, bordered: true).empty(text: loadedOnce
                             ? "No data for these metrics in \(range.phrase). Widen the range or pick metrics you've logged."
                             : "Reading your history…")
                     } else {
@@ -167,9 +167,9 @@ struct CompareView: View {
                     }
                 }
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 20)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
@@ -345,7 +345,7 @@ struct CompareView: View {
     // (Instrumento rule 3), and the full screen width keeps the 6-segment range control from wrapping
     // — the earlier card padding squeezed "ALL"/«TODO» onto a second line. (FER-275)
     private var metricSection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             Text("Metrics").instrumentoOverline().foregroundStyle(theme.inkTertiary)
 
             SegmentedPillControl(CompareRange.allCases, selection: $range, theme: theme) { $0.label }
@@ -416,7 +416,7 @@ struct CompareView: View {
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
-                OverlayChart(series: nonEmpty, theme: theme, height: NoopMetrics.chartHeight)
+                OverlayChart(series: nonEmpty, theme: theme, height: CenitMetrics.chartHeight)
                 legend(nonEmpty)
             }
         }
@@ -509,7 +509,7 @@ struct CompareView: View {
     private func correlationSection(_ series: [CompareSeries]) -> some View {
         let pairs = pairResults(series)
         block(title: "How They Move Together", trailing: pairs.isEmpty ? nil : "\(pairs.count) pairs") {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("Pearson r · \(range.phrase)")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
@@ -522,7 +522,7 @@ struct CompareView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 if pairs.isEmpty {
-                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: NoopMetrics.cardRadius, bordered: true).empty(text: "Not enough overlapping days between these metrics in \(range.phrase). Widen the range.")
+                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: CenitMetrics.cardRadius, bordered: true).empty(text: "Not enough overlapping days between these metrics in \(range.phrase). Widen the range.")
                 } else {
                     ForEach(pairs) { p in
                         pairCard(p)
@@ -560,10 +560,10 @@ struct CompareView: View {
                 .font(StrandFont.footnote)
                 .foregroundStyle(theme.inkTertiary)
         }
-        .padding(NoopMetrics.cardPadding)
+        .padding(CenitMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(p.a.metric.title) versus \(p.b.metric.title), r equals \(String(format: "%.2f", p.r)), \(p.n) days")
@@ -691,7 +691,7 @@ private struct MetricPickerSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("Metrics").font(StrandFont.title2).foregroundStyle(theme.ink)
                 Text("Pick 2–4 to overlay.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -712,7 +712,7 @@ private struct MetricPickerSheet: View {
                     }
                 }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)

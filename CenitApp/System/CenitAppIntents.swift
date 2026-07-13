@@ -52,7 +52,7 @@ struct BuzzStrapIntent: AppIntent {
 }
 
 /// Surfaces NOOP's intents to Siri, Spotlight, and the Shortcuts gallery without any user setup.
-struct NOOPShortcuts: AppShortcutsProvider {
+struct CenitShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: MarkMomentIntent(),
                     phrases: ["Mark a moment in \(.applicationName)"],

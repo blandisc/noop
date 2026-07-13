@@ -84,7 +84,7 @@ struct WeeklyPlanEditorView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if loaded {
                     if !routines.isEmpty {
@@ -95,8 +95,8 @@ struct WeeklyPlanEditorView: View {
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -264,7 +264,7 @@ struct WeeklyPlanEditorView: View {
         .padding(.horizontal, wd == today ? 10 : 0)
         .background {
             if wd == today {
-                RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous).fill(theme.surface)
+                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous).fill(theme.surface)
             }
         }
         .contentShape(Rectangle())
@@ -531,8 +531,8 @@ struct WeeklyPlanEditorView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 18).padding(.vertical, 14)
-        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .padding(.horizontal, NoopMetrics.screenPadding)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .task(id: d.id) {

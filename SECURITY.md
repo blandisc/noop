@@ -2,7 +2,7 @@
 
 ## Scope
 
-NOOP is a fully offline, on-device app. It has no servers, no accounts, and no
+Cénit is a fully offline, on-device app. It has no servers, no accounts, and no
 cloud sync, so the usual web attack surface does not apply. What remains is local:
 
 - **Bluetooth Low Energy** — the link to your WHOOP strap.
@@ -17,7 +17,7 @@ otherwise breaks the offline, local-only guarantee the app makes.
 
 ## Reporting a vulnerability
 
-NOOP is maintained anonymously and has no security contact email. **Report
+Cénit is maintained anonymously and has no security contact email. **Report
 security issues by opening a GitHub issue** on the repository.
 
 If a public report would put users at immediate risk before a fix can ship,
@@ -37,7 +37,7 @@ the next release.
 
 ## Supported versions
 
-Only the latest release receives fixes. NOOP ships from source; if you build your
+Only the latest release receives fixes. Cénit ships from source; if you build your
 own copy, rebuild from the latest tag to pick up security fixes.
 
 ## Out of scope
@@ -45,6 +45,6 @@ own copy, rebuild from the latest tag to pick up security fixes.
 - Vulnerabilities that require physical access to an already-unlocked device
 - Issues in third-party dependencies — please report those upstream (see
   [`NOTICE`](NOTICE) for the bundled libraries and their licences)
-- The WHOOP strap firmware itself, which NOOP does not ship or modify
+- The WHOOP strap firmware itself, which Cénit does not ship or modify
 - The user's own API key being misused after they have entered it (the key is
   stored in the platform keystore; protecting the device account is the user's job)

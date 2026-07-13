@@ -256,7 +256,7 @@ private struct CuerpoLanding: View {
     var body: some View {
         ZStack {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 titleBlock
                 periodSelector
                 // §8.7 landing micro-legend: today's values vs last month's trends (period selector above).
@@ -273,9 +273,9 @@ private struct CuerpoLanding: View {
                 connectNudge
                 footerActions
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(PaperBackground())
@@ -531,8 +531,8 @@ private struct CuerpoLanding: View {
         }
         .padding(.vertical, 16).padding(.horizontal, 20)
         .frame(maxWidth: .infinity)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 

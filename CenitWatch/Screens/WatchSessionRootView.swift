@@ -39,7 +39,7 @@ struct WatchIdleView: View {
     private let t = InstrumentoTheme.base
 
     var body: some View {
-        VStack(spacing: NoopMetrics.space2) {
+        VStack(spacing: CenitMetrics.space2) {
             Text("No session")
                 .font(StrandFont.headline)
                 .foregroundStyle(t.ink)
@@ -54,7 +54,7 @@ struct WatchIdleView: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .padding(.horizontal, NoopMetrics.gap)
+        .padding(.horizontal, CenitMetrics.gap)
     }
 }
 
@@ -66,14 +66,14 @@ struct WatchConnectingView: View {
     private let t = InstrumentoTheme.base
 
     var body: some View {
-        VStack(spacing: NoopMetrics.space2) {
+        VStack(spacing: CenitMetrics.space2) {
             Text("Connecting")
                 .font(StrandFont.headline)
                 .foregroundStyle(t.inkSecondary)
             ProgressView()
                 .tint(t.inkTertiary)
         }
-        .padding(.horizontal, NoopMetrics.gap)
+        .padding(.horizontal, CenitMetrics.gap)
     }
 }
 
@@ -86,7 +86,7 @@ struct WatchRestEndedView: View {
     private let t = InstrumentoTheme.base
 
     var body: some View {
-        VStack(spacing: NoopMetrics.space2) {
+        VStack(spacing: CenitMetrics.space2) {
             Image(systemName: "checkmark")
                 .font(StrandFont.title1)
                 .foregroundStyle(t.verdict)
@@ -95,7 +95,7 @@ struct WatchRestEndedView: View {
                 .foregroundStyle(t.ink)
                 .multilineTextAlignment(.center)
         }
-        .padding(.horizontal, NoopMetrics.gap)
+        .padding(.horizontal, CenitMetrics.gap)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Rest over"))
         .onAppear { AccessibilityNotification.Announcement(String(localized: "Rest over")).post() }

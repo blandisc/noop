@@ -8,17 +8,17 @@ import SwiftUI
 /// opacidades (H4). No renderiza — son aserciones baratas y deterministas.
 final class DesignDriftTokenTests: XCTestCase {
 
-    // H3 — radios de tarjeta: cada rol mapea a su token de NoopMetrics, sin literales fantasma.
+    // H3 — radios de tarjeta: cada rol mapea a su token de CenitMetrics, sin literales fantasma.
     func test_cardRadiusRolesMapToTokens() {
-        XCTAssertEqual(InstrumentoCardRadius.card.value,    NoopMetrics.cardRadius)
-        XCTAssertEqual(InstrumentoCardRadius.cta.value,     NoopMetrics.ctaRadius)
-        XCTAssertEqual(InstrumentoCardRadius.control.value, NoopMetrics.controlRadius)
-        XCTAssertEqual(InstrumentoCardRadius.inset.value,   NoopMetrics.insetRadius)
+        XCTAssertEqual(InstrumentoCardRadius.card.value,    CenitMetrics.cardRadius)
+        XCTAssertEqual(InstrumentoCardRadius.cta.value,     CenitMetrics.ctaRadius)
+        XCTAssertEqual(InstrumentoCardRadius.control.value, CenitMetrics.controlRadius)
+        XCTAssertEqual(InstrumentoCardRadius.inset.value,   CenitMetrics.insetRadius)
         // Los cuatro radios son distintos y ordenados inset < control < cta < card.
         XCTAssertLessThan(InstrumentoCardRadius.inset.value, InstrumentoCardRadius.control.value)
         XCTAssertLessThan(InstrumentoCardRadius.control.value, InstrumentoCardRadius.cta.value)
         XCTAssertLessThan(InstrumentoCardRadius.cta.value, InstrumentoCardRadius.card.value)
-        XCTAssertEqual(NoopMetrics.insetRadius, 10)
+        XCTAssertEqual(CenitMetrics.insetRadius, 10)
     }
 
     // H1 — escala de glifos: cuatro escalones fijos, crecientes.
@@ -84,7 +84,7 @@ final class InstrumentoCardRenderTests: XCTestCase {
             .font(StrandFont.caption)
             .foregroundStyle(t.inkSecondary)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .padding(NoopMetrics.cardPadding)
+            .padding(CenitMetrics.cardPadding)
             .instrumentoCard(r)
     }
 }

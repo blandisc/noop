@@ -1,11 +1,11 @@
 # Privacy & Security
 
-This document describes NOOP's privacy posture, security model, and the hardening
+This document describes Cénit's privacy posture, security model, and the hardening
 applied to the parts of the codebase that touch untrusted input. It is written
 against the actual source tree; file paths and identifiers below are real and can
 be checked.
 
-> **Not affiliated with WHOOP. Not a medical device.** NOOP is an independent,
+> **Not affiliated with WHOOP. Not a medical device.** Cénit is an independent,
 > unofficial, local-first companion app. It interoperates with a WHOOP strap that
 > **you own**, reading **your own** biometric data from **your own** device. It is
 > not affiliated with, endorsed by, or connected to WHOOP, Inc. All computed
@@ -17,9 +17,9 @@ be checked.
 
 ## 1. Design principle: offline by default
 
-NOOP is **offline by default**. The biometric pipeline — strap → on-device decode →
+Cénit is **offline by default**. The biometric pipeline — strap → on-device decode →
 local SQLite — has no network layer at all: no phone-home, no analytics, no accounts,
-no login, no cloud sync, and no telemetry. Everything NOOP computes about you lives in a
+no login, no cloud sync, and no telemetry. Everything Cénit computes about you lives in a
 single SQLite file on your own device.
 
 There is exactly **one** opt-in exception: the **AI Coach** (§1.1a). It is off until you
@@ -27,7 +27,7 @@ turn it on with your own API key; when you ask it a question it sends a short te
 summary of your recent metrics to the provider you choose. Nothing else in the app ever
 touches the network, and your raw data never does.
 
-Data enters NOOP two ways:
+Data enters Cénit two ways:
 
 | Path | Transport | Direction |
 |------|-----------|-----------|
@@ -62,17 +62,17 @@ feature that uses the network, and only on your terms:
 
 - **Off until you enable it.** You enter your own API key for the provider you choose
   (OpenAI or Anthropic). No key, no network calls, ever.
-- **What is sent.** When you ask a question, NOOP builds a compact **text** summary of
+- **What is sent.** When you ask a question, Cénit builds a compact **text** summary of
   your recent metrics (recovery, strain, sleep, HRV, resting HR over ~14 days, plus
   30-day averages and recent workouts) and sends it, with your question, directly to
   that provider's API (`api.openai.com` / `api.anthropic.com`).
 - **What is NOT sent.** No raw biometric streams, no Bluetooth data, no account or
   device identifiers — only the summary text and your question.
 - **Your key, your relationship.** The request goes from your device straight to the
-  provider you picked, under your own account. NOOP runs no server in between and keeps
+  provider you picked, under your own account. Cénit runs no server in between and keeps
   no copy.
 
-If you never enable the AI Coach, NOOP makes zero network connections.
+If you never enable the AI Coach, Cénit makes zero network connections.
 
 ### 1.2 The iOS app's entitlements
 
@@ -85,8 +85,8 @@ The iOS app ships with a deliberately minimal entitlement set
 ```
 
 - **`healthkit`** — read your own Apple Health data on-device (steps, heart rate, sleep)
-  to compute metrics, and write back the metrics NOOP computes, only when you allow it.
-  The Clinical/Verifiable Health Records key is intentionally **omitted** — NOOP never
+  to compute metrics, and write back the metrics Cénit computes, only when you allow it.
+  The Clinical/Verifiable Health Records key is intentionally **omitted** — Cénit never
   reads clinical records.
 - **`application-groups`** — a shared container so the app and its widgets read the same
   tiny snapshot. BLE access is granted by the `NSBluetoothAlwaysUsageDescription` prompt
@@ -140,11 +140,11 @@ database — they live in the same container.
 
 ### 2.2 Encryption
 
-The SQLite file is **not encrypted at rest by NOOP itself.** Confidentiality of the
+The SQLite file is **not encrypted at rest by Cénit itself.** Confidentiality of the
 data on disk relies on the platform:
 
 - **iOS Data Protection** — iOS encrypts every file with hardware-backed keys tied to
-  the device passcode. NOOP's database inherits the default protection class
+  the device passcode. Cénit's database inherits the default protection class
   (`NSFileProtectionCompleteUntilFirstUserAuthentication`): the file is encrypted and
   unreadable until you first unlock the device after a reboot, after which the key
   stays available so the app can keep recording in the background. Setting a device
@@ -157,7 +157,7 @@ backup of the container. Turn on **Encrypt iPhone Backup** (or rely on encrypted
 backups) so the database isn't readable inside a backup.
 
 > **Option: SQLCipher.** GRDB supports SQLCipher (an encrypted SQLite build) as a
-> drop-in. Wiring NOOP's `DatabaseQueue` to a SQLCipher build with a
+> drop-in. Wiring Cénit's `DatabaseQueue` to a SQLCipher build with a
 > Keychain-derived key would give at-rest encryption independent of the OS Data
 > Protection class. This is not enabled in the current build, but the persistence
 > layer is small and centralized (one `WhoopStore.init(path:)`), so it is a
@@ -175,14 +175,14 @@ DELETE FROM rawBatch WHERE syncedAt IS NOT NULL AND syncedAt < ?
 ```
 
 So raw captures do not accumulate forever. (The `syncedAt`/upload-related columns are
-schema scaffolding inherited from the upstream collection library; in NOOP's offline
+schema scaffolding inherited from the upstream collection library; in Cénit's offline
 configuration nothing uploads, and the raw buffer is purely a local replay/recovery
 aid.)
 
 ### 2.4 Diagnostics: the strap connection log
 
 When a strap won't connect or behaves oddly, the single most useful thing a user can
-send is the connection log. NOOP keeps one so it can be shared **without** needing a
+send is the connection log. Cénit keeps one so it can be shared **without** needing a
 developer setup (this is what made issues #17/#18 reportable), and the same
 log doubles as the primary tool for **debugging and protocol development**.
 
@@ -191,7 +191,7 @@ buffer** of the connection's control flow: scan results (strap
 advertised name + RSSI), the bond/handshake state machine, command names with their
 outbound payload **hex**, and offload progress (trim cursors, chunk acks). It is held
 in RAM only; the "Share strap log" button writes it to a private app-cache file at
-share time and hands that file to the OS share sheet. Nothing is uploaded by NOOP.
+share time and hands that file to the OS share sheet. Nothing is uploaded by Cénit.
 
 **What it does *not* contain.** No account credentials (there is no account), no
 decoded biometric *values* (heart-rate numbers, R-R intervals, SpO₂, skin-temp are not
@@ -204,15 +204,15 @@ secret payload). The one mild identifier is the strap's advertised name (e.g.
 
 ## 3. Threat model
 
-NOOP parses two classes of **untrusted input**: bytes arriving over Bluetooth, and
+Cénit parses two classes of **untrusted input**: bytes arriving over Bluetooth, and
 files chosen for import. Both are treated as hostile and validated before anything
 reaches the database. Apple Health and WHOOP files in particular can be very large
 (multi-hundred-MB to multi-GB), so resource exhaustion is part of the model.
 
-What is explicitly **out of scope**: NOOP cannot defend the data against an attacker
+What is explicitly **out of scope**: Cénit cannot defend the data against an attacker
 who already controls your unlocked user session (see §2.2), and it makes no claim of
 cryptographic authentication of the strap — BLE pairing/bonding security is provided
-by the OS Bluetooth stack and the device, not by NOOP.
+by the OS Bluetooth stack and the device, not by Cénit.
 
 ### 3.1 Threat A: a malicious or malfunctioning BLE peer
 
@@ -342,15 +342,15 @@ bundle of CSV files, but the same defensive posture applies.
 
 ---
 
-## 4. What NOOP does *not* collect or transmit
+## 4. What Cénit does *not* collect or transmit
 
 - **No accounts, no login.** Nothing to sign into; no credentials
   stored.
 - **No telemetry / analytics / crash reporting.** No third-party SDKs of that kind.
 - **No cloud, no sync, no remote backup.** Your data never leaves the machine via
-  NOOP.
+  Cénit.
 - **No advertising identifiers, no tracking.**
-- **No WHOOP account or API credentials.** NOOP talks only to the strap over local
+- **No WHOOP account or API credentials.** Cénit talks only to the strap over local
   BLE; it does not authenticate against, or pull from, any WHOOP server.
 
 ---
@@ -376,7 +376,7 @@ bundle of CSV files, but the same defensive posture applies.
 
 ## 6. Reporting a security issue
 
-NOOP is a hobbyist, non-commercial interoperability and research project provided
+Cénit is a hobbyist, non-commercial interoperability and research project provided
 **as-is, with no warranty**, for personal and educational use only (see
 `DISCLAIMER.md`). If you find a security or privacy issue, please open a GitHub issue
 describing the problem and a reproduction; sensitive reports can be coordinated
@@ -387,7 +387,7 @@ good faith.
 
 ## 7. Credits
 
-The protocol and persistence work NOOP builds on is community reverse-engineering of
+The protocol and persistence work Cénit builds on is community reverse-engineering of
 hardware the user owns, used for interoperability:
 
 - **`johnmiddleton12/my-whoop`** — the WHOOP 4.0 BLE framing/command/decode work and
@@ -400,5 +400,5 @@ hardware the user owns, used for interoperability:
 - **`weichsel/ZIPFoundation`** — the archive reader used by the importers.
 
 See `ATTRIBUTION.md` and `DISCLAIMER.md` for the full attribution and good-faith
-notice. NOOP contains no WHOOP proprietary code, firmware, binaries, logos, or
+notice. Cénit contains no WHOOP proprietary code, firmware, binaries, logos, or
 assets, and performs no DRM circumvention.

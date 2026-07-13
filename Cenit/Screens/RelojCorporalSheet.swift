@@ -21,16 +21,16 @@ struct RelojCorporalSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 Text("RELOJ CORPORAL")
                     .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.top, NoopMetrics.screenPadding)
+                    .padding(.top, CenitMetrics.screenPadding)
                 content
                 reajusteSection
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
         }
         .background(theme.paper.ignoresSafeArea())
         .presentationDragIndicator(.visible)
@@ -63,7 +63,7 @@ struct RelojCorporalSheet: View {
     }
 
     private func planActive(_ day: CircadianEngine.DayPlan, dayIndex: Int, total: Int) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(verbatim: "Día \(dayIndex)")
                     .font(InstrumentoType.groteskHeadline(40)).foregroundStyle(theme.ink)
@@ -89,7 +89,7 @@ struct RelojCorporalSheet: View {
     }
 
     private func planFinished(total: Int) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             Text(verbatim: "Listo: completaste tu reajuste de \(total) días. Ojalá tu reloj ya vaya a la par.")
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -127,7 +127,7 @@ struct RelojCorporalSheet: View {
 
     private func reading(_ r: CircadianReading) -> some View {
         let t = Self.tendencyCopy(r.tendency)
-        return VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             // Hero: the tendency word (the datum) + the single spot of color (the clock glyph).
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Image(systemName: "clock")

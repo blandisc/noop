@@ -1,13 +1,13 @@
-# NOOP — On-Device Data Model
+# Cénit — On-Device Data Model
 
-NOOP is a standalone, fully offline companion app for WHOOP straps (4.0 and 5.0). It talks to
+Cénit is a standalone, fully offline companion app for WHOOP straps (4.0 and 5.0). It talks to
 the user's own strap directly over Bluetooth Low Energy — no WHOOP cloud or account
 is involved, and stores everything it decodes locally in a single SQLite database.
 This document describes that on-device database: every table, its columns, natural keys, indexes,
 and the migration history that produced the current schema.
 
 > **Scope note.** Interacting with the strap here means interoperating with the user's *own*
-> device and the data it has already recorded. NOOP is **not affiliated with, endorsed by, or
+> device and the data it has already recorded. Cénit is **not affiliated with, endorsed by, or
 > connected to WHOOP**, and it is **not a medical device** — none of the stored values are
 > intended for diagnosis or treatment.
 
@@ -114,7 +114,7 @@ Migrations are registered in `Packages/WhoopStore/Sources/WhoopStore/Database.sw
 ### The vestigial `synced` column
 
 Migration v5 added a per-row `synced` integer (`NOT NULL DEFAULT 0`) to each of the eight
-decoded-stream tables. It dates from a since-removed server-upload feature. **NOOP is fully
+decoded-stream tables. It dates from a since-removed server-upload feature. **Cénit is fully
 offline: nothing writes or reads `synced`.** The insert path explicitly never sets it
 (`StreamStore.swift`), and no read query references it. The column is left in place only to avoid
 a `DROP COLUMN` migration over potentially millions of existing rows. Treat it as dead schema.
@@ -271,7 +271,7 @@ inserts, identical range-read shape).
 ### `rawBatch` *(v1)*
 
 The raw outbox stores the strap's original BLE frames — compressed and batched — so the exact
-bytes survive even for frames NOOP can't yet fully decode. Whereas the decoded streams are durable,
+bytes survive even for frames Cénit can't yet fully decode. Whereas the decoded streams are durable,
 raw batches are **transient and prunable**. Implementation in `RawOutbox.swift`.
 
 | Column | Type | Notes |
@@ -466,7 +466,7 @@ served by the `(deviceId, ts)` / `(deviceId, day)` / `(deviceId, startTs)` prima
 
 ## Provenance
 
-NOOP's strap interoperability is built on community reverse-engineering work, which it credits and
+Cénit's strap interoperability is built on community reverse-engineering work, which it credits and
 builds upon:
 
 - **WHOOP 4.0 protocol** — [`johnmiddleton12/my-whoop`](https://github.com/johnmiddleton12/my-whoop)
@@ -476,5 +476,5 @@ The frame parsing, CRC, and command/event/packet decode that feed the decoded-st
 live in the `WhoopProtocol` package; persistence is `WhoopStore`; the local recovery / strain /
 HRV / sleep math is `StrandAnalytics`; and the CSV / Apple-Health importers are `StrandImport`.
 
-> **Reminder.** NOOP is not affiliated with WHOOP and is not a medical device. All stored data is
+> **Reminder.** Cénit is not affiliated with WHOOP and is not a medical device. All stored data is
 > the user's own, kept entirely on the user's device.

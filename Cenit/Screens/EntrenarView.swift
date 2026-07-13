@@ -117,7 +117,7 @@ private struct EntrenarLanding: View {
         // height back into layout and looped as the plan grew — 99% CPU, «Invalid frame dimension», freeze.
         // `sectionGap` (28) still gives more air between blocks than the old 18; no measured-height feedback.
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if loaded {
                     if split.isEmpty {
@@ -134,9 +134,9 @@ private struct EntrenarLanding: View {
                     }
                 }
             }
-            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -233,7 +233,7 @@ private struct EntrenarLanding: View {
 
     private var hoyCard: some View {
         card {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text(hoyOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 if let r = todayRoutine {
                     // Name + a routine-tinted square (the handoff's per-routine color) sit alone on
@@ -368,7 +368,7 @@ private struct EntrenarLanding: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15)
                 .background(
-                    RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
                         .fill(tint)
                 )
                 .contentShape(Rectangle())
@@ -410,7 +410,7 @@ private struct EntrenarLanding: View {
                 }
                 .padding(.horizontal, 15).padding(.vertical, 13)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -474,7 +474,7 @@ private struct EntrenarLanding: View {
                 weekStripCell(wd)
             }
         }
-        .padding(.vertical, NoopMetrics.space2)
+        .padding(.vertical, CenitMetrics.space2)
     }
 
     @ViewBuilder
@@ -483,7 +483,7 @@ private struct EntrenarLanding: View {
         let region = routineId.flatMap { routineCategory[$0] }
         let isToday = wd == todayWeekday
         let hasRoutine = routineId != nil
-        let cell = VStack(spacing: NoopMetrics.space1) {
+        let cell = VStack(spacing: CenitMetrics.space1) {
             Text(weekdayLetter(wd))
                 .font(StrandFont.overline)
                 .foregroundStyle(isToday ? theme.ink : (hasRoutine ? routineTint(region) : theme.inkTertiary))
@@ -561,7 +561,7 @@ private struct EntrenarLanding: View {
                         .foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 8)
                 }
-                .padding(.vertical, NoopMetrics.gap)
+                .padding(.vertical, CenitMetrics.gap)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
@@ -759,8 +759,8 @@ private struct EntrenarLanding: View {
                 .padding(.top, 4)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 30).padding(.horizontal, 18)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: - First use · «O empieza sin plan» → Rutinas de plantilla (mock 5a)
@@ -804,10 +804,10 @@ private struct EntrenarLanding: View {
 
     private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0, content: content)
-            .padding(NoopMetrics.cardPadding)
+            .padding(CenitMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     /// Localized short weekday letter (respects locale), single character.
@@ -1059,11 +1059,11 @@ struct RestDayScreen: View {
                 streakBullet.padding(.top, 16)
 
                 if let alt {
-                    suggestedCard(alt).padding(.top, NoopMetrics.sectionGap)
+                    suggestedCard(alt).padding(.top, CenitMetrics.sectionGap)
                 }
 
                 Text("If you still want to train").instrumentoOverline()
-                    .foregroundStyle(theme.inkTertiary).padding(.top, NoopMetrics.sectionGap)
+                    .foregroundStyle(theme.inkTertiary).padding(.top, CenitMetrics.sectionGap)
                 VStack(spacing: 0) {
                     if alt != .softer { row("figure.cooldown", "Mobility · 20 min") { model.startMobilityOneOff() } }
                     if alt != .optionalLight { row("timer", "Intervals · 12 min") { openIntervals() } }
@@ -1074,14 +1074,14 @@ struct RestDayScreen: View {
                 .padding(.top, 6)
 
                 if let tomorrow = tomorrowRoutineName {
-                    Divider().overlay(theme.hairline).padding(.top, NoopMetrics.sectionGap)
+                    Divider().overlay(theme.hairline).padding(.top, CenitMetrics.sectionGap)
                     Text("Tomorrow: \(tomorrow)")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).padding(.top, 14)
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -1124,10 +1124,10 @@ struct RestDayScreen: View {
             StrandCTAButton("Empezar") { if alt == .softer { model.startMobilityOneOff() } else { openIntervals() } }
                 .padding(.top, 14)
         }
-        .padding(NoopMetrics.cardPadding)
+        .padding(CenitMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     private func row(_ icon: String, _ title: LocalizedStringKey, last: Bool = false, action: @escaping () -> Void) -> some View {
@@ -1189,15 +1189,15 @@ struct OtherWaysScreen: View {
                     bigRow("wind", "Breathe", subtitle: String(localized: "Slow it down")) { openBreathe() }
                     bigRow("dot.radiowaves.left.and.right", "Live", subtitle: String(localized: "Beat by beat"), last: true) { startLive() }
                 }
-                .padding(.top, NoopMetrics.sectionGap)
+                .padding(.top, CenitMetrics.sectionGap)
 
                 Text("None of this breaks your streak or your plan.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .center).padding(.top, NoopMetrics.sectionGap)
+                    .frame(maxWidth: .infinity, alignment: .center).padding(.top, CenitMetrics.sectionGap)
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())

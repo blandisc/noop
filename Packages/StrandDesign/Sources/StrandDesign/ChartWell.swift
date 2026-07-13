@@ -23,7 +23,7 @@ public struct ChartWell {
     ///   - theme: the screen's explicit theme (sheets don't inherit it from the presenter).
     ///   - icon: SF Symbol shown in the empty well. Default is the generic chart glyph.
     ///   - cornerRadius: the well's rounding. Most wells use 12; card-shaped ones use
-    ///     `NoopMetrics.cardRadius`.
+    ///     `CenitMetrics.cardRadius`.
     ///   - bordered: true adds a hairline stroke + horizontal breathing room (CompareView's well).
     public init(_ theme: InstrumentoTheme,
                 icon: String = "chart.xyaxis.line",
@@ -105,10 +105,10 @@ public struct ChartWell {
         VStack(spacing: 16) {
             ChartWell(theme).loading(height: 160)
             ChartWell(theme).empty(text: "Not enough days in this range to draw a trend.")
-            ChartWell(theme, icon: "moon.zzz", cornerRadius: NoopMetrics.cardRadius)
+            ChartWell(theme, icon: "moon.zzz", cornerRadius: CenitMetrics.cardRadius)
                 .empty(text: "Not enough nights yet to draw a trend.")
             ChartWell(theme, icon: "arrow.left.arrow.right",
-                      cornerRadius: NoopMetrics.cardRadius, bordered: true)
+                      cornerRadius: CenitMetrics.cardRadius, bordered: true)
                 .empty(text: "Compare needs at least two metrics with history.")
             ChartWell(theme).note(text: "No readings in this range.")
         }

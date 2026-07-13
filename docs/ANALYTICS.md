@@ -1,8 +1,8 @@
-# NOOP Analytics
+# Cénit Analytics
 
-On-device analytics for **NOOP** — a standalone, fully offline companion app for WHOOP straps (4.0 and 5.0). NOOP talks to *your own* strap over Bluetooth, stores everything locally in SQLite, and computes recovery, strain, HRV, and sleep on-device. There is no cloud and no account involved in any of the math described here.
+On-device analytics for **Cénit** — a standalone, fully offline companion app for WHOOP straps (4.0 and 5.0). Cénit talks to *your own* strap over Bluetooth, stores everything locally in SQLite, and computes recovery, strain, HRV, and sleep on-device. There is no cloud and no account involved in any of the math described here.
 
-> **Not affiliated with WHOOP.** NOOP interoperates with hardware and data you already own. The metrics below are **approximations** of common exercise-physiology and HRV methods, derived from published literature — they are **not** reproductions of any proprietary scoring model, and they are **not a medical device**. Nothing here is medical advice.
+> **Not affiliated with WHOOP.** Cénit interoperates with hardware and data you already own. The metrics below are **approximations** of common exercise-physiology and HRV methods, derived from published literature — they are **not** reproductions of any proprietary scoring model, and they are **not a medical device**. Nothing here is medical advice.
 
 All analytics live in the cross-platform `StrandAnalytics` Swift package. Every entry point is a **pure, deterministic, DB-free** function over its inputs — no I/O, no global state, no network. Persistence and BLE are wired in elsewhere (`WhoopStore`, the app target). This makes the whole package straightforward to unit-test against fixed vectors.
 
@@ -141,7 +141,7 @@ pNN50 = 100 · (count of |ΔNN| > 50 ms) / (N − 1)
 2. **Ectopic rejection (Malik-style)** — drop any beat deviating more than `ectopicThreshold = 0.20` (20%) from a **local median** over a centered window of `2·ectopicWindowRadius + 1 = 5` beats. Beats with too small a neighbourhood are kept.
 3. **Sufficiency gate** — require at least `minBeats = 20` clean intervals before returning a trustworthy result; otherwise `HRVResult.empty(...)`.
 
-> **Honest substitution.** The reference Python pipeline ran neurokit2's Kubios / Lipponen–Tarvainen (2019) artifact classifier, which isn't available on-device. NOOP substitutes the classical **Malik et al. (1989)** 20%-local-median rule — a simpler, fully deterministic approximation of the same intent (remove physiologically impossible beat-to-beat jumps before computing HRV). It does not model the missed/extra-beat insertion that Kubios does.
+> **Honest substitution.** The reference Python pipeline ran neurokit2's Kubios / Lipponen–Tarvainen (2019) artifact classifier, which isn't available on-device. Cénit substitutes the classical **Malik et al. (1989)** 20%-local-median rule — a simpler, fully deterministic approximation of the same intent (remove physiologically impossible beat-to-beat jumps before computing HRV). It does not model the missed/extra-beat insertion that Kubios does.
 
 ### API
 
@@ -263,7 +263,7 @@ Source: `RestReadiness.swift`. Pure between-sets rule: "ready" = HR has returned
 
 Stateless: the caller (the guided session, FER-347, in `Cenit/`) owns the timer and passes plain values — live HR, wrist-wear, resting-HR baseline, seconds elapsed — so the package never imports CoreBluetooth/UIKit and never sees `LiveState`.
 
-**Method:** heart-rate recovery — the bpm the HR falls after effort reflects parasympathetic reactivation (Cole 1999, NEJM 341:1351; Daanen 2012, IJSPP 7:251, HRR for monitoring training status). NOOP uses no absolute clinical thresholds: the target is the user's own resting HR. **APPROXIMATE** — a rest cue, not a medical verdict. (Distinct from the Heart-Rate *Reserve* the StrainScorer calls "HRR".)
+**Method:** heart-rate recovery — the bpm the HR falls after effort reflects parasympathetic reactivation (Cole 1999, NEJM 341:1351; Daanen 2012, IJSPP 7:251, HRR for monitoring training status). Cénit uses no absolute clinical thresholds: the target is the user's own resting HR. **APPROXIMATE** — a rest cue, not a medical verdict. (Distinct from the Heart-Rate *Reserve* the StrainScorer calls "HRR".)
 
 ---
 
@@ -323,7 +323,7 @@ Consecutive same-stage epochs are merged into `StageSegment`s tiling `[start, en
 
 Source: `SleepRegularityIndex.swift` (FER-214). The **Sleep Regularity Index** (Phillips et al. 2017, *Sci Rep* 7:3216) scores how repeatable your sleep TIMING is, independent of duration or quality: the probability of being in the same state (asleep vs awake) at two instants exactly 24 h apart, averaged over the window and rescaled `SRI = (2·P − 1)·100` (100 = a perfectly repeated schedule; 0 = chance; negatives clamped to 0). Windred et al. 2024 (*Sleep* 47(1):zsad253, DOI 10.1093/sleep/zsad253) found the SRI predicts all-cause mortality **above** sleep duration — which is why `VitalityEngine`'s regularity hazard prefers it to the `1 − CV` duration proxy it ships with.
 
-NOOP records only during sleep sessions (a night wearable, not 24/7 actigraphy), so the index compares consecutive nights over a **±12 h coverage window** around each night's onset rather than a continuous round-the-clock timeline: daytime reads as awake on both days (a match), and a missing night drops out of the 24 h pairing instead of reading as an all-awake day. Coverage gate: fewer than `minNights` (7) → `nil`, and the orchestration falls back to the duration proxy.
+Cénit records only during sleep sessions (a night wearable, not 24/7 actigraphy), so the index compares consecutive nights over a **±12 h coverage window** around each night's onset rather than a continuous round-the-clock timeline: daytime reads as awake on both days (a match), and a missing night drops out of the 24 h pairing instead of reading as an all-awake day. Coverage gate: fewer than `minNights` (7) → `nil`, and the orchestration falls back to the duration proxy.
 
 **Comparability caveat (FER-657).** When `VitalityEngine` scores this SRI against the population **median 60** from **Cribb et al. 2023** (24/7 accelerometry, UK Biobank), the two are not measured on the same timeline: Cribb's SRI sees the full round-the-clock day, ours sees only the ±12 h windows around recorded nights. A window-restricted SRI tends to read **higher** than a full 24/7 SRI (it excludes daytime irregularity and counts near-certain daytime awake-awake matches), so comparing it against 60 is if anything **optimistic** — biased toward "regular", i.e. conservative in the direction that would *age* you. The Vitality regularity factor keeps its 0.450 slope rather than widening the band: it is already a soft input (a real SRI only when coverage exists, else the `1 − CV` duration proxy), and the bias does not over-penalize. See `VitalityEngine.contributions` (correction #5).
 
@@ -437,12 +437,12 @@ men:    100.27  − 0.296·age + 0.226·PA − 0.369·waist − 0.155·RHRseated
 women:   74.736 − 0.247·age + 0.198·PA − 0.259·waist − 0.114·RHRseated
 ```
 
-- **PA-index (0–15)** — the HUNT1 PA-Q (Kurtze 2008): `frequency(0–5) × intensity(1–3) × duration(0.10–1.0)`, reconstructed from weekly signals since NOOP has no questionnaire.
+- **PA-index (0–15)** — the HUNT1 PA-Q (Kurtze 2008): `frequency(0–5) × intensity(1–3) × duration(0.10–1.0)`, reconstructed from weekly signals since Cénit has no questionnaire.
 - **Fitness Age** — invert the *same* Nes equation against a reference-fit peer: `FA = age + (rhrC·(RHR − RHRref) − paiC·(PA − PAref)) / ageC`. The waist term appears in both the user's estimate and the reference curve, so it **cancels** — the headline needs no body measurement, and an average-fitness person maps to their own chronological age by construction.
 
-### NOOP domain-transfer corrections (FER-122)
+### Cénit domain-transfer corrections (FER-122)
 
-The Nes model was calibrated on HUNT questionnaire inputs; NOOP feeds it wearable signals from a different domain. Three documented corrections (each verified by a test), after an expert review of the model's assumptions:
+The Nes model was calibrated on HUNT questionnaire inputs; Cénit feeds it wearable signals from a different domain. Three documented corrections (each verified by a test), after an expert review of the model's assumptions:
 
 1. **Resting-HR domain.** Nes/CERG use **seated** resting HR ("sit 10 min, count your pulse"); WHOOP reports **nocturnal** RHR, ≈7 bpm lower (nocturnal dip; [Dial 2025](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12367097/) confirms WHOOP tracks nocturnal RHR accurately vs ECG — the gap is the *domain*, not the device). Feeding nocturnal RHR against a seated reference would read everyone ≈0.52 yr/bpm × 7 ≈ **3.7 yr too young**. Fix: the engine's RHR contract is **nocturnal throughout**; `restingHRReference = 58` (the validated seated anchor 65 minus the 7-bpm dip); the absolute VO₂max converts nocturnal → seated-equivalent internally. The Fitness Age uses `(RHR − RHRref)` with both terms nocturnal, so the dip cancels and the delta is unbiased.
 2. **Activity scale.** `physicalActivityIndexFromStrain` is recalibrated to **this repo's 0–21 strain scale** (the upstream engine assumed 0–100, where a real workout would read as sedentary here). The strain→PA-index bridge is an **unvalidated heuristic** in any scale, so activity is a *soft* input: resting HR drives the headline, and sparse activity coverage caps confidence at `.estimate`.
@@ -480,7 +480,7 @@ Quantifies how much the heart can "ease off" (decelerate) at rest — the decele
 
 ### `ThermalStabilityEngine` — nocturnal distal warming + its night-to-night stability (FER-681)
 
-Reports the magnitude of the wrist-skin warming that accompanies sleep onset (skin temp rises as core falls and distal vasodilation dumps heat — **Kräuchi et al.**, "Warm feet promote the rapid onset of sleep", *Nature* 1999;401:36–37) and how consistent it is night-to-night, reusing the shipped `Baselines` EWMA for a robust center/spread and a descriptive 3-band coefficient-of-variation label. **Sensor honesty (load-bearing):** NOOP has skin temp only *while asleep*, so it CANNOT fit a 24 h cosinor and never claims a "24 h circadian amplitude". The UK-Biobank association between a flattened 24 h amplitude and future cardiometabolic risk (**Brooks TG, Skarke C, et al.**, "Diurnal rhythms of wrist temperature are associated with future disease risk in the UK Biobank", *Nat Commun* 2023;14:5172; peer-reviewed; association, never causal) is a population 24 h result — NOT this nocturnal-only signal — so the copy never invokes the disease link. **Hedge:** the CV cutoffs and 0.1 °C floor are product-calibration knobs, NOT validated against the strap's real skin-temp resolution — they must be checked before the band is ever shown. APPROXIMATE.
+Reports the magnitude of the wrist-skin warming that accompanies sleep onset (skin temp rises as core falls and distal vasodilation dumps heat — **Kräuchi et al.**, "Warm feet promote the rapid onset of sleep", *Nature* 1999;401:36–37) and how consistent it is night-to-night, reusing the shipped `Baselines` EWMA for a robust center/spread and a descriptive 3-band coefficient-of-variation label. **Sensor honesty (load-bearing):** Cénit has skin temp only *while asleep*, so it CANNOT fit a 24 h cosinor and never claims a "24 h circadian amplitude". The UK-Biobank association between a flattened 24 h amplitude and future cardiometabolic risk (**Brooks TG, Skarke C, et al.**, "Diurnal rhythms of wrist temperature are associated with future disease risk in the UK Biobank", *Nat Commun* 2023;14:5172; peer-reviewed; association, never causal) is a population 24 h result — NOT this nocturnal-only signal — so the copy never invokes the disease link. **Hedge:** the CV cutoffs and 0.1 °C floor are product-calibration knobs, NOT validated against the strap's real skin-temp resolution — they must be checked before the band is ever shown. APPROXIMATE.
 
 ### `RespirationTrendWatch` — nightly respiratory rate as a personal deviation channel (FER-682)
 
@@ -507,7 +507,7 @@ Source: `VitalityEngine.swift`. A pure, **independent** implementation of the pu
 - **Factors** — each a signed log-hazard vs a reference (positive = ages you): resting HR, VO₂max vs the age/sex-expected value, sleep duration, sleep regularity, HRV (RMSSD), daily steps. `compute` returns nil until ≥ `minFactors` (3) are present (honesty gate).
 - **Combine** — `Δage = (Σ lnHR · shrink) / (ln2 / 8)`; `bodyAge = age + Δage` (clamped [20, 90]); `vitality = clamp(50 + (age − bodyAge)·2.5, 0, 100)`. `contributions` exposes the per-factor breakdown that drives the "what's moving this" UI.
 
-### NOOP corrections (FER-124)
+### Cénit corrections (FER-124)
 
 An expert review against current primary literature found the upstream coefficients portable but **not verbatim**. Six documented corrections (each verified by a test):
 
@@ -527,12 +527,12 @@ Kept **verbatim** (well-centered, documented): VO₂max 0.130/MET (Kodama 2009 /
 Source: `ReadinessEngine.swift`. Live in `TodayView` (the verdict hero). A pure, deterministic synthesis of a handful of established sports-science signals from the daily-metrics history into one readiness `Level` (`primed` / `balanced` / `strained` / `rundown` / `insufficient`) plus the drivers behind it. Each signal is a flag (`good` / `neutral` / `watch` / `bad`):
 
 - **HRV / resting-HR** — z-scores against the robust EWMA personal baseline `RecoveryScorer` also consumes (shrunk toward neutral on thin baselines). An HRV drop / RHR rise flags autonomic fatigue / overtraining (Plews et al. 2013; Buchheit 2014). **Respiratory rate** uses a plain trailing-window Gaussian z (mean / sample-SD over the recent baseline window) and **skin-temperature** uses fixed °C deviation thresholds (≈ +0.4 / +0.8 °C) rather than a baseline z — a rise in either is an early illness marker. (`RecoveryScorer.recovery()` *does* route all four through the EWMA baseline, so the score and this verdict can differ slightly for resp / skin-temp.)
-- **Training Stress Balance (ACWR)** — acute (7-day) ÷ chronic (28-day) workload, banded `<0.8 / 0.8–1.3 / 1.3–1.5 / ≥1.5`. Computed on a **linearized** TRIMP-like load (inverting `StrainScorer`'s log map) so a spike reads as a spike, not flattened. Needs ≥ `minChronic` (14) days of strain. **The signal copy is purely descriptive of where your acute load sits vs your chronic** ("acute above chronic", "acute well above chronic") — no injury-risk imperative (FER-657): **Impellizzeri et al. 2020** (*Br J Sports Med* 54:1451–1462) show the ACWR does **not** predict injury, so NOOP states the load relationship, not a risk verdict.
+- **Training Stress Balance (ACWR)** — acute (7-day) ÷ chronic (28-day) workload, banded `<0.8 / 0.8–1.3 / 1.3–1.5 / ≥1.5`. Computed on a **linearized** TRIMP-like load (inverting `StrainScorer`'s log map) so a spike reads as a spike, not flattened. Needs ≥ `minChronic` (14) days of strain. **The signal copy is purely descriptive of where your acute load sits vs your chronic** ("acute above chronic", "acute well above chronic") — no injury-risk imperative (FER-657): **Impellizzeri et al. 2020** (*Br J Sports Med* 54:1451–1462) show the ACWR does **not** predict injury, so Cénit states the load relationship, not a risk verdict.
 - **Training monotony** — week-long mean ÷ SD of strain; high monotony (low day-to-day variety) is associated with higher strain/illness (Foster 1998).
 
 A short night (< 6 h) flags the morning read **low-confidence** (a short night suppresses HRV / lifts RHR regardless of true recovery). A separate, testable `BridgeKind` reconciles a high recovery score against a cautious verdict (the classic "you woke up recovered, but your training load is the thing to watch" divergence), reusing `RecoveryScorer.bandYellowMax` as the "recovery high" threshold.
 
-**Honest note — the ACWR is coupled.** The acute window is a subset of the chronic window (acute ⊂ chronic), faithful to the original Gabbett formulation; this is the "coupled" ACWR whose statistical properties (spurious correlation, ratio artefacts) were critiqued by **Lolli et al. 2019** — an uncoupled ACWR (acute vs the *preceding* chronic block) avoids the shared term. NOOP keeps the coupled form deliberately (it matches the published bands users may know), and the readout is an association, not a clinical risk model. APPROXIMATE. References: **Gabbett 2016** (*Br J Sports Med* 50:273–280, ACWR); **Foster 1998** (*Med Sci Sports Exerc* 30(7), monotony); **Lolli et al. 2019** (*Br J Sports Med* 53(15):921–922, PMID 29101104, mathematical-coupling critique); **Plews et al. 2013**, **Buchheit 2014** (HRV/RHR).
+**Honest note — the ACWR is coupled.** The acute window is a subset of the chronic window (acute ⊂ chronic), faithful to the original Gabbett formulation; this is the "coupled" ACWR whose statistical properties (spurious correlation, ratio artefacts) were critiqued by **Lolli et al. 2019** — an uncoupled ACWR (acute vs the *preceding* chronic block) avoids the shared term. Cénit keeps the coupled form deliberately (it matches the published bands users may know), and the readout is an association, not a clinical risk model. APPROXIMATE. References: **Gabbett 2016** (*Br J Sports Med* 50:273–280, ACWR); **Foster 1998** (*Med Sci Sports Exerc* 30(7), monotony); **Lolli et al. 2019** (*Br J Sports Med* 53(15):921–922, PMID 29101104, mathematical-coupling critique); **Plews et al. 2013**, **Buchheit 2014** (HRV/RHR).
 
 ---
 
@@ -602,7 +602,7 @@ t  = (m1 − m2) / sqrt(s1²/n1 + s2²/n2)
 - `rank(...)` orders effects by `|d|` descending, significant first.
 - `sentence(_:)` renders plain English, e.g. *"On days you logged 'Alcohol', Recovery was 12% lower (avg 61 vs 69, n=140 vs 498)."*
 
-**Eligible-day restriction (FER-385).** `effect(… , eligibleDays:)` takes an optional universe of days the behavior is even *measured* on. For journal behaviors it stays `nil` — absence of a log means "didn't do it", so every day is eligible. For **diet adherence** it's the set of days that carry a `diet-adherence` point: a day with no record is *unknown*, not non-adherent, and falls into **neither** group. The binary behavior is *"I followed my diet"* = days with `diet-adherence ≥ 80%` (`DietAdherence.adherentDayThreshold`; 80% is borrowed *by analogy* from the medication-adherence PDC/MPR convention — Karve 2009 — not a validated diet cutoff, so it's a NOOP product convention). `InsightEngine.Inputs.eligibleDaysByBehavior` threads the per-behavior universe in; the **N-of-1 experiment deliberately does NOT restrict** (its "without" group is the full baseline — restricting a 7-day window would starve it below the `minGroup` floor).
+**Eligible-day restriction (FER-385).** `effect(… , eligibleDays:)` takes an optional universe of days the behavior is even *measured* on. For journal behaviors it stays `nil` — absence of a log means "didn't do it", so every day is eligible. For **diet adherence** it's the set of days that carry a `diet-adherence` point: a day with no record is *unknown*, not non-adherent, and falls into **neither** group. The binary behavior is *"I followed my diet"* = days with `diet-adherence ≥ 80%` (`DietAdherence.adherentDayThreshold`; 80% is borrowed *by analogy* from the medication-adherence PDC/MPR convention — Karve 2009 — not a validated diet cutoff, so it's a Cénit product convention). `InsightEngine.Inputs.eligibleDaysByBehavior` threads the per-behavior universe in; the **N-of-1 experiment deliberately does NOT restrict** (its "without" group is the full baseline — restricting a 7-day window would starve it below the `minGroup` floor).
 
 ### `ComparisonEngine`
 
@@ -653,7 +653,7 @@ daysToBaseline = smallest k∈1…7 with median(Charge[D+k]) ≥ baselineCenter 
 
 The engine was ported from upstream NoopApp/noop **after an expert review of the method**, which found several upstream thresholds sat below the measurement-noise floor. Five adjustments were applied (each covered by a test), deliberately breaking byte-parity with the upstream oracle:
 
-| Lever | Upstream | NOOP | Why |
+| Lever | Upstream | Cénit | Why |
 |---|---|---|---|
 | Center | arithmetic mean | **median** | a single off night shouldn't dominate a thin sample (matches the robust-center house style of `Baselines`) |
 | `minSessions` | 4 | **6** | at n≈4 the standard error of the center (~5 pts for SD≈10) is the same order as the gap itself — mostly noise |
@@ -701,7 +701,7 @@ Apple Health XML ──┘                                         │
 ## `CyclePhaseEngine` — menstrual-cycle phase awareness (FER-672)
 
 Estimates the **current** cycle phase (follicular-lean vs luteal-lean) from the nightly skin-temperature
-deviation NOOP already stores (`DailyMetric.skinTempDevC`). Pure, DB-free, computed on the fly — no new
+deviation Cénit already stores (`DailyMetric.skinTempDevC`). Pure, DB-free, computed on the fly — no new
 decode, no persistence, no migration. Opt-in and off by default; surfaced only in the Experiments sheet.
 
 ### Method
@@ -709,7 +709,7 @@ decode, no persistence, no migration. Opt-in and off by default; surfaced only i
 A robust **luteal index** z over the trailing window: `z = 0.75·zTemp + 0.25·zRHR`, each term z-scored
 against the window's own median (centre) and robust σ (`IllnessWatch.robustSigma`, the repo's `× 1.253`
 mean-absolute-deviation convention). Skin temp is the dominant driver; resting HR corroborates. **HRV is
-NOT a term in the index** (decision H1): a DROP is luteal-ward, but for the RMSSD NOOP measures the
+NOT a term in the index** (decision H1): a DROP is luteal-ward, but for the RMSSD Cénit measures the
 effect is inconsistent, so HRV can only *raise confidence one notch* when it agrees with the temp+RHR
 lean — it never votes on the phase. A ≥42-night gate (`.learning` below it), a robust-σ noise floor and a
 minimum |z| guard the `.noClearPattern` state; confidence scales with |z| and night count.
@@ -745,4 +745,4 @@ date, or any clinical claim.
 - **Robust statistics.** z-scores use EWMA mean-absolute-deviation (`× 1.253` to a Gaussian σ); resting HR uses 5-minute bin minima; HR display uses windowed medians — all chosen to resist single-sample outliers.
 - **Cold-start honesty.** When a baseline isn't trustworthy yet, the recovery scorer returns `nil` rather than a fabricated number.
 - **Not a medical device.** None of this is diagnostic or medical advice. The illness early-warning is a wellness nudge from your own baselines, not a clinical screen.
-- **Not affiliated with WHOOP.** NOOP interoperates with hardware and exports you already own, entirely on-device. Protocol decoding builds on community reverse-engineering of the WHOOP 4.0 (project *my-whoop*, `johnmiddleton12/my-whoop`) and WHOOP 5.0 (project *goose*, `b-nnett/goose`) protocols.
+- **Not affiliated with WHOOP.** Cénit interoperates with hardware and exports you already own, entirely on-device. Protocol decoding builds on community reverse-engineering of the WHOOP 4.0 (project *my-whoop*, `johnmiddleton12/my-whoop`) and WHOOP 5.0 (project *goose*, `b-nnett/goose`) protocols.

@@ -1,16 +1,16 @@
-# Google Health → NOOP bridge
+# Google Health → Cénit bridge
 
-Drive NOOP with a Google account (Fitbit / Pixel Watch data via the Google Health
+Drive Cénit with a Google account (Fitbit / Pixel Watch data via the Google Health
 API) instead of a WHOOP strap over BLE.
 
 `export_google_health.py` fetches Google Health API data and writes it as an
-**Apple Health `export.zip`**, which NOOP's existing `AppleHealthImporter` ingests
+**Apple Health `export.zip`**, which Cénit's existing `AppleHealthImporter` ingests
 with no app changes. The recovery / strain / sleep / HRV analytics then run on the
 imported data exactly as they would for a WHOOP or Apple Health import.
 
 ## Data type mapping
 
-| Google Health data type | HealthKit identifier NOOP reads |
+| Google Health data type | HealthKit identifier Cénit reads |
 |---|---|
 | `heart-rate` | `HeartRate` |
 | `heart-rate-variability` (RMSSD) | `HeartRateVariabilitySDNN` (ms) |
@@ -34,7 +34,7 @@ system Python, not just 3.11+.)
 python3 export_google_health.py --days 14 --out export.zip
 ```
 
-Then in NOOP: **Data Sources → Import → select `export.zip`**.
+Then in Cénit: **Data Sources → Import → select `export.zip`**.
 
 ### Credentials
 
@@ -51,12 +51,12 @@ Google Health migration parity tool.
 
 ## Verified
 
-A 3-day export (17,015 records) imported through NOOP's `AppleHealthImporter`
+A 3-day export (17,015 records) imported through Cénit's `AppleHealthImporter`
 produced 15,000 heart-rate samples, HRV/RHR/SpO₂/respiratory-rate series, 878
 step records, 3 workouts, and 64 sleep-stage intervals (core 31, deep 14, REM 14,
 awake 5). Standard library only; no dependencies.
 
-Running the imported data through NOOP's `AppleHealthAggregator` produced correct
+Running the imported data through Cénit's `AppleHealthAggregator` produced correct
 per-night metrics (HRV ~30 ms, resting HR 57–58, respiratory 13–15, sleep
 efficiency 96–99%), and `RecoveryScorer` + `Baselines` consumed them: the
 production cold-start gate correctly withheld a score with fewer than four

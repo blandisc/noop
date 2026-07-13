@@ -65,7 +65,7 @@ struct WorkoutImportView: View {
                 case .done:    doneFlow
                 }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -89,7 +89,7 @@ struct WorkoutImportView: View {
     // MARK: - Capture
 
     private var captureFlow: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             stepper(current: .capture)
             header("Import plan", "Bring your plan from your AI")
 
@@ -98,9 +98,9 @@ struct WorkoutImportView: View {
             }
 
             step(2, "Bring back the file it gives you: paste it or upload it.") {
-                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                     pasteField
-                    HStack(spacing: NoopMetrics.gap) {
+                    HStack(spacing: CenitMetrics.gap) {
                         QuietButton("Upload .json file") { showFileImporter = true }
                         QuietButton("Continue") { parse(text: pasteText) }
                             .disabled(pasteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -121,22 +121,22 @@ struct WorkoutImportView: View {
             .foregroundStyle(theme.ink)
             .scrollContentBackground(.hidden)
             .frame(minHeight: 96)
-            .padding(NoopMetrics.cardPadding)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .padding(CenitMetrics.cardPadding)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             .overlay(alignment: .topLeading) {
                 if pasteText.isEmpty {
                     Text("Paste the result here…")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                        .padding(NoopMetrics.cardPadding).allowsHitTesting(false)
+                        .padding(CenitMetrics.cardPadding).allowsHitTesting(false)
                 }
             }
             .accessibilityLabel("Paste your plan")
     }
 
     private func errorNote(_ error: WorkoutProgramParseError) -> some View {
-        HStack(alignment: .top, spacing: NoopMetrics.gap) {
+        HStack(alignment: .top, spacing: CenitMetrics.gap) {
             Image(systemName: "exclamationmark.triangle")
                 .font(StrandFont.glyph(.lead)).foregroundStyle(theme.critical)
                 .accessibilityHidden(true)
@@ -150,7 +150,7 @@ struct WorkoutImportView: View {
     // MARK: - Mapping (the names that aren't in the catalog yet)
 
     private var mappingFlow: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             stepper(current: .mapping)
             header("Import plan", "\(unmatched.count) exercises to set up")
             Text("These aren't in your library. Match each one to an exercise you have, or create it.")
@@ -179,19 +179,19 @@ struct WorkoutImportView: View {
         let key = norm(name)
         let resolved = resolution[key]
         let isOmitted = omitted.contains(key)
-        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text(verbatim: name).font(StrandFont.body)
                 .foregroundStyle(isOmitted ? theme.inkTertiary : theme.ink)
             if isOmitted {
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     Text("Omitted").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: NoopMetrics.space2)
+                    Spacer(minLength: CenitMetrics.space2)
                     undoLink { omitted.remove(key) }
                 }
                 .accessibilityElement(children: .combine)
             } else if let resolved {
                 let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
                         .font(StrandFont.subhead).foregroundStyle(theme.verdict)
                         .accessibilityHidden(true)
@@ -200,7 +200,7 @@ struct WorkoutImportView: View {
                         else { Text("Matched · \(StrengthDisplay.name(resolved))") }
                     }
                     .font(StrandFont.subhead).foregroundStyle(theme.verdict)
-                    Spacer(minLength: NoopMetrics.space2)
+                    Spacer(minLength: CenitMetrics.space2)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
                     Button { mappingTarget = MappingName(name: name) } label: {
                         Text("Change mapping").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
@@ -214,26 +214,26 @@ struct WorkoutImportView: View {
                     Text("Did you mean…").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     ForEach(suggestions, id: \.id) { s in
                         Button { resolve(name, with: s) } label: {
-                            HStack(spacing: NoopMetrics.space2) {
+                            HStack(spacing: CenitMetrics.space2) {
                                 Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                                 Text(StrengthDisplay.name(s)).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                                Spacer(minLength: NoopMetrics.space2)
+                                Spacer(minLength: CenitMetrics.space2)
                                 Text("Use").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                             }
-                            .padding(.vertical, NoopMetrics.space1).contentShape(Rectangle())
+                            .padding(.vertical, CenitMetrics.space1).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint(Text("Use \(StrengthDisplay.name(s)) for \(name)"))
                     }
                 }
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     chip("Match") { mappingTarget = MappingName(name: name) }
                     chip("Create new") { createNew(name) }
                     chip("Omit") { omitted.insert(key) }
                 }
             }
         }
-        .padding(.vertical, NoopMetrics.gap)
+        .padding(.vertical, CenitMetrics.gap)
     }
 
     /// A small underlined «Undo» link — reverts a suggestion/omit so the row goes back to unmatched.
@@ -256,7 +256,7 @@ struct WorkoutImportView: View {
     // MARK: - Confirm
 
     private func confirmFlow(_ program: WorkoutProgram) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             stepper(current: .confirm)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Import plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -281,7 +281,7 @@ struct WorkoutImportView: View {
         let muscles = routine.exercises.compactMap { resolution[norm($0.name)]?.primaryMuscles }
         let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
         let accent = region.tint(theme)
-        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Circle().fill(accent).frame(width: 8, height: 8)
                 nameText(routine.name, fallback: "Routine").font(StrandFont.body).foregroundStyle(theme.ink)
@@ -297,15 +297,15 @@ struct WorkoutImportView: View {
                 }
             }
         }
-        .padding(.vertical, NoopMetrics.gap)
+        .padding(.vertical, CenitMetrics.gap)
     }
 
     // MARK: - Done
 
     private var doneFlow: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             stepper(current: .done)
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 40, weight: .regular)).foregroundStyle(theme.verdict)   // token-exempt: glifo de éxito 40pt (empty token es 34)
                     .accessibilityHidden(true)
@@ -325,8 +325,8 @@ struct WorkoutImportView: View {
     private func stepper(current: Phase) -> some View {
         let labels: [LocalizedStringKey] = ["Capture", "Map", "Confirm", "Done"]
         let currentIndex = phaseIndex(current)
-        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            HStack(spacing: NoopMetrics.space2) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Capsule()
                         .fill(i <= currentIndex ? theme.dataStrain : theme.hairline)
@@ -334,7 +334,7 @@ struct WorkoutImportView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            HStack(spacing: NoopMetrics.space2) {
+            HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
                         .font(StrandFont.footnote)
@@ -367,9 +367,9 @@ struct WorkoutImportView: View {
 
     private func step<Action: View>(_ n: Int, _ text: LocalizedStringKey,
                                     @ViewBuilder action: () -> Action) -> some View {
-        HStack(alignment: .top, spacing: NoopMetrics.gap) {
+        HStack(alignment: .top, spacing: CenitMetrics.gap) {
             Text("\(n)").font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkTertiary)
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text(text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 action()

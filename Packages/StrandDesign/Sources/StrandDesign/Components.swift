@@ -3,11 +3,11 @@ import SwiftUI
 // MARK: - Shared design-system primitives
 //
 // What survives the «Instrumento diurno» migration: the spacing/measure token scale
-// (`NoopMetrics`), the one segmented pill control, and the source badge. The legacy card
+// (`CenitMetrics`), the one segmented pill control, and the source badge. The legacy card
 // primitives (`NoopCard` / `StatTile` / `SectionHeader` / `ChartCard` / `ChartFooter`) were
 // removed once the dark screens that used them went away (FER-444, tail of FER-413/FER-427).
 
-public enum NoopMetrics {
+public enum CenitMetrics {
     public static let cardRadius: CGFloat = 16
     public static let cardPadding: CGFloat = 16
     public static let gap: CGFloat = 12          // gap between cards
@@ -48,7 +48,7 @@ public enum NoopMetrics {
 // Vive en el paquete —no como enum local del widget— para que sea parte del sistema de diseño y el
 // linter de deriva no la marque. Tamaños FIJOS a propósito: geometría del Dynamic Island / Lock Screen,
 // EXENTA de Dynamic Type (una Live Activity es más apretada que una pantalla y ActivityKit recorta el
-// Lock Screen a 160 pt, sin scroll). Por eso NO reusa `NoopMetrics`.
+// Lock Screen a 160 pt, sin scroll). Por eso NO reusa `CenitMetrics`.
 //
 // Disciplina de altura: los zones apilados + paddings deben sumar ≤ 160 pt o la fila de acciones se
 // corta en silencio: 2·12 pad + 34 identidad + 8 + 34 hero + 8 + 4 barra + 8 + 44 acciones = 156 pt.
@@ -109,6 +109,8 @@ public struct SegmentedPillControl<T: Hashable>: View {
                     segment(item, sel)
                 }
                 .buttonStyle(.plain)
+                // VoiceOver announces which segment is active (FER-914).
+                .accessibilityAddTraits(sel ? [.isSelected] : [])
             }
         }
         .padding(3)

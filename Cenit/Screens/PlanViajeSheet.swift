@@ -40,10 +40,10 @@ struct PlanViajeSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 if showingPlan { planView } else { inputView }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -68,9 +68,9 @@ struct PlanViajeSheet: View {
     // MARK: - Input
 
     private var inputView: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             Text("PLANEAR UN VIAJE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .padding(.top, NoopMetrics.screenPadding)
+                .padding(.top, CenitMetrics.screenPadding)
             Text(verbatim: "¿Cuánto se recorre tu horario? También aplica si cambias de turno.")
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -100,18 +100,18 @@ struct PlanViajeSheet: View {
     @ViewBuilder
     private var planView: some View {
         if plan.direction == .none {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 Text("TU PLAN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.top, NoopMetrics.screenPadding)
+                    .padding(.top, CenitMetrics.screenPadding)
                 Text(verbatim: "Con un cambio tan chico tu reloj apenas se mueve: no necesitas un plan. Descansa como siempre.")
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 QuietButton("Entendido") { showingPlan = false }
             }
         } else {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 Text("TU PLAN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.top, NoopMetrics.screenPadding)
+                    .padding(.top, CenitMetrics.screenPadding)
                 Text(verbatim: Self.summary(plan))
                     .font(StrandFont.headline).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)

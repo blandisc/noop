@@ -3,14 +3,14 @@
 
 `Packages/StrandDesign` is the single source of visual truth. A screen must not re-introduce a raw
 hex, an ad-hoc `.font(.system(size:))`, a literal corner radius, or a magic opacity — each is a token
-in the package (see `NoopMetrics`, `StrandFont.glyph`/`.micro`, `InstrumentoCardRadius`, `StrandOpacity`).
+in the package (see `CenitMetrics`, `StrandFont.glyph`/`.micro`, `InstrumentoCardRadius`, `StrandOpacity`).
 This linter fails with concrete `file:line: rule — snippet` lines when it finds one.
 
 Rules (each activated in the PR that finishes its migration — pass `--rules` to opt in incrementally):
 
     no-hex             `Color(hex:` outside Packages/StrandDesign            (already clean — on by default)
     no-adhoc-font      `.font(.system(size:`                                 (after task 02)
-    no-radius-literal  `cornerRadius: <number>` not using a NoopMetrics token (after task 01)
+    no-radius-literal  `cornerRadius: <number>` not using a CenitMetrics token (after task 01)
     no-opacity-literal `.opacity(<number>)` not using StrandOpacity/helpers   (after task 03)
     no-emdash-string   em-dash (—) inside a Swift string literal (copy rule)   (FER-878/879; on for Screens+Onboarding)
 
@@ -54,7 +54,7 @@ RE_HEX = re.compile(r"Color\(hex:")
 # it only flags a bare digit — `.font(.system(size: WidgetMetrics.hero))` / `.system(size: M.name)` source
 # the size from a design token and pass; `.font(.system(size: 13))` is the magic number it's meant to catch.
 RE_FONT = re.compile(r"\.font\(\.system\(size:\s*[0-9]")
-# no-radius-literal: cornerRadius: followed by a bare number (a token ref like NoopMetrics.cardRadius,
+# no-radius-literal: cornerRadius: followed by a bare number (a token ref like CenitMetrics.cardRadius,
 # radius.value, or M.foo is a name, not a digit, so it's allowed).
 RE_RADIUS = re.compile(r"cornerRadius:\s*[0-9]")
 # no-opacity-literal: .opacity( followed by a bare number. `.opacity(StrandOpacity.x)`,

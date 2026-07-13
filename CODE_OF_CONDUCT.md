@@ -2,7 +2,7 @@
 
 ## Our pledge
 
-We as contributors and maintainers pledge to make participation in NOOP a
+We as contributors and maintainers pledge to make participation in Cénit a
 harassment-free experience for everyone, regardless of age, body size, visible
 or invisible disability, ethnicity, sex characteristics, gender identity and
 expression, level of experience, education, socio-economic status, nationality,
@@ -35,7 +35,7 @@ representing the project in public spaces.
 
 ## Enforcement
 
-NOOP is maintained anonymously, so there is no private contact address. Instances
+Cénit is maintained anonymously, so there is no private contact address. Instances
 of abusive, harassing, or otherwise unacceptable behaviour may be reported by
 opening an issue. If the report itself is sensitive, keep it factual and avoid
 restating the abusive content in detail.

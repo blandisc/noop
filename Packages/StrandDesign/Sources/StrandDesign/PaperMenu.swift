@@ -86,7 +86,7 @@ public struct PaperMenuCard: View {
         .background(theme.surface)
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: theme.ink.opacity(0.16), radius: 16, y: 10)
+        .strandElevation(.floating, ink: theme.ink)
         .presentationBackground(theme.surface)
         .animation(StrandMotion.fade, value: pushed?.id)
     }

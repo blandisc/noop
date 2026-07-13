@@ -65,7 +65,7 @@ struct StressDetailScreen: View {
                         bandScale(model.score)
                     } else {
                         heroFlat(message: "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs: your history is below.")
-                            .padding(NoopMetrics.screenPadding)
+                            .padding(CenitMetrics.screenPadding)
                     }
                     if infoOpen { whatWeMeasureCard }
                     // Level 1.5 · mapa del día BEFORE «qué lo mueve» (FER-433).
@@ -95,7 +95,7 @@ struct StressDetailScreen: View {
                     }
                 } else {
                     heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
-                        .padding(NoopMetrics.screenPadding)
+                        .padding(CenitMetrics.screenPadding)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

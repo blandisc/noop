@@ -26,7 +26,7 @@ private struct SupportContent: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("About & support").font(StrandFont.title1).foregroundStyle(theme.ink)
                     Text("\(ProjectInfo.appName): all your data, none of the cloud.")
@@ -42,8 +42,8 @@ private struct SupportContent: View {
                 disclaimer
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())

@@ -217,7 +217,7 @@ struct WhyVerdictSheet: View {
             }
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
-        .background(here ? c.opacity(StrandOpacity.tintFill) : .clear, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+        .background(here ? c.opacity(StrandOpacity.tintFill) : .clear, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
     }
 
     // MARK: color maps (mirror TodayView.verdictDataColor so the hero and sheet never disagree, FER-167)

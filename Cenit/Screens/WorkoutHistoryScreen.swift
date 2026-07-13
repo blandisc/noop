@@ -64,7 +64,7 @@ struct WorkoutHistoryScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if loaded {
                     if sessions.isEmpty {
@@ -80,8 +80,8 @@ struct WorkoutHistoryScreen: View {
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -287,7 +287,7 @@ struct WorkoutHistoryScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             NavigationLink(value: SavedTicketsRoute()) {
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                         .fill(theme.hairline)
                         .frame(width: 38, height: 38)
                         .overlay(
@@ -305,10 +305,10 @@ struct WorkoutHistoryScreen: View {
                         .font(StrandFont.glyph(.chevron, weight: .semibold))
                         .foregroundStyle(theme.inkTertiary)
                 }
-                .padding(NoopMetrics.cardPadding)
+                .padding(CenitMetrics.cardPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -355,10 +355,10 @@ struct WorkoutHistoryScreen: View {
             }
             .padding(.top, 12)
         }
-        .padding(NoopMetrics.cardPadding)
+        .padding(CenitMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -524,8 +524,8 @@ struct WorkoutHistoryScreen: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 18).padding(.vertical, 14)
-        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .padding(.horizontal, NoopMetrics.screenPadding)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .task(id: d.id) {
@@ -651,7 +651,7 @@ struct WorkoutSessionDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 heading
                 hero
                 Divider().overlay(theme.hairline)
@@ -666,8 +666,8 @@ struct WorkoutSessionDetailScreen: View {
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())

@@ -127,8 +127,8 @@ struct ProgressionSetupScreen: View {
                 .opacity(enabled ? 1 : StrandPalette.disabledOpacity)
                 .padding(.top, 14)
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, 12).padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.top, 12).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())

@@ -21,7 +21,7 @@
   <a href="docs/ARCHITECTURE.md">Architecture</a>
 </p>
 
-<p align="center"><sub>Cénit began life as <b>NOOP</b> — the name the repository still carries.</sub></p>
+<p align="center"><sub>Cénit began life as <b>Cénit</b> — the name the repository still carries.</sub></p>
 
 ---
 
@@ -218,7 +218,7 @@ Tools/                  developer scripts (localization, screen-map, protocol de
 Fixtures/               sample WHOOP export for tests
 ```
 
-> The packages keep their original `Whoop*` / `Strand*` names from the NOOP era;
+> The packages keep their original `Whoop*` / `Strand*` names from the Cénit era;
 > the app layer was renamed to `Cenit/` with the rebrand.
 
 ### `WhoopProtocol` — the reverse-engineering core

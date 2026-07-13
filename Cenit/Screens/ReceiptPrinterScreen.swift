@@ -77,8 +77,8 @@ struct ReceiptPrinterScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 actionBar
-                    .padding(.horizontal, NoopMetrics.screenPadding)
-                    .padding(.bottom, NoopMetrics.screenPadding)
+                    .padding(.horizontal, CenitMetrics.screenPadding)
+                    .padding(.bottom, CenitMetrics.screenPadding)
             }
         }
         .instrumentoTheme(theme)
@@ -126,7 +126,7 @@ struct ReceiptPrinterScreen: View {
                 StrandCTAButton("REIMPRIMIR", kind: .outline) { reprint() }
                     .frame(maxWidth: 220)
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
         } else if let receipt {
             ticketStage(receipt)
         } else if loadFailed {

@@ -115,9 +115,9 @@ private struct PatronesLanding: View {
                 expedienteSection      // §6 · Tu expediente
                 if hasContributed { resetFooter }
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -327,7 +327,7 @@ private struct PatronesLanding: View {
                     .foregroundStyle(theme.paper)
                     .padding(.horizontal, 20).padding(.vertical, 11)
                     .background(theme.dataRecovery,
-                                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
                     .shadow(color: theme.dataRecovery.opacity(0.25), radius: 3, x: 0, y: 1) // token-exempt: sombra decorativa <0.28
                 }
                 .buttonStyle(ControlPressStyle())
@@ -618,7 +618,7 @@ private struct PatronesLanding: View {
                         .foregroundStyle(theme.paper)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
                     }
                     .buttonStyle(ControlPressStyle())
                     quietButton("Repeat") { restartExperiment(exp) }
@@ -634,8 +634,8 @@ private struct PatronesLanding: View {
                     Button { restartExperiment(exp) } label: {
                         Text("Try 1 more week").font(StrandFont.headline).foregroundStyle(theme.ink)
                             .frame(maxWidth: .infinity).padding(.vertical, 11)
-                            .background(theme.paperLo, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                            .background(theme.paperLo, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                                 .stroke(theme.hairlineStrong, lineWidth: 1))
                     }
                     .buttonStyle(ControlPressStyle())
@@ -693,7 +693,7 @@ private struct PatronesLanding: View {
                 Button { startLever = InsightItem(insight: insight) } label: {
                     Text("Start trial").font(StrandFont.headline).foregroundStyle(theme.paper)
                         .padding(.horizontal, 16).padding(.vertical, 9)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
                 }
                 .buttonStyle(ControlPressStyle())
             }
@@ -718,11 +718,11 @@ private struct PatronesLanding: View {
                 Image(systemName: "plus").font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 14).padding(.vertical, 13)
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                 .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4])))
             .contentShape(Rectangle())
         }
-        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: NoopMetrics.controlRadius)) // token-exempt: tinte pressed <0.10
+        .buttonStyle(SurfacePressStyle(tint: theme.ink.opacity(0.05), radius: CenitMetrics.controlRadius)) // token-exempt: tinte pressed <0.10
         .padding(.top, 11)
     }
 
@@ -749,8 +749,8 @@ private struct PatronesLanding: View {
         Button(action: action) {
             Text(label).font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
                 .padding(.horizontal, 16).padding(.vertical, 11)
-                .background(theme.paperLo, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                .background(theme.paperLo, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                     .stroke(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(ControlPressStyle())
@@ -1042,7 +1042,7 @@ private struct PatronesLanding: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity)
             .padding(16)
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                 .stroke(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4])))
             .padding(.top, 11)
     }
@@ -1187,8 +1187,8 @@ private extension View {
         self.padding(15)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(fill ?? theme.surface,
-                        in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .stroke(border, lineWidth: 1))
             .padding(.top, 11)
     }
@@ -1196,8 +1196,8 @@ private extension View {
     /// A §5 surface row: surface fill, hairline border, rounded.
     func surfaceRow(_ theme: InstrumentoTheme) -> some View {
         self.padding(14)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .stroke(theme.hairlineStrong, lineWidth: 1))
     }
 }

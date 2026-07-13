@@ -453,8 +453,8 @@ struct SkinTempDetailScreen: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
         // Fade in place (no slide) — smoother than flying in from the top. (Detalle de Vital fix)
         .transition(.opacity)
     }

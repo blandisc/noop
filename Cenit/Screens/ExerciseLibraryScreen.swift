@@ -54,8 +54,8 @@ struct ExerciseLibraryScreen: View {
                 createRow
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, addMode ? 88 : NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, addMode ? 88 : CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -109,7 +109,7 @@ struct ExerciseLibraryScreen: View {
             }
         }
         .padding(.horizontal, 13).padding(.vertical, 9)
-        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Filters
@@ -296,7 +296,7 @@ struct ExerciseLibraryScreen: View {
                 .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain).disabled(selected.isEmpty)
-        .padding(.horizontal, NoopMetrics.screenPadding).padding(.bottom, 8)
+        .padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, 8)
         .background(theme.paper.opacity(0.96).ignoresSafeArea(edges: .bottom))  // token-exempt: casi-opaco fuera de banda
     }
 
@@ -372,7 +372,7 @@ private struct CreateExerciseSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Library").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Text("New exercise").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -383,7 +383,7 @@ private struct CreateExerciseSheet: View {
                     TextField("e.g. Svend press", text: $name)
                         .font(StrandFont.body).foregroundStyle(theme.ink)
                         .padding(.horizontal, 13).padding(.vertical, 11)
-                        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -406,7 +406,7 @@ private struct CreateExerciseSheet: View {
                 }
                 .buttonStyle(.plain).disabled(!canCreate)
             }
-            .padding(.top, 20).padding(.horizontal, NoopMetrics.screenPadding).padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.top, 20).padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -447,8 +447,8 @@ private struct CreateExerciseSheet: View {
                 if type == t { Image(systemName: "checkmark").font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink) }
             }
             .padding(.horizontal, 13).padding(.vertical, 11).contentShape(Rectangle())
-            .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))  // token-exempt: fondo condicional
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+            .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))  // token-exempt: fondo condicional
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                 .strokeBorder(type == t ? theme.ink : theme.hairline, lineWidth: type == t ? 1.5 : 1))
         }
         .buttonStyle(.plain)

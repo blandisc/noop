@@ -97,7 +97,7 @@ struct DietCaptureView: View {
     // MARK: - Capture
 
     private var captureFlow: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             header("Capture plan", "Bring your nutritionist's plan")
 
             step(1, "Copy the prompt and paste it into your trusted AI, along with your plan (PDF or photo).") {
@@ -105,9 +105,9 @@ struct DietCaptureView: View {
             }
 
             step(2, "Bring back the file it gives you: paste it or upload it.") {
-                VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                     pasteField
-                    HStack(spacing: NoopMetrics.gap) {
+                    HStack(spacing: CenitMetrics.gap) {
                         QuietButton("Upload .json file") { showFileImporter = true }
                         QuietButton("Continue") { parse(text: pasteText) }
                             .disabled(pasteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -130,10 +130,10 @@ struct DietCaptureView: View {
             .foregroundStyle(theme.ink)
             .scrollContentBackground(.hidden)
             .frame(minHeight: 96)
-            .padding(NoopMetrics.cardPadding)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .padding(CenitMetrics.cardPadding)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1)
             )
             .overlay(alignment: .topLeading) {
@@ -141,7 +141,7 @@ struct DietCaptureView: View {
                     Text("Paste the result here…")
                         .font(StrandFont.subhead)
                         .foregroundStyle(theme.inkTertiary)
-                        .padding(NoopMetrics.cardPadding)
+                        .padding(CenitMetrics.cardPadding)
                         .allowsHitTesting(false)
                 }
             }
@@ -149,7 +149,7 @@ struct DietCaptureView: View {
     }
 
     private func errorNote(_ error: DietPlanParseError) -> some View {
-        HStack(alignment: .top, spacing: NoopMetrics.gap) {
+        HStack(alignment: .top, spacing: CenitMetrics.gap) {
             Image(systemName: "exclamationmark.triangle")
                 .font(StrandFont.glyph(.lead))
                 .foregroundStyle(theme.critical)
@@ -165,7 +165,7 @@ struct DietCaptureView: View {
     // MARK: - Confirm
 
     private func confirmStep(_ plan: DietPlan) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             planHeader("Review your plan", name: plan.name)
             mealList(plan)
             QuietButton("Save plan") { save(plan) }
@@ -177,15 +177,15 @@ struct DietCaptureView: View {
     /// Type a plan by hand (no LLM): plan name + meals (short name + foods), with equivalent options.
     /// All-ink — there's no measured datum here, same as the BYO-LLM capture screen.
     private var manualForm: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             header("Diet · by hand", "Build your plan")
 
-            VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 Text("Plan name").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 manualField($manualPlanName, "Plan name")
             }
 
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("Meals").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 ForEach($manualMeals) { meal in
                     manualMealCard(meal)
@@ -199,7 +199,7 @@ struct DietCaptureView: View {
     }
 
     private func manualMealCard(_ meal: Binding<ManualMeal>) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             manualField(meal.name, "Short name")
             ForEach(meal.options) { option in
                 manualOption(option, isEquivalent: option.wrappedValue.id != meal.wrappedValue.options.first?.id)
@@ -207,9 +207,9 @@ struct DietCaptureView: View {
             addRow("Equivalent option") { meal.wrappedValue.options.append(ManualOption()) }
             dayPicker(meal)
         }
-        .padding(NoopMetrics.cardPadding)
+        .padding(CenitMetrics.cardPadding)
         .overlay(
-            RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 0.5)
         )
     }
@@ -217,9 +217,9 @@ struct DietCaptureView: View {
     /// Weekday chips per meal (FER-431): all 7 selected = every day (diario); deselect any to make the
     /// plan weekly. ISO 1=Mon … 7=Sun. At least one day stays selected.
     private func dayPicker(_ meal: Binding<ManualMeal>) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text("Days").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            HStack(spacing: NoopMetrics.space1) {
+            HStack(spacing: CenitMetrics.space1) {
                 ForEach(1...7, id: \.self) { iso in
                     let on = meal.wrappedValue.days.contains(iso)
                     Button {
@@ -252,12 +252,12 @@ struct DietCaptureView: View {
     }
 
     private func manualOption(_ option: Binding<ManualOption>, isEquivalent: Bool) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             if isEquivalent {
                 Text("or equivalent").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
             ForEach(option.foods) { food in
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     manualField(food.text, "Food")
                     Button {
                         option.wrappedValue.foods.removeAll { $0.id == food.wrappedValue.id }
@@ -276,18 +276,18 @@ struct DietCaptureView: View {
         TextField(placeholder, text: text)
             .font(StrandFont.body)
             .foregroundStyle(theme.ink)
-            .padding(.horizontal, NoopMetrics.gap)
-            .padding(.vertical, NoopMetrics.space2)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+            .padding(.horizontal, CenitMetrics.gap)
+            .padding(.vertical, CenitMetrics.space2)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1)
             )
     }
 
     private func addRow(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: NoopMetrics.space2) {
+            HStack(spacing: CenitMetrics.space2) {
                 Image(systemName: "plus")
                 Text(title)
             }
@@ -317,7 +317,7 @@ struct DietCaptureView: View {
         let marked = dayStatuses.count
         let pct = (marked == 0 || planned == 0) ? nil
             : DietAdherence.dayPercent(statuses: Array(dayStatuses.values), plannedMeals: planned)
-        return VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             dayNav
             adherenceHero(pct: pct, marked: marked, planned: planned, restDay: planned == 0)
             if planned > 0 { mealTracker(dayMeals) } else { restDayState }
@@ -339,7 +339,7 @@ struct DietCaptureView: View {
 
     /// Shown when a `semanal` plan has no meals for the viewed day — an honest rest day; the % stays «—».
     private var restDayState: some View {
-        VStack(alignment: .center, spacing: NoopMetrics.space2) {
+        VStack(alignment: .center, spacing: CenitMetrics.space2) {
             Image(systemName: "moon.zzz").font(StrandFont.title1)
                 .foregroundStyle(theme.hairlineStrong).accessibilityHidden(true)
             Text("Rest day: your plan has no meals today. Come back tomorrow or use ‹ ›.")
@@ -347,7 +347,7 @@ struct DietCaptureView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, NoopMetrics.gap)
+        .padding(.vertical, CenitMetrics.gap)
     }
 
     /// The nutritionist's plan-level guidance, shown only when the plan actually carries it (FER-411):
@@ -357,10 +357,10 @@ struct DietCaptureView: View {
         let rules = (plan.rules ?? []).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         let targets = plan.dailyTargets ?? [:]
         if !rules.isEmpty || !targets.isEmpty {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("Indications").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 ForEach(rules, id: \.self) { rule in
-                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                         Text(verbatim: "•").foregroundStyle(theme.inkTertiary)
                         Text(verbatim: rule).foregroundStyle(theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
@@ -375,16 +375,16 @@ struct DietCaptureView: View {
     /// Declared daily targets as reference chips — the keys are whatever the plan declared (the format
     /// doesn't fix them), so we show them verbatim and never map to units or count.
     private func targetsReference(_ targets: [String: Double]) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text("Plan target · reference").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .padding(.top, NoopMetrics.space1)
+                .padding(.top, CenitMetrics.space1)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     ForEach(targets.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
                         Text(verbatim: "\(key.replacingOccurrences(of: "_", with: " ")) · \(value.formatted())")
                             .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space1)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+                            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space1)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                     }
                 }
             }
@@ -396,7 +396,7 @@ struct DietCaptureView: View {
     /// A 90-day adherence heatmap (FER-410): each cell a day, tinted green by its apego %, faint when
     /// untracked. Reuses `YearHeatStrip`; tapping a day jumps the tracker to it.
     private var adherenceCalendar: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text("Adherence · history").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if heatDays.contains(where: { $0.score != nil }) {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -441,19 +441,19 @@ struct DietCaptureView: View {
     @ViewBuilder
     private var remindersRow: some View {
         let slots = activeParsed.map { DietReminderScheduler.reminderSlots($0.meals) } ?? []
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            HStack(alignment: .top, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            HStack(alignment: .top, spacing: CenitMetrics.gap) {
                 Image(systemName: "bell")
                     .font(StrandFont.body)
                     .foregroundStyle(theme.inkSecondary)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                     Text("Meal reminders").font(StrandFont.body).foregroundStyle(theme.ink)
                     Text(reminderSubtitle(hasTimes: !slots.isEmpty, count: slots.count))
                         .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: NoopMetrics.gap)
+                Spacer(minLength: CenitMetrics.gap)
                 Toggle("", isOn: Binding(get: { remindersOn }, set: { setReminders($0) }))
                     .labelsHidden()
                     .tint(theme.dataRecovery)
@@ -461,7 +461,7 @@ struct DietCaptureView: View {
                     .accessibilityLabel("Meal reminders")
             }
             if remindersOn, !slots.isEmpty {
-                VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                     ForEach(Array(slots.enumerated()), id: \.offset) { _, slot in
                         HStack {
                             Text(verbatim: slot.title).font(StrandFont.footnote).foregroundStyle(theme.ink)
@@ -542,10 +542,10 @@ struct DietCaptureView: View {
     /// The day's adherence % — the one dominant numeral and the lone datum, so it carries the only
     /// saturated color. Until a meal is marked it shows «—» in ink (pending isn't a punitive 0%).
     private func adherenceHero(pct: Int?, marked: Int, planned: Int, restDay: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
-            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                 Text(selectedDay == todayKey ? "Diet · today" : "Diet").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
                     if let pct {
                         Text("\(pct)").instrumentoHero(62).foregroundStyle(theme.dataRecovery)
                         Text(verbatim: "%").font(StrandFont.title1).foregroundStyle(theme.dataRecovery)
@@ -578,7 +578,7 @@ struct DietCaptureView: View {
     private func mealTracker(_ meals: [DietMeal]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Today's meals").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .padding(.bottom, NoopMetrics.gap)
+                .padding(.bottom, CenitMetrics.gap)
             ForEach(Array(meals.enumerated()), id: \.offset) { index, meal in
                 mealTrackRow(meal)
                 if index < meals.count - 1 {
@@ -590,7 +590,7 @@ struct DietCaptureView: View {
 
     private func mealTrackRow(_ meal: DietMeal) -> some View {
         let status = todayStatuses[meal.id]
-        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             nameText(meal.name, fallback: "Meal").font(StrandFont.body).foregroundStyle(theme.ink)
             if let note = meal.notes?.trimmingCharacters(in: .whitespaces), !note.isEmpty {
                 (Text("Note: ") + Text(verbatim: note))
@@ -608,14 +608,14 @@ struct DietCaptureView: View {
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     statusChip("Followed", meal.id, .cumpli, status)
                     statusChip("Swapped",  meal.id, .sustitui, status)
                     statusChip("Skipped",  meal.id, .salte, status)
                 }
             }
         }
-        .padding(.vertical, NoopMetrics.gap)
+        .padding(.vertical, CenitMetrics.gap)
     }
 
     /// Hint chip for multi-option meals marked Swapped — surfaces the second equivalent quietly.
@@ -623,7 +623,7 @@ struct DietCaptureView: View {
     private func swappedEquivalentsHint(_ meal: DietMeal) -> some View {
         if meal.options.count > 1 {
             let foods = meal.options[1].foods.joined(separator: " + ")
-            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                 Text(verbatim: "Option 2 · \(foods)")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.dataHrv)
@@ -642,12 +642,12 @@ struct DietCaptureView: View {
     /// plan is always consultable (FER-401). Color stays out — the apego % is the only datum.
     private func optionPicker(_ meal: DietMeal, status: DietMealStatus?) -> some View {
         let chosen = todayOptions[meal.id]
-        return VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text("pick what you ate").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             ForEach(Array(meal.options.enumerated()), id: \.offset) { index, option in
                 let sel = status == .cumpli && chosen == index
                 Button { mark(meal.id, .cumpli, option: index) } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.gap) {
+                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                         Image(systemName: sel ? "largecircle.fill.circle" : "circle")
                             .font(StrandFont.subhead)
                             .foregroundStyle(sel ? theme.ink : theme.hairlineStrong)
@@ -660,7 +660,7 @@ struct DietCaptureView: View {
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(sel ? [.isSelected] : [])
             }
-            HStack(spacing: NoopMetrics.space2) {
+            HStack(spacing: CenitMetrics.space2) {
                 statusChip("Other",   meal.id, .sustitui, status)
                 statusChip("Skipped", meal.id, .salte, status)
             }
@@ -702,7 +702,7 @@ struct DietCaptureView: View {
                         }
                     }
                 }
-                .padding(.vertical, NoopMetrics.gap)
+                .padding(.vertical, CenitMetrics.gap)
                 if index < plan.meals.count - 1 {
                     Rectangle().fill(theme.hairline).frame(height: 1)
                 }
@@ -733,11 +733,11 @@ struct DietCaptureView: View {
 
     private func step<Action: View>(_ n: Int, _ text: LocalizedStringKey,
                                     @ViewBuilder action: () -> Action) -> some View {
-        HStack(alignment: .top, spacing: NoopMetrics.gap) {
+        HStack(alignment: .top, spacing: CenitMetrics.gap) {
             Text("\(n)")
                 .font(StrandFont.headline).monospacedDigit()
                 .foregroundStyle(theme.inkTertiary)
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text(text)
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -749,7 +749,7 @@ struct DietCaptureView: View {
     private func scrolled<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         ScrollView {
             content()
-                .padding(NoopMetrics.screenPadding)
+                .padding(CenitMetrics.screenPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
