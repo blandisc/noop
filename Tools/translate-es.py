@@ -877,7 +877,7 @@ ES: dict[str, str] = {
     "%@, range %@ to %@": "%@, rango de %@ a %@",
     "%@: %@ last night%@": "%@: %@ anoche%@",
     "%lld app%@ on": "%lld app%@ en uso",
-    "%lld breaths": "%lld respiraciones",
+    # "%lld breaths": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
     "%lld chunks pulled": "%lld bloques descargados",
     "%lld days · %lld sleeps stored": "%lld días · %lld noches guardadas",
     # Plural-safe: Spanish can't inflect "capturado/s" off the bare "s" argument,
@@ -1400,7 +1400,7 @@ ES: dict[str, str] = {
     "Your body looks strained — %@. Consider taking it easy.": "Tu cuerpo se ve exigido, %@. Considera tomártelo con calma.",
 
     # Apple Health import progress.
-    "%lld records": "%lld registros",
+    # "%lld records": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
 
     # App Intents (Atajos / Shortcuts).
     "Connect your WHOOP strap in NOOP, then try again.": "Conecta tu banda WHOOP en NOOP y vuelve a intentarlo.",
@@ -1780,7 +1780,7 @@ ES: dict[str, str] = {
     "Connect your strap to run the sync diagnostic.": "Conecta tu banda para ejecutar el diagnóstico de sincronización.",
     "Complete secure pairing first: the strap won’t offload its history until the encrypted bond is set.": "Primero completa el emparejamiento seguro, la banda no descargará su historial hasta que se establezca el vínculo cifrado.",
     "On the band:": "En la banda:",
-    "%lld pieces": "%lld piezas",
+    # "%lld pieces": plural-managed in the String Catalog (one/other, FER-912) — no re-add (clobbers plural).
     "Received this sync": "Recibido en esta sincronización",
     "R-R": "R-R",
     "The band has nothing new.": "La banda no tiene nada nuevo.",
