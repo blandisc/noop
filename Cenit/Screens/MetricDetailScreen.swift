@@ -1769,7 +1769,7 @@ struct MetricDetailScreen: View {
                 .fixedSize(horizontal: false, vertical: true)
             if appleConnectHint {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataHeart)
+                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataHeart)
                     Text("Connect Apple Health to see your VO₂max.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)

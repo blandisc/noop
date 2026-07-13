@@ -30,7 +30,7 @@ DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/AI"
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow"]
 
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -60,12 +60,17 @@ RE_RADIUS = re.compile(r"cornerRadius:\s*[0-9]")
 # no-opacity-literal: .opacity( followed by a bare number. `.opacity(StrandOpacity.x)`,
 # `.opacity(theme.tint(...))`, `.opacity(someVar)` all start with a non-digit and pass.
 RE_OPACITY = re.compile(r"\.opacity\(\s*[0-9.]")
+# no-raw-shadow: an inline `.shadow(` in a screen. Elevation is a token now (`.strandElevation(_:ink:)`);
+# a hand-rolled drop shadow in a screen should either use it or be a documented exception. Deliberate
+# non-standard shadows (the thermal receipt, upward-casting sheets, ambient glows) carry `// token-exempt:`.
+RE_SHADOW = re.compile(r"\.shadow\(")
 
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
     "no-radius-literal": RE_RADIUS,
     "no-opacity-literal": RE_OPACITY,
+    "no-raw-shadow": RE_SHADOW,
 }
 
 

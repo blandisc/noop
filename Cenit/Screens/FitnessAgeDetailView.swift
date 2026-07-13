@@ -187,7 +187,7 @@ struct FitnessAgeDetailView: View {
     /// No Apple reading + not connected: a quiet, no-number invite. No action button — connecting lives in Today / Settings.
     private var vo2maxConnectNudgeContent: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: "heart.fill")
+            StrandIcon.heart.image
                 .font(StrandFont.glyph(.chevron))
                 .foregroundStyle(theme.dataHeart)
             Text("Connect Apple Health to see your VO₂max.")
@@ -228,7 +228,7 @@ struct FitnessAgeDetailView: View {
 
                     // disclaimerStrip content (moved into method for calculation transparency).
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Image(systemName: "info.circle")
+                        StrandIcon.info.image
                             .font(StrandFont.glyph(.chevron))
                             .foregroundStyle(theme.inkTertiary)
                         Text("It's a comparison of your fitness, not your biological age or a medical diagnosis.")

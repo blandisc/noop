@@ -246,7 +246,7 @@ struct LiveView: View {
                         .font(StrandFont.captionNumber).foregroundStyle(theme.dataHeart)
                         .contentTransition(.numericText())
                         .animation(.snappy, value: live.beatsThisSession)
-                    Image(systemName: "arrow.up").font(StrandFont.caption).foregroundStyle(theme.dataHeart)
+                    StrandIcon.up.image.font(StrandFont.caption).foregroundStyle(theme.dataHeart)
                     Text("beats").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 .fixedSize()
@@ -718,7 +718,7 @@ struct LiveView: View {
 
     private func reconnectGuideBanner(_ guide: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            StrandIcon.warning.image
                 .foregroundStyle(theme.warning)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
@@ -738,7 +738,7 @@ struct LiveView: View {
 
     private func pairingHintBanner(_ hint: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
+            StrandIcon.warning.image
                 .foregroundStyle(theme.warning)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {

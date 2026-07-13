@@ -229,7 +229,7 @@ struct StressDayMapBlock: View {
     private func calendarsFooter(_ names: [String]) -> some View {
         Button { showPicker = true } label: {
             HStack(spacing: 6) {
-                Image(systemName: "calendar")
+                StrandIcon.calendar.image
                 Text("Calendars: \(names.isEmpty ? String(localized: "none") : names.joined(separator: ", "))")
                 Text("· change").underline()
             }
@@ -318,7 +318,7 @@ private struct StressBarsStrip: View {
             Text("during activity or sleep").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         } else if let title = eventTitle(atHour: h) {
             HStack(spacing: 5) {
-                Image(systemName: "calendar").font(StrandFont.glyph(.chevron))
+                StrandIcon.calendar.image.font(StrandFont.glyph(.chevron))
                 Text(verbatim: title).lineLimit(1).truncationMode(.tail)
             }
             .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)

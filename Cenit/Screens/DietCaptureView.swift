@@ -340,7 +340,7 @@ struct DietCaptureView: View {
     /// Shown when a `semanal` plan has no meals for the viewed day — an honest rest day; the % stays «—».
     private var restDayState: some View {
         VStack(alignment: .center, spacing: CenitMetrics.space2) {
-            Image(systemName: "moon.zzz").font(StrandFont.title1)
+            StrandIcon.sleep.image.font(StrandFont.title1)
                 .foregroundStyle(theme.hairlineStrong).accessibilityHidden(true)
             Text("Rest day: your plan has no meals today. Come back tomorrow or use ‹ ›.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

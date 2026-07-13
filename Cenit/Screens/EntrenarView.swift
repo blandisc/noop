@@ -279,7 +279,7 @@ private struct EntrenarLanding: View {
                 // the datum; the deferral copy is the recovery gate speaking («aplaza, no cancela»).
                 if !raisesToday.isEmpty {
                     HStack(alignment: .firstTextBaseline, spacing: 7) {
-                        Image(systemName: "arrow.up")
+                        StrandIcon.up.image
                             .font(StrandFont.glyph(.chevron, weight: .bold)).foregroundStyle(theme.dataRecovery)
                         Text("Today you raise: \(raisesToday.map { "\($0.name) · \(UnitFormatter.massFromKilograms($0.kg, system: unitSystem))" }.joined(separator: ", "))")
                             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

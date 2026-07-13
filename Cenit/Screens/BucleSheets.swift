@@ -80,7 +80,7 @@ struct PalancaDetailSheet: View {
                 if canStartExperiment, let onProbar {
                     Button(action: onProbar) {
                         HStack(spacing: 7) {
-                            Image(systemName: "flask").font(StrandFont.glyph(.inline))
+                            StrandIcon.experiment.image.font(StrandFont.glyph(.inline))
                             Text("Try this idea for a week").font(StrandFont.headline)
                             Image(systemName: "arrow.right").font(StrandFont.glyph(.inline))
                         }
@@ -798,7 +798,7 @@ struct ExperimentDetailSheet: View {
                     Text("Your streak").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     HStack(spacing: 4) {
-                        Image(systemName: "flame").font(StrandFont.glyph(.chevron, weight: .medium))
+                        StrandIcon.flame.image.font(StrandFont.glyph(.chevron, weight: .medium))
                         Text("Best: \(p.streakBest)").font(StrandFont.captionNumber)
                     }
                     .foregroundStyle(theme.inkTertiary)
@@ -884,7 +884,7 @@ struct ExperimentDetailSheet: View {
 
     private var meta: some View {
         HStack(spacing: 8) {
-            Image(systemName: "calendar").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+            StrandIcon.calendar.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             Text("Verdict on ").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 + Text(progress?.verdictDate ?? "—").font(StrandFont.subhead).foregroundStyle(theme.ink).bold()
         }

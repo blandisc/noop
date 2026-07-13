@@ -304,7 +304,7 @@ struct SkinTempDetailScreen: View {
             .frame(height: 46)
             HStack(spacing: 5) {
                 Text("typical swing · 0 = your baseline").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                Image(systemName: "info.circle").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.info.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
         }
         .padding(4)

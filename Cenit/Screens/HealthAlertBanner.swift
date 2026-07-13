@@ -8,7 +8,7 @@ struct HealthAlertBanner: View {
     var body: some View {
         if let alert = model.healthAlert {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "exclamationmark.triangle.fill")
+                StrandIcon.warning.image
                     .foregroundStyle(StrandPalette.statusWarning)
                     .accessibilityHidden(true)
                 Text(alert)
