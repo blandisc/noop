@@ -24,6 +24,11 @@ approximate; Cénit is built from source — see the [README](README.md).
   **EN** — «Your workouts» aligns its order to the handoff: weekly volume now sits above the month totals, and **Your progression** rises above **Volume per muscle**. The hero subtitle gains **«· N load raises»** next to the month's sessions when any exercise raised.
   ([WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift))
 
+- **Catálogo de ejercicios más limpio y de dominio público, sin perder tu historial / Cleaner, public-domain exercise catalog with your history intact.**
+  **ES** — La base de ejercicios cambia a **free-exercise-db** (873 ejercicios reales, licencia de dominio público, sin duplicados ni basura), con nombres e instrucciones en español de México. Tus entrenamientos guardados **siguen apuntando a su ejercicio**: una migración remapea los ids del historial al nuevo catálogo y conserva como «ejercicio propio» cualquiera que ya no exista, sin dejar entrenamientos huérfanos.
+  **EN** — The exercise base moves to **free-exercise-db** (873 real exercises, public-domain license, no duplicates or junk), with es-MX names and instructions. Your saved workouts **still resolve their exercise**: a migration remaps history ids to the new catalog and keeps any now-missing one as a custom exercise, so no logged workout is orphaned.
+  ([Database.swift](Packages/WhoopStore/Sources/WhoopStore/Database.swift), [StarterTemplates.swift](Packages/StrandTraining/Sources/StrandTraining/StarterTemplates.swift))
+
 - **«Tu Plan» estrena héroe «Tu semana» y encabeza su semana / «Your plan» gets a «This week» hero and a labeled week.**
   **ES** — El héroe de Tu Plan pasa a **«Tu semana»** con un subtítulo escueto **«N días · N rutinas»** (antes «Tu plan» + una frase de balance), y la lista de días estrena su encabezado **«La semana · toca un día para editarlo»**, al mismo estilo que Volumen y Mis rutinas. Alinea la pantalla al handoff sin tocar su lógica.
   **EN** — The Your-plan hero becomes **«Tu semana»** with a terse **«N days · N routines»** subtitle (was «Your plan» + a balance sentence), and the day list gains a **«The week · tap a day to edit it»** header matching the Volume and My-routines sections. Aligns the screen to the handoff with no logic change.
