@@ -85,7 +85,7 @@ struct PlatesScreen: View {
 
     /// Amber strip under the dominant number when the rack can't hit the target exactly.
     private var shortfallNotice: some View {
-        Text("Your plates can't hit \(kg(targetKg)) kg exactly — closest is \(kg(loading.achievedKg)) kg")
+        Text("Your plates can't hit \(kg(targetKg)) kg exactly, closest is \(kg(loading.achievedKg)) kg")
             .font(StrandFont.caption)
             .foregroundStyle(theme.inkSecondary)
             .fixedSize(horizontal: false, vertical: true)

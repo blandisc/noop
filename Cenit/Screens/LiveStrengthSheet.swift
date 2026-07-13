@@ -2688,7 +2688,7 @@ struct LiveStrengthSheet: View {
                 .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkSecondary)
                 .accessibilityHidden(true)
             Text("Nothing to save").font(StrandFont.title1).foregroundStyle(theme.ink)
-            Text("Your history stays clean — no sets were logged this session.")
+            Text("Your history stays clean: no sets were logged this session.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button { model.endStrengthSession(save: false) } label: {
@@ -3405,7 +3405,7 @@ struct ChangeExerciseSheet: View {
                         }
                         ForEach(filtered) { row($0) }
                     } else if loaded {
-                        Text(query.isEmpty ? "No alternatives for this muscle — search the library."
+                        Text(query.isEmpty ? "No alternatives for this muscle: search the library."
                                            : "No matches.")
                             .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                             .fixedSize(horizontal: false, vertical: true).padding(.top, 8)
