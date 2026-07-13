@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Tu Plan» estrena héroe «Tu semana» y encabeza su semana / «Your plan» gets a «This week» hero and a labeled week.**
+  **ES** — El héroe de Tu Plan pasa a **«Tu semana»** con un subtítulo escueto **«N días · N rutinas»** (antes «Tu plan» + una frase de balance), y la lista de días estrena su encabezado **«La semana · toca un día para editarlo»**, al mismo estilo que Volumen y Mis rutinas. Alinea la pantalla al handoff sin tocar su lógica.
+  **EN** — The Your-plan hero becomes **«Tu semana»** with a terse **«N days · N routines»** subtitle (was «Your plan» + a balance sentence), and the day list gains a **«The week · tap a day to edit it»** header matching the Volume and My-routines sections. Aligns the screen to the handoff with no logic change.
+  ([WeeklyPlanEditorView.swift](Cenit/Screens/WeeklyPlanEditorView.swift))
+
 - **Las puertas de «Entrenar» se vuelven fichas de color / The «Train» doors become color tokens.**
   **ES** — Las cinco puertas «Formas de entrenar» del Hub (Rápido, En vivo, Interv., Movilidad, Respira) dejan la tarjeta gris y pasan a un **disco de color troquelado**: cada una con su propio tinte (fuerza, corazón, esfuerzo, movilidad, respiración) y el ícono recortado en el papel, con un aro del mismo tono un paso más profundo. Además: con una sesión en curso el botón lee **«Continuar»** (reabre la sesión, ya no arranca otra); si tus rutinas no se pueden leer aparece **«No pudimos leer tus rutinas · Reintentar»** en vez del onboarding; y vuelve la fila **«Mis entrenamientos y progreso»** al pie.
   **EN** — The Hub's five «Ways to train» doors (Quick, Live, Interval, Mobility, Breathe) drop the gray card for a **die-cut color disc**: each in its own hue (strain, heart, effort, mobility, breathing) with the glyph knocked out of the paper, rimmed by the same hue a step deeper. Also: with a session running the button reads **«Continuar»** (re-opens it instead of starting another); an unreadable routine store now shows **«No pudimos leer tus rutinas · Reintentar»** instead of the onboarding; and the **«Mis entrenamientos y progreso»** row returns at the foot.
