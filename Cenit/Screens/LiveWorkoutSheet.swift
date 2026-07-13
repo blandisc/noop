@@ -72,7 +72,7 @@ struct LiveWorkoutHubRow: View {
                     Text(Self.elapsed(from: w.start, to: ctx.date))
                         .font(StrandFont.bodyNumber).foregroundStyle(theme.inkSecondary)
                 }
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 48).contentShape(Rectangle())
@@ -88,7 +88,7 @@ struct LiveWorkoutHubRow: View {
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 48).contentShape(Rectangle())

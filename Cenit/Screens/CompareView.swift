@@ -656,7 +656,7 @@ private struct FlowChips: View {
                     Button {
                         onRemove(metric)
                     } label: {
-                        Image(systemName: "xmark")
+                        StrandIcon.close.image
                             .font(.system(size: 9, weight: .bold))   // token-exempt: microtexto <10pt
                             .foregroundStyle(theme.inkTertiary)
                     }
@@ -740,7 +740,7 @@ private struct MetricPickerSheet: View {
                     .foregroundStyle(atCap ? theme.inkTertiary : theme.ink)
                 Spacer(minLength: 8)
                 if isOn {
-                    Image(systemName: "checkmark")
+                    StrandIcon.confirm.image
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.verdict)
                 }

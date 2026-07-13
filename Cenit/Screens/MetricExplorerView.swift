@@ -232,7 +232,7 @@ private struct MetricRow: View {
                     .foregroundStyle(theme.inkTertiary.opacity(StrandOpacity.dim))
                     .accessibilityLabel("No data")
             }
-            Image(systemName: "chevron.right")
+            StrandIcon.disclosure.image
                 .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
         }

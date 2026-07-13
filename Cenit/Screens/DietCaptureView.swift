@@ -262,7 +262,7 @@ struct DietCaptureView: View {
                     Button {
                         option.wrappedValue.foods.removeAll { $0.id == food.wrappedValue.id }
                     } label: {
-                        Image(systemName: "xmark").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        StrandIcon.close.image.font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Remove food")
@@ -288,7 +288,7 @@ struct DietCaptureView: View {
     private func addRow(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: CenitMetrics.space2) {
-                Image(systemName: "plus")
+                StrandIcon.add.image
                 Text(title)
             }
             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -524,14 +524,14 @@ struct DietCaptureView: View {
         let atToday = selectedDay >= todayKey
         return HStack {
             Button { goToDay(Self.shiftDay(selectedDay, by: -1)) } label: {
-                Image(systemName: "chevron.left").font(StrandFont.headline).foregroundStyle(theme.ink)
+                StrandIcon.back.image.font(StrandFont.headline).foregroundStyle(theme.ink)
             }
             .accessibilityLabel("Previous day")
             Spacer()
             Text(dayLabel(selectedDay)).font(StrandFont.subhead).foregroundStyle(theme.ink)
             Spacer()
             Button { goToDay(Self.shiftDay(selectedDay, by: 1)) } label: {
-                Image(systemName: "chevron.right").font(StrandFont.headline)
+                StrandIcon.disclosure.image.font(StrandFont.headline)
                     .foregroundStyle(atToday ? theme.hairlineStrong : theme.ink)
             }
             .disabled(atToday)

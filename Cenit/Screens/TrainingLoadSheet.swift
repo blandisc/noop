@@ -102,7 +102,7 @@ struct TrainingLoadStrip: View {
                     .font(InstrumentoType.groteskNumber(10, weight: .medium))
                     .foregroundStyle(theme.inkMuted)
                     .padding(.leading, 6)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
                     .foregroundStyle(theme.inkMuted)
                     .padding(.leading, 6)

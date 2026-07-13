@@ -344,7 +344,7 @@ struct RoutineBuilderScreen: View {
     private func addSetRow(_ idx: Int) -> some View {
         Button { addSet(idx) } label: {
             HStack(spacing: 8) {
-                Image(systemName: "plus")
+                StrandIcon.add.image
                 Text("Add set")
             }
             .font(StrandFont.body).foregroundStyle(theme.inkSecondary)

@@ -84,7 +84,7 @@ private struct SupportContent: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             ForEach(ProjectInfo.attributions, id: \.repo) { a in
                 HStack(spacing: 8) {
-                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
+                    StrandIcon.disclosure.image.font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
                         .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
                     Text(a.repo).font(StrandFont.mono(12)).foregroundStyle(theme.ink)
                     Text("· \(a.note)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)

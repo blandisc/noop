@@ -235,7 +235,7 @@ struct EfectosExplorerSheet: View {
                             }
                             Spacer()
                             effectBadge(insight)
-                            Image(systemName: "chevron.right").font(StrandFont.glyph(.inline))
+                            StrandIcon.disclosure.image.font(StrandFont.glyph(.inline))
                                 .foregroundStyle(theme.inkTertiary).padding(.leading, 10)
                         }
                         .padding(.vertical, 12)

@@ -557,7 +557,7 @@ private struct AjustesLanding: View {
                 Text(label).font(StrandFont.body).foregroundStyle(theme.ink)
                 Spacer(minLength: 8)
                 Text(value).font(StrandFont.bodyNumber).foregroundStyle(theme.ink)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 44)
@@ -580,7 +580,7 @@ private struct AjustesLanding: View {
                     }
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 44)

@@ -1122,7 +1122,7 @@ struct LiveStrengthSheet: View {
             // Row 1: minimize «‹» (session stays alive, the pill re-opens it) · routine name · «Terminar».
             HStack(spacing: 10) {
                 Button { model.strengthSheetPresented = false } label: {
-                    Image(systemName: "chevron.left")
+                    StrandIcon.back.image
                         .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
                         .frame(width: 44, height: 44).contentShape(Rectangle())
                 }
@@ -1256,7 +1256,7 @@ struct LiveStrengthSheet: View {
             HStack {
                 Spacer(minLength: 0)
                 Button { focusMode = false } label: {
-                    Image(systemName: "xmark")
+                    StrandIcon.close.image
                         .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
                         .frame(width: 38, height: 38)
                         .background(theme.surface, in: Circle())
@@ -1728,7 +1728,7 @@ struct LiveStrengthSheet: View {
                         Text(run.name).font(StrandFont.headline).foregroundStyle(theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Image(systemName: "chevron.right")
+                        StrandIcon.disclosure.image
                             .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     }
                     .contentShape(Rectangle())
@@ -1912,7 +1912,7 @@ struct LiveStrengthSheet: View {
             HStack(spacing: 6) {
                 Image(systemName: "clock").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 Text(restChipLabel(run)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 9).padding(.vertical, 4)
             .background(theme.surface, in: Capsule())

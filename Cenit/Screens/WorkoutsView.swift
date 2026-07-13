@@ -72,7 +72,7 @@ struct WorkoutsView: View {
                 Button("Done") { dismiss() }.foregroundStyle(theme.ink)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button { addWorkout() } label: { Image(systemName: "plus") }
+                Button { addWorkout() } label: { StrandIcon.add.image }
                     .foregroundStyle(theme.ink)
                     .accessibilityLabel("Add a workout")
             }
@@ -393,7 +393,7 @@ struct WorkoutsView: View {
                     Text("Connect Apple Health to bring in your workouts from there.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 6)
-                    Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())
             }

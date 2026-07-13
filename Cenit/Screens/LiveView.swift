@@ -345,7 +345,7 @@ struct LiveView: View {
             withAnimation(.snappy) { signalsExpanded.toggle() }
         } label: {
             HStack(spacing: 9) {
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.caption).fontWeight(.semibold)
                     .foregroundStyle(theme.inkTertiary)
                     .rotationEffect(.degrees(signalsExpanded ? 90 : 0))

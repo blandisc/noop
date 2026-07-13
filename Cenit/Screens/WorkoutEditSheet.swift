@@ -249,7 +249,7 @@ struct WorkoutEditSheet: View {
         Button { reassignGroup = ReassignTarget(index: gi) } label: {
             HStack(spacing: 6) {
                 Text(exerciseName(groups[gi].exerciseId)).font(StrandFont.headline).foregroundStyle(theme.ink)
-                Image(systemName: "chevron.right")
+                StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 0)
             }
@@ -264,7 +264,7 @@ struct WorkoutEditSheet: View {
     private func addSetRow(_ gi: Int) -> some View {
         Button { addSet(gi) } label: {
             HStack(spacing: 6) {
-                Image(systemName: "plus").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Add set").font(StrandFont.subhead)
             }
             .foregroundStyle(theme.inkSecondary)

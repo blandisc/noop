@@ -840,7 +840,7 @@ struct TodayView: View {
         // rebote (con desvanecido salvo Reduce Motion). El chevron permanece como cue sutil, así el gesto
         // sigue siendo descubrible (a diferencia de FER-270, que lo apagaba por completo para siempre).
         if !didFirstPullSync {
-            withAnimation(reduceMotion ? nil : StrandMotion.fade) { didFirstPullSync = true }
+            withAnimation(StrandMotion.gated(StrandMotion.fade, reduceMotion)) { didFirstPullSync = true }
         }
     }
 
@@ -1470,7 +1470,7 @@ struct TodayView: View {
     /// hay datos que ver mientras llega el veredicto). Cápsula en tinta — chrome, no dato (sin verde).
     private var metricsBridge: some View {
         Button {
-            withAnimation(reduceMotion ? nil : StrandMotion.interactive) { pagerPage = 0 }
+            withAnimation(StrandMotion.gated(StrandMotion.interactive, reduceMotion)) { pagerPage = 0 }
         } label: {
             HStack(spacing: CenitMetrics.space2) {
                 Text("See your metrics for today").font(StrandFont.subhead.weight(.semibold))
@@ -1606,7 +1606,7 @@ struct TodayView: View {
                     Spacer(minLength: CenitMetrics.space2)
                     HStack(spacing: 2) {
                         Text(cta).font(StrandFont.caption)
-                        Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                        StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .foregroundStyle(theme.verdict)
                     .fixedSize()
@@ -1813,7 +1813,7 @@ struct TodayView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
             }
             .padding(.vertical, CenitMetrics.space2)
@@ -2014,7 +2014,7 @@ struct TodayView: View {
     private func tabButton(_ title: LocalizedStringKey, page: Int) -> some View {
         let active = (pagerPage ?? 0) == page
         return Button {
-            withAnimation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.62)) {
+            withAnimation(StrandMotion.gated(.spring(response: 0.34, dampingFraction: 0.62), reduceMotion)) {
                 pagerPage = page
             }
         } label: {
@@ -2060,7 +2060,7 @@ struct TodayView: View {
             ForEach(0..<2, id: \.self) { i in
                 let active = (pagerPage ?? 0) == i
                 Button {
-                    withAnimation(reduceMotion ? nil : StrandMotion.interactive) { pagerPage = i }
+                    withAnimation(StrandMotion.gated(StrandMotion.interactive, reduceMotion)) { pagerPage = i }
                 } label: {
                     Capsule(style: .continuous)
                         .fill(active ? theme.ink : theme.hairlineStrong)
@@ -2304,7 +2304,7 @@ struct TodayView: View {
                     Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
             .padding(CenitMetrics.cardPadding)
             .contentShape(Rectangle())
@@ -2367,7 +2367,7 @@ struct TodayView: View {
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: CenitMetrics.space2)
-                    Image(systemName: "chevron.right")
+                    StrandIcon.disclosure.image
                         .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .contentShape(Rectangle())

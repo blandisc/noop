@@ -176,7 +176,7 @@ private struct RhythmReadingView: View {
                 if !expanded {
                     HStack(spacing: 4) {
                         Text(RhythmCopy.tapHint).font(StrandFont.footnote)
-                        Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+                        StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     }
                     .foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .center)

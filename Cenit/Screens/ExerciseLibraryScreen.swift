@@ -264,7 +264,7 @@ struct ExerciseLibraryScreen: View {
             .buttonStyle(.plain)
             .contentShape(Rectangle())
         } else {
-            Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
+            StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
         }
     }
@@ -272,7 +272,7 @@ struct ExerciseLibraryScreen: View {
     private var createRow: some View {
         Button { showCreate = true } label: {
             HStack(spacing: 8) {
-                Image(systemName: "plus").font(StrandFont.glyph(.inline, weight: .semibold))
+                StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
                 Text("Create exercise").font(StrandFont.body)
             }
             .foregroundStyle(theme.inkSecondary).padding(.vertical, 13).contentShape(Rectangle())
@@ -444,7 +444,7 @@ private struct CreateExerciseSheet: View {
                     Text(StrengthDisplay.typeDetail(t)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                if type == t { Image(systemName: "checkmark").font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink) }
+                if type == t { StrandIcon.confirm.image.font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink) }
             }
             .padding(.horizontal, 13).padding(.vertical, 11).contentShape(Rectangle())
             .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))  // token-exempt: fondo condicional

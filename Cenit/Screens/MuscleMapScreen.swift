@@ -290,7 +290,7 @@ struct MuscleMapScreen: View {
                     }
                     .frame(height: 6)
                 }
-                Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 11).padding(.vertical, 9)
             .instrumentoCard(.inset, theme: theme, fill: theme.paper, stroke: theme.hairlineStrong)

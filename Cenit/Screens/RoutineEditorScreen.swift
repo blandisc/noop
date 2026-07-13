@@ -191,7 +191,7 @@ struct RoutineEditorScreen: View {
         HStack(spacing: 8) {
             Button { back() } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "chevron.left").font(StrandFont.glyph(.inline, weight: .semibold))
+                    StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     Text("Back").font(StrandFont.body)
                 }
                 .foregroundStyle(theme.ink).frame(minHeight: 44).contentShape(Rectangle())
@@ -623,7 +623,7 @@ struct RoutineEditorScreen: View {
         HStack(spacing: 16) {
             Button { addSet(idx) } label: {
                 HStack(spacing: 7) {
-                    Image(systemName: "plus").font(StrandFont.glyph(.chevron, weight: .semibold))
+                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Add set")
                 }
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
