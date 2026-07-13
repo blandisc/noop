@@ -70,10 +70,11 @@ struct WorkoutHistoryScreen: View {
                     if sessions.isEmpty {
                         emptyState
                     } else {
-                        monthlyTotal
+                        // Handoff v2 order: «Tu mes» (bars then totals) → progression → volume per muscle.
                         weeklyBars
-                        muscleVolumeInline
+                        monthlyTotal
                         progressionBlock
+                        muscleVolumeInline
                         list
                         savedTicketsEntry
                     }
@@ -97,9 +98,16 @@ struct WorkoutHistoryScreen: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             InstrumentoFlowTitle(Text("On the rise"))
-            Text("\(monthAggregate.count) sessions this month")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            // Handoff v2: sessions this month, plus the count of load raises when any (from progression).
+            Group {
+                if raisedThisMonth > 0 {
+                    Text("\(monthAggregate.count) sessions this month · \(raisedThisMonth) load raises")
+                } else {
+                    Text("\(monthAggregate.count) sessions this month")
+                }
+            }
+            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            .fixedSize(horizontal: false, vertical: true)
             // «Volumen por músculo» (Entrenar v3 · 3d, FER-719) — the history's stats view.
             NavigationLink(value: MuscleVolumeRoute()) {
                 HStack(spacing: 6) {
@@ -425,6 +433,12 @@ struct WorkoutHistoryScreen: View {
         let id: String
         let name: String
         let kind: Kind
+    }
+
+    /// Count of exercises whose cycle just raised (the hero's «N subidas de carga»), from the same
+    /// progression signals the «Your progression» block shows.
+    private var raisedThisMonth: Int {
+        progressionRows.filter { if case .raised = $0.kind { return true }; return false }.count
     }
 
     /// This calendar month's totals across finished sessions. kcal sums only sessions that carry it; nil
