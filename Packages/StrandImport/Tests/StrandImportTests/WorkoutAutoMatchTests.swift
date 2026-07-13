@@ -17,7 +17,7 @@ final class WorkoutAutoMatchTests: XCTestCase {
     private static let ownerPlan: [(name: String, expects: [String])] = [
         ("Press banca con barra",            ["press", "banca", "barra"]),
         ("Press militar de pie",             ["press militar", "de pie"]),
-        ("Prensa de pierna 45°",             ["prensa", "45"]),
+        ("Prensa de pierna 45°",             ["prensa", "pierna"]),   // free-exercise-db: «Prensa de piernas» (sin 45)
         ("Remo con barra (bent-over)",       ["remo inclinado", "barra"]),
         ("Sentadilla con barra",             ["sentadilla", "barra"]),
         ("Peso muerto rumano",               ["peso muerto rumano"]),
@@ -30,7 +30,7 @@ final class WorkoutAutoMatchTests: XCTestCase {
         ("Fondos en paralelas",              ["fondos"]),
         ("Curl femoral acostado",            ["curl", "acostado"]),
         ("Extensión de pierna",              ["extensión de pierna"]),
-        ("Elevación de pantorrilla de pie",  ["talones", "pie"]),   // catálogo dice «talones»
+        ("Elevación de pantorrilla de pie",  ["pantorrilla", "pie"]),   // catálogo: «Elevación de pantorrilla de pie»
     ]
 
     /// Acceptance criterion FER-794: the reference plan resolves ≥ 13/16 automatically, each to the
@@ -72,10 +72,12 @@ final class WorkoutAutoMatchTests: XCTestCase {
     /// The content-key tier: stopword/word-order differences collapse; the alias tier is not involved.
     func testContentKeyEquality() {
         let plain = WorkoutExerciseReconciler(known: ExerciseCatalog.all)   // no aliases
-        let hit = plain.autoMatch("Press banca con barra")
-        XCTAssertEqual(hit?.nameES, "Press de banca con barra")
+        // free-exercise-db's basic barbell bench press → «Press de banca con barra agarre medio».
+        let expected = "Press de banca con barra agarre medio"
+        let hit = plain.autoMatch("Press banca con barra agarre medio")   // stopword «de» dropped
+        XCTAssertEqual(hit?.nameES, expected)
         // Word order too — same content tokens.
-        XCTAssertEqual(plain.autoMatch("Press con barra de banca")?.nameES, "Press de banca con barra")
+        XCTAssertEqual(plain.autoMatch("Press agarre medio con barra de banca")?.nameES, expected)
     }
 
     /// Every alias in the derived table must point at an id that exists in the bundled catalog —
