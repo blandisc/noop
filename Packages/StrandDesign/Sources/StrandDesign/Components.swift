@@ -159,20 +159,20 @@ public struct SourceBadge: View {
     }
 }
 
-// MARK: - In-screen serif title + ⓘ (FER-581 · «Instrumento» detail-screen identity)
+// MARK: - In-screen title + ⓘ (FER-581 · «Instrumento» detail-screen identity)
 
-/// The detail-screen headline: an `Instrument Serif` title (the handoff reserves serif for in-screen
-/// headlines, never numbers or tab names) with an optional ⓘ that toggles an inline plain-language
-/// explanation. One source of truth so every detail sheet titles identically. The numeral, range bar
-/// and blocks live BELOW this, unchanged. (FER-581)
+/// The detail-screen headline: a Grotesk headline title (`groteskHeadline`, Medium — the serif voice
+/// was retired in FER-901) with an optional ⓘ that toggles an inline plain-language explanation. One
+/// source of truth so every detail sheet titles identically. The numeral, range bar and blocks live
+/// BELOW this, unchanged. (FER-581)
 public struct InstrumentoScreenTitle: View {
     let title: LocalizedStringKey
     var size: CGFloat
     var theme: InstrumentoTheme
     var explanation: LocalizedStringKey?
     /// When set, the title renders as the §8.7 overline (metric icon in its hue + ALL-CAPS grotesk)
-    /// instead of the legacy serif — the standardized «Tendencias v2» header. Provenance is NOT here;
-    /// it lives in the `OriginStamp` at the foot.
+    /// instead of the plain Grotesk headline — the standardized «Tendencias v2» header. Provenance is
+    /// NOT here; it lives in the `OriginStamp` at the foot.
     var glyph: MetricGlyph?
     @State private var open = false
 
@@ -204,7 +204,7 @@ public struct InstrumentoScreenTitle: View {
                     Spacer(minLength: 6)
                 } else {
                     Text(title)
-                        .font(StrandFont.serif(size))
+                        .font(InstrumentoType.groteskHeadline(size))
                         .foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }

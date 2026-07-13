@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Los títulos dejan la serif y hablan en Space Grotesk / Titles drop the serif and speak in Space Grotesk.**
+  **ES** — La voz de títulos y frases-veredicto de las pantallas de detalle (Fase del ciclo, Ritmo, Bucle, Reloj corporal, y las hojas de métrica) migra de la serif *Instrument Serif* a **Space Grotesk** —Medium para los encabezados, Bold para las frases-veredicto—, la misma familia que ya usaban los numerales y «Hoy». La serif se retira por completo (fuera del bundle), dejando una sola identidad tipográfica. Sin cambios de tamaño ni de layout.
+  **EN** — The title and verdict-phrase voice of the detail screens (Cycle phase, Ritmo, Bucle, Body clock, and the metric sheets) moves from the *Instrument Serif* serif to **Space Grotesk** —Medium for headlines, Bold for verdict phrases— the same family the numerals and «Hoy» already use. The serif is retired entirely (out of the bundle), leaving a single type identity. No size or layout change.
+  ([Typography.swift](Packages/StrandDesign/Sources/StrandDesign/Typography.swift), [GroteskVoice.swift](Packages/StrandDesign/Sources/StrandDesign/GroteskVoice.swift), [Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift))
+
 - **El número protagonista habla en una sola voz (Space Grotesk) / The protagonist numeral speaks in one voice (Space Grotesk).**
   **ES** — El «número dominante» de cada pantalla (recuperación, esfuerzo, sueño, etc.) se unifica en **Space Grotesk**, la misma voz del héroe de «Hoy». Antes convivían dos tipografías para el mismo rol (SF Mono en los detalles, Grotesk en «Hoy»), así que el numeral cambiaba de cara según la pantalla; ahora es consistente en toda la app. Sin cambio de tamaños ni de layout.
   **EN** — Every screen's dominant number (recovery, strain, sleep, …) unifies on **Space Grotesk**, the same voice as the «Hoy» hero. Two typefaces used to fill the same role (SF Mono in the details, Grotesk on «Hoy»), so the numeral changed face by screen; it's now consistent across the app. No size or layout change.
