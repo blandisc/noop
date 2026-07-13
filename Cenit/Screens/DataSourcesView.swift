@@ -1062,7 +1062,7 @@ struct DataSourcesView: View {
                 }
                 if let err = autoBackup.lastError {
                     HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.warning)
+                        StrandIcon.warning.image.foregroundStyle(theme.warning)
                             .font(StrandFont.glyph(.chevron)).accessibilityHidden(true)
                         Text(verbatim: err).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)

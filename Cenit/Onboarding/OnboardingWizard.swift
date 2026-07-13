@@ -636,7 +636,7 @@ private struct ProfileStep: View {
 
             if !fromHealth.isEmpty {
                 HStack(spacing: CenitMetrics.space2) {
-                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
+                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("From Apple Health · editable")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }

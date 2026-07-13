@@ -304,7 +304,7 @@ struct ExerciseDetailScreen: View {
                 Button { showTypeMenu = true } label: {
                     HStack(spacing: 6) {
                         Text(StrengthDisplay.typeLabel(effectiveType)).font(StrandFont.body).foregroundStyle(theme.ink)
-                        Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                        StrandIcon.down.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                     }
                 }
                 .buttonStyle(.plain)

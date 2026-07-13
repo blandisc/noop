@@ -1229,7 +1229,7 @@ struct MetricInfoSheet: View {
         Button {
             withAnimation(StrandMotion.interactive) { headlineExpanded.toggle() }
         } label: {
-            Image(systemName: "info.circle")
+            StrandIcon.info.image
                 .font(StrandFont.glyph(.inline))
                 .foregroundStyle(headlineExpanded ? metricHue : theme.inkTertiary)
         }
@@ -1260,7 +1260,7 @@ struct MetricInfoSheet: View {
     /// closing the sheet leaves it one tap away. (FER-162)
     private var appleConnectLine: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: "heart.fill")
+            StrandIcon.heart.image
                 .font(StrandFont.glyph(.chevron))
                 .foregroundStyle(theme.dataHeart)
             Text("This reading can come from Apple Health. Connect it from Today to see it here.")
@@ -1278,7 +1278,7 @@ struct MetricInfoSheet: View {
     /// Today tile's Apple badge. Shown only when `appleSource` — resolved per reading by the caller.
     private var appleSourceLine: some View {
         HStack(spacing: 6) {
-            Image(systemName: "heart.fill")
+            StrandIcon.heart.image
                 .font(StrandFont.glyph(.chevron))
                 .foregroundStyle(theme.dataHeart)
             Text("Apple Health")

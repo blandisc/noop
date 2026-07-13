@@ -389,7 +389,7 @@ struct WorkoutsView: View {
         if notConnected && noAppleSessions {
             Button { showDataSources = true } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
+                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Connect Apple Health to bring in your workouts from there.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 6)

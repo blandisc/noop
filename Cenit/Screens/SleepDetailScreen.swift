@@ -334,7 +334,7 @@ struct SleepDetailScreen: View {
                     .instrumentoCard(.card, theme: theme)
                 if model.isAppleHealth {
                     HStack(spacing: 6) {
-                        Image(systemName: "heart.fill")
+                        StrandIcon.heart.image
                             .font(StrandFont.glyph(.chevron))
                             .foregroundStyle(theme.dataSpO2)
                         Text("Apple Health")

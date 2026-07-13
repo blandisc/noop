@@ -347,7 +347,7 @@ struct CoachView: View {
     private func errorBanner(_ message: String) -> some View {
         card(padding: 14) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "exclamationmark.triangle.fill")
+                StrandIcon.warning.image
                     .foregroundStyle(theme.critical)
                     .accessibilityHidden(true)
                 Text(message)
@@ -406,7 +406,7 @@ struct CoachView: View {
                     if coach.sending {
                         ProgressView().controlSize(.small).tint(theme.paper)
                     } else {
-                        Image(systemName: "arrow.up").font(StrandFont.glyph(.inline, weight: .semibold))
+                        StrandIcon.up.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     }
                 }
                 .frame(width: 44, height: 36)

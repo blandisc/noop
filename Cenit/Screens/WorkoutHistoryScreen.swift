@@ -238,7 +238,7 @@ struct WorkoutHistoryScreen: View {
                         switch row.kind {
                         case .raised(let kg):
                             HStack(spacing: 4) {
-                                Image(systemName: "arrow.up")
+                                StrandIcon.up.image
                                 Text(StrengthDisplay.weight(kg, system: system))
                             }
                             .font(StrandFont.caption)

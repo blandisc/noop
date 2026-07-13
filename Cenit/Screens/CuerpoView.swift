@@ -1048,7 +1048,7 @@ private struct CuerpoLanding: View {
         if notConnected && freshSteps == nil {
             Button { darkSheet = .screen(.dataSources) } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
+                    StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Connect Apple Health to fill steps and more.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     Spacer(minLength: 6)

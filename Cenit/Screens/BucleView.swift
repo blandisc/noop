@@ -279,7 +279,7 @@ private struct PatronesLanding: View {
     private func leverHero(_ insight: Insight) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                Image(systemName: "arrow.up").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.up.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Your strongest lever").instrumentoOverline()
             }
             .foregroundStyle(theme.inkTertiary)
@@ -321,7 +321,7 @@ private struct PatronesLanding: View {
             if canProbar {
                 Button { startLever = InsightItem(insight: insight) } label: {
                     HStack(spacing: 7) {
-                        Image(systemName: "flask").font(StrandFont.glyph(.inline, weight: .semibold))
+                        StrandIcon.experiment.image.font(StrandFont.glyph(.inline, weight: .semibold))
                         Text("Try 1 week").font(StrandFont.headline)
                     }
                     .foregroundStyle(theme.paper)
@@ -706,7 +706,7 @@ private struct PatronesLanding: View {
     private var disenaRow: some View {
         Button { showDisena = true } label: {
             HStack(spacing: 11) {
-                Image(systemName: "flask").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary).frame(width: 18)
+                StrandIcon.experiment.image.font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary).frame(width: 18)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(running != nil ? String(localized: "Design an experiment") : String(localized: "Design one yourself"))
                         .font(StrandFont.body).foregroundStyle(theme.ink)
@@ -904,7 +904,7 @@ private struct PatronesLanding: View {
         let pct = Int((Double(min(usableNights, Self.calibrationTarget)) / Double(Self.calibrationTarget) * 100).rounded())
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                Image(systemName: "clock").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.clock.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Still watching").instrumentoOverline()
             }
             .foregroundStyle(theme.inkTertiary)
@@ -963,7 +963,7 @@ private struct PatronesLanding: View {
                 Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 if let infoItem {
                     Button { info = infoItem } label: {
-                        Image(systemName: "info.circle").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+                        StrandIcon.info.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
                             .padding(.horizontal, 6)
                             .contentShape(Rectangle())
                     }

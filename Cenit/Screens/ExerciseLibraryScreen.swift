@@ -98,7 +98,7 @@ struct ExerciseLibraryScreen: View {
 
     private var searchField: some View {
         HStack(spacing: 9) {
-            Image(systemName: "magnifyingglass").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+            StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             TextField("Search exercise", text: $search)
                 .font(StrandFont.body).foregroundStyle(theme.ink)
                 .autocorrectionDisabled().textInputAutocapitalization(.never)
@@ -146,7 +146,7 @@ struct ExerciseLibraryScreen: View {
                 Text(active.map(label) ?? title)
                     .font(StrandFont.subhead)
                     .foregroundStyle(active == nil ? theme.ink : theme.paper)
-                Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron, weight: .semibold))
+                StrandIcon.down.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(active == nil ? theme.inkTertiary : theme.paper)
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
@@ -421,7 +421,7 @@ private struct CreateExerciseSheet: View {
                 HStack(spacing: 5) {
                     Text(selection.wrappedValue.isEmpty ? placeholder : label(selection.wrappedValue))
                         .font(StrandFont.body).foregroundStyle(selection.wrappedValue.isEmpty ? theme.inkTertiary : theme.inkSecondary)
-                    Image(systemName: "chevron.down").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                    StrandIcon.down.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
             }
             .buttonStyle(.plain)

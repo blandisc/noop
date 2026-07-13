@@ -427,7 +427,7 @@ struct TodayView: View {
                         // ≈2.7:1 sobre el papel claro de Hoy → falla 3:1 no-textual y rompe la disciplina
                         // «Instrumento»). `theme.critical` es un rojo contenido theme-native (4.9:1) que
                         // sigue leyéndose como corazón. (FER-273)
-                        Image(systemName: "heart.fill")
+                        StrandIcon.heart.image
                             .foregroundStyle(theme.critical)
                             .attentionWiggle(period: 4)
                     }
@@ -1333,7 +1333,7 @@ struct TodayView: View {
                                     .frame(height: 1)
                                     .offset(y: 2)
                             }
-                        Image(systemName: "info.circle").font(StrandFont.glyph(.chevron))
+                        StrandIcon.info.image.font(StrandFont.glyph(.chevron))
                             .foregroundStyle(theme.inkTertiary)
                     }
                     .contentShape(Rectangle())
@@ -1544,7 +1544,7 @@ struct TodayView: View {
                         .tracking(-0.4)
                         .foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Image(systemName: "info.circle").font(StrandFont.glyph(.inline))
+                    StrandIcon.info.image.font(StrandFont.glyph(.inline))
                         .foregroundStyle(theme.inkTertiary)
                     Spacer(minLength: 0)
                 }
@@ -1918,7 +1918,7 @@ struct TodayView: View {
                     .groteskOverline().foregroundStyle(theme.inkTertiary)
                 // FER-878: la ⓘ que abre «Qué medimos» (la explicación deja de flotar en pantalla).
                 Button { showWhatWeMeasure = true } label: {
-                    Image(systemName: "info.circle").font(StrandFont.glyph(.chevron))
+                    StrandIcon.info.image.font(StrandFont.glyph(.chevron))
                         .foregroundStyle(theme.inkTertiary)
                 }
                 .buttonStyle(.plain)
@@ -2104,7 +2104,7 @@ struct TodayView: View {
         let learning = !didFirstPullSync
         let bobbing = learning && !reduceMotion && hintBob
         return VStack(spacing: CenitMetrics.space1) {
-            Image(systemName: "chevron.down")
+            StrandIcon.down.image
                 .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
                 .offset(y: bobbing ? 4 : 0)
@@ -2204,7 +2204,7 @@ struct TodayView: View {
                 // vive en WhyVerdictSheet (la «i» de arriba la abre). El `confidenceNote` del engine se
                 // conserva (a11y / otros consumidores), pero el Hero ya no lo muestra entero.
                 HStack(spacing: CenitMetrics.space2) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(StrandFont.glyph(.chevron))
+                    StrandIcon.warning.image.font(StrandFont.glyph(.chevron))
                     Text("Short night · low confidence").font(StrandFont.caption)
                 }
                 .foregroundStyle(theme.warning)
@@ -2316,7 +2316,7 @@ struct TodayView: View {
     /// Salud), AA sobre papel.
     private var appleBaseChip: some View {
         HStack(spacing: CenitMetrics.space2) {
-            Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
+            StrandIcon.heart.image.font(StrandFont.glyph(.chevron))
             Text("Baseline · Apple Health").font(StrandFont.subhead)
         }
         .foregroundStyle(theme.dataSpO2)
@@ -2359,7 +2359,7 @@ struct TodayView: View {
                 .padding(.top, CenitMetrics.gap).padding(.bottom, CenitMetrics.gap)
             Button(action: onTap) {
                 HStack(spacing: CenitMetrics.space2) {
-                    Image(systemName: "heart.fill")
+                    StrandIcon.heart.image
                         .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Got history in Apple Health? Connect it and your baseline starts ahead.")
                         .font(StrandFont.caption)

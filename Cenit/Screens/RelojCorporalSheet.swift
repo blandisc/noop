@@ -130,7 +130,7 @@ struct RelojCorporalSheet: View {
         return VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             // Hero: the tendency word (the datum) + the single spot of color (the clock glyph).
             HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Image(systemName: "clock")
+                StrandIcon.clock.image
                     .font(.system(size: 26, weight: .regular)) // token-exempt: glifo hero 26pt fuera de banda
                     .foregroundStyle(theme.dataHrv)
                     .accessibilityHidden(true)

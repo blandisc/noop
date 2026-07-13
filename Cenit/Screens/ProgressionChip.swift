@@ -13,7 +13,7 @@ struct ProgressionChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 3) {
-                Image(systemName: "arrow.up")
+                StrandIcon.up.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text(Self.summary(re, system: system))
                     .font(StrandFont.caption)

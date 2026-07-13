@@ -564,7 +564,7 @@ struct RoutineEditorScreen: View {
             Spacer(minLength: 6)
             if rest.mode == .heartRate {
                 HStack(spacing: 2) {
-                    Image(systemName: "heart.fill")
+                    StrandIcon.heart.image
                         .font(StrandFont.glyph(.chevron))
                     Text(String(localized: "HR"))
                         .font(StrandFont.caption)
@@ -633,7 +633,7 @@ struct RoutineEditorScreen: View {
             if !hasWarmups(idx) {
                 Button { addWarmupRamp(idx) } label: {
                     HStack(spacing: 7) {
-                        Image(systemName: "flame").font(StrandFont.glyph(.chevron, weight: .semibold))
+                        StrandIcon.flame.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                         Text("Add warm-up")
                     }
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -672,7 +672,7 @@ struct RoutineEditorScreen: View {
 
     private var emptyFallback: some View {
         VStack(spacing: 10) {
-            Image(systemName: "moon.zzz").font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
+            StrandIcon.sleep.image.font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
             Text(isPlanDay ? "Rest day" : "No routine").font(StrandFont.title2).foregroundStyle(theme.ink)
             Text(isPlanDay ? "This day has no routine. Assign one from the weekly plan."
                            : "This routine could not be found.")

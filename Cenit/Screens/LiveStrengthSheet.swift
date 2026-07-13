@@ -1842,7 +1842,7 @@ struct LiveStrengthSheet: View {
             }
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: "arrow.up")
+                StrandIcon.up.image
                     .font(StrandFont.glyph(.chevron, weight: .bold))
                 Text("today \(massText(raise.toKg))")
                     .font(InstrumentoType.grotesk(12, weight: .bold)).monospacedDigit()
@@ -1910,7 +1910,7 @@ struct LiveStrengthSheet: View {
     private func restChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         Button { openRestEditor(ei: ei) } label: {
             HStack(spacing: 6) {
-                Image(systemName: "clock").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                StrandIcon.clock.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 Text(restChipLabel(run)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
@@ -2139,7 +2139,7 @@ struct LiveStrengthSheet: View {
                 }
             }
             HStack(spacing: 5) {
-                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.hrZoneRamp[zone - 1])
+                StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.hrZoneRamp[zone - 1])
                 Text("\(hr)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(theme.ink)
                 Text("·").foregroundStyle(theme.inkTertiary)
                 Text("\(pct)% of your max").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
@@ -2514,7 +2514,7 @@ struct LiveStrengthSheet: View {
 
                 Button { showLibraryPicker = true } label: {
                     HStack(spacing: 9) {
-                        Image(systemName: "magnifyingglass").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+                        StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
                         Text("Search the library…").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
                         Spacer(minLength: 0)
                     }
@@ -3158,7 +3158,7 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {
         switch trend {
         case .some(1):
-            Image(systemName: "arrow.up").font(StrandFont.glyph(.chevron, weight: .semibold))
+            StrandIcon.up.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.positiveText)
                 .accessibilityLabel(Text("Up vs last time"))
         case .some(-1):
@@ -3315,7 +3315,7 @@ struct LiveStrengthSheet: View {
                 HStack(spacing: 14) {
                     if !isFirst {
                         Button { withAnimation(.snappy) { session.moveExerciseEarlier(index) } } label: {
-                            Image(systemName: "arrow.up").font(StrandFont.glyph(.inline, weight: .semibold))
+                            StrandIcon.up.image.font(StrandFont.glyph(.inline, weight: .semibold))
                                 .foregroundStyle(theme.inkSecondary)
                         }
                         .buttonStyle(.plain).accessibilityLabel(Text("Move \(run.name) earlier"))
@@ -3434,7 +3434,7 @@ struct ChangeExerciseSheet: View {
 
     private var searchField: some View {
         HStack(spacing: 9) {
-            Image(systemName: "magnifyingglass").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
+            StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             TextField("Search the library…", text: $query)
                 .font(StrandFont.body).foregroundStyle(theme.ink).tint(theme.ink)
                 .autocorrectionDisabled()
