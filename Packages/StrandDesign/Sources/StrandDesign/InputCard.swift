@@ -112,7 +112,7 @@ public struct InputCard: View {
 
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 15))
+                .font(StrandFont.scaled(15))
                 .foregroundStyle(theme.ink)
                 .focused($focused)
                 .submitLabel(.done)
