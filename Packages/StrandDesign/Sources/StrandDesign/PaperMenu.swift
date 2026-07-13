@@ -118,11 +118,11 @@ public struct PaperMenuCard: View {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(item.title)
-                            .font(.system(size: 14))
+                            .font(StrandFont.scaled(14))
                             .foregroundStyle(item.isDestructive ? theme.critical : theme.ink)
                         if let subtitle = item.subtitle {
                             Text(subtitle)
-                                .font(.system(size: 11))
+                                .font(StrandFont.scaled(11))
                                 .foregroundStyle(theme.inkTertiary)
                         }
                     }
