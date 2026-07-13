@@ -59596,6 +59596,57 @@
           }
         }
       }
+    },
+    "SUPERSET": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPERSET"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPERSERIE"
+          }
+        }
+      }
+    },
+    "NO REST BETWEEN %@ AND %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NO REST BETWEEN %@ AND %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SIN DESCANSO ENTRE %@ Y %@"
+          }
+        }
+      }
+    },
+    "superset %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "superset %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "superserie %@"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

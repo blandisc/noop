@@ -8,10 +8,10 @@ import StrandTraining
 final class StrengthSessionModelTests: XCTestCase {
 
     private func re(_ id: String, exerciseId: String, sets: Int, reps: Int? = nil,
-                    weight: Double? = nil, rest: Int = 90) -> RoutineExercise {
+                    weight: Double? = nil, rest: Int = 90, superset: Int? = nil) -> RoutineExercise {
         RoutineExercise(id: id, routineId: "rt", exerciseId: exerciseId, position: 0,
                         targetSets: sets, targetReps: reps, targetWeightKg: weight,
-                        restMode: .fixed, restSeconds: rest)
+                        restMode: .fixed, restSeconds: rest, supersetGroup: superset)
     }
 
     private func ex(_ id: String, _ name: String, type: ExerciseType = .weightReps) -> Exercise {
@@ -475,5 +475,100 @@ final class StrengthSessionModelTests: XCTestCase {
         s.pause(now: Date(timeIntervalSince1970: 300)); s.resume(now: Date(timeIntervalSince1970: 320))  // 20
         XCTAssertEqual(s.pausedSeconds(at: Date(timeIntervalSince1970: 400)), 50)
         XCTAssertEqual(s.elapsedSeconds(now: Date(timeIntervalSince1970: 400)), 250, "400-100-50")
+    }
+
+    // MARK: Superset auto-advance (FER-931)
+
+    /// Two exercises in the same routine superset (2 work sets each), plus a standalone third exercise —
+    /// the fixture every FER-931 test below builds on.
+    private func supersetSession(rounds: Int = 2) -> StrengthSessionModel {
+        make([
+            StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: rounds, superset: 1),
+                                          exercise: ex("bench", "Bench"), lastSets: []),
+            StrengthSessionModel.PlanSlot(re: re("b", exerciseId: "row", sets: rounds, superset: 1),
+                                          exercise: ex("row", "Row"), lastSets: []),
+            StrengthSessionModel.PlanSlot(re: re("c", exerciseId: "curl", sets: 1),
+                                          exercise: ex("curl", "Curl"), lastSets: [])
+        ])
+    }
+
+    func testMakeCopiesSupersetGroupFromRoutine() {
+        let s = supersetSession()
+        XCTAssertEqual(s.runs[0].supersetGroup, 1, "A1 carries the routine's group")
+        XCTAssertEqual(s.runs[1].supersetGroup, 1, "A2 carries the same group")
+        XCTAssertNil(s.runs[2].supersetGroup, "the standalone exercise is ungrouped")
+    }
+
+    /// Finishing A1's round moves straight to A2's SAME round with no rest: `phase == .capturing`,
+    /// `restEndsAt == nil`, and focus lands on the second member (the design's central invariant).
+    func testSupersetAdvancesToNextMemberWithoutRest() {
+        let s = supersetSession()
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // A1, round 0
+        XCTAssertTrue(s.runs[0].sets[0].done)
+        XCTAssertEqual(s.currentIndex, 1, "focus jumped straight to A2")
+        XCTAssertEqual(s.runs[1].currentSet, 0, "same round (0) on A2")
+        XCTAssertEqual(s.phase, .capturing, "no rest card between A1 and A2")
+        XCTAssertNil(s.restEndsAt, "no countdown started between group members")
+    }
+
+    /// Finishing the group's LAST member's round starts rest as normal, and the focus that
+    /// `advanceToNextPending` already parked (rest runs concurrently, not blocking) is the FIRST
+    /// member's next round — not a continuation of the last member.
+    func testSupersetRestsAfterLastMemberAndReturnsToFirstForNextRound() {
+        let s = supersetSession()
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // A1 round 0 → jumps to A2 round 0
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5010))   // A2 round 0 → group's round done
+        XCTAssertTrue(s.runs[1].sets[0].done)
+        XCTAssertEqual(s.phase, .resting, "rest after the group's last member")
+        XCTAssertNotNil(s.restEndsAt)
+        XCTAssertEqual(s.currentIndex, 0, "focus returned to A1 (the group's first member)")
+        XCTAssertEqual(s.runs[0].currentSet, 1, "for the NEXT round (1), not stuck on round 0")
+    }
+
+    /// Once every round of every member is done, the group has nothing left — focus moves on to the
+    /// next exercise in the plan (the standalone one), same as a normal exercise-to-exercise crossing.
+    func testSupersetCompleteMovesToNextExercise() {
+        let s = supersetSession(rounds: 1)
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // A1 round 0 → A2 round 0
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5010))   // A2 round 0 → group complete
+        XCTAssertEqual(s.currentIndex, 2, "moved past the finished superset to the standalone exercise")
+        XCTAssertEqual(s.current?.exerciseId, "curl")
+    }
+
+    /// A skipped group member must not steal focus: registering A1 when A2 is skipped falls back to a
+    /// normal rest (A2's sets are never `.done`, so without the `!skipped` guard the round-robin would
+    /// park focus on a skipped exercise). FER-931 D1.
+    func testSupersetSkippedMemberDoesNotStealFocus() {
+        let s = supersetSession()
+        s.runs[1].skipped = true   // A2 skipped mid-session
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))   // A1 round 0
+        XCTAssertTrue(s.runs[0].sets[0].done)
+        XCTAssertNotEqual(s.currentIndex, 1, "focus must not jump to a skipped superset member")
+        XCTAssertEqual(s.phase, .resting, "a skipped next member falls back to a normal rest")
+        XCTAssertNotNil(s.restEndsAt)
+    }
+
+    /// The superset logic must not perturb a plain, ungrouped exercise's register/rest/advance path —
+    /// byte-for-byte the pre-931 behavior (mirrors `testRegisterAdvancesAndStartsRest`), even sharing a
+    /// session with a superset elsewhere in the plan.
+    func testStandaloneExerciseAdvanceIsUnaffectedBySupersetElsewhere() {
+        let s = supersetSession(rounds: 1)
+        s.goToExercise(2)   // focus the standalone "curl" exercise directly
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        XCTAssertTrue(s.runs[2].sets[0].done)
+        XCTAssertEqual(s.phase, .resting, "a standalone exercise still rests normally")
+        XCTAssertNotNil(s.restEndsAt)
+    }
+
+    /// `addExercise` (ad-hoc, FER-762) and `replaceExercise` (swap mid-session, FER-894) both always seed
+    /// `supersetGroup = nil` — neither auto-joins a superset it wasn't authored into.
+    func testAddExerciseAndReplaceExerciseLeaveSupersetGroupNil() {
+        let s = supersetSession()
+        s.addExercise(ex("deadlift", "Deadlift"))
+        XCTAssertNil(s.runs.last?.supersetGroup, "an ad-hoc exercise is never auto-grouped")
+
+        XCTAssertEqual(s.runs[0].supersetGroup, 1, "A1 starts grouped")
+        s.replaceExercise(at: 0, with: ex("incline", "Incline bench"))
+        XCTAssertNil(s.runs[0].supersetGroup, "swapping the exercise breaks its superset membership")
     }
 }
