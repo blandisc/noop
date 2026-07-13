@@ -21,6 +21,7 @@ public struct StrandCTAButton: View {
     public enum Kind { case solid, outline }
 
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.isEnabled) private var isEnabled
     private let title: LocalizedStringKey
     private let systemImage: String?
     private let kind: Kind
@@ -53,6 +54,8 @@ public struct StrandCTAButton: View {
                     }
                 }
                 .contentShape(Rectangle())
+                // Disabled: dim to the shared dim value; the Button already blocks the tap (FER-916).
+                .opacity(isEnabled ? 1 : StrandOpacity.dim)
         }
         .buttonStyle(InstrumentoPressStyle())
     }
@@ -67,6 +70,7 @@ public struct StrandCTAButton: View {
     VStack(spacing: CenitMetrics.gap) {
         StrandCTAButton("Empezar", action: {})
         StrandCTAButton("Descartar", kind: .outline, action: {})
+        StrandCTAButton("Guardar", action: {}).disabled(true)
     }
     .padding(CenitMetrics.screenPadding)
     .frame(width: 390)
