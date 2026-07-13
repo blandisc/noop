@@ -26,13 +26,13 @@ private struct WatchFaceMetrics: View {
     private var elapsedStart: Date { manager.startDate ?? Date() }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             if !manager.iPhoneReachable { disconnectedLine }
             if let rest = manager.rest { resting(rest) } else { active }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(.horizontal, NoopMetrics.gap)
-        .padding(.vertical, NoopMetrics.space2)
+        .padding(.horizontal, CenitMetrics.gap)
+        .padding(.vertical, CenitMetrics.space2)
     }
 
     // State 8 — a quiet line; heart rate and time keep running. Clears itself on reconnect.
@@ -46,10 +46,10 @@ private struct WatchFaceMetrics: View {
     // State 3 — heart rate is the hero; time and routine subordinate. State 7 swaps time+routine for the
     // Health-access warning while keeping the timer running.
     private var active: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Text("Pulse").instrumentoOverline().foregroundStyle(t.inkTertiary).accessibilityHidden(true)
             pulseHero
-            Spacer(minLength: NoopMetrics.space2)
+            Spacer(minLength: CenitMetrics.space2)
             elapsed
             if manager.healthAccessDenied { permissionWarning }
             else if let cap = manager.capture { captureContext(cap) }
@@ -62,7 +62,7 @@ private struct WatchFaceMetrics: View {
     // its «weight × reps». Chrome tint (this bar isn't a physiological datum). Omitted detail line when a
     // time/distance set carries no load.
     private func captureContext(_ cap: WorkoutCaptureSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Text("Set \(cap.setNumber) / \(cap.setTotal)")
                 .font(StrandFont.caption).foregroundStyle(t.ink)
             ProgressView(value: Double(cap.setNumber), total: Double(max(cap.setTotal, 1)))
@@ -108,7 +108,7 @@ private struct WatchFaceMetrics: View {
     // State 4 — the focus migrates to the countdown; heart rate drops to secondary; the return detail
     // (set + exercise) stays visible.
     private func resting(_ rest: RestActivitySnapshot) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Text("Rest").instrumentoOverline().foregroundStyle(t.inkTertiary).accessibilityHidden(true)
             Text(timerInterval: rest.restStartedAt...rest.restEndsAt, countsDown: true)
                 .instrumentoHero(44)
@@ -123,7 +123,7 @@ private struct WatchFaceMetrics: View {
                 .tint(t.dataStrain)
                 .accessibilityHidden(true)
             restControls(rest)
-            Spacer(minLength: NoopMetrics.space1)
+            Spacer(minLength: CenitMetrics.space1)
             heartSecondary
             Text("Next: set \(rest.setNumber) · \(rest.returnDetail)")
                 .font(StrandFont.footnote).foregroundStyle(t.inkSecondary).lineLimit(2)
@@ -134,7 +134,7 @@ private struct WatchFaceMetrics: View {
     // FER-808 — the rest controls the iPhone Live Activity already has: ±30 s and Skip, now on the wrist.
     // «−30» is hidden once the rest has run out (nothing left to trim; `extendRest` also floors at «now»).
     private func restControls(_ rest: RestActivitySnapshot) -> some View {
-        HStack(spacing: NoopMetrics.space1) {
+        HStack(spacing: CenitMetrics.space1) {
             if secondsLeft(rest) > 0 { pill("−30") { manager.adjustRestFromWrist(by: -30) } }
             pill("+30 s") { manager.adjustRestFromWrist(by: 30) }
             pill("Skip") { manager.skipRestFromWrist() }
@@ -163,7 +163,7 @@ private struct WatchFaceMetrics: View {
 
     // State 3 — the pulse hero.
     private var pulseHero: some View {
-        HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
             pulseValue
                 .instrumentoHero(52)
                 .foregroundStyle(pulseDashed ? t.inkDim : t.dataHeart)
@@ -195,7 +195,7 @@ private struct WatchFaceMetrics: View {
             Text(verbatim: "Z\(z)")
                 .font(StrandFont.footnote)
                 .foregroundStyle(t.inkSecondary)
-                .padding(.horizontal, NoopMetrics.space1)
+                .padding(.horizontal, CenitMetrics.space1)
                 .padding(.vertical, 1)
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(t.inkTertiary, lineWidth: 1))
                 .accessibilityLabel(Text("Effort zone \(z)"))
@@ -204,7 +204,7 @@ private struct WatchFaceMetrics: View {
 
     // State 4 — heart rate demoted during a rest: small, still the datum's hue (or «--»).
     private var heartSecondary: some View {
-        HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
             pulseValue
                 .font(StrandFont.bodyNumber)
                 .foregroundStyle(pulseDashed ? t.inkDim : t.dataHeart)
@@ -222,7 +222,7 @@ private struct WatchFaceMetrics: View {
 
     // State 7 — the session keeps serving (timer + rests + haptics); only pulse + saving degrade.
     private var permissionWarning: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Text("No access to Health. Without it there's no pulse and nothing saved.")
                 .font(StrandFont.caption)
                 .foregroundStyle(t.inkSecondary)
@@ -254,7 +254,7 @@ private struct WatchControlPage: View {
     private let t = InstrumentoTheme.base
 
     var body: some View {
-        VStack(spacing: NoopMetrics.space2) {
+        VStack(spacing: CenitMetrics.space2) {
             Spacer()
             Text("Session").instrumentoOverline().foregroundStyle(t.inkTertiary)
             if manager.rest != nil {
@@ -274,7 +274,7 @@ private struct WatchControlPage: View {
             .buttonStyle(.bordered).tint(t.critical)
             Spacer()
         }
-        .padding(.horizontal, NoopMetrics.gap)
+        .padding(.horizontal, CenitMetrics.gap)
         .confirmationDialog("End the session?", isPresented: $confirming, titleVisibility: .visible) {
             Button("End", role: .destructive) { manager.endFromWrist() }
             Button("Keep going", role: .cancel) { }
@@ -293,7 +293,7 @@ private struct WatchPlanRotor: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                 Text("Plan").instrumentoOverline().foregroundStyle(t.inkTertiary)
                 if let plan = manager.plan, !plan.exercises.isEmpty {
                     ForEach(Array(plan.exercises.enumerated()), id: \.offset) { _, ex in planRow(ex) }
@@ -302,20 +302,20 @@ private struct WatchPlanRotor: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, NoopMetrics.gap)
-            .padding(.vertical, NoopMetrics.space2)
+            .padding(.horizontal, CenitMetrics.gap)
+            .padding(.vertical, CenitMetrics.space2)
         }
     }
 
     private func planRow(_ ex: WorkoutPlanSnapshot.Exercise) -> some View {
         let done = ex.setsTotal > 0 && ex.setsDone >= ex.setsTotal
-        return HStack(spacing: NoopMetrics.space1) {
+        return HStack(spacing: CenitMetrics.space1) {
             marker(done: done, current: ex.isCurrent)
             Text(ex.name)
                 .font(StrandFont.caption)
                 .foregroundStyle(done ? t.inkTertiary : t.ink)
                 .lineLimit(1)
-            Spacer(minLength: NoopMetrics.space1)
+            Spacer(minLength: CenitMetrics.space1)
             Text("\(ex.setsDone)/\(ex.setsTotal)")
                 .font(StrandFont.footnote)
                 .foregroundStyle(t.inkSecondary)
