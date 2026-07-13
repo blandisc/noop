@@ -202,7 +202,7 @@ struct TrainingLoadSheet: View {
                         metodoBlock
                         OriginStamp(origin: .computed, when: String(localized: "today"), theme: theme)
                     }
-                    .padding(NoopMetrics.screenPadding)
+                    .padding(CenitMetrics.screenPadding)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -450,7 +450,7 @@ struct TrainingLoadSheet: View {
             .foregroundStyle(theme.ink)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 13)
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                 .strokeBorder(theme.ink, lineWidth: 1.5))
         }
         .buttonStyle(.plain)

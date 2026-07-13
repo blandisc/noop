@@ -139,7 +139,7 @@ struct WorkoutEditSheet: View {
     // MARK: - List
 
     private var rowInsets: EdgeInsets {
-        EdgeInsets(top: 0, leading: NoopMetrics.screenPadding, bottom: 0, trailing: NoopMetrics.screenPadding)
+        EdgeInsets(top: 0, leading: CenitMetrics.screenPadding, bottom: 0, trailing: CenitMetrics.screenPadding)
     }
 
     private var listBody: some View {
@@ -229,7 +229,7 @@ struct WorkoutEditSheet: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.paperHi, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+            .background(theme.paperHi, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         }
     }
 

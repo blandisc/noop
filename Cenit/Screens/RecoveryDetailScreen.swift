@@ -75,7 +75,7 @@ struct RecoveryDetailScreen: View {
                         heroFlat
                         ChartWell(theme).loading(height: 160).padding(.top, 22)
                     }
-                    .padding(NoopMetrics.screenPadding)
+                    .padding(CenitMetrics.screenPadding)
                 } else if model.calibration != nil {
                     VStack(alignment: .leading, spacing: 22) {
                         heroFlat
@@ -83,12 +83,12 @@ struct RecoveryDetailScreen: View {
                         metodoBlock
                         sourceFooter
                     }
-                    .padding(NoopMetrics.screenPadding)
+                    .padding(CenitMetrics.screenPadding)
                 } else if model.hasData {
                     if model.score != nil {
                         heroField
                     } else {
-                        heroFlat.padding(NoopMetrics.screenPadding)
+                        heroFlat.padding(CenitMetrics.screenPadding)
                     }
                     if infoOpen { whatWeMeasureCard }
                     // Level 1 · the answer: what's pushing it, then what changed since yesterday.
@@ -117,7 +117,7 @@ struct RecoveryDetailScreen: View {
                     }
                 } else {
                     // Empty (loaded, no calibration, no data): the flat hero's reading says it.
-                    heroFlat.padding(NoopMetrics.screenPadding)
+                    heroFlat.padding(CenitMetrics.screenPadding)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1008,7 +1008,7 @@ struct RecoveryDetailScreen: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Source footer

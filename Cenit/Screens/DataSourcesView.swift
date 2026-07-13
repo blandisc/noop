@@ -56,7 +56,7 @@ struct DataSourcesView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Sources").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Text("Data Sources").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -78,8 +78,8 @@ struct DataSourcesView: View {
                 #endif
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -98,7 +98,7 @@ struct DataSourcesView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .patternBlock(theme, bar: backupAlertIsError ? theme.critical : theme.verdict)
-                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.horizontal, CenitMetrics.screenPadding)
                 .onTapGesture { showBackupAlert = false }
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .task {

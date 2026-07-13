@@ -151,7 +151,7 @@ struct AppleHealthView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if loaded && !hasAnyData {
                     EmptyStateView(
@@ -170,8 +170,8 @@ struct AppleHealthView: View {
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -311,9 +311,9 @@ struct AppleHealthView: View {
 
     private var tileGrid: some View {
         LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)],
+            columns: [GridItem(.adaptive(minimum: 168), spacing: CenitMetrics.gap)],
             alignment: .leading,
-            spacing: NoopMetrics.gap
+            spacing: CenitMetrics.gap
         ) {
             statTile(key: "steps", label: "Steps",
                      accent: theme.dataSteps, fmt: { intString($0) })
@@ -409,9 +409,9 @@ struct AppleHealthView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: .infinity, minHeight: NoopMetrics.tileHeight, alignment: .topLeading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .frame(maxWidth: .infinity, minHeight: CenitMetrics.tileHeight, alignment: .topLeading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -475,7 +475,7 @@ struct AppleHealthView: View {
     @ViewBuilder
     private func chartSection<Cards: View>(_ title: LocalizedStringKey, overline: LocalizedStringKey,
                                            @ViewBuilder cards: () -> Cards) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -525,7 +525,7 @@ struct AppleHealthView: View {
                         gradient: ChartWell.fillGradient(hue),
                         valueRange: valueRange(pts, fallback: fallback),
                         showsArea: true,
-                        height: NoopMetrics.chartHeight,
+                        height: CenitMetrics.chartHeight,
                         valueFormat: fmt,
                         axisLabelColor: theme.inkTertiary,
                         gridLineColor: theme.hairline
@@ -538,15 +538,15 @@ struct AppleHealthView: View {
                     emptyChart
                 }
             }
-            .frame(height: NoopMetrics.chartHeight)
+            .frame(height: CenitMetrics.chartHeight)
             .clipped()
             divider
             lightFooter(footerItems)
         }
-        .padding(NoopMetrics.cardPadding)
+        .padding(CenitMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 

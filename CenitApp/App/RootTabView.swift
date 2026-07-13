@@ -184,7 +184,7 @@ struct RootTabView: View {
         .overlay(alignment: .bottom) {
             if appModel.strengthSession != nil && !appModel.strengthSheetPresented {
                 ActiveSessionPillHost(model: appModel)
-                    .padding(.bottom, barHeight + NoopMetrics.space2)
+                    .padding(.bottom, barHeight + CenitMetrics.space2)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }

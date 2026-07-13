@@ -45,12 +45,12 @@ struct StarterTemplatesSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 if let t = selected { preview(t) } else { listContent }
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -59,7 +59,7 @@ struct StarterTemplatesSheet: View {
     // MARK: - List (grouped by program)
 
     private var listContent: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Start from a template")
                     .font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -80,8 +80,8 @@ struct StarterTemplatesSheet: View {
                                 if t.id != templates.last?.id { divider }
                             }
                         }
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                             .strokeBorder(theme.hairline, lineWidth: 1))
                     }
                 }
@@ -111,7 +111,7 @@ struct StarterTemplatesSheet: View {
     // MARK: - Preview (one template + the «add» action)
 
     private func preview(_ t: StarterTemplate) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             Button { withAnimation(.snappy) { selected = nil } } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left").font(StrandFont.glyph(.chevron, weight: .semibold))
@@ -137,8 +137,8 @@ struct StarterTemplatesSheet: View {
                     if index != t.slots.count - 1 { divider }
                 }
             }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
 
             VStack(spacing: 10) {
@@ -149,7 +149,7 @@ struct StarterTemplatesSheet: View {
                         Text("Empezar")
                             .font(StrandFont.headline).foregroundStyle(theme.paper)
                             .frame(maxWidth: .infinity).padding(.vertical, 15)
-                            .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                            .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
 
@@ -157,7 +157,7 @@ struct StarterTemplatesSheet: View {
                         Text("Add to my routines")
                             .font(StrandFont.headline).foregroundStyle(theme.ink)
                             .frame(maxWidth: .infinity).padding(.vertical, 15)
-                            .background(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                                 .strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
@@ -168,7 +168,7 @@ struct StarterTemplatesSheet: View {
                         Text("Add to my routines")
                             .font(StrandFont.headline).foregroundStyle(theme.paper)
                             .frame(maxWidth: .infinity).padding(.vertical, 15)
-                            .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
+                            .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .disabled(saving)
@@ -195,8 +195,8 @@ struct StarterTemplatesSheet: View {
             Text(restChipText(slot.restSeconds))
                 .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
                 .padding(.horizontal, 7).padding(.vertical, 2)
-                .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+                .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
         }
         .padding(.horizontal, 14).padding(.vertical, 12)

@@ -49,7 +49,7 @@ struct SavedTicketsScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 segmentControl
                 if loaded {
@@ -61,8 +61,8 @@ struct SavedTicketsScreen: View {
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())

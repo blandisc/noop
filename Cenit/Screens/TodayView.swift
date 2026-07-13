@@ -198,7 +198,7 @@ struct TodayView: View {
     @State private var briefDotPulse = false
 
     // THE single grid definition — every tile group reuses it so margins line up.
-    private let grid = [GridItem(.adaptive(minimum: 168), spacing: NoopMetrics.gap)]
+    private let grid = [GridItem(.adaptive(minimum: 168), spacing: CenitMetrics.gap)]
 
     // MARK: - Memoización del veredicto + conteos derivados (FER-172)
     //
@@ -742,14 +742,14 @@ struct TodayView: View {
                 // FER-878 follow-up: aire más apretado entre header y héroe (space1) para recuperar el
                 // alto que sumaron la cápsula del delta y la leyenda de orígenes, y que SEÑALES vuelva a
                 // caber sin scroll.
-                VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                     headerBlock
                     HealthAlertBanner()
                     todayStatusBanner
                     heroBlock
                 }
                 sectionTabs
-                    .padding(.top, NoopMetrics.space1)   // FER-878 follow-up: cromo apretado para caber sin scroll
+                    .padding(.top, CenitMetrics.space1)   // FER-878 follow-up: cromo apretado para caber sin scroll
                 // La franja de carga YA NO vive aquí: se movió DENTRO de la página Señales (bajo las cinco
                 // reglas) para que pertenezca solo a Señales y no aparezca al deslizar a Brief. Ver `senalesPage`.
                 // Pager horizontal de 2 páginas: ① SEÑALES (por qué + tiles) · ② BRIEF. Full-bleed (FER-725):
@@ -757,10 +757,10 @@ struct TodayView: View {
                 // dentro, así cada hoja ocupa todo el ancho y se va limpia a un lado. Ejes ortogonales al
                 // scroll vertical → el swipe horizontal y el pull-to-refresh no se pelean.
                 todayPager(fullWidth: proxy.size.width)
-                    .padding(.top, NoopMetrics.space2)
+                    .padding(.top, CenitMetrics.space2)
                 // La otra mitad del sobrante vive AQUÍ: mantiene los page dots al fondo, cerca del dock,
                 // mientras el `Spacer` de arriba baja la rejilla al centro.
-                Spacer(minLength: NoopMetrics.space2)
+                Spacer(minLength: CenitMetrics.space2)
                 todayPageDots
             }
             // FER-274/FER-293: la pista del pull-to-refresh (chevron + microcopy) flota en el TOPE como
@@ -772,13 +772,13 @@ struct TodayView: View {
             }
             .animation(reduceMotion ? nil : StrandMotion.fade, value: showsSyncHint)
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             // Margen inferior compacto (FER-475): los page dots (último elemento) quedan pegados al dock,
             // no flotando con 24pt de aire. Bajado 8→4 para asentar los dots un pelín MÁS abajo (más cerca
             // del dock) y, de paso, reclamar altura que compensa el numeral mayor. La rejilla de métricas
             // mantiene su aire propio (cards + gap).
-            .padding(.bottom, NoopMetrics.space1)
-            .padding(.top, NoopMetrics.space2)
+            .padding(.bottom, CenitMetrics.space1)
+            .padding(.top, CenitMetrics.space2)
             // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
             // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
             .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .leading)
@@ -979,8 +979,8 @@ struct TodayView: View {
     /// reposo, la línea de frescura «última lectura hace N min»; sincronizando, «Sincronizando con tu
     /// banda…». FER-222: la acción accesible «Sincronizar» reinstala para VoiceOver el gesto de jalar.
     private var headerBlock: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space1) {
-            HStack(alignment: .center, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+            HStack(alignment: .center, spacing: CenitMetrics.space2) {
                 Text(shortDate)
                     .font(InstrumentoType.grotesk(11, weight: .semibold))
                     .tracking(2)
@@ -1001,7 +1001,7 @@ struct TodayView: View {
                         ? Text("Strap battery: \(Int(pct.rounded()))%, charging")
                         : Text("Strap battery: \(Int(pct.rounded()))%"))
                 }
-                Spacer(minLength: NoopMetrics.space2)
+                Spacer(minLength: CenitMetrics.space2)
                 // FER-888 (W3): BPM en vivo / «sin señal» / sello del dial 24h son de la banda.
                 // En modo Solo-Apple no aplican; en Combinado/Solo-banda quedan idénticos.
                 if repo.dataSourceMode.usesWhoop {
@@ -1026,7 +1026,7 @@ struct TodayView: View {
             PulseReader(live.pulse) { p in
                 let liveNow = p.heartRate != nil && live.worn
                 let shown = liveNow ? p.heartRate : hrPoints.last.map { Int($0.value.rounded()) }
-                HStack(spacing: NoopMetrics.space1 + 1) {
+                HStack(spacing: CenitMetrics.space1 + 1) {
                     BreathingDot(color: liveNow ? theme.dataHeart : theme.inkTertiary,
                                  radius: 3, breathes: liveNow)
                     Text(verbatim: "\(shown ?? 0) BPM")
@@ -1047,7 +1047,7 @@ struct TodayView: View {
     /// El header cuando la banda se desconectó de día (FER-711): en lugar del BPM vivo, un punto gris
     /// quieto + «SIN SEÑAL». El punto NO late (no hay señal), a diferencia del BPM.
     private var noSignalHeader: some View {
-        HStack(spacing: NoopMetrics.space1 + 1) {
+        HStack(spacing: CenitMetrics.space1 + 1) {
             BreathingDot(color: theme.inkMuted, radius: 3, breathes: false)
             Text("NO SIGNAL")
                 .font(InstrumentoType.grotesk(11, weight: .semibold))
@@ -1225,10 +1225,10 @@ struct TodayView: View {
     @ViewBuilder private var heroBlock: some View {
         let state = heroState
         let animatingHero = !reduceMotion
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             // Alineación al TOPE del numeral (no centrada): el overline «RECUPERACIÓN DE HOY» arranca a
             // la altura del tope del número. Gap más amplio para dar aire al héroe (FER-878 follow-up).
-            HStack(alignment: .top, spacing: NoopMetrics.sectionGapCompact) {
+            HStack(alignment: .top, spacing: CenitMetrics.sectionGapCompact) {
                 heroNumeralText(state)
                     // El numeral de 102pt (Space Grotesk) trae ~29.8pt de descenso VACÍO bajo la línea base
                     // (los dígitos no bajan): ese hueco es el «padding» de más hacia SEÑALES. Lo recupero con
@@ -1239,7 +1239,7 @@ struct TodayView: View {
                     .animation(animatingHero ? .easeOut(duration: 0.5) : nil, value: heroEntered)
                 // FER-878 follow-up: columna derecha más apretada (space1) — así la cápsula «vs tu base»
                 // sube y queda mejor centrada contra el número grande, y el héroe pierde alto.
-                VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+                VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                     Text(heroOverline(state))
                         .groteskOverline()
                         .foregroundStyle(theme.inkTertiary)
@@ -1322,7 +1322,7 @@ struct TodayView: View {
             let lvl = readiness.level
             if lvl != .insufficient {
                 Button { showWhyVerdict = true } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
                         Text(stateLabel(lvl))
                             .font(InstrumentoType.groteskVerdict)
                             .foregroundStyle(theme.ink)
@@ -1436,7 +1436,7 @@ struct TodayView: View {
             waitingBrief(state)
         default:   // descargando (waiting+isSyncing) / calibrating — y .verdict SÍ llega aquí cuando
                    // `dailyBrief == nil` (nivel .insufficient o < 2 viñetas): cae al copy honesto (FER-547)
-            VStack(spacing: NoopMetrics.gap) {
+            VStack(spacing: CenitMetrics.gap) {
                 heroBody(state)
                 heroFooter(state)
                 metricsBridge
@@ -1449,7 +1449,7 @@ struct TodayView: View {
     /// lectura de hoy» + cuándo llega + «Ayer cerraste en …» (si hubo veredicto ayer) + el puente a
     /// Métricas. Sin el copy viejo de «tu base está lista / usa el strap».
     private func waitingBrief(_ state: HeroState) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             briefHeader(now: false)
             Text("No reading for today yet")
                 .font(StrandFont.title2).fontWeight(.semibold).foregroundStyle(theme.ink)
@@ -1472,18 +1472,18 @@ struct TodayView: View {
         Button {
             withAnimation(reduceMotion ? nil : StrandMotion.interactive) { pagerPage = 0 }
         } label: {
-            HStack(spacing: NoopMetrics.space2) {
+            HStack(spacing: CenitMetrics.space2) {
                 Text("See your metrics for today").font(StrandFont.subhead.weight(.semibold))
                 Image(systemName: "arrow.right").font(StrandFont.glyph(.chevron, weight: .semibold))
             }
             .foregroundStyle(theme.inkSecondary)
-            .padding(.horizontal, NoopMetrics.cardPadding).padding(.vertical, NoopMetrics.gap)
+            .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.gap)
             .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.top, NoopMetrics.space2)
+        .padding(.top, CenitMetrics.space2)
         .accessibilityHint(Text("Opens today's metrics page"))
     }
 
@@ -1535,10 +1535,10 @@ struct TodayView: View {
     /// `patternBlock`, las filas de acción y el CTA de entrenamiento. Las cinco reglas NO viven aquí
     /// (pertenecen solo a Señales). Sin serif: la voz nueva es Space Grotesk (F0).
     private func dailyBriefView(_ brief: DailyBrief) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             briefHeader(now: true)
             Button { showWhyVerdict = true } label: {
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                     Text(brief.titular)
                         .font(InstrumentoType.grotesk(22, weight: .bold, relativeTo: .title2))
                         .tracking(-0.4)
@@ -1598,12 +1598,12 @@ struct TodayView: View {
     private func connectionLineView(text: String, cta: LocalizedStringKey, hint: String,
                                     action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: NoopMetrics.space1) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                 Text("Today's connection").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                     Text(text).font(StrandFont.subhead).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: NoopMetrics.space2)
+                    Spacer(minLength: CenitMetrics.space2)
                     HStack(spacing: 2) {
                         Text(cta).font(StrandFont.caption)
                         Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
@@ -1612,9 +1612,9 @@ struct TodayView: View {
                     .fixedSize()
                 }
             }
-            .padding(.leading, NoopMetrics.gap)
-            .padding(.trailing, NoopMetrics.space2)
-            .padding(.vertical, NoopMetrics.space2)
+            .padding(.leading, CenitMetrics.gap)
+            .padding(.trailing, CenitMetrics.space2)
+            .padding(.vertical, CenitMetrics.space2)
             .frame(maxWidth: .infinity, alignment: .leading)
             // Bloque «patrón/conexión» del handoff: fondo `patternBlock` con la barra verde a la
             // izquierda y esquinas redondeadas solo del lado derecho (radio 0 8 8 0).
@@ -1626,7 +1626,7 @@ struct TodayView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.top, NoopMetrics.space2)
+        .padding(.top, CenitMetrics.space2)
         .accessibilityHint(Text(hint))
     }
 
@@ -1637,18 +1637,18 @@ struct TodayView: View {
     /// «Hoy descansas». El color del ritmo (verde sube / ámbar baja) es el único dato con color, como el resto
     /// del «Instrumento». «Empezar» enruta a Entrenar y arranca la sesión vía `TabRouter` (reusa el prefetch).
     private func trainingBlockView(_ tb: DailyBrief.TrainingBlock) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             Text("Today in your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             switch tb.state {
             case .training:
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                     Text(tb.routineName ?? "").font(StrandFont.title2).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     streakChip(tb.streakDays)
                     Spacer(minLength: 0)
                 }
                 if let copy = tb.paceCopy {
-                    HStack(spacing: NoopMetrics.space2) {
+                    HStack(spacing: CenitMetrics.space2) {
                         Image(systemName: paceGlyph(tb.pace)).font(StrandFont.glyph(.inline, weight: .semibold))
                             .foregroundStyle(paceColor(tb.pace))
                         Text(copy).font(StrandFont.subhead).foregroundStyle(paceColor(tb.pace))
@@ -1659,13 +1659,13 @@ struct TodayView: View {
                 // CTA del handoff: barra en TINTA (radio 14) con la rutina en crema y «EMPEZAR →» en el
                 // acento `ctaAccent` — el único lugar donde ese verde eléctrico existe (solo sobre tinta).
                 Button { tabRouter.startTodayTraining() } label: {
-                    HStack(spacing: NoopMetrics.space2) {
+                    HStack(spacing: CenitMetrics.space2) {
                         Text(tb.routineName ?? String(localized: "Your workout"))
                             .font(InstrumentoType.grotesk(13, weight: .bold))
                             .foregroundStyle(theme.paperHi)
                             .lineLimit(1).minimumScaleFactor(0.8)
-                        Spacer(minLength: NoopMetrics.space2)
-                        HStack(spacing: NoopMetrics.space1) {
+                        Spacer(minLength: CenitMetrics.space2)
+                        HStack(spacing: CenitMetrics.space1) {
                             Text("Start")
                                 .font(InstrumentoType.grotesk(11, weight: .semibold))
                                 .tracking(1.2)
@@ -1674,16 +1674,16 @@ struct TodayView: View {
                         }
                         .foregroundStyle(theme.ctaAccent)
                     }
-                    .padding(.horizontal, NoopMetrics.cardPadding)
+                    .padding(.horizontal, CenitMetrics.cardPadding)
                     .padding(.vertical, 14)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .padding(.top, NoopMetrics.space1)
+                .padding(.top, CenitMetrics.space1)
                 .accessibilityHint(Text("Opens Train and starts today's session"))
             case .rest:
-                HStack(spacing: NoopMetrics.gap) {
+                HStack(spacing: CenitMetrics.gap) {
                     Image(systemName: "moon.fill").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkSecondary)
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Rest day today").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
@@ -1694,14 +1694,14 @@ struct TodayView: View {
                 .accessibilityElement(children: .combine)
             }
         }
-        .padding(NoopMetrics.cardPadding)
+        .padding(CenitMetrics.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .fill(theme.surface)
                 .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1) // token-exempt: sombra sutil <0.10
         }
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -1712,7 +1712,7 @@ struct TodayView: View {
             Image(systemName: "flame.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.warning)
             Text("streak \(days) \(unit)").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
         }
-        .padding(.horizontal, NoopMetrics.space2).padding(.vertical, 2)
+        .padding(.horizontal, CenitMetrics.space2).padding(.vertical, 2)
         .background(theme.paper, in: Capsule())
         .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 0.5))
         .accessibilityElement(children: .combine)
@@ -1740,8 +1740,8 @@ struct TodayView: View {
     /// El encabezado de la página 1 (FER-475): overline «DAILY BRIEF» · punto · «AHORA» (verde, con
     /// veredicto) o «EN ESPERA» (tinta, sin lectura) + una regla hairline. Fiel al handoff.
     private func briefHeader(now: Bool) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            HStack(spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            HStack(spacing: CenitMetrics.space2) {
                 Text("Daily Brief").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 0)
                 // FER-549/handoff: el estado va a la DERECHA (space-between) y el punto «Ahora» PULSA (halo)
@@ -1780,7 +1780,7 @@ struct TodayView: View {
 
     /// La línea de continuidad «Ayer cerraste en …» (FER-475): el nivel del veredicto de ayer en su color.
     private func yesterdayLine(_ level: ReadinessEngine.Level) -> some View {
-        HStack(spacing: NoopMetrics.space2) {
+        HStack(spacing: CenitMetrics.space2) {
             Text("Ayer cerraste en").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
             Text(stateLabel(level)).font(StrandFont.subhead.weight(.semibold))
                 .foregroundStyle(verdictDataColor(level))
@@ -1794,13 +1794,13 @@ struct TodayView: View {
     /// viñeta (el handoff usa una hoja con cuerpo común). Separador hairline entre viñetas.
     private func briefBulletRow(_ b: DailyBrief.Bullet, showTopHairline: Bool) -> some View {
         Button { openBriefBullet(b.kind) } label: {
-            HStack(spacing: NoopMetrics.gap) {
+            HStack(spacing: CenitMetrics.gap) {
                 Image(systemName: briefGlyph(b.kind))
                     .font(StrandFont.glyph(.lead))
                     .foregroundStyle(flagColor(b.flag))
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: NoopMetrics.space2) {
+                    HStack(spacing: CenitMetrics.space2) {
                         Text(b.lead).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
                         // FER-623: cuando la HRV de hoy es un estimado de Apple Salud (SDNN, día sin banda),
                         // se sella «estimado» — espejo del mismo glifo/criterio que el sello del veredicto, así
@@ -1816,7 +1816,7 @@ struct TodayView: View {
                 Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
             }
-            .padding(.vertical, NoopMetrics.space2)
+            .padding(.vertical, CenitMetrics.space2)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1890,7 +1890,7 @@ struct TodayView: View {
     @ViewBuilder private var senalesPage: some View {
         // Gap `space2` (8) entre «Por qué N» y la retícula (FER-878 follow-up: 12→8 para recuperar el alto
         // que sumó la leyenda de orígenes y el numeral más grande, y que SEÑALES quepa sin scroll).
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             if heroState == .verdict, !rulesRows.isEmpty { fiveRulesBlock }
             // Franja de carga (FER-705 · handoff «Carga»): ahora vive DENTRO de Señales, bajo las cinco
             // reglas, así que pertenece solo a esta página y NO viaja al Brief con el swipe. No respira ni
@@ -1912,8 +1912,8 @@ struct TodayView: View {
     /// Las marcas se dibujan asentadas siempre (sin secuencia de encendido en el sync).
     @ViewBuilder private var fiveRulesBlock: some View {
         let rows = rulesRows
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            HStack(spacing: NoopMetrics.space1) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            HStack(spacing: CenitMetrics.space1) {
                 Text("Why \(recoveryScore ?? 0)")
                     .groteskOverline().foregroundStyle(theme.inkTertiary)
                 // FER-878: la ⓘ que abre «Qué medimos» (la explicación deja de flotar en pantalla).
@@ -1923,7 +1923,7 @@ struct TodayView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("What we measure"))
-                Spacer(minLength: NoopMetrics.space2)
+                Spacer(minLength: CenitMetrics.space2)
                 Text("Length is weight")
                     .groteskOverline(small: true).foregroundStyle(theme.inkMuted)
             }
@@ -1953,7 +1953,7 @@ struct TodayView: View {
 
     /// El canalón entre Señales y Brief (FER-725): el hueco de papel que se ve al deslizar, para que las
     /// hojas no se lean pegadas. Solo visible en la transición (en reposo la hoja activa llena la pantalla).
-    private var pagerGutter: CGFloat { NoopMetrics.screenPadding + NoopMetrics.space2 }   // 32
+    private var pagerGutter: CGFloat { CenitMetrics.screenPadding + CenitMetrics.space2 }   // 32
 
     /// El pager horizontal de 2 páginas (FER-465, pulido FER-725). **Full-bleed:** cada página ocupa el
     /// ANCHO COMPLETO de la pantalla (el `.padding(.horizontal, -screenPadding)` cancela el margen del
@@ -1978,7 +1978,7 @@ struct TodayView: View {
             for (k, v) in new where pageHeights[k] != v { pageHeights[k] = v }
         }
         .frame(height: activeHeight, alignment: .top)
-        .padding(.horizontal, -NoopMetrics.screenPadding)
+        .padding(.horizontal, -CenitMetrics.screenPadding)
         // Anima el alto al CAMBIAR de página (valor discreto y estable), NUNCA con `activeHeight`:
         // ese alto se mide en el layout y tiembla sub-punto en cada pasada, así que animarlo implícito
         // reactiva el layout en bucle infinito → main thread al 99% y la pantalla se congela.
@@ -1990,7 +1990,7 @@ struct TodayView: View {
     /// `TodayPageHeightKey` para el «alto por página activa».
     private func pagerPageContent<P: View>(_ page: P, index: Int, fullWidth: CGFloat) -> some View {
         page
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .frame(width: fullWidth, alignment: .top)
             .background(GeometryReader { geo in
                 Color.clear.preference(key: TodayPageHeightKey.self, value: [index: geo.size.height])
@@ -2003,7 +2003,7 @@ struct TodayView: View {
     /// ancho entre palabras (`matchedGeometryEffect`). Tocar una pestaña anima el pager a su página.
     @Namespace private var tabUnderlineNS
     private var sectionTabs: some View {
-        HStack(spacing: NoopMetrics.cardPadding) {
+        HStack(spacing: CenitMetrics.cardPadding) {
             tabButton("Signals", page: 0)
             tabButton("Brief", page: 1)
             Spacer(minLength: 0)
@@ -2018,7 +2018,7 @@ struct TodayView: View {
                 pagerPage = page
             }
         } label: {
-            VStack(alignment: .leading, spacing: NoopMetrics.space1 + 1) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space1 + 1) {
                 Text(title)
                     .font(InstrumentoType.groteskTab)
                     .tracking(InstrumentoType.groteskTabTracking)
@@ -2056,7 +2056,7 @@ struct TodayView: View {
     /// (`StrandMotion.interactive`, omitida bajo Reduce Motion). El acento verde NO se usa en el chrome:
     /// la página activa es TINTA, no verde (handoff). Área tocable de 28pt.
     private var todayPageDots: some View {
-        HStack(spacing: NoopMetrics.space2) {
+        HStack(spacing: CenitMetrics.space2) {
             ForEach(0..<2, id: \.self) { i in
                 let active = (pagerPage ?? 0) == i
                 Button {
@@ -2103,7 +2103,7 @@ struct TodayView: View {
     private var syncHint: some View {
         let learning = !didFirstPullSync
         let bobbing = learning && !reduceMotion && hintBob
-        return VStack(spacing: NoopMetrics.space1) {
+        return VStack(spacing: CenitMetrics.space1) {
             Image(systemName: "chevron.down")
                 .font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
@@ -2138,7 +2138,7 @@ struct TodayView: View {
         case .verdict:
             verdictBody
         case .calibrating(let nights):
-            VStack(alignment: .center, spacing: NoopMetrics.gap) {
+            VStack(alignment: .center, spacing: CenitMetrics.gap) {
                 calibrationDots(nights: nights)   // FER-467: pulso vivo movido al encabezado de Métricas
                 Text(calibrationDetailCopy(nights: nights))
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
@@ -2147,7 +2147,7 @@ struct TodayView: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
         case .waiting:
-            VStack(alignment: .center, spacing: NoopMetrics.space2) {
+            VStack(alignment: .center, spacing: CenitMetrics.space2) {
                 if isSyncing {
                     // Modificador «descargando» (ex-`.downloading`, FER-286): el dial ya gira (FER-221);
                     // aquí el copy honesto de que el dato viene en camino.
@@ -2203,7 +2203,7 @@ struct TodayView: View {
                 // FER-285: en el Hero, una línea CORTA; la explicación con las horas reales de anoche
                 // vive en WhyVerdictSheet (la «i» de arriba la abre). El `confidenceNote` del engine se
                 // conserva (a11y / otros consumidores), pero el Hero ya no lo muestra entero.
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     Image(systemName: "exclamationmark.triangle.fill").font(StrandFont.glyph(.chevron))
                     Text("Short night · low confidence").font(StrandFont.caption)
                 }
@@ -2229,7 +2229,7 @@ struct TodayView: View {
     /// Token-only; reusa las frases localizadas del Detalle de recuperación.
     private var estimatedTodayMarker: some View {
         let dayKey = Repository.localDayKey(Date())
-        return HStack(spacing: NoopMetrics.space2) {
+        return HStack(spacing: CenitMetrics.space2) {
             Image(systemName: "applewatch").font(StrandFont.glyph(.chevron, weight: .semibold))
                 .accessibilityHidden(true)
             Text(RecoveryDetailScreen.coverageLabel(repo.recoveryPrimaryDrivers(dayKey))
@@ -2266,11 +2266,11 @@ struct TodayView: View {
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, NoopMetrics.gap)
-                .background(theme.verdict, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                .padding(.vertical, CenitMetrics.gap)
+                .background(theme.verdict, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
         }
         .buttonStyle(.plain)
-        .padding(.top, NoopMetrics.space1)
+        .padding(.top, CenitMetrics.space1)
     }
 
     /// Cero fuentes: ni strap visto, ni datos de Apple Health, ni permiso de Health concedido. (FER-364)
@@ -2284,12 +2284,12 @@ struct TodayView: View {
         VStack(spacing: 0) {
             sourceRow(icon: "heart.fill", tint: theme.dataSpO2,
                       title: "Connect Apple Health", subtitle: "the base of your data") { showDataSources = true }
-            Divider().overlay(theme.hairline).padding(.leading, NoopMetrics.cardPadding)
+            Divider().overlay(theme.hairline).padding(.leading, CenitMetrics.cardPadding)
             sourceRow(icon: "applewatch.side.right", tint: theme.inkTertiary,
                       title: "Pair WHOOP strap", subtitle: "sharpens the signal · optional") { model.scan() }
         }
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
         .shadow(color: theme.ink.opacity(0.08), radius: 8, y: 3) // token-exempt: sombra sutil <0.10
     }
@@ -2297,7 +2297,7 @@ struct TodayView: View {
     private func sourceRow(icon: String, tint: Color, title: LocalizedStringKey,
                            subtitle: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: NoopMetrics.gap) {
+            HStack(spacing: CenitMetrics.gap) {
                 Image(systemName: icon).font(StrandFont.glyph(.inline)).foregroundStyle(tint).frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
@@ -2306,7 +2306,7 @@ struct TodayView: View {
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(NoopMetrics.cardPadding)
+            .padding(CenitMetrics.cardPadding)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2315,19 +2315,19 @@ struct TodayView: View {
     /// Chip de procedencia — la base viene de Apple Health, dicho de frente. Tono de dato (azul de Apple
     /// Salud), AA sobre papel.
     private var appleBaseChip: some View {
-        HStack(spacing: NoopMetrics.space2) {
+        HStack(spacing: CenitMetrics.space2) {
             Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
             Text("Baseline · Apple Health").font(StrandFont.subhead)
         }
         .foregroundStyle(theme.dataSpO2)
-        .padding(.horizontal, NoopMetrics.space2).padding(.vertical, NoopMetrics.space1)
-        .background(theme.dataSpO2.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+        .padding(.horizontal, CenitMetrics.space2).padding(.vertical, CenitMetrics.space1)
+        .background(theme.dataSpO2.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
     }
 
     /// Night-dots de calibración: llenos en el dato (`dataRecovery`), vacíos en `hairline`.
     private func calibrationDots(nights: Int) -> some View {
         let total = Baselines.minNightsSeed
-        return HStack(spacing: NoopMetrics.space2) {
+        return HStack(spacing: CenitMetrics.space2) {
             ForEach(0..<total, id: \.self) { i in
                 Circle()
                     .fill(i < nights ? theme.dataRecovery : theme.hairline)
@@ -2356,9 +2356,9 @@ struct TodayView: View {
     private func appleHealthShortcut(onTap: @escaping () -> Void) -> some View {
         VStack(spacing: 0) {
             Rectangle().fill(theme.hairline).frame(height: 0.5)
-                .padding(.top, NoopMetrics.gap).padding(.bottom, NoopMetrics.gap)
+                .padding(.top, CenitMetrics.gap).padding(.bottom, CenitMetrics.gap)
             Button(action: onTap) {
-                HStack(spacing: NoopMetrics.space2) {
+                HStack(spacing: CenitMetrics.space2) {
                     Image(systemName: "heart.fill")
                         .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataSpO2)
                     Text("Got history in Apple Health? Connect it and your baseline starts ahead.")
@@ -2366,7 +2366,7 @@ struct TodayView: View {
                         .foregroundStyle(theme.inkSecondary)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: NoopMetrics.space2)
+                    Spacer(minLength: CenitMetrics.space2)
                     Image(systemName: "chevron.right")
                         .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
@@ -2390,9 +2390,9 @@ struct TodayView: View {
     /// nights" counter — so the two never read as the same thing twice. When Apple Health seeded the
     /// baseline, a tertiary note names the source so the early verdict never feels unexplained. (FER-105)
     private var calibrationConfidence: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
-            HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                     Image(systemName: "sparkles").font(StrandFont.glyph(.chevron))
                     // Compacto (FER-202): la procedencia «base Apple Salud» se pliega aquí, en la misma línea
                     // de la etiqueta, en vez de un tercer renglón aparte — recorta alto para que Hoy quepa.
@@ -2407,7 +2407,7 @@ struct TodayView: View {
                     }
                 }
                 .foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: NoopMetrics.space2)
+                Spacer(minLength: CenitMetrics.space2)
                 Text("\(ownNights) of \(Baselines.minNightsTrust) nights")
                     .font(StrandFont.captionNumber)
                     .foregroundStyle(theme.inkSecondary)
@@ -2424,7 +2424,7 @@ struct TodayView: View {
             }
             .frame(height: 5)
         }
-        .padding(.top, NoopMetrics.space2)
+        .padding(.top, CenitMetrics.space2)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Calibration confidence"))
         .accessibilityValue(Text(baselineFromApple
@@ -2507,13 +2507,13 @@ struct TodayView: View {
         // Se resuelve UNA vez por render (su bisección OKLab no debe correr por-tile).
         let positiveDelta = theme.positiveText
 
-        VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             // La retícula 2×4 del handoff: los MISMOS 8 vitales de hoy, cada tile con su punto de
             // origen, valor 21/700 en color y la línea delta explícita («+24 min vs promedio 7 d»).
             // Recuperación NO es tile: ya es el numeral del héroe.
             // FER-743: tile de 3 renglones sin sparkband (la tendencia 14 d vive en el Detalle) para que
             // la retícula 2×4 quepa en SEÑALES sin scroll.
-            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: NoopMetrics.space2) {
+            LazyVGrid(columns: tileGrid, alignment: .leading, spacing: CenitMetrics.space2) {
                 // Sueño — day-scoped (solo hoy); más es mejor dentro de lo razonable.
                 metricTile(TodayMetricTile(
                     label: "Sleep",
@@ -2612,12 +2612,12 @@ struct TodayView: View {
     /// el punto de cada tile: banda (verde) · Apple Salud (azul) · calculado en tu teléfono (gris). El
     /// texto en tinta terciaria 11 pt, igual que el sello de origen del header.
     private var originLegend: some View {
-        HStack(spacing: NoopMetrics.gap + 2) {
+        HStack(spacing: CenitMetrics.gap + 2) {
             legendItem(origin: .band, label: "band")
             legendItem(origin: .apple, label: "Apple Health source")
             legendItem(origin: .computed, label: "computed on your phone")
         }
-        .padding(.top, NoopMetrics.space1)   // FER-878 follow-up: 8→4, cabe sin scroll
+        .padding(.top, CenitMetrics.space1)   // FER-878 follow-up: 8→4, cabe sin scroll
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 0.5) }
         .accessibilityHidden(true)
     }
@@ -2637,8 +2637,8 @@ struct TodayView: View {
     }
 
     /// La rejilla de «Métricas de hoy»: dos columnas iguales → 8 tiles en 4 renglones de 2.
-    private let tileGrid = [GridItem(.flexible(), spacing: NoopMetrics.gap),
-                            GridItem(.flexible(), spacing: NoopMetrics.gap)]
+    private let tileGrid = [GridItem(.flexible(), spacing: CenitMetrics.gap),
+                            GridItem(.flexible(), spacing: CenitMetrics.gap)]
 
     /// Envuelve un tile en su `Button` tappable (todo el tile es objetivo) + feedback de pulsado, y abre
     /// el `MetricInfoSheet` de la métrica. El detalle trae la tendencia 14d (interino hasta «Cuerpo»).
@@ -2773,8 +2773,8 @@ struct TodayView: View {
         private var isEmpty: Bool { value == "—" }
 
         var body: some View {
-            VStack(alignment: .leading, spacing: NoopMetrics.space1 + 1) {
-                HStack(spacing: NoopMetrics.space1) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space1 + 1) {
+                HStack(spacing: CenitMetrics.space1) {
                     if let icon {
                         Image(systemName: icon)
                             .font(StrandFont.glyph(.chevron, weight: .medium))
@@ -2787,10 +2787,10 @@ struct TodayView: View {
                         .textCase(.uppercase)
                         .foregroundStyle(theme.inkTertiary)
                         .lineLimit(1).minimumScaleFactor(0.7)
-                    Spacer(minLength: NoopMetrics.space1)
+                    Spacer(minLength: CenitMetrics.space1)
                     if !isEmpty { SourceChip(source: source) }
                 }
-                HStack(alignment: .firstTextBaseline, spacing: NoopMetrics.space1) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
                     Text(value)
                         .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(isEmpty ? theme.inkDim : valueColor)
@@ -2802,17 +2802,17 @@ struct TodayView: View {
                 }
                 footer
             }
-            .padding(.horizontal, NoopMetrics.gap).padding(.vertical, NoopMetrics.space2)
+            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space2)
             // FER-743: piso de alto 72 (antes 88) y sin sparkband — el tile pasa a 3 renglones (etiqueta /
             // valor / delta explícito) para que SEÑALES quepa sin scroll; la tendencia 14 d vive en el
             // Detalle. Sigue siendo PISO, no tope: el tile crece con Dynamic Type grande.
             .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
             .background {
-                RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
                     .fill(theme.surface)
                     .shadow(color: theme.ink.opacity(0.05), radius: 1.5, x: 0, y: 1) // token-exempt: sombra sutil <0.10
             }
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
             .accessibilityElement(children: .combine)
         }
@@ -2848,7 +2848,7 @@ struct TodayView: View {
         let liftBorder: Color
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
-                .overlay(RoundedRectangle(cornerRadius: NoopMetrics.tileRadius, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
                     .strokeBorder(configuration.isPressed ? liftBorder : Color.clear, lineWidth: 1))
                 .scaleEffect(configuration.isPressed ? 1.03 : 1.0)
                 .animation(.spring(response: 0.3, dampingFraction: 0.72), value: configuration.isPressed)
@@ -3277,11 +3277,11 @@ private struct WhatWeMeasureSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("What we measure")
                     .font(StrandFont.title2)
                     .foregroundStyle(theme.ink)
-                VStack(alignment: .leading, spacing: NoopMetrics.space2) {
+                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                     Text("The five marks below add up to your recovery of \(score).")
                     Text("The longer a mark, the more that signal weighed today.")
                     Text("HRV (how your heart's timing varied overnight) carries the most weight, because it's the earliest sign of how recovered you are.")
@@ -3289,11 +3289,11 @@ private struct WhatWeMeasureSheet: View {
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(NoopMetrics.gap)
+                .padding(CenitMetrics.gap)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .instrumentoCard(.control, theme: theme)   // superficie + hairline, radio 12 (como Tendencias)
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { g in
                 Color.clear.preference(key: WhatWeMeasureHeightKey.self, value: g.size.height)

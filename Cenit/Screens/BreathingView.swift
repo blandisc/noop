@@ -96,7 +96,7 @@ struct BreathingView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 statusRow
                 paceSelector
@@ -106,9 +106,9 @@ struct BreathingView: View {
                 coherenceCard
                 if !live.bonded { hapticHint }
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -198,15 +198,15 @@ struct BreathingView: View {
         content()
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     // MARK: - Pace selector
 
     private var paceSelector: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("BREATHE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Choose a pace")
@@ -214,7 +214,7 @@ struct BreathingView: View {
                     .foregroundStyle(theme.ink)
             }
 
-            VStack(spacing: NoopMetrics.gap) {
+            VStack(spacing: CenitMetrics.gap) {
                 ForEach(Pace.allCases, id: \.self) { option in
                     paceRow(option)
                 }
@@ -227,7 +227,7 @@ struct BreathingView: View {
         return Button {
             pace = option
         } label: {
-            HStack(alignment: .center, spacing: NoopMetrics.gap) {
+            HStack(alignment: .center, spacing: CenitMetrics.gap) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(option.label)
                         .font(StrandFont.headline)
@@ -241,16 +241,16 @@ struct BreathingView: View {
                     .font(StrandFont.captionNumber)
                     .foregroundStyle(selected ? theme.dataHrv : theme.inkSecondary)
             }
-            .padding(NoopMetrics.cardPadding)
+            .padding(CenitMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 selected
                     ? theme.tint(theme.dataHrv)
                     : theme.surface,
-                in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .strokeBorder(selected ? theme.softStroke(theme.dataHrv) : theme.hairline, lineWidth: 1)
             )
         }
@@ -396,7 +396,7 @@ struct BreathingView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(running ? theme.critical : theme.ink,
-                                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
             .buttonStyle(.plain)
 
@@ -409,8 +409,8 @@ struct BreathingView: View {
                     .padding(.vertical, 14)
                     .padding(.horizontal, 14)
                     .background(theme.surface,
-                                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                                in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                         .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -423,7 +423,7 @@ struct BreathingView: View {
     // MARK: - Readouts
 
     private var readoutRow: some View {
-        HStack(spacing: NoopMetrics.gap) {
+        HStack(spacing: CenitMetrics.gap) {
             PulseReader(live.pulse) { p in
                 readoutTile(label: "Heart rate",
                             value: p.smoothedBpm.map { "\($0)" } ?? "—",
@@ -470,7 +470,7 @@ struct BreathingView: View {
                     .padding(.top, 4)
             }
         }
-        .frame(height: NoopMetrics.tileHeight)
+        .frame(height: CenitMetrics.tileHeight)
     }
 
     // MARK: - Coherence estimate

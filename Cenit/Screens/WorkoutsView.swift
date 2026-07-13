@@ -416,7 +416,7 @@ struct WorkoutsView: View {
             QuietButton("Add workout") { addWorkout() }.padding(.top, 4)
             QuietButton("Data Sources") { showDataSources = true }
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

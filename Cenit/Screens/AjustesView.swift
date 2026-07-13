@@ -127,7 +127,7 @@ private struct AjustesLanding: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
 
                 profileSection
@@ -138,9 +138,9 @@ private struct AjustesLanding: View {
 
                 footer
             }
-            .padding(.top, NoopMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -330,7 +330,7 @@ private struct AjustesLanding: View {
     // MARK: - More (A5: grouped drill rows with overlines + subtitles)
 
     private var moreSection: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             section("App") {
                 navRow("Units & format", subtitle: unitsSubtitle) { showUnits = true }
                 divider
@@ -680,7 +680,7 @@ private struct ProfileWheelSheet: View {
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -689,7 +689,7 @@ private struct ProfileWheelSheet: View {
             wheelBody
                 .frame(maxWidth: .infinity)
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
         .fittedSheet()
@@ -778,7 +778,7 @@ private struct MaxHRSheet: View {
     private var autoBpm: Int { Int((208 - 0.7 * Double(profile.age)).rounded()) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Max heart rate").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -815,7 +815,7 @@ private struct MaxHRSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
         .fittedSheet()
@@ -851,7 +851,7 @@ private struct StepsCalibrationSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Steps estimate").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -911,7 +911,7 @@ private struct StepsCalibrationSheet: View {
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
         .fittedSheet()
@@ -930,7 +930,7 @@ private struct StepTicksSheet: View {
     @EnvironmentObject private var profile: ProfileStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Profile").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Steps calibration").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -953,7 +953,7 @@ private struct StepTicksSheet: View {
                 .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
         .fittedSheet()
@@ -973,7 +973,7 @@ private struct AdvancedSheet: View {
     @AppStorage(PuffinFrameRecorder.enabledKey) private var puffinCapture = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Advanced").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("WHOOP 5/MG probes").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -1008,7 +1008,7 @@ private struct AdvancedSheet: View {
                 }
             }
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
         .fittedSheet()
@@ -1031,7 +1031,7 @@ private struct UnidadesSheet: View {
     @AppStorage(UnitPrefs.temperatureKey) private var temperatureRaw = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Display").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Units & format").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -1063,7 +1063,7 @@ private struct UnidadesSheet: View {
                 }
             }
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.paper.ignoresSafeArea())
         .fittedSheet()
@@ -1080,7 +1080,7 @@ private struct StrapLogSheet: View {
     @Environment(LiveState.self) var live
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Your strap").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Strap log").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -1120,7 +1120,7 @@ private struct StrapLogSheet: View {
                 }
             }
         }
-        .padding(NoopMetrics.screenPadding)
+        .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
         .presentationDetents([.medium, .large])

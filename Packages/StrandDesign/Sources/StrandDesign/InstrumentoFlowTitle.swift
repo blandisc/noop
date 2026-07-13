@@ -36,12 +36,12 @@ public struct InstrumentoFlowTitle: View {
 
 #if DEBUG
 #Preview("Instrumento · flow title") {
-    VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+    VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
         InstrumentoFlowTitle(overline: Text(verbatim: "TODAY'S ROUTINE"), Text(verbatim: "Pierna"))
         InstrumentoFlowTitle(Text(verbatim: "My workouts"))
     }
     .frame(width: 390, alignment: .leading)
-    .padding(NoopMetrics.screenPadding)
+    .padding(CenitMetrics.screenPadding)
     .background(InstrumentoTheme.base.paper)
     .instrumentoTheme(.base)
 }

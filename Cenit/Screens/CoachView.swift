@@ -40,7 +40,7 @@ struct CoachView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Coach").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Text("Pregúntale a tus datos").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -59,7 +59,7 @@ struct CoachView: View {
                     setupCard
                 }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -87,8 +87,8 @@ struct CoachView: View {
                 .accessibilityLabel("Let the coach use my data")
         }
         .padding(12)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairlineStrong, lineWidth: 1))
     }
 
@@ -412,7 +412,7 @@ struct CoachView: View {
                 .frame(width: 44, height: 36)
                 .foregroundStyle(theme.paper)
                 .background(sendDisabled ? theme.inkTertiary : theme.ink,
-                            in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)) // token-exempt: fondo condicional
+                            in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)) // token-exempt: fondo condicional
             }
             .buttonStyle(.plain)
             .disabled(sendDisabled)
@@ -445,8 +445,8 @@ struct CoachView: View {
         content()
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairlineStrong, lineWidth: 1))
     }
 
@@ -459,7 +459,7 @@ struct CoachView: View {
                 .frame(minWidth: 90)
                 .padding(.horizontal, 16).padding(.vertical, 9)
                 .background(disabled ? theme.inkTertiary : theme.ink,
-                            in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(disabled)

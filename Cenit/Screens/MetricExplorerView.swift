@@ -124,7 +124,7 @@ struct MetricExplorerView: View {
                     }
                 }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
@@ -137,7 +137,7 @@ struct MetricExplorerView: View {
     /// One category: a quiet overline + title + count, then its rows directly on the paper, divided by
     /// hairlines (no card-in-card — Instrumento rule 3).
     private func categorySection(_ category: String, metrics: [MetricDescriptor]) -> some View {
-        VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Category").instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -201,7 +201,7 @@ private struct MetricRow: View {
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .fill(theme.surface)
                 Image(systemName: metric.icon)
                     .font(StrandFont.glyph(.inline, weight: .medium))
@@ -316,7 +316,7 @@ struct MetricDetailView: View {
                     correlationBlock
                 }
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
@@ -491,7 +491,7 @@ struct MetricDetailView: View {
 
     private var correlationBlock: some View {
         let rows = correlationCache
-        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("What correlates").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Pearson r over the visible window · |r| ≥ 0.30, n ≥ 10")

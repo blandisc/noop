@@ -211,7 +211,7 @@ struct RoutineEditorScreen: View {
                     .foregroundStyle(theme.inkTertiary)
             }
         }
-        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.horizontal, CenitMetrics.screenPadding)
     }
 
     // MARK: - Editor (title + meta + per-exercise tables + pinned CTA)
@@ -235,10 +235,10 @@ struct RoutineEditorScreen: View {
         ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 if firstOfGroup(idx) {
                     Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        .plainRow(top: NoopMetrics.sectionGap, bottom: 2)
+                        .plainRow(top: CenitMetrics.sectionGap, bottom: 2)
                 }
                 exerciseHeader(idx)
-                    .plainRow(top: firstOfGroup(idx) || idx == 0 ? NoopMetrics.gap : NoopMetrics.sectionGap)
+                    .plainRow(top: firstOfGroup(idx) || idx == 0 ? CenitMetrics.gap : CenitMetrics.sectionGap)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         if !locked {
                             Button { duplicate(idx) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
@@ -257,7 +257,7 @@ struct RoutineEditorScreen: View {
                 }
                 if !locked { addSetRow(idx).plainRow(top: 4) }
             }
-        if !locked { addExerciseRow.plainRow(top: NoopMetrics.sectionGap, bottom: NoopMetrics.screenPadding) }
+        if !locked { addExerciseRow.plainRow(top: CenitMetrics.sectionGap, bottom: CenitMetrics.screenPadding) }
     }
 
     // MARK: - Drag reorder (6a, FER-841)
@@ -299,7 +299,7 @@ struct RoutineEditorScreen: View {
             // screen margin moves INSIDE as padding and a paper fill spans edge-to-edge — so the lifted
             // snapshot is paper, hiding the platter. Resting rows look identical (List bg is paper too).
             compactBlock(block)
-                .padding(.horizontal, NoopMetrics.screenPadding)
+                .padding(.horizontal, CenitMetrics.screenPadding)
                 .padding(.vertical, 5)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(theme.paper)
@@ -313,11 +313,11 @@ struct RoutineEditorScreen: View {
                 .frame(maxWidth: .infinity, alignment: .center).frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .plainRow(top: NoopMetrics.gap, bottom: 2)
+        .plainRow(top: CenitMetrics.gap, bottom: 2)
         Text("Drop to place. The sets come back when you let go.")
             .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             .frame(maxWidth: .infinity, alignment: .center)
-            .plainRow(top: 0, bottom: NoopMetrics.screenPadding)
+            .plainRow(top: 0, bottom: CenitMetrics.screenPadding)
     }
 
     /// The compact card the drag lifts: thumb + name + «N sets · top kg» per exercise; a superset adds
@@ -344,8 +344,8 @@ struct RoutineEditorScreen: View {
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(theme.paper, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+        .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 
     /// «3 sets · 90 kg» — work sets + the top work weight (weight omitted when none is set).
@@ -424,7 +424,7 @@ struct RoutineEditorScreen: View {
 
     private func exerciseHeader(_ idx: Int) -> some View {
         let item = items[idx]
-        return VStack(alignment: .leading, spacing: NoopMetrics.gap) {
+        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack(spacing: 11) {
                 Button { detailExercise = item.exercise } label: {
                     ExerciseThumbView(exercise: item.exercise, side: 40)
@@ -636,8 +636,8 @@ struct RoutineEditorScreen: View {
             .focused($focusedCell, equals: id)
             .disabled(locked)
             .frame(width: width, height: 31)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: NoopMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 
     private func addSetRow(_ idx: Int) -> some View {
@@ -680,10 +680,10 @@ struct RoutineEditorScreen: View {
         Button { start() } label: {
             Text(ctaTitle).font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                 .foregroundStyle(theme.paper).frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, NoopMetrics.screenPadding)
+        .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, 8)
         .padding(.bottom, 8)
         .background(theme.paper)
@@ -1001,8 +1001,8 @@ private extension View {
         self
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: top, leading: NoopMetrics.screenPadding,
-                                      bottom: bottom, trailing: NoopMetrics.screenPadding))
+            .listRowInsets(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
+                                      bottom: bottom, trailing: CenitMetrics.screenPadding))
     }
 }
 #endif

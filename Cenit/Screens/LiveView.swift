@@ -124,10 +124,10 @@ struct LiveView: View {
                     disconnectedState
                 }
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             // Breathing room below the sheet's grabber so the title isn't cramped against it (FER-192).
             .padding(.top, monitorOnly ? 28 : 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             // Measure the content height so the sheet detent fits it exactly (FER-196).
             .background(GeometryReader { proxy in

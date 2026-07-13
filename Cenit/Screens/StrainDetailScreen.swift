@@ -60,12 +60,12 @@ struct StrainDetailScreen: View {
                         heroFlat
                         ChartWell(theme).loading(height: 160).padding(.top, 22)
                     }
-                    .padding(NoopMetrics.screenPadding)
+                    .padding(CenitMetrics.screenPadding)
                 } else if model.hasData {
                     if shownToday != nil {
                         heroField
                     } else {
-                        heroFlat.padding(NoopMetrics.screenPadding)
+                        heroFlat.padding(CenitMetrics.screenPadding)
                     }
                     if infoOpen { whatWeMeasureCard }
                     seccion(String(localized: "How today added up")) { howTodayContent }
@@ -80,7 +80,7 @@ struct StrainDetailScreen: View {
                         sourceFooter
                     }
                 } else {
-                    heroFlat.padding(NoopMetrics.screenPadding)
+                    heroFlat.padding(CenitMetrics.screenPadding)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -289,7 +289,7 @@ struct StrainDetailScreen: View {
         .padding(.horizontal, 8)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                 .fill(band.isActive ? theme.tint(theme.dataStrain) : Color.clear)
         )
     }

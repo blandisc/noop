@@ -38,9 +38,9 @@ struct ShareReceiptScreen: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
@@ -147,8 +147,8 @@ struct ShareCardView: View {
             }
         }
         .padding(20)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
     }
 
     private struct Metric { let label: LocalizedStringKey; let value: String; let unit: String?; let accent: Color? }

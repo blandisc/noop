@@ -41,9 +41,9 @@ struct PlatesScreen: View {
                 Rectangle().fill(theme.hairline).frame(height: 1)
                 warmupSection
             }
-            .padding(.horizontal, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 18)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -93,10 +93,10 @@ struct PlatesScreen: View {
             .padding(.horizontal, 12).padding(.vertical, 10)
             .background(
                 theme.tint(theme.warning),
-                in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                     .strokeBorder(theme.softStroke(theme.warning), lineWidth: 1)
             )
             .overlay(alignment: .leading) { Rectangle().fill(theme.warning).frame(width: 2.5) }
@@ -277,7 +277,7 @@ struct PlatesScreen: View {
                 .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                 .foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.ctaRadius, style: .continuous))
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         }
         .buttonStyle(.plain).padding(.top, 6)
     }

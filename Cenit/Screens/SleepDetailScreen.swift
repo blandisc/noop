@@ -97,9 +97,9 @@ struct SleepDetailScreen: View {
                         heroFlat
                         ChartWell(theme).loading(height: 160).padding(.top, 22)
                     }
-                    .padding(NoopMetrics.screenPadding)
+                    .padding(CenitMetrics.screenPadding)
                 } else {
-                    heroFlat.padding(NoopMetrics.screenPadding)
+                    heroFlat.padding(CenitMetrics.screenPadding)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -430,7 +430,7 @@ struct SleepDetailScreen: View {
             }
         }
         .frame(height: 30)
-        .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Sleep stages: deep \(pct(s.deep, s.total)) percent, light \(pct(s.light, s.total)) percent, REM \(pct(s.rem, s.total)) percent, awake \(pct(s.awake, s.total)) percent"))
     }
@@ -928,7 +928,7 @@ struct SleepDetailScreen: View {
                 }
                 .padding(.top, 4)
             } else {
-                ChartWell(theme, icon: "moon.zzz", cornerRadius: NoopMetrics.cardRadius)
+                ChartWell(theme, icon: "moon.zzz", cornerRadius: CenitMetrics.cardRadius)
                     .empty(text: "Not enough nights yet to draw a trend.")
             }
         }

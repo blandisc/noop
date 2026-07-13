@@ -44,7 +44,7 @@ struct RestLiveActivity: Widget {
 // MARK: - Live Activity metrics
 
 /// The card's own scale now lives in the design system as `WidgetMetrics` (auditoría jul-2026, H5) —
-/// FIXED Dynamic-Island / Lock-Screen geometry, exempt from Dynamic Type, never `NoopMetrics`. The
+/// FIXED Dynamic-Island / Lock-Screen geometry, exempt from Dynamic Type, never `CenitMetrics`. The
 /// height discipline (≤160 pt) is documented at the token. This alias keeps the tight `M.*` call sites.
 private typealias LiveActivityMetrics = WidgetMetrics
 

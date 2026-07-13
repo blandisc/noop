@@ -55,15 +55,15 @@ struct MisRutinasScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: NoopMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 if loaded {
                     if routines.isEmpty { emptyState } else { misRutinas }
                 }
             }
             .padding(.top, 20)
-            .padding(.horizontal, NoopMetrics.screenPadding)
-            .padding(.bottom, NoopMetrics.screenPadding)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -459,8 +459,8 @@ struct MisRutinasScreen: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 18).padding(.vertical, 14)
-        .background(theme.ink, in: RoundedRectangle(cornerRadius: NoopMetrics.cardRadius, style: .continuous))
-        .padding(.horizontal, NoopMetrics.screenPadding)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .task(id: d.id) {
@@ -671,9 +671,9 @@ private extension View {
     func dropHighlight(_ targeted: Bool, fill: Color, stroke: Color) -> some View {
         self
             .padding(.horizontal, targeted ? 10 : 0)
-            .background(targeted ? fill : .clear, in: RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous))   // token-exempt: fondo condicional
+            .background(targeted ? fill : .clear, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))   // token-exempt: fondo condicional
             .overlay { if targeted {
-                RoundedRectangle(cornerRadius: NoopMetrics.controlRadius, style: .continuous).strokeBorder(stroke, lineWidth: 1.5) } }
+                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous).strokeBorder(stroke, lineWidth: 1.5) } }
             .animation(.snappy, value: targeted)
             .contentShape(Rectangle())
     }

@@ -89,7 +89,7 @@ struct WorkoutDetailScreen: View {
                 originBlock
                 methodNote
             }
-            .padding(NoopMetrics.screenPadding)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .task(id: row.startTs) {
@@ -207,7 +207,7 @@ struct WorkoutDetailScreen: View {
                 }
             }
             .frame(height: 34)
-            .clipShape(RoundedRectangle(cornerRadius: NoopMetrics.chipRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(zonesA11y(percents))
             HStack(spacing: 0) {
