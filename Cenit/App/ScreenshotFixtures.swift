@@ -25,7 +25,8 @@ enum ScreenshotFixtures {
     static func activeState() -> String? {
         guard let raw = UserDefaults.standard.string(forKey: "noop.fixture")?
             .trimmingCharacters(in: .whitespaces).lowercased(),
-              raw == "primed" || raw == "strained" || raw == "calibrating" else { return nil }
+              ["primed", "strained", "balanced", "rundown", "insufficient",
+               "calibrating", "downloading"].contains(raw) else { return nil }
         return raw
     }
 
@@ -58,6 +59,40 @@ enum ScreenshotFixtures {
             return
         }
 
+        // FER · insufficient (numeral en TINTA + «Not enough context for a verdict»): hay recovery de HOY
+        // (→ heroState `.verdict`) pero SIN historia previa, así que ninguna señal se puede z-scorear y
+        // `synthesize` cae en `.insufficient`. Una sola fila (hoy).
+        if state == "insufficient" {
+            let dayKey = Repository.localDayKey(today)
+            model.repo.setDashboard(days: [DailyMetric(
+                day: dayKey, totalSleepMin: 440, efficiency: 0.9,
+                deepMin: 95, remMin: 110, lightMin: 235, disturbances: 4,
+                restingHr: 50, avgHrv: 55, recovery: 58, strain: 9,
+                exerciseCount: 0, spo2Pct: 98, skinTempDevC: 0.05,
+                respRateBpm: 14.5, steps: 6000, activeKcalEst: 450)])
+            return
+        }
+
+        // FER · downloading («Downloading / your night is on its way»): un offload en curso
+        // (`live.backfilling`) sin recovery de HOY todavía → `heroState` cae en `.waiting` con el
+        // modificador de descarga. Sembramos noches PREVIAS con recovery (para que `fullyLoaded` publique)
+        // pero NINGUNA fila de hoy, y prendemos el flag de backfill.
+        if state == "downloading" {
+            model.live.backfilling = true
+            var days: [DailyMetric] = []
+            for ago in stride(from: 6, through: 1, by: -1) {   // ayer … −6, sin hoy
+                let dayKey = Repository.localDayKey(cal.date(byAdding: .day, value: -ago, to: today)!)
+                days.append(DailyMetric(
+                    day: dayKey, totalSleepMin: 440, efficiency: 0.9,
+                    deepMin: 95, remMin: 110, lightMin: 235, disturbances: 4,
+                    restingHr: 51, avgHrv: 56, recovery: 66, strain: 9,
+                    exerciseCount: 0, spo2Pct: 97.5, skinTempDevC: 0.05,
+                    respRateBpm: 14.5, steps: 7800, activeKcalEst: 450))
+            }
+            model.repo.setDashboard(days: days)
+            return
+        }
+
         let primed = (state == "primed")
 
         // Small, deterministic per-day wobble so trends/sparklines look real (no RNG → reproducible).
@@ -84,9 +119,17 @@ enum ScreenshotFixtures {
             var steps = 8000 + Int(wobble(idx, 1500, 0.2))
 
             if isToday {
-                if primed {
+                switch state {
+                case "primed":
+                    // HRV muy arriba (z≈+2.7 good) + RHR bajo (good) + carga en el sweet-spot ⇒ good≥2.
                     hrv = 72; rhr = 46; recovery = 82; strain = 9; sleepMin = 445; spo2 = 98; steps = 9240
-                } else {
+                case "balanced":
+                    // Todo en rango normal (HRV/RHR neutral) — una sola señal good (carga) ⇒ `.balanced`.
+                    hrv = 56; rhr = 52; recovery = 66; strain = 10; sleepMin = 440; spo2 = 98; steps = 8100
+                case "rundown":
+                    // Dos señales de recuperación abajo a la vez (HRV suprimida + RHR elevada) ⇒ `.rundown`.
+                    hrv = 33; rhr = 60; recovery = 28; strain = 12; sleepMin = 388; spo2 = 96; steps = 3400
+                default: // "strained": exactamente UNA señal mala (HRV) ⇒ `.strained`.
                     hrv = 33; rhr = 52; recovery = 45; strain = 11; sleepMin = 402; spo2 = 97; steps = 4180
                 }
             }
