@@ -17,7 +17,8 @@ final class StrengthSessionSnapshotTests: XCTestCase {
             id: "r1", exerciseId: "bench", name: "Press de banca", type: .weightReps,
             restSeconds: 90, restMode: .heartRate, hrRestReference: .restingMargin, hrRestValue: 12,
             lastWeightKg: 57.5, lastReps: 8, lastTimeS: nil, lastDistanceM: nil,
-            sets: [set1, set2], currentSet: 1, skipped: false, raiseOptedOut: true)
+            sets: [set1, set2], currentSet: 1, skipped: false, raiseOptedOut: true,
+            supersetGroup: 1)
         return StrengthSessionSnapshot(
             id: "sess-1", routineId: "push-a", routineName: "Push A", startTs: 900,
             runs: [run], currentIndex: 0,
@@ -60,5 +61,24 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("raiseOptedOut"))
         let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
         XCTAssertNil(decoded.runs.first?.raiseOptedOut)
+    }
+
+    /// FER-931: the superset grouping rides the snapshot so a crash mid-superset restores the same
+    /// A1/A2 pairing rather than falling back to standalone.
+    func testPreservesSupersetGroup() throws {
+        let decoded = try JSONDecoder().decode(
+            StrengthSessionSnapshot.self, from: try JSONEncoder().encode(sample()))
+        XCTAssertEqual(decoded.runs.first?.supersetGroup, 1)
+    }
+
+    /// FER-931: a snapshot persisted BEFORE the field existed (no `supersetGroup` key) still decodes —
+    /// absent means standalone (nil), never a false grouping.
+    func testPreFer931SnapshotDecodesWithoutSupersetGroup() throws {
+        var snap = sample()
+        snap.runs[0].supersetGroup = nil
+        let data = try JSONEncoder().encode(snap)   // optional nil → key absent, like a pre-931 snapshot
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("supersetGroup"))
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertNil(decoded.runs.first?.supersetGroup)
     }
 }

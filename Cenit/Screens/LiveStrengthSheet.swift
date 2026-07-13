@@ -160,6 +160,11 @@ final class StrengthSessionModel: ObservableObject {
         /// «Volver a X» was tapped for this exercise (FER-835). Persisted with the session at save so
         /// the progression cycle treats it as neither hit nor miss; carried by the crash snapshot.
         var raiseOptedOut: Bool = false
+        /// Superset grouping (FER-931), seeded from `RoutineExercise.supersetGroup`: the same `Int`
+        /// within a session = one superset (round-robin, rest only after the last member). `nil` =
+        /// standalone. `addExercise`/`replaceExercise` always seed `nil` — an ad-hoc/swapped exercise
+        /// is never auto-grouped into a superset it wasn't authored into.
+        var supersetGroup: Int? = nil
 
         /// This exercise's rest as the shared `RestConfig` shape (FER-715), from its four flat fields.
         var restConfig: RestConfig {
@@ -264,6 +269,45 @@ final class StrengthSessionModel: ObservableObject {
         return nil
     }
 
+    // MARK: Superset (FER-931 — the grouping was authored in the routine; here it only reads it)
+
+    /// The consecutive span of run indices sharing `index`'s (non-nil) `supersetGroup` — the adjacency +
+    /// equality rule mirrors `RoutineEditorScreen.reorderBlocks` (that one only scans forward from a block
+    /// start; this one spans both directions since `index` can be any member). `[index]` when the run has
+    /// no group or the span is a single exercise — so standalone exercises are always their own one-member
+    /// "group" and every call site can treat `count <= 1` as "not a superset".
+    func supersetMembers(at index: Int) -> [Int] {
+        guard runs.indices.contains(index), let g = runs[index].supersetGroup else { return [index] }
+        var lo = index
+        while lo - 1 >= 0, runs[lo - 1].supersetGroup == g { lo -= 1 }
+        var hi = index
+        while hi + 1 < runs.count, runs[hi + 1].supersetGroup == g { hi += 1 }
+        return Array(lo...hi)
+    }
+
+    /// Whether the run at `index` is part of a real (2+) superset span.
+    func isInSuperset(_ index: Int) -> Bool { supersetMembers(at: index).count > 1 }
+
+    /// «A», «B» … by order of appearance of the group among `runs` — the letter half of the A1/A2 badge.
+    /// nil for a standalone exercise.
+    func supersetLetter(for index: Int) -> String? {
+        guard runs.indices.contains(index), let g = runs[index].supersetGroup else { return nil }
+        var seen: [Int] = []
+        for run in runs {
+            if let rg = run.supersetGroup, !seen.contains(rg) { seen.append(rg) }
+        }
+        guard let ordinal = seen.firstIndex(of: g) else { return nil }
+        let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        let idx = letters.index(letters.startIndex, offsetBy: ordinal % letters.count)
+        return String(letters[idx])
+    }
+
+    /// How many `.work` series the run at `index` carries — the "rounds" a superset member cycles through.
+    func supersetRounds(at index: Int) -> Int {
+        guard runs.indices.contains(index) else { return 0 }
+        return runs[index].sets.filter { $0.kind == .work }.count
+    }
+
     // MARK: Editing the current set
 
     func bumpWeight(byKg delta: Double) { mutateCurrentSet { $0.weightKg = max(0, $0.weightKg + delta) } }
@@ -352,9 +396,30 @@ final class StrengthSessionModel: ObservableObject {
         if timerStart != nil { stopSetTimer(now: now) }
         let i = runs[currentIndex].currentSet
         guard runs[currentIndex].sets.indices.contains(i) else { return }
+        let justCompletedKind = runs[currentIndex].sets[i].kind
         let doneTs = Int(now.timeIntervalSince1970)
         runs[currentIndex].sets[i].done = true
         runs[currentIndex].sets[i].doneTs = doneTs
+
+        // FER-931: superset round-robin — A1 done moves straight to A2's same round, no rest in between.
+        // Warm-ups don't participate; only `.work` cycles the group. A standalone exercise (group of one)
+        // takes this branch's condition to false immediately, so its rest/advance is byte-for-byte the
+        // pre-931 path below.
+        let group = supersetMembers(at: currentIndex)
+        if justCompletedKind == .work, group.count > 1,
+           let posInGroup = group.firstIndex(of: currentIndex), posInGroup < group.count - 1 {
+            let nextMember = group[posInGroup + 1]
+            if !runs[nextMember].skipped, runs[nextMember].sets.indices.contains(i),
+               !runs[nextMember].sets[i].done, runs[nextMember].sets[i].kind == .work {
+                phase = .capturing
+                clearRest()
+                timerStart = nil
+                currentIndex = nextMember
+                runs[nextMember].currentSet = i
+                return
+            }
+        }
+
         // FER-715: rest is resolved per set — the active set's own override, else the exercise's default.
         let rest = runs[currentIndex].effectiveRest(forSet: i)
         computeRestTarget(rest: rest, doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
@@ -601,6 +666,19 @@ final class StrengthSessionModel: ObservableObject {
 
     /// Move focus to the next not-done set: rest of the current exercise, then later non-skipped exercises.
     private func advanceToNextPending(fromStart: Bool = false) {
+        // FER-931: a group's last member just rested — the next round belongs to the FIRST member, not a
+        // continuation of the last one. Priority: the group's first member's earliest pending round, before
+        // falling through to the plain "rest of this exercise" / "scan the plan" scan below. A standalone
+        // exercise's `supersetMembers` is `[currentIndex]` (count 1), so this is a no-op for it.
+        if !fromStart, runs.indices.contains(currentIndex), !runs[currentIndex].skipped {
+            let group = supersetMembers(at: currentIndex)
+            if group.count > 1, let first = group.first, runs.indices.contains(first),
+               !runs[first].skipped, let next = runs[first].sets.firstIndex(where: { !$0.done }) {
+                currentIndex = first
+                runs[first].currentSet = next
+                return
+            }
+        }
         // Current exercise first (a set after the current one), unless we were told to scan from scratch.
         if !fromStart, runs.indices.contains(currentIndex), !runs[currentIndex].skipped {
             if let next = runs[currentIndex].sets.firstIndex(where: { !$0.done }) {
@@ -679,7 +757,8 @@ final class StrengthSessionModel: ObservableObject {
                             rest: s.rest, kind: s.kind)
                     },
                     currentSet: run.currentSet, skipped: run.skipped,
-                    raiseOptedOut: run.raiseOptedOut ? true : nil)
+                    raiseOptedOut: run.raiseOptedOut ? true : nil,
+                    supersetGroup: run.supersetGroup)
             },
             currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
@@ -703,7 +782,8 @@ final class StrengthSessionModel: ObservableObject {
                                        rest: s.rest, kind: s.kind)
                         },
                         currentSet: r.currentSet, skipped: r.skipped,
-                        raiseOptedOut: r.raiseOptedOut ?? false)
+                        raiseOptedOut: r.raiseOptedOut ?? false,
+                        supersetGroup: r.supersetGroup)
         }
         let model = StrengthSessionModel(id: snap.id, routineId: snap.routineId,
                                          routineName: snap.routineName, startTs: snap.startTs, runs: runs)
@@ -764,7 +844,8 @@ final class StrengthSessionModel: ObservableObject {
                                lastWeightKg: lastWeight, lastReps: lastReps,
                                lastTimeS: last?.timeS.map { Int($0) }, lastDistanceM: last?.distanceM,
                                sets: sets, currentSet: 0, skipped: false,
-                               proposedRaise: type == .weightReps ? slot.raise : nil)
+                               proposedRaise: type == .weightReps ? slot.raise : nil,
+                               supersetGroup: slot.re.supersetGroup)
         }
         return StrengthSessionModel(routineId: routineId, routineName: routineName,
                                     startTs: startTs, runs: runs)
@@ -1085,25 +1166,54 @@ struct LiveStrengthSheet: View {
         return .upcoming
     }
 
-    /// The vertical rail: a 2px hairline (teal for a superset span — the color only, FER-931 owns the
-    /// grouping logic) with one dot per exercise. Purely decorative — `accessibilityHidden`, the row's
-    /// own label carries the state to VoiceOver.
-    private func railColumn(_ state: RailState, superset: Bool) -> some View {
+    /// The vertical rail: a 2px hairline (teal for a superset span, `theme.dataHrv`) with one dot per
+    /// exercise — or, inside a superset span, an «A1»/«A2» badge in place of the plain dot (FER-931).
+    /// Purely decorative — `accessibilityHidden`, the row's own label carries the state to VoiceOver.
+    private func railColumn(_ state: RailState, superset: Bool, badgeText: String? = nil) -> some View {
         ZStack {
             Rectangle().fill(superset ? theme.dataHrv : theme.hairlineStrong).frame(width: 2)
-            Circle()
-                .fill(state == .active ? theme.dataStrain : state == .done ? theme.inkDim : theme.hairlineStrong)
-                .frame(width: state == .active ? 14 : 11, height: state == .active ? 14 : 11)
-                .opacity(state == .done ? StrandOpacity.dim : 1)
-                .overlay {
-                    if state == .active {
-                        Circle().strokeBorder(theme.dataStrain.opacity(0.3), lineWidth: 3)
-                            .frame(width: 22, height: 22)
+            if let badgeText {
+                Circle()
+                    .fill(theme.dataHrv)
+                    .frame(width: state == .active ? 20 : 17, height: state == .active ? 20 : 17)
+                    .overlay {
+                        Text(badgeText).font(StrandFont.footnote).fontWeight(.semibold)
+                            .foregroundStyle(theme.paper)
                     }
-                }
+                    .opacity(state == .done ? StrandOpacity.dim : 1)
+            } else {
+                Circle()
+                    .fill(state == .active ? theme.dataStrain : state == .done ? theme.inkDim : theme.hairlineStrong)
+                    .frame(width: state == .active ? 14 : 11, height: state == .active ? 14 : 11)
+                    .opacity(state == .done ? StrandOpacity.dim : 1)
+                    .overlay {
+                        if state == .active {
+                            Circle().strokeBorder(theme.dataStrain.opacity(0.3), lineWidth: 3)  // token-exempt: decorative active-node halo ring alpha
+                                .frame(width: 22, height: 22)
+                        }
+                    }
+            }
         }
         .frame(width: 14)
         .accessibilityHidden(true)
+    }
+
+    /// The «A1»/«A2» badge text for the run at `ei`: its superset letter + (position in the span + 1).
+    /// nil when the run isn't in a real superset (railColumn then falls back to the plain dot).
+    private func supersetBadgeText(ei: Int) -> String? {
+        guard session.isInSuperset(ei) else { return nil }
+        let members = session.supersetMembers(at: ei)
+        guard let letter = session.supersetLetter(for: ei),
+              let position = members.firstIndex(of: ei) else { return nil }
+        return "\(letter)\(position + 1)"
+    }
+
+    /// «SUPERSERIE» tag, teal, next to a run's name when it's part of a real superset span (FER-931).
+    @ViewBuilder private func supersetTag(_ ei: Int) -> some View {
+        if session.isInSuperset(ei) {
+            Text("SUPERSET").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(theme.dataHrv)
+        }
     }
 
     /// A finished exercise, compressed to one line: dimmed name + «carga × reps·reps·reps» + a green
@@ -1115,9 +1225,12 @@ struct LiveStrengthSheet: View {
             }
         } label: {
             HStack(spacing: 12) {
-                railColumn(.done, superset: false)
-                Text(run.name).font(StrandFont.body).foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                railColumn(.done, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei))
+                VStack(alignment: .leading, spacing: 1) {
+                    supersetTag(ei)
+                    Text(run.name).font(StrandFont.body).foregroundStyle(theme.inkTertiary).lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Text(doneDetailText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
                     .lineLimit(1)
                 Image(systemName: "checkmark.circle.fill")
@@ -1129,7 +1242,7 @@ struct LiveStrengthSheet: View {
         .buttonStyle(.plain)
         .opacity(StrandOpacity.dim)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("\(run.name), done, \(doneDetailText(run))"))
+        .accessibilityLabel(Text(supersetAccessibilityLabel(ei: ei, base: "\(run.name), done, \(doneDetailText(run))")))
         .accessibilityHint(Text("Double tap to reopen and correct a set"))
     }
 
@@ -1140,9 +1253,12 @@ struct LiveStrengthSheet: View {
             withAnimation(.snappy(duration: 0.22)) { session.select(exerciseIndex: ei, setIndex: 0) }
         } label: {
             HStack(spacing: 12) {
-                railColumn(.upcoming, superset: false)
-                Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink)
-                    .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                railColumn(.upcoming, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei))
+                VStack(alignment: .leading, spacing: 1) {
+                    supersetTag(ei)
+                    Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Text(prescriptionText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
                     .lineLimit(1)
             }
@@ -1151,8 +1267,20 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("\(run.name), coming up, \(prescriptionText(run))"))
+        .accessibilityLabel(Text(supersetAccessibilityLabel(ei: ei, base: "\(run.name), coming up, \(prescriptionText(run))")))
         .accessibilityHint(Text("Double tap to move focus here"))
+    }
+
+    /// Appends the superset role to a row's a11y label when the run is grouped (FER-931), e.g.
+    /// «Press banca, superserie A1, coming up, 60 kg × 8» — a plain exercise's label is untouched.
+    private func supersetAccessibilityLabel(ei: Int, base: String) -> String {
+        guard let badge = supersetBadgeText(ei: ei) else { return base }
+        let role = String(format: String(localized: "superset %@"), badge)
+        // Insert right after the name (before the first comma) so the role reads naturally.
+        guard let commaRange = base.range(of: ",") else { return "\(base), \(role)" }
+        var result = base
+        result.insert(contentsOf: ", \(role)", at: commaRange.lowerBound)
+        return result
     }
 
     /// «82,5 kg × 8·8·6» for a finished weight/reps or bodyweight exercise; falls back to the plain
@@ -1179,7 +1307,7 @@ struct LiveStrengthSheet: View {
     /// before FER-929, just no longer repeated for every exercise at once.
     @ViewBuilder private func activeExerciseBlock(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            railColumn(.active, superset: false)
+            railColumn(.active, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei))
             exerciseHeader(run, ei: ei, first: true)
         }
         .plainRow(top: CenitMetrics.gap)
@@ -1218,7 +1346,7 @@ struct LiveStrengthSheet: View {
                     .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
                     .frame(width: 18, height: 18)
                     .overlay(
-                        Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)
+                        Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)  // token-exempt: tiny plus glyph sized to the 18pt dotted add-node
                     )
                 Text("Add exercise").font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Spacer(minLength: 0)
@@ -1893,6 +2021,7 @@ struct LiveStrengthSheet: View {
             HStack(spacing: 12) {
                 SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
                 VStack(alignment: .leading, spacing: 2) {
+                supersetTag(ei)
                 if run.type != .weightReps {
                     Text(typeWord(run.type)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .accessibilityHidden(true)
@@ -1922,9 +2051,23 @@ struct LiveStrengthSheet: View {
                 if whyRaiseOpen.contains(run.id) { whyRaiseCard(raise, ei: ei) }
             }
             restChip(run, ei: ei)
+            supersetNoRestCaption(ei)
             if !reflow { columnHeader(run.type) }
         }
         .padding(.top, first ? CenitMetrics.gap : CenitMetrics.sectionGap)
+    }
+
+    /// «SIN DESCANSO ENTRE A1 Y A2» — shown only on the active block, only while it's a superset member
+    /// that isn't the group's last (FER-931; the last member rests normally, so gets no caption).
+    @ViewBuilder private func supersetNoRestCaption(_ ei: Int) -> some View {
+        let members = session.supersetMembers(at: ei)
+        if members.count > 1, members.last != ei,
+           let currentBadge = supersetBadgeText(ei: ei),
+           let nextIndex = members.first(where: { $0 > ei }), let nextBadge = supersetBadgeText(ei: nextIndex) {
+            Text(String(format: String(localized: "NO REST BETWEEN %@ AND %@"), currentBadge, nextBadge))
+                .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(theme.dataHrv)
+        }
     }
 
     /// The «···» exercise menu (FER-894 · «Cómo llego a Cambiar»): a themed paper menu (spec 4b) with

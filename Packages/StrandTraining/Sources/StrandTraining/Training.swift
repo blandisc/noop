@@ -337,12 +337,16 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// «Volver a X» was tapped for this exercise (FER-835). Optional so a pre-FER-835 snapshot
         /// (key absent) still decodes; nil means false.
         public var raiseOptedOut: Bool?
+        /// Superset grouping (FER-931), mirroring `RoutineExercise.supersetGroup`. Optional so a
+        /// pre-FER-931 snapshot (key absent) still decodes; nil = standalone exercise.
+        public var supersetGroup: Int?
 
         public init(id: String, exerciseId: String, name: String, type: ExerciseType,
                     restSeconds: Int, restMode: RestMode, hrRestReference: HRRestReference,
                     hrRestValue: Double, lastWeightKg: Double? = nil, lastReps: Int? = nil,
                     lastTimeS: Int? = nil, lastDistanceM: Double? = nil, sets: [SetSnapshot],
-                    currentSet: Int, skipped: Bool, raiseOptedOut: Bool? = nil) {
+                    currentSet: Int, skipped: Bool, raiseOptedOut: Bool? = nil,
+                    supersetGroup: Int? = nil) {
             self.id = id; self.exerciseId = exerciseId; self.name = name; self.type = type
             self.restSeconds = restSeconds; self.restMode = restMode
             self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
@@ -350,6 +354,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
             self.lastTimeS = lastTimeS; self.lastDistanceM = lastDistanceM
             self.sets = sets; self.currentSet = currentSet; self.skipped = skipped
             self.raiseOptedOut = raiseOptedOut
+            self.supersetGroup = supersetGroup
         }
     }
     public var id: String
