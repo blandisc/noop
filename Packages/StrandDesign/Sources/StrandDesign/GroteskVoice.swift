@@ -95,6 +95,14 @@ public extension InstrumentoType {
     /// The verdict word next to the hero («Equilibrado») — 22/700, scales with `.title3`.
     static let groteskVerdict = grotesk(22, weight: .bold, relativeTo: .title3)
 
+    /// An in-screen headline — the Grotesk successor to the retired `StrandFont.serif(_:)` (FER-901:
+    /// the serif title voice retires). Medium (500), not bold, so it keeps the airy editorial presence
+    /// the serif had rather than reading as a loud datum; scales with Dynamic Type relative to `.title2`.
+    /// Verdict *phrases* (the datum) stay on `groteskVerdict` (Bold). (FER-901)
+    static func groteskHeadline(_ size: CGFloat) -> Font {
+        grotesk(size, weight: .medium, relativeTo: .title2)
+    }
+
     /// A sheet title — 12/700, tracking 2.4, ALL-CAPS (`groteskSheetTitle(_: )` on `Text` bakes
     /// the case + tracking in). FIXED chrome.
     static let groteskSheetTitle = grotesk(12, weight: .bold)

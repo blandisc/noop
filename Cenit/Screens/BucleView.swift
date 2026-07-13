@@ -263,7 +263,7 @@ private struct PatronesLanding: View {
             }
             .foregroundStyle(theme.dataRecovery)
             Text(insight.title)
-                .font(StrandFont.serif(28)).lineSpacing(1)
+                .font(InstrumentoType.groteskHeadline(28)).lineSpacing(1)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 11)
@@ -284,7 +284,7 @@ private struct PatronesLanding: View {
             }
             .foregroundStyle(theme.inkTertiary)
             Text(heroLeverHeadline(insight))
-                .font(StrandFont.serif(28)).lineSpacing(1)
+                .font(InstrumentoType.groteskHeadline(28)).lineSpacing(1)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 11)
@@ -354,7 +354,7 @@ private struct PatronesLanding: View {
             }
             .foregroundStyle(theme.inkTertiary)
             Text("No clear pattern in your body yet.")
-                .font(StrandFont.serif(27))
+                .font(InstrumentoType.groteskHeadline(27))
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 11)
@@ -606,7 +606,7 @@ private struct PatronesLanding: View {
                 .font(StrandFont.title2).foregroundStyle(theme.ink).padding(.top, 11)
             if worked {
                 Text(BucleFormat.verdictHeadline(v))
-                    .font(StrandFont.serifVerdict).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true).padding(.top, 6)
                 verdictStats(exp).padding(.top, 13)
                 HStack(spacing: 9) {
@@ -909,7 +909,7 @@ private struct PatronesLanding: View {
             }
             .foregroundStyle(theme.inkTertiary)
             Text("I'm still learning how your body works.")
-                .font(StrandFont.serif(27))
+                .font(InstrumentoType.groteskHeadline(27))
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 11)

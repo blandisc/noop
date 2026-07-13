@@ -9,8 +9,6 @@ import CoreText
 // that needs them is asked for. CoreText is platform-neutral (no AppKit/UIKit), so this stays
 // inside the package's cross-platform contract.
 //
-//   • Instrument Serif Regular — the legacy serif verdict face (FER-564; superseded by the
-//     2026-07 «Hoy» redesign, retired once the migration completes).
 //   • Space Grotesk 400/500/600/700 — the evolved «Instrumento» voice (FER-707/708): numerals,
 //     sheet titles, overlines, lane labels, tabs, buttons. Static instances (the SemiBold is
 //     instanced from the official variable font), referenced by PostScript name.
@@ -22,7 +20,6 @@ extension StrandFont {
     /// is called.
     private static let registerBundledFonts: Void = {
         let files = [
-            "InstrumentSerif-Regular",
             "SpaceGrotesk-Regular", "SpaceGrotesk-Medium", "SpaceGrotesk-SemiBold", "SpaceGrotesk-Bold",
         ]
         for file in files {
