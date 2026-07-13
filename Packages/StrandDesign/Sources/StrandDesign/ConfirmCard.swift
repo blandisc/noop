@@ -118,7 +118,7 @@ public struct ConfirmCard: View {
 
             if let message {
                 Text(message)
-                    .font(.system(size: 13))
+                    .font(StrandFont.scaled(13))
                     .foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 6)

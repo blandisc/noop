@@ -61,7 +61,7 @@ public struct StatTile: View {
                     .minimumScaleFactor(0.75)
                 if let unit {
                     Text(unit)
-                        .font(.system(size: 11))
+                        .font(StrandFont.scaled(11))
                         .foregroundStyle(theme.inkTertiary)
                 }
             }
@@ -80,7 +80,7 @@ public struct StatTile: View {
 
             if let caption {
                 Text(caption)
-                    .font(.system(size: 10))
+                    .font(StrandFont.scaled(10))
                     .foregroundStyle(theme.inkTertiary)
                     .lineLimit(2)
             }
