@@ -549,6 +549,76 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(afterEdit.first { $0.id == "a" }?.rpe, 9)
     }
 
+    // MARK: - Exercise notes (FER-932)
+
+    /// Notes round-trip through save → read at both scopes: exercise-wide (`setPosition` nil) and
+    /// one-set (`setPosition` non-nil). A re-save is idempotent (delete-first, no duplicates).
+    func testExerciseNoteRoundTripBothScopes() async throws {
+        let store = try await WhoopStore.inMemory()
+        let session = StrengthSession(id: "s1", startTs: 1000)
+        let sets = [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .work,
+                     weightKg: 60, reps: 8, done: true, ts: 1001)
+        ]
+        let notes = [
+            ExerciseNote(id: "n1", sessionId: "s1", exerciseId: "bench", setPosition: nil,
+                        text: "Buena técnica hoy", ts: 1001),
+            ExerciseNote(id: "n2", sessionId: "s1", exerciseId: "bench", setPosition: 0,
+                        text: "Falló al final de esta serie", ts: 1002)
+        ]
+        try await store.saveSession(session, sets: sets, notes: notes)
+
+        let back = try await store.sessionNotes(sessionId: "s1")
+        XCTAssertEqual(back.count, 2)
+        XCTAssertNil(back.first { $0.id == "n1" }?.setPosition, "exercise-scope note has no setPosition")
+        XCTAssertEqual(back.first { $0.id == "n2" }?.setPosition, 0, "set-scope note keeps its position")
+
+        // Re-saving the same session with the same notes must not duplicate rows (delete-first).
+        try await store.saveSession(session, sets: sets, notes: notes)
+        let backAgain = try await store.sessionNotes(sessionId: "s1")
+        XCTAssertEqual(backAgain.count, 2, "re-save must be idempotent, not append duplicates")
+    }
+
+    /// Empty-text notes are dropped on save (never persisted as blank rows).
+    func testExerciseNoteEmptyTextNotSaved() async throws {
+        let store = try await WhoopStore.inMemory()
+        let session = StrengthSession(id: "s1", startTs: 1000)
+        try await store.saveSession(session, sets: [], notes: [
+            ExerciseNote(id: "n1", sessionId: "s1", exerciseId: "bench", text: "   ", ts: 1001)
+        ])
+        let back = try await store.sessionNotes(sessionId: "s1")
+        XCTAssertTrue(back.isEmpty, "blank/whitespace-only note text must not be persisted")
+    }
+
+    /// «NOTAS ANTERIORES»: `exerciseNotes(excludingSession:)` returns prior sessions' notes for the same
+    /// exercise, newest session first, and excludes the session currently being edited.
+    func testExerciseNotesHistoryExcludesCurrentSessionOrderedNewestFirst() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [], notes: [
+            ExerciseNote(id: "n1", sessionId: "s1", exerciseId: "bench", text: "Primera nota", ts: 1000)
+        ])
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [], notes: [
+            ExerciseNote(id: "n2", sessionId: "s2", exerciseId: "bench", text: "Segunda nota", ts: 2000)
+        ])
+        try await store.saveSession(StrengthSession(id: "s3", startTs: 3000), sets: [], notes: [
+            ExerciseNote(id: "n3", sessionId: "s3", exerciseId: "bench", text: "Nota de hoy", ts: 3000)
+        ])
+
+        let history = try await store.exerciseNotes(exerciseId: "bench", excludingSession: "s3")
+        XCTAssertEqual(history.map(\.id), ["n2", "n1"], "excludes the current session, newest first")
+    }
+
+    /// Deleting a session cascades to its exercise notes.
+    func testDeleteSessionCascadesExerciseNotes() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [], notes: [
+            ExerciseNote(id: "n1", sessionId: "s1", exerciseId: "bench", text: "Nota", ts: 1000)
+        ])
+        try await store.deleteSession(id: "s1")
+        let back = try await store.sessionNotes(sessionId: "s1")
+        XCTAssertTrue(back.isEmpty, "deleteSession must cascade-delete its exercise notes")
+    }
+
     // MARK: - Delete session + PR recompute (FER-527)
 
     /// Two bench sessions: s1 holds the 62.5 kg PR, s2 a lighter 50 kg. Deleting s1 drops the maxWeight PR

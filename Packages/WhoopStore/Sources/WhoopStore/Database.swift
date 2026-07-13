@@ -783,6 +783,18 @@ extension WhoopStore {
                 $0.add(column: "rpe", .double)
             }
         }
+        // v35 (FER-932): free-text notes per exercise (optionally per-set), separate from
+        // `strengthSession.notes` (whole-session). A new table, not a column on `setEntry` — a note isn't
+        // tied to one set row and needs its own lifecycle (delete-first re-save, cross-session history).
+        migrator.registerMigration("v35") { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS strengthExerciseNote (
+                    id TEXT PRIMARY KEY, sessionId TEXT NOT NULL, exerciseId TEXT NOT NULL,
+                    setPosition INTEGER, text TEXT NOT NULL, ts INTEGER NOT NULL)
+                """)
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_exNote_ex ON strengthExerciseNote(exerciseId, ts)")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_exNote_sess ON strengthExerciseNote(sessionId)")
+        }
         return migrator
     }
 

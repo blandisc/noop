@@ -1099,7 +1099,8 @@ final class AppModel: ObservableObject {
             guard let self, let store = await self.repo.storeHandle() else { return }
             // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
             let prior = await self.priorStrengthPRs(store: store, ids: Set(sets.map(\.exerciseId)))
-            try? await store.saveSession(record, sets: sets, progressionOptOuts: built.progressionOptOuts)
+            try? await store.saveSession(record, sets: sets, progressionOptOuts: built.progressionOptOuts,
+                                         notes: built.notes)
             self.persistSessionTask?.cancel()            // FER-798: the session is saved — stop persisting
             try? await store.clearInProgressSession()    // and drop the snapshot so it never re-restores
             // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).

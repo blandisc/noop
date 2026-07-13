@@ -1075,4 +1075,46 @@ final class MigrationTests: XCTestCase {
                           "v34 must be recorded so it never re-runs and wedges startup")
         }
     }
+
+    /// v35 (FER-932): the new `strengthExerciseNote` table must exist with its two indices after
+    /// migrating from v34.
+    func testV35CreatesStrengthExerciseNoteTable() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v34")
+
+        try migrator.migrate(dbQueue)   // → v35
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try db.tableExists("strengthExerciseNote"), "v35 must create strengthExerciseNote")
+            let cols = try db.columns(in: "strengthExerciseNote").map(\.name)
+            XCTAssertEqual(Set(cols), ["id", "sessionId", "exerciseId", "setPosition", "text", "ts"])
+            let indexes = try db.indexes(on: "strengthExerciseNote").map(\.name)
+            XCTAssertTrue(indexes.contains("idx_exNote_ex"))
+            XCTAssertTrue(indexes.contains("idx_exNote_sess"))
+        }
+    }
+
+    /// v35 must be idempotent (FER-791 discipline): `CREATE TABLE/INDEX IF NOT EXISTS` means re-running
+    /// against a DB that already has the table is a no-op, not a crash.
+    func testV35IsIdempotent() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = WhoopStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v34")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: """
+                CREATE TABLE IF NOT EXISTS strengthExerciseNote (
+                    id TEXT PRIMARY KEY, sessionId TEXT NOT NULL, exerciseId TEXT NOT NULL,
+                    setPosition INTEGER, text TEXT NOT NULL, ts INTEGER NOT NULL)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v35; must not throw
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v35"),
+                          "v35 must be recorded so it never re-runs and wedges startup")
+        }
+    }
 }

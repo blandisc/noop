@@ -411,7 +411,8 @@ extension WhoopStore {
     /// `progressionOptOuts` are the exercise ids whose raise was reverted with «Volver a X» this
     /// session (FER-835): persisted so the progression cycle treats the session as neither hit nor miss.
     public func saveSession(_ session: StrengthSession, sets: [SetEntry],
-                            progressionOptOuts: Set<String> = []) async throws {
+                            progressionOptOuts: Set<String> = [],
+                            notes: [ExerciseNote] = []) async throws {
         try syncWrite { db in
             let sArgs: [DatabaseValueConvertible?] = [
                 session.id, session.routineId, session.startTs, session.endTs,
@@ -445,6 +446,15 @@ extension WhoopStore {
             for exerciseId in progressionOptOuts.sorted() {
                 try db.execute(sql: "INSERT INTO progressionOptOut (sessionId, exerciseId) VALUES (?, ?)",
                                arguments: [session.id, exerciseId])
+            }
+            // Replace this session's exercise notes (delete-first keeps a re-save idempotent, like setEntry).
+            // Only non-empty text is stored — a cleared note simply doesn't come back.
+            try db.execute(sql: "DELETE FROM strengthExerciseNote WHERE sessionId = ?", arguments: [session.id])
+            for n in notes where !n.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                try db.execute(sql: """
+                    INSERT INTO strengthExerciseNote (id, sessionId, exerciseId, setPosition, text, ts)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """, arguments: [n.id, n.sessionId, n.exerciseId, n.setPosition, n.text, n.ts])
             }
             try Self.updatePersonalRecords(db, sets: sets)
         }
@@ -507,9 +517,40 @@ extension WhoopStore {
                 "SELECT DISTINCT exerciseId FROM setEntry WHERE sessionId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM progressionOptOut WHERE sessionId = ?", arguments: [id])
+            try db.execute(sql: "DELETE FROM strengthExerciseNote WHERE sessionId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM strengthSession WHERE id = ?", arguments: [id])
             for exerciseId in affected { try Self.recomputePR(db, exerciseId: exerciseId) }
         }
+    }
+
+    /// This session's own exercise notes (all scopes), for re-seeding the edit sheet. Not filtered by
+    /// exercise — the caller groups by `exerciseId` if needed.
+    public func sessionNotes(sessionId: String) async throws -> [ExerciseNote] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: "SELECT * FROM strengthExerciseNote WHERE sessionId = ?",
+                             arguments: [sessionId]).map(Self.exerciseNote)
+        }
+    }
+
+    /// Prior notes for one exercise, across other sessions — the «NOTAS ANTERIORES» history in the
+    /// note sheet (FER-932). Excludes the session currently being edited/logged (`excludingSession`) so
+    /// a note just typed this session doesn't show up as its own "history". Newest session first.
+    public func exerciseNotes(exerciseId: String, excludingSession: String,
+                              limit: Int = 20) async throws -> [ExerciseNote] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: """
+                SELECT n.* FROM strengthExerciseNote n
+                JOIN strengthSession s ON n.sessionId = s.id
+                WHERE n.exerciseId = ? AND n.sessionId <> ?
+                ORDER BY s.startTs DESC
+                LIMIT ?
+                """, arguments: [exerciseId, excludingSession, limit]).map(Self.exerciseNote)
+        }
+    }
+
+    private static func exerciseNote(_ r: Row) -> ExerciseNote {
+        ExerciseNote(id: r["id"], sessionId: r["sessionId"], exerciseId: r["exerciseId"],
+                     setPosition: r["setPosition"], text: r["text"], ts: r["ts"])
     }
 
     public func recentSessions(limit: Int = 200) async throws -> [StrengthSession] {

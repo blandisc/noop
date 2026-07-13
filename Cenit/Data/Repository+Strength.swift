@@ -242,6 +242,13 @@ extension Repository {
         }
         return events
     }
+
+    /// Prior notes for one exercise, across other sessions (FER-932) — the «NOTAS ANTERIORES» history
+    /// in the note sheet. Empty when the store can't be opened, same contract as the rest of this file.
+    func exerciseNotes(exerciseId: String, excludingSession: String) async -> [ExerciseNote] {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.exerciseNotes(exerciseId: exerciseId, excludingSession: excludingSession)) ?? []
+    }
 }
 
 extension Exercise {

@@ -132,6 +132,9 @@ final class StrengthSessionModel: ObservableObject {
         /// Perceived effort (RPE), 6-10 with half-steps (FER-930). Optional: marking a set done never
         /// requires it. Set from the RPE sheet, independent of `done`.
         var rpe: Double? = nil
+        /// Set-scoped note text (FER-932), written from the note sheet with «Guardar en: Solo la serie N».
+        /// nil = no set-scope note; the exercise-scope note lives on `ExerciseRun.note` instead.
+        var note: String? = nil
     }
 
     /// One exercise's run: its plan, the editable sets, which set the Foco is on, and whether it was skipped.
@@ -168,6 +171,11 @@ final class StrengthSessionModel: ObservableObject {
         /// standalone. `addExercise`/`replaceExercise` always seed `nil` — an ad-hoc/swapped exercise
         /// is never auto-grouped into a superset it wasn't authored into.
         var supersetGroup: Int? = nil
+        /// Exercise-scoped note text (FER-932), written from the «✎ Nota» chip with «Guardar en: Este
+        /// ejercicio». nil = no note. A set-scope note lives on the individual `WorkingSet.note` instead.
+        var note: String? = nil
+        /// Whether this run (or any of its sets) carries a note (FER-932) — drives the chip's «con nota» state.
+        var hasNote: Bool { (note?.isEmpty == false) || sets.contains { $0.note?.isEmpty == false } }
 
         /// This exercise's rest as the shared `RestConfig` shape (FER-715), from its four flat fields.
         var restConfig: RestConfig {
@@ -437,6 +445,21 @@ final class StrengthSessionModel: ObservableObject {
         guard let runIdx = runs.firstIndex(where: { $0.id == runId }),
               let setIdx = runs[runIdx].sets.firstIndex(where: { $0.id == setId }) else { return }
         runs[runIdx].sets[setIdx].rpe = rpe
+    }
+
+    /// Write the exercise-scope note from the «✎ Nota» chip → `NoteSheet` (FER-932). Independent of
+    /// `done`/rest — opening or saving the sheet never touches `restEndsAt`, so a running rest keeps
+    /// counting behind it.
+    func setExerciseNote(exercise runId: String, text: String?) {
+        guard let runIdx = runs.firstIndex(where: { $0.id == runId }) else { return }
+        runs[runIdx].note = text
+    }
+
+    /// Write the set-scope note («Guardar en: Solo la serie N») for one working set (FER-932).
+    func setSetNote(exercise runId: String, set setId: String, text: String?) {
+        guard let runIdx = runs.firstIndex(where: { $0.id == runId }),
+              let setIdx = runs[runIdx].sets.firstIndex(where: { $0.id == setId }) else { return }
+        runs[runIdx].sets[setIdx].note = text
     }
 
     /// Resolve the HR rest target once on entry (FER-495/506), for a set's effective `RestConfig`. The set
@@ -725,17 +748,26 @@ final class StrengthSessionModel: ObservableObject {
     /// (`.work`/`.warmup`, FER-720). Each set persists only the fields its exercise type measures, so a
     /// time/distance set never carries the model's placeholder reps and the weight×reps path stays as it was.
     func buildForSave(deviceId: String?, endTs: Int)
-        -> (StrengthSession, [SetEntry], progressionOptOuts: Set<String>) {
+        -> (StrengthSession, [SetEntry], progressionOptOuts: Set<String>, notes: [ExerciseNote]) {
         let session = StrengthSession(id: id, routineId: routineId, startTs: startTs,
                                       endTs: endTs, deviceId: deviceId)
         var entries: [SetEntry] = []
         var optedOut: Set<String> = []
+        var notes: [ExerciseNote] = []
         var position = 0
         for run in runs where !run.skipped {
             // FER-835: the exercise's «Volver a X» mark rides with the save — only if something was
             // actually logged (no saved sets → no session rows to mark).
             if run.raiseOptedOut, run.sets.contains(where: \.done) { optedOut.insert(run.exerciseId) }
-            for set in run.sets where set.done {
+            if let text = run.note, !text.isEmpty {
+                notes.append(ExerciseNote(sessionId: id, exerciseId: run.exerciseId, text: text, ts: endTs))
+            }
+            for (setIndex, set) in run.sets.enumerated() {
+                if let text = set.note, !text.isEmpty {
+                    notes.append(ExerciseNote(sessionId: id, exerciseId: run.exerciseId,
+                                              setPosition: setIndex, text: text, ts: endTs))
+                }
+                guard set.done else { continue }
                 let f = SetCapture.fields(type: run.type, weightKg: set.weightKg, reps: set.reps,
                                           timeS: set.timeS, distanceM: set.distanceM)
                 entries.append(SetEntry(id: set.id, sessionId: id, exerciseId: run.exerciseId,
@@ -745,7 +777,7 @@ final class StrengthSessionModel: ObservableObject {
                 position += 1
             }
         }
-        return (session, entries, optedOut)
+        return (session, entries, optedOut, notes)
     }
 
     // MARK: Crash-recovery snapshot (FER-798)
@@ -766,11 +798,11 @@ final class StrengthSessionModel: ObservableObject {
                         StrengthSessionSnapshot.SetSnapshot(
                             id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                             distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
-                            rest: s.rest, kind: s.kind, rpe: s.rpe)
+                            rest: s.rest, kind: s.kind, rpe: s.rpe, note: s.note)
                     },
                     currentSet: run.currentSet, skipped: run.skipped,
                     raiseOptedOut: run.raiseOptedOut ? true : nil,
-                    supersetGroup: run.supersetGroup)
+                    supersetGroup: run.supersetGroup, note: run.note)
             },
             currentIndex: currentIndex, restEndsAt: restEndsAt, restStartedAt: restStartedAt,
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
@@ -791,11 +823,11 @@ final class StrengthSessionModel: ObservableObject {
                         sets: r.sets.map { s in
                             WorkingSet(id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                                        distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
-                                       rest: s.rest, kind: s.kind, rpe: s.rpe)
+                                       rest: s.rest, kind: s.kind, rpe: s.rpe, note: s.note)
                         },
                         currentSet: r.currentSet, skipped: r.skipped,
                         raiseOptedOut: r.raiseOptedOut ?? false,
-                        supersetGroup: r.supersetGroup)
+                        supersetGroup: r.supersetGroup, note: r.note)
         }
         let model = StrengthSessionModel(id: snap.id, routineId: snap.routineId,
                                          routineName: snap.routineName, startTs: snap.startTs, runs: runs)
@@ -906,6 +938,11 @@ struct LiveStrengthSheet: View {
     @State private var shareReceipt: ShareRef?
     /// The set whose RPE sheet is open (FER-930), tapped from the table's RPE cell. nil = closed.
     @State private var rpeTarget: RPETarget?
+    /// The exercise whose note sheet is open (FER-932), tapped from the «✎ Nota» chip. nil = closed.
+    @State private var noteTarget: NoteTarget?
+    /// This session's prior notes for `noteTarget.exerciseId` (across other sessions), loaded when the
+    /// sheet opens — «NOTAS ANTERIORES». nil = still loading / not opened; [] = loaded, honestly empty.
+    @State private var noteHistory: [ExerciseNote]?
 
     /// The empty «Rápido de fuerza» state (FER-762): no routine, no exercises added yet. Its search field
     /// opens `ExerciseLibraryScreen` in ADD mode; the freshness suggestions load once when this state
@@ -957,6 +994,16 @@ struct LiveStrengthSheet: View {
         let weightKg: Double
         let reps: Int
         let currentRPE: Double?
+    }
+
+    /// Identifies which exercise's note sheet is open (FER-932): the run id + exercise id (for the
+    /// history lookup) + the active set's number (for the «Solo la serie N» scope option).
+    struct NoteTarget: Identifiable {
+        let id: String   // runId
+        let exerciseId: String
+        let exerciseName: String
+        let setId: String
+        let setNumber: Int
     }
     /// A marker to present the receipt printer (thermal ticket); carries the real session id for
     /// barcode/order stability and set/HR loads. The summary comes from `session.summary`.
@@ -1095,6 +1142,31 @@ struct LiveStrengthSheet: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
+        }
+        .sheet(item: $noteTarget) { target in
+            if let run = session.runs.first(where: { $0.id == target.id }) {
+                NoteSheet(
+                    theme: theme, target: target,
+                    initialScope: .exercise,
+                    exerciseText: run.note ?? "",
+                    setText: run.sets.first(where: { $0.id == target.setId })?.note ?? "",
+                    history: noteHistory,
+                    onSave: { scope, text in
+                        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let value: String? = trimmed.isEmpty ? nil : trimmed
+                        switch scope {
+                        case .exercise: session.setExerciseNote(exercise: target.id, text: value)
+                        case .set: session.setSetNote(exercise: target.id, set: target.setId, text: value)
+                        }
+                        noteTarget = nil
+                    },
+                    onClose: { noteTarget = nil }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
+            }
         }
         .fullScreenCover(item: $shareReceipt) { ref in
             if let summary = session.summary {
@@ -2087,7 +2159,10 @@ struct LiveStrengthSheet: View {
                 raiseLine(raise, ei: ei)
                 if whyRaiseOpen.contains(run.id) { whyRaiseCard(raise, ei: ei) }
             }
-            restChip(run, ei: ei)
+            HStack(spacing: 8) {
+                restChip(run, ei: ei)
+                noteChip(run, ei: ei)
+            }
             supersetNoRestCaption(ei)
             if !reflow { columnHeader(run.type) }
         }
@@ -2284,6 +2359,28 @@ struct LiveStrengthSheet: View {
         run.restMode == .heartRate ? String(localized: "Rest · by HR") : restChipText(run.restSeconds)
     }
 
+    /// The «✎ Nota» chip (FER-932), next to the rest chip on the active exercise's header. Opens
+    /// `NoteSheet` without touching `restEndsAt` — a running rest keeps counting behind it. Fills when
+    /// this run (or any of its sets) already carries a note.
+    private func noteChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        Button { openNote(exercise: run, ei: ei) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: run.hasNote ? "square.and.pencil" : "square.and.pencil")
+                    .font(StrandFont.glyph(.chevron)).foregroundStyle(run.hasNote ? theme.dataStrain : theme.inkTertiary)
+                Text("Note").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                if run.hasNote {
+                    Circle().fill(theme.dataStrain).frame(width: 5, height: 5)
+                }
+            }
+            .padding(.horizontal, 9).padding(.vertical, 4)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(run.hasNote ? "Edit note, has a note" : "Add note"))
+    }
+
     /// Resolve the full `Exercise` for a session run (override > custom > catalog, FER-541) and open its
     /// Detail sheet. Dismissing it leaves the session untouched — the session lives in `AppModel`.
     private func openDetail(_ run: StrengthSessionModel.ExerciseRun) {
@@ -2291,6 +2388,23 @@ struct LiveStrengthSheet: View {
             if let ex = await model.repo.resolvedExercise(run.exerciseId) {
                 await MainActor.run { detailExercise = ex }
             }
+        }
+    }
+
+    /// Open the note sheet (FER-932) for the active exercise, from the «✎ Nota» chip. Never touches
+    /// `restEndsAt` — a running rest keeps counting behind the sheet. Loads the cross-session history
+    /// (`exerciseNotes(excludingSession:)`) fresh each open so a note saved elsewhere shows up.
+    private func openNote(exercise run: StrengthSessionModel.ExerciseRun, ei: Int) {
+        let setNumber = min(run.currentSet + 1, max(run.sets.count, 1))
+        let setId = run.sets.indices.contains(run.currentSet) ? run.sets[run.currentSet].id : (run.sets.first?.id ?? "")
+        noteTarget = NoteTarget(id: run.id, exerciseId: run.exerciseId, exerciseName: run.name,
+                                 setId: setId, setNumber: setNumber)
+        noteHistory = nil
+        Task {
+            guard let store = await model.repo.storeHandle() else { return }
+            let history = (try? await store.exerciseNotes(exerciseId: run.exerciseId,
+                                                           excludingSession: session.id)) ?? []
+            await MainActor.run { noteHistory = history }
         }
     }
 
@@ -3896,6 +4010,161 @@ struct RPESheet: View {
         case 10:  return "To failure"
         default:  return ""
         }
+    }
+}
+
+// MARK: - Note sheet (FER-932)
+//
+// Preview v3 aprobado del handoff («Nota con color de vuelta»): editor con borde/caret ámbar
+// (`dataStrain`), toggle «Guardar en:» exercise/set, «Guardar» verde, historial «NOTAS ANTERIORES»
+// separado por hairline (sin tarjeta), omitido si está vacío. Abrir el sheet no toca `restEndsAt`.
+
+struct NoteSheet: View {
+    /// Where a note is saved: the whole exercise (default) or just the active set (FER-932 §4).
+    enum Scope { case exercise, set }
+
+    let theme: InstrumentoTheme
+    let target: LiveStrengthSheet.NoteTarget
+    let initialScope: Scope
+    let exerciseText: String
+    let setText: String
+    /// Cross-session history for this exercise, loaded by the caller. nil = still loading.
+    let history: [ExerciseNote]?
+    let onSave: (Scope, String) -> Void
+    let onClose: () -> Void
+
+    @State private var scope: Scope
+    @State private var text: String
+    @FocusState private var focused: Bool
+
+    init(theme: InstrumentoTheme, target: LiveStrengthSheet.NoteTarget, initialScope: Scope,
+         exerciseText: String, setText: String, history: [ExerciseNote]?,
+         onSave: @escaping (Scope, String) -> Void, onClose: @escaping () -> Void) {
+        self.theme = theme; self.target = target; self.initialScope = initialScope
+        self.exerciseText = exerciseText; self.setText = setText; self.history = history
+        self.onSave = onSave; self.onClose = onClose
+        _scope = State(initialValue: initialScope)
+        _text = State(initialValue: initialScope == .exercise ? exerciseText : setText)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            header
+            scopeToggle
+            editor
+            if let history, !history.isEmpty {
+                historySection(history)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.top, 12)
+        .padding(.bottom, CenitMetrics.screenPadding)
+        .background(theme.paper.ignoresSafeArea())
+        .onChange(of: scope) { _, newScope in
+            text = newScope == .exercise ? exerciseText : setText
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Note · \(target.exerciseName)").font(StrandFont.headline).foregroundStyle(theme.ink)
+                Text(scope == .exercise
+                     ? "Saved in this exercise's history"
+                     : "Saved for this set only")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer()
+            Button { onSave(scope, text) } label: {
+                Text("Save").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.verdictDeep)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var scopeToggle: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Save to:").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            HStack(spacing: 3) {
+                scopeOption(.exercise, label: String(localized: "This exercise"))
+                scopeOption(.set, label: String(format: String(localized: "Only set %d"), target.setNumber))
+            }
+            .padding(3)
+            .background(theme.trackWarm, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        }
+    }
+
+    private func scopeOption(_ value: Scope, label: String) -> some View {
+        let selected = scope == value
+        return Button {
+            withAnimation(StrandMotion.interactive) { scope = value }
+        } label: {
+            Text(label)
+                .font(StrandFont.caption.weight(.bold))
+                .foregroundStyle(selected ? theme.paper : theme.inkSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background {
+                    if selected { RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.ink) }
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+    }
+
+    private var editor: some View {
+        ZStack(alignment: .topLeading) {
+            if text.isEmpty {
+                Text("Jot something for next time: how it felt, technique, a load tweak…")
+                    .font(StrandFont.body).foregroundStyle(theme.inkTertiary)
+                    .padding(.horizontal, 13).padding(.vertical, 13)
+                    .allowsHitTesting(false)
+            }
+            TextEditor(text: $text)
+                .font(StrandFont.body)
+                .foregroundStyle(theme.ink)
+                .scrollContentBackground(.hidden)
+                .tint(theme.dataStrain)
+                .focused($focused)
+                .padding(9)
+        }
+        .frame(minHeight: 100)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.dataStrain, lineWidth: 1.5))
+    }
+
+    private func historySection(_ history: [ExerciseNote]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("PREVIOUS NOTES").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Array(history.enumerated()), id: \.element.id) { index, note in
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(Self.relativeDays(note.ts)).font(StrandFont.caption.weight(.semibold))
+                                .foregroundStyle(theme.inkTertiary)
+                            if note.setPosition != nil {
+                                Text("Set \(note.setPosition! + 1)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            }
+                        }
+                        Text(verbatim: note.text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if index < history.count - 1 {
+                        Rectangle().fill(theme.hairline).frame(height: 1)
+                    }
+                }
+            }
+        }
+    }
+
+    /// «Hace N días» relative-day label for a note's `ts` (epoch seconds).
+    private static func relativeDays(_ ts: Int) -> String {
+        let days = max(0, Int((Date().timeIntervalSince1970 - Double(ts)) / 86400))
+        if days == 0 { return String(localized: "Today") }
+        if days == 1 { return String(localized: "Yesterday") }
+        return String(format: String(localized: "%d days ago"), days)
     }
 }
 

@@ -185,7 +185,7 @@ final class StrengthSessionModelTests: XCTestCase {
         ])
         s.registerCurrentSet()          // bench set 0 done
         // leave the rest pending
-        let (record, sets, _) = s.buildForSave(deviceId: "my-whoop", endTs: 9000)
+        let (record, sets, _, _) = s.buildForSave(deviceId: "my-whoop", endTs: 9000)
         XCTAssertEqual(record.id, s.id)
         XCTAssertEqual(record.routineId, "rt")
         XCTAssertEqual(record.endTs, 9000)
@@ -201,7 +201,7 @@ final class StrengthSessionModelTests: XCTestCase {
         ])
         s.registerCurrentSet()
         s.skipExercise(0)
-        let (_, sets, _) = s.buildForSave(deviceId: nil, endTs: 9000)
+        let (_, sets, _, _) = s.buildForSave(deviceId: nil, endTs: 9000)
         XCTAssertTrue(sets.isEmpty, "a skipped exercise's sets don't persist")
     }
 
@@ -437,6 +437,45 @@ final class StrengthSessionModelTests: XCTestCase {
         s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
         XCTAssertTrue(s.runs[0].sets[0].done)
         XCTAssertNil(s.runs[0].sets[0].rpe, "marking a set never fills RPE; it stays optional")
+    }
+
+    // MARK: Exercise note (FER-932)
+
+    /// The exercise-scope note is written by its own setter, independent of the set table, and the
+    /// «con nota» chip state (`hasNote`) reflects it.
+    func testSetExerciseNoteWritesAndReflectsInHasNote() {
+        let s = oneSlot()
+        let run = s.runs[0].id
+        XCTAssertFalse(s.runs[0].hasNote, "no note yet")
+        s.setExerciseNote(exercise: run, text: "Buena técnica hoy")
+        XCTAssertEqual(s.runs[0].note, "Buena técnica hoy")
+        XCTAssertTrue(s.runs[0].hasNote, "chip reflects the exercise-scope note")
+        s.setExerciseNote(exercise: run, text: nil)
+        XCTAssertFalse(s.runs[0].hasNote, "cleared note drops the chip state")
+    }
+
+    /// A set-scope note («Guardar en: Solo la serie N») also flips `hasNote` on the run, even with no
+    /// exercise-scope note set.
+    func testSetSetNoteReflectsInRunHasNote() {
+        let s = oneSlot()
+        let run = s.runs[0].id
+        let set = s.runs[0].sets[1].id
+        s.setSetNote(exercise: run, set: set, text: "Falló al final de esta serie")
+        XCTAssertEqual(s.runs[0].sets[1].note, "Falló al final de esta serie")
+        XCTAssertTrue(s.runs[0].hasNote, "a set-scope note also marks the exercise as having a note")
+    }
+
+    /// `buildForSave` assembles `ExerciseNote` rows for both scopes, skipping empty text, and never
+    /// requires the set to be `done` (a note can be written on a set not yet logged).
+    func testBuildForSaveAssemblesNotesBothScopes() {
+        let s = oneSlot()
+        let run = s.runs[0].id
+        s.setExerciseNote(exercise: run, text: "Nota del ejercicio")
+        s.setSetNote(exercise: run, set: s.runs[0].sets[0].id, text: "Nota de la serie 1")
+        let (_, _, _, notes) = s.buildForSave(deviceId: nil, endTs: 9000)
+        XCTAssertEqual(notes.count, 2)
+        XCTAssertTrue(notes.contains { $0.setPosition == nil && $0.text == "Nota del ejercicio" })
+        XCTAssertTrue(notes.contains { $0.setPosition == 0 && $0.text == "Nota de la serie 1" })
     }
 
     func testElapsedFreezesWhilePaused() {
