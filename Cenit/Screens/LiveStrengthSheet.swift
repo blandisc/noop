@@ -1027,37 +1027,26 @@ struct LiveStrengthSheet: View {
     private var inlineSession: some View {
         // A flat List (not ScrollView) so each set row gets a real swipe-to-delete; styled down to the
         // warm-paper language — no native separators / background, our own hairlines. FER-497.
+        // FER-929: rail + accordion — only the active exercise expands into its table; done/upcoming
+        // exercises collapse to one line each, hung off a vertical rail (`railColumn`).
         List {
             ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
                 if !run.skipped {
-                    exerciseHeader(run, ei: ei, first: ei == firstActiveIndex)
-                        .plainRow()
-                    ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
-                        setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
-                            .plainRow()
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
-                                } label: { Label("Delete", systemImage: "trash") }
-                            }
+                    switch railState(ei: ei, run: run) {
+                    case .active:
+                        activeExerciseBlock(run, ei: ei)
+                    case .done:
+                        doneRow(run, ei: ei)
+                            .plainRow(top: 2, bottom: 2)
+                            .transition(.opacity)
+                    case .upcoming:
+                        comingRow(run, ei: ei)
+                            .plainRow(top: 2, bottom: 2)
+                            .transition(.opacity)
                     }
-                    // The rest card (1k) slots between this exercise's rows and the next, while resting here.
-                    if session.phase == .resting, ei == session.currentIndex, session.summary == nil {
-                        restInlineCard
-                            // A fixed rest that runs out dismisses itself — focus lands on the next active
-                            // set with no tap in between (HR rests keep the card up until the buzz/skip).
-                            .task(id: session.restEndsAt) {
-                                guard session.currentRestMode == .fixed, let end = session.restEndsAt else { return }
-                                let delay = end.timeIntervalSinceNow
-                                if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
-                                guard !Task.isCancelled, session.phase == .resting, !session.paused else { return }
-                                withAnimation(StrandMotion.gentle) { session.skipRest() }
-                            }
-                            .plainRow(top: 4)
-                    }
-                    addSetButton(ei).plainRow(top: 4)
                 }
             }
+            addExerciseNode.plainRow(top: CenitMetrics.gap)
             if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
             discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
         }
@@ -1065,9 +1054,10 @@ struct LiveStrengthSheet: View {
         .scrollContentBackground(.hidden)
         .background(theme.paper)
         .environment(\.defaultMinListRowHeight, 1)
-        .safeAreaInset(edge: .top, spacing: 0) { sessionHeader }
+        .animation(.snappy(duration: 0.22), value: session.currentIndex)
+        .safeAreaInset(edge: .top, spacing: 0) { liveHead }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if let cell = activeCell { keypad(for: cell) }
+            if let cell = activeCell { keypad(for: cell) } else { statsBar }
         }
         .onChange(of: activeCell) { _, newValue in
             // Seed the buffer from the newly-active cell's current value (replace-on-first-keystroke), and
@@ -1080,6 +1070,164 @@ struct LiveStrengthSheet: View {
                 buffer = ""; bufferTyped = false
             }
         }
+    }
+
+    // MARK: Rail + accordion (FER-929)
+
+    /// One exercise's position relative to the guided focus: active (accordion open), done (all its sets
+    /// logged, or its index already passed), or upcoming. Derived purely from `StrengthSessionModel`'s
+    /// existing `currentIndex`/`sets.done` — the model itself is untouched.
+    private enum RailState { case active, done, upcoming }
+
+    private func railState(ei: Int, run: StrengthSessionModel.ExerciseRun) -> RailState {
+        if ei == session.currentIndex { return .active }
+        if ei < session.currentIndex || run.sets.allSatisfy(\.done) { return .done }
+        return .upcoming
+    }
+
+    /// The vertical rail: a 2px hairline (teal for a superset span — the color only, FER-931 owns the
+    /// grouping logic) with one dot per exercise. Purely decorative — `accessibilityHidden`, the row's
+    /// own label carries the state to VoiceOver.
+    private func railColumn(_ state: RailState, superset: Bool) -> some View {
+        ZStack {
+            Rectangle().fill(superset ? theme.dataHrv : theme.hairlineStrong).frame(width: 2)
+            Circle()
+                .fill(state == .active ? theme.dataStrain : state == .done ? theme.inkDim : theme.hairlineStrong)
+                .frame(width: state == .active ? 14 : 11, height: state == .active ? 14 : 11)
+                .opacity(state == .done ? StrandOpacity.dim : 1)
+                .overlay {
+                    if state == .active {
+                        Circle().strokeBorder(theme.dataStrain.opacity(0.3), lineWidth: 3)
+                            .frame(width: 22, height: 22)
+                    }
+                }
+        }
+        .frame(width: 14)
+        .accessibilityHidden(true)
+    }
+
+    /// A finished exercise, compressed to one line: dimmed name + «carga × reps·reps·reps» + a green
+    /// check. Still tappable — re-opens the accordion on its first not-done set so a set can be corrected.
+    private func doneRow(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        Button {
+            withAnimation(.snappy(duration: 0.22)) {
+                session.select(exerciseIndex: ei, setIndex: run.sets.firstIndex { !$0.done } ?? 0)
+            }
+        } label: {
+            HStack(spacing: 12) {
+                railColumn(.done, superset: false)
+                Text(run.name).font(StrandFont.body).foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                Text(doneDetailText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataRecovery)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .opacity(StrandOpacity.dim)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("\(run.name), done, \(doneDetailText(run))"))
+        .accessibilityHint(Text("Double tap to reopen and correct a set"))
+    }
+
+    /// A not-yet-reached exercise, compressed to one line: name + its planned prescription. Tapping moves
+    /// the guided focus here (the same `select` the plan navigator already used).
+    private func comingRow(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        Button {
+            withAnimation(.snappy(duration: 0.22)) { session.select(exerciseIndex: ei, setIndex: 0) }
+        } label: {
+            HStack(spacing: 12) {
+                railColumn(.upcoming, superset: false)
+                Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink)
+                    .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                Text(prescriptionText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("\(run.name), coming up, \(prescriptionText(run))"))
+        .accessibilityHint(Text("Double tap to move focus here"))
+    }
+
+    /// «82,5 kg × 8·8·6» for a finished weight/reps or bodyweight exercise; falls back to the plain
+    /// «previous» phrasing for time/distance (there's no per-set rep list to join there).
+    private func doneDetailText(_ run: StrengthSessionModel.ExerciseRun) -> String {
+        guard run.type == .weightReps || run.type == .bodyweight else { return previousText(run) ?? "" }
+        let w = run.sets.first?.weightKg ?? 0
+        let reps = run.sets.map { "\($0.reps)" }.joined(separator: "·")
+        return "\(massText(w)) × \(reps)"
+    }
+
+    /// «82,5 kg × 8» — the planned first-set prescription for an upcoming exercise.
+    private func prescriptionText(_ run: StrengthSessionModel.ExerciseRun) -> String {
+        guard run.type == .weightReps || run.type == .bodyweight else {
+            return "\(run.sets.count) " + String(localized: "series")
+        }
+        let w = run.sets.first?.weightKg ?? 0
+        let reps = run.sets.first?.reps ?? 0
+        return "\(massText(w)) × \(reps)"
+    }
+
+    /// The active exercise: rail dot + full header, then its set table inside a `surface` card (spec §3),
+    /// the inline rest card, and «Add set» — the exact content `inlineSession` rendered per exercise
+    /// before FER-929, just no longer repeated for every exercise at once.
+    @ViewBuilder private func activeExerciseBlock(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            railColumn(.active, superset: false)
+            exerciseHeader(run, ei: ei, first: true)
+        }
+        .plainRow(top: CenitMetrics.gap)
+        ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
+            setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+                .activeCardRow(top: si == 0, bottom: si == run.sets.count - 1, theme: theme)
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
+                    } label: { Label("Delete", systemImage: "trash") }
+                }
+        }
+        // The rest card (1k) slots between this exercise's rows and the next, while resting here.
+        if session.phase == .resting, ei == session.currentIndex, session.summary == nil {
+            restInlineCard
+                // A fixed rest that runs out dismisses itself — focus lands on the next active
+                // set with no tap in between (HR rests keep the card up until the buzz/skip).
+                .task(id: session.restEndsAt) {
+                    guard session.currentRestMode == .fixed, let end = session.restEndsAt else { return }
+                    let delay = end.timeIntervalSinceNow
+                    if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+                    guard !Task.isCancelled, session.phase == .resting, !session.paused else { return }
+                    withAnimation(StrandMotion.gentle) { session.skipRest() }
+                }
+                .plainRow(top: 4)
+        }
+        addSetButton(ei).plainRow(top: 4)
+    }
+
+    /// The riel's terminal node — a dotted circle affordance that opens the existing ad-hoc add-exercise
+    /// flow (`showLibraryPicker` → `addExercises`). Positional insertion is a later child (FER-929 §1).
+    private var addExerciseNode: some View {
+        Button { showLibraryPicker = true } label: {
+            HStack(spacing: 12) {
+                Circle()
+                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                    .frame(width: 18, height: 18)
+                    .overlay(
+                        Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)
+                    )
+                Text("Add exercise").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Add exercise"))
     }
 
     /// The custom keypad bound to the active cell (FER-716).
@@ -1108,18 +1256,15 @@ struct LiveStrengthSheet: View {
         platesTarget = PlatesTarget(ei: ei, weightKg: session.runs[ei].sets[si].weightKg)
     }
 
-    /// The first non-skipped exercise's index — its header skips the inter-exercise top gap.
-    private var firstActiveIndex: Int { session.runs.firstIndex { !$0.skipped } ?? 0 }
-
     private static func indices(_ ref: CellRef) -> (Int, Int) {
         switch ref { case let .weight(e, s): return (e, s); case let .reps(e, s): return (e, s) }
     }
 
-    // MARK: Session header (title + Finish + live counters)
+    // MARK: _LiveHead (FER-929 — replaces the old `sessionHeader`: nav + title + live counters)
 
-    private var sessionHeader: some View {
+    private var liveHead: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            // Row 1: minimize «‹» (session stays alive, the pill re-opens it) · routine name · «Terminar».
+            // Nav row: minimize «‹» (session stays alive, the pill re-opens it) · live/paused pulse.
             HStack(spacing: 10) {
                 Button { model.strengthSheetPresented = false } label: {
                     StrandIcon.back.image
@@ -1128,93 +1273,64 @@ struct LiveStrengthSheet: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Minimize session"))
-                Text(session.routineName).font(StrandFont.title2).foregroundStyle(theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.7)
                 Spacer(minLength: 8)
-                // FER-823: paused → «Resume» is the primary action (finish after resuming); running with
-                // sets → a pause toggle sits left of Finish; the empty ad-hoc session only offers Discard.
-                if session.paused {
-                    Button { model.resumeStrengthSessionFromPause() } label: {
-                        Label("Resume", systemImage: "play.fill").labelStyle(.titleAndIcon)
-                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                            .padding(.horizontal, 14).padding(.vertical, 6)
-                            .background(theme.surface, in: Capsule())
-                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Resume session"))
-                } else if !isEmptyAdHoc {
-                    Button { model.pauseStrengthSession() } label: {
-                        Image(systemName: "pause.fill")
-                            .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
-                            .frame(width: 38, height: 38)
-                            .background(theme.surface, in: Circle())
-                            .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Pause session"))
-                    // Ending the session is the one destructive-ish act in the header — it carries the
-                    // reserved alert hue (label + border, never a fill: primary-by-border, DNA §).
-                    Button { finishTapped() } label: {
-                        Text("Finish").font(StrandFont.subhead).foregroundStyle(theme.critical)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(theme.surface, in: Capsule())
-                            .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Finish workout"))
-                } else {
-                    Button { discardEmptySession() } label: {
-                        Text("Discard").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(theme.surface, in: Capsule())
-                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Discard workout"))
+                HStack(spacing: 6) {
+                    BpmPulseDot(color: theme.dataStrain, animated: !reduceMotion && !session.paused)
+                    Text(session.paused ? "Paused" : "In progress")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
+                .accessibilityElement(children: .combine)
             }
             .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
 
-            // Row 2 (Sesión v21): Rows 2–6 collapsed into ONE compact band. The running clock with the BPM
-            // fused right beside it, the volume·series counter to the right, and the per-exercise progress as
-            // a 3px filete underneath. FER-823: the clock counts ACTIVE time (freezes + dims while paused).
-            // kcal rides inside `counterLine` only while the strap streams (no dashes). The BPM/pulse and the
-            // filete keep every datum the old rows carried — only their arrangement changes.
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                        let elapsed = session.elapsedSeconds(now: ctx.date)
-                        Text(Self.clock(elapsed))
-                            .font(InstrumentoType.groteskSessionClockInline)
-                            .tracking(InstrumentoType.groteskSessionClockTracking)
-                            .foregroundStyle(session.paused ? theme.inkDim : theme.ink)
-                            .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
-                                                                     : "Elapsed \(Self.clock(elapsed))"))
-                    }
-                    // BPM fused to the clock — the app's one always-on pulse. Hidden (not dashed) with no strap.
-                    // PulseReader: only this fragment re-evaluates per heartbeat, including its presence (FER-755).
-                    PulseReader(model.live.pulse) { p in
-                        if let bpm = p.smoothedBpm {
-                            HStack(spacing: 6) {
-                                BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
-                                Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
-                            }
-                            .accessibilityElement(children: .combine)
-                            .accessibilityLabel(Text("Heart rate \(bpm)"))
-                        }
-                    }
-                    if session.paused {
-                        Text("Paused").font(StrandFont.caption).textCase(.uppercase).tracking(0.8)
-                            .foregroundStyle(theme.inkTertiary)
-                            .accessibilityHidden(true)   // the clock already announces the paused state
-                    }
-                    Spacer(minLength: 8)
-                    // Quiet counters — volume · series · (kcal only when the strap is streaming, no dashes).
-                    Text(counterLine).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
-                        .accessibilityElement(children: .combine)
+            // Overline: hidden in ad-hoc (no plan to name). No per-day schedule is exposed by
+            // `StrengthSessionModel` today, so this counts exercises rather than inventing a day count.
+            if !isEmptyAdHoc {
+                Text("ROUTINE · \(session.activeExercises.count) EXERCISES")
+                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+            }
+
+            // Title, underlined solid `ink` (not the dotted neutral rule reserved for table values).
+            Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
+                .font(StrandFont.title2).foregroundStyle(theme.ink)
+                .lineLimit(1).minimumScaleFactor(0.7)
+                .overlay(alignment: .bottomLeading) {
+                    Rectangle().fill(theme.ink).frame(height: 2).offset(y: 3)
                 }
-                // Per-exercise progress, now a 3px filete under the metrics band (FER-823: no hue while paused).
+                .padding(.bottom, 3)
+
+            // Metrics: clock (dims + freezes while paused, FER-823) · BPM (strap-only, never «♥ --») ·
+            // done/total · Spacer · Pausa/Reanuda + Terminar (or Discard for an empty ad-hoc session).
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                    let elapsed = session.elapsedSeconds(now: ctx.date)
+                    Text(Self.clock(elapsed))
+                        .font(InstrumentoType.groteskSessionClockInline)
+                        .tracking(InstrumentoType.groteskSessionClockTracking)
+                        .foregroundStyle(session.paused ? theme.inkDim : theme.ink)
+                        .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
+                                                                 : "Elapsed \(Self.clock(elapsed))"))
+                }
+                // BPM fused to the clock — the app's one always-on pulse. Hidden (not dashed) with no strap.
+                PulseReader(model.live.pulse) { p in
+                    if let bpm = p.smoothedBpm {
+                        HStack(spacing: 6) {
+                            BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
+                            Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(Text("Heart rate \(bpm)"))
+                    }
+                }
+                Text("· \(session.doneCount)/\(sessionSetsTotal)")
+                    .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                headActionButtons
+            }
+
+            // Per-exercise progress, a 3px filete (FER-823: no hue while paused). No plan in ad-hoc.
+            if !isEmptyAdHoc {
                 SessionProgressBar(segments: progressSegments,
                                    hue: session.paused ? theme.inkDim : theme.dataStrain,
                                    track: theme.hairline, height: 3)
@@ -1222,17 +1338,73 @@ struct LiveStrengthSheet: View {
                     .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
             }
 
-            // The Apple Watch mirror status (FER-742) — v21: drawn ONLY when the watch fails (didn't respond /
-            // no watch this session). The normal recording state costs no row. Never competes with the session.
+            // The Apple Watch mirror status (FER-742) — drawn ONLY when the watch fails.
             watchStatusLine
+        }
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
+        .background(theme.paper)
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+    }
 
-            // Focus mode entry (mock v21): full-screen capture/rest; does not replace the inline table.
+    /// The header's right-side action(s), FER-823: paused → «Resume» is the primary action (finish after
+    /// resuming); running with sets → a pause toggle sits left of Finish; an empty ad-hoc session only
+    /// offers Discard. Unchanged behavior from the pre-FER-929 `sessionHeader` — only its container moved.
+    @ViewBuilder private var headActionButtons: some View {
+        if session.paused {
+            Button { model.resumeStrengthSessionFromPause() } label: {
+                Label("Resume", systemImage: "play.fill").labelStyle(.titleAndIcon)
+                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 14).padding(.vertical, 6)
+                    .background(theme.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Resume session"))
+        } else if !isEmptyAdHoc {
+            Button { model.pauseStrengthSession() } label: {
+                Image(systemName: "pause.fill")
+                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
+                    .frame(width: 38, height: 38)
+                    .background(theme.surface, in: Circle())
+                    .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Pause session"))
+            // Ending the session is the one destructive-ish act in the header — it carries the
+            // reserved alert hue (label + border, never a fill: primary-by-border, DNA §).
+            Button { finishTapped() } label: {
+                Text("Finish").font(StrandFont.subhead).foregroundStyle(theme.critical)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(theme.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Finish workout"))
+        } else {
+            Button { discardEmptySession() } label: {
+                Text("Discard").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(theme.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Discard workout"))
+        }
+    }
+
+    // MARK: _StatsBar (FER-929 — fixed bottom bar; the keypad takes this slot instead while a cell is active)
+
+    private var statsBar: some View {
+        VStack(spacing: 8) {
+            // Focus mode entry moved here from the old header row (mock v21 → FER-929 §3): full-screen
+            // capture/rest; does not replace the inline table.
             if !isEmptyAdHoc && session.summary == nil {
                 Button { focusMode = true } label: {
-                    Label("Focus mode", systemImage: "scope")
+                    Label("Focus mode", systemImage: "arrow.up.left.and.arrow.down.right")
                         .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, CenitMetrics.gap)
+                        .padding(.horizontal, 14).padding(.vertical, 6)
                         .background(theme.surface, in: Capsule())
                         .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
@@ -1240,12 +1412,15 @@ struct LiveStrengthSheet: View {
                 .accessibilityLabel(Text("Focus mode"))
                 .accessibilityHint(Text("Opens a full-screen set logger"))
             }
+            // kg · series · (kcal only with a streaming strap, never dashes) — same source as before.
+            Text(counterLine).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
+                .accessibilityElement(children: .combine)
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 14)
-        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
         .background(theme.paper)
-        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
     // MARK: - Focus mode (full-screen cover · additive entry from the inline list)
@@ -2560,7 +2735,7 @@ struct LiveStrengthSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper)
-        .safeAreaInset(edge: .top, spacing: 0) { sessionHeader }
+        .safeAreaInset(edge: .top, spacing: 0) { liveHead }
         .task {
             guard freshSuggestions == nil else { return }
             await loadFreshSuggestions()
@@ -3476,6 +3651,21 @@ private extension View {
             .listRowInsets(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
                                       bottom: bottom, trailing: CenitMetrics.screenPadding))
             .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    /// FER-929: the active exercise's set table lives inside one `surface` card (spec §3) — `top`/`bottom`
+    /// round only the first/last row's corresponding corners so the stack of rows reads as one card.
+    func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme) -> some View {
+        let shape = UnevenRoundedRectangle(
+            topLeadingRadius: top ? CenitMetrics.cardRadius : 0,
+            bottomLeadingRadius: bottom ? CenitMetrics.cardRadius : 0,
+            bottomTrailingRadius: bottom ? CenitMetrics.cardRadius : 0,
+            topTrailingRadius: top ? CenitMetrics.cardRadius : 0)
+        return self
+            .listRowInsets(EdgeInsets(top: 0, leading: CenitMetrics.screenPadding,
+                                      bottom: 0, trailing: CenitMetrics.screenPadding))
+            .listRowBackground(shape.fill(theme.surface).overlay(shape.strokeBorder(theme.hairline, lineWidth: 1)))
             .listRowSeparator(.hidden)
     }
 }
