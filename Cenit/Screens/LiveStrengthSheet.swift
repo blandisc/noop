@@ -952,6 +952,25 @@ struct LiveStrengthSheet: View {
     /// FER-938: the id of a set just appended via «+ Serie», so its row shows the «COPIADA DE LA N» hint +
     /// dashed border until it's logged (the guard `!set.done` retires the hint the moment it's marked).
     @State private var copiedSetId: String?
+    /// FER-936: which exercise's «≡» reorder handle is momentarily emphasised (ember) after picking
+    /// «Reordenar» from its menu — a discoverability nudge toward the drag that already reorders.
+    @State private var reorderHint: Int?
+
+    /// FER-936: the breathing ember halo behind the active exercise's «···». A stroked ring (not a blurred
+    /// shadow, per DNA) that pulses opacity + scale; a steady faint ring under Reduce Motion.
+    private struct TapRing: View {
+        let color: Color
+        let animated: Bool
+        @State private var on = false
+        var body: some View {
+            Circle()
+                .strokeBorder(color, lineWidth: 2)
+                .opacity(on ? 0.10 : 0.28)
+                .scaleEffect(on ? 1.0 : 0.82)
+                .frame(width: 30, height: 30)
+                .onAppear { if animated { withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) { on = true } } }
+        }
+    }
     @State private var freshSuggestions: [QuickSuggestion]?
     @State private var loadedMuscle: String?
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
@@ -2208,8 +2227,15 @@ struct LiveStrengthSheet: View {
         Button { menuExerciseIndex = ei } label: {
             Image(systemName: "ellipsis")
                 .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(ei == session.currentIndex ? theme.dataStrain : theme.inkTertiary)
                 .frame(width: 30, height: 44)
+                .background {
+                    // FER-936 tapRing: the active exercise's «···» wears a gently breathing ember ring,
+                    // inviting a tap (menu holds Change / Reorder / Skip). Static under Reduce Motion.
+                    if ei == session.currentIndex {
+                        TapRing(color: theme.dataStrain, animated: !reduceMotion)
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2229,6 +2255,11 @@ struct LiveStrengthSheet: View {
             },
             .init(String(localized: "Skip exercise"), systemImage: "forward.end") {
                 withAnimation(.snappy) { session.skipExercise(ei) }
+            },
+            // FER-936: «Reordenar» points at the drag handle already on every header (the reorder itself
+            // rides the existing `≡` gesture); picking it emphasises that exercise's handle for a moment.
+            .init(String(localized: "Reorder"), systemImage: "line.3.horizontal") {
+                withAnimation(.snappy) { reorderHint = ei }
             }
         ]
         // Never leave the session empty — the last exercise can only be skipped, not removed.
@@ -2245,11 +2276,20 @@ struct LiveStrengthSheet: View {
     /// which keeps the focused exercise focused) — the same reorder the plan navigator exposes, now with a
     /// visible grab. VoiceOver gets explicit move-earlier / move-later actions since a drag isn't reachable.
     private func reorderHandle(ei: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
-        Image(systemName: "line.3.horizontal")
+        let hinted = reorderHint == ei
+        return Image(systemName: "line.3.horizontal")
             .font(StrandFont.glyph(.chevron))
-            .foregroundStyle(theme.inkTertiary)
+            .foregroundStyle(hinted ? theme.dataStrain : theme.inkTertiary)
+            .scaleEffect(hinted ? 1.18 : 1)
+            .animation(.snappy, value: hinted)
             .frame(width: 30, height: 44)
             .contentShape(Rectangle())
+            // FER-936: the ember nudge from the menu fades on its own after a couple of seconds.
+            .task(id: reorderHint) {
+                guard reorderHint == ei else { return }
+                try? await Task.sleep(for: .seconds(2.5))
+                if reorderHint == ei { withAnimation(.snappy) { reorderHint = nil } }
+            }
             .highPriorityGesture(
                 DragGesture(minimumDistance: 6)
                     .onEnded { value in

@@ -60359,6 +60359,16 @@
           }
         }
       }
+    },
+    "Reorder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reordenar"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
