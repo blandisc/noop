@@ -299,7 +299,7 @@ struct WorkoutImportView: View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             stepper(current: .confirm)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Import plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Import plan").instrumentoOverline().foregroundStyle(theme.dataStrain)
                 nameText(program.name, fallback: "Your program").font(StrandFont.title1).foregroundStyle(theme.ink)
                 Text(programSummary(program)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
@@ -313,7 +313,7 @@ struct WorkoutImportView: View {
                 }
             }
 
-            QuietButton(createRoutinesTitle(program.routines.count)) { save(program) }
+            StrandCTAButton(createRoutinesTitle(program.routines.count)) { save(program) }
         }
     }
 
@@ -321,23 +321,43 @@ struct WorkoutImportView: View {
         let muscles = routine.exercises.compactMap { resolution[norm($0.name)]?.primaryMuscles }
         let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
         let accent = region.tint(theme)
-        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Circle().fill(accent).frame(width: 8, height: 8)
-                nameText(routine.name, fallback: "Routine").font(StrandFont.body).foregroundStyle(theme.ink)
-                if let tag = routine.tag {
-                    Text(verbatim: "· \(tag)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        // Handoff: glyph de familia de movimiento en chip lavado con borde del tinte — espejo de Tu Plan.
+        return HStack(alignment: .top, spacing: CenitMetrics.gap) {
+            RoutineRegionGlyph(glyphKind(region), tint: accent)
+                .frame(width: 22, height: 22)
+                .frame(width: 40, height: 40)
+                .background(accent.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .strokeBorder(accent, lineWidth: 1.5))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    nameText(routine.name, fallback: "Routine")
+                        .font(StrandFont.body.weight(.semibold)).foregroundStyle(theme.ink)
+                    if let tag = routine.tag {
+                        Text(verbatim: "· \(tag)").font(StrandFont.footnote).foregroundStyle(accent)
+                    }
                 }
-            }
-            ForEach(Array(routine.exercises.enumerated()), id: \.offset) { _, ex in
-                if !omitted.contains(norm(ex.name)) {   // omitted exercises aren't imported (FER-536)
-                    Text(verbatim: exerciseLine(ex))
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(routine.exercises.enumerated()), id: \.offset) { _, ex in
+                    if !omitted.contains(norm(ex.name)) {   // omitted exercises aren't imported (FER-536)
+                        Text(verbatim: exerciseLine(ex))
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
         .padding(.vertical, CenitMetrics.gap)
+    }
+
+    private func glyphKind(_ region: RoutineRegion) -> RoutineGlyphKind {
+        switch region {
+        case .push: return .push
+        case .pull: return .pull
+        case .legs: return .legs
+        case .fullBody: return .fullBody
+        }
     }
 
     // MARK: - Done
