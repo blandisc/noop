@@ -195,6 +195,34 @@ final class CenitScreenshotTests: XCTestCase {
         }
     }
 
+    /// «Biblioteca de ejercicios» (ExerciseLibraryScreen) — entered from Tu Plan's foot row.
+    func test_biblioteca() throws {
+        let a = XCUIApplication()
+        a.launchArguments = [
+            "-noop.onboarded",               "YES",
+            "-noop.acceptedTermsVersion",    "1.0",
+            "-noop.lastSeenChangelogVersion","1.80",
+            "-noop.didOfferRestore",         "YES",
+            "-noop.fixture",                 "primed",
+        ]
+        a.launch()
+        wait(6)
+        let entrenar = a.buttons["Entrenar"].firstMatch
+        if entrenar.waitForExistence(timeout: 6) { entrenar.tap() }
+        wait(3)
+        let editar = a.buttons["Editar semana"].firstMatch
+        if editar.waitForExistence(timeout: 4) { editar.tap() }
+        wait(2)
+        a.swipeUp(); a.swipeUp(); wait(1)
+        let lib = a.buttons["Biblioteca de ejercicios"].firstMatch
+        if lib.waitForExistence(timeout: 4) { lib.tap() }
+        else { a.staticTexts["Biblioteca de ejercicios"].firstMatch.tap() }
+        wait(4)   // catalog load
+        snap("biblioteca", app: a)
+        a.swipeUp(); wait(1)
+        snap("biblioteca_2", app: a)
+    }
+
     // MARK: - All screens (empty/default state)
 
     func test_captureAllScreens() throws {
