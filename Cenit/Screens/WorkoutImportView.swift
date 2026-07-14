@@ -24,7 +24,7 @@ struct WorkoutImportView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
 
-    private enum Phase { case capture, mapping, confirm, done }
+    fileprivate enum Phase { case capture, mapping, confirm, done }
 
     /// The unmatched exercise name being mapped (wraps the name so `.sheet(item:)` has an `Identifiable`
     /// without a global `String` conformance). Names are deduped by normalization, so they're unique.
@@ -640,6 +640,7 @@ extension WorkoutImportView {
     }
 }
 
+@MainActor
 private func importPreview(_ view: WorkoutImportView) -> some View {
     view
         .environmentObject(Repository(deviceId: "preview"))
