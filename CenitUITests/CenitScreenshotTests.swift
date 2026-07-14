@@ -126,6 +126,34 @@ final class CenitScreenshotTests: XCTestCase {
         snap("tu_plan_2", app: a)
     }
 
+    /// «Mis entrenamientos» (WorkoutHistoryScreen) with the seeded demo plan+sessions. Entered from
+    /// the hub's foot row (below the fold — swipe first). Three frames: the screen is long.
+    func test_mis_entrenamientos() throws {
+        let a = XCUIApplication()
+        a.launchArguments = [
+            "-noop.onboarded",               "YES",
+            "-noop.acceptedTermsVersion",    "1.0",
+            "-noop.lastSeenChangelogVersion","1.80",
+            "-noop.didOfferRestore",         "YES",
+            "-noop.fixture",                 "primed",
+        ]
+        a.launch()
+        wait(6)
+        let entrenar = a.buttons["Entrenar"].firstMatch
+        if entrenar.waitForExistence(timeout: 6) { entrenar.tap() }
+        wait(3)
+        a.swipeUp(); a.swipeUp(); wait(1)
+        let hist = a.buttons["Mis entrenamientos y progreso"].firstMatch
+        if hist.waitForExistence(timeout: 4) { hist.tap() }
+        else { a.staticTexts["Mis entrenamientos y progreso"].firstMatch.tap() }
+        wait(3)
+        snap("mis_entrenamientos", app: a)
+        a.swipeUp(); wait(1)
+        snap("mis_entrenamientos_2", app: a)
+        a.swipeUp(); wait(1)
+        snap("mis_entrenamientos_3", app: a)
+    }
+
     // MARK: - All screens (empty/default state)
 
     func test_captureAllScreens() throws {
