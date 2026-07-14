@@ -149,8 +149,14 @@ struct WeeklyPlanEditorView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("This week").font(StrandFont.title1).foregroundStyle(theme.ink)
+            // Handoff: the same Grotesk hero voice as the hub (FER-939) — overline 12/2.4, title 28/−0.8.
+            Text("Your plan")
+                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
+                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            Text("This week")
+                .font(InstrumentoType.grotesk(28, weight: .bold)).tracking(-0.8)
+                .foregroundStyle(theme.ink)
+                .padding(.top, 2)
             if loaded && !routines.isEmpty {
                 // Handoff v4b: a terse count («4 días · 3 rutinas»), not an opinion.
                 Text("\(assignedCount) days · \(routines.count) routines")
@@ -171,10 +177,8 @@ struct WeeklyPlanEditorView: View {
 
     private var weekSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Section header, matching the volume / routines overlines — with the handoff's «tap a day» hint.
-            HStack(alignment: .firstTextBaseline) {
-                Text("The week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
+            // Handoff: the sunken section band, with the «tap a day» hint riding its trailing slot.
+            InstrumentoSectionBand("The week") {
                 Text("tap a day to edit it").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             VStack(spacing: 0) {
@@ -233,7 +237,7 @@ struct WeeklyPlanEditorView: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(weekdayLabel(wd))
-                    .font(StrandFont.mono)
+                    .font(InstrumentoType.grotesk(14, weight: .medium))
                     .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
                 if wd == today {
                     Text("today").textCase(.uppercase)
@@ -291,7 +295,7 @@ struct WeeklyPlanEditorView: View {
         let vol = weeklyVolume
         let maxV = MuscleGroup.allCases.map { vol[$0] ?? 0 }.max() ?? 1
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Weekly volume by group").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            InstrumentoSectionBand("Weekly volume by group")
             HStack(alignment: .bottom, spacing: 14) {
                 ForEach(MuscleGroup.allCases, id: \.self) { g in
                     let v = vol[g] ?? 0
@@ -304,9 +308,25 @@ struct WeeklyPlanEditorView: View {
                     }
                 }
             }
+            // Handoff: the honest footnote on a thin filete — «Series planeadas. Core quedó corto…»
+            HStack(spacing: 7) {
+                Rectangle().fill(theme.inkTertiary).frame(width: 2, height: 10)  // token-exempt: filete de dato
+                Text(volumeNote(vol, maxV: maxV))
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .padding(.top, 6)
-        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
+    }
+
+    /// «Series planeadas.» plus, when one group falls clearly behind the rest (< ¼ of the top group),
+    /// the handoff's honest note naming it. Only the weakest group is named — a hint, not a scold.
+    private func volumeNote(_ vol: [MuscleGroup: Int], maxV: Int) -> String {
+        let short = MuscleGroup.allCases
+            .map { ($0, vol[$0] ?? 0) }
+            .filter { $0.1 < max(1, maxV) / 4 }
+            .min { $0.1 < $1.1 }
+        guard maxV > 0, let g = short else { return String(localized: "Planned sets.") }
+        return String(localized: "Planned sets. \(g.0.label) fell short this week.")
     }
 
     // MARK: - Routines (flat list + create / import / templates / folders / library) — FER-890
@@ -320,7 +340,15 @@ struct WeeklyPlanEditorView: View {
 
     private var routinesSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("My routines").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // Handoff: the band carries «＋ Nueva» as its trailing action — the in-list row is gone.
+            InstrumentoSectionBand("My routines") {
+                Button { showBuilder = true } label: {
+                    (Text(verbatim: "＋ ") + Text("New"))
+                        .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("New routine"))
+            }
             VStack(alignment: .leading, spacing: 0) {
                 if routines.isEmpty {
                     Text("No routines yet. Create one, start from a template, or import a plan.")
@@ -335,8 +363,6 @@ struct WeeklyPlanEditorView: View {
                     }
                     divider
                 }
-                actionRow("plus", "New routine") { showBuilder = true }
-                divider
                 // The mock folds templates / import / folders into one row; the menu keeps all three
                 // functions (decision A: conserve plantillas, import, carpetas behind this row).
                 actionMenuRow("rectangle.stack", "Templates · Import · Folders", isPresented: $showToolsMenu, items: toolsMenuItems)
@@ -344,6 +370,22 @@ struct WeeklyPlanEditorView: View {
                 actionRow("book", "Exercise library", action: openLibrary)
             }
         }
+    }
+
+    /// The routine's movement-family glyph kind, from its classified region (nil → the dumbbell).
+    private func glyphKind(_ r: Routine) -> RoutineGlyphKind {
+        switch routineRegion[r.id] {
+        case .push: return .push
+        case .pull: return .pull
+        case .legs: return .legs
+        case .fullBody, .none: return .fullBody
+        }
+    }
+
+    /// The weekdays this routine is scheduled on, as the handoff's terse «lun·vie» (nil = unassigned).
+    private func assignedDaysText(_ r: Routine) -> String? {
+        let days = weekdays.filter { schedule[$0] == r.id }.map { weekdayLabel($0).lowercased() }
+        return days.isEmpty ? nil : days.joined(separator: "·")
     }
 
     /// Items for the «Templates · Import · Folders» menu. Folders are degraded (decision A): they're not
@@ -402,14 +444,7 @@ struct WeeklyPlanEditorView: View {
         return parts.joined(separator: " · ")
     }
 
-    /// Trailing status (mock 1c): «hoy» in green if it's today's scheduled routine, else «hace N d» from
-    /// the last time this routine was trained (nil if never).
-    private func statusText(_ r: Routine) -> (text: String, isToday: Bool)? {
-        if schedule[today] == r.id { return (String(localized: "today"), true) }
-        guard let d = lastTrainedDays[r.id] else { return nil }
-        if d <= 0 { return (String(localized: "today"), false) }
-        return (d == 1 ? String(localized: "1 d ago") : String(localized: "\(d) d ago"), false)
-    }
+    // (statusText «hoy / hace N d» retired in FER-940 — the trailing datum is the assigned days now.)
 
     @ViewBuilder
     private func routineActions(_ r: Routine) -> some View {
@@ -457,23 +492,26 @@ struct WeeklyPlanEditorView: View {
         ) {
             HStack(spacing: 8) {
                 Button { openRoutine(r.id) } label: {
+                    // Handoff (opción B, FER-940): a sunken chip with the movement-family glyph in the
+                    // routine's tint, and the assigned days («lun·vie») as the trailing datum.
                     HStack(spacing: 12) {
+                        RoutineRegionGlyph(glyphKind(r), tint: routineTint(r))
+                            .frame(width: 22, height: 22)
+                            .frame(width: 38, height: 38)
+                            .background(theme.patternBlock,
+                                        in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 7) {
-                                RoundedRectangle(cornerRadius: 3, style: .continuous)   // token-exempt: geometría de dato (punto 8pt)
-                                    .fill(routineTint(r)).frame(width: 8, height: 8)
-                                Text(r.name).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
-                            }
+                            Text(r.name).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
                             Text(metadataLine(r)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                                .padding(.leading, 15)
                         }
                         Spacer(minLength: 8)
-                        if let status = statusText(r) {
-                            Text(status.text).font(StrandFont.caption)
-                                .foregroundStyle(status.isToday ? theme.dataRecovery : theme.inkTertiary)
+                        if let days = assignedDaysText(r) {
+                            Text(days).font(InstrumentoType.grotesk(12, weight: .medium))
+                                .foregroundStyle(theme.inkSecondary)
                         }
                     }
-                    .frame(minHeight: 48).contentShape(Rectangle())
+                    .frame(minHeight: 56).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .contextMenu { routineActions(r) }

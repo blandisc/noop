@@ -60045,6 +60045,46 @@
           }
         }
       }
+    },
+    "Templates · Import · Folders": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plantillas · Importar · Carpetas"
+          }
+        }
+      }
+    },
+    "New": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva"
+          }
+        }
+      }
+    },
+    "Planned sets.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series planeadas."
+          }
+        }
+      }
+    },
+    "Planned sets. %@ fell short this week.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series planeadas. %@ quedó corto esta semana."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -376,32 +376,9 @@ private struct EntrenarLanding: View {
         model.startStrengthSession(routineId: nil, routineName: String(localized: "Quick strength"), slots: [])
     }
 
-    // MARK: - Sunken section band (handoff v4b: every section opens with a full-bleed sunken strip)
-
-    /// The handoff's section header: an uppercase overline on a full-bleed sunken strip (`patternBlock`),
-    /// with an optional trailing action. The negative padding undoes the screen inset so the band runs
-    /// edge to edge; the inner padding restores the text to the 24pt margin.
-    private func sectionBand<T: View>(_ title: LocalizedStringKey,
-                                      @ViewBuilder trailing: () -> T) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-                .font(InstrumentoType.grotesk(11, weight: .semibold)).tracking(1.4)
-                .textCase(.uppercase).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 8)
-            trailing()
-        }
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.vertical, 9)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.patternBlock)
-        .padding(.horizontal, -CenitMetrics.screenPadding)
-    }
-
-    private func sectionBand(_ title: LocalizedStringKey) -> some View {
-        sectionBand(title) { EmptyView() }
-    }
-
     // MARK: - ③ «LA SESIÓN DE HOY» (handoff v4b: the day's detail in its own band section)
+    // (The sunken section band itself is `InstrumentoSectionBand` in StrandDesign — promoted in
+    // FER-940 when «Tu Plan» adopted the same header.)
     //
     // Big Grotesk numerals for the session's shape (min · exercises · sets), the earned raise as the
     // green line (FER-G — it lives where you start), and the recovery hint on a thin green filete.
@@ -410,7 +387,7 @@ private struct EntrenarLanding: View {
     @ViewBuilder private var sesionDeHoy: some View {
         if let r = todayRoutine {
             VStack(alignment: .leading, spacing: 12) {
-                sectionBand("The session today")
+                InstrumentoSectionBand("The session today")
                 sesionMetrics(r.id)
                 if !raisesToday.isEmpty {
                     Button { openRoutine(r.id) } label: {
@@ -541,7 +518,7 @@ private struct EntrenarLanding: View {
 
     private var tuPlanSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionBand("Your plan") {
+            InstrumentoSectionBand("Your plan") {
                 Button { openWeeklyPlan() } label: {
                     Text("Edit week").font(StrandFont.subhead).foregroundStyle(theme.ink)
                 }
@@ -774,7 +751,7 @@ private struct EntrenarLanding: View {
         let months = constancyMonths
         let total = months.reduce(0) { $0 + $1.count }
         return VStack(alignment: .leading, spacing: 12) {
-            sectionBand("Consistency") {
+            InstrumentoSectionBand("Consistency") {
                 Text("\(total) sessions · 90 days")
                     .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
             }
