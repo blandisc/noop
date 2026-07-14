@@ -556,4 +556,99 @@ struct WorkoutImportView: View {
         }
     }
 }
+
+// MARK: - Previews (FER-946 — canvas del rediseño; datos espejo del handoff «Importar Plan»)
+
+#if DEBUG
+extension WorkoutImportView {
+
+    /// Canvas-only: freeze the view at a phase with seeded state, so each step renders without
+    /// driving the real flow. The live path (init(onComplete:)) is untouched.
+    fileprivate init(previewPhase: Phase,
+                     program: WorkoutProgram?,
+                     pasteText: String = "",
+                     unmatched: [String] = [],
+                     resolution: [String: Exercise] = [:],
+                     autoMatched: Set<String> = [],
+                     omitted: Set<String> = [],
+                     createdCount: Int = 0) {
+        self.onComplete = {}
+        _phase = State(initialValue: previewPhase)
+        _program = State(initialValue: program)
+        _pasteText = State(initialValue: pasteText)
+        _catalog = State(initialValue: ExerciseCatalog.all)
+        _reconciler = State(initialValue: WorkoutExerciseReconciler(
+            known: ExerciseCatalog.all, aliases: ExerciseAliasTable.bundled))
+        _unmatched = State(initialValue: unmatched)
+        _resolution = State(initialValue: resolution)
+        _autoMatched = State(initialValue: autoMatched)
+        _omitted = State(initialValue: omitted)
+        _createdCount = State(initialValue: createdCount)
+    }
+
+    /// El plan del handoff: «Bloque de fuerza 5×5» — Empuje A · Tirón A · Pierna.
+    fileprivate static let previewProgram = WorkoutProgram(
+        language: .es, name: "Bloque de fuerza 5×5", routines: [
+            WorkoutRoutine(name: "Empuje A", tag: "Lun", exercises: [
+                WorkoutExercise(name: "Press banca con barra", sets: 4, reps: 6, weightKg: 82.5),
+                WorkoutExercise(name: "Press militar con barra", sets: 4, reps: 8, weightKg: 45),
+                WorkoutExercise(name: "Contractor de pecho (máquina)", sets: 3, reps: 12),
+                WorkoutExercise(name: "Elevaciones laterales", sets: 3, reps: 15, weightKg: 10),
+            ]),
+            WorkoutRoutine(name: "Tirón A", tag: "Mié", exercises: [
+                WorkoutExercise(name: "Peso muerto", sets: 3, reps: 5, weightKg: 120),
+                WorkoutExercise(name: "Remo con barra", sets: 4, reps: 8, weightKg: 70),
+                WorkoutExercise(name: "Jalón al pecho", sets: 3, reps: 10, weightKg: 60),
+                WorkoutExercise(name: "Curl con barra", sets: 3, reps: 12, weightKg: 30),
+            ]),
+            WorkoutRoutine(name: "Pierna", tag: "Vie", exercises: [
+                WorkoutExercise(name: "Sentadilla con barra", sets: 4, reps: 6, weightKg: 100),
+                WorkoutExercise(name: "Prensa", sets: 3, reps: 10, weightKg: 180),
+                WorkoutExercise(name: "Curl femoral", sets: 3, reps: 12, weightKg: 40),
+                WorkoutExercise(name: "Gemelos de pie", sets: 4, reps: 15, weightKg: 80),
+            ]),
+        ])
+
+    fileprivate static func previewCapture() -> WorkoutImportView {
+        WorkoutImportView(previewPhase: .capture, program: nil)
+    }
+
+    /// Mapping con los tres estados del handoff: auto-match ✦, sin match (sugerencia + chips), omitido.
+    fileprivate static func previewMapping() -> WorkoutImportView {
+        let r = WorkoutExerciseReconciler(known: ExerciseCatalog.all, aliases: ExerciseAliasTable.bundled)
+        var resolution: [String: Exercise] = [:]
+        var auto: Set<String> = []
+        let autoName = "Press de banca plano"
+        if let hit = r.suggestions(for: autoName).first {
+            let key = WorkoutExerciseReconciler.normalize(autoName)
+            resolution[key] = hit
+            auto.insert(key)
+        }
+        return WorkoutImportView(
+            previewPhase: .mapping, program: previewProgram,
+            unmatched: [autoName, "Aperturas en pec-deck", "Cardio 20 min · caminadora"],
+            resolution: resolution, autoMatched: auto,
+            omitted: [WorkoutExerciseReconciler.normalize("Cardio 20 min · caminadora")])
+    }
+
+    fileprivate static func previewConfirm() -> WorkoutImportView {
+        WorkoutImportView(previewPhase: .confirm, program: previewProgram)
+    }
+
+    fileprivate static func previewDone() -> WorkoutImportView {
+        WorkoutImportView(previewPhase: .done, program: previewProgram, createdCount: 3)
+    }
+}
+
+private func importPreview(_ view: WorkoutImportView) -> some View {
+    view
+        .environmentObject(Repository(deviceId: "preview"))
+        .preferredColorScheme(.light)
+}
+
+#Preview("1 · Captura") { importPreview(.previewCapture()) }
+#Preview("2 · Mapear") { importPreview(.previewMapping()) }
+#Preview("3 · Confirmar") { importPreview(.previewConfirm()) }
+#Preview("4 · Listo") { importPreview(.previewDone()) }
+#endif
 #endif
