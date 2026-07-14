@@ -318,7 +318,11 @@ struct WorkoutImportView: View {
     }
 
     private func routinePreview(_ routine: WorkoutRoutine) -> some View {
-        let muscles = routine.exercises.compactMap { resolution[norm($0.name)]?.primaryMuscles }
+        // Resolver con la misma precedencia que save(): reconciliador (matches directos/aliases) y
+        // luego las decisiones manuales — si no, las rutinas con puros matches directos no clasifican.
+        let muscles = routine.exercises.compactMap { ex in
+            (reconciler?.resolve(ex) ?? resolution[norm(ex.name)])?.primaryMuscles
+        }
         let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
         let accent = region.tint(theme)
         // Handoff: glyph de familia de movimiento en chip lavado con borde del tinte — espejo de Tu Plan.
@@ -342,7 +346,7 @@ struct WorkoutImportView: View {
                 ForEach(Array(routine.exercises.enumerated()), id: \.offset) { _, ex in
                     if !omitted.contains(norm(ex.name)) {   // omitted exercises aren't imported (FER-536)
                         Text(verbatim: exerciseLine(ex))
-                            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
