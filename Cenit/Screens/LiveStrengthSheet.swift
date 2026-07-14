@@ -949,6 +949,9 @@ struct LiveStrengthSheet: View {
     /// appears. `nil` = not loaded yet (the `.task` hasn't resolved); `[]` = loaded, honestly no fresh
     /// muscle to suggest — one optional instead of a separate "have I tried yet" flag.
     @State private var showLibraryPicker = false
+    /// FER-938: the id of a set just appended via «+ Serie», so its row shows the «COPIADA DE LA N» hint +
+    /// dashed border until it's logged (the guard `!set.done` retires the hint the moment it's marked).
+    @State private var copiedSetId: String?
     @State private var freshSuggestions: [QuickSuggestion]?
     @State private var loadedMuscle: String?
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
@@ -2512,6 +2515,13 @@ struct LiveStrengthSheet: View {
         .padding(.horizontal, active ? 6 : 0)
         .background(active ? theme.surface : .clear,
                     in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay {
+            // FER-938: a dashed ember outline marks a just-copied, not-yet-logged set.
+            if set.id == copiedSetId, !set.done {
+                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            }
+        }
         .overlay(alignment: .bottom) {
             if !last { Rectangle().fill(theme.hairline).frame(height: 1) }
         }
@@ -2525,8 +2535,15 @@ struct LiveStrengthSheet: View {
                          set: StrengthSessionModel.WorkingSet) -> some View {
         HStack(spacing: 8) {
             badge(run: run, si: si)
-            previousCell(ei: ei, si: si, run: run)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if set.id == copiedSetId, !set.done, si > 0 {
+                // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».
+                let fromNumber = run.sets.prefix(si).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+                Text("COPIED FROM \(fromNumber)").instrumentoOverline().foregroundStyle(theme.dataStrain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                previousCell(ei: ei, si: si, run: run)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             dataCells(ei: ei, si: si, run: run, set: set)
             checkButton(ei: ei, si: si, set: set)
         }
@@ -3020,7 +3037,10 @@ struct LiveStrengthSheet: View {
     }
 
     private func addSetButton(_ ei: Int) -> some View {
-        Button { withAnimation(.snappy) { session.addSet(exercise: ei) } } label: {
+        Button {
+            withAnimation(.snappy) { session.addSet(exercise: ei) }
+            copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
+        } label: {
             Label("Add set", systemImage: "plus")
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 9)
