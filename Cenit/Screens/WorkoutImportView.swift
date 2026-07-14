@@ -218,35 +218,49 @@ struct WorkoutImportView: View {
             } else if let resolved {
                 let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
                 HStack(spacing: CenitMetrics.space2) {
-                    Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
-                        .font(StrandFont.subhead).foregroundStyle(theme.verdict)
-                        .accessibilityHidden(true)
-                    Group {
-                        if isAuto { Text("Matched automatically · \(StrengthDisplay.name(resolved))") }
-                        else { Text("Matched · \(StrengthDisplay.name(resolved))") }
+                    // Handoff: el match como pill verde lavada — el veredicto se lee de un vistazo.
+                    HStack(spacing: 5) {
+                        Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
+                            .font(StrandFont.caption)
+                            .accessibilityHidden(true)
+                        Group {
+                            if isAuto { Text("Matched automatically · \(StrengthDisplay.name(resolved))") }
+                            else { Text("Matched · \(StrengthDisplay.name(resolved))") }
+                        }
+                        .font(StrandFont.caption.weight(.semibold))
+                        .lineLimit(1).minimumScaleFactor(0.85)
                     }
-                    .font(StrandFont.subhead).foregroundStyle(theme.verdict)
+                    .foregroundStyle(theme.verdict)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .background(theme.verdict.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     Spacer(minLength: CenitMetrics.space2)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
-                    Button { mappingTarget = MappingName(name: name) } label: {
-                        Text("Change mapping").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
-                    }
-                    .buttonStyle(.plain)
                 }
                 .accessibilityElement(children: .combine)
+                Button { mappingTarget = MappingName(name: name) } label: {
+                    Text("Change mapping").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+                }
+                .buttonStyle(.plain)
             } else {
                 let suggestions = reconciler?.suggestions(for: name) ?? []
                 if !suggestions.isEmpty {
                     Text("Did you mean…").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     ForEach(suggestions, id: \.id) { s in
+                        // Handoff: la sugerencia como tarjeta — sparkle ember, nombre, y «Usar» como botón oscuro.
                         Button { resolve(name, with: s) } label: {
                             HStack(spacing: CenitMetrics.space2) {
-                                Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                                Text(StrengthDisplay.name(s)).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                                Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.dataStrain)
+                                Text(StrengthDisplay.name(s)).font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.ink)
                                 Spacer(minLength: CenitMetrics.space2)
-                                Text("Use").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                                Text("Use").font(StrandFont.caption.weight(.bold)).foregroundStyle(theme.paperHi)
+                                    .padding(.horizontal, 11).padding(.vertical, 4)
+                                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             }
-                            .padding(.vertical, CenitMetrics.space1).contentShape(Rectangle())
+                            .padding(.horizontal, 10).padding(.vertical, 8)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .strokeBorder(theme.hairline, lineWidth: 1))
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint(Text("Use \(StrengthDisplay.name(s)) for \(name)"))
