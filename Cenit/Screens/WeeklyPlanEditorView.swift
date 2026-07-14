@@ -23,6 +23,9 @@ import StrandTraining
 struct WeeklyPlanEditorView: View {
     @EnvironmentObject var repo: Repository
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Drives the volume bars' one-shot grow-from-base entry (handoff `recGrow`).
+    @State private var volumeBarsGrown = false
 
     /// Push «Rutina» — the prescription editor for a routine tapped in the list (FER-839/840).
     var openRoutine: (String) -> Void
@@ -297,17 +300,22 @@ struct WeeklyPlanEditorView: View {
         return VStack(alignment: .leading, spacing: 10) {
             InstrumentoSectionBand("Weekly volume by group")
             HStack(alignment: .bottom, spacing: 14) {
-                ForEach(MuscleGroup.allCases, id: \.self) { g in
+                ForEach(Array(MuscleGroup.allCases.enumerated()), id: \.element) { i, g in
                     let v = vol[g] ?? 0
                     VStack(spacing: 5) {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt: geometría de dato
                             .fill(v == 0 ? theme.hairlineStrong : g.tint(theme))
                             .frame(height: max(8, CGFloat(v) / CGFloat(max(1, maxV)) * 34))
                             .frame(maxWidth: .infinity)
+                            // Handoff `recGrow`: each bar grows from its base on entry, staggered
+                            // left→right (150→330 ms). Reduce Motion skips it (bars appear settled).
+                            .scaleEffect(y: volumeBarsGrown || reduceMotion ? 1 : 0.001, anchor: .bottom)
+                            .animation(StrandMotion.gentle.delay(0.15 + 0.06 * Double(i)), value: volumeBarsGrown)
                         Text(g.label).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }
                 }
             }
+            .onAppear { volumeBarsGrown = true }
             // Handoff: the honest footnote on a thin filete — «Series planeadas. Core quedó corto…»
             HStack(spacing: 7) {
                 Rectangle().fill(theme.inkTertiary).frame(width: 2, height: 10)  // token-exempt: filete de dato
