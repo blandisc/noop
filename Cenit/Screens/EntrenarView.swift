@@ -106,6 +106,14 @@ private struct EntrenarLanding: View {
     @State private var constancyPopup: ConstancyPopup? = nil
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
     @State private var showTemplates = false
+    /// Entrance reveal (FER-944): flips true once per mount — «Empezar» + the five discs fade/rise in a
+    /// short stagger the FIRST time the loaded hero appears. Re-entering the tab with the view alive
+    /// keeps it true, so the screen re-appears settled.
+    @State private var revealed = false
+    /// Whether that entrance actually animates. Stays false (elements appear settled, glyphs static)
+    /// when the reveal is suppressed: arrival via `startTodaySession`, the empty state, or Reduce Motion.
+    @State private var entrancePlays = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -274,8 +282,12 @@ private struct EntrenarLanding: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)
             }
-            empezarButton.padding(.top, 14)
-            formasDiscos.padding(.top, 12)
+            // FER-944 rhythm: the datum→action border (16) reads clearly wider than the hero's inner
+            // gaps (4/8), so the block squints as three masses — text, button, discs.
+            empezarButton
+                .padding(.top, CenitMetrics.sectionGapCompact)
+                .entranceReveal(revealed: revealed, plays: entrancePlays, delay: 0)
+            formasDiscos.padding(.top, CenitMetrics.gap)
         }
     }
 
@@ -401,6 +413,7 @@ private struct EntrenarLanding: View {
                             StrandIcon.disclosure.image
                                 .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                         }
+                        .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -545,6 +558,7 @@ private struct EntrenarLanding: View {
                 Spacer(minLength: 8)
             }
             .padding(.vertical, 11)
+            .frame(minHeight: 44)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -609,30 +623,43 @@ private struct EntrenarLanding: View {
     // paper), so no raw hex or new tokens.
 
     private struct FormOption: Identifiable {
-        let icon: String
+        let glyph: TrainGlyph
         let label: LocalizedStringKey
+        let hint: LocalizedStringKey
         let tint: Color
         let action: () -> Void
-        var id: String { icon }
+        var id: String { glyph.rawValue }
     }
 
     /// The five training doors in the icon grid. Diet sits as a quiet full-width row below (not a chip).
+    /// Glyphs are the custom `TrainGlyph` set (FER-944) — each performs its own entrance gesture.
     private var formOptions: [FormOption] {
         [
-            FormOption(icon: "bolt", label: "Quick", tint: theme.dataStrain) { startQuickStrength() },
-            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live", tint: theme.dataHeart) { startLive() },
-            FormOption(icon: "timer", label: "Interval", tint: theme.dataSleep) { openIntervals() },
-            FormOption(icon: "figure.flexibility", label: "Mobility", tint: theme.dataHrv) { model.startMobilityOneOff() },
-            FormOption(icon: "wind", label: "Breathe", tint: theme.dataRecovery) { openBreathe() },
+            FormOption(glyph: .quick, label: "Quick",
+                       hint: "Starts a quick strength session, no routine.",
+                       tint: theme.dataStrain) { startQuickStrength() },
+            FormOption(glyph: .live, label: "Live",
+                       hint: "Starts a live workout with heart rate.",
+                       tint: theme.dataHeart) { startLive() },
+            FormOption(glyph: .interval, label: "Intervals",
+                       hint: "Opens the interval timer.",
+                       tint: theme.dataSleep) { openIntervals() },
+            FormOption(glyph: .mobility, label: "Mobility",
+                       hint: "Starts a guided mobility session.",
+                       tint: theme.dataHrv) { model.startMobilityOneOff() },
+            FormOption(glyph: .breathe, label: "Breathe",
+                       hint: "Opens guided breathing.",
+                       tint: theme.dataRecovery) { openBreathe() },
         ]
     }
 
     /// The five discs alone — they now ride the hero, directly under «Empezar» (FER-939, the FER-920
-    /// placement decision finally applied). No overline: their position IS the label.
+    /// placement decision finally applied). No overline: their position IS the label. Each disc joins
+    /// the entrance a beat after «Empezar», left to right (FER-944).
     private var formasDiscos: some View {
-        HStack(alignment: .top, spacing: 6) {
-            ForEach(formOptions) { opt in
-                formChip(opt)
+        HStack(alignment: .top, spacing: CenitMetrics.space2) {
+            ForEach(Array(formOptions.enumerated()), id: \.element.id) { i, opt in
+                formChip(opt, entranceDelay: 0.05 + Double(i) * 0.04)
             }
         }
     }
@@ -661,7 +688,7 @@ private struct EntrenarLanding: View {
                     .foregroundStyle(theme.inkDim)
             }
             .padding(.vertical, CenitMetrics.gap)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -669,30 +696,34 @@ private struct EntrenarLanding: View {
 
     /// One card chip in the «Formas de entrenar» row (FER-939): the handoff's square card SHAPE
     /// (rounded rect, label inside) carrying the FER-920 «troquel» color — solid data-token fill,
-    /// glyph AND label knocked out in paper, rimmed a step deeper (`dataEdge`) so it reads as a
-    /// die-cut token rather than a colored sticker. Runs its door's action.
-    private func formChip(_ opt: FormOption) -> some View {
+    /// glyph AND label knocked out in paper. The dark `dataEdge` rim is gone (FER-944): the solid
+    /// fill on paper cuts itself out; less line, more instrument. Runs its door's action.
+    private func formChip(_ opt: FormOption, entranceDelay: Double) -> some View {
         Button {
             opt.action()
         } label: {
-            VStack(spacing: 4) {
-                Image(systemName: opt.icon).font(StrandFont.glyph(.lead, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    .frame(height: 22)   // equal glyph slot — SF symbols vary in intrinsic height
+            VStack(spacing: CenitMetrics.space1) {
+                TrainGlyphView(opt.glyph, color: theme.paper, play: entrancePlays && !reduceMotion,
+                               active: revealed,
+                               delay: entranceDelay + 0.30)   // the gesture starts once its disc settles
+                    .frame(width: 20, height: 20)
+                    .frame(height: 22)   // equal glyph slot
                     .accessibilityHidden(true)
-                Text(opt.label).font(StrandFont.overline).foregroundStyle(theme.paper)
+                Text(opt.label)
+                    .font(InstrumentoType.groteskOverline).tracking(InstrumentoType.groteskOverlineTracking)
+                    .foregroundStyle(theme.paper)
                     .lineLimit(1).minimumScaleFactor(0.65)
             }
-            .padding(.vertical, 9)
-            .padding(.horizontal, 2)
+            .padding(.vertical, CenitMetrics.space2)
+            .padding(.horizontal, CenitMetrics.space1)
             .frame(maxWidth: .infinity, minHeight: 44)   // HIG: keep the whole chip a ≥44pt tap target
             .background(opt.tint, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                .strokeBorder(theme.dataEdge(opt.tint), lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(opt.label)
+        .accessibilityHint(opt.hint)
+        .entranceReveal(revealed: revealed, plays: entrancePlays, delay: entranceDelay)
     }
 
     /// «En vivo» from the expanded pill: start (or resume) the live HR workout and present its sheet — the
@@ -1116,6 +1147,26 @@ private struct EntrenarLanding: View {
         todaySlots = slots
         sessions = (try? await store.recentSessions(limit: 200)) ?? []
         loaded = true
+        // Entrance reveal (FER-944): decided once, on the FIRST load only. It animates only when the
+        // loaded hero actually lands in front of the user: not when the Daily Brief is about to cover it
+        // with the session (`startTodaySession`/`startWhenLoaded`), not in the empty/error states, and
+        // never under Reduce Motion (elements appear settled; the per-element `.animation` is nil'd).
+        if !revealed {
+            let briefStart = startWhenLoaded || tabRouter.startTodaySession
+            // Reduce Motion still reveals (crossfade), so it's NOT part of this gate — the modifier
+            // and the glyphs degrade on their own.
+            entrancePlays = !split.isEmpty && !loadFailed && !briefStart
+            if entrancePlays {
+                // Let the hidden state render one frame first, then flip — each element animates the
+                // change with its own delay. Without the beat, both land in one render and nothing moves.
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 50_000_000)
+                    revealed = true
+                }
+            } else {
+                revealed = true
+            }
+        }
         // A «Empezar» from the Daily Brief that arrived before the prefetch finished now has its slots (FER-613).
         if startWhenLoaded { startWhenLoaded = false; startToday() }
     }
@@ -1139,6 +1190,37 @@ private struct EntrenarLanding: View {
             return a != b ? a > b : (idx[$0] ?? 0) < (idx[$1] ?? 0)
         }.prefix(3)
         return top.map { MuscleVocabulary.es[$0] ?? $0.capitalized }
+    }
+}
+
+// MARK: - Entrance reveal (FER-944)
+//
+// The once-per-mount fade+rise for «Empezar» and the five discs. Pure paint (opacity/offset), so the
+// element is tappable from frame 0. Reduce Motion keeps the crossfade but drops the rise AND the
+// stagger (delay 0). With `plays == false` the modifier is inert — the element renders settled.
+
+private struct EntranceReveal: ViewModifier {
+    let revealed: Bool
+    let plays: Bool
+    let delay: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(plays ? (revealed ? 1 : 0) : 1)
+            .offset(y: plays && !reduceMotion ? (revealed ? 0 : CenitMetrics.space2) : 0)
+            .animation(plays ? animation : nil, value: revealed)
+    }
+
+    private var animation: Animation {
+        reduceMotion ? StrandMotion.fade
+                     : .easeOut(duration: StrandMotion.durationStandard).delay(delay)
+    }
+}
+
+private extension View {
+    func entranceReveal(revealed: Bool, plays: Bool, delay: Double) -> some View {
+        modifier(EntranceReveal(revealed: revealed, plays: plays, delay: delay))
     }
 }
 
