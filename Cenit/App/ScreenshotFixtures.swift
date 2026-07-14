@@ -229,6 +229,9 @@ enum ScreenshotFixtures {
     @MainActor
     static func seedTrainingPlan(_ model: AppModel) async {
         guard let store = await model.repo.storeHandle() else { return }
+        // Idempotent: the fixture relaunches between captures and the store persists — seeding again
+        // would duplicate the routines (first capture showed «18 rutinas»: 6× each).
+        if let existing = try? await store.routines(), !existing.isEmpty { return }
         let now = Int(Date().timeIntervalSince1970)
         let cal = Calendar(identifier: .gregorian)
 

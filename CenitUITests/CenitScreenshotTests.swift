@@ -101,6 +101,31 @@ final class CenitScreenshotTests: XCTestCase {
         snap("entrenar_hub_2", app: a)
     }
 
+    /// FER-939 follow-up · «Tu Plan» (WeeklyPlanEditorView) with the seeded demo plan: hero, LA SEMANA
+    /// (one row per day), weekly volume, MIS RUTINAS. Entered from the hub's «Editar semana».
+    func test_tu_plan() throws {
+        let a = XCUIApplication()
+        a.launchArguments = [
+            "-noop.onboarded",               "YES",
+            "-noop.acceptedTermsVersion",    "1.0",
+            "-noop.lastSeenChangelogVersion","1.80",
+            "-noop.didOfferRestore",         "YES",
+            "-noop.fixture",                 "primed",
+        ]
+        a.launch()
+        wait(6)   // seeding (dashboard + plan) is async
+        let entrenar = a.buttons["Entrenar"].firstMatch
+        if entrenar.waitForExistence(timeout: 6) { entrenar.tap() }
+        wait(3)
+        let editar = a.buttons["Editar semana"].firstMatch
+        if editar.waitForExistence(timeout: 4) { editar.tap() }
+        else { a.staticTexts["Editar semana"].firstMatch.tap() }
+        wait(3)
+        snap("tu_plan", app: a)
+        a.swipeUp(); wait(1)
+        snap("tu_plan_2", app: a)
+    }
+
     // MARK: - All screens (empty/default state)
 
     func test_captureAllScreens() throws {
