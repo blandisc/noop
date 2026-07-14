@@ -91,4 +91,36 @@ private struct AppMapGrid: View {
     }
     .background(Color(white: 0.14))
 }
+
+/// Una celda que monta el hub de Entrenar REAL, sembrado con el fixture `train` (FER-943) — la pantalla
+/// completa dentro del Canvas, con su plan, discos y la animación de entrada (FER-944). Los cierres de
+/// navegación son no-ops: el preview es para mirar la portada, no para navegar.
+private struct EntrenarMapCell: View {
+    @StateObject private var model = AppModel()
+    @State private var seeded = false
+
+    var body: some View {
+        EntrenarView(openRoutine: { _ in }, openBreathe: {}, openIntervals: {}, openDiet: {},
+                     openHistory: {}, openWeeklyPlan: {}, openRoutines: {}, openRestDay: {},
+                     openOtherWays: {}, openWorkoutSession: { _ in })
+            .environmentObject(model.repo)
+            .environmentObject(model)
+            .environmentObject(TabRouter())
+            .environmentObject(HealthKitBridge(repo: model.repo,
+                                               appleDeviceId: "map-apple",
+                                               noopDeviceId: "map"))
+            .environment(model.live)
+            .preferredColorScheme(.light)
+            .frame(width: 393, height: 852)
+            .task {
+                guard !seeded else { return }
+                seeded = true
+                await ScreenshotFixtures.seed(model, state: "train")
+            }
+    }
+}
+
+#Preview("Entrenar · hub (con plan)") {
+    EntrenarMapCell()
+}
 #endif
