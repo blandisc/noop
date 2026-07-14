@@ -53,6 +53,20 @@ MAP = [
     ("descargando", "insufficient", "sin historia previa"),
   ],
  },
+ {
+  "name": "Entrenar · flujo de fuerza",
+  "blurb": "El hub del tracker (plan sembrado: split Empuje/Jalón/Pierna, Empuje = hoy) → la sesión "
+           "guiada serie por serie. El corazón del tracker de fuerza.",
+  "nodes": {
+    "hub":    ("entrenar-hub.png", "Entrenar · hub",
+               "rutina de hoy («Empuje») + recuperación + «La sesión de hoy» + Tu Plan semanal + herramientas", 0, 0),
+    "sesion": ("entrenar-sesion.png", "Sesión guiada de fuerza",
+               "«En curso» · foco serie×serie: tabla editable (kg/reps/RPE) + descanso por FC + siguientes ejercicios", 520, 0),
+  },
+  "edges": [
+    ("hub", "sesion", "Empezar"),
+  ],
+ },
 ]
 
 def esc(s): return html.escape(s, quote=True)
@@ -357,6 +371,8 @@ SHOT_SRC = {
     "hoy-equilibrado.png":  "today_balanced.png",
     "hoy-exigido.png":      "today_strained.png",
     "hoy-desgastado.png":   "today_rundown.png",
+    "entrenar-hub.png":     "train-hub.png",
+    "entrenar-sesion.png":  "train-sesion.png",
 }
 SHOT_W = 800   # ancho al que se reescalan las capturas para el repo/muro (nítido, ligero)
 
