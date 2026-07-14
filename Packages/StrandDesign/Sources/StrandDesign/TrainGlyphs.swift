@@ -3,8 +3,9 @@ import SwiftUI
 // MARK: - TrainGlyphs — the five «Formas de entrenar» disc glyphs, each with its own gesture (FER-944)
 //
 // Custom-drawn (not SF Symbols) so each can perform its one entrance move: the bolt DRAWS itself,
-// live PULSES from its dot, the interval hand SWEEPS one turn, mobility STRETCHES side to side, and
-// breath BLOWS its lines in sequence. The gesture runs ONCE (after the disc settles) and then the
+// live PULSES from its dot, the interval hand SWEEPS one turn, mobility RUNS IN from the left and
+// stops standing, and breath INHALES/EXHALES its lines. The gesture runs ONCE (after the disc
+// settles) and then the
 // glyph rests as a static icon — never a loop. With `play == false` (Reduce Motion, or an entrance
 // the screen suppressed) the glyph renders its rest state immediately, so it is never invisible.
 // Stroke color comes from the caller (paper knockout on the tinted discs).
@@ -38,7 +39,7 @@ public struct TrainGlyphView: View {
             case .quick:    BoltDraw(color: color, pending: pending)
             case .live:     LivePulse(color: color, pending: pending)
             case .interval: IntervalSweep(color: color, pending: pending)
-            case .mobility: MobilityStretch(color: color, pending: pending)
+            case .mobility: MobilityRun(color: color, pending: pending)
             case .breathe:  BreatheBlow(color: color, pending: pending)
             }
         }
@@ -169,80 +170,119 @@ private struct IntervalSweep: View {
     }
 }
 
-// MARK: Movilidad — the figure stretches side to side twice, then stands
+// MARK: Movilidad — the little figure RUNS IN from the left, strides swapping, and stops standing
 
-private struct MobilityStretch: View {
+private struct MobilityRun: View {
     let color: Color
     let pending: Bool
-    @State private var tilt: Double = 0
+    /// .stand at rest; .runA/.runB alternate as sprite frames while the figure slides in.
+    @State private var pose: FigurePose = .stand
+    @State private var entered = true   // false only while the gesture holds the figure offscreen
+
     var body: some View {
-        FigureShape()
-            .stroke(color, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
-            .rotationEffect(.degrees(tilt), anchor: .bottom)
-            .onChange(of: pending) { was, now in
-                if was, !now { Task { await stretch() } }
-            }
+        GeometryReader { geo in
+            FigureShape(pose: pose)
+                .stroke(color, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                .offset(x: entered ? 0 : -(geo.size.width * 1.2))
+                .opacity(entered ? 1 : 0)
+        }
+        .onAppear {
+            // Armed from the first frame: hold the figure just off the left edge, mid-stride.
+            if pending { entered = false; pose = .runA }
+        }
+        .onChange(of: pending) { was, now in
+            if was, !now { Task { await runIn() } }
+        }
     }
 
-    @MainActor private func stretch() async {
-        for side in [-10.0, 10.0, -10.0, 10.0] {
-            withAnimation(.easeInOut(duration: 0.4)) { tilt = side }
-            try? await Task.sleep(nanoseconds: 420_000_000)
+    @MainActor private func runIn() async {
+        withAnimation(.easeOut(duration: 0.7)) { entered = true }
+        // Sprite-style stride swaps while it slides in — snapped, not tweened.
+        for i in 0..<5 {
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            var snap = Transaction(); snap.disablesAnimations = true
+            withTransaction(snap) { pose = i.isMultiple(of: 2) ? .runB : .runA }
         }
-        withAnimation(.easeInOut(duration: 0.3)) { tilt = 0 }
+        withAnimation(.easeOut(duration: 0.25)) { pose = .stand }
     }
 }
 
+private enum FigurePose { case stand, runA, runB }
+
+/// A small stick figure — clearly a person: head, torso, two arms, two legs. `stand` is the resting
+/// icon; `runA`/`runB` are the two stride frames (leaning, legs and arms scissored) for the run-in.
 private struct FigureShape: Shape {
+    let pose: FigurePose
     func path(in rect: CGRect) -> Path {
         func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
             CGPoint(x: rect.minX + x / 18 * rect.width, y: rect.minY + y / 18 * rect.height)
         }
         var path = Path()
-        // Head
-        path.addEllipse(in: CGRect(x: p(7.2, 1.8).x, y: p(7.2, 1.8).y,
-                                   width: rect.width * 3.6 / 18, height: rect.height * 3.6 / 18))
-        // Bending torso→leg
-        path.move(to: p(9, 6.2))
-        path.addCurve(to: p(5.5, 15.5), control1: p(9, 9.5), control2: p(6.8, 11.5))
-        // Reaching arm
-        path.move(to: p(9, 8.2))
-        path.addCurve(to: p(13, 13.5), control1: p(11, 9), control2: p(13, 11))
+        func head(cx: CGFloat, cy: CGFloat) {
+            let r = 1.9 / 18 * rect.width
+            let c = p(cx, cy)
+            path.addEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
+        }
+        func line(_ a: CGPoint, _ b: CGPoint) { path.move(to: a); path.addLine(to: b) }
+        switch pose {
+        case .stand:
+            head(cx: 9, cy: 3.6)
+            line(p(9, 5.7), p(9, 11))             // torso
+            line(p(9, 7), p(6.2, 9.6))            // arms, relaxed
+            line(p(9, 7), p(11.8, 9.6))
+            line(p(9, 11), p(6.8, 15.6))          // legs, slightly apart
+            line(p(9, 11), p(11.2, 15.6))
+        case .runA:
+            head(cx: 10.6, cy: 3.8)
+            line(p(10.2, 5.9), p(8.6, 10.8))      // torso leaning forward
+            line(p(9.6, 7.2), p(13, 6.4))         // front arm up
+            line(p(9.6, 7.2), p(6.4, 9))          // back arm
+            line(p(8.6, 10.8), p(12.4, 13.4))     // front leg reaching
+            line(p(8.6, 10.8), p(5.2, 14.6))      // back leg trailing
+        case .runB:
+            head(cx: 10.6, cy: 3.8)
+            line(p(10.2, 5.9), p(8.6, 10.8))      // torso leaning forward
+            line(p(9.6, 7.2), p(12.6, 9.2))       // front arm low
+            line(p(9.6, 7.2), p(6.6, 6.2))        // back arm up
+            line(p(8.6, 10.8), p(10.6, 15))       // legs gathered under
+            line(p(8.6, 10.8), p(7, 14.2))
+        }
         return path
     }
 }
 
-// MARK: Respira — the wind blows its three lines in sequence, twice
+// MARK: Respira — the wind lines INHALE and EXHALE: two slow swells, then still
 
 private struct BreatheBlow: View {
     let color: Color
     let pending: Bool
-    @State private var drawn: [CGFloat] = [1, 1, 1]
+    /// 0 = at rest; 1 = full inhale (lines swell outward and brighten).
+    @State private var breath: CGFloat = 0
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 ForEach(0..<3, id: \.self) { i in
                     WindLine(row: i)
-                        .trim(from: 0, to: drawn[i])
                         .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
+            .scaleEffect(1 + breath * 0.14, anchor: .leading)
+            .opacity(0.78 + Double(breath) * 0.22)
         }
         .onChange(of: pending) { was, now in
-            if was, !now { Task { await blow() } }
+            if was, !now { Task { await breathe() } }
         }
     }
 
-    @MainActor private func blow() async {
+    /// Two inhale/exhale cycles at a calm cadence (the system's physiological «breathe» motif),
+    /// settling back to rest — no erase/redraw, just the lines swelling like a breath.
+    @MainActor private func breathe() async {
         for _ in 0..<2 {
-            var snap = Transaction(); snap.disablesAnimations = true
-            withTransaction(snap) { drawn = [0, 0, 0] }
-            for i in 0..<3 {
-                withAnimation(.easeOut(duration: 0.45)) { drawn[i] = 1 }
-                try? await Task.sleep(nanoseconds: 130_000_000)
-            }
-            try? await Task.sleep(nanoseconds: 550_000_000)
+            withAnimation(.easeInOut(duration: 0.55)) { breath = 1 }     // inhale
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            withAnimation(.easeInOut(duration: 0.7)) { breath = 0 }      // exhale
+            try? await Task.sleep(nanoseconds: 750_000_000)
         }
     }
 }
