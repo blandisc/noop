@@ -94,7 +94,7 @@ struct WorkoutImportView: View {
             header("Import plan", "Bring your plan from your AI")
 
             step(1, "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).") {
-                QuietButton(copied ? "Copied" : "Copy prompt") { copyPrompt() }
+                emberButton(copied ? "Copied" : "Copy prompt") { copyPrompt() }
             }
 
             step(2, "Bring back the file it gives you: paste it or upload it.") {
@@ -109,10 +109,36 @@ struct WorkoutImportView: View {
                 }
             }
 
+            privacyNote
+        }
+    }
+
+    /// Handoff: la promesa offline como tarjeta con barra verde — es la garantía del flujo, no letra chica.
+    private var privacyNote: some View {
+        HStack(alignment: .top, spacing: CenitMetrics.gap) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(theme.verdict).frame(width: 3)
             Text("Your routines are created on your iPhone. NOOP never connects: you run the AI step yourself.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(CenitMetrics.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Handoff: acción de acento dentro de un paso (ember lleno) — distinta del CTA canónico de tinta.
+    private func emberButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(StrandFont.headline).foregroundStyle(theme.paperHi)
+                .padding(.horizontal, 18).padding(.vertical, 10)
+                .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var pasteField: some View {
@@ -360,7 +386,7 @@ struct WorkoutImportView: View {
 
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(overline).instrumentoOverline().foregroundStyle(theme.dataStrain)
             Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
         }
     }
@@ -368,7 +394,10 @@ struct WorkoutImportView: View {
     private func step<Action: View>(_ n: Int, _ text: LocalizedStringKey,
                                     @ViewBuilder action: () -> Action) -> some View {
         HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            Text("\(n)").font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkTertiary)
+            Text("\(n)").font(StrandFont.subhead.weight(.bold)).monospacedDigit()
+                .foregroundStyle(theme.paperHi)
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(theme.dataStrain))
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text(text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
