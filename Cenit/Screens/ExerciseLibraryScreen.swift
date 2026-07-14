@@ -84,15 +84,22 @@ struct ExerciseLibraryScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(addMode ? "Add to routine" : "Train")
-                .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("Library").font(StrandFont.title1).foregroundStyle(theme.ink)
-            // The count reflects the REAL loaded catalog (never a made-up figure). Hidden until loaded so
-            // it never flashes a wrong 0.
-            if loaded {
-                Text("\(exercises.count) exercises")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            // Handoff: overline «BIBLIOTECA» + the COUNT as the Grotesk hero title («873 ejercicios»).
+            // The count reflects the REAL loaded catalog (never a made-up figure) — until it loads, the
+            // title falls back to the section name so nothing flashes a wrong 0.
+            Text(addMode ? "Add to routine" : "Library")
+                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
+                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            Group {
+                if loaded {
+                    Text("\(exercises.count) exercises")
+                } else {
+                    Text("Library")
+                }
             }
+            .font(InstrumentoType.grotesk(28, weight: .bold)).tracking(-0.8)
+            .foregroundStyle(theme.ink)
+            .padding(.top, 2)
         }
     }
 
@@ -185,7 +192,7 @@ struct ExerciseLibraryScreen: View {
             }
             // «Con historial tuyo» — the exercises you've logged, first, each with its best mark + sparkline.
             if !mine.isEmpty {
-                Text("With your history").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                InstrumentoSectionBand("With your history")
                     .padding(.top, 4).padding(.bottom, 6)
                 ForEach(mine) { ex in
                     exerciseRow(ex, showsHistory: true)
@@ -195,10 +202,7 @@ struct ExerciseLibraryScreen: View {
             // «De la biblioteca» — catalog remainder, one overline section per primary muscle.
             if !rest.isEmpty {
                 ForEach(Array(libraryGroups.enumerated()), id: \.element.key) { index, group in
-                    Text(group.key.isEmpty
-                         ? String(localized: "Other")
-                         : StrengthDisplay.muscle(group.key) + " · " + String(localized: "FROM THE LIBRARY"))
-                        .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    InstrumentoSectionBand("\(group.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(group.key)) · \(String(localized: "FROM THE LIBRARY"))")
                         .padding(.top, index == 0 && mine.isEmpty ? 4 : 18).padding(.bottom, 6)
                     ForEach(group.items) { ex in
                         exerciseRow(ex, showsHistory: false)
@@ -216,33 +220,50 @@ struct ExerciseLibraryScreen: View {
             detail = ex
         } label: {
             HStack(spacing: 13) {
+                // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
                 ExerciseThumbView(exercise: ex, side: 48)   // cached GIF still, or paper placeholder (FER-790)
+                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                        .strokeBorder(familyTint(ex), lineWidth: 2))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .multilineTextAlignment(.leading)
-                    // Best mark for a history row; the muscle subtitle otherwise.
-                    if showsHistory, let kg = bestKg[ex.id] {
-                        Text("your record \(StrengthDisplay.weight(kg, system: system))")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    } else {
-                        Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
+                    Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                // A quiet weight-over-time sparkline in the «paper trench» for history rows.
+                // The quiet weight-over-time sparkline stays (a Cénit extra the handoff didn't draw).
                 if showsHistory, let s = sparklines[ex.id], s.count >= 2 {
                     Sparkline(values: s,
                               gradient: Gradient(colors: [theme.inkTertiary, theme.inkSecondary]),
                               bandColor: theme.hairlineStrong,
                               showsHead: false, showsScrub: false)
-                        .frame(width: 56, height: 20)
+                        .frame(width: 46, height: 18)
                         .accessibilityHidden(true)
+                }
+                // Handoff: the best mark as the right-hand datum, in the family hue («82,5 kg / tu récord»).
+                if showsHistory, let kg = bestKg[ex.id] {
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(StrengthDisplay.weight(kg, system: system))
+                            .font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(familyTint(ex))
+                        Text("your record")
+                            .font(InstrumentoType.grotesk(10)).foregroundStyle(theme.inkTertiary)
+                    }
+                    .accessibilityElement(children: .combine)
                 }
                 trailingAccessory(ex)
             }
             .padding(.vertical, 11).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// The movement-family hue for an exercise (push=ember · pull=teal · legs=indigo), from its
+    /// first primary muscle — same mapping as the history screen's muscle bars.
+    private func familyTint(_ ex: Exercise) -> Color {
+        let m = (ex.primaryMuscles.first ?? "").lowercased()
+        if ["chest", "shoulders", "triceps"].contains(where: m.contains) { return theme.dataStrain }
+        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return theme.dataHrv }
+        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return theme.dataSleep }
+        return theme.dataStrain
     }
 
     /// The trailing control: an «Add» affordance in ADD mode (a check when picked), a chevron in BROWSE.
@@ -271,11 +292,12 @@ struct ExerciseLibraryScreen: View {
 
     private var createRow: some View {
         Button { showCreate = true } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                Text("Create exercise").font(StrandFont.body)
+                    .foregroundStyle(theme.dataStrain)   // handoff: the ＋ carries the ember accent
+                Text("Create your own exercise").font(StrandFont.body).foregroundStyle(theme.ink)
             }
-            .foregroundStyle(theme.inkSecondary).padding(.vertical, 13).contentShape(Rectangle())
+            .padding(.vertical, 13).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

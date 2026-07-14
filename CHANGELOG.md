@@ -19,6 +19,12 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Biblioteca» fiel al handoff / "Library" reconciled to the handoff.**
+  **ES** — La biblioteca adopta la firma del handoff: overline «BIBLIOTECA» con **el conteo como título** («873 ejercicios», Grotesk), bandas hundidas («CON HISTORIAL TUYO», «{MÚSCULO} · DE LA BIBLIOTECA»), **miniaturas con marco del color de su familia** (empuje/tirón/pierna), y el récord como **dato derecho en su color** («80 kg / tu récord») conservando la mini-tendencia de peso. «＋ Crear ejercicio propio» con el ＋ en ámbar. Bugs es-MX: «Type», «your record» y «FROM THE LIBRARY» salían en inglés.
+  **EN** — The library adopts the handoff's signature: the count as the Grotesk hero title, sunken section bands, thumbnails framed in their movement-family hue, and the record as the right-hand datum in that hue (keeping the weight sparkline). es-MX bugs: three strings rendered in English.
+  ([ExerciseLibraryScreen.swift](Cenit/Screens/ExerciseLibraryScreen.swift))
+
+
 - **«Mis entrenamientos» espejo del handoff v2 / "My workouts" mirrored to the v2 handoff.**
   **ES** — El historial adopta la firma completa del handoff: héroe con overline y **«Vas al alza»** (antes salía en inglés), tarjeta **«TU MES»** con badge verde del delta, barras semanales con **tap-por-barra** y strip «ESTA SEMANA · EN CURSO · N kg», **3 tiles** (Sesiones · Horas · Energía kcal), **volumen por músculo teñido por familia** (top 4 + el más débil, «Ver mapa» en la banda, nota honesta), **sesiones como filas compactas** con el glyph de su familia y «día · min · kg» (antes tarjetas altas), y tickets bajo banda. Bugs es-MX: «On the rise», «vs last month» y «My saved tickets» salían en inglés.
   **EN** — The history adopts the handoff's full signature: overline hero with the translated title, a "YOUR MONTH" card with the green delta badge, weekly bars with tap-to-switch and the "THIS WEEK · IN PROGRESS · N kg" strip, three tiles (Sessions · Hours · Energy kcal), family-tinted muscle volume (top 4 + the weakest, "See map" on the band, honest footnote), sessions as compact glyph rows, and banded tickets. es-MX bugs: three strings rendered in English.
