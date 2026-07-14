@@ -690,26 +690,28 @@ private struct EntrenarLanding: View {
         .buttonStyle(.plain)
     }
 
-    /// One icon chip in the always-visible «Formas de entrenar» row: a tinted glyph on a paper circle over a
-    /// small label. Runs its door's action.
+    /// One card chip in the «Formas de entrenar» row (FER-939): the handoff's square card SHAPE
+    /// (rounded rect, label inside) carrying the FER-920 «troquel» color — solid data-token fill,
+    /// glyph AND label knocked out in paper, rimmed a step deeper (`dataEdge`) so it reads as a
+    /// die-cut token rather than a colored sticker. Runs its door's action.
     private func formChip(_ opt: FormOption) -> some View {
         Button {
             opt.action()
         } label: {
-            VStack(spacing: CenitMetrics.space2) {
-                // «Troquel en papel»: solid data-token disc, glyph knocked out in paper (the paper is seen
-                // THROUGH the disc), rimmed with the same hue a step deeper (`dataEdge`) so it reads as a
-                // die-cut token rather than a colored sticker. Color lands on the datum (the modality).
+            VStack(spacing: 4) {
                 Image(systemName: opt.icon).font(StrandFont.glyph(.lead, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .frame(width: 38, height: 38)
-                    .background(opt.tint, in: Circle())
-                    .overlay(Circle().strokeBorder(theme.dataEdge(opt.tint), lineWidth: 1))
+                    .frame(height: 22)   // equal glyph slot — SF symbols vary in intrinsic height
                     .accessibilityHidden(true)
-                Text(opt.label).font(StrandFont.overline).foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1).minimumScaleFactor(0.75)
+                Text(opt.label).font(StrandFont.overline).foregroundStyle(theme.paper)
+                    .lineLimit(1).minimumScaleFactor(0.65)
             }
+            .padding(.vertical, 9)
+            .padding(.horizontal, 2)
             .frame(maxWidth: .infinity, minHeight: 44)   // HIG: keep the whole chip a ≥44pt tap target
+            .background(opt.tint, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                .strokeBorder(theme.dataEdge(opt.tint), lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
