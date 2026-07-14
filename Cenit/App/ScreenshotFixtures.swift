@@ -27,7 +27,7 @@ enum ScreenshotFixtures {
         guard let raw = UserDefaults.standard.string(forKey: "noop.fixture")?
             .trimmingCharacters(in: .whitespaces).lowercased(),
               ["primed", "strained", "balanced", "rundown", "insufficient",
-               "calibrating", "downloading"].contains(raw) else { return nil }
+               "calibrating", "downloading", "train"].contains(raw) else { return nil }
         return raw
     }
 
@@ -93,6 +93,43 @@ enum ScreenshotFixtures {
                     respRateBpm: 14.5, steps: 7800, activeKcalEst: 450))
             }
             model.repo.setDashboard(days: days)
+            return
+        }
+
+        // FER · train (flujo de Entrenar): recuperación de hoy (para la banda de Entrenar) + 3 rutinas
+        // de plantilla (Empuje/Jalón/Pierna) guardadas en el store y asignadas al split semanal, con
+        // Empuje = HOY. Puebla el hub, «Tu Plan», «Rutina de hoy» y la sesión guiada con datos reales.
+        if state == "train" {
+            var days: [DailyMetric] = []
+            for ago in stride(from: 6, through: 0, by: -1) {
+                let dayKey = Repository.localDayKey(cal.date(byAdding: .day, value: -ago, to: today)!)
+                days.append(DailyMetric(
+                    day: dayKey, totalSleepMin: 445, efficiency: 0.9,
+                    deepMin: 95, remMin: 110, lightMin: 240, disturbances: 4,
+                    restingHr: 50, avgHrv: 60, recovery: ago == 0 ? 74 : 64, strain: 9,
+                    exerciseCount: 0, spo2Pct: 98, skinTempDevC: 0.05,
+                    respRateBpm: 14.5, steps: 8200, activeKcalEst: 450))
+            }
+            if let store = await model.repo.storeHandle() {
+                let now = Int(Date().timeIntervalSince1970)
+                let picks: [(String, String)] = [("ppl-push", "Empuje"), ("ppl-pull", "Jalón"), ("ppl-legs", "Pierna")]
+                var ids: [String] = []
+                for (tid, name) in picks {
+                    guard let t = StarterTemplates.byID(tid) else { continue }
+                    let rid = UUID().uuidString
+                    let (routine, exercises) = t.makeRoutine(name: name, now: now, routineId: rid)
+                    try? await store.saveRoutine(routine, exercises: exercises)
+                    ids.append(rid)
+                }
+                // Split: Empuje = HOY; Jalón y Pierna en los dos días siguientes.
+                let wd = cal.component(.weekday, from: Date())   // 1…7
+                if ids.count == 3 {
+                    try? await store.setRoutineSchedule(weekday: wd, routineId: ids[0])
+                    try? await store.setRoutineSchedule(weekday: (wd % 7) + 1, routineId: ids[1])
+                    try? await store.setRoutineSchedule(weekday: ((wd + 1) % 7) + 1, routineId: ids[2])
+                }
+            }
+            model.repo.setDashboard(days: days)   // publica al final → dispara loadAll
             return
         }
 

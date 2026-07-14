@@ -154,6 +154,47 @@ final class CenitScreenshotTests: XCTestCase {
         snap("mis_entrenamientos_3", app: a)
     }
 
+    // MARK: - Entrenar (training flow, seeded routines + plan)
+
+    /// El flujo de Entrenar con datos sembrados (fixture `train`): hub poblado → rutina de hoy →
+    /// sesión guiada. Navegación defensiva: snapea lo que alcanza sin fallar duro.
+    func test_train_flow() throws {
+        continueAfterFailure = true
+        let a = XCUIApplication()
+        a.launchArguments = [
+            "-noop.onboarded", "YES", "-noop.acceptedTermsVersion", "1.0",
+            "-noop.lastSeenChangelogVersion", "1.80", "-noop.didOfferRestore", "YES",
+            "-noop.fixture", "train",
+        ]
+        a.launch()
+        _ = a.otherElements.firstMatch.waitForExistence(timeout: 8)
+        wait(7)   // las rutinas se siembran async en el store — dale tiempo antes de abrir Entrenar
+
+        // La barra de pestañas es custom (InstrumentTabBar, la nativa va oculta) → XCUI no la ve como
+        // `tabBars`. Tocamos el tab Entrenar por coordenada: 4º de 5, pegado al fondo.
+        func tapTab(_ dx: CGFloat) {
+            a.coordinate(withNormalizedOffset: CGVector(dx: dx, dy: 0.965)).tap()
+        }
+        tapTab(0.7); wait(3)   // Entrenar
+        snap("train-hub", app: a)
+
+        // Sesión guiada de fuerza: «Empezar» desde el hub (el botón sí trae label accesible).
+        let empezar = a.buttons["Empezar"].firstMatch
+        if empezar.waitForExistence(timeout: 4) {
+            empezar.tap(); wait(3)
+            snap("train-sesion", app: a)
+            // cerrar la hoja (swipe down) para volver al hub
+            a.swipeDown(); wait(2)
+        }
+
+        // Rutina de hoy: tocar el nombre de la rutina del día («Empuje») en la tarjeta de Hoy.
+        let empuje = a.staticTexts["Empuje"].firstMatch
+        if empuje.waitForExistence(timeout: 3) {
+            empuje.tap(); wait(3)
+            snap("train-rutina", app: a)
+        }
+    }
+
     // MARK: - All screens (empty/default state)
 
     func test_captureAllScreens() throws {
