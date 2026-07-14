@@ -60329,6 +60329,26 @@
           }
         }
       }
+    },
+    "WORK SETS": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SERIES DE TRABAJO"
+          }
+        }
+      }
+    },
+    "Warm-up set": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie de calentamiento"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
