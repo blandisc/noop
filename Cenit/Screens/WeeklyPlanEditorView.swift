@@ -326,7 +326,7 @@ struct WeeklyPlanEditorView: View {
             .filter { $0.1 < max(1, maxV) / 4 }
             .min { $0.1 < $1.1 }
         guard maxV > 0, let g = short else { return String(localized: "Planned sets.") }
-        return String(localized: "Planned sets. \(g.0.label) fell short this week.")
+        return String(localized: "Planned sets. \(g.0.title) fell short this week.")   // title case: prose, not the bar label
     }
 
     // MARK: - Routines (flat list + create / import / templates / folders / library) — FER-890
@@ -413,6 +413,9 @@ struct WeeklyPlanEditorView: View {
                     .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
                 Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: 0)
+                // Handoff: both foot rows disclose (›) — the library row was missing its chevron.
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
             }
             .frame(minHeight: 44).contentShape(Rectangle())
         }
@@ -506,10 +509,10 @@ struct WeeklyPlanEditorView: View {
                             Text(metadataLine(r)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                         }
                         Spacer(minLength: 8)
-                        if let days = assignedDaysText(r) {
-                            Text(days).font(InstrumentoType.grotesk(12, weight: .medium))
-                                .foregroundStyle(theme.inkSecondary)
-                        }
+                        // Unassigned reads as the honest «—» (handoff: «Movilidad 20 min · —»).
+                        Text(assignedDaysText(r) ?? "—")
+                            .font(InstrumentoType.grotesk(12, weight: .medium))
+                            .foregroundStyle(theme.inkSecondary)
                     }
                     .frame(minHeight: 56).contentShape(Rectangle())
                 }
