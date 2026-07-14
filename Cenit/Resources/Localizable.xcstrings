@@ -27973,6 +27973,22 @@
         }
       }
     },
+    "Rings and buzzes when it ends.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rings and buzzes when it ends."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suena y vibra al terminar."
+          }
+        }
+      }
+    },
     "Ready at the chosen % of your heart-rate reserve (Karvonen). Uses your max and resting HR; falls back to the timer if either is missing.": {
       "localizations": {
         "en": {
@@ -31610,6 +31626,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Serie %lld de %lld"
+          }
+        }
+      }
+    },
+    "set %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "set %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "serie %lld"
           }
         }
       }
@@ -45193,6 +45225,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "de %lld"
+          }
+        }
+      }
+    },
+    "of %lld s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of %lld s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de %lld s"
+          }
+        }
+      }
+    },
+    "of rest · the strap buzzes on arrival": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of rest · the strap buzzes on arrival"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de descanso · la banda vibra al llegar"
           }
         }
       }
