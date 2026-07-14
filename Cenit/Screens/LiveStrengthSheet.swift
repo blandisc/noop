@@ -997,6 +997,9 @@ struct LiveStrengthSheet: View {
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
     /// without ending the session (mock v21 handoff). Additive only; does not replace `inlineSession`.
     @State private var focusMode = false
+    /// Manual Tiempo/FC toggle for the full-screen rest hero (FER-934). nil = follow `currentRestMode`
+    /// (FC when a rest target exists and the strap has signal); the user can flip it either way.
+    @State private var focusRestShowsHR: Bool?
     /// Which exercise's «···» paper menu is open (FER-894 · «Cómo llego a Cambiar»), by run index. nil = closed.
     @State private var menuExerciseIndex: Int?
     /// The exercise whose «Change {exercise}» sheet is open (FER-894). nil = closed.
@@ -1742,22 +1745,27 @@ struct LiveStrengthSheet: View {
     // MARK: - Focus mode (full-screen cover · additive entry from the inline list)
 
     /// Full-screen capture/rest surface. Closing returns to the inline table; session state is unchanged.
+    /// FER-934: while resting, the whole surface flips to the `dataRecovery` green with crema ink
+    /// (handoff `_RestFull`); the capture variant keeps the paper background untouched.
     private var focusModeView: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        let resting = session.phase == .resting
+        return VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             HStack {
+                if resting { focusRestModeToggle }
                 Spacer(minLength: 0)
                 Button { focusMode = false } label: {
                     StrandIcon.close.image
-                        .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
+                        .font(StrandFont.glyph(.inline, weight: .semibold))
+                        .foregroundStyle(resting ? theme.paper : theme.ink)
                         .frame(width: 38, height: 38)
-                        .background(theme.surface, in: Circle())
-                        .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        .background(resting ? theme.paper.opacity(0.14) : theme.surface, in: Circle())
+                        .overlay(Circle().strokeBorder(resting ? theme.paper.opacity(0.3) : theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Close focus mode"))
             }
 
-            if session.phase == .resting {
+            if resting {
                 focusRestPhase
             } else {
                 focusCapturePhase
@@ -1768,7 +1776,7 @@ struct LiveStrengthSheet: View {
         .padding(.top, CenitMetrics.sectionGap)
         .padding(.bottom, CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(theme.paper.ignoresSafeArea())
+        .background((resting ? theme.dataRecovery : theme.paper).ignoresSafeArea())
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
     }
@@ -2002,10 +2010,12 @@ struct LiveStrengthSheet: View {
         .opacity(captured ? 1 : StrandOpacity.dim)
     }
 
-    /// Rest phase scaled to full-screen; reuses the inline card's readiness/time evaluation patterns.
+    /// Rest phase scaled to full-screen, fully dressed in `dataRecovery` green + crema ink (FER-934,
+    /// handoff `_RestFull`). Reuses the inline card's readiness/time evaluation patterns; only the
+    /// vestment changes, the rest engine (`extendRest`/`skipRest`/`computeRestTarget`) is untouched.
     private var focusRestPhase: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))
 
             if session.currentRestMode == .heartRate, let started = session.restStartedAt {
                 PulseReader(model.live.pulse) { p in
@@ -2014,10 +2024,11 @@ struct LiveStrengthSheet: View {
                         let v = RestReadinessRule.evaluate(
                             currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
                             elapsedS: elapsed, targetHR: session.currentRestTarget)
-                        if v.state == .noSignal {
-                            focusRestTimeHero(end: session.restEndsAt, now: ctx.date, noStrapFallback: true)
-                        } else {
+                        let noSignal = v.state == .noSignal
+                        if (focusRestShowsHR ?? true) && !noSignal {
                             focusRestHRHero(elapsed: elapsed, readiness: v)
+                        } else {
+                            focusRestTimeHero(end: session.restEndsAt, now: ctx.date, noStrapFallback: noSignal)
                         }
                     }
                 }
@@ -2030,53 +2041,86 @@ struct LiveStrengthSheet: View {
             HStack(spacing: CenitMetrics.gap) {
                 focusRestAdjust("−15") { session.extendRest(byseconds: -15) }
                 Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
-                    Label("Skip", systemImage: "forward.fill")
-                        .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    Text("Skip")
+                        .font(StrandFont.headline).foregroundStyle(theme.dataRecovery)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, CenitMetrics.sectionGap)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                        .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Skip rest"))
                 focusRestAdjust("+15") { session.extendRest(byseconds: 15) }
             }
+
+            focusRestNextCard
         }
+    }
+
+    /// «<ejercicio> · serie N ✓» — the just-completed set, for orientation while the screen is all green.
+    private var focusRestCaption: String {
+        guard session.runs.indices.contains(session.currentIndex) else { return String(localized: "Rest") }
+        let run = session.runs[session.currentIndex]
+        let doneIndex = run.currentSet - 1
+        guard run.sets.indices.contains(doneIndex) else { return run.name }
+        let n = run.sets.prefix(doneIndex + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        return "\(run.name) · " + String(localized: "set \(n)") + " ✓"
+    }
+
+    /// Tiempo/FC segmented toggle (FER-934 §3.2) — only shown when the active rest actually resolved a
+    /// heart-rate target; a fixed-time rest has nothing to switch to. Defaults to FC (`nil` ≙ true).
+    @ViewBuilder private var focusRestModeToggle: some View {
+        if session.currentRestMode == .heartRate {
+            let showsHR = focusRestShowsHR ?? true
+            HStack(spacing: 2) {
+                focusRestModeTab(String(localized: "Time"), systemImage: "timer", active: !showsHR) {
+                    focusRestShowsHR = false
+                }
+                focusRestModeTab(String(localized: "HR"), systemImage: "heart.fill", active: showsHR) {
+                    focusRestShowsHR = true
+                }
+            }
+            .padding(3)
+            .background(theme.paper.opacity(0.14), in: Capsule())
+        }
+    }
+
+    private func focusRestModeTab(_ label: String, systemImage: String, active: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(label, systemImage: systemImage)
+                .font(StrandFont.caption).fontWeight(.semibold)
+                .foregroundStyle(active ? theme.dataRecovery : theme.paper)
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(active ? theme.paper : Color.clear, in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     private func focusRestHRHero(elapsed: Int, readiness v: RestReadiness) -> some View {
         let bpm = model.bpm ?? 0
         let target = session.currentRestTarget
         let ready = v.ready
-        let hue = ready ? theme.dataRecovery : theme.dataHeart
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            HStack {
-                Text("Resting · by HR").font(StrandFont.caption).fontWeight(.semibold)
-                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
-                Spacer()
-                Text("\(Self.clock(elapsed)) elapsed").font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(theme.inkTertiary)
-            }
             if ready {
                 Text("Ready")
-                    .instrumentoHero(76).foregroundStyle(theme.dataRecovery)
+                    .instrumentoHero(76).foregroundStyle(theme.paper)
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
-                    Text("\(bpm)").instrumentoHero(90).monospacedDigit().foregroundStyle(theme.dataHeart)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                    Text("\(bpm)").instrumentoHero(100).monospacedDigit().foregroundStyle(theme.paper)
+                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.paper.opacity(0.7))
                 }
             }
-            restHRTrack(bpm: bpm, target: target)
             if let target, !ready {
                 (Text(String(localized: "dropping toward "))
-                 + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
+                 + Text("\(target) bpm").bold()
                  + Text(" · " + String(localized: "the strap will buzz")))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
             } else if let toReady = v.bpmToReady, !ready {
                 Text("\(toReady) bpm to ready")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.7))
             }
-            ECGWave(color: hue, animate: true, bpm: model.bpm)
-                .frame(height: CenitMetrics.sectionGap + CenitMetrics.gap)
+            focusRestHRTrack(bpm: bpm, target: target)
+            Text("\(Self.clock(elapsed)) " + String(localized: "of rest · the strap buzzes on arrival"))
+                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -2087,38 +2131,88 @@ struct LiveStrengthSheet: View {
             ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300))
             : end
         let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
+        let total = max(1, cappedEnd.map { Int($0.timeIntervalSince(session.restStartedAt ?? now)) } ?? remaining)
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            HStack {
-                Text(noStrapFallback ? "Resting · by time" : "Resting")
-                    .font(StrandFont.caption).fontWeight(.semibold)
-                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
-                Spacer()
+            ZStack {
+                Circle().stroke(theme.paper.opacity(0.22), lineWidth: 10)
+                Circle()
+                    .trim(from: 0, to: max(0, min(1, Double(remaining) / Double(total))))
+                    .stroke(theme.paper, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 2) {
+                    Text(Self.clock(remaining))
+                        .instrumentoHero(72).monospacedDigit().foregroundStyle(theme.paper)
+                        .contentTransition(.numericText())
+                    Text(String(localized: "of \(total) s"))
+                        .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                }
             }
-            Text(Self.clock(remaining))
-                .instrumentoHero(90).monospacedDigit()
-                .foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
-                .contentTransition(.numericText())
-            if noStrapFallback {
-                Text("No strap signal: resting by time, 5 min cap")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
+            .frame(width: 232, height: 232)
+            .frame(maxWidth: .infinity)
+            Text(noStrapFallback ? String(localized: "No strap signal: resting by time, 5 min cap")
+                                  : String(localized: "Rings and buzzes when it ends."))
+                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                .frame(maxWidth: .infinity, alignment: .center)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(remaining == 0 ? "Rest done" : "Resting, \(remaining) seconds left"))
     }
 
+    /// Focus-mode FC track (FER-934): crema-on-green variant of `restHRTrack`, kept separate so the
+    /// shared inline-card track (dataHeart→dataRecovery gradient) is untouched.
+    private func focusRestHRTrack(bpm: Int, target: Int?) -> some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let hi = Double((target ?? bpm) + 40)
+            let lo = Double(target ?? bpm)
+            let frac = hi > lo ? max(0, min(1, (hi - Double(bpm)) / (hi - lo))) : 1
+            ZStack(alignment: .leading) {
+                Capsule().fill(theme.paper.opacity(0.22))
+                Capsule().fill(theme.paper).frame(width: w * frac)
+                Rectangle().fill(theme.paper).frame(width: 2, height: 14)
+                    .offset(x: w - 1)
+            }
+        }
+        .frame(height: 6)
+    }
+
     private func focusRestAdjust(_ label: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkSecondary)
+            Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.paper)
                 .frame(width: 56)
                 .padding(.vertical, CenitMetrics.sectionGap)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .background(theme.paper.opacity(0.14), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 1))
+                    .strokeBorder(theme.paper.opacity(0.3), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
+    }
+
+    /// «SIGUE» card (FER-934 §3.6): the next real step, derived the same way the inline UI derives it —
+    /// `registerCurrentSet` already advanced `session.current`/`currentSet` before starting this rest, so
+    /// it reflects either the next set of the active exercise or the next exercise once this one is done.
+    @ViewBuilder private var focusRestNextCard: some View {
+        if let run = session.current {
+            let si = run.currentSet
+            let n = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+            let load = run.sets.indices.contains(si) ? run.sets[si].weightKg : nil
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Next").font(StrandFont.caption).fontWeight(.semibold)
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.paper.opacity(0.6))
+                if let load, load > 0 {
+                    Text("\(run.name) · " + String(localized: "set \(n)") + " · \(massText(load))")
+                        .font(StrandFont.subhead).foregroundStyle(theme.paper)
+                } else {
+                    Text("\(run.name) · " + String(localized: "set \(n)"))
+                        .font(StrandFont.subhead).foregroundStyle(theme.paper)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(theme.paper.opacity(0.14), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        }
     }
 
     /// One progress segment per non-skipped exercise: width ∝ its set count, fill = fraction of its sets done.
