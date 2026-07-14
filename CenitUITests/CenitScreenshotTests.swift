@@ -76,6 +76,31 @@ final class CenitScreenshotTests: XCTestCase {
     /// FER-286 · «Downloading / your night is on its way»: offload en curso, sin recovery de hoy aún.
     func test_today_downloading() throws { captureToday(state: "downloading") }
 
+    /// FER-939 · the Entrenar hub's PLANNED state (open hero + discs + «LA SESIÓN DE HOY» + TU PLAN +
+    /// Constancia). The `primed` fixture also seeds the demo plan (`seedTrainingPlan`), so the tab
+    /// renders the full layout. Two frames: top + one swipe (plan/consistency/foot).
+    func test_entrenar_hub() throws {
+        let a = XCUIApplication()
+        a.launchArguments = [
+            "-noop.onboarded",               "YES",
+            "-noop.acceptedTermsVersion",    "1.0",
+            "-noop.lastSeenChangelogVersion","1.80",
+            "-noop.didOfferRestore",         "YES",
+            "-noop.fixture",                 "primed",
+        ]
+        a.launch()
+        wait(6)   // seeding (dashboard + plan) is async
+        // The dock is the custom InstrumentTabBar (FER-490) — not a native TabBar, so query the
+        // localized button label directly.
+        let entrenar = a.buttons["Entrenar"].firstMatch
+        if entrenar.waitForExistence(timeout: 6) { entrenar.tap() }
+        else { a.staticTexts["Entrenar"].firstMatch.tap() }
+        wait(3)   // EntrenarLanding's own async load()
+        snap("entrenar_hub", app: a)
+        a.swipeUp(); wait(1)
+        snap("entrenar_hub_2", app: a)
+    }
+
     // MARK: - All screens (empty/default state)
 
     func test_captureAllScreens() throws {

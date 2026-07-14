@@ -311,6 +311,9 @@ final class AppModel: ObservableObject {
             Task { [weak self] in
                 guard let self else { return }
                 await ScreenshotFixtures.seed(self, state: fixtureState)
+                // FER-939: the Entrenar hub's planned state (routines + split + sessions) rides
+                // every non-empty fixture, so the Train tab captures its full layout too.
+                await ScreenshotFixtures.seedTrainingPlan(self)
             }
             return
         }

@@ -3,6 +3,7 @@ import Foundation
 import WhoopProtocol
 import WhoopStore
 import StrandAnalytics
+import StrandTraining
 
 /// Deterministic synthetic data that forces TodayView into a specific readiness verdict, for the
 /// screenshot UI test (`CenitUITests/CenitScreenshotTests`). DEBUG-only — never compiled into a
@@ -216,6 +217,76 @@ enum ScreenshotFixtures {
         // dos capturas del mismo estado salgan idénticas (la sinusoide variaba con la hora real).
         if let last = out.last { out[out.count - 1] = HRSample(ts: last.ts, bpm: 62) }
         return out
+    }
+
+    // MARK: - Weekly training plan (FER-939 — the Entrenar hub's planned state)
+
+    /// Seed the handoff's demo plan (Día A/B/C + split + this week's completed sessions) so the
+    /// Entrenar hub captures its FULL planned layout: open hero, «LA SESIÓN DE HOY», TU PLAN with
+    /// check-marked week squares, and a tinted Constancia. Catalog ids are real (so muscles and the
+    /// RoutineClassifier tints resolve); the split is laid out around TODAY so the hero always has
+    /// a routine regardless of the day the capture runs.
+    @MainActor
+    static func seedTrainingPlan(_ model: AppModel) async {
+        guard let store = await model.repo.storeHandle() else { return }
+        let now = Int(Date().timeIntervalSince1970)
+        let cal = Calendar(identifier: .gregorian)
+
+        func rex(_ rid: String, _ eid: String, _ pos: Int, sets: Int, reps: Int, kg: Double) -> RoutineExercise {
+            let planned = (0..<sets).map { RoutineSet(position: $0, reps: reps, weightKg: kg) }
+            return RoutineExercise(routineId: rid, exerciseId: eid, position: pos,
+                                   targetSets: sets, targetReps: reps, targetWeightKg: kg,
+                                   restMode: .fixed, restSeconds: 90, sets: planned)
+        }
+
+        // Push (chest/shoulders → ember) / pull (lats/biceps → teal) / legs (quads → indigo).
+        let a = Routine(name: "Día A — Empuje", createdTs: now, updatedTs: now, sortOrder: 0)
+        let b = Routine(name: "Día B — Tirón", createdTs: now, updatedTs: now, sortOrder: 1)
+        let c = Routine(name: "Día C — Pierna", createdTs: now, updatedTs: now, sortOrder: 2)
+        try? await store.saveRoutine(a, exercises: [
+            rex(a.id, "Barbell_Bench_Press_-_Medium_Grip", 0, sets: 4, reps: 8, kg: 80),
+            rex(a.id, "Incline_Dumbbell_Press", 1, sets: 3, reps: 10, kg: 26),
+            rex(a.id, "Dumbbell_Lying_One-Arm_Rear_Lateral_Raise", 2, sets: 3, reps: 12, kg: 8),
+        ])
+        try? await store.saveRoutine(b, exercises: [
+            rex(b.id, "Barbell_Deadlift", 0, sets: 4, reps: 6, kg: 120),
+            rex(b.id, "Close-Grip_Front_Lat_Pulldown", 1, sets: 3, reps: 10, kg: 55),
+            rex(b.id, "Barbell_Curl", 2, sets: 3, reps: 10, kg: 30),
+        ])
+        try? await store.saveRoutine(c, exercises: [
+            rex(c.id, "Barbell_Full_Squat", 0, sets: 4, reps: 8, kg: 100),
+            rex(c.id, "Dumbbell_Lunges", 1, sets: 3, reps: 10, kg: 20),
+        ])
+
+        // Split anchored to TODAY: today = A (hero); +2/−3 days = B; −2 days = C. Weekday numbers
+        // stay in Calendar convention (1 = Sun … 7 = Sat) by deriving them from real dates.
+        func wd(_ offset: Int) -> Int {
+            cal.component(.weekday, from: cal.date(byAdding: .day, value: offset, to: Date())!)
+        }
+        try? await store.setRoutineSchedule(weekday: wd(0), routineId: a.id)
+        try? await store.setRoutineSchedule(weekday: wd(2), routineId: b.id)
+        try? await store.setRoutineSchedule(weekday: wd(-3), routineId: b.id)
+        try? await store.setRoutineSchedule(weekday: wd(-2), routineId: c.id)
+
+        // Completed sessions: two earlier this week (check-marked week squares) and a few across
+        // the prior weeks so the 90-day Constancia grid reads as a real, tinted pattern.
+        func session(_ rid: String, exerciseId: String, daysAgo: Int, kg: Double) async {
+            guard let day = cal.date(byAdding: .day, value: -daysAgo, to: Date()) else { return }
+            let start = Int(cal.startOfDay(for: day).timeIntervalSince1970) + 18 * 3600
+            let s = StrengthSession(routineId: rid, startTs: start, endTs: start + 50 * 60)
+            let sets = (0..<3).map {
+                SetEntry(sessionId: s.id, exerciseId: exerciseId, position: $0,
+                         kind: .work, weightKg: kg, reps: 8, done: true, ts: start + $0 * 300)
+            }
+            try? await store.saveSession(s, sets: sets)
+        }
+        await session(c.id, exerciseId: "Barbell_Full_Squat", daysAgo: 2, kg: 100)
+        await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 3, kg: 120)
+        await session(a.id, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 7, kg: 80)
+        await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 10, kg: 115)
+        await session(c.id, exerciseId: "Barbell_Full_Squat", daysAgo: 16, kg: 95)
+        await session(a.id, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 23, kg: 77.5)
+        await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 31, kg: 110)
     }
 }
 #endif
