@@ -23088,12 +23088,6 @@
     },
     "My workouts": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My workouts"
-          }
-        },
         "es": {
           "stringUnit": {
             "state": "translated",
@@ -60082,6 +60076,216 @@
           "stringUnit": {
             "state": "translated",
             "value": "Series planeadas. %@ quedó corto esta semana."
+          }
+        }
+      }
+    },
+    "On the rise": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vas al alza"
+          }
+        }
+      }
+    },
+    "Your month": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu mes"
+          }
+        }
+      }
+    },
+    "↗ +%lld% vs. last month": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ +%lld% vs. mes pasado"
+          }
+        }
+      }
+    },
+    "↘ −%lld% vs. last month": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↘ −%lld% vs. mes pasado"
+          }
+        }
+      }
+    },
+    "this week": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "esta semana"
+          }
+        }
+      }
+    },
+    "This week · in progress": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta semana · en curso"
+          }
+        }
+      }
+    },
+    "Week of %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semana del %@"
+          }
+        }
+      }
+    },
+    "%lld sessions · tap another bar to switch": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sesiones · toca otra barra para cambiar"
+          }
+        }
+      }
+    },
+    "trained": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "entrenadas"
+          }
+        }
+      }
+    },
+    "measured": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "medidas"
+          }
+        }
+      }
+    },
+    "Volume per muscle · 30 days": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen por músculo · 30 días"
+          }
+        }
+      }
+    },
+    "See map": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver mapa"
+          }
+        }
+      }
+    },
+    "Work sets per muscle.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series de trabajo por músculo."
+          }
+        }
+      }
+    },
+    "Work sets per muscle. %@ has no volume in 30 days.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series de trabajo por músculo. %@ sin volumen en 30 días."
+          }
+        }
+      }
+    },
+    "What rose, what waits on recovery, and what stalled.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que subió, lo que espera recuperación y lo que se estancó."
+          }
+        }
+      }
+    },
+    "My saved tickets": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mis tickets guardados"
+          }
+        }
+      }
+    },
+    "%lld receipts · today's on top": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld recibos · el de hoy arriba"
+          }
+        }
+      }
+    },
+    "this month": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "este mes"
+          }
+        }
+      }
+    },
+    "Each session saves its receipt. Open them to reprint or share.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada sesión guarda su recibo. Ábrelos para reimprimir o compartir."
+          }
+        }
+      }
+    },
+    "↗ +%lld%% vs. last month": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ +%lld%% vs. mes pasado"
+          }
+        }
+      }
+    },
+    "↘ −%lld%% vs. last month": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↘ −%lld%% vs. mes pasado"
           }
         }
       }

@@ -60,6 +60,8 @@ struct WorkoutHistoryScreen: View {
     @State private var muscleEvents: [MuscleFatigueMap.MuscleSetEvent] = []
     /// Progression signals (raised / waiting / stalled) for exercises with progression enabled.
     @State private var progressionRows: [ProgressionRow] = []
+    /// Movement family per routine (for the session rows' glyph/tint) — classified once at load.
+    @State private var routineRegions: [String: RoutineRegion] = [:]
     @State private var loaded = false
 
     var body: some View {
@@ -70,12 +72,11 @@ struct WorkoutHistoryScreen: View {
                     if sessions.isEmpty {
                         emptyState
                     } else {
-                        // Handoff v2 order: «Tu mes» (bars then totals) → progression → volume per muscle.
-                        weeklyBars
-                        monthlyTotal
+                        // Handoff v2: TU MES (card) → progression → muscle → sessions → tickets.
+                        tuMes
                         progressionBlock
                         muscleVolumeInline
-                        list
+                        sessionsSection
                         savedTicketsEntry
                     }
                 }
@@ -97,6 +98,11 @@ struct WorkoutHistoryScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
+            // Handoff v2 hero: overline + Grotesk title + terse subtitle. The muscle-map access moved
+            // to «Ver mapa» on the muscle band (FER-941), so the hero pill is gone.
+            Text("My workouts")
+                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
+                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
             InstrumentoFlowTitle(Text("On the rise"))
             // Handoff v2: sessions this month, plus the count of load raises when any (from progression).
             Group {
@@ -108,126 +114,182 @@ struct WorkoutHistoryScreen: View {
             }
             .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             .fixedSize(horizontal: false, vertical: true)
-            // «Volumen por músculo» (Entrenar v3 · 3d, FER-719) — the history's stats view.
-            NavigationLink(value: MuscleVolumeRoute()) {
-                HStack(spacing: 6) {
-                    Image(systemName: "chart.bar.xaxis").font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Volume per muscle").font(StrandFont.caption).fontWeight(.semibold)
-                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                }
-                .foregroundStyle(theme.inkSecondary)
-                .padding(.horizontal, 12).padding(.vertical, 7)
-                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
         }
     }
 
-    // MARK: - Monthly total (v3 · 1m) — sessions · hours · kg · kcal, this calendar month
+    // MARK: - «TU MES» (handoff v2, FER-941) — the weekly-volume card + the three month tiles
 
-    private var monthlyTotal: some View {
+    @State private var selectedWeek: Int? = nil   // nil / 7 = current week
+
+    private var tuMes: some View {
         let m = monthAggregate
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("This month").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                if let delta = monthVolumeDeltaPercent {
-                    let up = delta >= 0
-                    let n = Int(delta.rounded())
-                    HStack(spacing: 3) {
-                        Image(systemName: up ? "arrow.up.right" : "arrow.down.right")
-                        Text("\(up ? "+" : "")\(n)% vs last month")
-                    }
-                    .font(StrandFont.caption)
-                    .foregroundStyle(up ? theme.dataRecovery : theme.warning)
-                }
-            }
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 20) { monthCells(m) }
-                VStack(alignment: .leading, spacing: 10) { monthCells(m) }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func monthCells(_ m: MonthAggregate) -> some View {
-        stat("Sessions", "\(m.count)", color: theme.ink)
-        if m.hours > 0 { stat("Hours", String(format: "%.1f", m.hours), color: theme.ink) }
-        if m.volumeKg > 0 { stat("Volume", StrengthHistoryFormat.volume(m.volumeKg, system: system), color: theme.ink) }
-        // kcal only when at least one session in the month carries it (never a fabricated 0).
-        if let kcal = m.energyKcal { stat("Energy", StrandFormat.groupedInt(kcal), unit: "kcal", color: theme.ink) }
-    }
-
-    // MARK: - Weekly volume bars (v3 · 1m) — last 8 weeks, the current week in `dataRecovery`
-
-    @ViewBuilder
-    private var weeklyBars: some View {
         let weeks = weeklyVolumes
-        if weeks.contains(where: { $0.volumeKg > 0 }) {
-            let peak = max(weeks.map(\.volumeKg).max() ?? 1, 1)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Volume per week").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .bottom, spacing: 6) {
-                    ForEach(weeks) { w in
-                        RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: geometría de dato
-                            .fill(w.isCurrent ? theme.dataRecovery : theme.hairlineStrong)
-                            .frame(height: max(3, CGFloat(w.volumeKg / peak) * 54))
-                            .frame(maxWidth: .infinity)
+        let peak = max(weeks.map(\.volumeKg).max() ?? 1, 1)
+        let sel = weeks.first { $0.id == (selectedWeek ?? 7) } ?? weeks[7]
+        return VStack(alignment: .leading, spacing: 12) {
+            InstrumentoSectionBand("Your month")
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Volume per week").font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
+                    Spacer(minLength: 8)
+                    if let delta = monthVolumeDeltaPercent {
+                        let up = delta >= 0
+                        let n = abs(Int(delta.rounded()))
+                        Group {
+                            if up { Text("↗ +\(n)% vs. last month") } else { Text("↘ −\(n)% vs. last month") }
+                        }
+                        .font(InstrumentoType.grotesk(11, weight: .bold))
+                        .foregroundStyle(up ? theme.dataRecovery : theme.warning)
+                        .padding(.horizontal, 9).padding(.vertical, 3)
+                        .background((up ? theme.dataRecovery : theme.warning).opacity(StrandOpacity.tintFill),
+                                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                     }
                 }
-                .frame(height: 54)
+                VStack(spacing: 4) {
+                    HStack(alignment: .bottom, spacing: 6) {
+                        ForEach(weeks) { w in
+                            UnevenRoundedRectangle(topLeadingRadius: 3, topTrailingRadius: 3)  // token-exempt: geometría de dato
+                                .fill(w.id == (selectedWeek ?? 7) ? theme.dataRecovery : theme.hairlineStrong)
+                                .frame(height: max(3, CGFloat(w.volumeKg / peak) * 54))
+                                .frame(maxWidth: .infinity)
+                                .contentShape(Rectangle())
+                                .onTapGesture { withAnimation(StrandMotion.interactive) { selectedWeek = w.id } }
+                        }
+                    }
+                    .frame(height: 58, alignment: .bottom)
+                    Rectangle().fill(theme.hairlineStrong).frame(height: 1.2)  // token-exempt: eje de dato
+                    HStack {
+                        Text(weekLabel(weeks.first?.start)).font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
+                        Spacer(minLength: 8)
+                        Text("this week").font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
+                    }
+                }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text("Volume over the last 8 weeks"))
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Group {
+                            if sel.isCurrent { Text("This week · in progress") } else { Text("Week of \(weekLabel(sel.start))") }
+                        }
+                        .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1)
+                        .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                        Text("\(sel.count) sessions · tap another bar to switch")
+                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    }
+                    Spacer(minLength: 10)
+                    Text(StrengthHistoryFormat.volume(sel.volumeKg, system: system))
+                        .font(InstrumentoType.groteskNumber(17)).foregroundStyle(theme.ink)
+                }
+                .padding(.horizontal, 12).padding(.vertical, 9)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            }
+            .padding(CenitMetrics.cardPadding)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+            HStack(spacing: 8) {
+                monthTile("Sessions", "\(m.count)", caption: "this month")
+                monthTile("Hours", m.hours > 0 ? String(format: "%.1f", m.hours) : "—", caption: "trained")
+                monthTile("Energy", m.energyKcal.map(StrandFormat.groupedInt) ?? "—",
+                          unit: m.energyKcal != nil ? "kcal" : nil, caption: "measured")
             }
         }
     }
 
-    // MARK: - Volume per muscle (compact inline summary, trailing 30 d)
+    private func monthTile(_ label: LocalizedStringKey, _ value: String,
+                           unit: LocalizedStringKey? = nil, caption: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(1)
+                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value).font(InstrumentoType.groteskNumber(22)).foregroundStyle(theme.ink)
+                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
+            }
+            Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «18 may» — a week-start date as the axis/strip label.
+    private func weekLabel(_ d: Date?) -> String {
+        guard let d else { return "" }
+        return d.formatted(.dateTime.day().month(.abbreviated)).lowercased()
+    }
+
+    // MARK: - «VOLUMEN POR MÚSCULO · 30 DÍAS» (handoff v2, FER-941)
+    //
+    // Top four muscles by weekly work sets plus the weakest one, each with a proportional bar in its
+    // movement-family tint; «Ver mapa» rides the band. The honest footnote names the neglected muscle.
 
     @ViewBuilder
     private var muscleVolumeInline: some View {
-        let volumes = MuscleFatigueMap.weeklyVolumes(events: muscleEvents, days: 30)
-        if !volumes.isEmpty {
-            let railTop = MuscleFatigueMap.weeklyVolumeRailTop
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Volume per muscle").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                VStack(spacing: 0) {
-                    ForEach(volumes, id: \.muscle) { v in
-                        let below = v.band == .below
-                        HStack(spacing: 12) {
-                            Text(MuscleAtlas.name(v.muscle))
-                                .font(StrandFont.body).foregroundStyle(theme.ink)
-                                .lineLimit(1).minimumScaleFactor(0.85)
-                                .frame(width: 96, alignment: .leading)
-                            GeometryReader { geo in
-                                let w = geo.size.width
-                                let lo = MuscleFatigueMap.weeklyBandLow / railTop
-                                let hi = MuscleFatigueMap.weeklyBandHigh / railTop
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 3).fill(theme.hairline)  // token-exempt: geometría de dato
-                                        .frame(width: w * (hi - lo), height: 14)
-                                        .offset(x: w * lo)
-                                    RoundedRectangle(cornerRadius: 3)  // token-exempt: geometría de dato
-                                        .fill(below ? theme.warning : theme.ink)
-                                        .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
-                                }
-                                .frame(height: 14, alignment: .leading)
-                            }
-                            .frame(height: 14)
-                            Text(MuscleFatigueMap.formattedSets(v.setsPerWeek))
-                                .font(StrandFont.captionNumber)
-                                .fontWeight(below ? .semibold : .regular)
-                                .foregroundStyle(below ? theme.warning : theme.ink)
-                                .frame(width: 34, alignment: .trailing)
-                        }
-                        .frame(minHeight: 40)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text(MuscleAtlas.name(v.muscle)))
-                        .accessibilityValue(Text("\(MuscleFatigueMap.formattedSets(v.setsPerWeek)) sets per week"))
+        let all = MuscleFatigueMap.weeklyVolumes(events: muscleEvents, days: 30)
+        if !all.isEmpty {
+            let sorted = all.sorted { $0.setsPerWeek > $1.setsPerWeek }
+            let shown = muscleRowsToShow(sorted)
+            let weakest = sorted.last
+            let maxV = max(sorted.first?.setsPerWeek ?? 1, 0.1)
+            VStack(alignment: .leading, spacing: 9) {
+                InstrumentoSectionBand("Volume per muscle · 30 days") {
+                    NavigationLink(value: MuscleVolumeRoute()) {
+                        Text("See map").font(StrandFont.subhead).foregroundStyle(theme.ink)
                     }
+                    .buttonStyle(.plain)
                 }
+                ForEach(shown, id: \.muscle) { v in
+                    HStack(spacing: 10) {
+                        Text(MuscleAtlas.name(v.muscle))
+                            .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(width: 86, alignment: .leading)
+                        Capsule().fill(theme.patternBlock)
+                            .frame(height: 12)
+                            .overlay(alignment: .leading) {
+                                GeometryReader { geo in
+                                    Capsule()
+                                        .fill(v.setsPerWeek <= 0 ? theme.hairlineStrong : muscleTint(v.muscle))
+                                        .frame(width: max(6, geo.size.width * CGFloat(min(v.setsPerWeek, maxV) / maxV)))
+                                }
+                            }
+                            .clipShape(Capsule())
+                        Text(MuscleFatigueMap.formattedSets(v.setsPerWeek))
+                            .font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)
+                            .frame(width: 34, alignment: .trailing)
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(MuscleAtlas.name(v.muscle)))
+                    .accessibilityValue(Text("\(MuscleFatigueMap.formattedSets(v.setsPerWeek)) sets per week"))
+                }
+                BarraAncla(muscleNote(weakest), color: theme.inkTertiary, theme: theme)
             }
         }
+    }
+
+    /// Top four by weekly sets, plus the weakest one (the honest tail) when it isn't already shown.
+    private func muscleRowsToShow(_ sorted: [MuscleFatigueMap.MuscleWeeklyVolume]) -> [MuscleFatigueMap.MuscleWeeklyVolume] {
+        var shown = Array(sorted.prefix(4))
+        if let weakest = sorted.last, !shown.contains(where: { $0.muscle == weakest.muscle }) { shown.append(weakest) }
+        return shown
+    }
+
+    /// «Series de trabajo por grupo.» + the neglected muscle when one sits at zero.
+    private func muscleNote(_ weakest: MuscleFatigueMap.MuscleWeeklyVolume?) -> String {
+        guard let weakest, weakest.setsPerWeek <= 0 else { return String(localized: "Work sets per muscle.") }
+        return String(localized: "Work sets per muscle. \(MuscleAtlas.name(weakest.muscle)) has no volume in 30 days.")
+    }
+
+    /// The movement-family tint for a muscle key (push=ember · pull=teal · legs=indigo; else ink-ish).
+    private func muscleTint(_ muscle: String) -> Color {
+        let m = muscle.lowercased()
+        if ["chest", "shoulders", "triceps"].contains(where: m.contains) { return theme.dataStrain }
+        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return theme.dataHrv }
+        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return theme.dataSleep }
+        return theme.dataStrain
     }
 
     // MARK: - Your progression (raised / waiting / stalled signals)
@@ -236,7 +298,7 @@ struct WorkoutHistoryScreen: View {
     private var progressionBlock: some View {
         if !progressionRows.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Your progression").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                InstrumentoSectionBand("Your progression")
                 ForEach(progressionRows) { row in
                     HStack(spacing: 10) {
                         Text(row.name)
@@ -269,30 +331,96 @@ struct WorkoutHistoryScreen: View {
                     .padding(.vertical, 4)
                     .accessibilityElement(children: .combine)
                 }
+                BarraAncla(String(localized: "What rose, what waits on recovery, and what stalled."),
+                           color: theme.dataRecovery, theme: theme)
             }
         }
     }
 
-    private var list: some View {
-        LazyVStack(alignment: .leading, spacing: 10) {
-            ForEach(sessions) { session in
-                NavigationLink(value: route(for: session)) {
-                    sessionCard(session)
-                }
-                .buttonStyle(.plain)
-                .contextMenu {
-                    Button(role: .destructive) { delete(session) } label: {
-                        Label("Delete workout", systemImage: "trash")
+    private var sessionsSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            InstrumentoSectionBand("Sessions")
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(sessions) { session in
+                    NavigationLink(value: route(for: session)) {
+                        sessionRow(session)
                     }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button(role: .destructive) { delete(session) } label: {
+                            Label("Delete workout", systemImage: "trash")
+                        }
+                    }
+                    if session.id != sessions.last?.id { Divider().overlay(theme.hairline) }
                 }
             }
         }
+    }
+
+    /// Handoff v2 session row: family glyph chip · name + «vie 10 jul · 48 min · 4.320 kg» · one right
+    /// datum (effort in the strain hue, else kcal, else the honest «—»). Replaces the tall cards.
+    private func sessionRow(_ session: StrengthSession) -> some View {
+        HStack(spacing: 12) {
+            RoutineRegionGlyph(sessionGlyph(session), tint: sessionTint(session))
+                .frame(width: 22, height: 22)
+                .frame(width: 38, height: 38)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name(for: session)).font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                Text(sessionMeta(session)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            Spacer(minLength: 8)
+            if let strain = session.strain {
+                Text(StrengthHistoryFormat.strain(strain))
+                    .font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.dataStrain)
+            } else if let k = session.energyKcal {
+                (Text(StrandFormat.groupedInt(k)) + Text(verbatim: " ") + Text("kcal"))
+                    .font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.inkSecondary)
+            } else {
+                Text(verbatim: "—").font(InstrumentoType.grotesk(13, weight: .bold)).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .frame(minHeight: 56)
+        .contentShape(Rectangle())
+    }
+
+    /// «vie 10 jul · 48 min · 4.320 kg» — everything the old card said, in one quiet line.
+    private func sessionMeta(_ session: StrengthSession) -> String {
+        var parts: [String] = [Date(timeIntervalSince1970: TimeInterval(session.startTs))
+            .formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)).lowercased()]
+        if let mins = StrengthHistoryFormat.durationMinutes(start: session.startTs, end: session.endTs) {
+            parts.append(StrengthHistoryFormat.durationText(mins))
+        }
+        if let vol = volumes[session.id], vol.volumeKg > 0 {
+            parts.append(StrengthHistoryFormat.volume(vol.volumeKg, system: system))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// The session routine's movement family (loaded per routine in `load()`); routine-less → dumbbell.
+    private func sessionGlyph(_ session: StrengthSession) -> RoutineGlyphKind {
+        guard let rid = session.routineId, let region = routineRegions[rid] else { return .fullBody }
+        switch region {
+        case .push: return .push
+        case .pull: return .pull
+        case .legs: return .legs
+        case .fullBody: return .fullBody
+        }
+    }
+
+    private func sessionTint(_ session: StrengthSession) -> Color {
+        guard let rid = session.routineId else { return theme.dataStrain }
+        return routineRegions[rid].tint(theme)
     }
 
     // MARK: - Saved tickets entry (thermal receipts peek)
 
     private var savedTicketsEntry: some View {
         VStack(alignment: .leading, spacing: 12) {
+            InstrumentoSectionBand("My saved tickets")
             NavigationLink(value: SavedTicketsRoute()) {
                 HStack(spacing: 12) {
                     RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
@@ -340,69 +468,6 @@ struct WorkoutHistoryScreen: View {
                 theme: theme
             )
         }
-    }
-
-    private func sessionCard(_ session: StrengthSession) -> some View {
-        let vol = volumes[session.id]
-        return VStack(alignment: .leading, spacing: 0) {
-            Text(StrengthHistoryFormat.dateTime(session.startTs)).instrumentoOverline()
-                .foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(name(for: session)).font(StrandFont.title2).foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.top, 3)
-
-            // The numbers reflow to a column at large Dynamic Type so nothing clips.
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 20) { statCells(session, vol) }
-                VStack(alignment: .leading, spacing: 10) { statCells(session, vol) }
-            }
-            .padding(.top, 12)
-        }
-        .padding(CenitMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    @ViewBuilder
-    private func statCells(_ session: StrengthSession, _ vol: (volumeKg: Double, setCount: Int)?) -> some View {
-        if let mins = StrengthHistoryFormat.durationMinutes(start: session.startTs, end: session.endTs) {
-            stat("Duration", StrengthHistoryFormat.durationText(mins), color: theme.ink)
-        }
-        if let vol, vol.volumeKg > 0 {
-            stat("Volume", StrengthHistoryFormat.volume(vol.volumeKg, system: system), color: theme.ink)
-        }
-        // The physiological datum carries the only color (Instrumento). Omitted — never faked — when
-        // the session was logged without a strap.
-        if let strain = session.strain {
-            stat("Effort", StrengthHistoryFormat.strain(strain), color: theme.dataStrain)
-        }
-        if let hr = session.avgHr {
-            stat("Avg HR", "\(hr)", unit: "bpm", color: theme.dataStrain)
-        }
-        // kcal per session (FER-715/718): omitted cleanly for a pre-v26 session (nil), never shown as 0.
-        if let k = session.energyKcal {
-            stat("Energy", StrandFormat.groupedInt(k), unit: "kcal", color: theme.ink)
-        }
-    }
-
-    private func stat(_ label: LocalizedStringKey, _ value: String,
-                      unit: LocalizedStringKey? = nil, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value).font(StrandFont.number(18, weight: .semibold)).foregroundStyle(color)
-                    .monospacedDigit()
-                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
-            }
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-        }
-        .accessibilityElement(children: .combine)
     }
 
     private var emptyState: some View {
@@ -478,7 +543,7 @@ struct WorkoutHistoryScreen: View {
                               volumeKg: vol, energyKcal: hasKcal ? kcal : nil)
     }
 
-    private struct WeekVolume: Identifiable { let id: Int; let volumeKg: Double; let isCurrent: Bool }
+    private struct WeekVolume: Identifiable { let id: Int; let volumeKg: Double; let count: Int; let start: Date?; let isCurrent: Bool }
 
     /// Total volume per week over the last 8 weeks (oldest→newest), Monday-anchored. The last bucket is
     /// the current week (drawn in `dataRecovery`).
@@ -486,14 +551,20 @@ struct WorkoutHistoryScreen: View {
         var cal = Calendar.current; cal.firstWeekday = 2
         let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
         var buckets = [Double](repeating: 0, count: 8)
+        var counts = [Int](repeating: 0, count: 8)
         for s in sessions where s.endTs != nil {
             let date = Date(timeIntervalSince1970: TimeInterval(s.startTs))
             guard let ws = cal.dateInterval(of: .weekOfYear, for: date)?.start else { continue }
             let weeksAgo = cal.dateComponents([.weekOfYear], from: ws, to: thisWeekStart).weekOfYear ?? 0
             guard weeksAgo >= 0, weeksAgo < 8 else { continue }
             buckets[7 - weeksAgo] += volumes[s.id]?.volumeKg ?? 0
+            counts[7 - weeksAgo] += 1
         }
-        return buckets.enumerated().map { WeekVolume(id: $0.offset, volumeKg: $0.element, isCurrent: $0.offset == 7) }
+        return buckets.enumerated().map { i, kg in
+            WeekVolume(id: i, volumeKg: kg, count: counts[i],
+                       start: cal.date(byAdding: .weekOfYear, value: i - 7, to: thisWeekStart),
+                       isCurrent: i == 7)
+        }
     }
 
     // MARK: - Derived
@@ -565,6 +636,22 @@ struct WorkoutHistoryScreen: View {
         self.volumes = volumes
         self.muscleEvents = muscleEvents
         self.loaded = true
+        // Classify each routine's movement family for the session rows (same resolution as the hub).
+        if let store = await repo.storeHandle() {
+            var regions: [String: RoutineRegion] = [:]
+            let custom = (try? await store.customExercises()) ?? []
+            let customByID = Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            for r in routines {
+                let exs = (try? await store.routineExercises(routineId: r.id)) ?? []
+                let perExercise = exs.compactMap { re in
+                    (ExerciseCatalog.byID(re.exerciseId) ?? customByID[re.exerciseId])?.primaryMuscles
+                }
+                if let cat = RoutineClassifier.classify(primaryMusclesPerExercise: perExercise) {
+                    regions[r.id] = cat
+                }
+            }
+            self.routineRegions = regions
+        }
         // Progression can take a beat (routines × exercises); paint the rest of the screen first.
         self.progressionRows = await loadProgressionRows()
     }
