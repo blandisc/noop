@@ -949,6 +949,9 @@ struct LiveStrengthSheet: View {
     /// appears. `nil` = not loaded yet (the `.task` hasn't resolved); `[]` = loaded, honestly no fresh
     /// muscle to suggest — one optional instead of a separate "have I tried yet" flag.
     @State private var showLibraryPicker = false
+    /// FER-938: the id of a set just appended via «+ Serie», so its row shows the «COPIADA DE LA N» hint +
+    /// dashed border until it's logged (the guard `!set.done` retires the hint the moment it's marked).
+    @State private var copiedSetId: String?
     @State private var freshSuggestions: [QuickSuggestion]?
     @State private var loadedMuscle: String?
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
@@ -1421,7 +1424,13 @@ struct LiveStrengthSheet: View {
         }
         .plainRow(top: CenitMetrics.gap)
         ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
-            setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+            // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows from the
+            // numbered work sets — drawn on the first work row that follows a warm-up.
+            let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
+            VStack(spacing: 0) {
+                if afterWarmup { workSetsDivider.padding(.top, 4).padding(.bottom, 6) }
+                setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+            }
                 .activeCardRow(top: si == 0, bottom: si == run.sets.count - 1, theme: theme)
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
@@ -1444,6 +1453,17 @@ struct LiveStrengthSheet: View {
                 .plainRow(top: 4)
         }
         addSetButton(ei).plainRow(top: 4)
+    }
+
+    /// FER-937: the «SERIES DE TRABAJO» rule between the warm-up «C» rows and the numbered work sets —
+    /// two hairlines flanking a quiet overline. A label, not a datum, so it stays in tinted ink.
+    private var workSetsDivider: some View {
+        HStack(spacing: 8) {
+            Rectangle().fill(theme.hairline).frame(height: 1)
+            Text("WORK SETS").instrumentoOverline().foregroundStyle(theme.inkDim)
+            Rectangle().fill(theme.hairline).frame(height: 1)
+        }
+        .accessibilityLabel(Text("Work sets"))
     }
 
     /// The riel's terminal node — a dotted circle affordance that opens the existing ad-hoc add-exercise
@@ -2495,6 +2515,13 @@ struct LiveStrengthSheet: View {
         .padding(.horizontal, active ? 6 : 0)
         .background(active ? theme.surface : .clear,
                     in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay {
+            // FER-938: a dashed ember outline marks a just-copied, not-yet-logged set.
+            if set.id == copiedSetId, !set.done {
+                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            }
+        }
         .overlay(alignment: .bottom) {
             if !last { Rectangle().fill(theme.hairline).frame(height: 1) }
         }
@@ -2507,9 +2534,16 @@ struct LiveStrengthSheet: View {
     private func gridRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
                          set: StrengthSessionModel.WorkingSet) -> some View {
         HStack(spacing: 8) {
-            badge(ei: ei, si: si, number: si + 1)
-            previousCell(ei: ei, si: si, run: run)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            badge(run: run, si: si)
+            if set.id == copiedSetId, !set.done, si > 0 {
+                // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».
+                let fromNumber = run.sets.prefix(si).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+                Text("COPIED FROM \(fromNumber)").instrumentoOverline().foregroundStyle(theme.dataStrain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                previousCell(ei: ei, si: si, run: run)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             dataCells(ei: ei, si: si, run: run, set: set)
             checkButton(ei: ei, si: si, set: set)
         }
@@ -2519,7 +2553,7 @@ struct LiveStrengthSheet: View {
                            set: StrengthSessionModel.WorkingSet) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                badge(ei: ei, si: si, number: si + 1)
+                badge(run: run, si: si)
                 Spacer()
                 checkButton(ei: ei, si: si, set: set)
             }
@@ -2536,7 +2570,7 @@ struct LiveStrengthSheet: View {
         let running = session.timerStart != nil
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
-                badge(ei: ei, si: si, number: si + 1)
+                badge(run: run, si: si)
                 // The clock — ticks live while running, else shows the captured time.
                 Group {
                     if running {
@@ -2770,13 +2804,19 @@ struct LiveStrengthSheet: View {
 
     /// The set-number badge — a non-interactive marker in the effort hue (FER-716: the Foco is gone; the
     /// row itself is the interactive surface). A ring with the set number.
-    private func badge(ei: Int, si: Int, number: Int) -> some View {
-        Text("\(number)").font(StrandFont.caption).monospacedDigit()
-            .foregroundStyle(theme.dataStrain)
+    /// The set's number badge. FER-937: a warm-up set shows a «C» (calentamiento) in a tenue ring and does
+    /// not consume a work-set number; work sets are numbered 1..n counting only `.work` rows, so a warm-up
+    /// never pushes «serie 1» to «serie 3».
+    private func badge(run: StrengthSessionModel.ExerciseRun, si: Int) -> some View {
+        let isWarmup = run.sets[si].kind == .warmup
+        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        let label = isWarmup ? String(localized: "C") : "\(workNumber)"
+        return Text(label).font(StrandFont.caption).monospacedDigit()
+            .foregroundStyle(isWarmup ? theme.dataStrain.opacity(StrandOpacity.dim) : theme.dataStrain)  // token-exempt: warm-up badge tenue (handoff «C»)
             .frame(width: 26, height: 26)
-            .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
+            .overlay(Circle().strokeBorder(theme.dataStrain.opacity(isWarmup ? StrandOpacity.dim : 1), lineWidth: 1.5))  // token-exempt: warm-up ring tenue
             .frame(width: reflow ? 26 : 44, height: reflow ? 26 : 44, alignment: .center)
-            .accessibilityLabel(Text("Set \(number)"))
+            .accessibilityLabel(Text(isWarmup ? "Warm-up set" : "Set \(workNumber)"))
     }
 
     /// «ANTERIOR · DESCANSO» — last time's value + this set's own rest (FER-716, per-set since F0);
@@ -2997,7 +3037,10 @@ struct LiveStrengthSheet: View {
     }
 
     private func addSetButton(_ ei: Int) -> some View {
-        Button { withAnimation(.snappy) { session.addSet(exercise: ei) } } label: {
+        Button {
+            withAnimation(.snappy) { session.addSet(exercise: ei) }
+            copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
+        } label: {
             Label("Add set", systemImage: "plus")
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 9)
