@@ -351,12 +351,12 @@ struct WorkoutImportView: View {
         .padding(.vertical, CenitMetrics.gap)
     }
 
-    private func glyphKind(_ region: RoutineRegion) -> RoutineGlyphKind {
+    private func glyphKind(_ region: RoutineRegion?) -> RoutineGlyphKind {
         switch region {
         case .push: return .push
         case .pull: return .pull
         case .legs: return .legs
-        case .fullBody: return .fullBody
+        case .fullBody, .none: return .fullBody
         }
     }
 
