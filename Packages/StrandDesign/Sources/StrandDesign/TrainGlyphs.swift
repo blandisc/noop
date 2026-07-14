@@ -251,52 +251,68 @@ private struct FigureShape: Shape {
     }
 }
 
-// MARK: Respira — the wind lines INHALE and EXHALE: two slow swells, then still
+// MARK: Respira — gusts of AIR: curled wind lines that stream out to the right, twice
 
 private struct BreatheBlow: View {
     let color: Color
     let pending: Bool
-    /// 0 = at rest; 1 = full inhale (lines swell outward and brighten).
-    @State private var breath: CGFloat = 0
+    /// Per-line draw progress (0 = hidden, 1 = fully streamed). The three gusts flow in sequence.
+    @State private var drawn: [CGFloat] = [1, 1, 1]
+    /// A small horizontal glide added while a gust streams, so the air reads as MOVING, not just drawn.
+    @State private var glide: CGFloat = 0
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 ForEach(0..<3, id: \.self) { i in
-                    WindLine(row: i)
-                        .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                    WindGust(row: i)
+                        .trim(from: 0, to: drawn[i])
+                        .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                        .offset(x: glide * geo.size.width * 0.06 * (i == 1 ? 1.4 : 1))
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
-            .scaleEffect(1 + breath * 0.14, anchor: .leading)
-            .opacity(0.78 + Double(breath) * 0.22)
         }
         .onChange(of: pending) { was, now in
-            if was, !now { Task { await breathe() } }
+            if was, !now { Task { await gust() } }
         }
     }
 
-    /// Two inhale/exhale cycles at a calm cadence (the system's physiological «breathe» motif),
-    /// settling back to rest — no erase/redraw, just the lines swelling like a breath.
-    @MainActor private func breathe() async {
+    /// Two gusts: each streams the three curled lines left→right in quick succession with a light
+    /// forward glide, then eases back — clearly moving air, not a breathing chest.
+    @MainActor private func gust() async {
         for _ in 0..<2 {
-            withAnimation(.easeInOut(duration: 0.55)) { breath = 1 }     // inhale
-            try? await Task.sleep(nanoseconds: 600_000_000)
-            withAnimation(.easeInOut(duration: 0.7)) { breath = 0 }      // exhale
-            try? await Task.sleep(nanoseconds: 750_000_000)
+            var snap = Transaction(); snap.disablesAnimations = true
+            withTransaction(snap) { drawn = [0, 0, 0]; glide = 0 }
+            withAnimation(.easeOut(duration: 0.9)) { glide = 1 }
+            for i in 0..<3 {
+                withAnimation(.easeOut(duration: 0.5)) { drawn[i] = 1 }
+                try? await Task.sleep(nanoseconds: 140_000_000)
+            }
+            withAnimation(.easeInOut(duration: 0.5)) { glide = 0 }
+            try? await Task.sleep(nanoseconds: 620_000_000)
         }
     }
 }
 
-private struct WindLine: Shape {
+/// One gust line: a long horizontal stream that ends in a small upward CURL — the universal "wind /
+/// air" mark. The middle row runs longer with a deeper curl so the three read as a blowing cluster.
+private struct WindGust: Shape {
     let row: Int
     func path(in rect: CGRect) -> Path {
         func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
             CGPoint(x: rect.minX + x / 18 * rect.width, y: rect.minY + y / 18 * rect.height)
         }
         let y = CGFloat(5 + row * 4)
+        let long = row == 1
         var path = Path()
-        path.move(to: p(2, y + 0.5))
-        path.addCurve(to: p(16, y - 0.3), control1: p(6, y - 1.7), control2: p(10, y + 1.7))
+        // The streaming stroke, drawn left→right with a gentle waft.
+        path.move(to: p(1.5, y))
+        let endX: CGFloat = long ? 13.5 : 11.5
+        path.addCurve(to: p(endX, y), control1: p(5, y - 1.2), control2: p(endX - 4, y + 1.2))
+        // The curl at the tip — a little hook that reads as swirling air.
+        path.addCurve(to: p(endX - 0.4, y - 2.4),
+                      control1: p(endX + 2.6, y - 0.4),
+                      control2: p(endX + 2.2, y - 2.6))
         return path
     }
 }
