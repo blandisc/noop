@@ -118,7 +118,7 @@ struct WorkoutImportView: View {
         HStack(alignment: .top, spacing: CenitMetrics.gap) {
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(theme.verdict).frame(width: 3)
-            Text("Your routines are created on your iPhone. NOOP never connects: you run the AI step yourself.")
+            Text("Your routines are created on your iPhone. Cénit never connects: you run the AI step yourself.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -569,7 +569,7 @@ struct WorkoutImportView: View {
         case .notJSON:
             return "We couldn't read that as a plan file. Paste the full result your AI gave you, or upload the .json."
         case .unsupportedSchema:
-            return "That file isn't a NOOP workout plan. Make sure you used the prompt above."
+            return "That file isn't a Cénit workout plan. Make sure you used the prompt above."
         case .unsupportedIdioma:
             return "The plan's language isn't supported: it must be Spanish or English."
         case .unsupportedUnidad:
@@ -674,6 +674,7 @@ private func importPreview(_ view: WorkoutImportView) -> some View {
     view
         .environmentObject(Repository(deviceId: "preview"))
         .preferredColorScheme(.light)
+        .environment(\.locale, Locale(identifier: "es"))   // canvas en es-MX; quitar para ver el copy en inglés
 }
 
 #Preview("1 · Captura") { importPreview(.previewCapture()) }
