@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Serie activa — nodo «＋» del riel abre el picker en sesión con rutina + inserción posicional / Active session — the rail's «＋» node opens the picker in a routine-backed session, with positional insertion.**
+  **ES** — El nodo «＋» al final del riel de la sesión de fuerza en vivo ahora abre la biblioteca de ejercicios también cuando la sesión viene de una rutina (antes solo funcionaba en la sesión ad-hoc vacía). El o los ejercicios elegidos se insertan **después del activo**, no al final, y el picker muestra la leyenda «se inserta después del actual · solo por hoy» cuando la sesión ya tiene ejercicios.
+  **EN** — The «＋» node at the end of the live-strength rail now opens the exercise library picker in routine-backed sessions too (it previously only worked in the empty ad-hoc session). Picked exercises are inserted **after the active one** instead of at the end, and the picker shows «inserted after the current · today only» once the session already has exercises.
+  ([LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
 - **«Biblioteca» fiel al handoff / "Library" reconciled to the handoff.**
   **ES** — La biblioteca adopta la firma del handoff: overline «BIBLIOTECA» con **el conteo como título** («873 ejercicios», Grotesk), bandas hundidas («CON HISTORIAL TUYO», «{MÚSCULO} · DE LA BIBLIOTECA»), **miniaturas con marco del color de su familia** (empuje/tirón/pierna), y el récord como **dato derecho en su color** («80 kg / tu récord») conservando la mini-tendencia de peso. «＋ Crear ejercicio propio» con el ＋ en ámbar. Bugs es-MX: «Type», «your record» y «FROM THE LIBRARY» salían en inglés.
   **EN** — The library adopts the handoff's signature: the count as the Grotesk hero title, sunken section bands, thumbnails framed in their movement-family hue, and the record as the right-hand datum in that hue (keeping the weight sparkline). es-MX bugs: three strings rendered in English.

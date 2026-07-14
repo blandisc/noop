@@ -59302,6 +59302,23 @@
         }
       }
     },
+    "inserted after the current · today only": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "inserted after the current · today only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "se inserta después del actual · solo por hoy"
+          }
+        }
+      }
+    },
     "intraday, no daily series": {
       "extractionState": "manual",
       "localizations": {
