@@ -10,7 +10,7 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         let set1 = StrengthSessionSnapshot.SetSnapshot(
             id: "s1", weightKg: 60, reps: 8, done: true, doneTs: 1000,
             rest: RestConfig(mode: .fixed, seconds: 90, hrReference: .restingMargin, hrValue: 0),
-            kind: .work, rpe: 7)
+            kind: .work, rpe: 7, note: "Falló al final")
         let set2 = StrengthSessionSnapshot.SetSnapshot(
             id: "s2", weightKg: 60, reps: 8, done: false, kind: .warmup)
         let run = StrengthSessionSnapshot.RunSnapshot(
@@ -18,7 +18,7 @@ final class StrengthSessionSnapshotTests: XCTestCase {
             restSeconds: 90, restMode: .heartRate, hrRestReference: .restingMargin, hrRestValue: 12,
             lastWeightKg: 57.5, lastReps: 8, lastTimeS: nil, lastDistanceM: nil,
             sets: [set1, set2], currentSet: 1, skipped: false, raiseOptedOut: true,
-            supersetGroup: 1)
+            supersetGroup: 1, note: "Buena técnica hoy")
         return StrengthSessionSnapshot(
             id: "sess-1", routineId: "push-a", routineName: "Push A", startTs: 900,
             runs: [run], currentIndex: 0,
@@ -98,5 +98,27 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("\"rpe\""))
         let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
         XCTAssertNil(decoded.runs.first?.sets.first?.rpe)
+    }
+
+    /// FER-932: the exercise-scoped note and the set-scoped note both ride the snapshot so a crash
+    /// mid-entry doesn't lose an already-typed note.
+    func testPreservesNotes() throws {
+        let decoded = try JSONDecoder().decode(
+            StrengthSessionSnapshot.self, from: try JSONEncoder().encode(sample()))
+        XCTAssertEqual(decoded.runs.first?.note, "Buena técnica hoy")
+        XCTAssertEqual(decoded.runs.first?.sets.first?.note, "Falló al final")
+    }
+
+    /// FER-932: a snapshot persisted BEFORE the field existed (no `note` key on run or set) still
+    /// decodes — absent means "no note" (nil), never an empty string standing in for it.
+    func testPreFer932SnapshotDecodesWithoutNote() throws {
+        var snap = sample()
+        snap.runs[0].note = nil
+        snap.runs[0].sets[0].note = nil
+        let data = try JSONEncoder().encode(snap)   // optional nil → key absent, like a pre-932 snapshot
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("\"note\""))
+        let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertNil(decoded.runs.first?.note)
+        XCTAssertNil(decoded.runs.first?.sets.first?.note)
     }
 }

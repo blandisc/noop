@@ -314,13 +314,16 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// Perceived effort (RPE), 6-10 with half-steps (FER-930). Legacy JSON without the key decodes
         /// to nil (Codable default via the memberwise init below, not a `decode(forKey:)` path).
         public var rpe: Double?
+        /// Set-scoped note text (FER-932). Legacy JSON without the key decodes to nil, same pattern as `rpe`.
+        public var note: String?
 
         public init(id: String, weightKg: Double, reps: Int, timeS: Int? = nil,
                     distanceM: Double? = nil, done: Bool = false, doneTs: Int? = nil,
-                    rest: RestConfig? = nil, kind: SetKind = .work, rpe: Double? = nil) {
+                    rest: RestConfig? = nil, kind: SetKind = .work, rpe: Double? = nil,
+                    note: String? = nil) {
             self.id = id; self.weightKg = weightKg; self.reps = reps; self.timeS = timeS
             self.distanceM = distanceM; self.done = done; self.doneTs = doneTs
-            self.rest = rest; self.kind = kind; self.rpe = rpe
+            self.rest = rest; self.kind = kind; self.rpe = rpe; self.note = note
         }
     }
     /// One exercise's run within the session.
@@ -346,13 +349,16 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// Superset grouping (FER-931), mirroring `RoutineExercise.supersetGroup`. Optional so a
         /// pre-FER-931 snapshot (key absent) still decodes; nil = standalone exercise.
         public var supersetGroup: Int?
+        /// Exercise-scoped note text (FER-932). Optional so a pre-FER-932 snapshot (key absent)
+        /// still decodes; nil means no note, never confused with an empty string.
+        public var note: String?
 
         public init(id: String, exerciseId: String, name: String, type: ExerciseType,
                     restSeconds: Int, restMode: RestMode, hrRestReference: HRRestReference,
                     hrRestValue: Double, lastWeightKg: Double? = nil, lastReps: Int? = nil,
                     lastTimeS: Int? = nil, lastDistanceM: Double? = nil, sets: [SetSnapshot],
                     currentSet: Int, skipped: Bool, raiseOptedOut: Bool? = nil,
-                    supersetGroup: Int? = nil) {
+                    supersetGroup: Int? = nil, note: String? = nil) {
             self.id = id; self.exerciseId = exerciseId; self.name = name; self.type = type
             self.restSeconds = restSeconds; self.restMode = restMode
             self.hrRestReference = hrRestReference; self.hrRestValue = hrRestValue
@@ -361,6 +367,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
             self.sets = sets; self.currentSet = currentSet; self.skipped = skipped
             self.raiseOptedOut = raiseOptedOut
             self.supersetGroup = supersetGroup
+            self.note = note
         }
     }
     public var id: String
@@ -396,6 +403,26 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         self.timerStart = timerStart
         self.paused = paused; self.pausedAccumulatedS = pausedAccumulatedS; self.pausedAt = pausedAt
         self.updatedTs = updatedTs
+    }
+}
+
+/// A free-text note attached to an exercise's run within a session (FER-932), primarily scoped to
+/// `(sessionId, exerciseId)`; `setPosition` non-nil narrows it to one set. Distinct from
+/// `StrengthSession.notes` (whole-session, feeds the receipt) — this is per-exercise and cross-session
+/// history ("NOTAS ANTERIORES"), not a single field on the session row.
+public struct ExerciseNote: Codable, Sendable, Identifiable, Equatable {
+    public var id: String
+    public var sessionId: String
+    public var exerciseId: String
+    /// `nil` = scoped to the whole exercise; non-nil = scoped to that one set (0-based, mirrors `SetEntry.position`).
+    public var setPosition: Int?
+    public var text: String
+    public var ts: Int
+
+    public init(id: String = UUID().uuidString, sessionId: String, exerciseId: String,
+                setPosition: Int? = nil, text: String, ts: Int) {
+        self.id = id; self.sessionId = sessionId; self.exerciseId = exerciseId
+        self.setPosition = setPosition; self.text = text; self.ts = ts
     }
 }
 
