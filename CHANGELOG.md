@@ -19,6 +19,12 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **«Importar Plan» fiel al handoff: 4 pasos «Instrumento» / "Import plan" reconciled to the handoff: four "Instrumento" steps.**
+  **ES** — El flujo para traer un plan desde tu IA adopta la firma del handoff en sus cuatro pasos (Captura · Mapear · Confirmar · Listo): overline ámbar, pasos numerados en disco, **«Copiar prompt»** en ámbar y la promesa offline como tarjeta con barra verde («tus rutinas se crean en tu iPhone»); en Mapear, el emparejamiento como **pill verde** y las sugerencias como tarjeta con **«Usar»**; en Confirmar, cada rutina con su **glyph teñido por familia** (empuje/tirón/pierna) y el día en su color; y un cierre **celebratorio centrado** con el sello verde que aparece con un pop suave (respeta Reduce Motion). Copy sin «NOOP» (ahora Cénit) y el stepper localizado es-MX.
+  **EN** — The bring-your-own-AI import flow adopts the handoff's signature across its four steps (Capture · Map · Confirm · Done): amber overline, numbered discs, an amber "Copy prompt", and the offline promise as a green-barred card; matched exercises as a green pill and suggestions as a card with "Use"; each routine shown with its family-tinted glyph and day; and a centered, celebratory finish whose green seal pops in (Reduce Motion respected). Copy drops "NOOP" (now Cénit) and the stepper is localized.
+  ([WorkoutImportView.swift](Cenit/Screens/WorkoutImportView.swift))
+
+
 - **«Biblioteca» fiel al handoff / "Library" reconciled to the handoff.**
   **ES** — La biblioteca adopta la firma del handoff: overline «BIBLIOTECA» con **el conteo como título** («873 ejercicios», Grotesk), bandas hundidas («CON HISTORIAL TUYO», «{MÚSCULO} · DE LA BIBLIOTECA»), **miniaturas con marco del color de su familia** (empuje/tirón/pierna), y el récord como **dato derecho en su color** («80 kg / tu récord») conservando la mini-tendencia de peso. «＋ Crear ejercicio propio» con el ＋ en ámbar. Bugs es-MX: «Type», «your record» y «FROM THE LIBRARY» salían en inglés.
   **EN** — The library adopts the handoff's signature: the count as the Grotesk hero title, sunken section bands, thumbnails framed in their movement-family hue, and the record as the right-hand datum in that hue (keeping the weight sparkline). es-MX bugs: three strings rendered in English.
