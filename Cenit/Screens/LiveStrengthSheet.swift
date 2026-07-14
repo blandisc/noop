@@ -517,6 +517,27 @@ final class StrengthSessionModel: ObservableObject {
         currentIndex = runs.count - 1
     }
 
+    /// Insert an exercise right after the currently active one (FER-935): same seeding as `addExercise`,
+    /// but the run lands at `currentIndex + 1` instead of the end, and the guided focus stays on the
+    /// active exercise (no `currentIndex` reassignment — the insert always lands after it, so it never
+    /// needs the reindex `removeExercise`/`moveExerciseEarlier` do). Calling this once per pick with the
+    /// picks in reverse order keeps a multi-pick batch contiguous and in the user's chosen order, since
+    /// each call lands its run at the same `currentIndex + 1` slot, pushing the previous insert one further.
+    func insertExerciseAfterCurrent(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
+        let weight = lastWeightKg ?? 0
+        let reps = usesReps ? (lastReps ?? 8) : 0
+        let set = WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
+        let run = ExerciseRun(id: UUID().uuidString, exerciseId: exercise.id,
+                              name: StrengthDisplay.name(exercise), type: exercise.type,
+                              restSeconds: Self.adHocRestSeconds, restMode: .fixed,
+                              hrRestReference: .restingMargin, hrRestValue: 0,
+                              lastWeightKg: lastWeightKg, lastReps: lastReps,
+                              lastTimeS: nil, lastDistanceM: nil,
+                              sets: [set], currentSet: 0, skipped: false)
+        runs.insert(run, at: min(currentIndex + 1, runs.count))
+    }
+
     /// Skip the current (pending) set: drop it from the plan. A done set is left untouched.
     func skipCurrentSet() {
         guard runs.indices.contains(currentIndex) else { return }
@@ -1081,6 +1102,25 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
+        // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
+        .sheet(isPresented: $showLibraryPicker) {
+            VStack(alignment: .leading, spacing: 0) {
+                if !session.runs.isEmpty {
+                    Text("inserted after the current · today only")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .padding(.horizontal, CenitMetrics.screenPadding)
+                        .padding(.top, 12)
+                        .padding(.bottom, 4)
+                }
+                ExerciseLibraryScreen { picks in
+                    showLibraryPicker = false
+                    Task { await addExercises(picks) }
+                }
+            }
+            .background(theme.paper.ignoresSafeArea())
+            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+        }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
@@ -3154,13 +3194,6 @@ struct LiveStrengthSheet: View {
             guard freshSuggestions == nil else { return }
             await loadFreshSuggestions()
         }
-        .sheet(isPresented: $showLibraryPicker) {
-            ExerciseLibraryScreen { picks in
-                showLibraryPicker = false
-                Task { await addExercises(picks) }
-            }
-            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
-        }
     }
 
     private func suggestionRow(_ s: QuickSuggestion) -> some View {
@@ -3238,9 +3271,13 @@ struct LiveStrengthSheet: View {
         loadedMuscle = loads.filter { $0.state == .loaded }.max { $0.load < $1.load }?.muscle
     }
 
-    /// Add one or more exercises to the ad-hoc session (from a suggestion or the library picker), seeding
-    /// each from its last logged set when there's history. The empty state falls away on its own once
-    /// `session.runs` isn't empty.
+    /// Add one or more exercises to the session (from a suggestion or the library picker), seeding each
+    /// from its last logged set when there's history. The empty ad-hoc state falls away on its own once
+    /// `session.runs` isn't empty. FER-935: when the session already has runs (routine-backed or an
+    /// ad-hoc session past its first exercise), the picks land right after the active exercise instead of
+    /// at the end — iterated in REVERSE so the batch stays contiguous and in the user's chosen order
+    /// (each `insertExerciseAfterCurrent` call lands at the same `currentIndex + 1` slot, pushing the
+    /// previous insert one further along — see its doc comment).
     private func addExercises(_ picks: [Exercise]) async {
         let lasts = await withTaskGroup(of: (String, Double?, Int?).self) { group in
             for ex in picks {
@@ -3253,9 +3290,16 @@ struct LiveStrengthSheet: View {
             for await (id, weight, reps) in group { results[id] = (weight, reps) }
             return results
         }
-        for ex in picks {
-            let last = lasts[ex.id]
-            session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
+        if session.runs.isEmpty {
+            for ex in picks {
+                let last = lasts[ex.id]
+                session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
+            }
+        } else {
+            for ex in picks.reversed() {
+                let last = lasts[ex.id]
+                session.insertExerciseAfterCurrent(ex, lastWeightKg: last?.0, lastReps: last?.1)
+            }
         }
     }
 
