@@ -517,6 +517,27 @@ final class StrengthSessionModel: ObservableObject {
         currentIndex = runs.count - 1
     }
 
+    /// Insert an exercise right after the currently active one (FER-935): same seeding as `addExercise`,
+    /// but the run lands at `currentIndex + 1` instead of the end, and the guided focus stays on the
+    /// active exercise (no `currentIndex` reassignment — the insert always lands after it, so it never
+    /// needs the reindex `removeExercise`/`moveExerciseEarlier` do). Calling this once per pick with the
+    /// picks in reverse order keeps a multi-pick batch contiguous and in the user's chosen order, since
+    /// each call lands its run at the same `currentIndex + 1` slot, pushing the previous insert one further.
+    func insertExerciseAfterCurrent(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
+        let weight = lastWeightKg ?? 0
+        let reps = usesReps ? (lastReps ?? 8) : 0
+        let set = WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
+        let run = ExerciseRun(id: UUID().uuidString, exerciseId: exercise.id,
+                              name: StrengthDisplay.name(exercise), type: exercise.type,
+                              restSeconds: Self.adHocRestSeconds, restMode: .fixed,
+                              hrRestReference: .restingMargin, hrRestValue: 0,
+                              lastWeightKg: lastWeightKg, lastReps: lastReps,
+                              lastTimeS: nil, lastDistanceM: nil,
+                              sets: [set], currentSet: 0, skipped: false)
+        runs.insert(run, at: min(currentIndex + 1, runs.count))
+    }
+
     /// Skip the current (pending) set: drop it from the plan. A done set is left untouched.
     func skipCurrentSet() {
         guard runs.indices.contains(currentIndex) else { return }
@@ -949,6 +970,28 @@ struct LiveStrengthSheet: View {
     /// appears. `nil` = not loaded yet (the `.task` hasn't resolved); `[]` = loaded, honestly no fresh
     /// muscle to suggest — one optional instead of a separate "have I tried yet" flag.
     @State private var showLibraryPicker = false
+    /// FER-938: the id of a set just appended via «+ Serie», so its row shows the «COPIADA DE LA N» hint +
+    /// dashed border until it's logged (the guard `!set.done` retires the hint the moment it's marked).
+    @State private var copiedSetId: String?
+    /// FER-936: which exercise's «≡» reorder handle is momentarily emphasised (ember) after picking
+    /// «Reordenar» from its menu — a discoverability nudge toward the drag that already reorders.
+    @State private var reorderHint: Int?
+
+    /// FER-936: the breathing ember halo behind the active exercise's «···». A stroked ring (not a blurred
+    /// shadow, per DNA) that pulses opacity + scale; a steady faint ring under Reduce Motion.
+    private struct TapRing: View {
+        let color: Color
+        let animated: Bool
+        @State private var on = false
+        var body: some View {
+            Circle()
+                .strokeBorder(color, lineWidth: 2)
+                .opacity(on ? 0.10 : 0.28)
+                .scaleEffect(on ? 1.0 : 0.82)
+                .frame(width: 30, height: 30)
+                .onAppear { if animated { withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) { on = true } } }
+        }
+    }
     @State private var freshSuggestions: [QuickSuggestion]?
     @State private var loadedMuscle: String?
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
@@ -1059,6 +1102,25 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
+        // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
+        .sheet(isPresented: $showLibraryPicker) {
+            VStack(alignment: .leading, spacing: 0) {
+                if !session.runs.isEmpty {
+                    Text("inserted after the current · today only")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .padding(.horizontal, CenitMetrics.screenPadding)
+                        .padding(.top, 12)
+                        .padding(.bottom, 4)
+                }
+                ExerciseLibraryScreen { picks in
+                    showLibraryPicker = false
+                    Task { await addExercises(picks) }
+                }
+            }
+            .background(theme.paper.ignoresSafeArea())
+            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+        }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
@@ -1421,7 +1483,13 @@ struct LiveStrengthSheet: View {
         }
         .plainRow(top: CenitMetrics.gap)
         ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
-            setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+            // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows from the
+            // numbered work sets — drawn on the first work row that follows a warm-up.
+            let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
+            VStack(spacing: 0) {
+                if afterWarmup { workSetsDivider.padding(.top, 4).padding(.bottom, 6) }
+                setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+            }
                 .activeCardRow(top: si == 0, bottom: si == run.sets.count - 1, theme: theme)
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
@@ -1444,6 +1512,17 @@ struct LiveStrengthSheet: View {
                 .plainRow(top: 4)
         }
         addSetButton(ei).plainRow(top: 4)
+    }
+
+    /// FER-937: the «SERIES DE TRABAJO» rule between the warm-up «C» rows and the numbered work sets —
+    /// two hairlines flanking a quiet overline. A label, not a datum, so it stays in tinted ink.
+    private var workSetsDivider: some View {
+        HStack(spacing: 8) {
+            Rectangle().fill(theme.hairline).frame(height: 1)
+            Text("WORK SETS").instrumentoOverline().foregroundStyle(theme.inkDim)
+            Rectangle().fill(theme.hairline).frame(height: 1)
+        }
+        .accessibilityLabel(Text("Work sets"))
     }
 
     /// The riel's terminal node — a dotted circle affordance that opens the existing ad-hoc add-exercise
@@ -2188,8 +2267,15 @@ struct LiveStrengthSheet: View {
         Button { menuExerciseIndex = ei } label: {
             Image(systemName: "ellipsis")
                 .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(ei == session.currentIndex ? theme.dataStrain : theme.inkTertiary)
                 .frame(width: 30, height: 44)
+                .background {
+                    // FER-936 tapRing: the active exercise's «···» wears a gently breathing ember ring,
+                    // inviting a tap (menu holds Change / Reorder / Skip). Static under Reduce Motion.
+                    if ei == session.currentIndex {
+                        TapRing(color: theme.dataStrain, animated: !reduceMotion)
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2209,6 +2295,11 @@ struct LiveStrengthSheet: View {
             },
             .init(String(localized: "Skip exercise"), systemImage: "forward.end") {
                 withAnimation(.snappy) { session.skipExercise(ei) }
+            },
+            // FER-936: «Reordenar» points at the drag handle already on every header (the reorder itself
+            // rides the existing `≡` gesture); picking it emphasises that exercise's handle for a moment.
+            .init(String(localized: "Reorder"), systemImage: "line.3.horizontal") {
+                withAnimation(.snappy) { reorderHint = ei }
             }
         ]
         // Never leave the session empty — the last exercise can only be skipped, not removed.
@@ -2225,11 +2316,20 @@ struct LiveStrengthSheet: View {
     /// which keeps the focused exercise focused) — the same reorder the plan navigator exposes, now with a
     /// visible grab. VoiceOver gets explicit move-earlier / move-later actions since a drag isn't reachable.
     private func reorderHandle(ei: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
-        Image(systemName: "line.3.horizontal")
+        let hinted = reorderHint == ei
+        return Image(systemName: "line.3.horizontal")
             .font(StrandFont.glyph(.chevron))
-            .foregroundStyle(theme.inkTertiary)
+            .foregroundStyle(hinted ? theme.dataStrain : theme.inkTertiary)
+            .scaleEffect(hinted ? 1.18 : 1)
+            .animation(.snappy, value: hinted)
             .frame(width: 30, height: 44)
             .contentShape(Rectangle())
+            // FER-936: the ember nudge from the menu fades on its own after a couple of seconds.
+            .task(id: reorderHint) {
+                guard reorderHint == ei else { return }
+                try? await Task.sleep(for: .seconds(2.5))
+                if reorderHint == ei { withAnimation(.snappy) { reorderHint = nil } }
+            }
             .highPriorityGesture(
                 DragGesture(minimumDistance: 6)
                     .onEnded { value in
@@ -2495,6 +2595,13 @@ struct LiveStrengthSheet: View {
         .padding(.horizontal, active ? 6 : 0)
         .background(active ? theme.surface : .clear,
                     in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay {
+            // FER-938: a dashed ember outline marks a just-copied, not-yet-logged set.
+            if set.id == copiedSetId, !set.done {
+                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            }
+        }
         .overlay(alignment: .bottom) {
             if !last { Rectangle().fill(theme.hairline).frame(height: 1) }
         }
@@ -2507,9 +2614,16 @@ struct LiveStrengthSheet: View {
     private func gridRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
                          set: StrengthSessionModel.WorkingSet) -> some View {
         HStack(spacing: 8) {
-            badge(ei: ei, si: si, number: si + 1)
-            previousCell(ei: ei, si: si, run: run)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            badge(run: run, si: si)
+            if set.id == copiedSetId, !set.done, si > 0 {
+                // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».
+                let fromNumber = run.sets.prefix(si).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+                Text("COPIED FROM \(fromNumber)").instrumentoOverline().foregroundStyle(theme.dataStrain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                previousCell(ei: ei, si: si, run: run)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             dataCells(ei: ei, si: si, run: run, set: set)
             checkButton(ei: ei, si: si, set: set)
         }
@@ -2519,7 +2633,7 @@ struct LiveStrengthSheet: View {
                            set: StrengthSessionModel.WorkingSet) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                badge(ei: ei, si: si, number: si + 1)
+                badge(run: run, si: si)
                 Spacer()
                 checkButton(ei: ei, si: si, set: set)
             }
@@ -2536,7 +2650,7 @@ struct LiveStrengthSheet: View {
         let running = session.timerStart != nil
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
-                badge(ei: ei, si: si, number: si + 1)
+                badge(run: run, si: si)
                 // The clock — ticks live while running, else shows the captured time.
                 Group {
                     if running {
@@ -2770,13 +2884,19 @@ struct LiveStrengthSheet: View {
 
     /// The set-number badge — a non-interactive marker in the effort hue (FER-716: the Foco is gone; the
     /// row itself is the interactive surface). A ring with the set number.
-    private func badge(ei: Int, si: Int, number: Int) -> some View {
-        Text("\(number)").font(StrandFont.caption).monospacedDigit()
-            .foregroundStyle(theme.dataStrain)
+    /// The set's number badge. FER-937: a warm-up set shows a «C» (calentamiento) in a tenue ring and does
+    /// not consume a work-set number; work sets are numbered 1..n counting only `.work` rows, so a warm-up
+    /// never pushes «serie 1» to «serie 3».
+    private func badge(run: StrengthSessionModel.ExerciseRun, si: Int) -> some View {
+        let isWarmup = run.sets[si].kind == .warmup
+        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        let label = isWarmup ? String(localized: "C") : "\(workNumber)"
+        return Text(label).font(StrandFont.caption).monospacedDigit()
+            .foregroundStyle(isWarmup ? theme.dataStrain.opacity(StrandOpacity.dim) : theme.dataStrain)  // token-exempt: warm-up badge tenue (handoff «C»)
             .frame(width: 26, height: 26)
-            .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
+            .overlay(Circle().strokeBorder(theme.dataStrain.opacity(isWarmup ? StrandOpacity.dim : 1), lineWidth: 1.5))  // token-exempt: warm-up ring tenue
             .frame(width: reflow ? 26 : 44, height: reflow ? 26 : 44, alignment: .center)
-            .accessibilityLabel(Text("Set \(number)"))
+            .accessibilityLabel(Text(isWarmup ? "Warm-up set" : "Set \(workNumber)"))
     }
 
     /// «ANTERIOR · DESCANSO» — last time's value + this set's own rest (FER-716, per-set since F0);
@@ -2997,7 +3117,10 @@ struct LiveStrengthSheet: View {
     }
 
     private func addSetButton(_ ei: Int) -> some View {
-        Button { withAnimation(.snappy) { session.addSet(exercise: ei) } } label: {
+        Button {
+            withAnimation(.snappy) { session.addSet(exercise: ei) }
+            copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
+        } label: {
             Label("Add set", systemImage: "plus")
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 9)
@@ -3070,13 +3193,6 @@ struct LiveStrengthSheet: View {
         .task {
             guard freshSuggestions == nil else { return }
             await loadFreshSuggestions()
-        }
-        .sheet(isPresented: $showLibraryPicker) {
-            ExerciseLibraryScreen { picks in
-                showLibraryPicker = false
-                Task { await addExercises(picks) }
-            }
-            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
         }
     }
 
@@ -3155,9 +3271,13 @@ struct LiveStrengthSheet: View {
         loadedMuscle = loads.filter { $0.state == .loaded }.max { $0.load < $1.load }?.muscle
     }
 
-    /// Add one or more exercises to the ad-hoc session (from a suggestion or the library picker), seeding
-    /// each from its last logged set when there's history. The empty state falls away on its own once
-    /// `session.runs` isn't empty.
+    /// Add one or more exercises to the session (from a suggestion or the library picker), seeding each
+    /// from its last logged set when there's history. The empty ad-hoc state falls away on its own once
+    /// `session.runs` isn't empty. FER-935: when the session already has runs (routine-backed or an
+    /// ad-hoc session past its first exercise), the picks land right after the active exercise instead of
+    /// at the end — iterated in REVERSE so the batch stays contiguous and in the user's chosen order
+    /// (each `insertExerciseAfterCurrent` call lands at the same `currentIndex + 1` slot, pushing the
+    /// previous insert one further along — see its doc comment).
     private func addExercises(_ picks: [Exercise]) async {
         let lasts = await withTaskGroup(of: (String, Double?, Int?).self) { group in
             for ex in picks {
@@ -3170,9 +3290,16 @@ struct LiveStrengthSheet: View {
             for await (id, weight, reps) in group { results[id] = (weight, reps) }
             return results
         }
-        for ex in picks {
-            let last = lasts[ex.id]
-            session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
+        if session.runs.isEmpty {
+            for ex in picks {
+                let last = lasts[ex.id]
+                session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
+            }
+        } else {
+            for ex in picks.reversed() {
+                let last = lasts[ex.id]
+                session.insertExerciseAfterCurrent(ex, lastWeightKg: last?.0, lastReps: last?.1)
+            }
         }
     }
 

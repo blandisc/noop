@@ -59353,6 +59353,23 @@
         }
       }
     },
+    "inserted after the current · today only": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "inserted after the current · today only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "se inserta después del actual · solo por hoy"
+          }
+        }
+      }
+    },
     "intraday, no daily series": {
       "extractionState": "manual",
       "localizations": {
@@ -60377,6 +60394,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Crear ejercicio propio"
+          }
+        }
+      }
+    },
+    "WORK SETS": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SERIES DE TRABAJO"
+          }
+        }
+      }
+    },
+    "Warm-up set": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie de calentamiento"
+          }
+        }
+      }
+    },
+    "COPIED FROM %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "COPIADA DE LA %lld"
+          }
+        }
+      }
+    },
+    "Reorder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reordenar"
           }
         }
       }
