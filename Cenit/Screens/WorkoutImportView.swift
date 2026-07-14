@@ -22,6 +22,7 @@ struct WorkoutImportView: View {
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject private var repo: Repository
 
     fileprivate enum Phase { case capture, mapping, confirm, done }
@@ -48,6 +49,7 @@ struct WorkoutImportView: View {
     @State private var omitted: Set<String> = []   // normalized names the user chose not to import (FER-536)
     @State private var mappingTarget: MappingName?  // name being mapped → drives the library picker sheet
     @State private var createdCount = 0
+    @State private var celebrate = false   // done-screen pop-in (respects Reduce Motion)
 
     /// The user's weight unit (kg / lb), for the confirm-step preview only — stored weights are kg.
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -366,20 +368,46 @@ struct WorkoutImportView: View {
 
     // MARK: - Done
 
+    /// Handoff: el cierre celebratorio — a diferencia de los pasos de trabajo, aquí el contenido se
+    /// centra y respira. Un solo color (verdict verde), un solo gesto (el sello aparece con un pop
+    /// suave). Sin confeti: la celebración a la «Instrumento» es espacio + un verde honesto.
     private var doneFlow: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(spacing: 0) {
             stepper(current: .done)
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Image(systemName: "checkmark.circle")
-                    .font(.system(size: 40, weight: .regular)).foregroundStyle(theme.verdict)   // token-exempt: glifo de éxito 40pt (empty token es 34)
-                    .accessibilityHidden(true)
-                Text(createdRoutinesTitle(createdCount)).font(StrandFont.title2).foregroundStyle(theme.ink)
-                Text("They're in «My routines», ready to train.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: CenitMetrics.sectionGap)
+
+            VStack(spacing: CenitMetrics.sectionGap) {
+                ZStack {
+                    Circle().fill(theme.verdict.opacity(0.12)).frame(width: 116, height: 116)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 44, weight: .semibold)).foregroundStyle(theme.verdict)
+                }
+                .scaleEffect(celebrate ? 1 : 0.72)
+                .opacity(celebrate ? 1 : 0)
+                .accessibilityHidden(true)
+
+                VStack(spacing: CenitMetrics.space2) {
+                    Text(createdRoutinesTitle(createdCount))
+                        .font(StrandFont.title1).foregroundStyle(theme.ink)
+                        .multilineTextAlignment(.center)
+                    Text("They're in «My routines», ready to train.")
+                        .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .opacity(celebrate ? 1 : 0)
             }
-            QuietButton("Done") { Task { await onComplete(); dismiss() } }
+
+            Spacer(minLength: CenitMetrics.sectionGap)
+            StrandCTAButton("Done") { Task { await onComplete(); dismiss() } }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 520)
+        .onAppear {
+            guard !celebrate else { return }
+            if reduceMotion { celebrate = true }
+            else { withAnimation(StrandMotion.hero.delay(0.05)) { celebrate = true } }
+        }
     }
 
     // MARK: - Shared pieces
