@@ -60289,6 +60289,46 @@
           }
         }
       }
+    },
+    "Type": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipo"
+          }
+        }
+      }
+    },
+    "FROM THE LIBRARY": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DE LA BIBLIOTECA"
+          }
+        }
+      }
+    },
+    "your record": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu récord"
+          }
+        }
+      }
+    },
+    "Create your own exercise": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crear ejercicio propio"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
