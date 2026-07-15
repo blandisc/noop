@@ -60501,6 +60501,40 @@
           }
         }
       }
+    },
+    "MOVING · DRAG ALONG THE RAIL": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MOVING · DRAG ALONG THE RAIL"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MOVIENDO · ARRASTRA SOBRE EL RIEL"
+          }
+        }
+      }
+    },
+    "DROP HERE · POSITION %d": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DROP HERE · POSITION %d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SOLTAR AQUÍ · POSICIÓN %d"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
