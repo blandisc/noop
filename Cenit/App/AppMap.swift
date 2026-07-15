@@ -131,4 +131,28 @@ private struct EntrenarMapCell: View {
 #Preview("Entrenar · hub · English") {
     EntrenarMapCell(locale: "en")
 }
+
+/// La Biblioteca de ejercicios REAL en el Canvas (FER-951): `allExercises()` devuelve el catálogo
+/// empaquetado aunque no haya semilla, así que la lista se llena sola. Sin media (paper placeholder),
+/// para mirar el buscador, las bandas por músculo y las miniaturas de 52px con marco de familia.
+private struct ExerciseLibraryMapCell: View {
+    var locale: String = "es"
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+
+    var body: some View {
+        NavigationStack {
+            ExerciseLibraryScreen()
+                .environmentObject(model.repo)
+                .environmentObject(media)
+        }
+        .environment(\.locale, .init(identifier: locale))
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+    }
+}
+
+#Preview("Biblioteca · Español") {
+    ExerciseLibraryMapCell(locale: "es")
+}
 #endif
