@@ -1618,6 +1618,19 @@ struct LiveStrengthSheet: View {
         return si
     }
 
+    /// The next step's thumb + one-liner for the inline rest card («sigue: Press militar · serie 2 ·
+    /// 26 kg») — precomputed as data so the card body stays cheap to type-check.
+    private var inlineNextStep: (exerciseId: String, text: String)? {
+        guard let run = session.current else { return nil }
+        let n = run.sets.prefix(run.currentSet + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        var text = "\(run.name) · " + String(localized: "set \(n)")
+        if run.sets.indices.contains(run.currentSet) {
+            let load = run.sets[run.currentSet].weightKg
+            if load > 0 { text += " · \(massText(load))" }
+        }
+        return (run.exerciseId, text)
+    }
+
     /// The inline rest card as a slice of the active card's flow — keeps its own float/shadow (the
     /// «hover» the owner asked to preserve) and the auto-dismiss task for fixed rests; entering and
     /// leaving animates as an opening/closing of space between the sets.
@@ -1951,34 +1964,8 @@ struct LiveStrengthSheet: View {
                 switch run.type {
                 case .weightReps:
                     HStack(alignment: .top, spacing: 12) {
-                        focusStepperCard(UnitFormatter.massUnit(units).uppercased(),
-                                         value: plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)),
-                                         valueTint: theme.dataRecovery,
-                                         minusLabel: "Decrease weight", plusLabel: "Increase weight",
-                                         minus: { session.bumpWeight(byKg: -weightStepKg) },
-                                         plus: { session.bumpWeight(byKg: weightStepKg) }) {
-                            Button {
-                                platesTarget = PlatesTarget(ei: session.currentIndex,
-                                                            weightKg: session.currentSet?.weightKg ?? 0)
-                            } label: {
-                                Text("±\(plateNumber(displayWeight(weightStepKg))) · ⛓ " + String(localized: "plates"))
-                                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        focusStepperCard(String(localized: "Reps").uppercased(),
-                                         value: "\(session.currentSet?.reps ?? 0)",
-                                         valueTint: theme.ink,
-                                         minusLabel: "Decrease reps", plusLabel: "Increase reps",
-                                         minus: { session.bumpReps(-1) },
-                                         plus: { session.bumpReps(1) }) {
-                            if let lr = run.lastReps {
-                                Text(String(localized: "target \(lr)"))
-                                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                            } else {
-                                Color.clear.frame(height: 14)
-                            }
-                        }
+                        focusKgCard
+                        focusRepsCard(run)
                     }
                     focusRegisterButton
                     focusQuickLinks(run)
@@ -2109,6 +2096,42 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Close focus mode"))
+    }
+
+    /// The KG stepper card (extracted so the capture switch stays cheap to type-check).
+    private var focusKgCard: some View {
+        focusStepperCard(UnitFormatter.massUnit(units).uppercased(),
+                         value: plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)),
+                         valueTint: theme.dataRecovery,
+                         minusLabel: "Decrease weight", plusLabel: "Increase weight",
+                         minus: { session.bumpWeight(byKg: -weightStepKg) },
+                         plus: { session.bumpWeight(byKg: weightStepKg) }) {
+            Button {
+                platesTarget = PlatesTarget(ei: session.currentIndex,
+                                            weightKg: session.currentSet?.weightKg ?? 0)
+            } label: {
+                Text("±\(plateNumber(displayWeight(weightStepKg))) · ⛓ " + String(localized: "plates"))
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// The REPS stepper card (see `focusKgCard`).
+    private func focusRepsCard(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        focusStepperCard(String(localized: "Reps").uppercased(),
+                         value: "\(session.currentSet?.reps ?? 0)",
+                         valueTint: theme.ink,
+                         minusLabel: "Decrease reps", plusLabel: "Increase reps",
+                         minus: { session.bumpReps(-1) },
+                         plus: { session.bumpReps(1) }) {
+            if let lr = run.lastReps {
+                Text(String(localized: "target \(lr)"))
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            } else {
+                Color.clear.frame(height: 14)
+            }
+        }
     }
 
     /// One handoff stepper card: overline unit, −/+ round steps flanking the big Grotesk value, and a
@@ -2567,21 +2590,32 @@ struct LiveStrengthSheet: View {
     }
 
     /// The counter line with the handoff's typographic contrast (canvas pass 2026-07-15): values in
-    /// Grotesk bold, labels/separators in light secondary ink. Same data as `counterLine` (which stays
-    /// as the accessibility read).
-    private var counterLineStyled: Text {
-        let num = InstrumentoType.groteskNumber(15)
-        let sep = Text(" · ").font(StrandFont.caption).foregroundColor(theme.inkTertiary)
-        var line = Text(massText(sessionVolumeKg)).font(num).foregroundColor(theme.ink)
-            + sep
-            + Text("\(session.doneCount)/\(sessionSetsTotal)").font(num).foregroundColor(theme.ink)
-            + Text(" " + String(localized: "series")).font(StrandFont.caption).foregroundColor(theme.inkSecondary)
-        if let kcal = liveKcal {
-            line = line + sep
-                + Text("~\(kcal)").font(num).foregroundColor(theme.ink)
-                + Text(" kcal").font(StrandFont.caption).foregroundColor(theme.inkSecondary)
+    /// Grotesk bold, labels/separators in light secondary ink. An HStack of small Texts (not one
+    /// concatenated Text) so the type-checker stays fast. Same data as `counterLine` (the a11y read).
+    private var counterLineStyled: some View {
+        let done = "\(session.doneCount)/\(sessionSetsTotal)"
+        let kcal = liveKcal
+        return HStack(alignment: .firstTextBaseline, spacing: 5) {
+            counterValue(massText(sessionVolumeKg))
+            counterDot
+            counterValue(done)
+            counterLabel(String(localized: "series"))
+            if let kcal {
+                counterDot
+                counterValue("~\(kcal)")
+                counterLabel("kcal")
+            }
         }
-        return line
+    }
+
+    private func counterValue(_ s: String) -> some View {
+        Text(s).font(InstrumentoType.groteskNumber(15)).monospacedDigit().foregroundStyle(theme.ink)
+    }
+    private func counterLabel(_ s: String) -> some View {
+        Text(s).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+    }
+    private var counterDot: some View {
+        Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
     }
 
     /// Live energy estimate (kcal) from the strap samples captured so far — nil (so the clause is hidden)
@@ -3336,17 +3370,12 @@ struct LiveStrengthSheet: View {
             restCardPills
             // Canvas pass 2026-07-15 (sugerencia 1): the full-screen rest already names what's next —
             // the inline card earns the same one-liner, so you can decide to skip without opening it.
-            if let run = session.current {
-                let n = run.sets.prefix(run.currentSet + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
-                let load = run.sets.indices.contains(run.currentSet) ? run.sets[run.currentSet].weightKg : nil
+            if let next = inlineNextStep {
                 HStack(spacing: 8) {
-                    SessionRunThumb(exerciseId: run.exerciseId, side: 22)
+                    SessionRunThumb(exerciseId: next.exerciseId, side: 22)
                     Text("Next").font(StrandFont.caption).fontWeight(.semibold)
                         .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.inkDim)
-                    Text(load.map { $0 > 0 ? "\(run.name) · " + String(localized: "set \(n)") + " · \(massText($0))"
-                                           : "\(run.name) · " + String(localized: "set \(n)") }
-                         ?? "\(run.name) · " + String(localized: "set \(n)"))
-                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                    Text(next.text).font(StrandFont.caption).foregroundStyle(theme.inkSecondary).lineLimit(1)
                 }
             }
         }
