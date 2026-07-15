@@ -6,16 +6,19 @@ import StrandTraining
 /// con una sesión de fuerza en vivo sembrada a mano, para revisar en el canvas de Xcode el modelo
 /// riel + acordeón y los estados nuevos del épico sin correr el harness ni el simulador.
 ///
-/// Qué se ve de entrada (riel + acordeón, FER-929): el primer ejercicio ya HECHO (`doneRow`), el
-/// segundo ACTIVO y expandido (acordeón abierto), el tercero POR VENIR (`comingRow`), y el nodo «＋»
-/// al final del riel (FER-935). Los estados interactivos se activan tocando en el Live preview:
-///  · **Modo mover «SOLTAR AQUÍ»** (FER-933) — «···» del activo → «Reordenar», o long-press una fila.
-///  · **Descanso completo verde** (FER-934) — registra las series del activo hasta que arranca el
-///    descanso, luego «Modo foco» para verlo a pantalla completa.
+/// Dos escenarios (dos #Preview):
+///  · **Riel + acordeón** — 1 hecho, 1 activo (tarjeta flotante), 1 por venir, nodo «＋».
+///  · **Superserie A1/A2** — un par en superserie a media vuelta (A1 con su primera serie hecha,
+///    foco en A2), más un ejercicio de pierna para ver los puntos de categoría conviviendo.
+///    Verifica en vivo: round-robin A1→A2→A1 al registrar, descanso solo al cerrar la vuelta,
+///    reorden en modo mover con el par pegado, y el par terminado.
 ///
 /// La sesión se construye con `StrengthSessionModel.make` (puro) en vez de `startStrengthSession`,
 /// para NO disparar los efectos de una sesión real (stream de HR, persistencia, buzz, Apple Watch).
 private struct SerieActivaPreviewCell: View {
+    enum Scenario { case plan, superserie }
+    var scenario: Scenario = .plan
+
     @StateObject private var model = AppModel()
     @State private var seeded = false
 
@@ -27,6 +30,7 @@ private struct SerieActivaPreviewCell: View {
                     .environmentObject(model)
                     .environmentObject(TabRouter())
                     .environment(model.live)
+                    .environment(\.locale, Locale(identifier: "es-MX"))
                     .preferredColorScheme(.light)
                     .frame(width: 393, height: 852)
                     .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
@@ -43,32 +47,61 @@ private struct SerieActivaPreviewCell: View {
         }
     }
 
+    private func rex(_ eid: String, _ pos: Int, sets: Int, reps: Int, kg: Double,
+                     superset: Int? = nil) -> RoutineExercise {
+        let planned = (0..<sets).map { RoutineSet(position: $0, reps: reps, weightKg: kg) }
+        return RoutineExercise(routineId: "preview", exerciseId: eid, position: pos,
+                               targetSets: sets, targetReps: reps, targetWeightKg: kg,
+                               restMode: .fixed, restSeconds: 90,
+                               supersetGroup: superset, sets: planned)
+    }
+
     private func seedLiveSession() {
-        func rex(_ eid: String, _ pos: Int, sets: Int, reps: Int, kg: Double) -> RoutineExercise {
-            let planned = (0..<sets).map { RoutineSet(position: $0, reps: reps, weightKg: kg) }
-            return RoutineExercise(routineId: "preview", exerciseId: eid, position: pos,
-                                   targetSets: sets, targetReps: reps, targetWeightKg: kg,
-                                   restMode: .fixed, restSeconds: 90, sets: planned)
+        let res: [RoutineExercise]
+        switch scenario {
+        case .plan:
+            // Mismos ejercicios reales del catálogo que el fixture del plan (Día A — Empuje).
+            res = [
+                rex("Barbell_Bench_Press_-_Medium_Grip", 0, sets: 4, reps: 8, kg: 80),
+                rex("Incline_Dumbbell_Press", 1, sets: 3, reps: 10, kg: 26),
+                rex("Dumbbell_Lying_One-Arm_Rear_Lateral_Raise", 2, sets: 3, reps: 12, kg: 8),
+            ]
+        case .superserie:
+            // Par A1/A2 (curl + jalón agrupados) entre un empuje hecho y una pierna por venir —
+            // mezcla de familias para ver los puntos de categoría conviviendo.
+            res = [
+                rex("Barbell_Bench_Press_-_Medium_Grip", 0, sets: 3, reps: 8, kg: 80),
+                rex("Barbell_Curl", 1, sets: 3, reps: 10, kg: 30, superset: 1),
+                rex("Close-Grip_Front_Lat_Pulldown", 2, sets: 3, reps: 10, kg: 55, superset: 1),
+                rex("Barbell_Full_Squat", 3, sets: 3, reps: 8, kg: 100),
+            ]
         }
-        // Mismos ejercicios reales del catálogo que el fixture del plan (Día A — Empuje).
-        let res = [
-            rex("Barbell_Bench_Press_-_Medium_Grip", 0, sets: 4, reps: 8, kg: 80),
-            rex("Incline_Dumbbell_Press", 1, sets: 3, reps: 10, kg: 26),
-            rex("Dumbbell_Lying_One-Arm_Rear_Lateral_Raise", 2, sets: 3, reps: 12, kg: 8),
-        ]
         let slots = res.map {
             StrengthSessionModel.PlanSlot(re: $0, exercise: ExerciseCatalog.byID($0.exerciseId), lastSets: [])
         }
-        let session = StrengthSessionModel.make(routineId: "preview", routineName: "Día A — Empuje",
+        let name = scenario == .plan ? "Día A — Empuje" : "Full body — Superserie"
+        let session = StrengthSessionModel.make(routineId: "preview", routineName: name,
                                                 slots: slots, startTs: Int(Date().timeIntervalSince1970))
-        // Ej0 completo → doneRow; ej1 activo → acordeón abierto; ej2 → comingRow.
-        for i in session.runs[0].sets.indices { session.runs[0].sets[i].done = true }
-        session.currentIndex = 1
+        switch scenario {
+        case .plan:
+            // Ej0 completo → doneRow; ej1 activo → tarjeta flotante; ej2 → comingRow.
+            for i in session.runs[0].sets.indices { session.runs[0].sets[i].done = true }
+            session.currentIndex = 1
+        case .superserie:
+            // Empuje hecho; A1 registró su primera serie; el foco round-robin quedó en A2.
+            for i in session.runs[0].sets.indices { session.runs[0].sets[i].done = true }
+            session.runs[1].sets[0].done = true
+            session.runs[1].currentSet = 1
+            session.currentIndex = 2
+        }
         model.strengthSession = session
     }
 }
 
 #Preview("Serie activa · riel + acordeón") {
-    SerieActivaPreviewCell()
+    SerieActivaPreviewCell(scenario: .plan)
+}
+#Preview("Serie activa · superserie A1/A2") {
+    SerieActivaPreviewCell(scenario: .superserie)
 }
 #endif
