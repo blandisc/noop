@@ -142,15 +142,28 @@ private struct EntrenarMapCell: View {
 private struct ExerciseLibraryMapCell: View {
     @StateObject private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
+    /// Seed first, mount after — the screen loads its history on appear (see ExerciseDetailMapCell).
+    @State private var seeded = false
 
     var body: some View {
-        NavigationStack {
-            ExerciseLibraryScreen()
-                .environmentObject(model.repo)
-                .environmentObject(media)
+        Group {
+            if seeded {
+                NavigationStack {
+                    ExerciseLibraryScreen()
+                        .environmentObject(model.repo)
+                        .environmentObject(media)
+                }
+            } else {
+                ProgressView()
+            }
         }
         .preferredColorScheme(.light)
         .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seed(model, state: "train")
+            seeded = true
+        }
     }
 }
 
@@ -165,11 +178,15 @@ private struct ExerciseLibraryMapCell: View {
 private struct ExerciseDetailMapCell: View {
     @StateObject private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
+    /// The screen mounts only AFTER seeding finishes — its `.task` loads the history the moment it
+    /// appears, so mounting first raced the seed and rendered the honest-empty state (FER-951).
     @State private var seeded = false
 
     var body: some View {
         Group {
-            if let ex = ExerciseCatalog.all.first(where: { $0.id == "Barbell_Bench_Press_-_Medium_Grip" }) {
+            if !seeded {
+                ProgressView()
+            } else if let ex = ExerciseCatalog.all.first(where: { $0.id == "Barbell_Bench_Press_-_Medium_Grip" }) {
                 NavigationStack { ExerciseDetailScreen(exercise: ex) }
             } else {
                 Text(verbatim: "Bench press no está en el catálogo")
@@ -182,8 +199,8 @@ private struct ExerciseDetailMapCell: View {
         .frame(width: 393, height: 852)
         .task {
             guard !seeded else { return }
-            seeded = true
             await ScreenshotFixtures.seed(model, state: "train")
+            seeded = true
         }
     }
 }
