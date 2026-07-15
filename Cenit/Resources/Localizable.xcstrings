@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Map": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Map"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mapear"
+          }
+        }
+      }
+    },
     "Night": {
       "extractionState": "manual",
       "localizations": {
@@ -13267,6 +13284,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Código QR de donación"
+          }
+        }
+      }
+    },
+    "Capture": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captura"
+          }
+        }
+      }
+    },
+    "Confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmar"
           }
         }
       }
@@ -27956,6 +28007,22 @@
         }
       }
     },
+    "Rings and buzzes when it ends.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rings and buzzes when it ends."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suena y vibra al terminar."
+          }
+        }
+      }
+    },
     "Ready at the chosen % of your heart-rate reserve (Karvonen). Uses your max and resting HR; falls back to the timer if either is missing.": {
       "localizations": {
         "en": {
@@ -31597,6 +31664,22 @@
         }
       }
     },
+    "set %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "set %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "serie %lld"
+          }
+        }
+      }
+    },
     "Set %lld, %@ by %lld reps, editable": {
       "localizations": {
         "en": {
@@ -35066,19 +35149,19 @@
         }
       }
     },
-    "That file isn't a NOOP workout plan. Make sure you used the prompt above.": {
+    "That file isn't a Cénit workout plan. Make sure you used the prompt above.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "That file isn't a NOOP workout plan. Make sure you used the prompt above."
+            "value": "That file isn't a Cénit workout plan. Make sure you used the prompt above."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ese archivo no es un plan de entrenamiento de NOOP. Asegúrate de haber usado el prompt de arriba."
+            "value": "Ese archivo no es un plan de entrenamiento de Cénit. Asegúrate de haber usado el prompt de arriba."
           }
         }
       }
@@ -45231,6 +45314,38 @@
         }
       }
     },
+    "of %lld s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of %lld s"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de %lld s"
+          }
+        }
+      }
+    },
+    "of rest · the strap buzzes on arrival": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "of rest · the strap buzzes on arrival"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de descanso · la banda vibra al llegar"
+          }
+        }
+      }
+    },
     "of 21": {
       "localizations": {
         "en": {
@@ -55240,19 +55355,19 @@
         }
       }
     },
-    "Your routines are created on your iPhone. NOOP never connects: you run the AI step yourself.": {
+    "Your routines are created on your iPhone. Cénit never connects: you run the AI step yourself.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your routines are created on your iPhone. NOOP never connects: you run the AI step yourself."
+            "value": "Your routines are created on your iPhone. Cénit never connects: you run the AI step yourself."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus rutinas se crean en tu iPhone. NOOP nunca se conecta, el paso de la IA lo haces tú."
+            "value": "Tus rutinas se crean en tu iPhone. Cénit nunca se conecta, el paso de la IA lo haces tú."
           }
         }
       }
@@ -59387,6 +59502,23 @@
         }
       }
     },
+    "inserted after the current · today only": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "inserted after the current · today only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "se inserta después del actual · solo por hoy"
+          }
+        }
+      }
+    },
     "intraday, no daily series": {
       "extractionState": "manual",
       "localizations": {
@@ -60411,6 +60543,80 @@
           "stringUnit": {
             "state": "translated",
             "value": "Crear ejercicio propio"
+          }
+        }
+      }
+    },
+    "WORK SETS": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SERIES DE TRABAJO"
+          }
+        }
+      }
+    },
+    "Warm-up set": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serie de calentamiento"
+          }
+        }
+      }
+    },
+    "COPIED FROM %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "COPIADA DE LA %lld"
+          }
+        }
+      }
+    },
+    "Reorder": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reordenar"
+          }
+        }
+      }
+    },
+    "MOVING · DRAG ALONG THE RAIL": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MOVING · DRAG ALONG THE RAIL"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MOVIENDO · ARRASTRA SOBRE EL RIEL"
+          }
+        }
+      }
+    },
+    "DROP HERE · POSITION %d": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DROP HERE · POSITION %d"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SOLTAR AQUÍ · POSICIÓN %d"
           }
         }
       }

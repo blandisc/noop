@@ -517,6 +517,27 @@ final class StrengthSessionModel: ObservableObject {
         currentIndex = runs.count - 1
     }
 
+    /// Insert an exercise right after the currently active one (FER-935): same seeding as `addExercise`,
+    /// but the run lands at `currentIndex + 1` instead of the end, and the guided focus stays on the
+    /// active exercise (no `currentIndex` reassignment — the insert always lands after it, so it never
+    /// needs the reindex `removeExercise`/`moveExerciseEarlier` do). Calling this once per pick with the
+    /// picks in reverse order keeps a multi-pick batch contiguous and in the user's chosen order, since
+    /// each call lands its run at the same `currentIndex + 1` slot, pushing the previous insert one further.
+    func insertExerciseAfterCurrent(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
+        let weight = lastWeightKg ?? 0
+        let reps = usesReps ? (lastReps ?? 8) : 0
+        let set = WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
+        let run = ExerciseRun(id: UUID().uuidString, exerciseId: exercise.id,
+                              name: StrengthDisplay.name(exercise), type: exercise.type,
+                              restSeconds: Self.adHocRestSeconds, restMode: .fixed,
+                              hrRestReference: .restingMargin, hrRestValue: 0,
+                              lastWeightKg: lastWeightKg, lastReps: lastReps,
+                              lastTimeS: nil, lastDistanceM: nil,
+                              sets: [set], currentSet: 0, skipped: false)
+        runs.insert(run, at: min(currentIndex + 1, runs.count))
+    }
+
     /// Skip the current (pending) set: drop it from the plan. A done set is left untouched.
     func skipCurrentSet() {
         guard runs.indices.contains(currentIndex) else { return }
@@ -949,11 +970,44 @@ struct LiveStrengthSheet: View {
     /// appears. `nil` = not loaded yet (the `.task` hasn't resolved); `[]` = loaded, honestly no fresh
     /// muscle to suggest — one optional instead of a separate "have I tried yet" flag.
     @State private var showLibraryPicker = false
+    /// FER-938: the id of a set just appended via «+ Serie», so its row shows the «COPIADA DE LA N» hint +
+    /// dashed border until it's logged (the guard `!set.done` retires the hint the moment it's marked).
+    @State private var copiedSetId: String?
+    /// FER-936: which exercise's «≡» reorder handle is momentarily emphasised (ember) after picking
+    /// «Reordenar» from its menu — a discoverability nudge toward the drag that already reorders.
+    @State private var reorderHint: Int?
+    /// «Modo mover» (FER-933): every exercise collapses to a compressed row and a `DragGesture` on each
+    /// row shows the handoff's «SOLTAR AQUÍ · POSICIÓN N» drop zone. Entered by long-press on any rail row
+    /// or the menu's «Reordenar» item; exits via «Listo». A view-layer toggle only — the model is untouched.
+    @State private var reorderMode = false
+    /// The exercise index currently being dragged in modo mover, and the slot its drop would land on.
+    /// nil/nil when nothing is mid-drag.
+    @State private var reorderDraggingIndex: Int?
+    @State private var reorderTargetIndex: Int?
+
+    /// FER-936: the breathing ember halo behind the active exercise's «···». A stroked ring (not a blurred
+    /// shadow, per DNA) that pulses opacity + scale; a steady faint ring under Reduce Motion.
+    private struct TapRing: View {
+        let color: Color
+        let animated: Bool
+        @State private var on = false
+        var body: some View {
+            Circle()
+                .strokeBorder(color, lineWidth: 2)
+                .opacity(on ? 0.10 : 0.28)
+                .scaleEffect(on ? 1.0 : 0.82)
+                .frame(width: 30, height: 30)
+                .onAppear { if animated { withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) { on = true } } }
+        }
+    }
     @State private var freshSuggestions: [QuickSuggestion]?
     @State private var loadedMuscle: String?
     /// Full-screen «Focus mode» cover — entry from the inline set list; dismiss returns to the table
     /// without ending the session (mock v21 handoff). Additive only; does not replace `inlineSession`.
     @State private var focusMode = false
+    /// Manual Tiempo/FC toggle for the full-screen rest hero (FER-934). nil = follow `currentRestMode`
+    /// (FC when a rest target exists and the strap has signal); the user can flip it either way.
+    @State private var focusRestShowsHR: Bool?
     /// Which exercise's «···» paper menu is open (FER-894 · «Cómo llego a Cambiar»), by run index. nil = closed.
     @State private var menuExerciseIndex: Int?
     /// The exercise whose «Change {exercise}» sheet is open (FER-894). nil = closed.
@@ -1059,6 +1113,25 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
+        // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
+        .sheet(isPresented: $showLibraryPicker) {
+            VStack(alignment: .leading, spacing: 0) {
+                if !session.runs.isEmpty {
+                    Text("inserted after the current · today only")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .padding(.horizontal, CenitMetrics.screenPadding)
+                        .padding(.top, 12)
+                        .padding(.bottom, 4)
+                }
+                ExerciseLibraryScreen { picks in
+                    showLibraryPicker = false
+                    Task { await addExercises(picks) }
+                }
+            }
+            .background(theme.paper.ignoresSafeArea())
+            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+        }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
@@ -1220,25 +1293,34 @@ struct LiveStrengthSheet: View {
         // FER-929: rail + accordion — only the active exercise expands into its table; done/upcoming
         // exercises collapse to one line each, hung off a vertical rail (`railColumn`).
         List {
+            // FER-933: modo mover — every exercise compresses to a draggable row with a «SOLTAR AQUÍ ·
+            // POSICIÓN N» drop zone; the accordion (`activeExerciseBlock`) stays closed for the duration.
+            if reorderMode { reorderModeBar.plainRow(top: CenitMetrics.gap, bottom: 4) }
             ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
                 if !run.skipped {
-                    switch railState(ei: ei, run: run) {
-                    case .active:
-                        activeExerciseBlock(run, ei: ei)
-                    case .done:
-                        doneRow(run, ei: ei)
-                            .plainRow(top: 2, bottom: 2)
-                            .transition(.opacity)
-                    case .upcoming:
-                        comingRow(run, ei: ei)
-                            .plainRow(top: 2, bottom: 2)
-                            .transition(.opacity)
+                    if reorderMode {
+                        reorderRow(run, ei: ei).plainRow(top: 4, bottom: 4)
+                    } else {
+                        switch railState(ei: ei, run: run) {
+                        case .active:
+                            activeExerciseBlock(run, ei: ei)
+                        case .done:
+                            doneRow(run, ei: ei)
+                                .plainRow(top: 2, bottom: 2)
+                                .transition(.opacity)
+                        case .upcoming:
+                            comingRow(run, ei: ei)
+                                .plainRow(top: 2, bottom: 2)
+                                .transition(.opacity)
+                        }
                     }
                 }
             }
-            addExerciseNode.plainRow(top: CenitMetrics.gap)
-            if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
-            discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
+            if !reorderMode {
+                addExerciseNode.plainRow(top: CenitMetrics.gap)
+                if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
+                discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
+            }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -1350,6 +1432,12 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .opacity(StrandOpacity.dim)
+        // FER-933: long-press any rail row to enter modo mover (`simultaneousGesture`, not
+        // `.onLongPressGesture`, so the row's own tap-to-reopen keeps working — same pattern as
+        // RoutineEditorScreen's reorder entry).
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+            withAnimation(.snappy) { reorderMode = true }
+        })
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(supersetAccessibilityLabel(ei: ei, base: "\(run.name), done, \(doneDetailText(run))")))
         .accessibilityHint(Text("Double tap to reopen and correct a set"))
@@ -1375,6 +1463,10 @@ struct LiveStrengthSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // FER-933: same long-press entry into modo mover as `doneRow`.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+            withAnimation(.snappy) { reorderMode = true }
+        })
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(supersetAccessibilityLabel(ei: ei, base: "\(run.name), coming up, \(prescriptionText(run))")))
         .accessibilityHint(Text("Double tap to move focus here"))
@@ -1421,7 +1513,13 @@ struct LiveStrengthSheet: View {
         }
         .plainRow(top: CenitMetrics.gap)
         ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
-            setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+            // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows from the
+            // numbered work sets — drawn on the first work row that follows a warm-up.
+            let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
+            VStack(spacing: 0) {
+                if afterWarmup { workSetsDivider.padding(.top, 4).padding(.bottom, 6) }
+                setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+            }
                 .activeCardRow(top: si == 0, bottom: si == run.sets.count - 1, theme: theme)
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
@@ -1444,6 +1542,17 @@ struct LiveStrengthSheet: View {
                 .plainRow(top: 4)
         }
         addSetButton(ei).plainRow(top: 4)
+    }
+
+    /// FER-937: the «SERIES DE TRABAJO» rule between the warm-up «C» rows and the numbered work sets —
+    /// two hairlines flanking a quiet overline. A label, not a datum, so it stays in tinted ink.
+    private var workSetsDivider: some View {
+        HStack(spacing: 8) {
+            Rectangle().fill(theme.hairline).frame(height: 1)
+            Text("WORK SETS").instrumentoOverline().foregroundStyle(theme.inkDim)
+            Rectangle().fill(theme.hairline).frame(height: 1)
+        }
+        .accessibilityLabel(Text("Work sets"))
     }
 
     /// The riel's terminal node — a dotted circle affordance that opens the existing ad-hoc add-exercise
@@ -1663,22 +1772,27 @@ struct LiveStrengthSheet: View {
     // MARK: - Focus mode (full-screen cover · additive entry from the inline list)
 
     /// Full-screen capture/rest surface. Closing returns to the inline table; session state is unchanged.
+    /// FER-934: while resting, the whole surface flips to the `dataRecovery` green with crema ink
+    /// (handoff `_RestFull`); the capture variant keeps the paper background untouched.
     private var focusModeView: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        let resting = session.phase == .resting
+        return VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             HStack {
+                if resting { focusRestModeToggle }
                 Spacer(minLength: 0)
                 Button { focusMode = false } label: {
                     StrandIcon.close.image
-                        .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
+                        .font(StrandFont.glyph(.inline, weight: .semibold))
+                        .foregroundStyle(resting ? theme.paper : theme.ink)
                         .frame(width: 38, height: 38)
-                        .background(theme.surface, in: Circle())
-                        .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        .background(resting ? theme.paper.opacity(0.14) : theme.surface, in: Circle())
+                        .overlay(Circle().strokeBorder(resting ? theme.paper.opacity(0.3) : theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Close focus mode"))
             }
 
-            if session.phase == .resting {
+            if resting {
                 focusRestPhase
             } else {
                 focusCapturePhase
@@ -1689,7 +1803,7 @@ struct LiveStrengthSheet: View {
         .padding(.top, CenitMetrics.sectionGap)
         .padding(.bottom, CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(theme.paper.ignoresSafeArea())
+        .background((resting ? theme.dataRecovery : theme.paper).ignoresSafeArea())
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
     }
@@ -1923,10 +2037,12 @@ struct LiveStrengthSheet: View {
         .opacity(captured ? 1 : StrandOpacity.dim)
     }
 
-    /// Rest phase scaled to full-screen; reuses the inline card's readiness/time evaluation patterns.
+    /// Rest phase scaled to full-screen, fully dressed in `dataRecovery` green + crema ink (FER-934,
+    /// handoff `_RestFull`). Reuses the inline card's readiness/time evaluation patterns; only the
+    /// vestment changes, the rest engine (`extendRest`/`skipRest`/`computeRestTarget`) is untouched.
     private var focusRestPhase: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))
 
             if session.currentRestMode == .heartRate, let started = session.restStartedAt {
                 PulseReader(model.live.pulse) { p in
@@ -1935,10 +2051,11 @@ struct LiveStrengthSheet: View {
                         let v = RestReadinessRule.evaluate(
                             currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
                             elapsedS: elapsed, targetHR: session.currentRestTarget)
-                        if v.state == .noSignal {
-                            focusRestTimeHero(end: session.restEndsAt, now: ctx.date, noStrapFallback: true)
-                        } else {
+                        let noSignal = v.state == .noSignal
+                        if (focusRestShowsHR ?? true) && !noSignal {
                             focusRestHRHero(elapsed: elapsed, readiness: v)
+                        } else {
+                            focusRestTimeHero(end: session.restEndsAt, now: ctx.date, noStrapFallback: noSignal)
                         }
                     }
                 }
@@ -1951,53 +2068,86 @@ struct LiveStrengthSheet: View {
             HStack(spacing: CenitMetrics.gap) {
                 focusRestAdjust("−15") { session.extendRest(byseconds: -15) }
                 Button { withAnimation(StrandMotion.gentle) { session.skipRest() } } label: {
-                    Label("Skip", systemImage: "forward.fill")
-                        .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    Text("Skip")
+                        .font(StrandFont.headline).foregroundStyle(theme.dataRecovery)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, CenitMetrics.sectionGap)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                        .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Skip rest"))
                 focusRestAdjust("+15") { session.extendRest(byseconds: 15) }
             }
+
+            focusRestNextCard
         }
+    }
+
+    /// «<ejercicio> · serie N ✓» — the just-completed set, for orientation while the screen is all green.
+    private var focusRestCaption: String {
+        guard session.runs.indices.contains(session.currentIndex) else { return String(localized: "Rest") }
+        let run = session.runs[session.currentIndex]
+        let doneIndex = run.currentSet - 1
+        guard run.sets.indices.contains(doneIndex) else { return run.name }
+        let n = run.sets.prefix(doneIndex + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        return "\(run.name) · " + String(localized: "set \(n)") + " ✓"
+    }
+
+    /// Tiempo/FC segmented toggle (FER-934 §3.2) — only shown when the active rest actually resolved a
+    /// heart-rate target; a fixed-time rest has nothing to switch to. Defaults to FC (`nil` ≙ true).
+    @ViewBuilder private var focusRestModeToggle: some View {
+        if session.currentRestMode == .heartRate {
+            let showsHR = focusRestShowsHR ?? true
+            HStack(spacing: 2) {
+                focusRestModeTab(String(localized: "Time"), systemImage: "timer", active: !showsHR) {
+                    focusRestShowsHR = false
+                }
+                focusRestModeTab(String(localized: "HR"), systemImage: "heart.fill", active: showsHR) {
+                    focusRestShowsHR = true
+                }
+            }
+            .padding(3)
+            .background(theme.paper.opacity(0.14), in: Capsule())
+        }
+    }
+
+    private func focusRestModeTab(_ label: String, systemImage: String, active: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(label, systemImage: systemImage)
+                .font(StrandFont.caption).fontWeight(.semibold)
+                .foregroundStyle(active ? theme.dataRecovery : theme.paper)
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(active ? theme.paper : Color.clear, in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     private func focusRestHRHero(elapsed: Int, readiness v: RestReadiness) -> some View {
         let bpm = model.bpm ?? 0
         let target = session.currentRestTarget
         let ready = v.ready
-        let hue = ready ? theme.dataRecovery : theme.dataHeart
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            HStack {
-                Text("Resting · by HR").font(StrandFont.caption).fontWeight(.semibold)
-                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
-                Spacer()
-                Text("\(Self.clock(elapsed)) elapsed").font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(theme.inkTertiary)
-            }
             if ready {
                 Text("Ready")
-                    .instrumentoHero(76).foregroundStyle(theme.dataRecovery)
+                    .instrumentoHero(76).foregroundStyle(theme.paper)
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
-                    Text("\(bpm)").instrumentoHero(90).monospacedDigit().foregroundStyle(theme.dataHeart)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                    Text("\(bpm)").instrumentoHero(100).monospacedDigit().foregroundStyle(theme.paper)
+                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.paper.opacity(0.7))
                 }
             }
-            restHRTrack(bpm: bpm, target: target)
             if let target, !ready {
                 (Text(String(localized: "dropping toward "))
-                 + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
+                 + Text("\(target) bpm").bold()
                  + Text(" · " + String(localized: "the strap will buzz")))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
             } else if let toReady = v.bpmToReady, !ready {
                 Text("\(toReady) bpm to ready")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.7))
             }
-            ECGWave(color: hue, animate: true, bpm: model.bpm)
-                .frame(height: CenitMetrics.sectionGap + CenitMetrics.gap)
+            focusRestHRTrack(bpm: bpm, target: target)
+            Text("\(Self.clock(elapsed)) " + String(localized: "of rest · the strap buzzes on arrival"))
+                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -2008,38 +2158,88 @@ struct LiveStrengthSheet: View {
             ? min(end ?? now, (session.restStartedAt ?? now).addingTimeInterval(300))
             : end
         let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
+        let total = max(1, cappedEnd.map { Int($0.timeIntervalSince(session.restStartedAt ?? now)) } ?? remaining)
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            HStack {
-                Text(noStrapFallback ? "Resting · by time" : "Resting")
-                    .font(StrandFont.caption).fontWeight(.semibold)
-                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
-                Spacer()
+            ZStack {
+                Circle().stroke(theme.paper.opacity(0.22), lineWidth: 10)
+                Circle()
+                    .trim(from: 0, to: max(0, min(1, Double(remaining) / Double(total))))
+                    .stroke(theme.paper, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 2) {
+                    Text(Self.clock(remaining))
+                        .instrumentoHero(72).monospacedDigit().foregroundStyle(theme.paper)
+                        .contentTransition(.numericText())
+                    Text(String(localized: "of \(total) s"))
+                        .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                }
             }
-            Text(Self.clock(remaining))
-                .instrumentoHero(90).monospacedDigit()
-                .foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
-                .contentTransition(.numericText())
-            if noStrapFallback {
-                Text("No strap signal: resting by time, 5 min cap")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
+            .frame(width: 232, height: 232)
+            .frame(maxWidth: .infinity)
+            Text(noStrapFallback ? String(localized: "No strap signal: resting by time, 5 min cap")
+                                  : String(localized: "Rings and buzzes when it ends."))
+                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                .frame(maxWidth: .infinity, alignment: .center)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(remaining == 0 ? "Rest done" : "Resting, \(remaining) seconds left"))
     }
 
+    /// Focus-mode FC track (FER-934): crema-on-green variant of `restHRTrack`, kept separate so the
+    /// shared inline-card track (dataHeart→dataRecovery gradient) is untouched.
+    private func focusRestHRTrack(bpm: Int, target: Int?) -> some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let hi = Double((target ?? bpm) + 40)
+            let lo = Double(target ?? bpm)
+            let frac = hi > lo ? max(0, min(1, (hi - Double(bpm)) / (hi - lo))) : 1
+            ZStack(alignment: .leading) {
+                Capsule().fill(theme.paper.opacity(0.22))
+                Capsule().fill(theme.paper).frame(width: w * frac)
+                Rectangle().fill(theme.paper).frame(width: 2, height: 14)
+                    .offset(x: w - 1)
+            }
+        }
+        .frame(height: 6)
+    }
+
     private func focusRestAdjust(_ label: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkSecondary)
+            Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.paper)
                 .frame(width: 56)
                 .padding(.vertical, CenitMetrics.sectionGap)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .background(theme.paper.opacity(0.14), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 1))
+                    .strokeBorder(theme.paper.opacity(0.3), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
+    }
+
+    /// «SIGUE» card (FER-934 §3.6): the next real step, derived the same way the inline UI derives it —
+    /// `registerCurrentSet` already advanced `session.current`/`currentSet` before starting this rest, so
+    /// it reflects either the next set of the active exercise or the next exercise once this one is done.
+    @ViewBuilder private var focusRestNextCard: some View {
+        if let run = session.current {
+            let si = run.currentSet
+            let n = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+            let load = run.sets.indices.contains(si) ? run.sets[si].weightKg : nil
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Next").font(StrandFont.caption).fontWeight(.semibold)
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.paper.opacity(0.6))
+                if let load, load > 0 {
+                    Text("\(run.name) · " + String(localized: "set \(n)") + " · \(massText(load))")
+                        .font(StrandFont.subhead).foregroundStyle(theme.paper)
+                } else {
+                    Text("\(run.name) · " + String(localized: "set \(n)"))
+                        .font(StrandFont.subhead).foregroundStyle(theme.paper)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .background(theme.paper.opacity(0.14), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        }
     }
 
     /// One progress segment per non-skipped exercise: width ∝ its set count, fill = fraction of its sets done.
@@ -2153,6 +2353,11 @@ struct LiveStrengthSheet: View {
                 exerciseMenuButton(ei: ei, run: run)
                 reorderHandle(ei: ei, run: run)
             }
+            // FER-933: long-press the active exercise's header also enters modo mover — same entry as the
+            // compressed rail rows (`doneRow`/`comingRow`).
+            .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                withAnimation(.snappy) { reorderMode = true }
+            })
             // FER-E · 2b: the earned raise, named where you train. «↑ hoy 102,5 · por qué» toggles the
             // arithmetic card; green because the raise IS the datum.
             if let raise = run.proposedRaise {
@@ -2188,8 +2393,15 @@ struct LiveStrengthSheet: View {
         Button { menuExerciseIndex = ei } label: {
             Image(systemName: "ellipsis")
                 .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(ei == session.currentIndex ? theme.dataStrain : theme.inkTertiary)
                 .frame(width: 30, height: 44)
+                .background {
+                    // FER-936 tapRing: the active exercise's «···» wears a gently breathing ember ring,
+                    // inviting a tap (menu holds Change / Reorder / Skip). Static under Reduce Motion.
+                    if ei == session.currentIndex {
+                        TapRing(color: theme.dataStrain, animated: !reduceMotion)
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2209,6 +2421,11 @@ struct LiveStrengthSheet: View {
             },
             .init(String(localized: "Skip exercise"), systemImage: "forward.end") {
                 withAnimation(.snappy) { session.skipExercise(ei) }
+            },
+            // FER-933: «Reordenar» now enters modo mover — the handoff's compressed-rows + «SOLTAR AQUÍ»
+            // drag surface — instead of only hinting the header's «≡» handle (FER-936's original wiring).
+            .init(String(localized: "Reorder"), systemImage: "line.3.horizontal") {
+                withAnimation(.snappy) { reorderMode = true }
             }
         ]
         // Never leave the session empty — the last exercise can only be skipped, not removed.
@@ -2225,11 +2442,20 @@ struct LiveStrengthSheet: View {
     /// which keeps the focused exercise focused) — the same reorder the plan navigator exposes, now with a
     /// visible grab. VoiceOver gets explicit move-earlier / move-later actions since a drag isn't reachable.
     private func reorderHandle(ei: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
-        Image(systemName: "line.3.horizontal")
+        let hinted = reorderHint == ei
+        return Image(systemName: "line.3.horizontal")
             .font(StrandFont.glyph(.chevron))
-            .foregroundStyle(theme.inkTertiary)
+            .foregroundStyle(hinted ? theme.dataStrain : theme.inkTertiary)
+            .scaleEffect(hinted ? 1.18 : 1)
+            .animation(.snappy, value: hinted)
             .frame(width: 30, height: 44)
             .contentShape(Rectangle())
+            // FER-936: the ember nudge from the menu fades on its own after a couple of seconds.
+            .task(id: reorderHint) {
+                guard reorderHint == ei else { return }
+                try? await Task.sleep(for: .seconds(2.5))
+                if reorderHint == ei { withAnimation(.snappy) { reorderHint = nil } }
+            }
             .highPriorityGesture(
                 DragGesture(minimumDistance: 6)
                     .onEnded { value in
@@ -2259,6 +2485,113 @@ struct LiveStrengthSheet: View {
             for _ in 0..<(-steps) where idx > 0 { session.moveExerciseEarlier(idx); idx -= 1 }
         } else {
             for _ in 0..<steps where idx < session.runs.count - 1 { session.moveExerciseEarlier(idx + 1); idx += 1 }
+        }
+    }
+
+    // MARK: Modo mover (FER-933) — handoff `_ListScreen.dc.html` reorder state, adopted on the riel.
+
+    /// The mode bar above the list: overline «MOVIENDO · ARRASTRA SOBRE EL RIEL» (ember) + «Listo» (verde).
+    private var reorderModeBar: some View {
+        HStack {
+            Text("MOVING · DRAG ALONG THE RAIL")
+                .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(theme.dataStrain)
+            Spacer()
+            Button {
+                withAnimation(.snappy) {
+                    reorderMode = false
+                    reorderDraggingIndex = nil
+                    reorderTargetIndex = nil
+                }
+            } label: {
+                Text("Done").font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataRecovery)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Done reordering"))
+        }
+    }
+
+    /// Clamp `ei + steps` to a valid slot — the same bound `reorderExercise` enforces one swap at a time,
+    /// computed up front here purely to label the drop zone while dragging.
+    private func reorderClampedTarget(_ ei: Int, steps: Int) -> Int {
+        max(0, min(session.runs.count - 1, ei + steps))
+    }
+
+    /// The dashed ember drop zone, «SOLTAR AQUÍ · POSICIÓN N» (1-based), shown at the slot a live drag
+    /// would land on.
+    private func reorderDropZone(position: Int) -> some View {
+        Text(String(format: String(localized: "DROP HERE · POSITION %d"), position + 1))
+            .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+            .foregroundStyle(theme.dataStrain)
+            .frame(maxWidth: .infinity)
+            .frame(height: 46)
+            .background(theme.dataStrain.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))  // token-exempt: decorative drop-zone tint alpha
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+            }
+            .padding(.bottom, 6)
+            .accessibilityHidden(true)
+    }
+
+    /// One exercise, compressed to a single draggable line in modo mover: dot handle + name + its current
+    /// prescription/done detail. A vertical `DragGesture` rides the same slot-stepping `reorderExercise`
+    /// the always-on «≡» handle uses; the row that's mid-drag lifts (scale + rotate + ember border +
+    /// shadow), the rest dim, and `reorderDropZone` renders above the destination slot. Reduce Motion drops
+    /// the scale/rotation, keeping only the border + soft shadow.
+    private func reorderRow(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        let dragging = reorderDraggingIndex == ei
+        let anyDragging = reorderDraggingIndex != nil
+        return VStack(spacing: 0) {
+            if let target = reorderTargetIndex, target == ei, !dragging {
+                reorderDropZone(position: target)
+            }
+            HStack(spacing: 12) {
+                Image(systemName: "line.3.horizontal")
+                    .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(run.sets.allSatisfy(\.done) ? doneDetailText(run) : prescriptionText(run))
+                    .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary).lineLimit(1)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .frame(minHeight: 44)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(dragging ? theme.dataStrain : theme.hairlineStrong, lineWidth: dragging ? 2 : 1)
+            }
+            .shadow(color: dragging ? theme.dataStrain.opacity(0.25) : .clear,  // token-exempt: decorative lift-shadow alpha
+                    radius: dragging ? 10 : 0, y: dragging ? 4 : 0)
+            .scaleEffect(dragging && !reduceMotion ? 1.03 : 1)
+            .rotationEffect(.degrees(dragging && !reduceMotion ? -1 : 0))
+            .opacity(anyDragging && !dragging ? StrandOpacity.dim : 1)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 4)
+                    .onChanged { value in
+                        reorderDraggingIndex = ei
+                        let step: CGFloat = 56
+                        let steps = Int((value.translation.height / step).rounded())
+                        reorderTargetIndex = reorderClampedTarget(ei, steps: steps)
+                    }
+                    .onEnded { value in
+                        let step: CGFloat = 56
+                        let steps = Int((value.translation.height / step).rounded())
+                        if steps != 0 { withAnimation(.snappy) { reorderExercise(ei, by: steps) } }
+                        reorderDraggingIndex = nil
+                        reorderTargetIndex = nil
+                    }
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(run.name))
+            .accessibilityHint(Text("Drag to change the order"))
+            .accessibilityAction(named: Text("Move earlier")) {
+                withAnimation(.snappy) { reorderExercise(ei, by: -1) }
+            }
+            .accessibilityAction(named: Text("Move later")) {
+                withAnimation(.snappy) { reorderExercise(ei, by: 1) }
+            }
         }
     }
 
@@ -2495,6 +2828,13 @@ struct LiveStrengthSheet: View {
         .padding(.horizontal, active ? 6 : 0)
         .background(active ? theme.surface : .clear,
                     in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay {
+            // FER-938: a dashed ember outline marks a just-copied, not-yet-logged set.
+            if set.id == copiedSetId, !set.done {
+                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            }
+        }
         .overlay(alignment: .bottom) {
             if !last { Rectangle().fill(theme.hairline).frame(height: 1) }
         }
@@ -2507,9 +2847,16 @@ struct LiveStrengthSheet: View {
     private func gridRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
                          set: StrengthSessionModel.WorkingSet) -> some View {
         HStack(spacing: 8) {
-            badge(ei: ei, si: si, number: si + 1)
-            previousCell(ei: ei, si: si, run: run)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            badge(run: run, si: si)
+            if set.id == copiedSetId, !set.done, si > 0 {
+                // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».
+                let fromNumber = run.sets.prefix(si).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+                Text("COPIED FROM \(fromNumber)").instrumentoOverline().foregroundStyle(theme.dataStrain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                previousCell(ei: ei, si: si, run: run)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             dataCells(ei: ei, si: si, run: run, set: set)
             checkButton(ei: ei, si: si, set: set)
         }
@@ -2519,7 +2866,7 @@ struct LiveStrengthSheet: View {
                            set: StrengthSessionModel.WorkingSet) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                badge(ei: ei, si: si, number: si + 1)
+                badge(run: run, si: si)
                 Spacer()
                 checkButton(ei: ei, si: si, set: set)
             }
@@ -2536,7 +2883,7 @@ struct LiveStrengthSheet: View {
         let running = session.timerStart != nil
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
-                badge(ei: ei, si: si, number: si + 1)
+                badge(run: run, si: si)
                 // The clock — ticks live while running, else shows the captured time.
                 Group {
                     if running {
@@ -2770,13 +3117,19 @@ struct LiveStrengthSheet: View {
 
     /// The set-number badge — a non-interactive marker in the effort hue (FER-716: the Foco is gone; the
     /// row itself is the interactive surface). A ring with the set number.
-    private func badge(ei: Int, si: Int, number: Int) -> some View {
-        Text("\(number)").font(StrandFont.caption).monospacedDigit()
-            .foregroundStyle(theme.dataStrain)
+    /// The set's number badge. FER-937: a warm-up set shows a «C» (calentamiento) in a tenue ring and does
+    /// not consume a work-set number; work sets are numbered 1..n counting only `.work` rows, so a warm-up
+    /// never pushes «serie 1» to «serie 3».
+    private func badge(run: StrengthSessionModel.ExerciseRun, si: Int) -> some View {
+        let isWarmup = run.sets[si].kind == .warmup
+        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        let label = isWarmup ? String(localized: "C") : "\(workNumber)"
+        return Text(label).font(StrandFont.caption).monospacedDigit()
+            .foregroundStyle(isWarmup ? theme.dataStrain.opacity(StrandOpacity.dim) : theme.dataStrain)  // token-exempt: warm-up badge tenue (handoff «C»)
             .frame(width: 26, height: 26)
-            .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
+            .overlay(Circle().strokeBorder(theme.dataStrain.opacity(isWarmup ? StrandOpacity.dim : 1), lineWidth: 1.5))  // token-exempt: warm-up ring tenue
             .frame(width: reflow ? 26 : 44, height: reflow ? 26 : 44, alignment: .center)
-            .accessibilityLabel(Text("Set \(number)"))
+            .accessibilityLabel(Text(isWarmup ? "Warm-up set" : "Set \(workNumber)"))
     }
 
     /// «ANTERIOR · DESCANSO» — last time's value + this set's own rest (FER-716, per-set since F0);
@@ -2997,7 +3350,10 @@ struct LiveStrengthSheet: View {
     }
 
     private func addSetButton(_ ei: Int) -> some View {
-        Button { withAnimation(.snappy) { session.addSet(exercise: ei) } } label: {
+        Button {
+            withAnimation(.snappy) { session.addSet(exercise: ei) }
+            copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
+        } label: {
             Label("Add set", systemImage: "plus")
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 9)
@@ -3070,13 +3426,6 @@ struct LiveStrengthSheet: View {
         .task {
             guard freshSuggestions == nil else { return }
             await loadFreshSuggestions()
-        }
-        .sheet(isPresented: $showLibraryPicker) {
-            ExerciseLibraryScreen { picks in
-                showLibraryPicker = false
-                Task { await addExercises(picks) }
-            }
-            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
         }
     }
 
@@ -3155,9 +3504,13 @@ struct LiveStrengthSheet: View {
         loadedMuscle = loads.filter { $0.state == .loaded }.max { $0.load < $1.load }?.muscle
     }
 
-    /// Add one or more exercises to the ad-hoc session (from a suggestion or the library picker), seeding
-    /// each from its last logged set when there's history. The empty state falls away on its own once
-    /// `session.runs` isn't empty.
+    /// Add one or more exercises to the session (from a suggestion or the library picker), seeding each
+    /// from its last logged set when there's history. The empty ad-hoc state falls away on its own once
+    /// `session.runs` isn't empty. FER-935: when the session already has runs (routine-backed or an
+    /// ad-hoc session past its first exercise), the picks land right after the active exercise instead of
+    /// at the end — iterated in REVERSE so the batch stays contiguous and in the user's chosen order
+    /// (each `insertExerciseAfterCurrent` call lands at the same `currentIndex + 1` slot, pushing the
+    /// previous insert one further along — see its doc comment).
     private func addExercises(_ picks: [Exercise]) async {
         let lasts = await withTaskGroup(of: (String, Double?, Int?).self) { group in
             for ex in picks {
@@ -3170,9 +3523,16 @@ struct LiveStrengthSheet: View {
             for await (id, weight, reps) in group { results[id] = (weight, reps) }
             return results
         }
-        for ex in picks {
-            let last = lasts[ex.id]
-            session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
+        if session.runs.isEmpty {
+            for ex in picks {
+                let last = lasts[ex.id]
+                session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
+            }
+        } else {
+            for ex in picks.reversed() {
+                let last = lasts[ex.id]
+                session.insertExerciseAfterCurrent(ex, lastWeightKg: last?.0, lastReps: last?.1)
+            }
         }
     }
 

@@ -22,9 +22,10 @@ struct WorkoutImportView: View {
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject private var repo: Repository
 
-    private enum Phase { case capture, mapping, confirm, done }
+    fileprivate enum Phase { case capture, mapping, confirm, done }
 
     /// The unmatched exercise name being mapped (wraps the name so `.sheet(item:)` has an `Identifiable`
     /// without a global `String` conformance). Names are deduped by normalization, so they're unique.
@@ -48,6 +49,7 @@ struct WorkoutImportView: View {
     @State private var omitted: Set<String> = []   // normalized names the user chose not to import (FER-536)
     @State private var mappingTarget: MappingName?  // name being mapped → drives the library picker sheet
     @State private var createdCount = 0
+    @State private var celebrate = false   // done-screen pop-in (respects Reduce Motion)
 
     /// The user's weight unit (kg / lb), for the confirm-step preview only — stored weights are kg.
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -94,7 +96,7 @@ struct WorkoutImportView: View {
             header("Import plan", "Bring your plan from your AI")
 
             step(1, "Copy the prompt and paste it into your trusted AI, along with your plan (text, photo or PDF).") {
-                QuietButton(copied ? "Copied" : "Copy prompt") { copyPrompt() }
+                emberButton(copied ? "Copied" : "Copy prompt") { copyPrompt() }
             }
 
             step(2, "Bring back the file it gives you: paste it or upload it.") {
@@ -109,10 +111,36 @@ struct WorkoutImportView: View {
                 }
             }
 
-            Text("Your routines are created on your iPhone. NOOP never connects: you run the AI step yourself.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            privacyNote
+        }
+    }
+
+    /// Handoff: la promesa offline como tarjeta con barra verde — es la garantía del flujo, no letra chica.
+    private var privacyNote: some View {
+        HStack(alignment: .top, spacing: CenitMetrics.gap) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(theme.verdict).frame(width: 3)
+            Text("Your routines are created on your iPhone. Cénit never connects: you run the AI step yourself.")
+                .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(CenitMetrics.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Handoff: acción de acento dentro de un paso (ember lleno) — distinta del CTA canónico de tinta.
+    private func emberButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(StrandFont.headline).foregroundStyle(theme.paperHi)
+                .padding(.horizontal, 18).padding(.vertical, 10)
+                .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var pasteField: some View {
@@ -192,35 +220,49 @@ struct WorkoutImportView: View {
             } else if let resolved {
                 let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
                 HStack(spacing: CenitMetrics.space2) {
-                    Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
-                        .font(StrandFont.subhead).foregroundStyle(theme.verdict)
-                        .accessibilityHidden(true)
-                    Group {
-                        if isAuto { Text("Matched automatically · \(StrengthDisplay.name(resolved))") }
-                        else { Text("Matched · \(StrengthDisplay.name(resolved))") }
+                    // Handoff: el match como pill verde lavada — el veredicto se lee de un vistazo.
+                    HStack(spacing: 5) {
+                        Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
+                            .font(StrandFont.caption)
+                            .accessibilityHidden(true)
+                        Group {
+                            if isAuto { Text("Matched automatically · \(StrengthDisplay.name(resolved))") }
+                            else { Text("Matched · \(StrengthDisplay.name(resolved))") }
+                        }
+                        .font(StrandFont.caption.weight(.semibold))
+                        .lineLimit(1).minimumScaleFactor(0.85)
                     }
-                    .font(StrandFont.subhead).foregroundStyle(theme.verdict)
+                    .foregroundStyle(theme.verdict)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .background(theme.verdict.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     Spacer(minLength: CenitMetrics.space2)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
-                    Button { mappingTarget = MappingName(name: name) } label: {
-                        Text("Change mapping").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
-                    }
-                    .buttonStyle(.plain)
                 }
                 .accessibilityElement(children: .combine)
+                Button { mappingTarget = MappingName(name: name) } label: {
+                    Text("Change mapping").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+                }
+                .buttonStyle(.plain)
             } else {
                 let suggestions = reconciler?.suggestions(for: name) ?? []
                 if !suggestions.isEmpty {
                     Text("Did you mean…").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     ForEach(suggestions, id: \.id) { s in
+                        // Handoff: la sugerencia como tarjeta — sparkle ember, nombre, y «Usar» como botón oscuro.
                         Button { resolve(name, with: s) } label: {
                             HStack(spacing: CenitMetrics.space2) {
-                                Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                                Text(StrengthDisplay.name(s)).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                                Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.dataStrain)
+                                Text(StrengthDisplay.name(s)).font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.ink)
                                 Spacer(minLength: CenitMetrics.space2)
-                                Text("Use").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                                Text("Use").font(StrandFont.caption.weight(.bold)).foregroundStyle(theme.paperHi)
+                                    .padding(.horizontal, 11).padding(.vertical, 4)
+                                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             }
-                            .padding(.vertical, CenitMetrics.space1).contentShape(Rectangle())
+                            .padding(.horizontal, 10).padding(.vertical, 8)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .strokeBorder(theme.hairline, lineWidth: 1))
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint(Text("Use \(StrengthDisplay.name(s)) for \(name)"))
@@ -259,7 +301,7 @@ struct WorkoutImportView: View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             stepper(current: .confirm)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Import plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Import plan").instrumentoOverline().foregroundStyle(theme.dataStrain)
                 nameText(program.name, fallback: "Your program").font(StrandFont.title1).foregroundStyle(theme.ink)
                 Text(programSummary(program)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
@@ -273,49 +315,99 @@ struct WorkoutImportView: View {
                 }
             }
 
-            QuietButton(createRoutinesTitle(program.routines.count)) { save(program) }
+            StrandCTAButton(createRoutinesTitle(program.routines.count)) { save(program) }
         }
     }
 
     private func routinePreview(_ routine: WorkoutRoutine) -> some View {
-        let muscles = routine.exercises.compactMap { resolution[norm($0.name)]?.primaryMuscles }
+        // Resolver con la misma precedencia que save(): reconciliador (matches directos/aliases) y
+        // luego las decisiones manuales — si no, las rutinas con puros matches directos no clasifican.
+        let muscles = routine.exercises.compactMap { ex in
+            (reconciler?.resolve(ex) ?? resolution[norm(ex.name)])?.primaryMuscles
+        }
         let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
         let accent = region.tint(theme)
-        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Circle().fill(accent).frame(width: 8, height: 8)
-                nameText(routine.name, fallback: "Routine").font(StrandFont.body).foregroundStyle(theme.ink)
-                if let tag = routine.tag {
-                    Text(verbatim: "· \(tag)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+        // Handoff: glyph de familia de movimiento en chip lavado con borde del tinte — espejo de Tu Plan.
+        return HStack(alignment: .top, spacing: CenitMetrics.gap) {
+            RoutineRegionGlyph(glyphKind(region), tint: accent)
+                .frame(width: 22, height: 22)
+                .frame(width: 40, height: 40)
+                .background(accent.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .strokeBorder(accent, lineWidth: 1.5))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    nameText(routine.name, fallback: "Routine")
+                        .font(StrandFont.body.weight(.semibold)).foregroundStyle(theme.ink)
+                    if let tag = routine.tag {
+                        Text(verbatim: "· \(tag)").font(StrandFont.footnote).foregroundStyle(accent)
+                    }
                 }
-            }
-            ForEach(Array(routine.exercises.enumerated()), id: \.offset) { _, ex in
-                if !omitted.contains(norm(ex.name)) {   // omitted exercises aren't imported (FER-536)
-                    Text(verbatim: exerciseLine(ex))
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(routine.exercises.enumerated()), id: \.offset) { _, ex in
+                    if !omitted.contains(norm(ex.name)) {   // omitted exercises aren't imported (FER-536)
+                        Text(verbatim: exerciseLine(ex))
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
         .padding(.vertical, CenitMetrics.gap)
     }
 
+    private func glyphKind(_ region: RoutineRegion?) -> RoutineGlyphKind {
+        switch region {
+        case .push: return .push
+        case .pull: return .pull
+        case .legs: return .legs
+        case .fullBody, .none: return .fullBody
+        }
+    }
+
     // MARK: - Done
 
+    /// Handoff: el cierre celebratorio — a diferencia de los pasos de trabajo, aquí el contenido se
+    /// centra y respira. Un solo color (verdict verde), un solo gesto (el sello aparece con un pop
+    /// suave). Sin confeti: la celebración a la «Instrumento» es espacio + un verde honesto.
     private var doneFlow: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(spacing: 0) {
             stepper(current: .done)
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Image(systemName: "checkmark.circle")
-                    .font(.system(size: 40, weight: .regular)).foregroundStyle(theme.verdict)   // token-exempt: glifo de éxito 40pt (empty token es 34)
-                    .accessibilityHidden(true)
-                Text(createdRoutinesTitle(createdCount)).font(StrandFont.title2).foregroundStyle(theme.ink)
-                Text("They're in «My routines», ready to train.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: CenitMetrics.sectionGap)
+
+            VStack(spacing: CenitMetrics.sectionGap) {
+                ZStack {
+                    Circle().fill(theme.verdict.opacity(0.12)).frame(width: 116, height: 116)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 44, weight: .semibold)).foregroundStyle(theme.verdict)
+                }
+                .scaleEffect(celebrate ? 1 : 0.72)
+                .opacity(celebrate ? 1 : 0)
+                .accessibilityHidden(true)
+
+                VStack(spacing: CenitMetrics.space2) {
+                    Text(createdRoutinesTitle(createdCount))
+                        .font(StrandFont.title1).foregroundStyle(theme.ink)
+                        .multilineTextAlignment(.center)
+                    Text("They're in «My routines», ready to train.")
+                        .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .opacity(celebrate ? 1 : 0)
             }
-            QuietButton("Done") { Task { await onComplete(); dismiss() } }
+
+            Spacer(minLength: CenitMetrics.sectionGap)
+            StrandCTAButton("Done") { Task { await onComplete(); dismiss() } }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 520)
+        .onAppear {
+            guard !celebrate else { return }
+            if reduceMotion { celebrate = true }
+            else { withAnimation(StrandMotion.hero.delay(0.05)) { celebrate = true } }
+        }
     }
 
     // MARK: - Shared pieces
@@ -360,7 +452,7 @@ struct WorkoutImportView: View {
 
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(overline).instrumentoOverline().foregroundStyle(theme.dataStrain)
             Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
         }
     }
@@ -368,7 +460,10 @@ struct WorkoutImportView: View {
     private func step<Action: View>(_ n: Int, _ text: LocalizedStringKey,
                                     @ViewBuilder action: () -> Action) -> some View {
         HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            Text("\(n)").font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.inkTertiary)
+            Text("\(n)").font(StrandFont.subhead.weight(.bold)).monospacedDigit()
+                .foregroundStyle(theme.paperHi)
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(theme.dataStrain))
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text(text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -540,7 +635,7 @@ struct WorkoutImportView: View {
         case .notJSON:
             return "We couldn't read that as a plan file. Paste the full result your AI gave you, or upload the .json."
         case .unsupportedSchema:
-            return "That file isn't a NOOP workout plan. Make sure you used the prompt above."
+            return "That file isn't a Cénit workout plan. Make sure you used the prompt above."
         case .unsupportedIdioma:
             return "The plan's language isn't supported: it must be Spanish or English."
         case .unsupportedUnidad:
@@ -556,4 +651,101 @@ struct WorkoutImportView: View {
         }
     }
 }
+
+// MARK: - Previews (FER-946 — canvas del rediseño; datos espejo del handoff «Importar Plan»)
+
+#if DEBUG
+extension WorkoutImportView {
+
+    /// Canvas-only: freeze the view at a phase with seeded state, so each step renders without
+    /// driving the real flow. The live path (init(onComplete:)) is untouched.
+    fileprivate init(previewPhase: Phase,
+                     program: WorkoutProgram?,
+                     pasteText: String = "",
+                     unmatched: [String] = [],
+                     resolution: [String: Exercise] = [:],
+                     autoMatched: Set<String> = [],
+                     omitted: Set<String> = [],
+                     createdCount: Int = 0) {
+        self.onComplete = {}
+        _phase = State(initialValue: previewPhase)
+        _program = State(initialValue: program)
+        _pasteText = State(initialValue: pasteText)
+        _catalog = State(initialValue: ExerciseCatalog.all)
+        _reconciler = State(initialValue: WorkoutExerciseReconciler(
+            known: ExerciseCatalog.all, aliases: ExerciseAliasTable.bundled))
+        _unmatched = State(initialValue: unmatched)
+        _resolution = State(initialValue: resolution)
+        _autoMatched = State(initialValue: autoMatched)
+        _omitted = State(initialValue: omitted)
+        _createdCount = State(initialValue: createdCount)
+    }
+
+    /// El plan del handoff: «Bloque de fuerza 5×5» — Empuje A · Tirón A · Pierna.
+    fileprivate static let previewProgram = WorkoutProgram(
+        language: .es, name: "Bloque de fuerza 5×5", routines: [
+            WorkoutRoutine(name: "Empuje A", tag: "Lun", exercises: [
+                WorkoutExercise(name: "Press banca con barra", sets: 4, reps: 6, weightKg: 82.5),
+                WorkoutExercise(name: "Press militar con barra", sets: 4, reps: 8, weightKg: 45),
+                WorkoutExercise(name: "Contractor de pecho (máquina)", sets: 3, reps: 12),
+                WorkoutExercise(name: "Elevaciones laterales", sets: 3, reps: 15, weightKg: 10),
+            ]),
+            WorkoutRoutine(name: "Tirón A", tag: "Mié", exercises: [
+                WorkoutExercise(name: "Peso muerto", sets: 3, reps: 5, weightKg: 120),
+                WorkoutExercise(name: "Remo con barra", sets: 4, reps: 8, weightKg: 70),
+                WorkoutExercise(name: "Jalón al pecho", sets: 3, reps: 10, weightKg: 60),
+                WorkoutExercise(name: "Curl con barra", sets: 3, reps: 12, weightKg: 30),
+            ]),
+            WorkoutRoutine(name: "Pierna", tag: "Vie", exercises: [
+                WorkoutExercise(name: "Sentadilla con barra", sets: 4, reps: 6, weightKg: 100),
+                WorkoutExercise(name: "Prensa", sets: 3, reps: 10, weightKg: 180),
+                WorkoutExercise(name: "Curl femoral", sets: 3, reps: 12, weightKg: 40),
+                WorkoutExercise(name: "Gemelos de pie", sets: 4, reps: 15, weightKg: 80),
+            ]),
+        ])
+
+    fileprivate static func previewCapture() -> WorkoutImportView {
+        WorkoutImportView(previewPhase: .capture, program: nil)
+    }
+
+    /// Mapping con los tres estados del handoff: auto-match ✦, sin match (sugerencia + chips), omitido.
+    fileprivate static func previewMapping() -> WorkoutImportView {
+        let r = WorkoutExerciseReconciler(known: ExerciseCatalog.all, aliases: ExerciseAliasTable.bundled)
+        var resolution: [String: Exercise] = [:]
+        var auto: Set<String> = []
+        let autoName = "Press de banca plano"
+        if let hit = r.suggestions(for: autoName).first {
+            let key = WorkoutExerciseReconciler.normalize(autoName)
+            resolution[key] = hit
+            auto.insert(key)
+        }
+        return WorkoutImportView(
+            previewPhase: .mapping, program: previewProgram,
+            unmatched: [autoName, "Aperturas en pec-deck", "Cardio 20 min · caminadora"],
+            resolution: resolution, autoMatched: auto,
+            omitted: [WorkoutExerciseReconciler.normalize("Cardio 20 min · caminadora")])
+    }
+
+    fileprivate static func previewConfirm() -> WorkoutImportView {
+        WorkoutImportView(previewPhase: .confirm, program: previewProgram)
+    }
+
+    fileprivate static func previewDone() -> WorkoutImportView {
+        WorkoutImportView(previewPhase: .done, program: previewProgram, createdCount: 3)
+    }
+}
+
+@MainActor
+private func importPreview(_ view: WorkoutImportView) -> some View {
+    view
+        .environmentObject(Repository(deviceId: "preview"))
+        .preferredColorScheme(.light)
+        .environment(\.locale, Locale(identifier: "es"))   // canvas en es-MX; quitar para ver el copy en inglés
+}
+
+#Preview("1 · Captura") { importPreview(.previewCapture()) }
+#Preview("2 · Mapear") { importPreview(.previewMapping()) }
+#Preview("3 · Confirmar") { importPreview(.previewConfirm()) }
+#Preview("4 · Listo") { importPreview(.previewDone()) }
+#endif
 #endif
