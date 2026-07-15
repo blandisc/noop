@@ -1292,6 +1292,9 @@ struct LiveStrengthSheet: View {
         // warm-paper language — no native separators / background, our own hairlines. FER-497.
         // FER-929: rail + accordion — only the active exercise expands into its table; done/upcoming
         // exercises collapse to one line each, hung off a vertical rail (`railColumn`).
+        // Canvas pass 2026-07-15 (sugerencia 3): the jump to the next exercise is NARRATED — when the
+        // guided focus moves, the list scrolls the new active card into view instead of teleporting.
+        ScrollViewReader { proxy in
         List {
             // FER-933: modo mover — every exercise compresses to a draggable row with a «SOLTAR AQUÍ ·
             // POSICIÓN N» drop zone; the accordion (`activeExerciseBlock`) stays closed for the duration.
@@ -1341,6 +1344,13 @@ struct LiveStrengthSheet: View {
             } else {
                 buffer = ""; bufferTyped = false
             }
+        }
+        .onChange(of: session.currentIndex) { _, newIndex in
+            // Sugerencia 3: bring the newly-active card into view — a narrated move, not a teleport.
+            withAnimation(reduceMotion ? nil : StrandMotion.gentle) {
+                proxy.scrollTo("session-exercise-\(newIndex)", anchor: .top)
+            }
+        }
         }
     }
 
@@ -1398,6 +1408,10 @@ struct LiveStrengthSheet: View {
         .frame(width: 14)
         .accessibilityHidden(true)
     }
+
+    /// The rail only exists with 2+ exercises — a thread through a single stop reads orphaned
+    /// (canvas pass 2026-07-15, sugerencia 2).
+    private var showRail: Bool { session.runs.filter { !$0.skipped }.count > 1 }
 
     /// The routine's own family tint — the color of the rail thread. Classified from what the session
     /// actually contains (same `RoutineClassifier` the hub/plan use), so an ad-hoc session earns a color
@@ -1554,16 +1568,19 @@ struct LiveStrengthSheet: View {
     /// the inline rest card, and «Add set» — the exact content `inlineSession` rendered per exercise
     /// before FER-929, just no longer repeated for every exercise at once.
     @ViewBuilder private func activeExerciseBlock(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Canvas pass: the active dot centers on the 44pt thumbnail's midline — measured from the
-            // CELL top, so it accounts for the header's inner breathing (gap + half the thumb).
-            railColumn(.active, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei),
-                       tint: categoryTint(run), dotTopOffset: CenitMetrics.gap + 22, lineTint: theme.ink)
-            exerciseHeader(run, ei: ei, first: true)
-                .padding(.top, CenitMetrics.gap)
-        }
-        .plainRow()
+        // Canvas pass 2026-07-15: the whole block lives INSIDE one floating white card (the same hover
+        // language as the rest card) — header, sets and «add set» are slices of it; the rail thread
+        // runs BEHIND the card and the category dot centers on the 44pt thumbnail, both painted by the
+        // row backgrounds so the hilo never breaks.
+        exerciseHeader(run, ei: ei, first: true)
+            .padding(.top, 12).padding(.horizontal, 12)
+            .activeCardRow(top: true, bottom: false, theme: theme, railTint: railTint,
+                           railVisible: showRail, dotTint: categoryTint(run), dotTopOffset: 12 + 22)
+            .id("session-exercise-\(ei)")
         ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
+            // The rest card slots BETWEEN the set just logged and the next one (owner call): an
+            // opening of space inside the card, not an appendix under the table.
+            if restSlotIndex(run, ei: ei) == si { restCardRow(run) }
             // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows from the
             // numbered work sets — drawn on the first work row that follows a warm-up.
             let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
@@ -1571,30 +1588,54 @@ struct LiveStrengthSheet: View {
                 if afterWarmup { workSetsDivider.padding(.top, 4).padding(.bottom, 6) }
                 setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
             }
-                .activeCardRow(top: si == 0, bottom: false, theme: theme, railTint: railTint)
+                .padding(.horizontal, 12)
+                .activeCardRow(top: false, bottom: false, theme: theme, railTint: railTint,
+                               railVisible: showRail)
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
                         withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
                     } label: { Label("Delete", systemImage: "trash") }
                 }
         }
-        // The rest card (1k) slots between this exercise's rows and the next, while resting here.
-        if session.phase == .resting, ei == session.currentIndex, session.summary == nil {
-            restInlineCard
-                // A fixed rest that runs out dismisses itself — focus lands on the next active
-                // set with no tap in between (HR rests keep the card up until the buzz/skip).
-                .task(id: session.restEndsAt) {
-                    guard session.currentRestMode == .fixed, let end = session.restEndsAt else { return }
-                    let delay = end.timeIntervalSinceNow
-                    if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
-                    guard !Task.isCancelled, session.phase == .resting, !session.paused else { return }
-                    withAnimation(StrandMotion.gentle) { session.skipRest() }
-                }
-                .plainRow(top: 4)
+        // Rest after the exercise's LAST set (no pending set to anchor to) — before the card closes.
+        if session.phase == .resting, ei == session.currentIndex, session.summary == nil,
+           restSlotIndex(run, ei: ei) == nil {
+            restCardRow(run)
         }
-        // Canvas pass 2026-07-15: «Add set» is one more row OF the card (its rounded bottom), not a
-        // floating outlined button under it — the table closes with its own quiet action row.
-        addSetButton(ei).activeCardRow(top: false, bottom: true, theme: theme, railTint: railTint)
+        // «Add set» closes the card as its own row — the handoff's ember pill, inside (FER-935 kin).
+        addSetButton(ei)
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .activeCardRow(top: false, bottom: true, theme: theme, railTint: railTint,
+                           railVisible: showRail)
+    }
+
+    /// The set index the inline rest card slots BEFORE (the next pending set of the resting exercise) —
+    /// nil when the rest follows the exercise's last set (the card then lands after the table).
+    private func restSlotIndex(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> Int? {
+        guard session.phase == .resting, ei == session.currentIndex, session.summary == nil else { return nil }
+        let si = run.currentSet
+        guard run.sets.indices.contains(si), !run.sets[si].done else { return nil }
+        return si
+    }
+
+    /// The inline rest card as a slice of the active card's flow — keeps its own float/shadow (the
+    /// «hover» the owner asked to preserve) and the auto-dismiss task for fixed rests; entering and
+    /// leaving animates as an opening/closing of space between the sets.
+    private func restCardRow(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        restInlineCard
+            // A fixed rest that runs out dismisses itself — focus lands on the next active
+            // set with no tap in between (HR rests keep the card up until the buzz/skip).
+            .task(id: session.restEndsAt) {
+                guard session.currentRestMode == .fixed, let end = session.restEndsAt else { return }
+                let delay = end.timeIntervalSinceNow
+                if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+                guard !Task.isCancelled, session.phase == .resting, !session.paused else { return }
+                withAnimation(StrandMotion.gentle) { session.skipRest() }
+            }
+            .padding(.horizontal, 8)
+            .activeCardRow(top: false, bottom: false, theme: theme, railTint: railTint,
+                           railVisible: showRail)
+            .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     /// FER-937: the «SERIES DE TRABAJO» rule between the warm-up «C» rows and the numbered work sets —
@@ -1619,6 +1660,7 @@ struct LiveStrengthSheet: View {
                 ZStack {
                     VStack(spacing: 0) {
                         Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                            .opacity(showRail ? 1 : 0)
                         Color.clear
                     }
                     Circle().fill(theme.paper)
@@ -3453,13 +3495,18 @@ struct LiveStrengthSheet: View {
             withAnimation(.snappy) { session.addSet(exercise: ei) }
             copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
         } label: {
-            // Canvas pass: dressed as the card's own closing row — a top hairline separates it from
-            // the last set, no private background/border (the card provides both).
-            Label("Add set", systemImage: "plus")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .frame(maxWidth: .infinity).padding(.vertical, 10)
-                .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
-                .contentShape(Rectangle())
+            // Canvas pass 2026-07-15: the handoff's ember «+ Serie» pill, living INSIDE the card as its
+            // closing row (top hairline separates it from the last set).
+            HStack {
+                Label("Add set", systemImage: "plus")
+                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(theme.dataStrain, in: Capsule())
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 8)
+            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -4739,19 +4786,45 @@ private extension View {
             .listRowSeparator(.hidden)
     }
 
-    /// Canvas pass 2026-07-15 (propuesta C «Regla de tinta», retira la carta blanca de FER-929): the
-    /// active exercise's set rows live directly on the paper — no `surface` card, no border. What marks
-    /// the block is the rail lane thickening into a 2pt INK rule painted by the row background itself,
-    /// so the hilo runs unbroken through the whole active table (header → sets → «add set»). `top`/
-    /// `bottom` stay in the signature for the call sites' rhythm, unused by the paper treatment.
-    func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme, railTint: Color) -> some View {
-        self
+    /// Canvas pass 2026-07-15 (vuelve la carta blanca, ahora FLOTANTE): the active exercise's rows are
+    /// slices of one floating `surface` card — the same hover language as the rest card — while the
+    /// row background also paints the rail thread BEHIND it and, on the header slice, the category dot
+    /// centered to the 44pt thumbnail (`dotTint`/`dotTopOffset`). `railVisible: false` hides the
+    /// thread/dot in single-exercise sessions where a rail would hang orphaned.
+    func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme, railTint: Color,
+                       railVisible: Bool = true, dotTint: Color? = nil,
+                       dotTopOffset: CGFloat = 34) -> some View {
+        let shape = UnevenRoundedRectangle(
+            topLeadingRadius: top ? CenitMetrics.cardRadius : 0,
+            bottomLeadingRadius: bottom ? CenitMetrics.cardRadius : 0,
+            bottomTrailingRadius: bottom ? CenitMetrics.cardRadius : 0,
+            topTrailingRadius: top ? CenitMetrics.cardRadius : 0)
+        return self
             .listRowInsets(EdgeInsets(top: 0, leading: CenitMetrics.screenPadding + 26,
                                       bottom: 0, trailing: CenitMetrics.screenPadding))
             .listRowBackground(
-                Rectangle().fill(theme.ink).frame(width: 2)
-                    .padding(.leading, CenitMetrics.screenPadding + 6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                ZStack(alignment: .topLeading) {
+                    if railVisible {
+                        Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                            .padding(.leading, CenitMetrics.screenPadding + 6)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    }
+                    shape.fill(theme.surface)
+                        .overlay(shape.strokeBorder(theme.hairline, lineWidth: 1))
+                        .shadow(color: theme.ink.opacity(0.08), radius: 8, y: 3)  // token-exempt: decorative float-shadow alpha (rest-card kin)
+                        .padding(.leading, CenitMetrics.screenPadding + 26)
+                        .padding(.trailing, CenitMetrics.screenPadding)
+                    if let dotTint, railVisible {
+                        Circle().fill(dotTint)
+                            .frame(width: 9, height: 9)
+                            .overlay {
+                                Circle().strokeBorder(dotTint.opacity(0.3), lineWidth: 3)  // token-exempt: decorative active-node halo ring alpha
+                                    .frame(width: 19, height: 19)
+                            }
+                            .padding(.leading, CenitMetrics.screenPadding + 2.5)
+                            .padding(.top, dotTopOffset - 4.5)
+                    }
+                }
             )
             .listRowSeparator(.hidden)
     }
