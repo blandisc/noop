@@ -322,11 +322,21 @@ enum ScreenshotFixtures {
         }
         await session(c.id, exerciseId: "Barbell_Full_Squat", daysAgo: 2, kg: 100)
         await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 3, kg: 120)
-        await session(a.id, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 7, kg: 80)
         await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 10, kg: 115)
         await session(c.id, exerciseId: "Barbell_Full_Squat", daysAgo: 16, kg: 95)
-        await session(a.id, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 23, kg: 77.5)
         await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 31, kg: 110)
+
+        // FER-951: a dense 8-week bench progression (2 sessions/week, a raise every ~2) so «Detalle ·
+        // Progreso» draws real charts — 1RM trend, best-set sparkline, weekly volume bars — and
+        // «Historial» shows day blocks with set chips + the RÉCORD badge on today.
+        let benchRamp: [(daysAgo: Int, kg: Double)] = [
+            (0, 82.5), (4, 80), (7, 80), (11, 80), (14, 77.5), (18, 77.5), (21, 77.5), (25, 75),
+            (28, 75), (32, 75), (35, 72.5), (39, 72.5), (42, 72.5), (46, 70), (49, 70), (53, 70),
+        ]
+        for step in benchRamp {
+            await session(a.id, exerciseId: "Barbell_Bench_Press_-_Medium_Grip",
+                          daysAgo: step.daysAgo, kg: step.kg)
+        }
     }
 }
 #endif

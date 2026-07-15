@@ -1,6 +1,7 @@
 #if DEBUG && os(iOS)
 import SwiftUI
 import WhoopStore
+import StrandTraining
 
 /// **Canvas del mapa de estados** — todas las variantes de una pantalla, lado a lado, dentro del
 /// `#Preview` de Xcode. Cada celda construye un `AppModel`, lo siembra con el MISMO `ScreenshotFixtures`
@@ -135,8 +136,10 @@ private struct EntrenarMapCell: View {
 /// La Biblioteca de ejercicios REAL en el Canvas (FER-951): `allExercises()` devuelve el catálogo
 /// empaquetado aunque no haya semilla, así que la lista se llena sola. Sin media (paper placeholder),
 /// para mirar el buscador, las bandas por músculo y las miniaturas de 52px con marco de familia.
+/// OJO idioma: NO forzamos `\.locale` — los strings computados (músculos, equipo) siguen el idioma
+/// del proceso, así que forzar «es» mezclaba idiomas en el canvas. En el iPhone en español todo sale
+/// en español; el canvas se ve consistente en el idioma del Mac.
 private struct ExerciseLibraryMapCell: View {
-    var locale: String = "es"
     @StateObject private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
 
@@ -146,13 +149,46 @@ private struct ExerciseLibraryMapCell: View {
                 .environmentObject(model.repo)
                 .environmentObject(media)
         }
-        .environment(\.locale, .init(identifier: locale))
         .preferredColorScheme(.light)
         .frame(width: 393, height: 852)
     }
 }
 
-#Preview("Biblioteca · Español") {
-    ExerciseLibraryMapCell(locale: "es")
+#Preview("Biblioteca") {
+    ExerciseLibraryMapCell()
+}
+
+/// El Detalle de ejercicio REAL, sembrado con la progresión de banca del fixture `train` (FER-951):
+/// 8 semanas de sesiones → la tendencia 1RM con ejes, la mini-sparkline de mejor serie, las barras
+/// de volumen semanal y el Historial con chips por día + badge RÉCORD hoy. Las tres gráficas
+/// responden al arrastre (scrub) dentro del canvas.
+private struct ExerciseDetailMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @State private var seeded = false
+
+    var body: some View {
+        Group {
+            if let ex = ExerciseCatalog.all.first(where: { $0.id == "Barbell_Bench_Press_-_Medium_Grip" }) {
+                NavigationStack { ExerciseDetailScreen(exercise: ex) }
+            } else {
+                Text(verbatim: "Bench press no está en el catálogo")
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            seeded = true
+            await ScreenshotFixtures.seed(model, state: "train")
+        }
+    }
+}
+
+#Preview("Detalle · Press banca (con datos)") {
+    ExerciseDetailMapCell()
 }
 #endif
