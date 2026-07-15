@@ -47,11 +47,11 @@ struct ExerciseDetailScreen: View {
     private enum DetailTab: String, CaseIterable, Identifiable {
         case guide, progress, history
         var id: String { rawValue }
-        var label: LocalizedStringKey {
+        var label: String {
             switch self {
-            case .guide:    return "Guide"
-            case .progress: return "Progress"
-            case .history:  return "History"
+            case .guide:    return String(localized: "Guide")
+            case .progress: return String(localized: "Progress")
+            case .history:  return String(localized: "History")
             }
         }
     }
@@ -67,11 +67,11 @@ struct ExerciseDetailScreen: View {
     private enum ProgressMetric: String, CaseIterable, Identifiable {
         case weight, oneRM, volume
         var id: String { rawValue }
-        var label: LocalizedStringKey {
+        var label: String {
             switch self {
-            case .weight: return "Max weight"
-            case .oneRM:  return "Est. 1RM"
-            case .volume: return "Volume"
+            case .weight: return String(localized: "Max weight")
+            case .oneRM:  return String(localized: "Est. 1RM")
+            case .volume: return String(localized: "Volume")
             }
         }
     }
@@ -79,22 +79,24 @@ struct ExerciseDetailScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                header
-                // Reserved media hero (FER-751, handoff 1g/1h): sits between the title and the
-                // segmented control. FER-722/778 fill this same slot with the cached loop/thumb
-                // (auto-play + top-right play/pause) without shifting the layout.
-                heroSection
-                Picker("View", selection: $tab) {
-                    ForEach(DetailTab.allCases) { t in Text(t.label).tag(t) }
+                // Two-speed rhythm (handoff): the chrome block — title, hero, segmented — sits
+                // tight at `gap`; `sectionGap` breathes only between the block and the tab content.
+                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                    header
+                    // Reserved media hero (FER-751, handoff 1g/1h): sits between the title and the
+                    // segmented control. FER-722/778 fill this same slot with the cached loop/thumb
+                    // (auto-play + top-right play/pause) without shifting the layout.
+                    heroSection
+                    SegmentedPillControl(DetailTab.allCases, selection: $tab, theme: theme,
+                                         inkThumb: true) { $0.label }
                 }
-                .pickerStyle(.segmented)
                 switch tab {
                 case .guide:    guideTab
                 case .progress: progressTab
                 case .history:  historyTab
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, CenitMetrics.gap)
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -176,7 +178,9 @@ struct ExerciseDetailScreen: View {
         if mediaCoordinator.isEnabled, let mediaURL, UIImage(contentsOfFile: mediaURL.path) != nil {
             ZStack(alignment: .topTrailing) {
                 AnimatedGIFView(url: mediaURL, isPlaying: isLoopPlaying)
-                    .aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
+                    // Handoff: the hero is a fixed 176pt banner, not a full-width square — the
+                    // segmented control and the datum stay above the fold.
+                    .frame(maxWidth: .infinity).frame(height: ExerciseThumbnail.heroHeight)
                     .clipShape(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous))
                     .accessibilityHidden(true)
                 Button { isLoopPlaying.toggle() } label: {
@@ -278,7 +282,9 @@ struct ExerciseDetailScreen: View {
             Text(metaLine)
                 .instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(StrengthDisplay.name(exercise))
-                .font(StrandFont.title1).foregroundStyle(theme.ink)
+                // §8.7: redesigned sheets title in Grotesk (handoff: 700 26px, tight tracking).
+                .font(InstrumentoType.grotesk(26, weight: .bold)).tracking(InstrumentoType.groteskHeroTrackingScaled(26))
+                .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -349,7 +355,7 @@ struct ExerciseDetailScreen: View {
 
     @ViewBuilder private var musclesSection: some View {
         if !exercise.primaryMuscles.isEmpty || !exercise.secondaryMuscles.isEmpty {
-            VStack(alignment: .leading, spacing: 11) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 Text("Muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 ChipFlow(spacing: 8) {
                     ForEach(exercise.primaryMuscles, id: \.self) { m in muscleChip(m, primary: true) }
@@ -367,7 +373,7 @@ struct ExerciseDetailScreen: View {
         Text(StrengthDisplay.muscle(muscle))
             .font(StrandFont.subhead)
             .foregroundStyle(primary ? theme.paper : theme.inkSecondary)
-            .padding(.horizontal, 13).padding(.vertical, 6)
+            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, 6)  // token-exempt: chip 6pt del handoff
             .background(primary ? theme.ink : Color.clear, in: Capsule(style: .continuous))
             .overlay(Capsule(style: .continuous)
                 .strokeBorder(primary ? theme.ink : theme.hairlineStrong, lineWidth: 1))
@@ -382,8 +388,8 @@ struct ExerciseDetailScreen: View {
     /// exercise or one whose primary muscle nothing else shares.
     @ViewBuilder private var variantsSection: some View {
         if !variants.isEmpty {
-            VStack(alignment: .leading, spacing: 11) {
-                Divider().overlay(theme.hairline).padding(.bottom, 4)
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                Divider().overlay(theme.hairline).padding(.bottom, CenitMetrics.space1)
                 Text("Variants").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 ChipFlow(spacing: 8) {
                     ForEach(variants) { ex in variantChip(ex) }
@@ -396,7 +402,7 @@ struct ExerciseDetailScreen: View {
         Button { variant = ex } label: {
             Text(StrengthDisplay.name(ex))
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                .padding(.horizontal, 13).padding(.vertical, 6)
+                .padding(.horizontal, CenitMetrics.gap).padding(.vertical, 6)  // token-exempt: chip 6pt del handoff
                 .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -420,7 +426,7 @@ struct ExerciseDetailScreen: View {
     private var howToSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Divider().overlay(theme.hairline)
-            Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, 18)
+            Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, CenitMetrics.sectionGapCompact)
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(Array(exercise.displayInstructions(localized: StrengthDisplay.localized).enumerated()), id: \.offset) { index, cue in
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -434,7 +440,7 @@ struct ExerciseDetailScreen: View {
                     }
                 }
             }
-            .padding(.top, 11)
+            .padding(.top, CenitMetrics.space2)
         }
     }
 
@@ -451,7 +457,7 @@ struct ExerciseDetailScreen: View {
                 openURL(url)
             }
         } label: {
-            HStack(spacing: 11) {
+            HStack(spacing: CenitMetrics.gap) {
                 Image(systemName: "play.rectangle").foregroundStyle(theme.inkSecondary)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Watch on YouTube").font(StrandFont.subhead).foregroundStyle(theme.ink)
@@ -459,9 +465,9 @@ struct ExerciseDetailScreen: View {
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "arrow.up.forward").font(.caption).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "arrow.up.forward").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(14)
+            .padding(CenitMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
@@ -477,21 +483,21 @@ struct ExerciseDetailScreen: View {
 
     private var progressSection: some View {
         let values = series(metric)
-        return VStack(alignment: .leading, spacing: 10) {
-            Divider().overlay(theme.hairline).padding(.bottom, 8)
+        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            Divider().overlay(theme.hairline)
             Text("Progress").instrumentoOverline().foregroundStyle(theme.inkTertiary)
 
-            Picker("Progress metric", selection: $metric) {
-                ForEach(ProgressMetric.allCases) { m in Text(m.label).tag(m) }
-            }
-            .pickerStyle(.segmented)
+            SegmentedPillControl(ProgressMetric.allCases, selection: $metric, theme: theme,
+                                 inkThumb: true) { $0.label }
 
             HStack(alignment: .firstTextBaseline) {
                 Text(metric.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 if let latest = values.last {
+                    // §8.4.1: the tab's ONE dominant number — the latest mark, in the Grotesk voice.
                     Text(latestText(latest))
-                        .font(StrandFont.number(22, weight: .semibold)).foregroundStyle(theme.ink)
+                        .font(InstrumentoType.groteskHeroNumeral(34)).tracking(InstrumentoType.groteskHeroTrackingScaled(34))
+                        .foregroundStyle(theme.ink)
                         .monospacedDigit()
                 }
             }
@@ -682,8 +688,9 @@ struct ExerciseDetailScreen: View {
     private var recordsSection: some View {
         let rows = recordRows
         if !rows.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Divider().overlay(theme.hairline).padding(.vertical, 8)
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                // The outer sectionGap already breathes above — the divider only pads below.
+                Divider().overlay(theme.hairline).padding(.bottom, CenitMetrics.space2)
                 Text("Personal records").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 ForEach(rows, id: \.id) { row in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -694,7 +701,7 @@ struct ExerciseDetailScreen: View {
                             }
                         }
                         Spacer(minLength: 8)
-                        Text(row.value).font(StrandFont.number(17, weight: .semibold))
+                        Text(row.value).font(InstrumentoType.grotesk(17, weight: .semibold))
                             .foregroundStyle(theme.ink).monospacedDigit()
                     }
                     .padding(.vertical, 5)
@@ -730,7 +737,7 @@ struct ExerciseDetailScreen: View {
     private var emptyHistory: some View {
         VStack(alignment: .leading, spacing: 0) {
             Divider().overlay(theme.hairline)
-            VStack(spacing: 11) {
+            VStack(spacing: CenitMetrics.space2) {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 30)).foregroundStyle(theme.inkTertiary) // token-exempt: 30pt, .empty(34) sería +4pt (>±1pt)
                 Text("Not logged yet").font(StrandFont.title2).foregroundStyle(theme.ink)
@@ -740,7 +747,7 @@ struct ExerciseDetailScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 22)
+            .padding(.vertical, CenitMetrics.cardPadding)
         }
     }
 
