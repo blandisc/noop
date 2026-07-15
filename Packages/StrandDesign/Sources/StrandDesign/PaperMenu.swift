@@ -80,6 +80,9 @@ public struct PaperMenuCard: View {
                     list(items)
                 }
             }
+            // Clears the popover container's system corner curve so the first/last row's
+            // text never rides into the rounding (FER-951 feedback).
+            .padding(.vertical, 6)
         }
         .scrollBounceBehavior(.basedOnSize)
         .frame(width: 250, height: estimatedHeight)
@@ -96,7 +99,7 @@ public struct PaperMenuCard: View {
         let rows = pushed.map { $0.children } ?? items
         let base: CGFloat = pushed != nil ? 41 : 0   // the submenu's back header row
         let content = rows.reduce(CGFloat(0)) { $0 + 45 + ($1.subtitle != nil ? 14 : 0) }
-        return min(base + content, 420)
+        return min(base + content + 12, 420)   // +12 = the vertical corner-clearing inset
     }
 
     private func list(_ items: [PaperMenuItem]) -> some View {

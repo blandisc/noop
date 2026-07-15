@@ -78,7 +78,7 @@ struct ExerciseDetailScreen: View {
                     // (auto-play + top-right play/pause) without shifting the layout.
                     heroSection
                     SegmentedPillControl(DetailTab.allCases, selection: $tab, theme: theme,
-                                         inkThumb: true) { $0.label }
+                                         squared: true) { $0.label }
                 }
                 switch tab {
                 case .guide:    guideTab
@@ -257,7 +257,7 @@ struct ExerciseDetailScreen: View {
                     HStack(spacing: CenitMetrics.space2) {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(familyTint).frame(width: 8, height: 8)
-                        Text(historyDayLabel(day.ts))
+                        historyDayText(day.ts)
                             .font(StrandFont.body.weight(.medium)).foregroundStyle(theme.ink)
                         Spacer(minLength: 8)
                         if day.isRecord {
@@ -306,11 +306,11 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    /// «Hoy» for today, else a short day-month («8 jul»).
-    private func historyDayLabel(_ ts: Int) -> String {
+    /// «Hoy» for today, else a short day-month («8 jul») — a `Text` so it follows the view's locale.
+    private func historyDayText(_ ts: Int) -> Text {
         let date = Date(timeIntervalSince1970: TimeInterval(ts))
-        if Calendar.current.isDateInToday(date) { return String(localized: "Today") }
-        return date.formatted(.dateTime.day().month(.abbreviated))
+        if Calendar.current.isDateInToday(date) { return Text("Today") }
+        return Text(date, format: .dateTime.day().month(.abbreviated))
     }
 
     /// The best (heaviest) work set per day, newest first, for the history list.
@@ -338,15 +338,17 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    /// The overline under the title: «equipment · type» (e.g. «Barra · Peso × reps»). Collapses to a
-    /// single term when they'd read the same (a bodyweight exercise's equipment «body only» and its type
-    /// both localize to «Peso corporal») — fixing the doubled-equipment overline (FER-739).
+    /// The overline over the title (handoff): «primary muscle(s) · equipment» — «PECHO · BARRA», or
+    /// «PIERNA / ESPALDA · BARRA» for a compound with two primaries. Falls back to the measurement
+    /// type when the exercise carries neither (a bare custom one).
     private var metaLine: String {
-        let type = StrengthDisplay.typeName(effectiveType)
-        guard let eq = exercise.equipment, !eq.isEmpty else { return type }
-        let eqLabel = StrengthDisplay.equipment(eq)
-        if eqLabel.caseInsensitiveCompare(type) == .orderedSame { return type }
-        return "\(eqLabel) · \(type)"
+        let muscles = exercise.primaryMuscles.prefix(2).map { StrengthDisplay.muscle($0) }
+        let equip = exercise.equipment.flatMap { $0.isEmpty ? nil : StrengthDisplay.equipment($0) }
+        var parts: [String] = []
+        if !muscles.isEmpty { parts.append(muscles.joined(separator: " / ")) }
+        if let equip { parts.append(equip) }
+        guard !parts.isEmpty else { return StrengthDisplay.typeName(effectiveType) }
+        return parts.joined(separator: " · ")
     }
 
     // MARK: - Measurement type (FER-541) — let the user re-type any exercise, incl. a catalog one
@@ -575,9 +577,13 @@ struct ExerciseDetailScreen: View {
 
             // The axis chart, in a raised card (handoff: gridlines + y labels + MAY/JUN/HOY).
             if oneRM.count >= 2, !historyDays.isEmpty {
-                TrendAxisChart(values: oneRM, xFirst: monthLabel(historyDays.last?.ts),
+                TrendAxisChart(values: oneRM,
+                               dates: historyDays.sorted { $0.ts < $1.ts }
+                                   .map { Date(timeIntervalSince1970: TimeInterval($0.ts)) },
+                               xFirst: monthLabel(historyDays.last?.ts),
                                xMid: monthLabel(historyDays[historyDays.count / 2].ts),
-                               accent: familyTint, theme: theme)
+                               accent: familyTint, theme: theme,
+                               valueFormat: { StrengthDisplay.weight($0, system: system) })
                     .padding(.top, CenitMetrics.cardPadding)
                     .accessibilityLabel(Text("Est. 1RM") + Text(verbatim: " trend"))
             }
@@ -619,7 +625,8 @@ struct ExerciseDetailScreen: View {
                 }
                 Sparkline(values: series(.weight),
                           gradient: Gradient(colors: [familyTint, familyTint]),
-                          bandColor: .clear, showsArea: false, showsHead: true, showsScrub: false)
+                          bandColor: .clear, showsArea: false, showsHead: true, showsScrub: true,
+                          valueFormat: { StrengthDisplay.weight($0, system: system) })
                     .frame(height: 36)
                     .padding(.top, 7)  // token-exempt: 7 del handoff
                     .accessibilityHidden(true)
@@ -682,18 +689,8 @@ struct ExerciseDetailScreen: View {
 
     /// Seven rounded weekly bars — tints of the family hue, the latest week in full hue.
     private func weeklyBars(_ vols: [Double]) -> some View {
-        let top = max(vols.max() ?? 1, 0.0001)
-        return GeometryReader { geo in
-            HStack(alignment: .bottom, spacing: 5) {
-                ForEach(Array(vols.enumerated()), id: \.offset) { idx, v in
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(idx == vols.count - 1 ? familyTint : familyTint.opacity(0.28))  // token-exempt: tinte 28% del handoff
-                        .frame(height: max(3, geo.size.height * v / top))
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .frame(height: geo.size.height, alignment: .bottom)
-        }
+        WeeklyBarsChart(vols: vols, accent: familyTint, theme: theme,
+                        valueFormat: { StrengthHistoryFormat.volume($0, system: system) })
     }
 
     /// «CICLO ACTUAL» — where this exercise's progression stands, in one sentence with real numbers.
@@ -774,17 +771,70 @@ struct ExerciseDetailScreen: View {
 
 }
 
+// MARK: - Weekly volume bars (handoff «Detalle · Progreso», mini card)
+
+/// Seven weekly tonnage bars; dragging pins a week (full hue) and shows its value above — the same
+/// scrub reading model as the line charts.
+private struct WeeklyBarsChart: View {
+    let vols: [Double]
+    let accent: Color
+    let theme: InstrumentoTheme
+    let valueFormat: (Double) -> String
+
+    @State private var scrubIndex: Int? = nil
+
+    var body: some View {
+        let top = max(vols.max() ?? 1, 0.0001)
+        return GeometryReader { geo in
+            HStack(alignment: .bottom, spacing: 5) {
+                ForEach(Array(vols.enumerated()), id: \.offset) { idx, v in
+                    let active = scrubIndex.map { $0 == idx } ?? (idx == vols.count - 1)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(active ? accent : accent.opacity(0.28))  // token-exempt: tinte 28% del handoff
+                        .frame(height: max(3, geo.size.height * v / top))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: geo.size.height, alignment: .bottom)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { g in
+                        let frac = max(0, min(0.999, g.location.x / max(geo.size.width, 1)))
+                        scrubIndex = Int(frac * CGFloat(vols.count))
+                    }
+                    .onEnded { _ in scrubIndex = nil }
+            )
+            .overlay(alignment: .top) {
+                if let i = scrubIndex, vols.indices.contains(i) {
+                    Text(verbatim: valueFormat(vols[i]))
+                        .font(InstrumentoType.grotesk(11, weight: .bold)).monospacedDigit()
+                        .foregroundStyle(accent)
+                        .padding(.horizontal, 5).padding(.vertical, 1)
+                        .background(theme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 4, style: .continuous))  // token-exempt: tooltip
+                        .offset(y: -14)
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Trend chart with axes (handoff «Detalle · Progreso»)
 
 /// The 1RM trend in the handoff's chart card: four hairline gridlines with Grotesk y labels, the
 /// series as a hue line over a soft area fill, an end dot with halo, and MAY/JUN/TODAY x captions.
+/// Dragging scrubs the series — a hairline + dot pin the nearest sample and the header swaps to
+/// «value · date», same reading model as the Trends charts.
 private struct TrendAxisChart: View {
     let values: [Double]
+    let dates: [Date]
     let xFirst: String
     let xMid: String
     let accent: Color
     let theme: InstrumentoTheme
+    let valueFormat: (Double) -> String
 
+    @State private var scrubIndex: Int? = nil
     private static let plotHeight: CGFloat = 150
 
     var body: some View {
@@ -793,6 +843,19 @@ private struct TrendAxisChart: View {
         let pad = (hi - lo) * 0.18 + 0.001
         let top = hi + pad, bottom = Swift.max(0, lo - pad)
         VStack(alignment: .leading, spacing: 6) {
+            // Scrub readout: value + date of the pinned sample; empty until you drag.
+            if let i = scrubIndex, values.indices.contains(i) {
+                HStack(spacing: 6) {
+                    Text(verbatim: valueFormat(values[i]))
+                        .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
+                        .foregroundStyle(accent)
+                    if dates.indices.contains(i) {
+                        Text(dates[i], format: .dateTime.day().month(.abbreviated))
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+                .padding(.bottom, 2)
+            }
             ZStack(alignment: .topLeading) {
                 // Gridlines + y labels, top→bottom; the bottom line slightly stronger (handoff).
                 VStack(spacing: 0) {
@@ -829,11 +892,30 @@ private struct TrendAxisChart: View {
                             points.dropFirst().forEach { p.addLine(to: $0) }
                         }
                         .stroke(accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        if let last = points.last {
+                        if let last = points.last, scrubIndex == nil {
                             Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(last)  // token-exempt: halo del handoff
                             Circle().fill(accent).frame(width: 9, height: 9).position(last)
                         }
+                        // The scrub pin: vertical hairline + dot at the nearest sample.
+                        if let i = scrubIndex, points.indices.contains(i) {
+                            Path { p in
+                                p.move(to: CGPoint(x: points[i].x, y: 0))
+                                p.addLine(to: CGPoint(x: points[i].x, y: h))
+                            }
+                            .stroke(theme.hairlineStrong, lineWidth: 1)
+                            Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(points[i])  // token-exempt: halo del handoff
+                            Circle().fill(accent).frame(width: 9, height: 9).position(points[i])
+                        }
                     }
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { g in
+                                let frac = max(0, min(1, g.location.x / max(w, 1)))
+                                scrubIndex = Int((frac * CGFloat(max(values.count - 1, 1))).rounded())
+                            }
+                            .onEnded { _ in scrubIndex = nil }
+                    )
                 }
                 .padding(.leading, 34)
                 .padding(.vertical, 5)   // keeps the line inside the first/last gridline

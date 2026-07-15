@@ -127,7 +127,7 @@ struct ExerciseLibraryScreen: View {
     // MARK: - Filters
 
     private var filterChips: some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: CenitMetrics.space1) {
             filterMenu(title: String(localized: "Muscle"), isPresented: $showMuscleFilter,
                        selection: $muscle, options: muscleOptions, label: StrengthDisplay.muscle)
             filterMenu(title: String(localized: "Equipment"), isPresented: $showEquipmentFilter,
