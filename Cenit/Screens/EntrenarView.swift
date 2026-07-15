@@ -639,10 +639,12 @@ private struct EntrenarLanding: View {
         // routine tint and takes a paper check; today is a paper square ringed in its routine's tint;
         // an assigned future day keeps its tinted letter over the wash; a rest day is just wash.
         let doneTint = trainedThisWeek(wd).map { routineTint(self.region(name: $0)) }   // `region` local shadows the func
+        let a11y = weekStripAccessibilityLabel(wd)
         let cell = VStack(spacing: 5) {
             Text(weekdayLetter(wd))
                 .font(InstrumentoType.grotesk(10, weight: .semibold))
                 .foregroundStyle(isToday ? theme.ink : (hasRoutine ? routineTint(region) : theme.inkTertiary))
+                .accessibilityHidden(true)
             ZStack {
                 if let doneTint {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(doneTint)
@@ -657,16 +659,37 @@ private struct EntrenarLanding: View {
                 }
             }
             .frame(width: 26, height: 26)
+            .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity)
+        .frame(minHeight: 44)   // HIG tap target (FER-947) — square stays 26pt; cell absorbs the rest
         .contentShape(Rectangle())
 
         if let routineId {
             Button { openRoutine(routineId) } label: { cell }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text(verbatim: a11y))
         } else {
             cell
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: a11y))
         }
+    }
+
+    /// VoiceOver label for a week-strip day: weekday + trained / assigned / rest (and «today» when it is).
+    private func weekStripAccessibilityLabel(_ wd: Int) -> String {
+        let head: String = {
+            if wd == todayWeekday { return String(localized: "Today") }
+            return Calendar.current.standaloneWeekdaySymbols[(wd - 1) % 7]
+        }()
+        if let name = trainedThisWeek(wd) {
+            if name.isEmpty { return String(localized: "\(head), trained") }
+            return String(localized: "\(head), you trained \(name)")
+        }
+        if let rid = split[wd], let name = routinesById[rid]?.name {
+            return String(localized: "\(head), assigned to \(name)")
+        }
+        return String(localized: "\(head), rest day")
     }
 
     // MARK: - «Formas de entrenar» — the six training doors, always visible at the foot (FER-787)
@@ -887,10 +910,15 @@ private struct EntrenarLanding: View {
 
     @ViewBuilder
     private func dayCell(_ m: ConstancyMonth, day: Int, cell: CGFloat) -> some View {
+        // Expand the hit/VO frame to ≥44pt without growing the visible 14pt dot: pad out, shape, then
+        // cancel the layout growth with equal negative padding (FER-947).
+        let hitPad = max(0, (44 - cell) / 2)
+        let inMonth = day <= m.daysInMonth
+        let trainedName = inMonth ? m.trained[day] : nil
         ZStack {
-            if day <= m.daysInMonth {
+            if inMonth {
                 Circle().fill(theme.hairlineStrong).frame(width: 4, height: 4)
-                if let name = m.trained[day] {
+                if let name = trainedName {
                     Circle().fill(routineFill(region(name: name))).frame(width: 9, height: 9)
                 }
                 if m.isCurrent && day == todayDayOfMonth {
@@ -901,17 +929,40 @@ private struct EntrenarLanding: View {
             }
         }
         .frame(width: cell, height: cell)
+        .padding(hitPad)
         .contentShape(Rectangle())
         .onTapGesture {
-            guard day <= m.daysInMonth, let name = m.trained[day] else { return }
+            guard let name = trainedName else { return }
             constancyPopup = ConstancyPopup(monthId: m.id, day: day, name: name)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: inMonth ? dayCellAccessibilityLabel(m, day: day) : ""))
+        .accessibilityAddTraits(trainedName != nil ? .isButton : [])
+        .accessibilityHidden(!inMonth)
+        .padding(-hitPad)
         .popover(isPresented: Binding(
             get: { constancyPopup?.monthId == m.id && constancyPopup?.day == day },
             set: { if !$0 { constancyPopup = nil } }
         )) {
             if let popup = constancyPopup { constancyPopoverContent(popup, month: m) }
         }
+    }
+
+    /// VoiceOver label for a Constancia day: date + trained-with-routine / no training / today.
+    private func dayCellAccessibilityLabel(_ m: ConstancyMonth, day: Int) -> String {
+        let isToday = m.isCurrent && day == todayDayOfMonth
+        let head: String = {
+            if isToday { return String(localized: "Today") }
+            guard let date = Calendar.current.date(from: DateComponents(year: m.year, month: m.month, day: day)) else {
+                return "\(day)"
+            }
+            return date.formatted(.dateTime.day().month(.wide))
+        }()
+        if let name = m.trained[day] {
+            if name.isEmpty { return String(localized: "\(head), trained") }
+            return String(localized: "\(head), you trained \(name)")
+        }
+        return String(localized: "\(head), no training")
     }
 
     /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
