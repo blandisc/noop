@@ -115,8 +115,12 @@ struct ExerciseLibraryScreen: View {
                 }.buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 13).padding(.vertical, 9)
-        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .padding(.horizontal, 13).padding(.vertical, 11)
+        // Handoff: the search field sits on the raised paper surface (#FBF9F2) with a 1px control
+        // hairline (#D8D0BD) at radius 12 — a defined field, not a tinted fill.
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
     }
 
     // MARK: - Filters
@@ -221,7 +225,7 @@ struct ExerciseLibraryScreen: View {
         } label: {
             HStack(spacing: 13) {
                 // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
-                ExerciseThumbView(exercise: ex, side: 48)   // cached GIF still, or paper placeholder (FER-790)
+                ExerciseThumbView(exercise: ex, side: 52)   // handoff: 52px thumb · cached GIF still or paper placeholder (FER-790)
                     .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                         .strokeBorder(familyTint(ex), lineWidth: 2))
                 VStack(alignment: .leading, spacing: 2) {
