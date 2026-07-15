@@ -1888,19 +1888,28 @@ struct LiveStrengthSheet: View {
     private var focusModeView: some View {
         let resting = session.phase == .resting
         return VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            HStack {
-                if resting { focusRestModeToggle }
-                Spacer(minLength: 0)
-                Button { focusMode = false } label: {
-                    StrandIcon.close.image
-                        .font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(resting ? theme.paper : theme.ink)
-                        .frame(width: 38, height: 38)
-                        .background(resting ? theme.paper.opacity(0.14) : theme.surface, in: Circle())
-                        .overlay(Circle().strokeBorder(resting ? theme.paper.opacity(0.3) : theme.hairlineStrong, lineWidth: 1))
+            // Canvas pass 2026-07-15 (handoff `_FocusScreen`): capturing shows «× · MODO FOCO · SERIE
+            // N DE M · reloj»; resting keeps FER-934's toggle-left/×-right green arrangement.
+            HStack(spacing: 12) {
+                if resting {
+                    focusRestModeToggle
+                    Spacer(minLength: 0)
+                    focusCloseButton(onGreen: true)
+                } else {
+                    focusCloseButton(onGreen: false)
+                    if let run = session.current {
+                        Text("FOCUS MODE · SET \(min(run.currentSet + 1, run.sets.count)) OF \(run.sets.count)")
+                            .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                    Spacer(minLength: 0)
+                    TimelineView(.periodic(from: Date(), by: 1)) { ctx in
+                        Text(Self.clock(session.elapsedSeconds(now: ctx.date)))
+                            .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
+                            .foregroundStyle(theme.inkSecondary)
+                    }
+                    .accessibilityHidden(true)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Close focus mode"))
             }
 
             if resting {
@@ -1921,29 +1930,72 @@ struct LiveStrengthSheet: View {
 
     @ViewBuilder private var focusCapturePhase: some View {
         if let run = session.current {
+            // Canvas pass 2026-07-15: rebuilt to the owner's handoff capture — centered thumb + name +
+            // «la última vez», KG/REPS stepper cards, the big ink «✓ Registrar serie» pill, the quick
+            // links row, and a prev/next exercise bar at the bottom.
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                    Text(run.name).font(StrandFont.title1).foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("Set \(run.currentSet + 1) of \(run.sets.count)")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                HStack(spacing: 12) {
+                    SessionRunThumb(exerciseId: run.exerciseId, side: 44)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(run.name).font(StrandFont.title2).foregroundStyle(theme.ink)
+                            .lineLimit(2).minimumScaleFactor(0.7)
+                        if let prev = previousText(run) {
+                            Text(String(localized: "last time ") + prev)
+                                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        }
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.top, CenitMetrics.sectionGap)
 
                 switch run.type {
                 case .weightReps:
-                    focusWeightHero
-                    focusRepsRow
+                    HStack(alignment: .top, spacing: 12) {
+                        focusStepperCard(UnitFormatter.massUnit(units).uppercased(),
+                                         value: plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)),
+                                         valueTint: theme.dataRecovery,
+                                         minusLabel: "Decrease weight", plusLabel: "Increase weight",
+                                         minus: { session.bumpWeight(byKg: -weightStepKg) },
+                                         plus: { session.bumpWeight(byKg: weightStepKg) }) {
+                            Button {
+                                platesTarget = PlatesTarget(ei: session.currentIndex,
+                                                            weightKg: session.currentSet?.weightKg ?? 0)
+                            } label: {
+                                Text("±\(plateNumber(displayWeight(weightStepKg))) · ⛓ " + String(localized: "plates"))
+                                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        focusStepperCard(String(localized: "Reps").uppercased(),
+                                         value: "\(session.currentSet?.reps ?? 0)",
+                                         valueTint: theme.ink,
+                                         minusLabel: "Decrease reps", plusLabel: "Increase reps",
+                                         minus: { session.bumpReps(-1) },
+                                         plus: { session.bumpReps(1) }) {
+                            if let lr = run.lastReps {
+                                Text(String(localized: "target \(lr)"))
+                                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            } else {
+                                Color.clear.frame(height: 14)
+                            }
+                        }
+                    }
                     focusRegisterButton
+                    focusQuickLinks(run)
                 case .bodyweight:
                     focusRepsHero
                     focusAddedWeightRow
                     focusRegisterButton
+                    focusQuickLinks(run)
                 case .time:
                     focusTimeControls
                 case .distance:
                     focusDistanceControls
                 }
+                Spacer(minLength: 0)
+                focusPrevNextBar
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } else {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("All done").font(StrandFont.title1).foregroundStyle(theme.ink)
@@ -2035,13 +2087,140 @@ struct LiveStrengthSheet: View {
                 session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
             }
         } label: {
+            // Canvas pass 2026-07-15: the handoff's big ink capsule.
             Label("Register set", systemImage: "checkmark")
                 .font(StrandFont.headline).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, CenitMetrics.sectionGap)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .padding(.vertical, 15)
+                .background(theme.ink, in: Capsule())
         }
         .buttonStyle(.plain)
+    }
+
+    /// The focus close «×» — ink-on-paper while capturing, crema-on-green while resting (FER-934).
+    private func focusCloseButton(onGreen: Bool) -> some View {
+        Button { focusMode = false } label: {
+            StrandIcon.close.image
+                .font(StrandFont.glyph(.inline, weight: .semibold))
+                .foregroundStyle(onGreen ? theme.paper : theme.ink)
+                .frame(width: 38, height: 38)
+                .background(onGreen ? theme.paper.opacity(0.14) : theme.surface, in: Circle())
+                .overlay(Circle().strokeBorder(onGreen ? theme.paper.opacity(0.3) : theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Close focus mode"))
+    }
+
+    /// One handoff stepper card: overline unit, −/+ round steps flanking the big Grotesk value, and a
+    /// caption slot («±2,5 · discos» / «objetivo N»).
+    private func focusStepperCard<Caption: View>(_ overline: String, value: String, valueTint: Color,
+                                                 minusLabel: LocalizedStringKey, plusLabel: LocalizedStringKey,
+                                                 minus: @escaping () -> Void, plus: @escaping () -> Void,
+                                                 @ViewBuilder caption: () -> Caption) -> some View {
+        VStack(spacing: 6) {
+            Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(spacing: 8) {
+                focusRoundStep("minus", label: minusLabel, action: minus)
+                Text(value).font(InstrumentoType.groteskNumber(32)).monospacedDigit()
+                    .foregroundStyle(valueTint).lineLimit(1).minimumScaleFactor(0.55)
+                    .frame(maxWidth: .infinity)
+                focusRoundStep("plus", label: plusLabel, action: plus)
+            }
+            caption()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14).padding(.horizontal, 10)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+        .accessibilityElement(children: .contain)
+    }
+
+    private func focusRoundStep(_ system: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: system).font(.system(size: 15, weight: .medium))  // token-exempt: glyph sized to the 32pt round step
+                .foregroundStyle(theme.inkSecondary)
+                .frame(width: 32, height: 32)
+                .background(theme.paper, in: Circle())
+                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(label))
+    }
+
+    /// «♥ Descanso · RPE · ✎ Nota» — the handoff's quiet action row under the register pill; each link
+    /// opens the sheet the inline table already uses (rest editor / RPE / note).
+    private func focusQuickLinks(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+        HStack(spacing: 10) {
+            Spacer(minLength: 0)
+            Button { openRestEditor(ei: session.currentIndex, setIndex: run.currentSet) } label: {
+                Label("Rest", systemImage: "heart.fill")
+                    .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataHrv)
+            }
+            .buttonStyle(.plain)
+            Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+            Button {
+                guard run.sets.indices.contains(run.currentSet) else { return }
+                let set = run.sets[run.currentSet]
+                rpeTarget = RPETarget(id: set.id, runId: run.id, setNumber: run.currentSet + 1,
+                                      weightKg: displayWeight(set.weightKg), reps: set.reps, currentRPE: set.rpe)
+            } label: {
+                Text(verbatim: "RPE").font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataEffort)
+            }
+            .buttonStyle(.plain)
+            Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+            Button { openNote(exercise: run, ei: session.currentIndex) } label: {
+                Label("Note", systemImage: "pencil")
+                    .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.ink)
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// «‹ anterior — siguiente ›» bottom bar (handoff): jumps the guided focus to the neighboring
+    /// non-skipped exercise, landing on its first pending set.
+    @ViewBuilder private var focusPrevNextBar: some View {
+        let prev = focusNeighbor(-1)
+        let next = focusNeighbor(1)
+        if prev != nil || next != nil {
+            HStack {
+                if let p = prev {
+                    Button { focusJump(to: p) } label: {
+                        Text("‹ \(session.runs[p].name)").font(StrandFont.subhead)
+                            .foregroundStyle(theme.inkSecondary).lineLimit(1)
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer(minLength: 12)
+                if let n = next {
+                    Button { focusJump(to: n) } label: {
+                        Text("\(session.runs[n].name) ›").font(StrandFont.subhead.weight(.semibold))
+                            .foregroundStyle(theme.ink).lineLimit(1)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, 10)
+            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
+        }
+    }
+
+    /// The nearest non-skipped exercise `delta` steps away from the guided focus, if any.
+    private func focusNeighbor(_ delta: Int) -> Int? {
+        var i = session.currentIndex + delta
+        while session.runs.indices.contains(i) {
+            if !session.runs[i].skipped { return i }
+            i += delta
+        }
+        return nil
+    }
+
+    private func focusJump(to ei: Int) {
+        withAnimation(StrandMotion.gentle) {
+            session.select(exerciseIndex: ei,
+                           setIndex: session.runs[ei].sets.firstIndex { !$0.done } ?? 0)
+        }
     }
 
     /// Time sets: running clock + Start / Stop-and-save. Goal store omitted (not present on the live
