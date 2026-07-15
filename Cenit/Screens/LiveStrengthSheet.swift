@@ -2153,7 +2153,14 @@ struct LiveStrengthSheet: View {
     /// vestment changes, the rest engine (`extendRest`/`skipRest`/`computeRestTarget`) is untouched.
     private var focusRestPhase: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))
+            // Canvas pass 2026-07-15: the exercise's thumbnail anchors the caption — you know whose
+            // rest this is at a glance, same as the list.
+            HStack(spacing: 10) {
+                if session.runs.indices.contains(session.currentIndex) {
+                    SessionRunThumb(exerciseId: session.runs[session.currentIndex].exerciseId, side: 28)
+                }
+                Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))
+            }
 
             if session.currentRestMode == .heartRate, let started = session.restStartedAt {
                 PulseReader(model.live.pulse) { p in
@@ -2336,15 +2343,19 @@ struct LiveStrengthSheet: View {
             let si = run.currentSet
             let n = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
             let load = run.sets.indices.contains(si) ? run.sets[si].weightKg : nil
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Next").font(StrandFont.caption).fontWeight(.semibold)
-                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.paper.opacity(0.6))
-                if let load, load > 0 {
-                    Text("\(run.name) · " + String(localized: "set \(n)") + " · \(massText(load))")
-                        .font(StrandFont.subhead).foregroundStyle(theme.paper)
-                } else {
-                    Text("\(run.name) · " + String(localized: "set \(n)"))
-                        .font(StrandFont.subhead).foregroundStyle(theme.paper)
+            HStack(spacing: 12) {
+                // Canvas pass 2026-07-15: the next exercise's thumbnail rides the SIGUE card.
+                SessionRunThumb(exerciseId: run.exerciseId, side: 34)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Next").font(StrandFont.caption).fontWeight(.semibold)
+                        .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.paper.opacity(0.6))
+                    if let load, load > 0 {
+                        Text("\(run.name) · " + String(localized: "set \(n)") + " · \(massText(load))")
+                            .font(StrandFont.subhead).foregroundStyle(theme.paper)
+                    } else {
+                        Text("\(run.name) · " + String(localized: "set \(n)"))
+                            .font(StrandFont.subhead).foregroundStyle(theme.paper)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -3144,6 +3155,21 @@ struct LiveStrengthSheet: View {
                 }
             }
             restCardPills
+            // Canvas pass 2026-07-15 (sugerencia 1): the full-screen rest already names what's next —
+            // the inline card earns the same one-liner, so you can decide to skip without opening it.
+            if let run = session.current {
+                let n = run.sets.prefix(run.currentSet + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+                let load = run.sets.indices.contains(run.currentSet) ? run.sets[run.currentSet].weightKg : nil
+                HStack(spacing: 8) {
+                    SessionRunThumb(exerciseId: run.exerciseId, side: 22)
+                    Text("Next").font(StrandFont.caption).fontWeight(.semibold)
+                        .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.inkDim)
+                    Text(load.map { $0 > 0 ? "\(run.name) · " + String(localized: "set \(n)") + " · \(massText($0))"
+                                           : "\(run.name) · " + String(localized: "set \(n)") }
+                         ?? "\(run.name) · " + String(localized: "set \(n)"))
+                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                }
+            }
         }
         .padding(.horizontal, 17).padding(.vertical, 15)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
