@@ -161,7 +161,9 @@ private struct ExerciseLibraryMapCell: View {
         .frame(width: 393, height: 852)
         .task {
             guard !seeded else { return }
-            await ScreenshotFixtures.seed(model, state: "train")
+            // `seedTrainingPlan` (no `seed(state: "train")`) — es la que guarda las SESIONES
+            // (la progresión de banca) además de las rutinas; la otra solo siembra el plan.
+            await ScreenshotFixtures.seedTrainingPlan(model)
             seeded = true
         }
     }
@@ -199,7 +201,9 @@ private struct ExerciseDetailMapCell: View {
         .frame(width: 393, height: 852)
         .task {
             guard !seeded else { return }
-            await ScreenshotFixtures.seed(model, state: "train")
+            // `seedTrainingPlan` (no `seed(state: "train")`) — es la que guarda las SESIONES
+            // (la progresión de banca) además de las rutinas; la otra solo siembra el plan.
+            await ScreenshotFixtures.seedTrainingPlan(model)
             seeded = true
         }
     }
