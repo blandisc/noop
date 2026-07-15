@@ -85,6 +85,10 @@ private struct EntrenarLanding: View {
     @State private var split: [Int: String] = [:]
     /// Completed strength sessions (newest first), for the week strip's day states and the daily streak.
     @State private var sessions: [StrengthSession] = []
+    /// Constancia month buckets (last ~90 days), computed once per `load()` — not on every body pass.
+    /// `trainedThisWeek` and the Constancia grid both read this; re-bucketing 200 sessions per access
+    /// was ~9–10× work per layout evaluation (FER-948).
+    @State private var constancyMonthsCache: [ConstancyMonth] = []
     /// Today's routine resolved into guided-session slots, prefetched on load so «Empezar» starts in one
     /// tap (F1). Empty when today is a rest day or the routine has no exercises.
     @State private var todaySlots: [StrengthSessionModel.PlanSlot] = []
@@ -106,6 +110,9 @@ private struct EntrenarLanding: View {
     @State private var constancyPopup: ConstancyPopup? = nil
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
     @State private var showTemplates = false
+    /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
+    /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
+    @State private var confirmResumeStrength = false
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -177,6 +184,20 @@ private struct EntrenarLanding: View {
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
         }
+        // FER-950: disc said «Rápido»/«Movilidad» but AppModel only re-opens the live session — make
+        // that resume path explicit (ConfirmCard), never clobber.
+        .instrumentoConfirm(
+            isPresented: $confirmResumeStrength,
+            title: String(localized: "You have a session in progress. Resume it?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: String(localized: "A new routine can't start until this one ends."),
+            actions: [
+                .init(String(localized: "Resume session"), role: .primary) {
+                    model.resumeStrengthSession()
+                },
+                .init(String(localized: "Not now"), role: .secondary)
+            ]
+        )
         // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
         // full-screen cover with a floating pill on all five tabs (FER-716), so it survives tab switches
         // and no longer needs a «Resume» row here. The session lives in AppModel.
@@ -215,7 +236,12 @@ private struct EntrenarLanding: View {
             Image(systemName: "figure.strengthtraining.functional")
                 .font(.system(size: 20)).foregroundStyle(theme.ink)  // token-exempt: glifo 20pt fuera de banda lead
         } trailing: {
-            if let rec = recovery { recoveryChip(rec) }   // hidden while calibrating (no score)
+            // Same trailing slot always occupied so the header doesn't jump when the score appears. (FER-949)
+            if let rec = recovery {
+                recoveryChip(rec)
+            } else {
+                recoveryChipPlaceholder
+            }
         }
     }
 
@@ -234,6 +260,20 @@ private struct EntrenarLanding: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Recuperación \(Int(rec.rounded())). Ver detalle."))
+    }
+
+    /// Quiet chrome while recovery is still calibrating (no score). Same capsule + height as the live
+    /// chip so the header stays still; `inkDim` only (no datum color); not tappable. (FER-949)
+    private var recoveryChipPlaceholder: some View {
+        Text(verbatim: "—")
+            .font(StrandFont.number(17, weight: .semibold))
+            .foregroundStyle(theme.inkDim)
+            .frame(minWidth: 22, minHeight: 22)   // match the live chip's ring box so height doesn't jump
+            .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Recovery, calibrating"))
     }
 
     // MARK: - ① Open hero + «Empezar» + discs (handoff v4b, FER-939)
@@ -373,9 +413,23 @@ private struct EntrenarLanding: View {
 
     /// «Entrenamiento rápido de fuerza» (mock 1p, FER-762): no routine, no slots — the session starts
     /// empty and `LiveStrengthSheet` shows its own empty-state (search + freshness suggestions) until the
-    /// first exercise is added.
+    /// first exercise is added. With a live session, confirm resume instead of looking like a new start
+    /// (FER-950 — AppModel's guard only re-presents the existing sheet).
     private func startQuickStrength() {
+        if model.strengthSession != nil {
+            confirmResumeStrength = true
+            return
+        }
         model.startStrengthSession(routineId: nil, routineName: String(localized: "Quick strength"), slots: [])
+    }
+
+    /// Mobility disc: one-off guided session, or explicit resume confirm when one is already live (FER-950).
+    private func startMobilityFromDisc() {
+        if model.strengthSession != nil {
+            confirmResumeStrength = true
+            return
+        }
+        model.startMobilityOneOff()
     }
 
     // MARK: - ③ «LA SESIÓN DE HOY» (handoff v4b: the day's detail in its own band section)
@@ -585,10 +639,12 @@ private struct EntrenarLanding: View {
         // routine tint and takes a paper check; today is a paper square ringed in its routine's tint;
         // an assigned future day keeps its tinted letter over the wash; a rest day is just wash.
         let doneTint = trainedThisWeek(wd).map { routineTint(self.region(name: $0)) }   // `region` local shadows the func
+        let a11y = weekStripAccessibilityLabel(wd)
         let cell = VStack(spacing: 5) {
             Text(weekdayLetter(wd))
                 .font(InstrumentoType.grotesk(10, weight: .semibold))
                 .foregroundStyle(isToday ? theme.ink : (hasRoutine ? routineTint(region) : theme.inkTertiary))
+                .accessibilityHidden(true)
             ZStack {
                 if let doneTint {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(doneTint)
@@ -603,16 +659,37 @@ private struct EntrenarLanding: View {
                 }
             }
             .frame(width: 26, height: 26)
+            .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity)
+        .frame(minHeight: 44)   // HIG tap target (FER-947) — square stays 26pt; cell absorbs the rest
         .contentShape(Rectangle())
 
         if let routineId {
             Button { openRoutine(routineId) } label: { cell }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text(verbatim: a11y))
         } else {
             cell
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: a11y))
         }
+    }
+
+    /// VoiceOver label for a week-strip day: weekday + trained / assigned / rest (and «today» when it is).
+    private func weekStripAccessibilityLabel(_ wd: Int) -> String {
+        let head: String = {
+            if wd == todayWeekday { return String(localized: "Today") }
+            return Calendar.current.standaloneWeekdaySymbols[(wd - 1) % 7]
+        }()
+        if let name = trainedThisWeek(wd) {
+            if name.isEmpty { return String(localized: "\(head), trained") }
+            return String(localized: "\(head), you trained \(name)")
+        }
+        if let rid = split[wd], let name = routinesById[rid]?.name {
+            return String(localized: "\(head), assigned to \(name)")
+        }
+        return String(localized: "\(head), rest day")
     }
 
     // MARK: - «Formas de entrenar» — the six training doors, always visible at the foot (FER-787)
@@ -646,7 +723,7 @@ private struct EntrenarLanding: View {
                        tint: theme.dataSleep) { openIntervals() },
             FormOption(icon: "figure.run", label: "Mobility",
                        hint: "Starts a guided mobility session.",
-                       tint: theme.dataHrv) { model.startMobilityOneOff() },
+                       tint: theme.dataHrv) { startMobilityFromDisc() },
             FormOption(icon: "wind", label: "Breathe",
                        hint: "Opens guided breathing.",
                        tint: theme.dataRecovery) { openBreathe() },
@@ -782,7 +859,7 @@ private struct EntrenarLanding: View {
     // strength sessions, bucketed by day and routine.
 
     private var constanciaSection: some View {
-        let months = constancyMonths
+        let months = constancyMonthsCache
         let total = months.reduce(0) { $0 + $1.count }
         return VStack(alignment: .leading, spacing: 12) {
             InstrumentoSectionBand("Consistency") {
@@ -833,10 +910,15 @@ private struct EntrenarLanding: View {
 
     @ViewBuilder
     private func dayCell(_ m: ConstancyMonth, day: Int, cell: CGFloat) -> some View {
+        // Expand the hit/VO frame to ≥44pt without growing the visible 14pt dot: pad out, shape, then
+        // cancel the layout growth with equal negative padding (FER-947).
+        let hitPad = max(0, (44 - cell) / 2)
+        let inMonth = day <= m.daysInMonth
+        let trainedName = inMonth ? m.trained[day] : nil
         ZStack {
-            if day <= m.daysInMonth {
+            if inMonth {
                 Circle().fill(theme.hairlineStrong).frame(width: 4, height: 4)
-                if let name = m.trained[day] {
+                if let name = trainedName {
                     Circle().fill(routineFill(region(name: name))).frame(width: 9, height: 9)
                 }
                 if m.isCurrent && day == todayDayOfMonth {
@@ -847,17 +929,40 @@ private struct EntrenarLanding: View {
             }
         }
         .frame(width: cell, height: cell)
+        .padding(hitPad)
         .contentShape(Rectangle())
         .onTapGesture {
-            guard day <= m.daysInMonth, let name = m.trained[day] else { return }
+            guard let name = trainedName else { return }
             constancyPopup = ConstancyPopup(monthId: m.id, day: day, name: name)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: inMonth ? dayCellAccessibilityLabel(m, day: day) : ""))
+        .accessibilityAddTraits(trainedName != nil ? .isButton : [])
+        .accessibilityHidden(!inMonth)
+        .padding(-hitPad)
         .popover(isPresented: Binding(
             get: { constancyPopup?.monthId == m.id && constancyPopup?.day == day },
             set: { if !$0 { constancyPopup = nil } }
         )) {
             if let popup = constancyPopup { constancyPopoverContent(popup, month: m) }
         }
+    }
+
+    /// VoiceOver label for a Constancia day: date + trained-with-routine / no training / today.
+    private func dayCellAccessibilityLabel(_ m: ConstancyMonth, day: Int) -> String {
+        let isToday = m.isCurrent && day == todayDayOfMonth
+        let head: String = {
+            if isToday { return String(localized: "Today") }
+            guard let date = Calendar.current.date(from: DateComponents(year: m.year, month: m.month, day: day)) else {
+                return "\(day)"
+            }
+            return date.formatted(.dateTime.day().month(.wide))
+        }()
+        if let name = m.trained[day] {
+            if name.isEmpty { return String(localized: "\(head), trained") }
+            return String(localized: "\(head), you trained \(name)")
+        }
+        return String(localized: "\(head), no training")
     }
 
     /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
@@ -875,7 +980,7 @@ private struct EntrenarLanding: View {
             let y = cal.component(.year, from: date)
             let mo = cal.component(.month, from: date)
             let d = cal.component(.day, from: date)
-            return constancyMonths.first { $0.year == y && $0.month == mo }?.trained[d]
+            return constancyMonthsCache.first { $0.year == y && $0.month == mo }?.trained[d]
         }
         return nil
     }
@@ -959,11 +1064,11 @@ private struct EntrenarLanding: View {
     private var loadErrorState: some View {
         card {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("No pudimos leer tus rutinas").font(StrandFont.title3).foregroundStyle(theme.ink)
-                Text("Algo falló al abrir tus datos.")
+                Text("We couldn't read your routines").font(StrandFont.title3).foregroundStyle(theme.ink)
+                Text("Something went wrong opening your data.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                StrandCTAButton("Reintentar", kind: .outline) { Task { await load() } }
+                StrandCTAButton("Retry", kind: .outline) { Task { await load() } }
             }
         }
     }
@@ -1015,7 +1120,8 @@ private struct EntrenarLanding: View {
     /// The last three calendar months (oldest → current) as dot-grid data: for each, the days you trained
     /// keyed to the latest routine that day, plus the session count. Read from the last-200 completed
     /// sessions (well over 90 days' worth). No streak, no adherence — just the pattern.
-    private var constancyMonths: [ConstancyMonth] {
+    /// Called once per `load()` into `constancyMonthsCache` (FER-948) — not from the view body.
+    private func computeConstancyMonths() -> [ConstancyMonth] {
         let cal = Calendar.current
         guard let startOfThisMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date())) else { return [] }
         // Bucket completed sessions by (year, month); within a month keep the first-seen (latest) routine per day.
@@ -1149,6 +1255,8 @@ private struct EntrenarLanding: View {
         split = splitMap
         todaySlots = slots
         sessions = (try? await store.recentSessions(limit: 200)) ?? []
+        // After sessions + routines (→ routinesById): bucket once for Constancia + week strip (FER-948).
+        constancyMonthsCache = computeConstancyMonths()
         loaded = true
         // A «Empezar» from the Daily Brief that arrived before the prefetch finished now has its slots (FER-613).
         if startWhenLoaded { startWhenLoaded = false; startToday() }
