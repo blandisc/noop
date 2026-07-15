@@ -85,6 +85,10 @@ private struct EntrenarLanding: View {
     @State private var split: [Int: String] = [:]
     /// Completed strength sessions (newest first), for the week strip's day states and the daily streak.
     @State private var sessions: [StrengthSession] = []
+    /// Constancia month buckets (last ~90 days), computed once per `load()` — not on every body pass.
+    /// `trainedThisWeek` and the Constancia grid both read this; re-bucketing 200 sessions per access
+    /// was ~9–10× work per layout evaluation (FER-948).
+    @State private var constancyMonthsCache: [ConstancyMonth] = []
     /// Today's routine resolved into guided-session slots, prefetched on load so «Empezar» starts in one
     /// tap (F1). Empty when today is a rest day or the routine has no exercises.
     @State private var todaySlots: [StrengthSessionModel.PlanSlot] = []
@@ -782,7 +786,7 @@ private struct EntrenarLanding: View {
     // strength sessions, bucketed by day and routine.
 
     private var constanciaSection: some View {
-        let months = constancyMonths
+        let months = constancyMonthsCache
         let total = months.reduce(0) { $0 + $1.count }
         return VStack(alignment: .leading, spacing: 12) {
             InstrumentoSectionBand("Consistency") {
@@ -875,7 +879,7 @@ private struct EntrenarLanding: View {
             let y = cal.component(.year, from: date)
             let mo = cal.component(.month, from: date)
             let d = cal.component(.day, from: date)
-            return constancyMonths.first { $0.year == y && $0.month == mo }?.trained[d]
+            return constancyMonthsCache.first { $0.year == y && $0.month == mo }?.trained[d]
         }
         return nil
     }
@@ -1015,7 +1019,8 @@ private struct EntrenarLanding: View {
     /// The last three calendar months (oldest → current) as dot-grid data: for each, the days you trained
     /// keyed to the latest routine that day, plus the session count. Read from the last-200 completed
     /// sessions (well over 90 days' worth). No streak, no adherence — just the pattern.
-    private var constancyMonths: [ConstancyMonth] {
+    /// Called once per `load()` into `constancyMonthsCache` (FER-948) — not from the view body.
+    private func computeConstancyMonths() -> [ConstancyMonth] {
         let cal = Calendar.current
         guard let startOfThisMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date())) else { return [] }
         // Bucket completed sessions by (year, month); within a month keep the first-seen (latest) routine per day.
@@ -1149,6 +1154,8 @@ private struct EntrenarLanding: View {
         split = splitMap
         todaySlots = slots
         sessions = (try? await store.recentSessions(limit: 200)) ?? []
+        // After sessions + routines (→ routinesById): bucket once for Constancia + week strip (FER-948).
+        constancyMonthsCache = computeConstancyMonths()
         loaded = true
         // A «Empezar» from the Daily Brief that arrived before the prefetch finished now has its slots (FER-613).
         if startWhenLoaded { startWhenLoaded = false; startToday() }
