@@ -976,6 +976,14 @@ struct LiveStrengthSheet: View {
     /// FER-936: which exercise's «≡» reorder handle is momentarily emphasised (ember) after picking
     /// «Reordenar» from its menu — a discoverability nudge toward the drag that already reorders.
     @State private var reorderHint: Int?
+    /// «Modo mover» (FER-933): every exercise collapses to a compressed row and a `DragGesture` on each
+    /// row shows the handoff's «SOLTAR AQUÍ · POSICIÓN N» drop zone. Entered by long-press on any rail row
+    /// or the menu's «Reordenar» item; exits via «Listo». A view-layer toggle only — the model is untouched.
+    @State private var reorderMode = false
+    /// The exercise index currently being dragged in modo mover, and the slot its drop would land on.
+    /// nil/nil when nothing is mid-drag.
+    @State private var reorderDraggingIndex: Int?
+    @State private var reorderTargetIndex: Int?
 
     /// FER-936: the breathing ember halo behind the active exercise's «···». A stroked ring (not a blurred
     /// shadow, per DNA) that pulses opacity + scale; a steady faint ring under Reduce Motion.
@@ -1285,25 +1293,34 @@ struct LiveStrengthSheet: View {
         // FER-929: rail + accordion — only the active exercise expands into its table; done/upcoming
         // exercises collapse to one line each, hung off a vertical rail (`railColumn`).
         List {
+            // FER-933: modo mover — every exercise compresses to a draggable row with a «SOLTAR AQUÍ ·
+            // POSICIÓN N» drop zone; the accordion (`activeExerciseBlock`) stays closed for the duration.
+            if reorderMode { reorderModeBar.plainRow(top: CenitMetrics.gap, bottom: 4) }
             ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
                 if !run.skipped {
-                    switch railState(ei: ei, run: run) {
-                    case .active:
-                        activeExerciseBlock(run, ei: ei)
-                    case .done:
-                        doneRow(run, ei: ei)
-                            .plainRow(top: 2, bottom: 2)
-                            .transition(.opacity)
-                    case .upcoming:
-                        comingRow(run, ei: ei)
-                            .plainRow(top: 2, bottom: 2)
-                            .transition(.opacity)
+                    if reorderMode {
+                        reorderRow(run, ei: ei).plainRow(top: 4, bottom: 4)
+                    } else {
+                        switch railState(ei: ei, run: run) {
+                        case .active:
+                            activeExerciseBlock(run, ei: ei)
+                        case .done:
+                            doneRow(run, ei: ei)
+                                .plainRow(top: 2, bottom: 2)
+                                .transition(.opacity)
+                        case .upcoming:
+                            comingRow(run, ei: ei)
+                                .plainRow(top: 2, bottom: 2)
+                                .transition(.opacity)
+                        }
                     }
                 }
             }
-            addExerciseNode.plainRow(top: CenitMetrics.gap)
-            if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
-            discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
+            if !reorderMode {
+                addExerciseNode.plainRow(top: CenitMetrics.gap)
+                if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
+                discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
+            }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -1415,6 +1432,12 @@ struct LiveStrengthSheet: View {
         }
         .buttonStyle(.plain)
         .opacity(StrandOpacity.dim)
+        // FER-933: long-press any rail row to enter modo mover (`simultaneousGesture`, not
+        // `.onLongPressGesture`, so the row's own tap-to-reopen keeps working — same pattern as
+        // RoutineEditorScreen's reorder entry).
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+            withAnimation(.snappy) { reorderMode = true }
+        })
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(supersetAccessibilityLabel(ei: ei, base: "\(run.name), done, \(doneDetailText(run))")))
         .accessibilityHint(Text("Double tap to reopen and correct a set"))
@@ -1440,6 +1463,10 @@ struct LiveStrengthSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // FER-933: same long-press entry into modo mover as `doneRow`.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+            withAnimation(.snappy) { reorderMode = true }
+        })
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(supersetAccessibilityLabel(ei: ei, base: "\(run.name), coming up, \(prescriptionText(run))")))
         .accessibilityHint(Text("Double tap to move focus here"))
@@ -2326,6 +2353,11 @@ struct LiveStrengthSheet: View {
                 exerciseMenuButton(ei: ei, run: run)
                 reorderHandle(ei: ei, run: run)
             }
+            // FER-933: long-press the active exercise's header also enters modo mover — same entry as the
+            // compressed rail rows (`doneRow`/`comingRow`).
+            .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                withAnimation(.snappy) { reorderMode = true }
+            })
             // FER-E · 2b: the earned raise, named where you train. «↑ hoy 102,5 · por qué» toggles the
             // arithmetic card; green because the raise IS the datum.
             if let raise = run.proposedRaise {
@@ -2390,10 +2422,10 @@ struct LiveStrengthSheet: View {
             .init(String(localized: "Skip exercise"), systemImage: "forward.end") {
                 withAnimation(.snappy) { session.skipExercise(ei) }
             },
-            // FER-936: «Reordenar» points at the drag handle already on every header (the reorder itself
-            // rides the existing `≡` gesture); picking it emphasises that exercise's handle for a moment.
+            // FER-933: «Reordenar» now enters modo mover — the handoff's compressed-rows + «SOLTAR AQUÍ»
+            // drag surface — instead of only hinting the header's «≡» handle (FER-936's original wiring).
             .init(String(localized: "Reorder"), systemImage: "line.3.horizontal") {
-                withAnimation(.snappy) { reorderHint = ei }
+                withAnimation(.snappy) { reorderMode = true }
             }
         ]
         // Never leave the session empty — the last exercise can only be skipped, not removed.
@@ -2453,6 +2485,113 @@ struct LiveStrengthSheet: View {
             for _ in 0..<(-steps) where idx > 0 { session.moveExerciseEarlier(idx); idx -= 1 }
         } else {
             for _ in 0..<steps where idx < session.runs.count - 1 { session.moveExerciseEarlier(idx + 1); idx += 1 }
+        }
+    }
+
+    // MARK: Modo mover (FER-933) — handoff `_ListScreen.dc.html` reorder state, adopted on the riel.
+
+    /// The mode bar above the list: overline «MOVIENDO · ARRASTRA SOBRE EL RIEL» (ember) + «Listo» (verde).
+    private var reorderModeBar: some View {
+        HStack {
+            Text("MOVING · DRAG ALONG THE RAIL")
+                .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(theme.dataStrain)
+            Spacer()
+            Button {
+                withAnimation(.snappy) {
+                    reorderMode = false
+                    reorderDraggingIndex = nil
+                    reorderTargetIndex = nil
+                }
+            } label: {
+                Text("Done").font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataRecovery)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Done reordering"))
+        }
+    }
+
+    /// Clamp `ei + steps` to a valid slot — the same bound `reorderExercise` enforces one swap at a time,
+    /// computed up front here purely to label the drop zone while dragging.
+    private func reorderClampedTarget(_ ei: Int, steps: Int) -> Int {
+        max(0, min(session.runs.count - 1, ei + steps))
+    }
+
+    /// The dashed ember drop zone, «SOLTAR AQUÍ · POSICIÓN N» (1-based), shown at the slot a live drag
+    /// would land on.
+    private func reorderDropZone(position: Int) -> some View {
+        Text(String(format: String(localized: "DROP HERE · POSITION %d"), position + 1))
+            .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+            .foregroundStyle(theme.dataStrain)
+            .frame(maxWidth: .infinity)
+            .frame(height: 46)
+            .background(theme.dataStrain.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))  // token-exempt: decorative drop-zone tint alpha
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+            }
+            .padding(.bottom, 6)
+            .accessibilityHidden(true)
+    }
+
+    /// One exercise, compressed to a single draggable line in modo mover: dot handle + name + its current
+    /// prescription/done detail. A vertical `DragGesture` rides the same slot-stepping `reorderExercise`
+    /// the always-on «≡» handle uses; the row that's mid-drag lifts (scale + rotate + ember border +
+    /// shadow), the rest dim, and `reorderDropZone` renders above the destination slot. Reduce Motion drops
+    /// the scale/rotation, keeping only the border + soft shadow.
+    private func reorderRow(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        let dragging = reorderDraggingIndex == ei
+        let anyDragging = reorderDraggingIndex != nil
+        return VStack(spacing: 0) {
+            if let target = reorderTargetIndex, target == ei, !dragging {
+                reorderDropZone(position: target)
+            }
+            HStack(spacing: 12) {
+                Image(systemName: "line.3.horizontal")
+                    .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(run.sets.allSatisfy(\.done) ? doneDetailText(run) : prescriptionText(run))
+                    .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary).lineLimit(1)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .frame(minHeight: 44)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(dragging ? theme.dataStrain : theme.hairlineStrong, lineWidth: dragging ? 2 : 1)
+            }
+            .shadow(color: dragging ? theme.dataStrain.opacity(0.25) : .clear,  // token-exempt: decorative lift-shadow alpha
+                    radius: dragging ? 10 : 0, y: dragging ? 4 : 0)
+            .scaleEffect(dragging && !reduceMotion ? 1.03 : 1)
+            .rotationEffect(.degrees(dragging && !reduceMotion ? -1 : 0))
+            .opacity(anyDragging && !dragging ? StrandOpacity.dim : 1)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 4)
+                    .onChanged { value in
+                        reorderDraggingIndex = ei
+                        let step: CGFloat = 56
+                        let steps = Int((value.translation.height / step).rounded())
+                        reorderTargetIndex = reorderClampedTarget(ei, steps: steps)
+                    }
+                    .onEnded { value in
+                        let step: CGFloat = 56
+                        let steps = Int((value.translation.height / step).rounded())
+                        if steps != 0 { withAnimation(.snappy) { reorderExercise(ei, by: steps) } }
+                        reorderDraggingIndex = nil
+                        reorderTargetIndex = nil
+                    }
+            )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(run.name))
+            .accessibilityHint(Text("Drag to change the order"))
+            .accessibilityAction(named: Text("Move earlier")) {
+                withAnimation(.snappy) { reorderExercise(ei, by: -1) }
+            }
+            .accessibilityAction(named: Text("Move later")) {
+                withAnimation(.snappy) { reorderExercise(ei, by: 1) }
+            }
         }
     }
 
