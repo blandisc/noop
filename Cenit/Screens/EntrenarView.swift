@@ -427,27 +427,36 @@ private struct EntrenarLanding: View {
     /// «~50 min · 6 ejercicios · 18 series» — each numeral big (Grotesk 20), its unit word quiet.
     private func sesionMetrics(_ rid: String) -> some View {
         let sets = todaySlots.reduce(0) { $0 + max(0, $1.re.targetSets) }
+        // The three numerals share ONE accent — the routine's tint (same hue as the hero dot and
+        // «Empezar»). They're a single piece of information (today's session shape), so one hue, not
+        // three: three colours here would compete with the five coloured discs right above. The unit
+        // words stay quiet ink. (FER-944)
+        let accent = routineTint(region(name: todayRoutine?.name ?? ""))
         return HStack(alignment: .firstTextBaseline, spacing: 6) {
             if estMinutes > 0 {
-                bigStat(Text(verbatim: "~\(estMinutes)"), unit: Text("min"))
+                bigStat(Text(verbatim: "~\(estMinutes)"), unit: Text("min"), valueColor: accent)
                 dotSeparator
             }
-            bigStat(Text(verbatim: "\(exerciseCounts[rid] ?? 0)"), unit: Text("exercises"))
+            bigStat(Text(verbatim: "\(exerciseCounts[rid] ?? 0)"), unit: Text("exercises"), valueColor: accent)
             if sets > 0 {
                 dotSeparator
-                bigStat(Text(verbatim: "\(sets)"), unit: Text("sets"))
+                bigStat(Text(verbatim: "\(sets)"), unit: Text("sets"), valueColor: accent)
             }
         }
+        // VoiceOver reads the cluster as ONE phrase — the numerals combine into their unit words and
+        // the «·» separators are hidden, so it says «~50 min, 6 exercises, 18 sets», not the glyphs. (FER-944)
+        .accessibilityElement(children: .combine)
     }
 
-    private func bigStat(_ value: Text, unit: Text) -> Text {
-        value.font(InstrumentoType.groteskNumber(20)).foregroundStyle(theme.ink)
+    private func bigStat(_ value: Text, unit: Text, valueColor: Color? = nil) -> Text {
+        value.font(InstrumentoType.groteskNumber(20)).foregroundStyle(valueColor ?? theme.ink)
             + Text(verbatim: " ")
             + unit.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
     }
 
-    private var dotSeparator: Text {
+    private var dotSeparator: some View {
         Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+            .accessibilityHidden(true)   // VoiceOver reads the cluster as a phrase, not the «·» glyphs (FER-944)
     }
 
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
@@ -694,19 +703,24 @@ private struct EntrenarLanding: View {
         Button {
             opt.action()
         } label: {
-            VStack(spacing: CenitMetrics.space1) {
+            VStack(spacing: CenitMetrics.space1 + 1) {
                 Image(systemName: opt.icon).font(StrandFont.glyph(.lead, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .frame(height: 22)   // equal glyph slot — SF symbols vary in intrinsic height
+                    .frame(height: 20)   // equal glyph slot — SF symbols vary in intrinsic height
                     .accessibilityHidden(true)
+                // Uniform label (FER-944): the real cause of the uneven look was the 2pt letter-spacing,
+                // which inflated the long words («Intervalos»/«Movilidad») until they scaled down while
+                // the short ones didn't. Tight tracking at 9pt lets ALL five fit on one line at the SAME
+                // size; the minimumScaleFactor is only a safety net for the largest Dynamic Type steps.
                 Text(opt.label)
-                    .font(InstrumentoType.groteskOverline).tracking(InstrumentoType.groteskOverlineTracking)
+                    .font(InstrumentoType.groteskOverlineSmall).tracking(0.2)
                     .foregroundStyle(theme.paper)
-                    .lineLimit(1).minimumScaleFactor(0.65)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2).minimumScaleFactor(0.9)   // AX5: the long labels wrap instead of truncating
             }
-            .padding(.vertical, CenitMetrics.space2)
+            .padding(.vertical, CenitMetrics.gap - 1)
             .padding(.horizontal, CenitMetrics.space1)
-            .frame(maxWidth: .infinity, minHeight: 44)   // HIG: keep the whole chip a ≥44pt tap target
+            .frame(maxWidth: .infinity, minHeight: 52)   // HIG tap target + a touch taller for even discs
             .background(opt.tint, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             .contentShape(Rectangle())
         }
