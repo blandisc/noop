@@ -60670,6 +60670,40 @@
           }
         }
       }
+    },
+    "You have a session in progress. Resume it?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have a session in progress. Resume it?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tienes una sesión en curso. ¿Reanudarla?"
+          }
+        }
+      }
+    },
+    "A new routine can't start until this one ends.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new routine can't start until this one ends."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se puede empezar otra rutina hasta terminar esta."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

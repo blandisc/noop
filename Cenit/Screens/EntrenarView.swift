@@ -110,6 +110,9 @@ private struct EntrenarLanding: View {
     @State private var constancyPopup: ConstancyPopup? = nil
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
     @State private var showTemplates = false
+    /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
+    /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
+    @State private var confirmResumeStrength = false
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -181,6 +184,20 @@ private struct EntrenarLanding: View {
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
         }
+        // FER-950: disc said «Rápido»/«Movilidad» but AppModel only re-opens the live session — make
+        // that resume path explicit (ConfirmCard), never clobber.
+        .instrumentoConfirm(
+            isPresented: $confirmResumeStrength,
+            title: String(localized: "You have a session in progress. Resume it?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: String(localized: "A new routine can't start until this one ends."),
+            actions: [
+                .init(String(localized: "Resume session"), role: .primary) {
+                    model.resumeStrengthSession()
+                },
+                .init(String(localized: "Not now"), role: .secondary)
+            ]
+        )
         // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
         // full-screen cover with a floating pill on all five tabs (FER-716), so it survives tab switches
         // and no longer needs a «Resume» row here. The session lives in AppModel.
@@ -396,9 +413,23 @@ private struct EntrenarLanding: View {
 
     /// «Entrenamiento rápido de fuerza» (mock 1p, FER-762): no routine, no slots — the session starts
     /// empty and `LiveStrengthSheet` shows its own empty-state (search + freshness suggestions) until the
-    /// first exercise is added.
+    /// first exercise is added. With a live session, confirm resume instead of looking like a new start
+    /// (FER-950 — AppModel's guard only re-presents the existing sheet).
     private func startQuickStrength() {
+        if model.strengthSession != nil {
+            confirmResumeStrength = true
+            return
+        }
         model.startStrengthSession(routineId: nil, routineName: String(localized: "Quick strength"), slots: [])
+    }
+
+    /// Mobility disc: one-off guided session, or explicit resume confirm when one is already live (FER-950).
+    private func startMobilityFromDisc() {
+        if model.strengthSession != nil {
+            confirmResumeStrength = true
+            return
+        }
+        model.startMobilityOneOff()
     }
 
     // MARK: - ③ «LA SESIÓN DE HOY» (handoff v4b: the day's detail in its own band section)
@@ -669,7 +700,7 @@ private struct EntrenarLanding: View {
                        tint: theme.dataSleep) { openIntervals() },
             FormOption(icon: "figure.run", label: "Mobility",
                        hint: "Starts a guided mobility session.",
-                       tint: theme.dataHrv) { model.startMobilityOneOff() },
+                       tint: theme.dataHrv) { startMobilityFromDisc() },
             FormOption(icon: "wind", label: "Breathe",
                        hint: "Opens guided breathing.",
                        tint: theme.dataRecovery) { openBreathe() },
