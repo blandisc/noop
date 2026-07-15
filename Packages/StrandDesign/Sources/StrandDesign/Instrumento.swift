@@ -318,12 +318,10 @@ public extension InstrumentoTheme {
     /// Borde tintado suave (`StrandOpacity.strokeSoft`, 0.30).
     func softStroke(_ c: Color) -> Color { c.opacity(StrandOpacity.strokeSoft) }
 
-    /// Aro de recorte para una ficha de color sólido: el MISMO hue un paso más profundo (no gris ni
-    /// sombra). Deriva el tono mezclando hacia la tinta cálida en OKLab, misma familia que los `*Deep`
-    /// hechos a mano (`strainDeep`, `dataSleepDeep`) — así un disco lleno lee como troquel de una sola
-    /// tinta sobre papel, sin agrisar el color como haría un negro translúcido. Usado por los discos
-    /// «Formas de entrenar» del Hub. Preferir esto sobre un hex `*Deep` cuando el color es dinámico.
-    func dataEdge(_ c: Color) -> Color { OKLab.mix(c, ink, 0.26) }
+    // `dataEdge(_:)` (el aro «troquel» de los discos del Hub) se retiró en FER-944: sobre los tintes
+    // oscuros leía como contorno casi negro y el fill sólido sobre papel se recorta solo. Si una ficha
+    // futura necesita filo, preferir un rim interior de papel (`paper` @ `strokeSoft`), nunca un mix
+    // hacia tinta.
 }
 
 // MARK: - Environment injection
@@ -509,26 +507,4 @@ private func swatches(_ title: String, _ items: [(String, Color)], _ t: Instrume
     .background(t.paper)
 }
 
-#Preview("Instrumento · dataEdge (discos troquel)") {
-    let t = InstrumentoTheme.base
-    let discs: [(String, Color)] = [
-        ("bolt", t.dataStrain), ("dot.radiowaves.left.and.right", t.dataHeart),
-        ("timer", t.dataSleep), ("figure.flexibility", t.dataHrv), ("wind", t.dataRecovery),
-    ]
-    return VStack(alignment: .leading, spacing: 16) {
-        Text("FORMAS DE ENTRENAR").instrumentoOverline().foregroundStyle(t.inkTertiary)
-        HStack(spacing: 6) {
-            ForEach(discs, id: \.0) { sym, hue in
-                Image(systemName: sym)
-                    .font(StrandFont.glyph(.lead, weight: .semibold))
-                    .foregroundStyle(t.paper)
-                    .frame(width: 38, height: 38)
-                    .background(hue, in: Circle())
-                    .overlay(Circle().strokeBorder(t.dataEdge(hue), lineWidth: 1))
-            }
-        }
-    }
-    .padding(28)
-    .background(t.paper)
-}
 #endif

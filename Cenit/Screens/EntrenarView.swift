@@ -274,8 +274,10 @@ private struct EntrenarLanding: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)
             }
-            empezarButton.padding(.top, 14)
-            formasDiscos.padding(.top, 12)
+            // FER-944 rhythm: the datum→action border (16) reads clearly wider than the hero's inner
+            // gaps (4/8), so the block squints as three masses — text, button, discs.
+            empezarButton.padding(.top, CenitMetrics.sectionGapCompact)
+            formasDiscos.padding(.top, CenitMetrics.gap)
         }
     }
 
@@ -401,6 +403,7 @@ private struct EntrenarLanding: View {
                             StrandIcon.disclosure.image
                                 .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                         }
+                        .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -424,27 +427,36 @@ private struct EntrenarLanding: View {
     /// «~50 min · 6 ejercicios · 18 series» — each numeral big (Grotesk 20), its unit word quiet.
     private func sesionMetrics(_ rid: String) -> some View {
         let sets = todaySlots.reduce(0) { $0 + max(0, $1.re.targetSets) }
+        // The three numerals share ONE accent — the routine's tint (same hue as the hero dot and
+        // «Empezar»). They're a single piece of information (today's session shape), so one hue, not
+        // three: three colours here would compete with the five coloured discs right above. The unit
+        // words stay quiet ink. (FER-944)
+        let accent = routineTint(region(name: todayRoutine?.name ?? ""))
         return HStack(alignment: .firstTextBaseline, spacing: 6) {
             if estMinutes > 0 {
-                bigStat(Text(verbatim: "~\(estMinutes)"), unit: Text("min"))
+                bigStat(Text(verbatim: "~\(estMinutes)"), unit: Text("min"), valueColor: accent)
                 dotSeparator
             }
-            bigStat(Text(verbatim: "\(exerciseCounts[rid] ?? 0)"), unit: Text("exercises"))
+            bigStat(Text(verbatim: "\(exerciseCounts[rid] ?? 0)"), unit: Text("exercises"), valueColor: accent)
             if sets > 0 {
                 dotSeparator
-                bigStat(Text(verbatim: "\(sets)"), unit: Text("sets"))
+                bigStat(Text(verbatim: "\(sets)"), unit: Text("sets"), valueColor: accent)
             }
         }
+        // VoiceOver reads the cluster as ONE phrase — the numerals combine into their unit words and
+        // the «·» separators are hidden, so it says «~50 min, 6 exercises, 18 sets», not the glyphs. (FER-944)
+        .accessibilityElement(children: .combine)
     }
 
-    private func bigStat(_ value: Text, unit: Text) -> Text {
-        value.font(InstrumentoType.groteskNumber(20)).foregroundStyle(theme.ink)
+    private func bigStat(_ value: Text, unit: Text, valueColor: Color? = nil) -> Text {
+        value.font(InstrumentoType.groteskNumber(20)).foregroundStyle(valueColor ?? theme.ink)
             + Text(verbatim: " ")
             + unit.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
     }
 
-    private var dotSeparator: Text {
+    private var dotSeparator: some View {
         Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+            .accessibilityHidden(true)   // VoiceOver reads the cluster as a phrase, not the «·» glyphs (FER-944)
     }
 
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
@@ -545,6 +557,7 @@ private struct EntrenarLanding: View {
                 Spacer(minLength: 8)
             }
             .padding(.vertical, 11)
+            .frame(minHeight: 44)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -609,28 +622,42 @@ private struct EntrenarLanding: View {
     // paper), so no raw hex or new tokens.
 
     private struct FormOption: Identifiable {
-        let icon: String
+        let icon: String            // SF Symbol — native, static
         let label: LocalizedStringKey
+        let hint: LocalizedStringKey
         let tint: Color
         let action: () -> Void
         var id: String { icon }
     }
 
     /// The five training doors in the icon grid. Diet sits as a quiet full-width row below (not a chip).
+    /// Icons are native SF Symbols, static (FER-944, «reposo + toque»). Labels + hints are
+    /// `LocalizedStringKey`, so the disc row follows the app language (es/en).
     private var formOptions: [FormOption] {
         [
-            FormOption(icon: "bolt", label: "Quick", tint: theme.dataStrain) { startQuickStrength() },
-            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live", tint: theme.dataHeart) { startLive() },
-            FormOption(icon: "timer", label: "Interval", tint: theme.dataSleep) { openIntervals() },
-            FormOption(icon: "figure.flexibility", label: "Mobility", tint: theme.dataHrv) { model.startMobilityOneOff() },
-            FormOption(icon: "wind", label: "Breathe", tint: theme.dataRecovery) { openBreathe() },
+            FormOption(icon: "bolt.fill", label: "Quick",
+                       hint: "Starts a quick strength session, no routine.",
+                       tint: theme.dataStrain) { startQuickStrength() },
+            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live",
+                       hint: "Starts a live workout with heart rate.",
+                       tint: theme.dataHeart) { startLive() },
+            FormOption(icon: "timer", label: "Intervals",
+                       hint: "Opens the interval timer.",
+                       tint: theme.dataSleep) { openIntervals() },
+            FormOption(icon: "figure.run", label: "Mobility",
+                       hint: "Starts a guided mobility session.",
+                       tint: theme.dataHrv) { model.startMobilityOneOff() },
+            FormOption(icon: "wind", label: "Breathe",
+                       hint: "Opens guided breathing.",
+                       tint: theme.dataRecovery) { openBreathe() },
         ]
     }
 
     /// The five discs alone — they now ride the hero, directly under «Empezar» (FER-939, the FER-920
-    /// placement decision finally applied). No overline: their position IS the label.
+    /// placement decision finally applied). No overline: their position IS the label. Static icons at
+    /// rest; the only motion is the press feedback when you tap one (FER-944, «reposo + toque»).
     private var formasDiscos: some View {
-        HStack(alignment: .top, spacing: 6) {
+        HStack(alignment: .top, spacing: CenitMetrics.space2) {
             ForEach(formOptions) { opt in
                 formChip(opt)
             }
@@ -661,7 +688,7 @@ private struct EntrenarLanding: View {
                     .foregroundStyle(theme.inkDim)
             }
             .padding(.vertical, CenitMetrics.gap)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -669,30 +696,37 @@ private struct EntrenarLanding: View {
 
     /// One card chip in the «Formas de entrenar» row (FER-939): the handoff's square card SHAPE
     /// (rounded rect, label inside) carrying the FER-920 «troquel» color — solid data-token fill,
-    /// glyph AND label knocked out in paper, rimmed a step deeper (`dataEdge`) so it reads as a
-    /// die-cut token rather than a colored sticker. Runs its door's action.
+    /// glyph AND label knocked out in paper. The dark `dataEdge` rim is gone (FER-944): the solid
+    /// fill on paper cuts itself out; less line, more instrument. Static native icon; the only motion
+    /// is the press feedback (`DiscPressStyle`). Runs its door's action.
     private func formChip(_ opt: FormOption) -> some View {
         Button {
             opt.action()
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: CenitMetrics.space1 + 1) {
                 Image(systemName: opt.icon).font(StrandFont.glyph(.lead, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .frame(height: 22)   // equal glyph slot — SF symbols vary in intrinsic height
+                    .frame(height: 20)   // equal glyph slot — SF symbols vary in intrinsic height
                     .accessibilityHidden(true)
-                Text(opt.label).font(StrandFont.overline).foregroundStyle(theme.paper)
-                    .lineLimit(1).minimumScaleFactor(0.65)
+                // Uniform label (FER-944): the real cause of the uneven look was the 2pt letter-spacing,
+                // which inflated the long words («Intervalos»/«Movilidad») until they scaled down while
+                // the short ones didn't. Tight tracking at 9pt lets ALL five fit on one line at the SAME
+                // size; the minimumScaleFactor is only a safety net for the largest Dynamic Type steps.
+                Text(opt.label)
+                    .font(InstrumentoType.groteskOverlineSmall).tracking(0.2)
+                    .foregroundStyle(theme.paper)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2).minimumScaleFactor(0.9)   // AX5: the long labels wrap instead of truncating
             }
-            .padding(.vertical, 9)
-            .padding(.horizontal, 2)
-            .frame(maxWidth: .infinity, minHeight: 44)   // HIG: keep the whole chip a ≥44pt tap target
+            .padding(.vertical, CenitMetrics.gap - 1)
+            .padding(.horizontal, CenitMetrics.space1)
+            .frame(maxWidth: .infinity, minHeight: 52)   // HIG tap target + a touch taller for even discs
             .background(opt.tint, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                .strokeBorder(theme.dataEdge(opt.tint), lineWidth: 1))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DiscPressStyle())
         .accessibilityLabel(opt.label)
+        .accessibilityHint(opt.hint)
     }
 
     /// «En vivo» from the expanded pill: start (or resume) the live HR workout and present its sheet — the
@@ -1139,6 +1173,22 @@ private struct EntrenarLanding: View {
             return a != b ? a > b : (idx[$0] ?? 0) < (idx[$1] ?? 0)
         }.prefix(3)
         return top.map { MuscleVocabulary.es[$0] ?? $0.capitalized }
+    }
+}
+
+// MARK: - Disc press feedback (FER-944 · «reposo + toque»)
+//
+// The discs sit still; the only motion is the tactile press — the chip dips slightly and springs back
+// when tapped, so the tap registers physically. Feedback, not decoration (HIG). Reduce Motion drops
+// the scale to a plain opacity dip so there's still a press cue without movement.
+
+private struct DiscPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(!reduceMotion && configuration.isPressed ? 0.93 : 1)
+            .opacity(reduceMotion && configuration.isPressed ? 0.7 : 1)
+            .animation(StrandMotion.interactive, value: configuration.isPressed)
     }
 }
 

@@ -14,8 +14,8 @@ import SwiftUI
 // top inset (keep it the same on all tabs — 14) and any bottom spacing. Pure SwiftUI; no UIKit/AppKit.
 
 /// The «Instrumento» tab/landing header: `glyph` (drawn at 22×22) + `title` on the left, an optional
-/// `trailing` slot (date, recovery chip…) on the right. Title is `StrandFont.tabTitle` + `.tracking(-0.3)`
-/// in `theme.ink`. The trailing slot never moves the title.
+/// `trailing` slot (date, recovery chip…) on the right. Title is `InstrumentoType.groteskTabTitle` +
+/// its tracking (FER-944) in `theme.ink`. The trailing slot never moves the title.
 public struct InstrumentoTabHeader<Glyph: View, Trailing: View>: View {
     @Environment(\.instrumentoTheme) private var theme
     private let title: String
@@ -34,7 +34,7 @@ public struct InstrumentoTabHeader<Glyph: View, Trailing: View>: View {
         HStack(spacing: 9) {
             glyph.frame(width: 22, height: 22)
             Text(title)
-                .font(StrandFont.tabTitle).tracking(-0.3)
+                .font(InstrumentoType.groteskTabTitle).tracking(InstrumentoType.groteskTabTitleTracking)
                 .foregroundStyle(theme.ink)
         }
         // The title lockup is one VoiceOver element labelled by the wordmark; the trailing slot keeps

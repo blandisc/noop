@@ -25875,6 +25875,23 @@
         }
       }
     },
+    "Opens guided breathing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens guided breathing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre la respiración guiada."
+          }
+        }
+      }
+    },
     "Opens the GitHub releases page in your browser. Cénit itself makes no network connections — the macOS sandbox has no network entitlement.": {
       "extractionState": "stale",
       "localizations": {
@@ -25981,6 +25998,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abre el detalle completo"
+          }
+        }
+      }
+    },
+    "Opens the interval timer.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the interval timer."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el temporizador de intervalos."
           }
         }
       }
@@ -33315,6 +33349,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Iniciar entrenamiento"
+          }
+        }
+      }
+    },
+    "Starts a guided mobility session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts a guided mobility session."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza una sesión guiada de movilidad."
+          }
+        }
+      }
+    },
+    "Starts a live workout with heart rate.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts a live workout with heart rate."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza un entrenamiento en vivo con frecuencia cardiaca."
+          }
+        }
+      }
+    },
+    "Starts a quick strength session, no routine.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts a quick strength session, no routine."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza un entrenamiento rápido de fuerza, sin rutina."
           }
         }
       }
