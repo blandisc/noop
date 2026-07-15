@@ -83,10 +83,9 @@ public struct PaperMenuCard: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .frame(width: 250, height: estimatedHeight)
-        .background(theme.surface)
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .strandElevation(.floating, ink: theme.ink)
+        // The popover container draws the card AND its anchor arrow from `presentationBackground`,
+        // so the card itself stays chromeless — a stroked/clipped rect here would draw a hairline
+        // straight across the arrow's joint and read as a broken seam (FER-951 feedback).
         .presentationBackground(theme.surface)
         .animation(StrandMotion.fade, value: pushed?.id)
     }
