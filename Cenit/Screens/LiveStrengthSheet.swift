@@ -1365,12 +1365,13 @@ struct LiveStrengthSheet: View {
     /// teal — the badge/tag alone carry the superset, so rail-color and superset don't compete).
     /// Purely decorative — `accessibilityHidden`, the row's own label carries the state to VoiceOver.
     private func railColumn(_ state: RailState, superset: Bool, badgeText: String? = nil,
-                            tint: Color, dotTopOffset: CGFloat? = nil) -> some View {
+                            tint: Color, dotTopOffset: CGFloat? = nil, lineTint: Color? = nil) -> some View {
         ZStack(alignment: dotTopOffset == nil ? .center : .top) {
             // The thread fills the WHOLE cell height (rows carry no outer vertical insets anymore —
             // their breathing lives inside the content), so adjacent cells butt up and the line reads
-            // as one continuous hilo.
-            Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+            // as one continuous hilo. Through the ACTIVE block the thread thickens into the ink rule
+            // (`lineTint`, propuesta C «Regla de tinta») — same lane, heavier ink.
+            Rectangle().fill(lineTint ?? railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
             Group {
                 if let badgeText {
                     Circle()
@@ -1557,7 +1558,7 @@ struct LiveStrengthSheet: View {
             // Canvas pass: the active dot centers on the 44pt thumbnail's midline — measured from the
             // CELL top, so it accounts for the header's inner breathing (gap + half the thumb).
             railColumn(.active, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei),
-                       tint: categoryTint(run), dotTopOffset: CenitMetrics.gap + 22)
+                       tint: categoryTint(run), dotTopOffset: CenitMetrics.gap + 22, lineTint: theme.ink)
             exerciseHeader(run, ei: ei, first: true)
                 .padding(.top, CenitMetrics.gap)
         }
@@ -3187,10 +3188,19 @@ struct LiveStrengthSheet: View {
         let isWarmup = run.sets[si].kind == .warmup
         let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
         let label = isWarmup ? String(localized: "C") : "\(workNumber)"
+        // Canvas pass (propuesta C): the set being worked RIGHT NOW wears a 2pt ink underline beneath
+        // its numeral — the same ink language as the block's rule, no color accent, survives
+        // «Differentiate without color» by shape alone.
+        let isCurrent = si == run.currentSet && !run.sets[si].done
         return Text(label).font(StrandFont.caption).monospacedDigit()
             .foregroundStyle(isWarmup ? theme.dataStrain.opacity(StrandOpacity.dim) : theme.dataStrain)  // token-exempt: warm-up badge tenue (handoff «C»)
             .frame(width: 26, height: 26)
             .overlay(Circle().strokeBorder(theme.dataStrain.opacity(isWarmup ? StrandOpacity.dim : 1), lineWidth: 1.5))  // token-exempt: warm-up ring tenue
+            .overlay(alignment: .bottom) {
+                if isCurrent, !isWarmup {
+                    Rectangle().fill(theme.ink).frame(width: 16, height: 2).offset(y: 5)
+                }
+            }
             .frame(width: reflow ? 26 : 44, height: reflow ? 26 : 44, alignment: .center)
             .accessibilityLabel(Text(isWarmup ? "Warm-up set" : "Set \(workNumber)"))
     }
@@ -4703,29 +4713,19 @@ private extension View {
             .listRowSeparator(.hidden)
     }
 
-    /// FER-929: the active exercise's set table lives inside one `surface` card (spec §3) — `top`/`bottom`
-    /// round only the first/last row's corresponding corners so the stack of rows reads as one card.
-    /// Canvas pass 2026-07-15: the card's leading edge moves right of the rail lane, and the row
-    /// background itself paints the rail thread segment behind it, so the hilo runs unbroken through
-    /// the active exercise's table instead of vanishing under the card.
+    /// Canvas pass 2026-07-15 (propuesta C «Regla de tinta», retira la carta blanca de FER-929): the
+    /// active exercise's set rows live directly on the paper — no `surface` card, no border. What marks
+    /// the block is the rail lane thickening into a 2pt INK rule painted by the row background itself,
+    /// so the hilo runs unbroken through the whole active table (header → sets → «add set»). `top`/
+    /// `bottom` stay in the signature for the call sites' rhythm, unused by the paper treatment.
     func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme, railTint: Color) -> some View {
-        let shape = UnevenRoundedRectangle(
-            topLeadingRadius: top ? CenitMetrics.cardRadius : 0,
-            bottomLeadingRadius: bottom ? CenitMetrics.cardRadius : 0,
-            bottomTrailingRadius: bottom ? CenitMetrics.cardRadius : 0,
-            topTrailingRadius: top ? CenitMetrics.cardRadius : 0)
-        return self
+        self
             .listRowInsets(EdgeInsets(top: 0, leading: CenitMetrics.screenPadding + 26,
                                       bottom: 0, trailing: CenitMetrics.screenPadding))
             .listRowBackground(
-                ZStack(alignment: .leading) {
-                    Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
-                        .padding(.leading, CenitMetrics.screenPadding + 6)
-                    shape.fill(theme.surface)
-                        .overlay(shape.strokeBorder(theme.hairline, lineWidth: 1))
-                        .padding(.leading, CenitMetrics.screenPadding + 26)
-                        .padding(.trailing, CenitMetrics.screenPadding)
-                }
+                Rectangle().fill(theme.ink).frame(width: 2)
+                    .padding(.leading, CenitMetrics.screenPadding + 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             )
             .listRowSeparator(.hidden)
     }
