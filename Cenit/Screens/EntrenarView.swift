@@ -963,11 +963,11 @@ private struct EntrenarLanding: View {
     private var loadErrorState: some View {
         card {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("No pudimos leer tus rutinas").font(StrandFont.title3).foregroundStyle(theme.ink)
-                Text("Algo falló al abrir tus datos.")
+                Text("We couldn't read your routines").font(StrandFont.title3).foregroundStyle(theme.ink)
+                Text("Something went wrong opening your data.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                StrandCTAButton("Reintentar", kind: .outline) { Task { await load() } }
+                StrandCTAButton("Retry", kind: .outline) { Task { await load() } }
             }
         }
     }

@@ -32771,6 +32771,23 @@
         }
       }
     },
+    "Something went wrong opening your data.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong opening your data."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Algo falló al abrir tus datos."
+          }
+        }
+      }
+    },
     "Soon": {
       "extractionState": "manual",
       "localizations": {
@@ -38711,6 +38728,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "No pudimos leer eso como un archivo de plan. Pega el resultado completo que te dio tu IA, o sube el .json."
+          }
+        }
+      }
+    },
+    "We couldn't read your routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't read your routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No pudimos leer tus rutinas"
           }
         }
       }
