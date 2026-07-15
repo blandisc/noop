@@ -96,6 +96,7 @@ private struct AppMapGrid: View {
 /// completa dentro del Canvas, con su plan, discos y la animación de entrada (FER-944). Los cierres de
 /// navegación son no-ops: el preview es para mirar la portada, no para navegar.
 private struct EntrenarMapCell: View {
+    var locale: String = "es"
     @StateObject private var model = AppModel()
     @State private var seeded = false
 
@@ -110,6 +111,7 @@ private struct EntrenarMapCell: View {
                                                appleDeviceId: "map-apple",
                                                noopDeviceId: "map"))
             .environment(model.live)
+            .environment(\.locale, .init(identifier: locale))
             .preferredColorScheme(.light)
             .frame(width: 393, height: 852)
             .task {
@@ -120,7 +122,13 @@ private struct EntrenarMapCell: View {
     }
 }
 
-#Preview("Entrenar · hub (con plan)") {
-    EntrenarMapCell()
+// Dos previews del MISMO hub — uno en español, otro en inglés — para comprobar de un vistazo que todo
+// (discos, secciones, hints) está parametrizado por idioma (FER-944).
+#Preview("Entrenar · hub · Español") {
+    EntrenarMapCell(locale: "es")
+}
+
+#Preview("Entrenar · hub · English") {
+    EntrenarMapCell(locale: "en")
 }
 #endif
