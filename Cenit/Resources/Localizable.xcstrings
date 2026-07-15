@@ -28953,6 +28953,22 @@
         }
       }
     },
+    "Recovery, calibrating": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery, calibrating"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación, calibrando"
+          }
+        }
+      }
+    },
     "Recovery, live heart rate, and strap battery at a glance.": {
       "extractionState": "stale",
       "localizations": {

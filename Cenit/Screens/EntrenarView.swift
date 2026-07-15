@@ -219,7 +219,12 @@ private struct EntrenarLanding: View {
             Image(systemName: "figure.strengthtraining.functional")
                 .font(.system(size: 20)).foregroundStyle(theme.ink)  // token-exempt: glifo 20pt fuera de banda lead
         } trailing: {
-            if let rec = recovery { recoveryChip(rec) }   // hidden while calibrating (no score)
+            // Same trailing slot always occupied so the header doesn't jump when the score appears. (FER-949)
+            if let rec = recovery {
+                recoveryChip(rec)
+            } else {
+                recoveryChipPlaceholder
+            }
         }
     }
 
@@ -238,6 +243,20 @@ private struct EntrenarLanding: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Recuperación \(Int(rec.rounded())). Ver detalle."))
+    }
+
+    /// Quiet chrome while recovery is still calibrating (no score). Same capsule + height as the live
+    /// chip so the header stays still; `inkDim` only (no datum color); not tappable. (FER-949)
+    private var recoveryChipPlaceholder: some View {
+        Text(verbatim: "—")
+            .font(StrandFont.number(17, weight: .semibold))
+            .foregroundStyle(theme.inkDim)
+            .frame(minWidth: 22, minHeight: 22)   // match the live chip's ring box so height doesn't jump
+            .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Recovery, calibrating"))
     }
 
     // MARK: - ① Open hero + «Empezar» + discs (handoff v4b, FER-939)
