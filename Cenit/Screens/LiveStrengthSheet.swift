@@ -1306,11 +1306,11 @@ struct LiveStrengthSheet: View {
                             activeExerciseBlock(run, ei: ei)
                         case .done:
                             doneRow(run, ei: ei)
-                                .plainRow(top: 2, bottom: 2)
+                                .plainRow(top: 4, bottom: 4)
                                 .transition(.opacity)
                         case .upcoming:
                             comingRow(run, ei: ei)
-                                .plainRow(top: 2, bottom: 2)
+                                .plainRow(top: 4, bottom: 4)
                                 .transition(.opacity)
                         }
                     }
@@ -1357,36 +1357,66 @@ struct LiveStrengthSheet: View {
         return .upcoming
     }
 
-    /// The vertical rail: a 2px hairline (teal for a superset span, `theme.dataHrv`) with one dot per
-    /// exercise — or, inside a superset span, an «A1»/«A2» badge in place of the plain dot (FER-931).
+    /// The vertical rail (canvas pass 2026-07-15): one CONTINUOUS thread in the routine's own family
+    /// tint at low opacity («ember tenue» — structure, not datum), bridging the inter-row insets with
+    /// negative vertical padding so it never breaks between rows. Each exercise hangs a fixed 9pt dot
+    /// tinted by ITS movement family (push=ember · pull=teal · legs=indigo); the active dot keeps the
+    /// existing soft halo. A superset span keeps its «A1»/«A2» teal badge (the LINE no longer flips
+    /// teal — the badge/tag alone carry the superset, so rail-color and superset don't compete).
     /// Purely decorative — `accessibilityHidden`, the row's own label carries the state to VoiceOver.
-    private func railColumn(_ state: RailState, superset: Bool, badgeText: String? = nil) -> some View {
-        ZStack {
-            Rectangle().fill(superset ? theme.dataHrv : theme.hairlineStrong).frame(width: 2)
-            if let badgeText {
-                Circle()
-                    .fill(theme.dataHrv)
-                    .frame(width: state == .active ? 20 : 17, height: state == .active ? 20 : 17)
-                    .overlay {
-                        Text(badgeText).font(StrandFont.footnote).fontWeight(.semibold)
-                            .foregroundStyle(theme.paper)
-                    }
-                    .opacity(state == .done ? StrandOpacity.dim : 1)
-            } else {
-                Circle()
-                    .fill(state == .active ? theme.dataStrain : state == .done ? theme.inkDim : theme.hairlineStrong)
-                    .frame(width: state == .active ? 14 : 11, height: state == .active ? 14 : 11)
-                    .opacity(state == .done ? StrandOpacity.dim : 1)
-                    .overlay {
-                        if state == .active {
-                            Circle().strokeBorder(theme.dataStrain.opacity(0.3), lineWidth: 3)  // token-exempt: decorative active-node halo ring alpha
-                                .frame(width: 22, height: 22)
+    private func railColumn(_ state: RailState, superset: Bool, badgeText: String? = nil,
+                            tint: Color, dotTopOffset: CGFloat? = nil) -> some View {
+        ZStack(alignment: dotTopOffset == nil ? .center : .top) {
+            Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                .padding(.vertical, -6)
+            Group {
+                if let badgeText {
+                    Circle()
+                        .fill(theme.dataHrv)
+                        .frame(width: 17, height: 17)
+                        .overlay {
+                            Text(badgeText).font(StrandFont.footnote).fontWeight(.semibold)
+                                .foregroundStyle(theme.paper)
                         }
-                    }
+                } else {
+                    Circle()
+                        .fill(tint)
+                        .frame(width: 9, height: 9)
+                        .overlay {
+                            if state == .active {
+                                Circle().strokeBorder(tint.opacity(0.3), lineWidth: 3)  // token-exempt: decorative active-node halo ring alpha
+                                    .frame(width: 19, height: 19)
+                            }
+                        }
+                }
             }
+            .padding(.top, dotTopOffset.map { $0 - 4.5 } ?? 0)
         }
         .frame(width: 14)
         .accessibilityHidden(true)
+    }
+
+    /// The routine's own family tint — the color of the rail thread. Classified from what the session
+    /// actually contains (same `RoutineClassifier` the hub/plan use), so an ad-hoc session earns a color
+    /// too. Push routines read ember, pull teal, legs indigo; mixed/full-body falls back to ember.
+    private var railTint: Color {
+        let muscles = session.runs.compactMap { ExerciseCatalog.byID($0.exerciseId)?.primaryMuscles }
+        switch RoutineClassifier.classify(primaryMusclesPerExercise: muscles) {
+        case .pull: return theme.dataHrv
+        case .legs: return theme.dataSleep
+        default: return theme.dataStrain
+        }
+    }
+
+    /// Movement-family tint for ONE exercise's rail dot (push=ember · pull=teal · legs=indigo) — the
+    /// same mapping History (`muscleTint`) and Library use. Third screen using it: candidate to promote
+    /// into StrandDesign at close (kept local during the live-canvas pass).
+    private func categoryTint(_ run: StrengthSessionModel.ExerciseRun) -> Color {
+        guard let ex = ExerciseCatalog.byID(run.exerciseId) else { return theme.dataStrain }
+        let m = ex.primaryMuscles.joined(separator: " ").lowercased()
+        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return theme.dataHrv }
+        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return theme.dataSleep }
+        return theme.dataStrain
     }
 
     /// The «A1»/«A2» badge text for the run at `ei`: its superset letter + (position in the span + 1).
@@ -1416,22 +1446,27 @@ struct LiveStrengthSheet: View {
             }
         } label: {
             HStack(spacing: 12) {
-                railColumn(.done, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei))
-                VStack(alignment: .leading, spacing: 1) {
-                    supersetTag(ei)
-                    Text(run.name).font(StrandFont.body).foregroundStyle(theme.inkTertiary).lineLimit(1)
+                railColumn(.done, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei),
+                           tint: categoryTint(run))
+                // Canvas pass: dim the CONTENT, not the whole row — the rail thread and its dot stay at
+                // full strength so the hilo reads continuous while the finished exercise recedes.
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        supersetTag(ei)
+                        Text(run.name).font(StrandFont.body).foregroundStyle(theme.inkTertiary).lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(doneDetailText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                        .lineLimit(1)
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataRecovery)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Text(doneDetailText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1)
-                Image(systemName: "checkmark.circle.fill")
-                    .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataRecovery)
+                .opacity(StrandOpacity.dim)
             }
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .opacity(StrandOpacity.dim)
         // FER-933: long-press any rail row to enter modo mover (`simultaneousGesture`, not
         // `.onLongPressGesture`, so the row's own tap-to-reopen keeps working — same pattern as
         // RoutineEditorScreen's reorder entry).
@@ -1450,14 +1485,20 @@ struct LiveStrengthSheet: View {
             withAnimation(.snappy(duration: 0.22)) { session.select(exerciseIndex: ei, setIndex: 0) }
         } label: {
             HStack(spacing: 12) {
-                railColumn(.upcoming, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei))
-                VStack(alignment: .leading, spacing: 1) {
-                    supersetTag(ei)
-                    Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
+                railColumn(.upcoming, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei),
+                           tint: categoryTint(run))
+                // Canvas pass: upcoming rows now dim exactly like done rows (the row that «se escapaba»)
+                // — content only, so the rail thread stays alive.
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        supersetTag(ei)
+                        Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(prescriptionText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                        .lineLimit(1)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Text(prescriptionText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1)
+                .opacity(StrandOpacity.dim)
             }
             .frame(minHeight: 44)
             .contentShape(Rectangle())
@@ -1508,7 +1549,10 @@ struct LiveStrengthSheet: View {
     /// before FER-929, just no longer repeated for every exercise at once.
     @ViewBuilder private func activeExerciseBlock(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            railColumn(.active, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei))
+            // Canvas pass: the active dot centers on the 44pt thumbnail's midline (22pt from the top),
+            // not on the whole expanded block.
+            railColumn(.active, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei),
+                       tint: categoryTint(run), dotTopOffset: 22)
             exerciseHeader(run, ei: ei, first: true)
         }
         .plainRow(top: CenitMetrics.gap)
@@ -1520,7 +1564,9 @@ struct LiveStrengthSheet: View {
                 if afterWarmup { workSetsDivider.padding(.top, 4).padding(.bottom, 6) }
                 setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
             }
-                .activeCardRow(top: si == 0, bottom: si == run.sets.count - 1, theme: theme)
+                // Canvas pass: the set being worked right now wears the fine green thread.
+                .activeCardRow(top: si == 0, bottom: si == run.sets.count - 1, theme: theme,
+                               emphasis: si == run.currentSet && !set.done)
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
                         withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
@@ -1560,12 +1606,21 @@ struct LiveStrengthSheet: View {
     private var addExerciseNode: some View {
         Button { showLibraryPicker = true } label: {
             HStack(spacing: 12) {
-                Circle()
-                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                    .frame(width: 18, height: 18)
-                    .overlay(
-                        Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)  // token-exempt: tiny plus glyph sized to the 18pt dotted add-node
-                    )
+                // Canvas pass: the «＋» is a STOP on the rail thread, not a floating affordance — the
+                // same 14pt column carries the thread up to (and through) the dotted circle, whose
+                // paper fill knocks the line out inside the ring.
+                ZStack {
+                    Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                        .padding(.top, -6)
+                        .padding(.bottom, 22)
+                    Circle().fill(theme.paper)
+                        .overlay(Circle().strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])))
+                        .frame(width: 18, height: 18)
+                        .overlay(
+                            Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)  // token-exempt: tiny plus glyph sized to the 18pt dotted add-node
+                        )
+                }
+                .frame(width: 14)
                 Text("Add exercise").font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Spacer(minLength: 0)
             }
@@ -1691,7 +1746,8 @@ struct LiveStrengthSheet: View {
         .padding(.top, 14)
         .padding(.bottom, 12)
         .background(theme.paper)
-        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+        // Canvas pass 2026-07-15: the bottom hairline under the progress bar is gone — the whitespace
+        // and the rail thread separate head from list on their own (owner call, punto 6).
     }
 
     /// The header's right-side action(s), FER-823: paused → «Resume» is the primary action (finish after
@@ -4642,7 +4698,10 @@ private extension View {
 
     /// FER-929: the active exercise's set table lives inside one `surface` card (spec §3) — `top`/`bottom`
     /// round only the first/last row's corresponding corners so the stack of rows reads as one card.
-    func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme) -> some View {
+    /// Canvas pass 2026-07-15: `emphasis` marks the set being worked RIGHT NOW with a fine green thread
+    /// (`dataRecovery`, 1.5pt) — the extra half-point of stroke doubles as the non-color cue so the row
+    /// survives «Differentiate without color» (UX pass).
+    func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme, emphasis: Bool = false) -> some View {
         let shape = UnevenRoundedRectangle(
             topLeadingRadius: top ? CenitMetrics.cardRadius : 0,
             bottomLeadingRadius: bottom ? CenitMetrics.cardRadius : 0,
@@ -4651,7 +4710,9 @@ private extension View {
         return self
             .listRowInsets(EdgeInsets(top: 0, leading: CenitMetrics.screenPadding,
                                       bottom: 0, trailing: CenitMetrics.screenPadding))
-            .listRowBackground(shape.fill(theme.surface).overlay(shape.strokeBorder(theme.hairline, lineWidth: 1)))
+            .listRowBackground(shape.fill(theme.surface)
+                .overlay(shape.strokeBorder(emphasis ? theme.dataRecovery : theme.hairline,
+                                            lineWidth: emphasis ? 1.5 : 1)))
             .listRowSeparator(.hidden)
     }
 }
