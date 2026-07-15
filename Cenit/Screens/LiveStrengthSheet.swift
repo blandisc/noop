@@ -1684,7 +1684,10 @@ struct LiveStrengthSheet: View {
                 .accessibilityLabel(Text("Minimize session"))
                 Spacer(minLength: 8)
                 HStack(spacing: 6) {
-                    BpmPulseDot(color: theme.dataStrain, animated: !reduceMotion && !session.paused)
+                    // Canvas pass 2026-07-15: recording-red and STILL — a state lamp, not a heartbeat
+                    // (the pulsing ember dot read as «loading»; owner call).
+                    Circle().fill(session.paused ? theme.inkDim : theme.critical)
+                        .frame(width: 8, height: 8)
                     Text(session.paused ? "Paused" : "In progress")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
@@ -1773,12 +1776,14 @@ struct LiveStrengthSheet: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Resume session"))
         } else if !isEmptyAdHoc {
+            // Canvas pass 2026-07-15: Pausa dresses like Terminar's sibling — same capsule grammar,
+            // neutral ink vs. Terminar's reserved alert hue, so the pair reads as one control family.
             Button { model.pauseStrengthSession() } label: {
-                Image(systemName: "pause.fill")
-                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
-                    .frame(width: 38, height: 38)
-                    .background(theme.surface, in: Circle())
-                    .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                Label("Pause", systemImage: "pause.fill").labelStyle(.titleAndIcon)
+                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(theme.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Pause session"))
@@ -1808,23 +1813,23 @@ struct LiveStrengthSheet: View {
 
     private var statsBar: some View {
         VStack(spacing: 8) {
-            // Focus mode entry moved here from the old header row (mock v21 → FER-929 §3): full-screen
-            // capture/rest; does not replace the inline table.
+            // Canvas pass 2026-07-15: the handoff's «◐ Modo foco» — a quiet glyph+text, not a shouting
+            // capsule; the bar's job is the counters, the entry just waits there.
             if !isEmptyAdHoc && session.summary == nil {
                 Button { focusMode = true } label: {
-                    Label("Focus mode", systemImage: "arrow.up.left.and.arrow.down.right")
-                        .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        .padding(.horizontal, 14).padding(.vertical, 6)
-                        .background(theme.surface, in: Capsule())
-                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    Label("Focus mode", systemImage: "viewfinder")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .padding(.vertical, 2).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Focus mode"))
                 .accessibilityHint(Text("Opens a full-screen set logger"))
             }
-            // kg · series · (kcal only with a streaming strap, never dashes) — same source as before.
-            Text(counterLine).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
+            // kg · series · (kcal only with a streaming strap, never dashes) — same sources as before,
+            // now with the handoff's typographic contrast: Grotesk-bold values, light labels.
+            counterLineStyled
                 .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(counterLine))
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
@@ -2327,6 +2332,24 @@ struct LiveStrengthSheet: View {
                      "\(session.doneCount)/\(sessionSetsTotal) " + String(localized: "series")]
         if let kcal = liveKcal { parts.append("~\(kcal) kcal") }
         return parts.joined(separator: " · ")
+    }
+
+    /// The counter line with the handoff's typographic contrast (canvas pass 2026-07-15): values in
+    /// Grotesk bold, labels/separators in light secondary ink. Same data as `counterLine` (which stays
+    /// as the accessibility read).
+    private var counterLineStyled: Text {
+        let num = InstrumentoType.groteskNumber(15)
+        let sep = Text(" · ").font(StrandFont.caption).foregroundColor(theme.inkTertiary)
+        var line = Text(massText(sessionVolumeKg)).font(num).foregroundColor(theme.ink)
+            + sep
+            + Text("\(session.doneCount)/\(sessionSetsTotal)").font(num).foregroundColor(theme.ink)
+            + Text(" " + String(localized: "series")).font(StrandFont.caption).foregroundColor(theme.inkSecondary)
+        if let kcal = liveKcal {
+            line = line + sep
+                + Text("~\(kcal)").font(num).foregroundColor(theme.ink)
+                + Text(" kcal").font(StrandFont.caption).foregroundColor(theme.inkSecondary)
+        }
+        return line
     }
 
     /// Live energy estimate (kcal) from the strap samples captured so far — nil (so the clause is hidden)
@@ -2844,7 +2867,10 @@ struct LiveStrengthSheet: View {
         let titles = columnTitles(type)
         return HStack(spacing: 8) {
             Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
-            Text("PREVIOUS · REST").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // Canvas pass 2026-07-15: «PREVIOUS · REST» truncated to an unreadable «PR…» at narrow
+            // widths — the rest already lives on each row's own cell, so the column header only needs
+            // to name the previous value.
+            Text("PREVIOUS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
             ForEach(titles.indices, id: \.self) { i in
@@ -4491,7 +4517,7 @@ struct NoteSheet: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 12)
+        .padding(.top, 4)   // canvas pass 2026-07-15: the sheet grabber already gives air; 12 doubled it
         .padding(.bottom, CenitMetrics.screenPadding)
         .background(theme.paper.ignoresSafeArea())
         .onChange(of: scope) { _, newScope in
