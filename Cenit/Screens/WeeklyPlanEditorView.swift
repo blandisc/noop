@@ -457,28 +457,8 @@ struct WeeklyPlanEditorView: View {
 
     // (statusText «hoy / hace N d» retired in FER-940 — the trailing datum is the assigned days now.)
 
-    @ViewBuilder
-    private func routineActions(_ r: Routine) -> some View {
-        // Editing lives on the unified «Rutina» editor now (FER-840) — same push as tapping the row.
-        Button { openRoutine(r.id) } label: { Label("Edit routine", systemImage: "slider.horizontal.3") }
-        Button { duplicate(r) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
-        Menu {
-            ForEach(folders) { f in
-                Button { move(r, to: f.id) } label: {
-                    Label(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder")
-                }
-            }
-            if r.folderId != nil {
-                Button { move(r, to: nil) } label: { Label("Remove from folder", systemImage: "folder.badge.minus") }
-            }
-            Divider()
-            Button { startNewFolder(moving: r) } label: { Label("New folder…", systemImage: "folder.badge.plus") }
-        } label: { Label("Move to…", systemImage: "folder") }
-        Button(role: .destructive) { delete(r) } label: { Label("Delete routine", systemImage: "trash") }
-    }
-
-    /// The same actions as `routineActions`, as the «···» paper menu (FER-837). The long-press
-    /// `contextMenu` keeps the native ViewBuilder version above.
+    /// The row's actions as the «···» paper menu (FER-837). The native long-press `contextMenu` was
+    /// retired (FER-951): iOS draws it as a system balloon that ignores the theme — one menu, one look.
     private func routinePaperItems(_ r: Routine) -> [PaperMenuItem] {
         var move: [PaperMenuItem] = folders.map { f in
             PaperMenuItem(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder") { self.move(r, to: f.id) }
@@ -525,7 +505,6 @@ struct WeeklyPlanEditorView: View {
                     .frame(minHeight: 56).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .contextMenu { routineActions(r) }
 
                 Button { menuRoutineId = r.id } label: {
                     Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))

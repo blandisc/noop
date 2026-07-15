@@ -24,6 +24,8 @@ struct CoachView: View {
     @State private var keyDraft: String = ""
     /// Whether the model selector is in free-text "Custom…" mode.
     @State private var customModel: Bool = false
+    /// Whether the model paper menu is open (FER-951 — replaces the native `.menu` picker balloon).
+    @State private var showModelMenu = false
     /// The id typed in the "Custom…" field.
     @State private var customModelDraft: String = ""
     @FocusState private var composerFocused: Bool
@@ -173,17 +175,28 @@ struct CoachView: View {
                 .accessibilityLabel("Refresh models from provider")
             }
 
-            Picker("Model", selection: modelPickerSelection) {
-                ForEach(coach.availableModels, id: \.self) { m in
-                    Text(m).tag(m)
+            // The model dropdown as the themed paper menu (FER-951) — the native `.menu` picker
+            // draws a system balloon that ignores the theme.
+            Button { showModelMenu = true } label: {
+                HStack(spacing: 5) {
+                    Text(customModel ? String(localized: "Custom…") : coach.model)
+                        .font(StrandFont.body).foregroundStyle(theme.ink)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
-                Divider()
-                Text("Custom…").tag(customModelTag)
+                .contentShape(Rectangle())
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .tint(theme.ink)
-            .fixedSize()
+            .buttonStyle(.plain)
+            .paperMenu(isPresented: $showModelMenu, items:
+                coach.availableModels.map { m in
+                    PaperMenuItem(m, systemImage: !customModel && coach.model == m ? "checkmark" : nil) {
+                        modelPickerSelection.wrappedValue = m
+                    }
+                } + [PaperMenuItem(String(localized: "Custom…"),
+                                   systemImage: customModel ? "checkmark" : nil) {
+                    modelPickerSelection.wrappedValue = customModelTag
+                }]
+            )
             .accessibilityLabel("Model")
 
             if customModel {
