@@ -107,10 +107,17 @@ struct SleepDetailScreen: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .sheetPaper(theme)
-        .task {
+        // FER-953: re-run when the placeholder model is replaced by the real one; parse + heat off-main.
+        .task(id: model.loaded) {
             range = .month
-            durationParsed = model.durationSeries.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
-            sleepHeatCache = buildSleepHeat()
+            let series = model.durationSeries
+            let todayKey = Repository.localDayKey(Date())   // main-isolated: resolve before the hop
+            let (parsed, heat) = await Task.detached(priority: .userInitiated) {
+                (series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) },
+                 Self.buildSleepHeat(durationSeries: series, todayKey: todayKey))
+            }.value
+            durationParsed = parsed
+            sleepHeatCache = heat
         }
         .task(id: model.night?.startTs) {
             let (shape, curve) = await loadNightShape()
@@ -978,15 +985,18 @@ struct SleepDetailScreen: View {
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
     }()
 
-    private func buildSleepHeat() -> [RecoveryDay] {
+    /// Builds the 90-night heat grid from a duration series snapshot (FER-953: pure / off-main-safe).
+    /// `todayKey` llega del caller en MainActor (`Repository.localDayKey` es main-isolated). (FER-953)
+    private nonisolated static func buildSleepHeat(durationSeries: [(day: String, value: Double)],
+                                                   todayKey: String) -> [RecoveryDay] {
         var mins: [String: Double] = [:]
-        for r in durationParsed { mins[r.day] = r.value }
+        for r in durationSeries { mins[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
         // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
         // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
         // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano. Asi los cuatro
         // calendarios (Recuperacion, Sueno, Esfuerzo, Estres) miden igual. (FER calendarios mismo tamano)
-        guard let today = Repository.parseDayKey(Repository.localDayKey(Date())) else { return [] }
+        guard let today = Repository.parseDayKey(todayKey) else { return [] }
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
             let key = Self.calDayFmt.string(from: date)
@@ -1099,36 +1109,42 @@ struct SleepDetailScreen: View {
         let hr = await loadNightHR(night.startTs, night.endTs)
         guard hr.count >= 2 else { return (nil, []) }
 
-        let asleep = model.intervals
-            .filter { $0.stage != .awake }
-            .map { NightAutonomicShape.AsleepSpan(start: Int($0.start), end: Int($0.end)) }
-        guard !asleep.isEmpty else { return (nil, []) }
+        // FER-953: HR load stays on the caller's path; pure shape/curve derivation hops off-main.
+        let intervals = model.intervals
+        let rhrBaseline = model.rhrBaseline
+        let onsetDate = night.onsetDate
+        return await Task.detached(priority: .userInitiated) { () -> (NightAutonomicShape.Result?, [Double]) in
+            let asleep = intervals
+                .filter { $0.stage != .awake }
+                .map { NightAutonomicShape.AsleepSpan(start: Int($0.start), end: Int($0.end)) }
+            guard !asleep.isEmpty else { return (nil, []) }
 
-        let awakeSpans = model.intervals.filter { $0.stage == .awake }
-        let awakeHR = hr.filter { s in awakeSpans.contains { Int($0.start) <= s.ts && s.ts < Int($0.end) } }
-        let wakingRef: Double? = {
-            if awakeHR.count >= 30 {
-                return Double(awakeHR.reduce(0) { $0 + $1.bpm }) / Double(awakeHR.count)
-            }
-            let sorted = hr.map { Double($0.bpm) }.sorted()
-            guard !sorted.isEmpty else { return nil }
-            let idx = Int((0.90 * Double(sorted.count - 1)).rounded())
-            return sorted[idx]
-        }()
+            let awakeSpans = intervals.filter { $0.stage == .awake }
+            let awakeHR = hr.filter { s in awakeSpans.contains { Int($0.start) <= s.ts && s.ts < Int($0.end) } }
+            let wakingRef: Double? = {
+                if awakeHR.count >= 30 {
+                    return Double(awakeHR.reduce(0) { $0 + $1.bpm }) / Double(awakeHR.count)
+                }
+                let sorted = hr.map { Double($0.bpm) }.sorted()
+                guard !sorted.isEmpty else { return nil }
+                let idx = Int((0.90 * Double(sorted.count - 1)).rounded())
+                return sorted[idx]
+            }()
 
-        let tz = TimeZone.current.secondsFromGMT(for: night.onsetDate)
-        let shape = NightAutonomicShape.compute(hr: hr, asleep: asleep,
-                                                wakingReferenceHR: wakingRef,
-                                                rhrBaseline: model.rhrBaseline,
-                                                tzOffsetSeconds: tz)
+            let tz = TimeZone.current.secondsFromGMT(for: onsetDate)
+            let shape = NightAutonomicShape.compute(hr: hr, asleep: asleep,
+                                                    wakingReferenceHR: wakingRef,
+                                                    rhrBaseline: rhrBaseline,
+                                                    tzOffsetSeconds: tz)
 
-        let asleepHR = hr.filter { s in asleep.contains { $0.start <= s.ts && s.ts < $0.end } }
-                         .sorted { $0.ts < $1.ts }
-        let curve = Self.downsampleBpm(asleepHR, maxPoints: 48)
-        return (shape, curve)
+            let asleepHR = hr.filter { s in asleep.contains { $0.start <= s.ts && s.ts < $0.end } }
+                             .sorted { $0.ts < $1.ts }
+            let curve = Self.downsampleBpm(asleepHR, maxPoints: 48)
+            return (shape, curve)
+        }.value
     }
 
-    private static func downsampleBpm(_ hr: [HRSample], maxPoints: Int) -> [Double] {
+    private nonisolated static func downsampleBpm(_ hr: [HRSample], maxPoints: Int) -> [Double] {
         guard hr.count > maxPoints else { return hr.map { Double($0.bpm) } }
         var out: [Double] = []
         out.reserveCapacity(maxPoints)
@@ -1146,10 +1162,13 @@ struct SleepDetailScreen: View {
     /// unreadable nights (`confidence == .unreadable`).
     private func loadNightDC() async -> NocturnalDC.Result? {
         guard let night = model.night, !model.isAppleHealth else { return nil }
-        let rr = (await loadNightRR(night.startTs, night.endTs)).map { Double($0.rrMs) }
+        let rr = await loadNightRR(night.startTs, night.endTs)
         guard !rr.isEmpty else { return nil }
         let baseline = await loadDCBaseline()
-        return NocturnalDC.compute(rawRR: rr, baselineDcMs: baseline)
+        // FER-953: RR/baseline loads stay; map + NocturnalDC.compute hop off-main.
+        return await Task.detached(priority: .userInitiated) {
+            NocturnalDC.compute(rawRR: rr.map { Double($0.rrMs) }, baselineDcMs: baseline)
+        }.value
     }
 
     // MARK: - Formatting helpers
@@ -1571,6 +1590,27 @@ struct SleepDetailModel {
             respirationTrend: respirationTrend,
             awakeningsTrend: awakeningsTrend,
             respNightly: respNightly)
+    }
+
+    /// Runs `build` off the MainActor (FER-953): the inputs are value-type snapshots, the engines are
+    /// pure StrandAnalytics — so the whole derivation hops to a background executor and only the
+    /// finished model returns to main.
+    static func buildDetached(days: [DailyMetric], sleeps: [CachedSleepSession],
+                              appleSleeps: [CachedSleepSession],
+                              importedSleep: [String: ImportedSleepFigures],
+                              appleHealthDays: Set<String>, loaded: Bool,
+                              todayKey: String,
+                              fusion: [String: [String: FusedMetricPoint]]) async -> SleepDetailModel {
+        await Task.detached(priority: .userInitiated) {
+            build(days: days, sleeps: sleeps, appleSleeps: appleSleeps, importedSleep: importedSleep,
+                  appleHealthDays: appleHealthDays, loaded: loaded, todayKey: todayKey, fusion: fusion)
+        }.value
+    }
+
+    /// Placeholder while `buildDetached` runs: renders the screen's existing `!loaded` loading state.
+    static var loading: SleepDetailModel {
+        build(days: [], sleeps: [], appleSleeps: [], importedSleep: [:], appleHealthDays: [],
+              loaded: false, todayKey: "", fusion: [:])
     }
 
     /// Trailing 14 nights of a metric, in whatever unit `pick` returns, as `TrendPoint`s. Skips nights

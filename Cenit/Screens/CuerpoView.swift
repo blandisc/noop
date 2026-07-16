@@ -136,7 +136,7 @@ private struct DetailChrome<Content: View>: View {
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)`
 /// (the model itself isn't Identifiable). One per presentation. (FER-212)
 private struct SleepDetailItem: Identifiable {
-    let id = UUID()
+    var id = UUID()
     let model: SleepDetailModel
 }
 
@@ -817,15 +817,21 @@ private struct CuerpoLanding: View {
         let fromApple = r?.fromApple == true
         return statColumn("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
                           fromApple: fromApple, spark: windowedSpark { $0.totalSleepMin }) {
-            sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
-                days: repo.days,
-                sleeps: repo.sleeps,
-                appleSleeps: repo.appleSleeps,
-                importedSleep: repo.importedSleep,
-                appleHealthDays: repo.appleHealthDays,
-                loaded: repo.loaded,
-                todayKey: Repository.localDayKey(Date()),
-                fusion: repo.fusion))
+            // FER-953: snapshot the inputs by value, present the loading state IMMEDIATELY, and build off-main.
+            let days = repo.days, sleeps = repo.sleeps, appleSleeps = repo.appleSleeps
+            let importedSleep = repo.importedSleep, appleHealthDays = repo.appleHealthDays
+            let loaded = repo.loaded, fusion = repo.fusion
+            let todayKey = Repository.localDayKey(Date())
+            let item = SleepDetailItem(model: .loading)
+            sleepDetail = item
+            Task {
+                let m = await SleepDetailModel.buildDetached(
+                    days: days, sleeps: sleeps, appleSleeps: appleSleeps, importedSleep: importedSleep,
+                    appleHealthDays: appleHealthDays, loaded: loaded, todayKey: todayKey, fusion: fusion)
+                if sleepDetail?.id == item.id {   // still the same presentation — user didn't close it
+                    sleepDetail = SleepDetailItem(id: item.id, model: m)
+                }
+            }
         }
     }
 

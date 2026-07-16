@@ -48,7 +48,7 @@ private struct TodayPageHeightKey: PreferenceKey {
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)` from Today
 /// (the model itself isn't Identifiable). Mirrors the one Cuerpo uses. (FER-251)
 private struct SleepDetailItem: Identifiable {
-    let id = UUID()
+    var id = UUID()
     let model: SleepDetailModel
 }
 
@@ -153,6 +153,8 @@ struct TodayView: View {
 
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
+    /// FER-953: sleep summary for MetricInfoSheet, built off-main when the sleep info sheet opens.
+    @State private var sleepSummaryModel: SleepDetailModel? = nil
     @State private var showWhyVerdict = false
     /// FER-878: la ⓘ junto a «POR QUÉ N» abre la tarjeta «Qué medimos» (el caption explicativo ya no
     /// flota en pantalla; vive aquí, como en Tendencias).
@@ -447,6 +449,14 @@ struct TodayView: View {
             .sheet(item: $metricDetail, onDismiss: { pendingSeeMore?(); pendingSeeMore = nil }) { info in
                 metricSheet(for: info)
             }
+            // FER-953: precompute the sleep summary model off-main when the sleep info sheet opens.
+            .task(id: metricDetail?.id) {
+                guard metricDetail?.id == "sleep" else { sleepSummaryModel = nil; return }
+                sleepSummaryModel = await SleepDetailModel.buildDetached(
+                    days: repo.days, sleeps: repo.sleeps, appleSleeps: repo.appleSleeps,
+                    importedSleep: repo.importedSleep, appleHealthDays: repo.appleHealthDays,
+                    loaded: repo.loaded, todayKey: Repository.localDayKey(Date()), fusion: repo.fusion)
+            }
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness, theme: theme,
                                 sleepMinutes: repo.today?.totalSleepMin,
@@ -571,12 +581,7 @@ struct TodayView: View {
             onSeeMore: seeMoreAction(for: info.id),
             levelsSeriesLoader: levelsSeriesLoader(for: info.id),
             whatMovesIt: whatMovesItFindings(for: info.id),
-            sleepDetail: info.id == "sleep" ? SleepDetailModel.build(
-                days: repo.days, sleeps: repo.sleeps, appleSleeps: repo.appleSleeps,
-                importedSleep: repo.importedSleep,
-                appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
-                todayKey: Repository.localDayKey(Date()),
-                fusion: repo.fusion) : nil
+            sleepDetail: info.id == "sleep" ? sleepSummaryModel : nil
         )
     }
 
@@ -599,12 +604,21 @@ struct TodayView: View {
             }
         case "sleep":
             present = {
-                sleepDetail = SleepDetailItem(model: SleepDetailModel.build(
-                    days: repo.days, sleeps: repo.sleeps, appleSleeps: repo.appleSleeps,
-                    importedSleep: repo.importedSleep,
-                    appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
-                    todayKey: Repository.localDayKey(Date()),
-                    fusion: repo.fusion))
+                // FER-953: snapshot the inputs by value, present the loading state IMMEDIATELY, and build off-main.
+                let days = repo.days, sleeps = repo.sleeps, appleSleeps = repo.appleSleeps
+                let importedSleep = repo.importedSleep, appleHealthDays = repo.appleHealthDays
+                let loaded = repo.loaded, fusion = repo.fusion
+                let todayKey = Repository.localDayKey(Date())
+                let item = SleepDetailItem(model: .loading)
+                sleepDetail = item
+                Task {
+                    let m = await SleepDetailModel.buildDetached(
+                        days: days, sleeps: sleeps, appleSleeps: appleSleeps, importedSleep: importedSleep,
+                        appleHealthDays: appleHealthDays, loaded: loaded, todayKey: todayKey, fusion: fusion)
+                    if sleepDetail?.id == item.id {   // still the same presentation — user didn't close it
+                        sleepDetail = SleepDetailItem(id: item.id, model: m)
+                    }
+                }
             }
         case "strain":
             present = {
