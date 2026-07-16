@@ -1631,78 +1631,89 @@ struct LiveStrengthSheet: View {
         return "\(massText(w)) × \(reps)"
     }
 
-    /// The active exercise — ONE List row (r13): the rail lane and the floating white card side by
-    /// side IN CONTENT, the same single-coordinate-space pattern the compressed rows (`railColumn`)
-    /// always used. The per-slice architecture (r7–r12) painted rail and card in the cell's
-    /// BACKGROUND space, which drifts from the content's — the dot missed the thumbnail, the thread
-    /// missed the dot, and per-slice cells bred the «fila gorda». One cell = one space: dot, thread
-    /// birth and card align by plain stack math. Swipe-to-delete needed List rows, so deleting a set
-    /// is a long-press context menu now.
+    /// The active exercise — ONE List row (r13). r14: the rail no longer has its own lane column —
+    /// the thread hangs off the CARD (overlay, spans exactly its height) and the category dot hangs
+    /// off the THUMBNAIL itself (overlay, vertically centered by alignment — zero math to drift).
+    /// Card, thread and dot are one layout tree, so they can only move together. Swipe-to-delete
+    /// needed List rows, so deleting a set is a long-press context menu (previewing JUST that row).
     private func activeExerciseBlock(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            activeRail(run, ei: ei)
-            VStack(spacing: 0) {
-                exerciseHeader(run, ei: ei, first: true)
-                    .padding(.top, 12).padding(.horizontal, 14).padding(.bottom, 8)
-                ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
-                    // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows
-                    // from the numbered work sets — drawn on the first work row after a warm-up.
-                    let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
-                    VStack(spacing: 0) {
-                        // El descanso vive DENTRO del bloque, pegado a su fila (r7/r12).
-                        if restSlotIndex(run, ei: ei) == si { restInlineSlice(run) }
-                        if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
-                        setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
-                                } label: { Label("Delete set", systemImage: "trash") }
-                            }
-                    }
-                    .padding(.horizontal, 14)
-                }
-                // «Add set» closes the card — the handoff's ember pill, inside (FER-935 kin).
-                // El descanso tras la ÚLTIMA serie vive aquí (r7/r12).
+        VStack(spacing: 0) {
+            exerciseHeader(run, ei: ei, first: true)
+                .padding(.top, 12).padding(.horizontal, 14).padding(.bottom, 8)
+            ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
+                // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows
+                // from the numbered work sets — drawn on the first work row after a warm-up.
+                let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
                 VStack(spacing: 0) {
-                    if session.phase == .resting, ei == accordionIndex, session.summary == nil,
-                       restSlotIndex(run, ei: ei) == nil {
-                        restInlineSlice(run)
-                    }
-                    addSetButton(ei)
+                    // El descanso vive DENTRO del bloque, pegado a su fila (r7/r12).
+                    if restSlotIndex(run, ei: ei) == si { restInlineSlice(run) }
+                    if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
+                    setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+                        // r14 (owner): the system lift snapshotted the WHOLE cell — the custom
+                        // preview lifts just this row, quiet and on-language.
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
+                            } label: { Label("Delete set", systemImage: "trash") }
+                        } preview: {
+                            setRowPreview(run: run, si: si, set: set)
+                        }
                 }
-                .padding(.horizontal, 14).padding(.vertical, 8)
+                .padding(.horizontal, 14)
             }
-            .background(
-                // «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra. One simple
-                // shape replaces the r8d per-slice UnevenRoundedRectangle + internal-edge mask.
-                RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .fill(theme.surface)
-                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                        .strokeBorder(theme.hairline, lineWidth: 1))
-            )
+            // «Add set» closes the card — the handoff's ember pill, inside (FER-935 kin).
+            // El descanso tras la ÚLTIMA serie vive aquí (r7/r12).
+            VStack(spacing: 0) {
+                if session.phase == .resting, ei == accordionIndex, session.summary == nil,
+                   restSlotIndex(run, ei: ei) == nil {
+                    restInlineSlice(run)
+                }
+                addSetButton(ei)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 8)
         }
+        .background(
+            // «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra. One simple
+            // shape replaces the r8d per-slice UnevenRoundedRectangle + internal-edge mask.
+            RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                .fill(theme.surface)
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                    .strokeBorder(theme.hairline, lineWidth: 1))
+        )
+        // r14: the thread is the CARD's overlay — it spans exactly the card's height, 19pt into the
+        // gutter (26 gutter − 7 lane center), and on the first exercise it's BORN at the dot (34 =
+        // 12 card padding + half the 44pt thumb). Same tree as the card: no cross-space drift.
+        .overlay(alignment: .topLeading) {
+            if showRail {
+                VStack(spacing: 0) {
+                    if ei == firstRailIndex { Color.clear.frame(height: 12 + 22) }
+                    Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                }
+                .offset(x: -20)
+                .allowsHitTesting(false)
+            }
+        }
+        .padding(.leading, 26)
         .plainRow()
         .id("session-exercise-\(ei)")
     }
 
-    /// The active card's rail lane — thread + category dot IN CONTENT, sharing the block's
-    /// coordinate space: the dot centers on the 44pt thumbnail (12 card padding + 22 = its middle,
-    /// the thumb is TOP-anchored in the header) and the first exercise's thread is BORN at the dot.
-    /// The lane is always 14pt wide so the card never shifts; `showRail` only hides the ink.
-    private func activeRail(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        ZStack(alignment: .top) {
-            if showRail {
-                Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
-                    .padding(.top, ei == firstRailIndex ? 12 + 22 : 0)
-                ZStack {
-                    Circle().fill(theme.paper).frame(width: 17, height: 17)
-                    Circle().fill(categoryTint(run)).frame(width: 11, height: 11)
-                }
-                .padding(.top, 12 + 22 - 8.5)
-            }
+    /// The lifted preview for a set row's context menu — JUST the row, restated as a quiet receipt
+    /// line on a surface chip (the interactive row itself can't be snapshotted without its cell).
+    private func setRowPreview(run: StrengthSessionModel.ExerciseRun,
+                               si: Int, set: StrengthSessionModel.WorkingSet) -> some View {
+        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        return HStack(spacing: 10) {
+            Text(set.kind == .warmup ? String(localized: "C") : "\(workNumber)")
+                .font(InstrumentoType.groteskNumber(12, weight: .medium)).monospacedDigit()
+                .foregroundStyle(theme.dataStrain)
+                .frame(width: 26, height: 26)
+                .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
+            Text(verbatim: "\(massText(set.weightKg)) × \(set.reps)")
+                .font(StrandFont.body).monospacedDigit().foregroundStyle(theme.ink)
         }
-        .frame(width: 14)
-        .accessibilityHidden(true)
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .background(theme.surface)
     }
 
     /// The exercise the current rest belongs to (canvas pass 2026-07-15, owner bug #4): registering the
@@ -1751,7 +1762,12 @@ struct LiveStrengthSheet: View {
                 withAnimation(StrandMotion.gentle) { session.skipRest() }
             }
             .padding(.vertical, 8)
-            .transition(.opacity.combined(with: .move(edge: .top)))
+            // r14 (owner): al terminar, el descanso «se echa para atrás» — se hunde en el papel
+            // (escala hacia abajo + fade) mientras las filas se cierran, en vez de brincar hacia
+            // el frente; la entrada sigue abriendo espacio desde su fila.
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .move(edge: .top)),
+                removal: .opacity.combined(with: .scale(scale: 0.94))))
     }
 
     /// FER-937: the «SERIES DE TRABAJO» rule between the warm-up «C» rows and the numbered work sets —
@@ -2236,8 +2252,11 @@ struct LiveStrengthSheet: View {
                 platesTarget = PlatesTarget(ei: session.currentIndex,
                                             weightKg: session.currentSet?.weightKg ?? 0)
             } label: {
-                Text("±\(plateNumber(displayWeight(weightStepKg))) · ⛓ " + String(localized: "plates"))
+                // r14: fuera el glifo «⛓» (tofu en Grotesk) y la clave «plates» ya vive en el
+                // catálogo — la leyenda queda «±2,5 · discos» en una sola línea.
+                Text("±\(plateNumber(displayWeight(weightStepKg))) · " + String(localized: "plates"))
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
+                    .lineLimit(1)
             }
             .buttonStyle(.plain)
         }
@@ -2286,12 +2305,13 @@ struct LiveStrengthSheet: View {
     }
 
     private func focusRoundStep(_ system: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        // r14 (owner): pasos GRANDES, de tinta y cuadrados — el gesto más repetido del foco deja de
+        // ser un botón tímido; paper glyph sobre ink, esquina continua como el resto del recibo.
         Button(action: action) {
-            Image(systemName: system).font(.system(size: 15, weight: .medium))  // token-exempt: glyph sized to the 32pt round step
-                .foregroundStyle(theme.inkSecondary)
-                .frame(width: 32, height: 32)
-                .background(theme.paper, in: Circle())
-                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            Image(systemName: system).font(.system(size: 17, weight: .semibold))  // token-exempt: glyph sized to the 40pt square step
+                .foregroundStyle(theme.paper)
+                .frame(width: 40, height: 40)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label))
@@ -2825,9 +2845,20 @@ struct LiveStrengthSheet: View {
             // centro del thumb SIEMPRE queda a 12+22=34, donde vive el punto.
             HStack(alignment: .top, spacing: 12) {
                 SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
-                    // r13: la bolita vive en `activeRail`, hermana de esta tarjeta en el MISMO
-                    // espacio de coordenadas — su centro (12+22 del tope del bloque) coincide con
-                    // el de este thumb top-anclado por pura aritmética de stacks.
+                    // r14: la bolita es OVERLAY del thumbnail — centro vertical por ALINEACIÓN
+                    // (no hay constante que pueda derivar) y en X aterriza sobre el hilo del
+                    // mismo árbol de la tarjeta: 14 de padding + 26 de canaleta − 7 del carril
+                    // = 33 a la izquierda del thumb (−8.5 corre el anillo a su centro).
+                    .overlay(alignment: .leading) {
+                        if showRail {
+                            ZStack {
+                                Circle().fill(theme.paper).frame(width: 17, height: 17)
+                                Circle().fill(categoryTint(run)).frame(width: 11, height: 11)
+                            }
+                            .offset(x: -33 - 8.5)
+                            .allowsHitTesting(false)
+                        }
+                    }
 
                 VStack(alignment: .leading, spacing: 2) {
                 supersetTag(ei)
@@ -3379,8 +3410,12 @@ struct LiveStrengthSheet: View {
             if set.id == copiedSetId, !set.done, si > 0 {
                 // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».
                 let fromNumber = run.sets.prefix(si).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+                // r14: candado duro — esta celda es la ÚNICA pieza exclusiva de la fila recién
+                // copiada (la que sale gorda); una línea y 44pt como sus celdas hermanas, pase lo
+                // que pase con la clave localizada.
                 Text("COPIED FROM \(fromNumber)").instrumentoOverline().foregroundStyle(theme.dataStrain)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, maxHeight: 44, alignment: .leading)
             } else {
                 previousCell(ei: ei, si: si, run: run)
                     .frame(maxWidth: .infinity, alignment: .leading)
