@@ -2428,7 +2428,9 @@ struct LiveStrengthSheet: View {
                                                  @ViewBuilder caption: () -> Caption) -> some View {
         VStack(spacing: 6) {
             Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(spacing: 8) {
+            // r23 (owner): spacing y padding ceden ~20pt al numeral — un «102,5» ya no se encoge
+            // a letra chica entre los dos cuadros.
+            HStack(spacing: 6) {
                 focusRoundStep("minus", label: minusLabel, action: minus)
                 Text(value).font(InstrumentoType.groteskNumber(32)).monospacedDigit()
                     .foregroundStyle(valueTint).lineLimit(1).minimumScaleFactor(0.55)
@@ -2438,7 +2440,7 @@ struct LiveStrengthSheet: View {
             caption()
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14).padding(.horizontal, 10)
+        .padding(.vertical, 14).padding(.horizontal, 8)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
@@ -2446,13 +2448,15 @@ struct LiveStrengthSheet: View {
     }
 
     private func focusRoundStep(_ system: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        // r14 (owner): pasos GRANDES, de tinta y cuadrados — el gesto más repetido del foco deja de
-        // ser un botón tímido; paper glyph sobre ink, esquina continua como el resto del recibo.
+        // r14 (owner): pasos de tinta y cuadrados. r23 (owner): un poco MÁS CHICOS (36pt visuales)
+        // para cederle ancho al numeral — con cargas de cientos («102,5») el valor es el héroe, no
+        // los botones. El toque conserva ~44pt vía contentShape extendido.
         Button(action: action) {
             Image(systemName: system).font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.paper)
-                .frame(width: 44, height: 44)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                .frame(width: 36, height: 36)
+                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                .contentShape(Rectangle().inset(by: -4))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label))
