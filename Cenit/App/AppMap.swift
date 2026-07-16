@@ -366,4 +366,106 @@ private struct NewRoutineFlowMapCell: View {
 #Preview("Flujo · Nueva rutina → Editar → Activa") {
     NewRoutineFlowMapCell()
 }
+
+/// EL HUB CON TODOS SUS CAMINOS (FER-952): EntrenarView con el MISMO cableado que RootTabView — cada
+/// disco, fila y CTA navega de verdad: Rutina de hoy / Tu Plan / Nueva rutina→Biblioteca→editor /
+/// Mis entrenamientos→detalle / Respira / Intervalos / Dieta / Descanso / Otras formas / mapa de
+/// músculo / tickets, y «Empezar» presenta la Serie activa. Para verificar los flujos de punta a punta.
+private struct EntrenarFlowsMapCell: View {
+    private enum Route: String, Hashable { case breathe, intervals, dieta, history, weeklyPlan, restDay, otherWays, library }
+
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @StateObject private var historyCoordinator = WorkoutHistoryCoordinator()
+    @State private var seeded = false
+    @State private var path = NavigationPath()
+
+    var body: some View {
+        Group {
+            if seeded {
+                NavigationStack(path: $path) {
+                    EntrenarView(
+                        openRoutine: { path.append(RoutineEditorRoute.today(routineId: $0)) },
+                        openBreathe: { path.append(Route.breathe) },
+                        openIntervals: { path.append(Route.intervals) },
+                        openDiet: { path.append(Route.dieta) },
+                        openHistory: { path.append(Route.history) },
+                        openWeeklyPlan: { path.append(Route.weeklyPlan) },
+                        openRoutines: { path.append(Route.weeklyPlan) },
+                        openRestDay: { path.append(Route.restDay) },
+                        openOtherWays: { path.append(Route.otherWays) },
+                        openWorkoutSession: { path.append($0) }
+                    )
+                    .navigationDestination(for: Route.self) { destination($0) }
+                    .navigationDestination(for: RoutineEditorRoute.self) { route in
+                        RoutineEditorScreen(origin: route).toolbar(.hidden, for: .navigationBar)
+                    }
+                    .navigationDestination(for: WorkoutSessionRoute.self) { route in
+                        WorkoutSessionDetailScreen(route: route,
+                            openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) })
+                    }
+                    .navigationDestination(for: MuscleVolumeRoute.self) { _ in MuscleVolumeScreen() }
+                    .navigationDestination(for: SavedTicketsRoute.self) { _ in SavedTicketsScreen() }
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .environmentObject(historyCoordinator)
+        .environmentObject(HealthKitBridge(repo: model.repo, appleDeviceId: "map-apple", noopDeviceId: "map"))
+        .environment(model.live)
+        .fullScreenCover(isPresented: Binding(
+            get: { model.strengthSession != nil },
+            set: { if !$0 { model.strengthSession = nil } }
+        )) {
+            if let session = model.strengthSession {
+                LiveStrengthSheet(session: session)
+                    .environmentObject(model.repo)
+                    .environmentObject(model)
+                    .environmentObject(TabRouter())
+                    .environmentObject(media)
+                    .environment(model.live)
+                    .preferredColorScheme(.light)
+            }
+        }
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seed(model, state: "train")
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            seeded = true
+        }
+    }
+
+    @ViewBuilder private func destination(_ r: Route) -> some View {
+        switch r {
+        case .breathe:   BreathingView()
+        case .intervals: IntervalTimerView()
+        case .dieta:     DietCaptureView()
+        case .history:   WorkoutHistoryScreen()
+        case .weeklyPlan:
+            WeeklyPlanEditorView(
+                openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },
+                openLibrary: { path.append(Route.library) },
+                openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) })
+        case .restDay:
+            RestDayScreen(openIntervals: { path.append(Route.intervals) },
+                          openBreathe: { path.append(Route.breathe) },
+                          openRoutines: { path.append(Route.weeklyPlan) })
+        case .otherWays:
+            OtherWaysScreen(openIntervals: { path.append(Route.intervals) },
+                            openBreathe: { path.append(Route.breathe) })
+        case .library:   ExerciseLibraryScreen()
+        }
+    }
+}
+
+#Preview("Entrenar · TODOS los flujos") {
+    EntrenarFlowsMapCell()
+}
 #endif
