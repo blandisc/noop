@@ -1398,17 +1398,20 @@ struct LiveStrengthSheet: View {
     private func railColumn(_ state: RailState, superset: Bool, badgeText: String? = nil,
                             tint: Color, dotTopOffset: CGFloat? = nil, clipTop: Bool = false) -> some View {
         ZStack(alignment: dotTopOffset == nil ? .center : .top) {
-            // The thread fills the WHOLE cell height (rows carry no outer vertical insets anymore —
-            // their breathing lives inside the content), so adjacent cells butt up and the line reads
-            // as one continuous hilo. `clipTop` (first exercise) starts the thread AT the dot — the
-            // dot is its birthplace, nothing hangs above.
+            // The thread fills the WHOLE cell height and OVERSHOOTS 30pt past its edges (r17): the
+            // List's cells carry unpredictable slack at their seams, so neighboring segments overlap
+            // in the lane instead of trying to butt exactly — overlap is invisible, a gap never is.
+            // `clipTop` (first exercise) starts the thread AT the dot — nothing hangs above, so that
+            // row only overshoots downward.
             if clipTop {
                 VStack(spacing: 0) {
                     Color.clear
                     Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                        .padding(.bottom, -30)
                 }
             } else {
                 Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                    .padding(.vertical, -30)
             }
             Group {
                 if let badgeText {
@@ -1655,16 +1658,17 @@ struct LiveStrengthSheet: View {
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
         )
-        // r16: the thread is a BACKGROUND of the card (r14 lo tenía de overlay y pintaba SOBRE la
-        // bolita), 19pt into the gutter (26 − 7). It runs the card's FULL height and overshoots
-        // 34pt past its bottom — the block's List cell carries slack below the card (medido en
-        // canvas: ~21pt) and the overshoot bridges it so the hilo reaches the next row unbroken.
-        // The FIRST exercise's birth-at-the-dot is a thumb-anchored eraser in `exerciseHeader`.
+        // r16/r17: the thread is a BACKGROUND of the card (behind the dot), 19pt into the gutter
+        // (26 − 7). It overshoots 34pt past BOTH card edges — the List's cells carry unpredictable
+        // slack at their seams and every seam is a potential break, so neighboring segments overlap
+        // in the lane instead of trying to butt exactly (overlap is invisible, a gap never is).
+        // The FIRST exercise's birth-at-the-dot is a thumb-anchored eraser in `exerciseHeader`,
+        // tall enough to also swallow this upward overshoot.
         .background(alignment: .topLeading) {
             if showRail {
                 Rectangle().fill(railTint.opacity(0.35))  // token-exempt: decorative rail-thread alpha (structure, not datum)
                     .frame(width: 2)
-                    .padding(.bottom, -34)
+                    .padding(.vertical, -34)
                     .offset(x: -20)
                     .allowsHitTesting(false)
             }
@@ -1742,11 +1746,12 @@ struct LiveStrengthSheet: View {
                 withAnimation(StrandMotion.gentle) { session.skipRest() }
             }
             .padding(.vertical, 8)
-            // r15 (owner, 2ª pulida): la salida se hunde ANCLADA A SU TOPE — escala 0.92 hacia la
-            // fila que la parió mientras las filas de abajo se cierran sobre ella; el anchor .top
-            // evita el «brinco hacia enfrente» que daba el anclaje al centro.
+            // r17 (owner, propuesta 1 «el papel se abre»): la ENTRADA no viaja — las series se
+            // apartan (el VStack abre el espacio) y la tarjeta se revela en su lugar con puro fade.
+            // La salida se queda como r15: se hunde ANCLADA A SU TOPE (escala 0.92 + fade) mientras
+            // las filas de abajo se cierran sobre ella.
             .transition(.asymmetric(
-                insertion: .opacity.combined(with: .move(edge: .top)),
+                insertion: .opacity,
                 removal: .opacity.combined(with: .scale(scale: 0.92, anchor: .top))))
     }
 
@@ -2916,8 +2921,8 @@ struct LiveStrengthSheet: View {
                     .overlay(alignment: .topLeading) {
                         if showRail, ei == firstRailIndex {
                             Rectangle().fill(theme.paper)
-                                .frame(width: 6, height: 60)
-                                .offset(x: -36, y: 22 - 60)
+                                .frame(width: 6, height: 96)
+                                .offset(x: -36, y: 22 - 96)
                                 .allowsHitTesting(false)
                         }
                     }
