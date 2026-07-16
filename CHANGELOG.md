@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Compila más rápido al editar Entrenar / Faster builds when editing Train.**
+  **ES** — `LiveStrengthSheet.swift` (el archivo más grande del app, 4,720 líneas) se partió en tres: el modelo de la sesión, la vista, y los sheets auxiliares. Nada cambia en pantalla; cada edición recompila menos.
+  **EN** — `LiveStrengthSheet.swift` (the app's largest file, 4,720 lines) split into three: the session model, the view, and the helper sheets. Nothing changes on screen; every edit recompiles less.
+  ([LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift), [StrengthSessionModel.swift](Cenit/Screens/StrengthSessionModel.swift), [LiveStrengthSheets.swift](Cenit/Screens/LiveStrengthSheets.swift))
+
 - **La pestaña de Tendencias entra más fluida / The Trends tab loads smoother.**
   **ES** — Al entrar a Tendencias (y en cada sincronización), todos los cálculos de las tarjetas — estrés, carga de entrenamiento, vitalidad/edad corporal, edad física, calibración de recuperación — corren ahora en segundo plano en vez de bloquear la pantalla. Mismos números, sin tirones.
   **EN** — Entering Trends (and every sync), all the card math — stress, training load, vitality/body age, fitness age, recovery calibration — now runs in the background instead of blocking the screen. Same numbers, no hitches.
