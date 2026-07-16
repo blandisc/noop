@@ -3854,8 +3854,17 @@ struct LiveStrengthSheet: View {
         let isActivePending = ei == session.currentIndex && si == curSet && !set.done
         return Button {
             withAnimation(.snappy) {
-                if isActivePending { activeCell = nil; registerActiveSet() }
-                else { session.toggleDone(exercise: ei, set: si) }
+                if set.done {
+                    // Desmarcar una serie hecha: corrección, sin descanso.
+                    session.toggleDone(exercise: ei, set: si)
+                } else {
+                    // r10 (owner): palomear CUALQUIER serie pendiente registra con su descanso —
+                    // antes solo la «actual» descansaba; las demás iban por toggleDone y el descanso
+                    // nunca aparecía (el comportamiento «raro»).
+                    activeCell = nil
+                    if !isActivePending { session.select(exerciseIndex: ei, setIndex: si) }
+                    registerActiveSet()
+                }
             }
         } label: {
             Image(systemName: set.done ? "checkmark.circle.fill" : "circle")
@@ -4997,99 +5006,6 @@ struct RPESheet: View {
 // (`dataStrain`), toggle «Guardar en:» exercise/set, «Guardar» verde, historial «NOTAS ANTERIORES»
 // separado por hairline (sin tarjeta), omitido si está vacío. Abrir el sheet no toca `restEndsAt`.
 
-/// Canvas pass 2026-07-15 — the exercise menu's «Progresión» mini-sheet: toggle + increment + cadence,
-/// persisted to the backing routine. Paper voice; the state line is the dominant datum.
-struct ProgressionMiniSheet: View {
-    let theme: InstrumentoTheme
-    let exerciseName: String
-    let units: String
-    let stepKg: Double
-    let current: RoutineExercise?
-    let canPersist: Bool
-    let displayKg: (Double) -> Double
-    let onApply: (Bool, Double, Int) -> Void
-    let onClose: () -> Void
-
-    @State private var enabled: Bool
-    @State private var incrementKg: Double
-    @State private var every: Int
-
-    init(theme: InstrumentoTheme, exerciseName: String, units: String, stepKg: Double,
-         current: RoutineExercise?, canPersist: Bool, displayKg: @escaping (Double) -> Double,
-         onApply: @escaping (Bool, Double, Int) -> Void, onClose: @escaping () -> Void) {
-        self.theme = theme; self.exerciseName = exerciseName; self.units = units; self.stepKg = stepKg
-        self.current = current; self.canPersist = canPersist; self.displayKg = displayKg
-        self.onApply = onApply; self.onClose = onClose
-        _enabled = State(initialValue: current?.progressionEnabled ?? false)
-        _incrementKg = State(initialValue: current?.progressionIncrementKg ?? 2.5)
-        _every = State(initialValue: current?.progressionSessions ?? 2)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("PROGRESSION").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Text(exerciseName).font(InstrumentoType.grotesk(20, weight: .semibold))
-                        .foregroundStyle(theme.ink).lineLimit(2)
-                }
-                Spacer()
-                Button(action: onClose) {
-                    StrandIcon.close.image
-                        .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
-                        .frame(width: 34, height: 34)
-                        .background(theme.surface, in: Circle())
-                        .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Close"))
-            }
-            Toggle(isOn: $enabled) {
-                Text("Raise the load automatically").font(StrandFont.subhead).foregroundStyle(theme.ink)
-            }
-            .tint(theme.dataRecovery)
-            HStack {
-                Text("Increment").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Spacer()
-                Stepper(value: $incrementKg, in: stepKg...(stepKg * 8), step: stepKg) {
-                    Text("+\(plateNumber(displayKg(incrementKg))) \(units)")
-                        .font(InstrumentoType.groteskNumber(17)).foregroundStyle(theme.ink)
-                }
-                .fixedSize()
-            }
-            .opacity(enabled ? 1 : StrandOpacity.dim)
-            HStack {
-                Text("Every").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Spacer()
-                Stepper(value: $every, in: 1...5) {
-                    Text(String(localized: "\(every) sessions"))
-                        .font(InstrumentoType.groteskNumber(17)).foregroundStyle(theme.ink)
-                }
-                .fixedSize()
-            }
-            .opacity(enabled ? 1 : StrandOpacity.dim)
-            if !canPersist {
-                Text("Ad-hoc session: progression lives on saved routines.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            Spacer(minLength: 0)
-            Button {
-                onApply(enabled, incrementKg, every)
-            } label: {
-                Text("Apply").font(StrandFont.headline).foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, 13)
-                    .background(canPersist ? theme.ink : theme.inkDim, in: Capsule())
-            }
-            .buttonStyle(.plain)
-            .disabled(!canPersist)
-        }
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, CenitMetrics.gap)
-        .padding(.bottom, CenitMetrics.screenPadding)
-        .background(theme.paper.ignoresSafeArea())
-    }
-}
-
 struct NoteSheet: View {
     /// Where a note is saved: the whole exercise (default) or just the active set (FER-932 §4).
     enum Scope { case exercise, set }
@@ -5130,7 +5046,7 @@ struct NoteSheet: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 18)   // r6: el grabber se comía el título — aire real arriba (owner)
+        .padding(.top, 24)   // r10 (owner): más aire aún — el grabber respira lejos del título
         .padding(.bottom, CenitMetrics.screenPadding)
         .background(theme.paper.ignoresSafeArea())
         .onChange(of: scope) { _, newScope in
@@ -5141,7 +5057,10 @@ struct NoteSheet: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Note · \(target.exerciseName)").font(StrandFont.headline).foregroundStyle(theme.ink)
+                // r10: voz de hoja hermana — título Grotesk como RPE/Progresión.
+                Text("Note · \(target.exerciseName)")
+                    .font(InstrumentoType.grotesk(20, weight: .semibold)).foregroundStyle(theme.ink)
+                    .lineLimit(2)
                 Text(scope == .exercise
                      ? "Saved in this exercise's history"
                      : "Saved for this set only")
