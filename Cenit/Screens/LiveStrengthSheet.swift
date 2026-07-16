@@ -1153,35 +1153,24 @@ struct LiveStrengthSheet: View {
             // ignorar-recuperación) — el dueño la recordaba bien; la mini-hoja lean se retira.
             if session.runs.indices.contains(target.id) {
                 let run = session.runs[target.id]
-                if let re = routineREs[run.id] {
-                    ProgressionSetupScreen(
-                        theme: theme, exercise: re, exerciseName: run.name,
-                        currentWeightKg: run.sets.first?.weightKg,
-                        derivedIncrementKg: weightStepKg,
-                        onBack: { progressionEdit = nil },
-                        onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
-                            persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
-                                                   sessions: sessions, incrementKg: incrementKg,
-                                                   deload: deload, ignoreRecovery: ignoreRecovery)
-                            progressionEdit = nil
-                        }
-                    )
-                    .padding(.top, CenitMetrics.gap)
-                    .presentationDragIndicator(.visible)
-                    .presentationBackground(theme.paper)
-                    .preferredColorScheme(.light)
-                } else {
-                    // Sesión ad-hoc: sin rutina no hay plan que progresar.
-                    VStack(spacing: 10) {
-                        Text("Progression lives on saved routines.")
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        Button(String(localized: "Close")) { progressionEdit = nil }
-                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                ProgressionSetupScreen(
+                    theme: theme,
+                    exercise: routineREs[run.id] ?? syntheticRE(from: run, position: target.id),
+                    exerciseName: run.name,
+                    currentWeightKg: run.sets.first?.weightKg,
+                    derivedIncrementKg: weightStepKg,
+                    onBack: { progressionEdit = nil },
+                    onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                        persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
+                                               sessions: sessions, incrementKg: incrementKg,
+                                               deload: deload, ignoreRecovery: ignoreRecovery)
+                        progressionEdit = nil
                     }
-                    .padding(CenitMetrics.screenPadding)
-                    .presentationDetents([.height(160)])
-                    .presentationBackground(theme.paper)
-                }
+                )
+                .padding(.top, CenitMetrics.gap)
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
             }
         }
         .task(id: session.routineId) { await loadRoutineREs() }
@@ -1650,6 +1639,7 @@ struct LiveStrengthSheet: View {
                 if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
                 setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
                     .border(.blue)   // TEMP-DEBUG r7 (fila gorda): quitar al cerrar la cacería
+                    .background(.yellow.opacity(0.15))   // TEMP-DEBUG r7b: pinta el ÁREA real de setRow
             }
                 .border(.red)   // TEMP-DEBUG r7 (fila gorda): quitar al cerrar la cacería
                 // Owner bug #3: a freshly-added set inflated its row — the slice can never stretch
@@ -4085,6 +4075,20 @@ struct LiveStrengthSheet: View {
         guard let rid = session.routineId, let store = await model.repo.storeHandle() else { return }
         let res = (try? await store.routineExercises(routineId: rid)) ?? []
         routineREs = Dictionary(uniqueKeysWithValues: res.map { ($0.id, $0) })
+    }
+
+    /// A stand-in RoutineExercise built from the LIVE run, so the full progression screen can open
+    /// even when the backing routine isn't loaded (preview / ad-hoc). Saving persists only when a
+    /// real routine exists.
+    private func syntheticRE(from run: StrengthSessionModel.ExerciseRun, position: Int) -> RoutineExercise {
+        let planned = run.sets.enumerated().map { i, set in
+            RoutineSet(position: i, kind: set.kind, reps: set.reps, weightKg: set.weightKg)
+        }
+        return RoutineExercise(routineId: session.routineId ?? "adhoc", exerciseId: run.exerciseId,
+                               position: position, targetSets: max(1, planned.count),
+                               targetReps: run.sets.first?.reps,
+                               restMode: run.restMode == .heartRate ? .heartRate : .fixed,
+                               restSeconds: run.restSeconds, sets: planned)
     }
 
     /// Persist the FULL progression config (r7 — the real ProgressionSetupScreen fields) into the
