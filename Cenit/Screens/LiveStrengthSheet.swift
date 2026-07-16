@@ -2107,9 +2107,10 @@ struct LiveStrengthSheet: View {
         } else if !isEmptyAdHoc {
             // Canvas pass 2026-07-15: Pausa dresses like Terminar's sibling — same capsule grammar.
             headerCapsule(action: { model.pauseStrengthSession() }) {
-                // r24 (owner): misma voz Grotesk que Terminar — ópticamente gemelos.
-                Label("Pause", systemImage: "pause.fill").labelStyle(.titleAndIcon)
-                    .font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
+                // r27 (owner): solo las dos barritas — el símbolo universal basta; la palabra la
+                // lleva VoiceOver.
+                Image(systemName: "pause.fill")
+                    .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
             }
             .accessibilityLabel(Text("Pause session"))
             // r20 (auditoría UX #6d + owner): Terminar-y-guardar es el acto constructivo esperado —
