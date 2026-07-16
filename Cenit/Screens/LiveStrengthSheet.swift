@@ -1655,20 +1655,18 @@ struct LiveStrengthSheet: View {
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
         )
-        // r14: the thread is the CARD's overlay — it spans exactly the card's height, 19pt into the
-        // gutter (26 gutter − 7 lane center), and on the first exercise it's BORN at the dot (34 =
-        // 12 card padding + half the 44pt thumb). Same tree as the card: no cross-space drift.
-        .overlay(alignment: .topLeading) {
+        // r16: the thread is a BACKGROUND of the card (r14 lo tenía de overlay y pintaba SOBRE la
+        // bolita), 19pt into the gutter (26 − 7). It runs the card's FULL height and overshoots
+        // 34pt past its bottom — the block's List cell carries slack below the card (medido en
+        // canvas: ~21pt) and the overshoot bridges it so the hilo reaches the next row unbroken.
+        // The FIRST exercise's birth-at-the-dot is a thumb-anchored eraser in `exerciseHeader`.
+        .background(alignment: .topLeading) {
             if showRail {
-                VStack(spacing: 0) {
-                    if ei == firstRailIndex { Color.clear.frame(height: 12 + 22) }
-                    Rectangle().fill(railTint.opacity(0.35))  // token-exempt: decorative rail-thread alpha (structure, not datum)
-                }
-                // r15: el ancho vive en el VStack — un Color.clear suelto es flexible en X y
-                // estiraba el stack al ancho de la tarjeta (el hilo aparecía por su CENTRO).
-                .frame(width: 2)
-                .offset(x: -20)
-                .allowsHitTesting(false)
+                Rectangle().fill(railTint.opacity(0.35))  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                    .frame(width: 2)
+                    .padding(.bottom, -34)
+                    .offset(x: -20)
+                    .allowsHitTesting(false)
             }
         }
         .padding(.leading, 26)
@@ -2911,6 +2909,18 @@ struct LiveStrengthSheet: View {
             // centro del thumb SIEMPRE queda a 12+22=34, donde vive el punto.
             HStack(alignment: .top, spacing: 12) {
                 SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
+                    // r16: el NACIMIENTO del hilo también se ancla al thumb — un borrador de papel
+                    // tapa el hilo desde arriba de la tarjeta hasta el CENTRO del thumb (donde vive
+                    // la bolita); el anillo remata la orilla. La constante «34 desde la tarjeta» de
+                    // r14 mentía: la celda trae holgura y el hueco bolita→línea medía ~17pt.
+                    .overlay(alignment: .topLeading) {
+                        if showRail, ei == firstRailIndex {
+                            Rectangle().fill(theme.paper)
+                                .frame(width: 6, height: 60)
+                                .offset(x: -36, y: 22 - 60)
+                                .allowsHitTesting(false)
+                        }
+                    }
                     // r14: la bolita es OVERLAY del thumbnail — centro vertical por ALINEACIÓN
                     // (no hay constante que pueda derivar) y en X aterriza sobre el hilo del
                     // mismo árbol de la tarjeta: 14 de padding + 26 de canaleta − 7 del carril

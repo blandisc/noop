@@ -63,7 +63,8 @@ struct SessionKeypad: View {
                 // FER-815: each accessory appears only when its function exists — never a permanent
                 // disabled placeholder. RPE shows once a handler is wired; plates once the math is on.
                 if let onRPE { pill("RPE ▾", action: onRPE) }
-                if platesEnabled { pill(String(localized: "⛓ plates"), action: onPlates) }
+                // r16: fuera el glifo «⛓» (tofu en Grotesk) — la pastilla queda en el puro «discos».
+                if platesEnabled { pill(String(localized: "plates"), action: onPlates) }
                 Spacer(minLength: 4)
                 Button(action: onNext) {
                     Text("Next").font(StrandFont.subhead).fontWeight(.semibold)
