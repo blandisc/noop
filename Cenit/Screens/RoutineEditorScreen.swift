@@ -67,6 +67,9 @@ struct RoutineEditorScreen: View {
     /// Drag-reorder mode (6a, FER-841): every row compacts to thumb + name + summary and the set tables
     /// fold away; dropping reopens them. Entered by long-pressing an exercise header.
     @State private var reordering = false
+    /// The set whose long-press armed the «Delete set» pill (Serie activa's gesture — cards are single
+    /// List rows, so swipe can't reach the inner set rows). nil = none armed.
+    @State private var armedDeleteSetId: String? = nil
     /// The routine hue + group label — refreshed by `refreshTint()` only when the exercise set changes,
     /// never per render (the ring in every set row reads the tint; see `dominantGroup`).
     @State private var routineTint: Color = .clear
@@ -232,50 +235,173 @@ struct RoutineEditorScreen: View {
         .safeAreaInset(edge: .bottom) { if startsSession { ctaBar } }
     }
 
+    // The editor now speaks the Serie activa's language (FER-952 approved mock): each exercise is a
+    // flat «recibo» card (surface + hairline, cardRadius, no shadow) hung off the family rail with its
+    // dot; a superset rides a full-strength teal rail with A1/A2 badges. Breathing lives INSIDE each
+    // row (r18: List insets would slice the rail into segments).
     @ViewBuilder
     private var fullList: some View {
         ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 let grouped = RoutineSetEditing.inSuperset(items.map(\.re), idx)
                 if firstOfGroup(idx) {
-                    // Handoff: the superset overline carries the teal — it IS the datum here.
                     Text("Superset").groteskOverline().foregroundStyle(theme.dataHrv)
-                        .plainRow(top: CenitMetrics.sectionGap, bottom: 2)
+                        .padding(.leading, 26)  // token-exempt: gutter del riel (Serie activa)
+                        .plainRow(top: CenitMetrics.sectionGap, bottom: 0)
                 }
-                // Grouped rows ride the handoff's continuous 2.5pt teal rail; their breathing lives
-                // INSIDE the row (canvas r18: List insets would slice the rail into segments).
-                railed(grouped, topPad: grouped ? CenitMetrics.gap : 0) { exerciseHeader(idx) }
-                    .plainRow(top: grouped ? 0 : (idx == 0 ? CenitMetrics.gap : CenitMetrics.sectionGap))
+                exerciseCard(idx, grouped: grouped)
+                    .plainRow(top: 0, bottom: 0)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         if !locked {
                             Button { duplicate(idx) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
                                 .tint(theme.inkSecondary)
                         }
                     }
-                ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
-                    railed(grouped) { setRow(idx: idx, si: si) }.plainRow(top: 0, bottom: 0)
-                        .swipeActions(edge: .trailing) {
-                            if !locked {
-                                Button(role: .destructive) { deleteSet(idx: idx, si: si) } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                        }
-                }
-                if !locked {
-                    railed(grouped, topPad: grouped ? 4 : 0) { addSetRow(idx) }
-                        .plainRow(top: grouped ? 0 : 4)
-                }
                 if isLastOfGroup(idx) {
-                    // Handoff (regla 5): the superset's rest rule, spelled out at the decision point,
-                    // hanging off the rail's indent.
+                    // Handoff (regla 5): the superset's rest rule, spelled out at the decision point.
                     Text("No rest between them: you rest when the round ends.")
                         .font(StrandFont.caption).foregroundStyle(theme.dataHrv)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.leading, 13)  // token-exempt: 13 del handoff (indent del riel)
-                        .plainRow(top: 6)
+                        .padding(.leading, 26)  // token-exempt: gutter del riel (Serie activa)
+                        .plainRow(top: 8)
                 }
             }
         if !locked { addExerciseRow.plainRow(top: CenitMetrics.sectionGap, bottom: CenitMetrics.screenPadding) }
+    }
+
+    /// One exercise as a Serie activa «recibo» card: header row (badge + thumb + name + «···»), the
+    /// exercise-level rest chip, the SERIE/KG/REPS table and the twin add-set / warm-up pills.
+    private func exerciseCard(_ idx: Int, grouped: Bool) -> some View {
+        let item = items[idx]
+        // Breathing INSIDE the row so the rail behind never breaks: tight within a superset,
+        // sectionGap between unrelated exercises.
+        let topGap: CGFloat = grouped
+            ? (firstOfGroup(idx) ? 6 : CenitMetrics.space2)
+            : (idx == 0 ? 6 : CenitMetrics.sectionGap)
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                if grouped { supersetBadge(idx) }
+                Button { detailExercise = item.exercise } label: {
+                    ExerciseThumbView(exercise: item.exercise, side: 40)
+                        .overlay(RoundedRectangle(cornerRadius: 40 * 0.22, style: .continuous)
+                            .strokeBorder(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles), lineWidth: 2))
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Opens the exercise"))
+                VStack(alignment: .leading, spacing: 1) {
+                    Button { detailExercise = item.exercise } label: {
+                        VStack(alignment: .leading, spacing: 1) {
+                            if item.exercise.type != .weightReps {
+                                Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            }
+                            Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(theme.ink)
+                                .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("Opens the exercise"))
+                    if item.re.progressionEnabled {
+                        ProgressionChip(re: item.re, system: system, theme: theme, disabled: locked, action: { progressionTarget = ProgressionTarget(ei: idx) })
+                    }
+                }
+                Spacer(minLength: 8)
+                if !locked { exerciseMenu(idx) }
+            }
+            RestChip(cfg: exerciseRest(idx), timeColor: theme.inkSecondary) {
+                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
+            }
+            .disabled(locked)
+            .padding(.top, 9)  // token-exempt: ritmo interno del recibo (Serie activa)
+            columnHeader(item.exercise.type).padding(.top, CenitMetrics.gap)
+            ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
+                interactiveSetRow(idx: idx, si: si)
+            }
+            if !locked { addRowPills(idx).padding(.top, 10) }
+        }
+        .padding(.horizontal, 13).padding(.vertical, CenitMetrics.gap)  // token-exempt: receiptPadding (Serie activa)
+        .background(
+            RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                .fill(theme.surface)
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                    .strokeBorder(theme.hairline, lineWidth: 1))
+        )
+        .padding(.top, topGap)
+        // The rail is a BACKGROUND of the whole row (gap included) so segments butt seam-to-seam —
+        // family tint at strokeSoft for solo exercises (the session's thread), full teal for a superset.
+        .background(alignment: .topLeading) {
+            ZStack(alignment: .topLeading) {
+                Rectangle()
+                    .fill(grouped ? theme.dataHrv
+                                  : theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles)
+                                        .opacity(StrandOpacity.strokeSoft))
+                    .frame(width: 2)
+                    .offset(x: -20)
+                if !grouped {
+                    Circle().fill(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles))
+                        .frame(width: 9, height: 9)
+                        .offset(x: -23.5, y: topGap + 14)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+        .padding(.leading, 26)  // token-exempt: gutter del riel (Serie activa)
+        .accessibilityAction(named: Text("Reorder exercises")) {
+            guard !locked else { return }
+            withAnimation(.snappy) { reordering = true }
+        }
+    }
+
+    /// «A1 / A2» — the superset member badge, the Serie activa's grammar for the pair.
+    private func supersetBadge(_ idx: Int) -> some View {
+        let res = items.map(\.re)
+        var groups: [Int] = []
+        for re in res.prefix(idx + 1) {
+            if let g = re.supersetGroup, !groups.contains(g) { groups.append(g) }
+        }
+        var n = 1
+        var i = idx
+        while i > 0, RoutineSetEditing.sameGroup(res, i - 1, i) { n += 1; i -= 1 }
+        let letter = String(UnicodeScalar(64 + min(max(groups.count, 1), 26))!)
+        return Text(verbatim: "\(letter)\(n)")
+            .font(InstrumentoType.grotesk(11, weight: .bold)).monospacedDigit()
+            .foregroundStyle(theme.dataHrv)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(theme.dataHrv.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))  // token-exempt: badge A1/A2 (Serie activa)
+    }
+
+    /// A set row + the Serie activa's armed-delete gesture: long-press lifts the row and offers the
+    /// «Delete set» pill; any other tap disarms. (Cards are single List rows, so swipe can't reach.)
+    private func interactiveSetRow(idx: Int, si: Int) -> some View {
+        let setId = items[idx].re.sets[si].id
+        return setRow(idx: idx, si: si)
+            .overlay(alignment: .trailing) {
+                if armedDeleteSetId == setId {
+                    Button {
+                        withAnimation(.snappy) { armedDeleteSetId = nil; deleteSet(idx: idx, si: si) }
+                    } label: {
+                        Text("Delete set").font(StrandFont.subhead).foregroundStyle(theme.critical)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(theme.surface, in: Capsule(style: .continuous))
+                            .overlay(Capsule(style: .continuous).strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                guard !locked else { return }
+                withAnimation(StrandMotion.gentle) { armedDeleteSetId = setId }
+            })
+            .simultaneousGesture(TapGesture().onEnded {
+                if armedDeleteSetId != nil {
+                    withAnimation(StrandMotion.gentle) { armedDeleteSetId = nil }
+                }
+            })
+            .accessibilityActions {
+                if !locked {
+                    Button("Delete set") { deleteSet(idx: idx, si: si) }
+                }
+            }
     }
 
     // MARK: - Drag reorder (6a, FER-841)
@@ -402,15 +528,12 @@ struct RoutineEditorScreen: View {
                 Spacer(minLength: 8)
                 if isPlanDay { dayMenu }
             }
+            // Serie activa look (FER-952 approved mock): no ink seal — the session header is bare.
             Text(routine?.name ?? "")
                 .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(alignment: .bottomLeading) {
-                    // Handoff: a 96pt ink seal under the title — an accent, not a section rule.
-                    Rectangle().fill(theme.ink).frame(width: 96, height: 2).offset(y: 5)
-                }
             metaLine
         }
     }
@@ -448,64 +571,6 @@ struct RoutineEditorScreen: View {
     }
 
     // MARK: - Exercise header (thumb + tappable name + «···» + column header)
-
-    private func exerciseHeader(_ idx: Int) -> some View {
-        let item = items[idx]
-        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            HStack(spacing: 11) {
-                Button { detailExercise = item.exercise } label: {
-                    // r25 (Serie activa): the thumb wears its movement family — 2pt frame in the hue,
-                    // corner matching ExerciseThumbnail's own clip (side × 0.22).
-                    ExerciseThumbView(exercise: item.exercise, side: 40)
-                        .overlay(RoundedRectangle(cornerRadius: 40 * 0.22, style: .continuous)
-                            .strokeBorder(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles), lineWidth: 2))
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("Opens the exercise"))
-                VStack(alignment: .leading, spacing: 1) {
-                    Button { detailExercise = item.exercise } label: {
-                        VStack(alignment: .leading, spacing: 1) {
-                            if item.exercise.type != .weightReps {
-                                Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                            }
-                            Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(theme.ink)
-                                .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(Text("Opens the exercise"))
-                    // Progression chip under the name (mock v8) — same destination as «···» → Progression.
-                    if item.re.progressionEnabled {
-                        ProgressionChip(re: item.re, system: system, theme: theme, disabled: locked, action: { progressionTarget = ProgressionTarget(ei: idx) })
-                    }
-                }
-                Spacer(minLength: 8)
-                if !locked { exerciseMenu(idx) }
-            }
-            // Handoff (rest-per-exercise): the rest rule is ONE decision per exercise — a chip under
-            // the name, teal-worded when it waits on heart rate. Editing applies to every set.
-            RestChip(cfg: exerciseRest(idx), timeColor: theme.inkSecondary) {
-                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
-            }
-            .disabled(locked)
-            columnHeader(item.exercise.type)
-        }
-        // Long-press enters reorder mode (6a): rows compact, ≡ handles appear, one drop reorders and
-        // leaves the mode. `simultaneousGesture` — NOT `.onLongPressGesture` — because the row is mostly
-        // Buttons (name → detail, «···» → menu) and a plain gesture never fires over them (FER-846);
-        // simultaneous lets a short tap keep opening those while a ~0.4 s hold enters the mode.
-        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-            guard !locked else { return }
-            focusedCell = nil
-            withAnimation(.snappy) { reordering = true }
-        })
-        .accessibilityAction(named: Text("Reorder exercises")) {
-            guard !locked else { return }
-            withAnimation(.snappy) { reordering = true }
-        }
-    }
 
     /// The «···» menu, FINAL order (mock 4b). No «move» — reordering is drag-only (FER-841);
     /// «Duplicate» lives in the swipe.
@@ -650,29 +715,36 @@ struct RoutineEditorScreen: View {
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 
-    private func addSetRow(_ idx: Int) -> some View {
-        HStack(spacing: 16) {
+    /// The card's closing row (approved mock): TWIN pills of equal weight — «＋ Agregar serie» on the
+    /// sunken gray, «🔥 Calentamiento» spelled in the ember voice (it deserved to be seen). The warm-up
+    /// pill hides once the ramp exists.
+    private func addRowPills(_ idx: Int) -> some View {
+        HStack(spacing: CenitMetrics.space2) {
             Button { addSet(idx) } label: {
-                HStack(spacing: 7) {
+                HStack(spacing: 6) {
                     StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Add set")
                 }
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .frame(minHeight: 30).contentShape(Rectangle())
+                .font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, minHeight: 34)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             if !hasWarmups(idx) {
                 Button { addWarmupRamp(idx) } label: {
-                    HStack(spacing: 7) {
+                    HStack(spacing: 6) {
                         StrandIcon.flame.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                         Text("Add warm-up")
                     }
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .frame(minHeight: 30).contentShape(Rectangle())
+                    .font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.dataStrain)
+                    .frame(maxWidth: .infinity, minHeight: 34)
+                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                        .strokeBorder(theme.dataStrain.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
-            Spacer(minLength: 0)
         }
     }
 
@@ -692,10 +764,14 @@ struct RoutineEditorScreen: View {
     // MARK: - Pinned CTA (`.today` only — start / resume the guided session)
 
     private var ctaBar: some View {
+        // Handoff: «Empezar» is the EMBER door with the play glyph — the one saturated CTA on screen.
         Button { start() } label: {
-            Text(ctaTitle).font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                .foregroundStyle(theme.paper).frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
+            HStack(spacing: 8) {
+                Image(systemName: "play.fill").font(.system(size: 13, weight: .bold))  // token-exempt: glifo del CTA
+                Text(ctaTitle).font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
+            }
+            .foregroundStyle(theme.paper).frame(maxWidth: .infinity).padding(.vertical, 15)
+            .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .padding(.horizontal, CenitMetrics.screenPadding)
@@ -824,24 +900,6 @@ struct RoutineEditorScreen: View {
 
     /// First member of a superset group (shows the «Superset» overline above it).
     private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
-
-    /// Wraps a superset member's row with the handoff's continuous teal rail: a 2.5pt `dataHrv` bar on
-    /// the leading edge (filling the WHOLE row, padding included, so segments meet seamlessly) and the
-    /// content indented 13pt. Non-grouped rows pass through untouched.
-    @ViewBuilder
-    private func railed<V: View>(_ grouped: Bool, topPad: CGFloat = 0, @ViewBuilder content: () -> V) -> some View {
-        if grouped {
-            content()
-                .padding(.top, topPad)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 15.5)  // token-exempt: riel 2.5 + indent 13 del handoff
-                .overlay(alignment: .leading) {
-                    Rectangle().fill(theme.dataHrv).frame(width: 2.5)  // token-exempt: riel 2.5 del handoff
-                }
-        } else {
-            content().padding(.top, topPad)
-        }
-    }
 
     /// The exercise-level rest rule (FER-952: rest is per exercise now — the model's set overrides
     /// remain readable, but every edit writes the exercise default and clears them).

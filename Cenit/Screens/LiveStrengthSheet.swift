@@ -3273,33 +3273,55 @@ struct LiveStrengthSheet: View {
         .accessibilityLabel(Text(set.done ? "Mark set \(si + 1) as not done" : "Mark set \(si + 1) as done"))
     }
 
+    /// Insert the 40·60·80% warm-up ramp at the front of an exercise (FER-952 — the pill next to
+    /// «+ Serie»; reuses the editor's ramp and the model's `insertWarmup`).
+    private func addWarmupRamp(_ ei: Int) {
+        guard session.runs.indices.contains(ei) else { return }
+        let top = session.runs[ei].sets.first(where: { $0.kind == .work })?.weightKg
+            ?? session.runs[ei].sets.first?.weightKg ?? 0
+        let ramp = [0.4, 0.6, 0.8].map { (weightKg: top * $0, reps: 10) }
+        withAnimation(StrandMotion.gentle) { session.insertWarmup(exercise: ei, sets: ramp) }
+    }
+
     private func addSetButton(_ ei: Int) -> some View {
-        Button {
-            // Canvas pass 2026-07-15: a contained, gentle open — ONE row's worth of space, not a leap
-            // (owner: «que se abra solamente con un nuevo renglón»).
-            withAnimation(StrandMotion.gentle) {
-                session.addSet(exercise: ei)
-                // r20 (sugerencia propia aprobada): la fila nueva no nace tapada por la barra —
-                // el bloque se asoma completo (su fondo incluye al propio botón).
-                scrollProxy?.scrollTo("session-exercise-\(ei)", anchor: .bottom)
-            }
-            copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
-        } label: {
-            // Canvas pass 2026-07-15: the handoff's ember «+ Serie» pill, living INSIDE the card as its
-            // closing row (top hairline separates it from the last set).
-            HStack {
+        // Canvas pass 2026-07-15: the handoff's ember «+ Serie» pill, living INSIDE the card as its
+        // closing row (top hairline separates it from the last set). FER-952 seats the warm-up pill
+        // next to it — quiet ember outline, visible only while the exercise has no warm-ups yet
+        // (same grammar as the routine editor's twin pills).
+        HStack(spacing: 8) {
+            Button {
+                // Canvas pass 2026-07-15: a contained, gentle open — ONE row's worth of space, not a leap
+                // (owner: «que se abra solamente con un nuevo renglón»).
+                withAnimation(StrandMotion.gentle) {
+                    session.addSet(exercise: ei)
+                    // r20 (sugerencia propia aprobada): la fila nueva no nace tapada por la barra —
+                    // el bloque se asoma completo (su fondo incluye al propio botón).
+                    scrollProxy?.scrollTo("session-exercise-\(ei)", anchor: .bottom)
+                }
+                copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
+            } label: {
                 Label("Add set", systemImage: "plus")
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)
                     .padding(.horizontal, 14).padding(.vertical, 8)
                     .background(theme.dataStrain, in: Capsule())
-                Spacer(minLength: 0)
+                    .contentShape(Capsule())
             }
-            .padding(.top, 8)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
+            .sensoryFeedback(.impact(weight: .light), trigger: copiedSetId)
+            if session.runs.indices.contains(ei), !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
+                Button { addWarmupRamp(ei) } label: {
+                    Label("Add warm-up", systemImage: "flame")
+                        .font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.dataStrain)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
-        // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
-        .sensoryFeedback(.impact(weight: .light), trigger: copiedSetId)
+        .padding(.top, 8)
     }
 
     // MARK: Empty ad-hoc state (mock 1p, FER-762)

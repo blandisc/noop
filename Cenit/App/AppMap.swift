@@ -309,4 +309,61 @@ private struct WeeklyPlanMapCell: View {
 #Preview("Tu Plan → Rutina (navegable)") {
     WeeklyPlanMapCell()
 }
+
+/// FLUJO COMPLETO de una rutina nueva (FER-952): nace en «Mis Rutinas» (＋ Nueva rutina → builder),
+/// al guardar aterriza en el editor unificado («Rutina»), y su «Empezar» presenta la Serie activa
+/// REAL — todo navegable dentro del canvas, con el plan demo sembrado de fondo.
+private struct NewRoutineFlowMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @State private var seeded = false
+    @State private var path = NavigationPath()
+
+    var body: some View {
+        Group {
+            if seeded {
+                NavigationStack(path: $path) {
+                    MisRutinasScreen(
+                        openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },
+                        openLibrary: {}
+                    )
+                    .navigationDestination(for: RoutineEditorRoute.self) { route in
+                        RoutineEditorScreen(origin: route)
+                    }
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .fullScreenCover(isPresented: Binding(
+            get: { model.strengthSession != nil },
+            set: { if !$0 { model.strengthSession = nil } }
+        )) {
+            if let session = model.strengthSession {
+                LiveStrengthSheet(session: session)
+                    .environmentObject(model.repo)
+                    .environmentObject(model)
+                    .environmentObject(TabRouter())
+                    .environmentObject(media)
+                    .environment(model.live)
+                    .preferredColorScheme(.light)
+            }
+        }
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            seeded = true
+        }
+    }
+}
+
+#Preview("Flujo · Nueva rutina → Editar → Activa") {
+    NewRoutineFlowMapCell()
+}
 #endif
