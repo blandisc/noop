@@ -425,4 +425,19 @@ struct ChangeExerciseSheet: View {
 }
 
 
+// MARK: - HR rest reference mapping (FER-506)
+
+/// Maps the persisted domain enum (StrandTraining) onto the rest-math vocabulary (StrandAnalytics), so the
+/// math package stays decoupled from the data model. 1-to-1.
+extension HRRestReference {
+    var restTargetReference: RestTarget.Reference {
+        switch self {
+        case .restingMargin:   return .restingMargin
+        case .peakDrop:        return .peakDrop
+        case .karvonenReserve: return .karvonenReserve
+        case .fixedBpm:        return .fixedBpm
+        }
+    }
+}
+
 #endif
