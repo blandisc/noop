@@ -126,7 +126,13 @@ private struct EntrenarLanding: View {
         // `sectionGap` (28) still gives more air between blocks than the old 18; no measured-height feedback.
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                header
+                // FER-952 (owner): the «Train» wordmark + tab glyph row retired — the dock already
+                // names the tab. The recovery chip keeps its own quiet row, a notch lower.
+                HStack {
+                    Spacer(minLength: 0)
+                    if let rec = recovery { recoveryChip(rec) } else { recoveryChipPlaceholder }
+                }
+                .padding(.top, CenitMetrics.space2)
                 if loaded {
                     if loadFailed {
                         loadErrorState       // store couldn't be read — «No pudimos leer tus rutinas · Reintentar»
@@ -226,24 +232,6 @@ private struct EntrenarLanding: View {
 
     // MARK: - Header + recovery chip
 
-    private var header: some View {
-        // Shared wordmark row — same lockup, size and baseline as «Tendencias»/«Patrones» so the three
-        // tab titles align as you swipe. Glyph = the dock's tab icon; the recovery chip rides the trailing
-        // slot, which is anchored to the title's height so it never pushes the title down.
-        // `String(localized:)` so the wordmark follows the app language — the header takes a plain String,
-        // which `Text` would render verbatim, leaving «Train» in English even in Spanish. (es → «Entrenar».)
-        InstrumentoTabHeader(String(localized: "Train")) {
-            Image(systemName: "figure.strengthtraining.functional")
-                .font(.system(size: 20)).foregroundStyle(theme.ink)  // token-exempt: glifo 20pt fuera de banda lead
-        } trailing: {
-            // Same trailing slot always occupied so the header doesn't jump when the score appears. (FER-949)
-            if let rec = recovery {
-                recoveryChip(rec)
-            } else {
-                recoveryChipPlaceholder
-            }
-        }
-    }
 
     /// The recovery chip: a small arc (`dataRecovery`) + the numeral. Tapping opens the Recovery Detail
     /// sheet (same as Today/Cuerpo) — it does NOT switch tabs. The one glanceable point of color here.
@@ -270,7 +258,7 @@ private struct EntrenarLanding: View {
             .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Recuperación \(Int(rec.rounded())). Ver detalle."))
+        .accessibilityLabel(Text("Recovery \(Int(rec.rounded())). See detail."))
     }
 
     /// Quiet chrome while recovery is still calibrating (no score). Same capsule + height as the live

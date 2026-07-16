@@ -2831,7 +2831,8 @@ struct LiveStrengthSheet: View {
                 StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.hrZoneRamp[zone - 1])
                 Text("\(hr)").font(InstrumentoType.groteskNumber(15, weight: .medium)).foregroundStyle(theme.ink)
                 Text("·").foregroundStyle(theme.inkTertiary)
-                Text("\(pct)% of your max").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                // Literal «%» next to a format specifier breaks String(format:) parsing — compose it.
+                (Text(verbatim: "\(pct)% ") + Text("of your max")).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
         }
         .accessibilityElement(children: .combine)
