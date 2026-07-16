@@ -1018,6 +1018,9 @@ struct LiveStrengthSheet: View {
     /// r20: el proxy del ScrollView, capturado al aparecer — «Agregar serie» lo usa para que la
     /// fila nueva no nazca tapada por la barra/teclado.
     @State private var scrollProxy: ScrollViewProxy?
+    /// r21 (auditoría UX #5a): el `ei` cuyo «Superserie con el siguiente» robaría al vecino de otra
+    /// pareja existente — pide confirmación antes de deshacerla.
+    @State private var confirmSupersetSteal: Int?
     /// Canvas pass 2026-07-15 (menú «Progresión»): which exercise's progression mini-sheet is open.
     struct ProgressionEditTarget: Identifiable { let id: Int }
     @State private var progressionEdit: ProgressionEditTarget?
@@ -1311,6 +1314,25 @@ struct LiveStrengthSheet: View {
             actions: [
                 .init(String(localized: "Keep training"), role: .primary),
                 .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
+            ]
+        )
+        // r21 (auditoría UX #5a): emparejar con un vecino que YA es de otra superserie deshace
+        // aquella pareja — se confirma con su nombre en la mano, nunca en silencio.
+        .instrumentoConfirm(
+            isPresented: Binding(get: { confirmSupersetSteal != nil },
+                                 set: { if !$0 { confirmSupersetSteal = nil } }),
+            title: String(localized: "Break its current superset?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: String(format: String(localized: "%@ is already paired in another superset. Pairing it here undoes that one."),
+                            confirmSupersetSteal.flatMap { session.runs.indices.contains($0 + 1) ? session.runs[$0 + 1].name : nil } ?? ""),
+            actions: [
+                .init(String(localized: "Pair here"), role: .primary) {
+                    if let ei = confirmSupersetSteal {
+                        withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
+                    }
+                    confirmSupersetSteal = nil
+                },
+                .init(String(localized: "Keep as is"), role: .secondary)
             ]
         )
     }
@@ -1613,7 +1635,7 @@ struct LiveStrengthSheet: View {
     private func activeExerciseBlock(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         VStack(spacing: 0) {
             exerciseHeader(run, ei: ei, first: true)
-                .padding(.top, 12).padding(.horizontal, 14).padding(.bottom, 8)
+                .padding(.top, 12).padding(.horizontal, CenitMetrics.receiptPadding).padding(.bottom, 8)
             ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
                 // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows
                 // from the numbered work sets — drawn on the first work row after a warm-up.
@@ -1646,7 +1668,7 @@ struct LiveStrengthSheet: View {
                             Button("Delete set") { withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) } }
                         }
                 }
-                .padding(.horizontal, 14)
+                .padding(.horizontal, CenitMetrics.receiptPadding)
                 .zIndex(armedDeleteSetId == set.id ? 2 : 0)
             }
             // «Add set» closes the card — the handoff's ember pill, inside (FER-935 kin).
@@ -1658,7 +1680,7 @@ struct LiveStrengthSheet: View {
                 }
                 addSetButton(ei)
             }
-            .padding(.horizontal, 14).padding(.vertical, 8)
+            .padding(.horizontal, CenitMetrics.receiptPadding).padding(.vertical, 8)
         }
         .background(
             // «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra. One simple
@@ -1693,14 +1715,16 @@ struct LiveStrengthSheet: View {
             withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
             armedDeleteSetId = nil
         } label: {
-            HStack(spacing: 6) {
+            // r21 (owner): más discreto — se comía la fila hacia la izquierda; glifo chico, texto
+            // caption plano, padding apretado.
+            HStack(spacing: 5) {
                 Image(systemName: "trash").font(StrandFont.glyph(.chevron))
-                Text("Delete set").font(StrandFont.caption.weight(.semibold))
+                Text("Delete set").font(StrandFont.caption)
             }
             .foregroundStyle(theme.critical)
-            .padding(.horizontal, 12).padding(.vertical, 7)
+            .padding(.horizontal, 9).padding(.vertical, 5)
             .background(theme.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(theme.critical, lineWidth: 1))
+            .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -2030,52 +2054,46 @@ struct LiveStrengthSheet: View {
         // and the rail thread separate head from list on their own (owner call, punto 6).
     }
 
+    /// r21 (deuda front): los botones-cápsula del header salen de UNA fábrica — misma gramática
+    /// (surface + hairlineStrong, padding 12/6), solo cambia el contenido.
+    private func headerCapsule<Content: View>(action: @escaping () -> Void,
+                                              @ViewBuilder content: () -> Content) -> some View {
+        Button(action: action) {
+            content()
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(theme.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
     /// The header's right-side action(s), FER-823: paused → «Resume» is the primary action (finish after
     /// resuming); running with sets → a pause toggle sits left of Finish; an empty ad-hoc session only
     /// offers Discard. Unchanged behavior from the pre-FER-929 `sessionHeader` — only its container moved.
     @ViewBuilder private var headActionButtons: some View {
         if session.paused {
-            Button { model.resumeStrengthSessionFromPause() } label: {
+            headerCapsule(action: { model.resumeStrengthSessionFromPause() }) {
                 Label("Resume", systemImage: "play.fill").labelStyle(.titleAndIcon)
                     .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 14).padding(.vertical, 6)
-                    .background(theme.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(.plain)
             .accessibilityLabel(Text("Resume session"))
         } else if !isEmptyAdHoc {
-            // Canvas pass 2026-07-15: Pausa dresses like Terminar's sibling — same capsule grammar,
-            // neutral ink vs. Terminar's reserved alert hue, so the pair reads as one control family.
-            Button { model.pauseStrengthSession() } label: {
+            // Canvas pass 2026-07-15: Pausa dresses like Terminar's sibling — same capsule grammar.
+            headerCapsule(action: { model.pauseStrengthSession() }) {
                 Label("Pause", systemImage: "pause.fill").labelStyle(.titleAndIcon)
                     .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(theme.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(.plain)
             .accessibilityLabel(Text("Pause session"))
-            // Ending the session is the one destructive-ish act in the header — it carries the
-            // reserved alert hue (label + border, never a fill: primary-by-border, DNA §).
             // r20 (auditoría UX #6d + owner): Terminar-y-guardar es el acto constructivo esperado —
             // vestirlo de alarma desensibilizaba el rojo del Descartar real. Tinta, voz Grotesk.
-            Button { finishTapped() } label: {
+            headerCapsule(action: { finishTapped() }) {
                 Text("Finish").font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(theme.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(.plain)
             .accessibilityLabel(Text("Finish workout"))
         } else {
-            Button { discardEmptySession() } label: {
+            headerCapsule(action: { discardEmptySession() }) {
                 Text("Discard").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(theme.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(.plain)
             .accessibilityLabel(Text("Discard workout"))
         }
     }
@@ -2089,19 +2107,20 @@ struct LiveStrengthSheet: View {
         // papel que le da cuerpo sin volverlo cápsula gritona — y el target de 44pt.
         VStack(spacing: 14) {
             if !isEmptyAdHoc && session.summary == nil {
+                // r21 (owner): la cápsula del handoff — icono + «Modo foco» juntos dentro de UNA
+                // cápsula surface con hairline, texto semibold en tinta.
                 Button { focusMode = true } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    HStack(spacing: 7) {
+                        Image(systemName: "square.inset.filled")
                             .font(StrandFont.glyph(.chevron, weight: .semibold))
-                            .foregroundStyle(theme.ink)
-                            .frame(width: 26, height: 26)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                        Text("Focus mode").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        Text("Focus mode").font(StrandFont.subhead.weight(.semibold))
                     }
+                    .foregroundStyle(theme.ink)
+                    .padding(.horizontal, 16).padding(.vertical, 9)
+                    .background(theme.surface, in: Capsule())
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                     .frame(minHeight: 44)
-                    .contentShape(Rectangle())
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Focus mode"))
@@ -3088,7 +3107,13 @@ struct LiveStrengthSheet: View {
             let paired = run.supersetGroup != nil && run.supersetGroup == session.runs[ei + 1].supersetGroup
             rows.append(.init(String(localized: paired ? "Undo superset" : "Superset with next"),
                               systemImage: "link") {
-                withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
+                // r21 (auditoría UX #5a): si el vecino YA forma pareja en otra superserie, emparejar
+                // aquí la deshace — eso se confirma, no se hace en silencio.
+                if !paired, session.runs[ei + 1].supersetGroup != nil {
+                    confirmSupersetSteal = ei
+                } else {
+                    withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
+                }
             })
         }
         rows.append(.init(String(localized: "Progression"),
@@ -3367,11 +3392,7 @@ struct LiveStrengthSheet: View {
                 Text(restChipLabel(run)).font(StrandFont.caption.weight(.medium)).foregroundStyle(theme.ink)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            .troquelChip(theme)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Edit rest"))
@@ -3401,11 +3422,7 @@ struct LiveStrengthSheet: View {
                     Circle().fill(theme.dataStrain).frame(width: 5, height: 5)
                 }
             }
-            .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            .troquelChip(theme)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(run.hasNote ? "Edit note, has a note" : "Add note"))
@@ -3721,7 +3738,8 @@ struct LiveStrengthSheet: View {
             // (El «SIGUE» vive solo en el descanso a pantalla completa — owner call 2026-07-15: dentro
             // del mismo ejercicio ya sabes qué sigue, la tarjeta en línea no lo repite.)
         }
-        .padding(.horizontal, 17).padding(.vertical, 15)
+        // r21 (auditoría UI V6): 17/15 a ojo → el padding del recibo, como sus rebanadas hermanas.
+        .padding(.horizontal, CenitMetrics.receiptPadding).padding(.vertical, CenitMetrics.receiptPadding)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
             .strokeBorder(theme.hairlineStrong, lineWidth: 1))
@@ -5095,7 +5113,10 @@ struct RPESheet: View {
     init(theme: InstrumentoTheme, target: LiveStrengthSheet.RPETarget,
          onPick: @escaping (Double?) -> Void, onClose: @escaping () -> Void) {
         self.theme = theme; self.target = target; self.onPick = onPick; self.onClose = onClose
-        _selected = State(initialValue: target.currentRPE ?? 8)
+        // r21 (auditoría UX #8b): un RPE legado fuera de la escala visible (7,5/8,5 del modelo
+        // viejo) se ancla al escalón más cercano — antes la hoja abría sin píldora seleccionada.
+        let raw = target.currentRPE ?? 8
+        _selected = State(initialValue: Self.scale.min(by: { abs($0 - raw) < abs($1 - raw) }) ?? 8)
     }
 
     var body: some View {
@@ -5140,7 +5161,7 @@ struct RPESheet: View {
             // Canvas pass 2026-07-15 (UI·armonía #1): un solo tamaño de héroe entre hojas hermanas
             // (RPE 84 vs. discos 52 → 64 en ambas).
             Text(LiveStrengthSheet.formatDecimalComma(selected))
-                .font(InstrumentoType.grotesk(64, weight: .semibold)).monospacedDigit()
+                .font(InstrumentoType.groteskSheetHero).tracking(InstrumentoType.groteskSheetHeroTracking)
                 .foregroundStyle(theme.ink)
             Text(Self.descriptor(selected)).font(StrandFont.headline).foregroundStyle(theme.ink)
             Text(Self.subtitle(selected)).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)

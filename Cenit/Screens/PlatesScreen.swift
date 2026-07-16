@@ -80,8 +80,8 @@ struct PlatesScreen: View {
                 // Canvas pass 2026-07-15 (UI·armonía #1): one hero size across sibling sheets (64,
                 // same as the RPE sheet).
                 Text(kg(loading.achievedKg))
-                    .font(InstrumentoType.grotesk(64, weight: .semibold)).monospacedDigit()
-                    .tracking(-0.5).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskSheetHero).tracking(InstrumentoType.groteskSheetHeroTracking)
+                    .foregroundStyle(theme.ink)
                 Text("kg").font(InstrumentoType.grotesk(20, weight: .regular)).foregroundStyle(theme.inkTertiary)
             }
             Text(perSideCaption).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)

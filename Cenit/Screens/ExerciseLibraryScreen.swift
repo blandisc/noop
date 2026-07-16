@@ -258,11 +258,8 @@ struct ExerciseLibraryScreen: View {
     /// The movement-family hue for an exercise (push=ember · pull=teal · legs=indigo), from its
     /// first primary muscle — same mapping as the history screen's muscle bars.
     private func familyTint(_ ex: Exercise) -> Color {
-        let m = (ex.primaryMuscles.first ?? "").lowercased()
-        if ["chest", "shoulders", "triceps"].contains(where: m.contains) { return theme.dataStrain }
-        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return theme.dataHrv }
-        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return theme.dataSleep }
-        return theme.dataStrain
+        // r21: mapeo PROMOVIDO a StrandDesign (`movementFamilyTint`) — una sola fuente de verdad.
+        theme.movementFamilyTint(primaryMuscles: [ex.primaryMuscles.first ?? ""])
     }
 
     /// The trailing control: an «Add» affordance in ADD mode (a check when picked), a chevron in BROWSE.

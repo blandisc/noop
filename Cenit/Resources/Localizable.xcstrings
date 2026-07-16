@@ -60746,6 +60746,50 @@
         }
       }
     },
+    "Break its current superset?": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Deshacer su superserie actual?"
+          }
+        }
+      }
+    },
+    "%@ is already paired in another superset. Pairing it here undoes that one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ya forma pareja en otra superserie. Emparejarlo aquí deshace aquella."
+          }
+        }
+      }
+    },
+    "Pair here": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emparejar aquí"
+          }
+        }
+      }
+    },
+    "Keep as is": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejarlo como está"
+          }
+        }
+      }
+    },
     "Reorder": {
       "localizations": {
         "es": {

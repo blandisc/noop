@@ -64,6 +64,11 @@ public extension InstrumentoType {
         grotesk(size, weight: weight, relativeTo: style).monospacedDigit()
     }
 
+    /// El héroe de HOJA hermana (RPE, Discos, foco de peso corporal): 64/semibold tabular con
+    /// tracking −0.5 — promovido 2026-07 (auditoría UI V5: dos usos a mano con tracking a ojo).
+    static let groteskSheetHero = groteskNumber(64, weight: .semibold)
+    static let groteskSheetHeroTracking: CGFloat = -0.5
+
     // MARK: Scale (handoff «Hoy» 2026-07)
 
     /// The «Hoy» hero numeral — 102/700, tracking −4.5 (apply `groteskHeroTracking`).

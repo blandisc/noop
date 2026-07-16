@@ -31,6 +31,7 @@ public enum CenitMetrics {
     public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
     public static let insetRadius: CGFloat = 10        // sub-tarjeta anidada dentro de otra tarjeta (auditoría jul-2026, H3 — absorbe 9/10/11)
     public static let rowVPad: CGFloat = 10            // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
+    public static let receiptPadding: CGFloat = 14     // padding interno de la tarjeta-recibo de la sesión de fuerza (canvas 2026-07, decisión del dueño — entre gap 12 y cardPadding 16)
 
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
@@ -252,3 +253,78 @@ public struct InstrumentoScreenTitle: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+// MARK: - TroquelChip (sesión de fuerza · propuesta B 2026-07)
+
+public extension View {
+    /// Chip «troquel»: papel hundido dentro de una tarjeta `surface` — padding fijo, esquina
+    /// `chipRadius`, borde `hairlineStrong`. El único hue permitido vive en el ICONO del contenido
+    /// (excepción nombrada en DESIGN.md §8.7); el valor va en tinta.
+    func troquelChip(_ theme: InstrumentoTheme) -> some View {
+        self
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+    }
+}
+
+// MARK: - PresetPill (editor de descanso / RPE — gramática rectangular FER-951)
+
+/// Preset rectangular «Instrumento»: thumb de TINTA al seleccionar, contorno `hairlineStrong` en
+/// reposo. Una sola gramática para todos los presets de las hojas de la sesión (auditoría UI O2).
+public struct PresetPill: View {
+    let text: String
+    let selected: Bool
+    let theme: InstrumentoTheme
+    let action: () -> Void
+
+    public init(_ text: String, selected: Bool, theme: InstrumentoTheme, action: @escaping () -> Void) {
+        self.text = text; self.selected = selected; self.theme = theme; self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            Text(text).font(StrandFont.caption).monospacedDigit()
+                .foregroundStyle(selected ? theme.paper : theme.inkSecondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .padding(.horizontal, 11).padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .fill(selected ? theme.ink : Color.clear))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .strokeBorder(selected ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+#if DEBUG
+#Preview("TroquelChip · PresetPill") {
+    let t = InstrumentoTheme.base
+    return VStack(spacing: 20) {
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "clock").foregroundStyle(t.dataStrain)
+                Text("90 s").font(StrandFont.caption.weight(.medium)).foregroundStyle(t.ink)
+            }
+            .troquelChip(t)
+            HStack(spacing: 6) {
+                Image(systemName: "square.and.pencil").foregroundStyle(t.dataHrv)
+                Text("Nota").font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+            }
+            .troquelChip(t)
+        }
+        .padding(14)
+        .background(t.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        HStack(spacing: 8) {
+            PresetPill("Sin descanso", selected: false, theme: t) {}
+            PresetPill("1:00", selected: true, theme: t) {}
+            PresetPill("2:00", selected: false, theme: t) {}
+        }
+    }
+    .padding(24)
+    .background(t.paper)
+}
+#endif

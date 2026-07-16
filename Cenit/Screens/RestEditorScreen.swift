@@ -174,18 +174,8 @@ struct RestEditorScreen: View {
         let sel = margin == m
         let text = restingHR.map { label + " · " + String(localized: "down to \(Int($0.rounded()) + m)") }
             ?? "\(label) · +\(m)"
-        return Button { margin = m } label: {
-            Text(text).font(StrandFont.caption).foregroundStyle(sel ? theme.paper : theme.inkSecondary)
-                .lineLimit(1).minimumScaleFactor(0.8)
-                .padding(.horizontal, 11).padding(.vertical, 7)
-                // r20 (auditoría UI, O2): una sola gramática de preset en toda la hoja — rectángulo
-                // continuo + thumb de TINTA (el fill dataHrv era el único preset con hue).
-                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .fill(sel ? theme.ink : Color.clear))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
+        // r21 (deuda front): los tres presets de la hoja usan el MISMO componente del sistema.
+        return PresetPill(text, selected: sel, theme: theme) { margin = m }
     }
 
     /// «Reserve» (Karvonen 1957): a % of heart-rate reserve. Needs the HR-max profile to show bpm.
@@ -208,15 +198,7 @@ struct RestEditorScreen: View {
 
     private func reservePreset(_ label: String, _ frac: Double) -> some View {
         let sel = abs(reserve - frac) < 0.005
-        return Button { reserve = frac } label: {
-            Text(label).font(StrandFont.caption).foregroundStyle(sel ? theme.paper : theme.inkSecondary)
-                .padding(.horizontal, 11).padding(.vertical, 7)
-                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .fill(sel ? theme.ink : Color.clear))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
+        return PresetPill(label, selected: sel, theme: theme) { reserve = frac }
     }
 
     // MARK: Time mode
@@ -243,16 +225,7 @@ struct RestEditorScreen: View {
                       glyph: StrandFont.glyph(.lead), theme: theme, action: action)
     }
     private func secondsPreset(_ label: String, _ s: Int) -> some View {
-        let sel = seconds == s
-        return Button { seconds = s } label: {
-            Text(label).font(StrandFont.caption).monospacedDigit().foregroundStyle(sel ? theme.paper : theme.inkSecondary)
-                .padding(.horizontal, 11).padding(.vertical, 7)
-                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .fill(sel ? theme.ink : Color.clear))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
+        PresetPill(label, selected: seconds == s, theme: theme) { seconds = s }
     }
 
     // MARK: Scope + note + CTA

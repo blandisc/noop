@@ -202,11 +202,9 @@ struct ExerciseDetailScreen: View {
     /// The movement-family hue (push=ember · pull=teal · legs=indigo) — the same mapping the Library
     /// uses on its thumbnails, so the frame, the primary-muscle chips and the how-to numbers agree.
     private var familyTint: Color {
-        let m = (exercise.primaryMuscles.first ?? "").lowercased()
-        if ["chest", "shoulders", "triceps"].contains(where: m.contains) { return theme.dataStrain }
-        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return theme.dataHrv }
-        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return theme.dataSleep }
-        return theme.dataStrain
+        // r21: mapeo PROMOVIDO a StrandDesign (`movementFamilyTint`) — misma clasificación, una
+        // sola fuente de verdad (se conserva el «solo el primer músculo» de esta pantalla).
+        theme.movementFamilyTint(primaryMuscles: [exercise.primaryMuscles.first ?? ""])
     }
 
     /// Discreet nudge shown only when the media download toggle is off — never when it's on and this
