@@ -178,9 +178,9 @@ struct RestEditorScreen: View {
             Text(text).font(StrandFont.caption).foregroundStyle(sel ? theme.paper : theme.inkSecondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .padding(.horizontal, 11).padding(.vertical, 7)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .fill(sel ? theme.dataHrv : Color.clear))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)

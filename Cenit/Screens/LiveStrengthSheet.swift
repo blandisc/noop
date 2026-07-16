@@ -2085,6 +2085,8 @@ struct LiveStrengthSheet: View {
                         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                             .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        // r19 (auditoría UI): target de 44pt — el chip visual no crece.
+                        .frame(minHeight: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -2302,8 +2304,11 @@ struct LiveStrengthSheet: View {
                 .font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(onGreen ? theme.paper : theme.ink)
                 .frame(width: 38, height: 38)
-                .background(onGreen ? theme.paper.opacity(0.14) : theme.surface, in: Circle())
-                .overlay(Circle().strokeBorder(onGreen ? theme.paper.opacity(0.3) : theme.hairlineStrong, lineWidth: 1))
+                .background(onGreen ? theme.paper.opacity(StrandOpacity.tintFillStrong) : theme.surface, in: Circle())
+                .overlay(Circle().strokeBorder(onGreen ? theme.paper.opacity(StrandOpacity.strokeSoft) : theme.hairlineStrong, lineWidth: 1))
+                // r19 (auditoría UI): target de 44pt — el círculo visual se queda en 38.
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Close focus mode"))
@@ -2313,7 +2318,9 @@ struct LiveStrengthSheet: View {
     private var focusKgCard: some View {
         focusStepperCard(UnitFormatter.massUnit(units).uppercased(),
                          value: plateNumber(displayWeight(session.currentSet?.weightKg ?? 0)),
-                         valueTint: theme.dataRecovery,
+                         // r19 (auditoría UI): la carga es familia EMBER en toda la sesión — el verde
+                         // es recuperación/veredicto y el teclado ya lo reserva para «Siguiente».
+                         valueTint: theme.dataStrain,
                          minusLabel: "Decrease weight", plusLabel: "Increase weight",
                          minus: { session.bumpWeight(byKg: -weightStepKg) },
                          plus: { session.bumpWeight(byKg: weightStepKg) }) {
@@ -2383,9 +2390,9 @@ struct LiveStrengthSheet: View {
         // r14 (owner): pasos GRANDES, de tinta y cuadrados — el gesto más repetido del foco deja de
         // ser un botón tímido; paper glyph sobre ink, esquina continua como el resto del recibo.
         Button(action: action) {
-            Image(systemName: system).font(.system(size: 17, weight: .semibold))  // token-exempt: glyph sized to the 40pt square step
+            Image(systemName: system).font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.paper)
-                .frame(width: 40, height: 40)
+                .frame(width: 44, height: 44)
                 .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -2583,7 +2590,7 @@ struct LiveStrengthSheet: View {
                 if session.runs.indices.contains(accordionIndex) {
                     SessionRunThumb(exerciseId: session.runs[accordionIndex].exerciseId, side: 28)
                 }
-                Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))
+                Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper)
             }
 
             if focusRestWantsHR, let started = session.restStartedAt {
@@ -2655,7 +2662,7 @@ struct LiveStrengthSheet: View {
             .padding(3)
             // r6: rectangular como el handoff — misma gramática que el selector global.
             .background(theme.paper.opacity(StrandOpacity.tintFillStrong),
-                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
         }
     }
 
@@ -2670,7 +2677,7 @@ struct LiveStrengthSheet: View {
                 .foregroundStyle(active ? theme.dataRecovery : theme.paper)
                 .padding(.horizontal, 12).padding(.vertical, 6)
                 .background(active ? theme.paper : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -2782,8 +2789,7 @@ struct LiveStrengthSheet: View {
                 // Canvas pass 2026-07-15: the next exercise's thumbnail rides the SIGUE card.
                 SessionRunThumb(exerciseId: run.exerciseId, side: 34)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Next").font(StrandFont.caption).fontWeight(.semibold)
-                        .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.paper.opacity(0.6))
+                    Text("Next").instrumentoOverline().foregroundStyle(theme.paper)
                     if let load, load > 0 {
                         Text("\(run.name) · " + String(localized: "set \(n)") + " · \(massText(load))")
                             .font(StrandFont.subhead).foregroundStyle(theme.paper)
@@ -3328,10 +3334,10 @@ struct LiveStrengthSheet: View {
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(theme.paper, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                 .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Edit rest"))
@@ -3360,10 +3366,10 @@ struct LiveStrengthSheet: View {
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(theme.paper, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                 .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(run.hasNote ? "Edit note, has a note" : "Add note"))
@@ -3689,8 +3695,9 @@ struct LiveStrengthSheet: View {
         let ready = v.ready
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Resting · by HR").font(StrandFont.caption).fontWeight(.semibold)
-                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
+                // r19 (auditoría UI): overline de token en tinta terciaria — el estado ya lo cuenta
+                // el numeral; el hue jamás anuncia (§8.4).
+                Text("Resting · by HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Text("\(Self.clock(elapsed)) elapsed").font(StrandFont.caption).monospacedDigit()
                     .foregroundStyle(theme.inkTertiary)
@@ -3739,8 +3746,7 @@ struct LiveStrengthSheet: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(noStrapFallback ? "Resting · by time" : "Resting")
-                    .font(StrandFont.caption).fontWeight(.semibold)
-                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.dataStrain)
+                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
             }
             Text(Self.clock(remaining))
