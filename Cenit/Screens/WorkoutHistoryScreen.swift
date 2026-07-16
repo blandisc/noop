@@ -285,11 +285,8 @@ struct WorkoutHistoryScreen: View {
 
     /// The movement-family tint for a muscle key (push=ember · pull=teal · legs=indigo; else ink-ish).
     private func muscleTint(_ muscle: String) -> Color {
-        let m = muscle.lowercased()
-        if ["chest", "shoulders", "triceps"].contains(where: m.contains) { return theme.dataStrain }
-        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return theme.dataHrv }
-        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return theme.dataSleep }
-        return theme.dataStrain
+        // r21: mapeo PROMOVIDO a StrandDesign (`movementFamilyTint`) — una sola fuente de verdad.
+        theme.movementFamilyTint(primaryMuscles: [muscle])
     }
 
     // MARK: - Your progression (raised / waiting / stalled signals)

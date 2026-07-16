@@ -389,30 +389,45 @@ final class StrengthSessionModel: ObservableObject {
         runs[currentIndex].sets[i].done = true
         runs[currentIndex].sets[i].doneTs = doneTs
 
-        // FER-931: superset round-robin — A1 done moves straight to A2's same round, no rest in between.
-        // Warm-ups don't participate; only `.work` cycles the group. A standalone exercise (group of one)
-        // takes this branch's condition to false immediately, so its rest/advance is byte-for-byte the
-        // pre-931 path below.
+        // FER-931: superset round-robin — A1 done moves straight to A2, no rest in between; the rest
+        // lands when the ROUND closes (the last member with pending work). r18 (owner edge case):
+        // the partner is found by its NEXT PENDING work set, not by the same round index — with
+        // staggered counts (A on its 5th set, B on its 1st) index-pairing broke the superset and a
+        // rest leaked between A and B. While any LATER member of the group still has pending work,
+        // the jump is rest-free. Warm-ups don't participate; only `.work` cycles the group. A
+        // standalone exercise (group of one) skips this entirely — pre-931 path below, untouched.
         let group = supersetMembers(at: currentIndex)
         if justCompletedKind == .work, group.count > 1,
-           let posInGroup = group.firstIndex(of: currentIndex), posInGroup < group.count - 1 {
-            let nextMember = group[posInGroup + 1]
-            if !runs[nextMember].skipped, runs[nextMember].sets.indices.contains(i),
-               !runs[nextMember].sets[i].done, runs[nextMember].sets[i].kind == .work {
-                phase = .capturing
-                clearRest()
-                timerStart = nil
-                currentIndex = nextMember
-                runs[nextMember].currentSet = i
-                return
+           let posInGroup = group.firstIndex(of: currentIndex) {
+            for nextMember in group.dropFirst(posInGroup + 1) where !runs[nextMember].skipped {
+                if let si = runs[nextMember].sets.firstIndex(where: { !$0.done && $0.kind == .work }) {
+                    phase = .capturing
+                    clearRest()
+                    timerStart = nil
+                    currentIndex = nextMember
+                    runs[nextMember].currentSet = si
+                    return
+                }
             }
         }
 
         // FER-715: rest is resolved per set — the active set's own override, else the exercise's default.
         let rest = runs[currentIndex].effectiveRest(forSet: i)
+        // r9 (owner): «Sin descanso» — un descanso fijo de 0 s registra y sigue de largo.
+        if rest.mode == .fixed, rest.seconds <= 0 {
+            phase = .capturing
+            clearRest()
+            advanceToNextPending()
+            return
+        }
         computeRestTarget(rest: rest, doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
         startRest(seconds: rest.seconds, now: now)
         advanceToNextPending()
+        // r9 (owner): tras el ÚLTIMO set del ÚLTIMO ejercicio no hay nada que descansar.
+        if isComplete {
+            phase = .capturing
+            clearRest()
+        }
     }
 
     /// Record (or clear, passing nil) the perceived-effort rating for one set (FER-930). Entirely
@@ -513,6 +528,21 @@ final class StrengthSessionModel: ObservableObject {
                               lastTimeS: nil, lastDistanceM: nil,
                               sets: [set], currentSet: 0, skipped: false)
         runs.insert(run, at: min(currentIndex + 1, runs.count))
+    }
+
+    /// Pair this exercise with the NEXT one as a superset (canvas pass 2026-07-15, menú «Superserie
+    /// con el siguiente») — or unpair them if they already share a group. Runtime-only, same contract
+    /// as the routine-seeded grouping (FER-931).
+    func toggleSupersetWithNext(_ ei: Int) {
+        guard runs.indices.contains(ei), runs.indices.contains(ei + 1) else { return }
+        if let g = runs[ei].supersetGroup, runs[ei + 1].supersetGroup == g {
+            runs[ei].supersetGroup = nil
+            runs[ei + 1].supersetGroup = nil
+        } else {
+            let g = (runs.compactMap(\.supersetGroup).max() ?? 0) + 1
+            runs[ei].supersetGroup = g
+            runs[ei + 1].supersetGroup = g
+        }
     }
 
     /// Skip the current (pending) set: drop it from the plan. A done set is left untouched.
@@ -893,4 +923,6 @@ final class StrengthSessionModel: ObservableObject {
                                     startTs: startTs, runs: runs)
     }
 }
+
+
 #endif

@@ -1,646 +1,717 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "+30 s": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+30 s"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+30 s"
+  "sourceLanguage" : "en",
+  "strings" : {
+    " / %@" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ " : {
+
+    },
+    "%@ beats per minute" : {
+
+    },
+    "%@ beats per minute, recovering toward %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ beats per minute, recovering toward %2$@"
           }
         }
       }
     },
-    "Add 30 seconds": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add 30 seconds"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sumar 30 segundos"
+    "%@/%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@/%2$@"
           }
         }
       }
     },
-    "back to set %lld · %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "back to set %1$lld · %2$@"
+    "%lld beats per minute" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld beats per minute"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "al volver: serie %1$lld · %2$@"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld latidos por minuto"
           }
         }
       }
     },
-    "Ends the current rest and returns to the set.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ends the current rest and returns to the set."
+    "%lld beats per minute, recovering toward %lld" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld beats per minute, recovering toward %2$lld"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Termina el descanso y regresa a la serie."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld latidos por minuto, recuperando hacia %2$lld"
           }
         }
       }
     },
-    "Extends the current rest by 30 seconds.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Extends the current rest by 30 seconds."
+    "%lld/%lld series" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld series"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alarga el descanso 30 segundos."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld series"
           }
         }
       }
     },
-    "set %lld of %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "set %1$lld of %2$lld"
+    "→ %@" : {
+
+    },
+    "+30 s" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+30 s"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "serie %1$lld de %2$lld"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+30 s"
           }
         }
       }
     },
-    "Skip": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip"
+    "−30 s" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "−30 s"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saltar"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "−30 s"
           }
         }
       }
     },
-    "Skip rest": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip rest"
+    "Add 30 seconds" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add 30 seconds"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saltar descanso"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sumar 30 segundos"
           }
         }
       }
     },
-    "−30 s": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "−30 s"
+    "Back to" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "−30 s"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al volver"
           }
         }
       }
     },
-    "Remove 30 seconds": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remove 30 seconds"
+    "back to set %lld · %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "back to set %1$lld · %2$@"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restar 30 segundos"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "al volver: serie %1$lld · %2$@"
           }
         }
       }
     },
-    "Complete set": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Complete set"
+    "By HR" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By HR"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Completar serie"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por FC"
           }
         }
       }
     },
-    "Logs the set and advances": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logs the set and advances"
+    "Cap" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cap"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Registra la serie y avanza"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tope"
           }
         }
       }
     },
-    "Finish workout": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Finish workout"
+    "Complete" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Terminar entrenamiento"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar"
           }
         }
       }
     },
-    "Logs the last set and ends the workout": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logs the last set and ends the workout"
+    "Complete set" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete set"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Registra la última serie y termina el entrenamiento"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar serie"
           }
         }
       }
     },
-    "Ends the rest without logging the set": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ends the rest without logging the set"
+    "Ends the current rest and returns to the set." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends the current rest and returns to the set."
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Corta el descanso sin registrar la serie"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termina el descanso y regresa a la serie."
           }
         }
       }
     },
-    "last set of the workout": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "last set of the workout"
+    "Ends the current rest without logging the set." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends the current rest without logging the set."
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Última serie del entrenamiento"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termina el descanso sin registrar la serie."
           }
         }
       }
     },
-    "Next up: %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Next up: %@"
+    "Ends the rest without logging the set" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends the rest without logging the set"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sigue: %@"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corta el descanso sin registrar la serie"
           }
         }
       }
     },
-    "Next: set %lld of %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Next: set %1$lld of %2$lld"
+    "Extends the current rest by 30 seconds." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extends the current rest by 30 seconds."
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Siguiente: serie %1$lld de %2$lld"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alarga el descanso 30 segundos."
           }
         }
       }
     },
-    "Shortens the current rest by 30 seconds.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Shortens the current rest by 30 seconds."
+    "Finish workout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish workout"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Acorta el descanso 30 segundos."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar entrenamiento"
           }
         }
       }
     },
-    "Ends the current rest without logging the set.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ends the current rest without logging the set."
+    "Last set" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last set"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Termina el descanso sin registrar la serie."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última serie"
           }
         }
       }
     },
-    "Logs the upcoming set and starts the next rest.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logs the upcoming set and starts the next rest."
+    "last set of the workout" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last set of the workout"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Registra la siguiente serie y arranca su descanso."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última serie del entrenamiento"
           }
         }
       }
     },
-    "Logs the last set and ends the workout.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logs the last set and ends the workout."
+    "Logs the last set and ends the workout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logs the last set and ends the workout"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Registra la última serie y termina el entrenamiento."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra la última serie y termina el entrenamiento"
           }
         }
       }
     },
-    "%lld/%lld series": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld/%2$lld series"
+    "Logs the last set and ends the workout." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logs the last set and ends the workout."
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld/%2$lld series"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra la última serie y termina el entrenamiento."
           }
         }
       }
     },
-    "of %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "of %lld"
+    "Logs the set and advances" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logs the set and advances"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "de %lld"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra la serie y avanza"
           }
         }
       }
     },
-    "By HR": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "By HR"
+    "Logs the upcoming set and starts the next rest." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logs the upcoming set and starts the next rest."
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Por FC"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra la siguiente serie y arranca su descanso."
           }
         }
       }
     },
-    "Rest": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest"
+    "Next" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Descanso"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sigue"
           }
         }
       }
     },
-    "Paused": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paused"
+    "Next up: %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next up: %@"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pausa"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sigue: %@"
           }
         }
       }
     },
-    "On pause": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "On pause"
+    "Next: set %lld of %lld" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next: set %1$lld of %2$lld"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En pausa"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siguiente: serie %1$lld de %2$lld"
           }
         }
       }
     },
-    "Cap": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cap"
+    "of %lld" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of %lld"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tope"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de %lld"
           }
         }
       }
     },
-    "%lld beats per minute": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld beats per minute"
+    "On pause" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On pause"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld latidos por minuto"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En pausa"
           }
         }
       }
     },
-    "%lld beats per minute, recovering toward %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld beats per minute, recovering toward %2$lld"
+    "Open Cénit to continue" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Cénit to continue"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld latidos por minuto, recuperando hacia %2$lld"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre Cénit para continuar"
           }
         }
       }
     },
-    "Next": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Next"
+    "Paused" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sigue"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa"
           }
         }
       }
     },
-    "Back to": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Back to"
+    "Remove 30 seconds" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove 30 seconds"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Al volver"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restar 30 segundos"
           }
         }
       }
     },
-    "Last set": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Last set"
+    "Rest" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Última serie"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descanso"
           }
         }
       }
     },
-    "Set %lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Set %lld"
+    "Resume" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Serie %lld"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reanudar"
           }
         }
       }
     },
-    "Open Cénit to continue": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open Cénit to continue"
+    "Resume workout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume workout"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abre Cénit para continuar"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reanudar entrenamiento"
           }
         }
       }
     },
-    "Complete": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Complete"
+    "Resumes the paused workout." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resumes the paused workout."
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Completar"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reanuda el entrenamiento en pausa."
           }
         }
       }
     },
-    "Resume": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resume"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reanudar"
+    "set %@ of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "set %1$@ of %2$@"
           }
         }
       }
     },
-    "Resume workout": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resume workout"
+    "Set %lld" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set %lld"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reanudar entrenamiento"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie %lld"
           }
         }
       }
     },
-    "Resumes the paused workout.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resumes the paused workout."
+    "set %lld of %lld" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "set %1$lld of %2$lld"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reanuda el entrenamiento en pausa."
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "serie %1$lld de %2$lld"
+          }
+        }
+      }
+    },
+    "Shortens the current rest by 30 seconds." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shortens the current rest by 30 seconds."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acorta el descanso 30 segundos."
+          }
+        }
+      }
+    },
+    "Skip" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saltar"
+          }
+        }
+      }
+    },
+    "Skip rest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip rest"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saltar descanso"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

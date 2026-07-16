@@ -1552,7 +1552,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@, hecha."
+            "value": "%@: listo."
           }
         }
       }
@@ -60746,6 +60746,61 @@
         }
       }
     },
+    "Break its current superset?": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Deshacer su superserie actual?"
+          }
+        }
+      }
+    },
+    "%@ is already paired in another superset. Pairing it here undoes that one.": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ya forma pareja en otra superserie. Emparejarlo aquí deshace aquella."
+          }
+        }
+      }
+    },
+    "Pair here": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emparejar aquí"
+          }
+        }
+      }
+    },
+    "SUPERSET · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPERSERIE · %@"
+          }
+        }
+      }
+    },
+    "Keep as is": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejarlo como está"
+          }
+        }
+      }
+    },
     "Reorder": {
       "localizations": {
         "es": {
@@ -60905,6 +60960,116 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@, entrenaste"
+          }
+        }
+      }
+    },
+    "Undo superset": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deshacer superserie"
+          }
+        }
+      }
+    },
+    "off": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "desactivada"
+          }
+        }
+      }
+    },
+    "No rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin descanso"
+          }
+        }
+      }
+    },
+    "last time ": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la última vez "
+          }
+        }
+      }
+    },
+    "target %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "objetivo %lld"
+          }
+        }
+      }
+    },
+    "plates": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "discos"
+          }
+        }
+      }
+    },
+    "FOCUS MODE · SET %lld OF %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MODO FOCO · SERIE %1$lld DE %2$lld"
+          }
+        }
+      }
+    },
+    "per side": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "por lado"
+          }
+        }
+      }
+    },
+    "down to %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hasta %lld"
+          }
+        }
+      }
+    },
+    "your rest": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tu reposo"
           }
         }
       }

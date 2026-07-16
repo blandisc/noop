@@ -98,7 +98,7 @@ public struct PaperMenuCard: View {
     private var estimatedHeight: CGFloat {
         let rows = pushed.map { $0.children } ?? items
         let base: CGFloat = pushed != nil ? 41 : 0   // the submenu's back header row
-        let content = rows.reduce(CGFloat(0)) { $0 + 45 + ($1.subtitle != nil ? 14 : 0) }
+        let content = rows.reduce(CGFloat(0)) { $0 + 49 + ($1.subtitle != nil ? 14 : 0) }
         return min(base + content + 12, 420)   // +12 = the vertical corner-clearing inset
     }
 
@@ -117,10 +117,19 @@ public struct PaperMenuCard: View {
                     pushed = item
                 }
             } label: {
-                HStack(spacing: 10) {
+                // Canvas pass 2026-07-15 (handoff `_ExMenu`): the icon LEADS the row — a fixed 24pt
+                // column so titles align — and rows breathe a touch taller; the trailing edge stays
+                // clean (only a chevron when the row pushes a submenu).
+                HStack(spacing: 12) {
+                    if let symbol = item.systemImage {
+                        Image(systemName: symbol)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(item.isDestructive ? theme.critical : theme.inkSecondary)
+                            .frame(width: 24, alignment: .center)
+                    }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(item.title)
-                            .font(StrandFont.scaled(14))
+                            .font(StrandFont.scaled(15))
                             .foregroundStyle(item.isDestructive ? theme.critical : theme.ink)
                         if let subtitle = item.subtitle {
                             Text(subtitle)
@@ -129,18 +138,14 @@ public struct PaperMenuCard: View {
                         }
                     }
                     Spacer(minLength: 0)
-                    if let symbol = item.systemImage {
-                        Image(systemName: symbol)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(item.isDestructive ? theme.critical : theme.inkSecondary)
-                    } else if !item.children.isEmpty {
+                    if !item.children.isEmpty {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(theme.inkTertiary)
                     }
                 }
-                .padding(.horizontal, 14)
-                .frame(minHeight: 44)
+                .padding(.horizontal, 16)
+                .frame(minHeight: 48)
                 .contentShape(Rectangle())
             }
             .buttonStyle(PaperMenuRowStyle(theme: theme))

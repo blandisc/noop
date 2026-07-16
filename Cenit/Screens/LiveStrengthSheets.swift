@@ -23,27 +23,32 @@ struct RPESheet: View {
     let onPick: (Double?) -> Void
     let onClose: () -> Void
 
-    /// The scale offered (FER-930 spec §3): 8 stops, half-steps from 8 up.
-    private static let scale: [Double] = [6, 7, 7.5, 8, 8.5, 9, 9.5, 10]
+    /// The scale offered (canvas pass 2026-07-15, owner trim): 6 stops — 7,5/8,5 dropped, 9,5 kept —
+    /// so the whole scale fits ONE row, no slide.
+    private static let scale: [Double] = [6, 7, 8, 9, 9.5, 10]
 
     @State private var selected: Double
 
     init(theme: InstrumentoTheme, target: LiveStrengthSheet.RPETarget,
          onPick: @escaping (Double?) -> Void, onClose: @escaping () -> Void) {
         self.theme = theme; self.target = target; self.onPick = onPick; self.onClose = onClose
-        _selected = State(initialValue: target.currentRPE ?? 8)
+        // r21 (auditoría UX #8b): un RPE legado fuera de la escala visible (7,5/8,5 del modelo
+        // viejo) se ancla al escalón más cercano — antes la hoja abría sin píldora seleccionada.
+        let raw = target.currentRPE ?? 8
+        _selected = State(initialValue: Self.scale.min(by: { abs($0 - raw) < abs($1 - raw) }) ?? 8)
     }
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            ScrollView {
-                VStack(spacing: 28) {
-                    hero
-                    scale
-                }
-                .padding(.top, 12)
+            // Canvas pass 2026-07-15: sin ScrollView — con el grid 2×4 todo cabe; más aire arriba
+            // (sectionGap) para que el héroe no se pegue a la colilla.
+            VStack(spacing: 28) {
+                hero
+                scale
             }
+            .padding(.top, CenitMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.gap)
             okButton
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
@@ -54,7 +59,8 @@ struct RPESheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text("RPE LOG").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                // Canvas pass 2026-07-15: it's a TITLE, not a label — Grotesk bold with real air above.
+                Text("RPE").font(InstrumentoType.grotesk(22, weight: .bold)).foregroundStyle(theme.ink)
                 Spacer()
                 Button(action: onClose) {
                     StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
@@ -65,14 +71,16 @@ struct RPESheet: View {
             Text("Set \(target.setNumber) · \(LiveStrengthSheet.formatDecimalComma(target.weightKg)) kg × \(target.reps) reps")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
         }
-        .padding(.top, 12)
+        .padding(.top, CenitMetrics.sectionGap)
         .padding(.bottom, 8)
     }
 
     private var hero: some View {
         VStack(spacing: 6) {
+            // Canvas pass 2026-07-15 (UI·armonía #1): un solo tamaño de héroe entre hojas hermanas
+            // (RPE 84 vs. discos 52 → 64 en ambas).
             Text(LiveStrengthSheet.formatDecimalComma(selected))
-                .font(InstrumentoType.grotesk(84, weight: .semibold)).monospacedDigit()
+                .font(InstrumentoType.groteskSheetHero).tracking(InstrumentoType.groteskSheetHeroTracking)
                 .foregroundStyle(theme.ink)
             Text(Self.descriptor(selected)).font(StrandFont.headline).foregroundStyle(theme.ink)
             Text(Self.subtitle(selected)).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
@@ -82,27 +90,30 @@ struct RPESheet: View {
     }
 
     private var scale: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(Self.scale, id: \.self) { value in
-                    let sel = value == selected
-                    Button {
-                        withAnimation(StrandMotion.interactive) { selected = value }
-                    } label: {
-                        Text(LiveStrengthSheet.formatDecimalComma(value))
-                            .font(StrandFont.number(15, weight: sel ? .bold : .regular)).monospacedDigit()
-                            .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
-                            .frame(width: 48, height: 44)
-                            .background {
-                                if sel { Capsule(style: .continuous).fill(theme.dataEffort) }
-                                else { Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1) }
-                            }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(sel ? [.isSelected] : [])
+        // Canvas pass 2026-07-15: the whole scale visible at once — ONE row of six (7,5/8,5 dropped),
+        // tiles ≥56pt (HIG), rounded-rect.
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6),
+                  spacing: CenitMetrics.gap) {
+            ForEach(Self.scale, id: \.self) { value in
+                let sel = value == selected
+                Button {
+                    withAnimation(StrandMotion.interactive) { selected = value }
+                } label: {
+                    Text(LiveStrengthSheet.formatDecimalComma(value))
+                        // r26: el numeral RPE también habla Grotesk (era el último en StrandFont.number).
+                        .font(InstrumentoType.groteskNumber(17, weight: sel ? .bold : .regular))
+                        .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .background {
+                            let shape = RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                            if sel { shape.fill(theme.dataEffort) }
+                            else { shape.strokeBorder(theme.hairlineStrong, lineWidth: 1) }
+                        }
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(sel ? [.isSelected] : [])
             }
-            .padding(.horizontal, 2)
         }
     }
 
@@ -127,8 +138,10 @@ struct RPESheet: View {
     /// Descriptors (FER-930 spec §3, es-MX in the xcstrings catalog), no prescriptive coaching.
     private static func descriptor(_ v: Double) -> LocalizedStringKey {
         switch v {
-        case 6:   return "Moderate effort"
-        case 7:   return "Comfortable"
+        // r20 (auditoría UX #6b): escala monótona — el 7 decía «Cómodo» y sonaba más fácil que el
+        // 6 «Esfuerzo moderado»; intercambiados para que el esfuerzo solo crezca.
+        case 6:   return "Comfortable"
+        case 7:   return "Moderate effort"
         case 8:   return "Hard effort"
         case 9:   return "Very hard"
         case 9.5: return "Near failure"
@@ -188,7 +201,8 @@ struct NoteSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
-            scopeToggle
+            // r9 (owner): las notas son POR EJERCICIO — el alcance por-serie se retira del UI (el
+            // modelo lo conserva por si vuelve).
             editor
             if let history, !history.isEmpty {
                 historySection(history)
@@ -196,7 +210,7 @@ struct NoteSheet: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 12)
+        .padding(.top, 32)   // r12 (owner): más aire aún — el grabber respira lejos del título
         .padding(.bottom, CenitMetrics.screenPadding)
         .background(theme.paper.ignoresSafeArea())
         .onChange(of: scope) { _, newScope in
@@ -207,7 +221,10 @@ struct NoteSheet: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Note · \(target.exerciseName)").font(StrandFont.headline).foregroundStyle(theme.ink)
+                // r10: voz de hoja hermana — título Grotesk como RPE/Progresión.
+                Text("Note · \(target.exerciseName)")
+                    .font(InstrumentoType.grotesk(20, weight: .semibold)).foregroundStyle(theme.ink)
+                    .lineLimit(2)
                 Text(scope == .exercise
                      ? "Saved in this exercise's history"
                      : "Saved for this set only")
@@ -407,6 +424,7 @@ struct ChangeExerciseSheet: View {
     }
 }
 
+
 // MARK: - HR rest reference mapping (FER-506)
 
 /// Maps the persisted domain enum (StrandTraining) onto the rest-math vocabulary (StrandAnalytics), so the
@@ -421,4 +439,5 @@ extension HRRestReference {
         }
     }
 }
+
 #endif

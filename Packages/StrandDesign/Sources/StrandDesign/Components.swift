@@ -31,6 +31,7 @@ public enum CenitMetrics {
     public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
     public static let insetRadius: CGFloat = 10        // sub-tarjeta anidada dentro de otra tarjeta (auditoría jul-2026, H3 — absorbe 9/10/11)
     public static let rowVPad: CGFloat = 10            // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
+    public static let receiptPadding: CGFloat = 14     // padding interno de la tarjeta-recibo de la sesión de fuerza (canvas 2026-07, decisión del dueño — entre gap 12 y cardPadding 16)
 
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
@@ -97,14 +98,20 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// (iOS HIG minimum) instead of the compact 28pt — used for the Tendencias landing selector. Only
     /// meaningful with a `theme`; default keeps the compact height.
     var tall: Bool = false
-    /// «Squared» variant (handoff «Detalle de Ejercicio», FER-951): rounded-RECT track (12) and a
-    /// thumb (9) that FILLS its whole segment — the boxier tab look, instead of the capsule pill.
+    /// «Squared» (handoff FER-951) kept for call-site compat — the selector is now ALWAYS the
+    /// rounded-RECT look (owner call 2026-07-15: one rectangular grammar everywhere), so the flag is
+    /// accepted but no longer changes the shape. `thumbTint` paints the active segment in a data hue.
     var squared: Bool = false
+    var thumbTint: Color? = nil
+    /// SF Symbol opcional por segmento (r7: «♥» como carácter era tofu en Grotesk — el ícono va real).
+    var icon: (T) -> String? = { _ in nil }
     public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme,
                 inkThumb: Bool = false, tall: Bool = false, squared: Bool = false,
+                thumbTint: Color? = nil, icon: @escaping (T) -> String? = { _ in nil },
                 label: @escaping (T) -> String) {
         self.items = items; self._selection = selection; self.theme = theme
-        self.inkThumb = inkThumb; self.tall = tall; self.squared = squared; self.label = label
+        self.inkThumb = inkThumb; self.tall = tall; self.squared = squared
+        self.thumbTint = thumbTint; self.icon = icon; self.label = label
     }
     public var body: some View {
         HStack(spacing: squared ? 3 : 4) {
@@ -119,13 +126,7 @@ public struct SegmentedPillControl<T: Hashable>: View {
             }
         }
         .padding(3)
-        .background {
-            if squared {
-                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(trackFill)
-            } else {
-                Capsule(style: .continuous).fill(trackFill)
-            }
-        }
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(trackFill))
     }
 
     /// One segment. Instrumento: the active «thumb» HUGS the label to the WIDTH (content-width, centered in
@@ -138,24 +139,28 @@ public struct SegmentedPillControl<T: Hashable>: View {
         // not the old quiet surface thumb — the bolder look the CompactTrendToggle already uses. The
         // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
         // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
-        Text(label(item))
-            .font(squared ? InstrumentoType.grotesk(13, weight: .semibold)
-                          : InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
-            .tracking(squared ? 0 : 1.6)
-            .lineLimit(1).minimumScaleFactor(0.85)
-            .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
-            .padding(.horizontal, 12)
-            .frame(height: tall ? 44 : 34)
-            // Squared (handoff): the ink thumb fills the WHOLE segment, not just the label.
-            .frame(maxWidth: squared ? .infinity : nil)
-            .background {
-                if sel {
-                    if squared { RoundedRectangle(cornerRadius: 9, style: .continuous).fill(theme.ink) }
-                    else { Capsule(style: .continuous).fill(theme.ink) }
-                }
+        // r7 (owner): el thumb LLENA su segmento SIEMPRE (frame antes del background) y el ícono es
+        // un SF Symbol real — «♥» como carácter era tofu en Grotesk.
+        HStack(spacing: 5) {
+            if let symbol = icon(item) {
+                Image(systemName: symbol).font(.system(size: 11, weight: .semibold))
             }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
+            Text(label(item))
+                .font(InstrumentoType.grotesk(12, weight: sel ? .bold : .medium))
+                .tracking(0.6)
+                .lineLimit(1).minimumScaleFactor(0.85)
+        }
+        .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity)
+        .frame(height: tall ? 44 : 34)
+        .background {
+            if sel {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(thumbTint ?? theme.ink)
+            }
+        }
+        .contentShape(Rectangle())
     }
 
     // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); the border stays.
@@ -248,3 +253,78 @@ public struct InstrumentoScreenTitle: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+// MARK: - TroquelChip (sesión de fuerza · propuesta B 2026-07)
+
+public extension View {
+    /// Chip «troquel»: papel hundido dentro de una tarjeta `surface` — padding fijo, esquina
+    /// `chipRadius`, borde `hairlineStrong`. El único hue permitido vive en el ICONO del contenido
+    /// (excepción nombrada en DESIGN.md §8.7); el valor va en tinta.
+    func troquelChip(_ theme: InstrumentoTheme) -> some View {
+        self
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+    }
+}
+
+// MARK: - PresetPill (editor de descanso / RPE — gramática rectangular FER-951)
+
+/// Preset rectangular «Instrumento»: thumb de TINTA al seleccionar, contorno `hairlineStrong` en
+/// reposo. Una sola gramática para todos los presets de las hojas de la sesión (auditoría UI O2).
+public struct PresetPill: View {
+    let text: String
+    let selected: Bool
+    let theme: InstrumentoTheme
+    let action: () -> Void
+
+    public init(_ text: String, selected: Bool, theme: InstrumentoTheme, action: @escaping () -> Void) {
+        self.text = text; self.selected = selected; self.theme = theme; self.action = action
+    }
+
+    public var body: some View {
+        Button(action: action) {
+            Text(text).font(StrandFont.caption).monospacedDigit()
+                .foregroundStyle(selected ? theme.paper : theme.inkSecondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .padding(.horizontal, 11).padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .fill(selected ? theme.ink : Color.clear))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .strokeBorder(selected ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+#if DEBUG
+#Preview("TroquelChip · PresetPill") {
+    let t = InstrumentoTheme.base
+    return VStack(spacing: 20) {
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "clock").foregroundStyle(t.dataStrain)
+                Text("90 s").font(StrandFont.caption.weight(.medium)).foregroundStyle(t.ink)
+            }
+            .troquelChip(t)
+            HStack(spacing: 6) {
+                Image(systemName: "square.and.pencil").foregroundStyle(t.dataHrv)
+                Text("Nota").font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+            }
+            .troquelChip(t)
+        }
+        .padding(14)
+        .background(t.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        HStack(spacing: 8) {
+            PresetPill("Sin descanso", selected: false, theme: t) {}
+            PresetPill("1:00", selected: true, theme: t) {}
+            PresetPill("2:00", selected: false, theme: t) {}
+        }
+    }
+    .padding(24)
+    .background(t.paper)
+}
+#endif

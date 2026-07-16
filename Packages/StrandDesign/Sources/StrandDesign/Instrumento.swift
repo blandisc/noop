@@ -422,6 +422,36 @@ public extension Text {
     }
 }
 
+// MARK: - Movement-family tint (promovido 2026-07 — 3er consumidor, sesión de fuerza en vivo)
+
+public extension InstrumentoTheme {
+    /// The movement-family hue shared by History, the Library and the live session's rail:
+    /// pull = teal (`dataHrv`) · legs = indigo (`dataSleep`) · push / everything else = ember
+    /// (`dataStrain`). Classified from an exercise's primary muscles (free-exercise-db vocabulary).
+    func movementFamilyTint(primaryMuscles: [String]) -> Color {
+        let m = primaryMuscles.joined(separator: " ").lowercased()
+        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return dataHrv }
+        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return dataSleep }
+        return dataStrain
+    }
+}
+
+#if DEBUG
+#Preview("Instrumento · movementFamilyTint") {
+    let t = InstrumentoTheme.base
+    return HStack(spacing: 20) {
+        ForEach([("empuje", ["chest"]), ("jalón", ["lats"]), ("pierna", ["quadriceps"])], id: \.0) { name, muscles in
+            VStack(spacing: 6) {
+                Circle().fill(t.movementFamilyTint(primaryMuscles: muscles)).frame(width: 22, height: 22)
+                Text(name).font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+            }
+        }
+    }
+    .padding(28)
+    .background(t.paper)
+}
+#endif
+
 // MARK: - Hierarchy rules (documentation, enforced by review)
 //
 // The language is four rules. They are not tokens — they are how the tokens are

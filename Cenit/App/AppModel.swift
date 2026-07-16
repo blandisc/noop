@@ -971,6 +971,20 @@ final class AppModel: ObservableObject {
         guard strengthSession == nil else { strengthSheetPresented = true; return }
         strengthSession = StrengthSessionModel.make(routineId: routineId, routineName: routineName,
                                                     slots: slots, startTs: Int(Date().timeIntervalSince1970))
+        // r22 (owner): un ejercicio con calentamiento ACTIVADO nace con su rampa «C» puesta — la de
+        // PlateMath sobre el peso de trabajo del día (solo barra, como la hoja de discos). Insertar
+        // la rampa una vez lo activó; quitar su última «C» en sesión lo apaga (LiveStrengthSheet).
+        if let s = strengthSession {
+            for (ei, run) in s.runs.enumerated() where plates.warmupExerciseIds.contains(run.exerciseId) {
+                guard !run.sets.contains(where: { $0.kind == .warmup }),
+                      let workKg = run.sets.first(where: { $0.kind == .work })?.weightKg, workKg > 0,
+                      let eq = ExerciseCatalog.byID(run.exerciseId)?.equipment?.lowercased(),
+                      eq.contains("barbell") || eq.contains("curl bar") else { continue }
+                let ramp = PlateMath.warmup(workKg: workKg, barKg: plates.barKg, inventory: plates.inventory)
+                guard !ramp.isEmpty else { continue }
+                s.insertWarmup(exercise: ei, sets: ramp.map { (weightKg: $0.weightKg, reps: $0.reps) })
+            }
+        }
         strengthSheetPresented = true
         // Arm the realtime HR stream for the duration of the session (FER-498) — without this, on a
         // WHOOP 4.0 the session sees no HR unless Live was opened first, and the receipt reads "no HR".

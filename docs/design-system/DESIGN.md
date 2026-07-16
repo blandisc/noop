@@ -418,6 +418,31 @@ no migradas conservan la voz de §8.3 hasta que les toque.
   del pull-to-refresh (FER-709). En **F3 (FER-711)** el `DiurnalDial` grande se **retiró del
   paquete**: su geometría compartida vive ahora en `DialGeometry.swift` (`SleepWindow` +
   `DialGeometry`, lo único que `DialSeal` necesita); el view y sus tests se borraron.
+- **Excepciones aprobadas de la sesión de fuerza (canvas 2026-07, dueño):** (a) el pill
+  **«+ Serie»** lleva fill `dataStrain` — única CTA con hue de dato como fondo; vive DENTRO del
+  recibo y ancla la familia ember de la carga (handoff Entrenar), no se replica en otros CTAs;
+  (b) los **chips troquel** de Descanso/Nota llevan su hue SOLO en el icono (reloj ember, lápiz
+  teal — propuesta B aprobada): el único color del chip es ese glifo; el valor va en tinta.
+  Ambas son excepciones nombradas a la regla 2 («color solo en el dato»), como `keyCap`.
+- **Aprendizajes del canvas de la sesión de fuerza (2026-07, ley para pantallas nuevas):**
+  1. **Los números vivos RUEDAN.** Todo numeral que cambia solo en pantalla (relojes, contadores,
+     countdown) lleva `contentTransition(.numericText())` — los dígitos ruedan, nunca parpadean;
+     un anillo/barra de progreso drena CONTINUO (lineal 1 s), no a brincos por tick.
+  2. **Todo selector es RECTANGULAR y su thumb llena el segmento.** `SegmentedPillControl`
+     (rectangular global), `PresetPill` (thumb de tinta) y los toggles del foco comparten una
+     sola gramática; las cápsulas quedan reservadas a acciones, nunca a selección.
+  3. **Chips «troquel» = `troquelChip`** (papel hundido + `chipRadius` + `hairlineStrong`) —
+     componente, no receta que se copia.
+  4. **El visual puede pedir menos de 44 pt; el toque NUNCA.** El área táctil se completa con
+     `contentShape` extendido / frame externo (pasos ± del foco, «×» de cierre) — así el numeral
+     manda sin sacrificar dedo.
+  5. **Los relojes le hablan a VoiceOver por HITOS, no por ticks:** `.updatesFrequently` +
+     valores cuantizados (60/30/15 s, «casi listo») en toda superficie con countdown.
+  6. **Elementos que deben alinearse viven en UN solo árbol de layout.** El riel (hilo + bolita +
+     nacimiento) ancla al thumbnail/tarjeta, jamás a fondos de celda: los marcos de `List` derivan
+     y esa deriva costó 10 rondas (r7–r18: la sesión terminó en `ScrollView`+`VStack`).
+  7. **Cápsulas hermanas = altura FIJA compartida**, no padding vertical: dos fuentes distintas
+     (SF vs Grotesk) con el mismo padding rinden cápsulas de tamaños distintos.
 
 #### 8.7.1 Estados de «Hoy» + banners (FER-711)
 

@@ -21,6 +21,9 @@ struct PlatesScreen: View {
     /// Insert the warm-up ramp into the session; the sheet dismisses after.
     let onInsertWarmup: ([(weightKg: Double, reps: Int)]) -> Void
     let onClose: () -> Void
+    /// r20 (auditoría UX #6c): «Añadir calentamiento» ancla la hoja directo en su sección — quien
+    /// pidió calentar no debería aterrizar en el héroe de discos.
+    var startAtWarmup = false
 
     @State private var editingInventory = false
 
@@ -32,19 +35,23 @@ struct PlatesScreen: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                header
-                loadedTotal
-                barDiagram
-                inventorySection
-                Rectangle().fill(theme.hairline).frame(height: 1)
-                warmupSection
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                    loadedTotal
+                    barDiagram
+                    inventorySection
+                    Rectangle().fill(theme.hairline).frame(height: 1)
+                    warmupSection
+                        .id("warmup")
+                }
+                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.top, 18)
+                .padding(.bottom, CenitMetrics.screenPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 18)
-            .padding(.bottom, CenitMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .onAppear { if startAtWarmup { proxy.scrollTo("warmup", anchor: .top) } }
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
@@ -70,15 +77,15 @@ struct PlatesScreen: View {
     private var loadedTotal: some View {
         VStack(alignment: .center, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
+                // Canvas pass 2026-07-15 (UI·armonía #1): one hero size across sibling sheets (64,
+                // same as the RPE sheet).
                 Text(kg(loading.achievedKg))
-                    .font(InstrumentoType.grotesk(52, weight: .semibold)).monospacedDigit()
-                    .tracking(-0.5).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskSheetHero).tracking(InstrumentoType.groteskSheetHeroTracking)
+                    .foregroundStyle(theme.ink)
                 Text("kg").font(InstrumentoType.grotesk(20, weight: .regular)).foregroundStyle(theme.inkTertiary)
             }
             Text(perSideCaption).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-            if loading.shortfallKg > 0.01 {
-                shortfallNotice
-            }
+            // (shortfall notice moved next to the CTA that resolves it — handoff placement.)
         }
         .frame(maxWidth: .infinity)
     }
@@ -94,11 +101,12 @@ struct PlatesScreen: View {
         .padding(.top, 4)
     }
 
-    /// «20 + 15 + 1,25 · barra 20 kg» — the per-side breakdown, heaviest first.
+    /// «por lado: 20 + 15 + 1,25 · barra 20 kg» — the per-side breakdown, heaviest first (handoff
+    /// prefixes the scope so the number can't be misread as total plates).
     private var perSideCaption: String {
         let plates = loading.perSide.map { plate($0) }.joined(separator: " + ")
         let bar = "\(String(localized: "bar")) \(kg(store.barKg)) kg"
-        return plates.isEmpty ? bar : "\(plates) · \(bar)"
+        return plates.isEmpty ? bar : "\(String(localized: "per side")): \(plates) · \(bar)"
     }
 
     // MARK: Bar diagram (to scale, per side)
@@ -123,7 +131,7 @@ struct PlatesScreen: View {
         // Height scales with plate mass (25 kg → tall, 1.25 kg → short), clamped to a readable band.
         let h = 30 + min(46, kg * 1.7)
         return RoundedRectangle(cornerRadius: 3) // token-exempt: geometría de dato
-            .fill(theme.ink)
+            .fill(theme.dataStrain)   // los discos SON el dato (carga) — ember, no tinta (handoff)
             .frame(width: max(8, min(16, 6 + kg * 0.45)), height: h)
             .overlay(
                 Text(plate(kg)).font(.system(size: 9, weight: .medium)).monospacedDigit() // token-exempt: microtexto <10pt
@@ -140,8 +148,9 @@ struct PlatesScreen: View {
                 Text("YOUR INVENTORY · PER SIDE").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Button(action: { withAnimation(.snappy) { editingInventory.toggle() } }) {
+                    // UI·armonía #2: acción de UI en tinta, no en hue de dato de salud.
                     Text(editingInventory ? "Done" : "Edit")
-                        .font(StrandFont.caption).foregroundStyle(theme.dataRecovery)
+                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.ink)
                 }
             }
             if editingInventory {
@@ -235,11 +244,15 @@ struct PlatesScreen: View {
                             Text(warmupLabel(set)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             Spacer()
                             Text("\(kg(set.weightKg)) kg")
-                                .font(StrandFont.subhead).fontWeight(.medium).monospacedDigit()
+                                .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
                                 .foregroundStyle(theme.ink)
                         }
                         .padding(.vertical, 10)
                     }
+                }
+                // Handoff: la nota honesta del faltante vive pegada al CTA que la resuelve.
+                if loading.shortfallKg > 0.01 {
+                    shortfallNotice
                 }
                 insertButton
             }
@@ -293,13 +306,15 @@ struct PlateChips: View {
     @Environment(\.instrumentoTheme) private var theme
 
     var body: some View {
-        // A lazy grid wraps naturally at this width without a custom layout.
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 54), spacing: 6)], alignment: .leading, spacing: 6) {
+        // Canvas pass 2026-07-15 (owner): ONE row, never two — compact chips, Grotesk numerals
+        // (handoff voice), sharing the width equally.
+        HStack(spacing: 6) {
             ForEach(items) { chip in
                 Text(chip.label)
-                    .font(StrandFont.subhead).monospacedDigit()
+                    .font(InstrumentoType.groteskNumber(13)).monospacedDigit()
                     .foregroundStyle(chip.owned ? theme.ink : theme.inkTertiary)
-                    .padding(.horizontal, 12).frame(height: 34)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .padding(.horizontal, 8).frame(height: 30).frame(maxWidth: .infinity)
                     .background(Capsule().fill(chip.owned ? theme.surface : Color.clear))
                     .overlay(Capsule().strokeBorder(chip.owned ? theme.hairlineStrong : theme.hairline,
                                                     style: StrokeStyle(lineWidth: 1, dash: chip.owned ? [] : [3, 3])))

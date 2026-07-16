@@ -56,6 +56,19 @@ public extension InstrumentoType {
         grotesk(size, weight: weight).monospacedDigit()
     }
 
+    /// A tabular-digit numeral that scales with Dynamic Type (auditoría UX sesión de fuerza,
+    /// 2026-07): las celdas de captura son texto que el usuario dimensiona — antes de AX1 los
+    /// tamaños intermedios (L–xxxLarge) no movían ni un dato.
+    static func groteskNumber(_ size: CGFloat, weight: GroteskWeight = .bold,
+                              relativeTo style: Font.TextStyle) -> Font {
+        grotesk(size, weight: weight, relativeTo: style).monospacedDigit()
+    }
+
+    /// El héroe de HOJA hermana (RPE, Discos, foco de peso corporal): 64/semibold tabular con
+    /// tracking −0.5 — promovido 2026-07 (auditoría UI V5: dos usos a mano con tracking a ojo).
+    static let groteskSheetHero = groteskNumber(64, weight: .semibold)
+    static let groteskSheetHeroTracking: CGFloat = -0.5
+
     // MARK: Scale (handoff «Hoy» 2026-07)
 
     /// The «Hoy» hero numeral — 102/700, tracking −4.5 (apply `groteskHeroTracking`).
