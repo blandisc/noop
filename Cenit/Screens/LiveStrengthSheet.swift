@@ -1189,20 +1189,7 @@ struct LiveStrengthSheet: View {
             }
         }
         .sheet(item: $platesTarget) { target in
-            PlatesScreen(
-                theme: theme,
-                targetKg: target.weightKg,
-                exerciseName: session.runs.indices.contains(target.ei) ? session.runs[target.ei].name : "",
-                store: model.plates,
-                onInsertWarmup: { sets in
-                    session.insertWarmup(exercise: target.ei, sets: sets)
-                    platesTarget = nil
-                },
-                onClose: { platesTarget = nil }
-            )
-            .presentationDetents([.large])
-            .presentationDragIndicator(.hidden)
-            .presentationBackground(theme.paper)
+            platesSheet(target)
         }
         .sheet(item: $rpeTarget) { target in
             RPESheet(theme: theme, target: target,
@@ -1253,7 +1240,13 @@ struct LiveStrengthSheet: View {
             }
         }
         .fullScreenCover(isPresented: $focusMode) {
+            // Canvas pass 2026-07-15 (UI·discos): the plates sheet must ALSO hang inside the cover —
+            // the outer `.sheet` presenter is covered while focus mode is up, so «⛓ discos» from the
+            // focus KG card silently failed to present (the reported «rota»).
             focusModeView
+                .sheet(item: $platesTarget) { target in
+                    platesSheet(target)
+                }
         }
         // S-2 (FER-830) → FER-837: one destructive-confirmation pattern across the flow, now the
         // «Instrumento» ConfirmCard. The stay-safe verb names its action («Keep training»), never a
@@ -1713,9 +1706,29 @@ struct LiveStrengthSheet: View {
             onNext: { focusNextCell() },
             onCopyPrevious: { if let run { prefillTapped(ei: ei, si: si, run: run); syncBufferFromModel(cell) } },
             onStep: { keypadStep(cell) },
-            onPlates: { openPlates(ei: ei, si: si) }
+            onPlates: { openPlates(ei: ei, si: si) },
+            onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } }
         )
         .transition(.move(edge: .bottom))
+    }
+
+    /// The plate-calculator sheet content, shared by the two presenters (main body + inside the focus
+    /// cover — a sheet can only present from the frontmost layer).
+    private func platesSheet(_ target: PlatesTarget) -> some View {
+        PlatesScreen(
+            theme: theme,
+            targetKg: target.weightKg,
+            exerciseName: session.runs.indices.contains(target.ei) ? session.runs[target.ei].name : "",
+            store: model.plates,
+            onInsertWarmup: { sets in
+                session.insertWarmup(exercise: target.ei, sets: sets)
+                platesTarget = nil
+            },
+            onClose: { platesTarget = nil }
+        )
+        .presentationDetents([.large])
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(theme.paper)
     }
 
     /// Open the plate calculator (FER-720 · 3a) for a weight cell, seeded with that set's current load.
@@ -1948,19 +1961,22 @@ struct LiveStrengthSheet: View {
             // «la última vez», KG/REPS stepper cards, the big ink «✓ Registrar serie» pill, the quick
             // links row, and a prev/next exercise bar at the bottom.
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                HStack(spacing: 12) {
-                    SessionRunThumb(exerciseId: run.exerciseId, side: 44)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(run.name).font(StrandFont.title2).foregroundStyle(theme.ink)
+                Spacer(minLength: 0)
+                // Canvas pass 2026-07-15: bigger hero (56pt thumb + 24pt Grotesk title), the row
+                // left-aligned (long names get the room), the whole block vertically centered.
+                HStack(spacing: 14) {
+                    SessionRunThumb(exerciseId: run.exerciseId, side: 56)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(run.name).font(InstrumentoType.grotesk(24, weight: .semibold))
+                            .foregroundStyle(theme.ink)
                             .lineLimit(2).minimumScaleFactor(0.7)
                         if let prev = previousText(run) {
                             Text(String(localized: "last time ") + prev)
                                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         }
                     }
+                    Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top, CenitMetrics.sectionGap)
 
                 switch run.type {
                 case .weightReps:
@@ -4657,13 +4673,14 @@ struct RPESheet: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            ScrollView {
-                VStack(spacing: 28) {
-                    hero
-                    scale
-                }
-                .padding(.top, 12)
+            // Canvas pass 2026-07-15: sin ScrollView — con el grid 2×4 todo cabe; más aire arriba
+            // (sectionGap) para que el héroe no se pegue a la colilla.
+            VStack(spacing: 28) {
+                hero
+                scale
             }
+            .padding(.top, CenitMetrics.sectionGap)
+            Spacer(minLength: CenitMetrics.gap)
             okButton
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
@@ -4691,8 +4708,10 @@ struct RPESheet: View {
 
     private var hero: some View {
         VStack(spacing: 6) {
+            // Canvas pass 2026-07-15 (UI·armonía #1): un solo tamaño de héroe entre hojas hermanas
+            // (RPE 84 vs. discos 52 → 64 en ambas).
             Text(LiveStrengthSheet.formatDecimalComma(selected))
-                .font(InstrumentoType.grotesk(84, weight: .semibold)).monospacedDigit()
+                .font(InstrumentoType.grotesk(64, weight: .semibold)).monospacedDigit()
                 .foregroundStyle(theme.ink)
             Text(Self.descriptor(selected)).font(StrandFont.headline).foregroundStyle(theme.ink)
             Text(Self.subtitle(selected)).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
@@ -4702,27 +4721,30 @@ struct RPESheet: View {
     }
 
     private var scale: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(Self.scale, id: \.self) { value in
-                    let sel = value == selected
-                    Button {
-                        withAnimation(StrandMotion.interactive) { selected = value }
-                    } label: {
-                        Text(LiveStrengthSheet.formatDecimalComma(value))
-                            .font(StrandFont.number(15, weight: sel ? .bold : .regular)).monospacedDigit()
-                            .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
-                            .frame(width: 48, height: 44)
-                            .background {
-                                if sel { Capsule(style: .continuous).fill(theme.dataEffort) }
-                                else { Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1) }
-                            }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(sel ? [.isSelected] : [])
+        // Canvas pass 2026-07-15: the whole scale visible at once — no horizontal slide. Two rows of
+        // four, split semantically at the 8 («below 8 / 8 and above»), tiles ≥56pt (HIG), rounded-rect
+        // (a 2×4 grid reads as tiles, not as pills of one row).
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: CenitMetrics.gap), count: 4),
+                  spacing: CenitMetrics.gap) {
+            ForEach(Self.scale, id: \.self) { value in
+                let sel = value == selected
+                Button {
+                    withAnimation(StrandMotion.interactive) { selected = value }
+                } label: {
+                    Text(LiveStrengthSheet.formatDecimalComma(value))
+                        .font(StrandFont.number(17, weight: sel ? .bold : .regular)).monospacedDigit()
+                        .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .background {
+                            let shape = RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                            if sel { shape.fill(theme.dataEffort) }
+                            else { shape.strokeBorder(theme.hairlineStrong, lineWidth: 1) }
+                        }
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(sel ? [.isSelected] : [])
             }
-            .padding(.horizontal, 2)
         }
     }
 

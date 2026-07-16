@@ -28,6 +28,9 @@ struct SessionKeypad: View {
     /// shown disabled (no dead buttons).
     var onRPE: (() -> Void)? = nil
     var onPlates: () -> Void = {}
+    /// Hides the keypad without registering anything (canvas pass 2026-07-15) — every keystroke has
+    /// already committed live to the model, so dismissing loses nothing.
+    var onHide: () -> Void = {}
 
     var body: some View {
         VStack(spacing: 0) {
@@ -44,6 +47,17 @@ struct SessionKeypad: View {
     private var accessoryBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
+                // Hide-keyboard at the far LEFT (mirror of «Next»), subordinated ink — never reads as
+                // «register». VoiceOver: «Hide keyboard», not «Done»/«Close».
+                Button(action: onHide) {
+                    Image(systemName: "chevron.down")
+                        .font(StrandFont.glyph(.inline, weight: .semibold))
+                        .foregroundStyle(theme.inkSecondary)
+                        .frame(width: 34, height: 34)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Hide keyboard"))
                 pill(String(localized: "copy last"), enabled: canCopyPrevious, action: onCopyPrevious)
                 pill(stepLabel, action: onStep)
                 // FER-815: each accessory appears only when its function exists — never a permanent
