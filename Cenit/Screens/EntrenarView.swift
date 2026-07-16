@@ -248,7 +248,18 @@ private struct EntrenarLanding: View {
     /// The recovery chip: a small arc (`dataRecovery`) + the numeral. Tapping opens the Recovery Detail
     /// sheet (same as Today/Cuerpo) — it does NOT switch tabs. The one glanceable point of color here.
     private func recoveryChip(_ rec: Double) -> some View {
-        Button { recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(repo: repo)) } label: {
+        Button {
+            // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
+            // in under the same id (same pattern as Tendencias/Hoy).
+            let item = RecoveryDetailItem(model: .loading)
+            recoveryDetail = item
+            Task {
+                let m = await RecoveryDetailModel.buildDetached(repo: repo)
+                if recoveryDetail?.id == item.id {
+                    recoveryDetail = RecoveryDetailItem(id: item.id, model: m)
+                }
+            }
+        } label: {
             HStack(spacing: 7) {
                 RecoveryChipRing(score: rec).frame(width: 22, height: 22)
                 Text("\(Int(rec.rounded()))")

@@ -88,9 +88,16 @@ struct StrainDetailScreen: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .sheetPaper(theme)
-        .task {
+        // FER-954: re-run when the placeholder model is replaced by the real one (same seam as
+        // Sueño/Recuperación, FER-953) and hop the day-key parse off-main. The placeholder pass
+        // bails early so `curveLoader` runs exactly once, on the real model.
+        .task(id: model.loaded) {
+            guard model.loaded else { return }   // placeholder pass — nothing to parse yet (FER-954)
             range = .month
-            parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            let series = model.series
+            parsed = await Task.detached(priority: .userInitiated) {
+                series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            }.value
             curve = await curveLoader()
             // The hero shows the curve's LAST point (the live in-progress-day value) so «ends on your score
             // above» holds exactly — same array, no second derivation (FER-650). `.last` is the real endpoint
@@ -539,10 +546,15 @@ struct StrainDetailScreen: View {
 /// Identifiable wrapper so the light «Instrumento» Detalle de Esfuerzo can ride `.sheet(item:)` (the
 /// model itself isn't Identifiable). Opened from Cuerpo's «Day Strain» row. (FER-238)
 struct StrainDetailItem: Identifiable {
-    let id = UUID()
+    let id: UUID
     let model: StrainDetailModel
     /// FER-885: today's load is an Apple workout-HR estimate (Apple-only mode), captured when the sheet opens.
     var estimated: Bool = false
+    /// FER-954: an explicit `id` lets the built model swap in under the SAME presentation identity
+    /// (same pattern as `SleepDetailItem`, FER-953).
+    init(id: UUID = UUID(), model: StrainDetailModel, estimated: Bool = false) {
+        self.id = id; self.model = model; self.estimated = estimated
+    }
 }
 
 // MARK: - StrainDetailModel — every derivation the screen draws, built ONCE from the repo
@@ -585,6 +597,22 @@ struct StrainDetailModel {
         return StrainDetailModel(today: today?.strain, series: series, loaded: loaded, drivers: drivers,
                                  confidence: today?.effortConfidence.flatMap(ScoreConfidence.init(rawValue:)))
     }
+
+    /// Runs `build` off the MainActor (FER-954, same seam as `SleepDetailModel.buildDetached` /
+    /// FER-953): snapshots `repo.days`/`repo.today`/`repo.loaded` on the MainActor (value-type
+    /// copies), then hops the pure derivation to a background executor; only the finished model
+    /// returns to main.
+    @MainActor
+    static func buildDetached(repo: Repository) async -> StrainDetailModel {
+        let days = repo.days, today = repo.today, loaded = repo.loaded
+        return await Task.detached(priority: .userInitiated) {
+            build(days: days, today: today, loaded: loaded)
+        }.value
+    }
+
+    /// Placeholder while `buildDetached` runs: renders the screen's existing `!model.loaded` loading
+    /// state (FER-954).
+    static let loading: StrainDetailModel = build(days: [], today: nil, loaded: false)
 }
 
 // MARK: - Preview

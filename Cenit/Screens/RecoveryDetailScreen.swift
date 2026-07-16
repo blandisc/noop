@@ -125,9 +125,16 @@ struct RecoveryDetailScreen: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .sheetPaper(theme)
-        .task {
+        // FER-954: re-run when the placeholder model is replaced by the real one (same seam as
+        // Sueño, FER-953); the parse hop is small here (the 90-day heat is already built off-main
+        // inside `buildDetached`), but it stays consistent with the rest of the pattern.
+        .task(id: model.loaded) {
             range = .month
-            parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            guard model.loaded else { return }   // placeholder pass — nothing to parse yet (FER-954)
+            let series = model.series
+            parsed = await Task.detached(priority: .userInitiated) {
+                series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            }.value
         }
     }
 
@@ -1036,8 +1043,11 @@ struct RecoveryDetailScreen: View {
 /// Identifiable wrapper so the light «Instrumento» Detalle de Recuperación can ride `.sheet(item:)` (the
 /// model itself isn't Identifiable). Shared by Cuerpo (the hero) and Hoy (the verdict numeral). (FER-225)
 struct RecoveryDetailItem: Identifiable {
-    let id = UUID()
+    let id: UUID
     let model: RecoveryDetailModel
+    /// FER-954: an explicit `id` lets the built model swap in under the SAME presentation identity
+    /// (same pattern as `SleepDetailItem`, FER-953).
+    init(id: UUID = UUID(), model: RecoveryDetailModel) { self.id = id; self.model = model }
 }
 
 // MARK: - RecoveryDetailModel — every derivation the screen draws, built ONCE from the repo
@@ -1113,20 +1123,35 @@ struct RecoveryDetailModel {
 
     // MARK: - Build
 
-    /// Convenience: build the whole model straight from the repo. Hoy and Cuerpo both open the recovery
-    /// detail the same way, so they share this instead of each assembling the argument list (incl. the
-    /// FER-153 estimate flags). (`@MainActor` to read the repo's published state on the main actor.)
+    /// Runs `build` off the MainActor (FER-954, same seam as `SleepDetailModel.buildDetached` /
+    /// FER-953): snapshots the inputs from `repo` on the MainActor (value-type copies + the small
+    /// `repo.recovery*(key)` reads, incl. the FER-153 estimate flags — Hoy, Cuerpo and Entrenar all
+    /// open the recovery detail through this), then hops the pure derivation to a background
+    /// executor; only the finished model returns to main. Supersedes the synchronous `build(repo:)`.
     @MainActor
-    static func build(repo: Repository) -> RecoveryDetailModel {
+    static func buildDetached(repo: Repository) async -> RecoveryDetailModel {
         let key = Repository.localDayKey(Date())
-        return build(days: repo.days, today: repo.today, todayKey: key,
-                     appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
-                     importedSleep: repo.importedSleep,
-                     isEstimated: repo.isRecoveryEstimated(key),
-                     confidence: repo.recoveryConfidence(key),
-                     presentPrimaryDrivers: repo.recoveryPrimaryDrivers(key),
-                     estimatedDirections: repo.recoveryEstimateDirections(key))
+        let days = repo.days, today = repo.today, appleHealthDays = repo.appleHealthDays
+        let loaded = repo.loaded, importedSleep = repo.importedSleep
+        let isEstimated = repo.isRecoveryEstimated(key)
+        let confidence = repo.recoveryConfidence(key)
+        let presentPrimaryDrivers = repo.recoveryPrimaryDrivers(key)
+        let estimatedDirections = repo.recoveryEstimateDirections(key)
+        return await Task.detached(priority: .userInitiated) {
+            build(days: days, today: today, todayKey: key,
+                  appleHealthDays: appleHealthDays, loaded: loaded,
+                  importedSleep: importedSleep,
+                  isEstimated: isEstimated,
+                  confidence: confidence,
+                  presentPrimaryDrivers: presentPrimaryDrivers,
+                  estimatedDirections: estimatedDirections)
+        }.value
     }
+
+    /// Placeholder while `buildDetached` runs: renders the screen's existing `!model.loaded` loading
+    /// state (FER-954).
+    static let loading: RecoveryDetailModel = build(
+        days: [], today: nil, todayKey: "", appleHealthDays: [], loaded: false)
 
     /// Build the whole model from the repo's in-memory dashboard. Pure (no DB). `days` is the strap +
     /// on-device dashboard (`repo.days`, the baseline source — FER-149); `today` is `repo.today`; `todayKey`

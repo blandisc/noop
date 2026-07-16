@@ -91,9 +91,13 @@ struct SkinTempDetailScreen: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .sheetPaper(theme)
+        // FER-954: hop the day-key parse off-main (same seam as the other detail screens, FER-953).
         .task {
             range = .month
-            parsed = model.series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            let series = model.series
+            parsed = await Task.detached(priority: .userInitiated) {
+                series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            }.value
         }
         // Load the nocturnal thermal-stability read once, only when the experimental toggle is on. The
         // heavy multi-night skin-temp read lives behind `loadWarmingMagnitudes`. (FER-850)
