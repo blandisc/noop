@@ -24,6 +24,17 @@ final class PlatesStore: ObservableObject {
     /// The denominations offered in the editor — the standard metric set.
     static let selectableKg: [Double] = [25, 20, 15, 10, 5, 2.5, 1.25]
 
+    /// r22 (owner): ejercicios con calentamiento ACTIVADO — insertar la rampa una vez lo recuerda y
+    /// cada sesión futura del ejercicio nace con sus «C»; quitar la última «C» en sesión lo apaga.
+    /// UserDefaults como el resto del store (preferencia de usuario, no historial).
+    @Published private(set) var warmupExerciseIds: Set<String> {
+        didSet { d.set(Array(warmupExerciseIds), forKey: K.warmupIds) }
+    }
+
+    func setWarmupAlways(_ exerciseId: String, _ on: Bool) {
+        if on { warmupExerciseIds.insert(exerciseId) } else { warmupExerciseIds.remove(exerciseId) }
+    }
+
     private let d = UserDefaults.standard
     private enum K {
         static let bar = "plates.barKg"
@@ -31,11 +42,14 @@ final class PlatesStore: ObservableObject {
         static let owned = "plates.ownedKg"
         /// Per-denomination pair counts as `[[kg, pairs], …]`.
         static let pairsKey = "plates.pairsByKg"
+        /// r22: exercise ids whose warm-up ramp auto-inserts at session start.
+        static let warmupIds = "plates.warmupExerciseIds"
     }
 
     init() {
         let storedBar = d.object(forKey: K.bar) as? Double
         barKg = storedBar ?? PlateMath.defaultBarKg
+        warmupExerciseIds = Set(d.stringArray(forKey: K.warmupIds) ?? [])
 
         if let loaded = Self.loadPairs(from: d) {
             pairs = loaded

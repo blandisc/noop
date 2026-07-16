@@ -1680,7 +1680,9 @@ struct LiveStrengthSheet: View {
                 }
                 addSetButton(ei)
             }
-            .padding(.horizontal, CenitMetrics.receiptPadding).padding(.vertical, 8)
+            // r22 (simetría): la tarjeta cerraba con 8 abajo vs 12 arriba — parejo con el tope.
+            .padding(.horizontal, CenitMetrics.receiptPadding)
+            .padding(.top, 8).padding(.bottom, 12)
         }
         .background(
             // «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra. One simple
@@ -1712,7 +1714,15 @@ struct LiveStrengthSheet: View {
     /// lifted row's trailing edge (it covers the check so the only offered act is the deletion).
     private func deleteSetPill(ei: Int, si: Int) -> some View {
         Button {
+            let wasWarmup = session.runs.indices.contains(ei)
+                && session.runs[ei].sets.indices.contains(si)
+                && session.runs[ei].sets[si].kind == .warmup
             withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
+            // r22 (owner): quitar la ÚLTIMA «C» del ejercicio apaga su calentamiento persistente.
+            if wasWarmup, session.runs.indices.contains(ei),
+               !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
+                model.plates.setWarmupAlways(session.runs[ei].exerciseId, false)
+            }
             armedDeleteSetId = nil
         } label: {
             // r21 (owner): más discreto — se comía la fila hacia la izquierda; glifo chico, texto
@@ -1862,6 +1872,11 @@ struct LiveStrengthSheet: View {
             store: model.plates,
             onInsertWarmup: { sets in
                 session.insertWarmup(exercise: target.ei, sets: sets)
+                // r22 (owner): insertar la rampa ACTIVA el calentamiento del ejercicio — las
+                // sesiones futuras nacen con sus «C» (se apaga quitando la última «C» en sesión).
+                if session.runs.indices.contains(target.ei) {
+                    model.plates.setWarmupAlways(session.runs[target.ei].exerciseId, true)
+                }
                 platesTarget = nil
             },
             onClose: { platesTarget = nil },
@@ -2009,6 +2024,9 @@ struct LiveStrengthSheet: View {
                         .font(InstrumentoType.groteskSessionClockInline)
                         .tracking(InstrumentoType.groteskSessionClockTracking)
                         .foregroundStyle(session.paused ? theme.inkDim : theme.ink)
+                        // r22: los dígitos RUEDAN en vez de parpadear — misma voz que el descanso.
+                        .contentTransition(.numericText())
+                        .animation(.default, value: elapsed)
                         .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
                                                                  : "Elapsed \(Self.clock(elapsed))"))
                         // r20 (auditoría UX #3): el trait le dice a VoiceOver que NO re-anuncie
@@ -2133,8 +2151,8 @@ struct LiveStrengthSheet: View {
                 .accessibilityLabel(Text(counterLine))
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
-        .padding(.bottom, 10)
+        // r22 (simetría): 8/10 a ojo → rowVPad parejo arriba y abajo.
+        .padding(.vertical, CenitMetrics.rowVPad)
         .background(theme.paper)
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
@@ -2771,6 +2789,9 @@ struct LiveStrengthSheet: View {
                     .trim(from: 0, to: max(0, min(1, Double(remaining) / Double(total))))
                     .stroke(theme.paper, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                     .rotationEffect(.degrees(-90))
+                    // r22: barrido CONTINUO — el anillo drena en lineal de 1 s en vez de brincar
+                    // por segundo (ReduceMotion lo respeta el sistema al aplanar la transacción).
+                    .animation(.linear(duration: 1), value: remaining)
                 VStack(spacing: 2) {
                     Text(Self.clock(remaining))
                         .instrumentoHero(72).monospacedDigit().foregroundStyle(theme.paper)
@@ -2898,7 +2919,10 @@ struct LiveStrengthSheet: View {
 
     private func counterValue(_ s: String) -> some View {
         // r20 (auditoría UX #6f): también los contadores escalan con Dynamic Type intermedio.
+        // r22: y ruedan al cambiar (numericText) — el recibo respira al palomear.
         Text(s).font(InstrumentoType.groteskNumber(15, relativeTo: .subheadline)).monospacedDigit().foregroundStyle(theme.ink)
+            .contentTransition(.numericText())
+            .animation(StrandMotion.gentle, value: s)
     }
     private func counterLabel(_ s: String) -> some View {
         Text(s).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
@@ -4141,6 +4165,8 @@ struct LiveStrengthSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
+        .sensoryFeedback(.impact(weight: .light), trigger: copiedSetId)
     }
 
     // MARK: Empty ad-hoc state (mock 1p, FER-762)
