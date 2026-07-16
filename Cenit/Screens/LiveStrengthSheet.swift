@@ -2241,9 +2241,10 @@ struct LiveStrengthSheet: View {
                     }
                     Spacer(minLength: 0)
                 }
-                // r20 (owner): el foco también narra la superserie — la misma leyenda del acordeón
-                // («sin descanso entre A1 y A2»), para que el brinco A1→A2 no sorprenda.
-                supersetNoRestCaption(session.currentIndex)
+                // r20/r28 (owner): el foco SIEMPRE narra la superserie — quien no es el último lleva
+                // la leyenda «sin descanso entre A1 y A2»; el último (que sí descansa) lleva el
+                // sello «SUPERSERIE · A2» en vez de un copy que no le aplica.
+                focusSupersetCaption(session.currentIndex)
 
                 switch run.type {
                 case .weightReps:
@@ -3087,6 +3088,19 @@ struct LiveStrengthSheet: View {
             if !reflow { columnHeader(run.type) }
         }
         .padding(.top, first ? CenitMetrics.gap : CenitMetrics.sectionGap)
+    }
+
+    /// r28 (owner): la voz de superserie del FOCO — miembros no-últimos heredan la leyenda «sin
+    /// descanso»; el último lleva su sello «SUPERSERIE · A2» (descansa normal, pero sigue en pareja).
+    @ViewBuilder private func focusSupersetCaption(_ ei: Int) -> some View {
+        let members = session.supersetMembers(at: ei)
+        if members.count > 1, members.last == ei, let badge = supersetBadgeText(ei: ei) {
+            Text(String(format: String(localized: "SUPERSET · %@"), badge))
+                .font(StrandFont.overline).tracking(StrandFont.overlineTracking)
+                .foregroundStyle(theme.dataHrv)
+        } else {
+            supersetNoRestCaption(ei)
+        }
     }
 
     /// «SIN DESCANSO ENTRE A1 Y A2» — shown only on the active block, only while it's a superset member

@@ -60779,6 +60779,17 @@
         }
       }
     },
+    "SUPERSET · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPERSERIE · %@"
+          }
+        }
+      }
+    },
     "Keep as is": {
       "extractionState": "manual",
       "localizations": {
