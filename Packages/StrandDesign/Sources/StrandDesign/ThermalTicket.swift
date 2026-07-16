@@ -190,21 +190,23 @@ public struct ThermalDialGlyph: View {
     public var diameter: CGFloat
     public init(diameter: CGFloat = 22) { self.diameter = diameter }
     public var body: some View {
-        Canvas { ctx, size in
-            let c = CGPoint(x: size.width / 2, y: size.height / 2)
-            let r = min(size.width, size.height) / 2 - 2
-            ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
+        Canvas { (ctx: inout GraphicsContext, size: CGSize) in
+            let c: CGPoint = CGPoint(x: size.width / 2, y: size.height / 2)
+            let r: CGFloat = min(size.width, size.height) / 2 - 2
+            let ring: CGRect = CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)
+            ctx.stroke(Path(ellipseIn: ring),
                        with: .color(ThermalPalette.ink), lineWidth: 1.4)
             for a in stride(from: 0.0, to: 360.0, by: 90.0) {
-                let rad = a * .pi / 180
-                let p1 = CGPoint(x: c.x + cos(rad) * (r - 2.5), y: c.y + sin(rad) * (r - 2.5))
-                let p2 = CGPoint(x: c.x + cos(rad) * r, y: c.y + sin(rad) * r)
-                var m = Path(); m.move(to: p1); m.addLine(to: p2)
+                let rad: Double = a * .pi / 180.0
+                let p1: CGPoint = CGPoint(x: c.x + cos(rad) * (r - 2.5), y: c.y + sin(rad) * (r - 2.5))
+                let p2: CGPoint = CGPoint(x: c.x + cos(rad) * r, y: c.y + sin(rad) * r)
+                var m: Path = Path(); m.move(to: p1); m.addLine(to: p2)
                 ctx.stroke(m, with: .color(ThermalPalette.ink), lineWidth: 1)
             }
-            let na = -45.0 * .pi / 180                          // «now» at upper-right
-            let np = CGPoint(x: c.x + cos(na) * r, y: c.y + sin(na) * r)
-            ctx.fill(Path(ellipseIn: CGRect(x: np.x - 2, y: np.y - 2, width: 4, height: 4)),
+            let na: Double = -45.0 * .pi / 180.0                          // «now» at upper-right
+            let np: CGPoint = CGPoint(x: c.x + cos(na) * r, y: c.y + sin(na) * r)
+            let dot: CGRect = CGRect(x: np.x - 2, y: np.y - 2, width: 4, height: 4)
+            ctx.fill(Path(ellipseIn: dot),
                      with: .color(ThermalPalette.ink))
         }
         .frame(width: diameter, height: diameter)
@@ -251,56 +253,84 @@ public struct ThermalTicketView: View {
 
     private var shape: ThermalTicketShape { ThermalTicketShape(topRadius: 7) }
 
-    public var body: some View {
+    private var ticketHeader: some View {
         VStack(spacing: 0) {
             ThermalDialGlyph(diameter: 22).padding(.bottom, 8)
             Text(receipt.title).font(StrandFont.mono(14, weight: .bold)).tracking(0.5)
             Text(receipt.kind).font(StrandFont.mono(9)).foregroundStyle(ThermalPalette.faint).padding(.top, 3)
             Text(receipt.orderLine).font(StrandFont.mono(9)).foregroundStyle(ThermalPalette.faint).padding(.top, 1)
+        }
+    }
 
-            dashedRule.padding(.vertical, 11)
-
-            // Itemized exercises
-            VStack(spacing: 7) {
-                ForEach(Array(receipt.items.enumerated()), id: \.offset) { _, item in
-                    itemRow(item)
-                }
+    private var ticketItems: some View {
+        VStack(spacing: 7) {
+            ForEach(Array(receipt.items.enumerated()), id: \.offset) { (_: Int, item: ThermalReceipt.Item) in
+                itemRow(item)
             }
+        }
+    }
 
-            dashedRule.padding(.vertical, 11)
+    private var ticketTotal: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(receipt.totalCaption).font(StrandFont.mono(10))
+            Spacer(minLength: 8)
+            Text(receipt.total).font(StrandFont.mono(14, weight: .bold))
+        }
+    }
 
-            HStack(alignment: .firstTextBaseline) {
-                Text(receipt.totalCaption).font(StrandFont.mono(10))
-                Spacer(minLength: 8)
-                Text(receipt.total).font(StrandFont.mono(14, weight: .bold))
-            }
+    @ViewBuilder private var ticketZones: some View {
+        if !receipt.zones.isEmpty {
+            sectionLabel("TIEMPO EN ZONA DE FC").padding(.top, 12)
+            ZoneStackBar(slices: receipt.zones).padding(.top, 6)
+            zoneLegend.padding(.top, 6)
+        }
+    }
 
-            if !receipt.zones.isEmpty {
-                sectionLabel("TIEMPO EN ZONA DE FC").padding(.top, 12)
-                ZoneStackBar(slices: receipt.zones).padding(.top, 6)
-                zoneLegend.padding(.top, 6)
-            }
-
-            if !receipt.summary.isEmpty {
-                sectionLabel("RESUMEN").padding(.top, 12)
-                VStack(spacing: 4) {
-                    ForEach(Array(receipt.summary.enumerated()), id: \.offset) { _, row in
-                        HStack {
-                            Text(row.key).font(StrandFont.mono(9)).foregroundStyle(ThermalPalette.faint)
-                            Spacer(minLength: 8)
-                            Text(row.value).font(StrandFont.mono(9, weight: .bold))
-                                .foregroundStyle(row.pink ? ThermalPalette.recordPink : ThermalPalette.ink)
-                        }
+    @ViewBuilder private var ticketSummary: some View {
+        if !receipt.summary.isEmpty {
+            sectionLabel("RESUMEN").padding(.top, 12)
+            VStack(spacing: 4) {
+                ForEach(Array(receipt.summary.enumerated()), id: \.offset) { (_: Int, row: ThermalReceipt.SummaryRow) in
+                    HStack {
+                        Text(row.key).font(StrandFont.mono(9)).foregroundStyle(ThermalPalette.faint)
+                        Spacer(minLength: 8)
+                        Text(row.value).font(StrandFont.mono(9, weight: .bold))
+                            .foregroundStyle(row.pink ? ThermalPalette.recordPink : ThermalPalette.ink)
                     }
                 }
-                .padding(.top, 4)
             }
+            .padding(.top, 4)
+        }
+    }
 
+    private var ticketFooter: some View {
+        VStack(spacing: 0) {
             Text("*** COPIA PARA TI ***").font(StrandFont.mono(9, weight: .bold)).tracking(1.5)
                 .padding(.top, 12)
             BarcodeGlyph(seed: receipt.barcodeSeed).frame(height: 34).padding(.top, 8)
             Text(receipt.footerCode).font(StrandFont.mono(8)).foregroundStyle(ThermalPalette.faint).padding(.top, 4)
             Text(receipt.footerTag).font(StrandFont.mono(8)).foregroundStyle(ThermalPalette.faint).padding(.top, 2)
+        }
+    }
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            ticketHeader
+
+            dashedRule.padding(.vertical, 11)
+
+            // Itemized exercises
+            ticketItems
+
+            dashedRule.padding(.vertical, 11)
+
+            ticketTotal
+
+            ticketZones
+
+            ticketSummary
+
+            ticketFooter
         }
         .foregroundStyle(ThermalPalette.ink)
         .multilineTextAlignment(.center)

@@ -782,14 +782,16 @@ private struct WeeklyBarsChart: View {
     @State private var scrubIndex: Int? = nil
 
     var body: some View {
-        let top = max(vols.max() ?? 1, 0.0001)
-        return GeometryReader { geo in
+        let top: Double = max(vols.max() ?? 1.0, 0.0001)
+        return GeometryReader { (geo: GeometryProxy) in
             HStack(alignment: .bottom, spacing: 5) {
-                ForEach(Array(vols.enumerated()), id: \.offset) { idx, v in
-                    let active = scrubIndex.map { $0 == idx } ?? (idx == vols.count - 1)
+                ForEach(Array(vols.enumerated()), id: \.offset) { (idx: Int, v: Double) in
+                    let active: Bool = scrubIndex.map { (s: Int) in s == idx } ?? (idx == vols.count - 1)
+                    let ratio: Double = v / top
+                    let barH: CGFloat = max(3, geo.size.height * CGFloat(ratio))
                     RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de barra del sparkline
                         .fill(active ? accent : accent.opacity(0.28))  // token-exempt: tinte 28% del handoff
-                        .frame(height: max(3, geo.size.height * v / top))
+                        .frame(height: barH)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -797,13 +799,14 @@ private struct WeeklyBarsChart: View {
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .onChanged { g in
-                        let frac = max(0, min(0.999, g.location.x / max(geo.size.width, 1)))
-                        let i = Int(frac * CGFloat(vols.count))
+                    .onChanged { (g: DragGesture.Value) in
+                        let w: CGFloat = max(geo.size.width, 1)
+                        let frac: CGFloat = max(0, min(0.999, g.location.x / w))
+                        let i: Int = Int(frac * CGFloat(vols.count))
                         if i != scrubIndex { ChartHaptics.datumChanged() }
                         scrubIndex = i
                     }
-                    .onEnded { _ in scrubIndex = nil }
+                    .onEnded { (_: DragGesture.Value) in scrubIndex = nil }
             )
             .overlay(alignment: .top) {
                 if let i = scrubIndex, vols.indices.contains(i) {
@@ -837,108 +840,133 @@ private struct TrendAxisChart: View {
     @State private var scrubIndex: Int? = nil
     private static let plotHeight: CGFloat = 150
 
-    var body: some View {
-        let lo = values.min() ?? 0
-        let hi = Swift.max(values.max() ?? 1, lo + 1)
-        let pad = (hi - lo) * 0.18 + 0.001
-        let top = hi + pad, bottom = Swift.max(0, lo - pad)
-        VStack(alignment: .leading, spacing: 6) {
-            // Scrub readout: value + date of the pinned sample; empty until you drag.
-            if let i = scrubIndex, values.indices.contains(i) {
-                HStack(spacing: 6) {
-                    Text(verbatim: valueFormat(values[i]))
-                        .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(accent)
-                    if dates.indices.contains(i) {
-                        Text(dates[i], format: .dateTime.day().month(.abbreviated))
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                .padding(.bottom, 2)
-            }
-            ZStack(alignment: .topLeading) {
-                // Gridlines + y labels, top→bottom; the bottom line slightly stronger (handoff).
-                VStack(spacing: 0) {
-                    ForEach(0..<4, id: \.self) { i in
-                        HStack(spacing: 6) {
-                            Text(verbatim: "\(Int((top - (top - bottom) * Double(i) / 3).rounded()))")
-                                .font(InstrumentoType.grotesk(10, weight: .semibold)).monospacedDigit()
-                                .foregroundStyle(theme.inkTertiary)
-                                .frame(width: 28, alignment: .trailing)
-                            Rectangle().fill(i == 3 ? theme.hairlineStrong : theme.hairline).frame(height: 1)
-                        }
-                        if i < 3 { Spacer(minLength: 0) }
-                    }
-                }
-                // The series: area + line + end dot, inset past the y-label column.
-                GeometryReader { geo in
-                    let w = geo.size.width, h = geo.size.height
-                    let points = values.enumerated().map { idx, v in
-                        CGPoint(x: w * CGFloat(idx) / CGFloat(max(values.count - 1, 1)),
-                                y: h * CGFloat(1 - (v - bottom) / (top - bottom)))
-                    }
-                    ZStack {
-                        Path { p in
-                            guard let first = points.first, let last = points.last else { return }
-                            p.move(to: CGPoint(x: first.x, y: h))
-                            points.forEach { p.addLine(to: $0) }
-                            p.addLine(to: CGPoint(x: last.x, y: h))
-                            p.closeSubpath()
-                        }
-                        .fill(accent.opacity(0.10))  // token-exempt: área 10% del handoff
-                        Path { p in
-                            guard let first = points.first else { return }
-                            p.move(to: first)
-                            points.dropFirst().forEach { p.addLine(to: $0) }
-                        }
-                        .stroke(accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        if let last = points.last, scrubIndex == nil {
-                            Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(last)  // token-exempt: halo del handoff
-                            Circle().fill(accent).frame(width: 9, height: 9).position(last)
-                        }
-                        // The scrub pin: vertical hairline + dot at the nearest sample.
-                        if let i = scrubIndex, points.indices.contains(i) {
-                            Path { p in
-                                p.move(to: CGPoint(x: points[i].x, y: 0))
-                                p.addLine(to: CGPoint(x: points[i].x, y: h))
-                            }
-                            .stroke(theme.hairlineStrong, lineWidth: 1)
-                            Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(points[i])  // token-exempt: halo del handoff
-                            Circle().fill(accent).frame(width: 9, height: 9).position(points[i])
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { g in
-                                let frac = max(0, min(1, g.location.x / max(w, 1)))
-                                let i = Int((frac * CGFloat(max(values.count - 1, 1))).rounded())
-                                if i != scrubIndex { ChartHaptics.datumChanged() }
-                                scrubIndex = i
-                            }
-                            .onEnded { _ in scrubIndex = nil }
-                    )
-                }
-                .padding(.leading, 34)
-                .padding(.vertical, 5)   // keeps the line inside the first/last gridline
-            }
-            .frame(height: Self.plotHeight)
-            // X captions: first month · middle month · TODAY in the hue.
-            HStack(spacing: 0) {
-                Text(verbatim: xFirst)
-                    .font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(0.6)
-                    .foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(verbatim: xMid)
-                    .font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(0.6)
-                    .foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                Text("Today").textCase(.uppercase)
-                    .font(InstrumentoType.grotesk(9, weight: .bold)).tracking(0.6)
+    private var lo: Double { values.min() ?? 0.0 }
+    private var hi: Double { Swift.max(values.max() ?? 1.0, lo + 1.0) }
+    private var pad: Double { (hi - lo) * 0.18 + 0.001 }
+    private var top: Double { hi + pad }
+    private var bottom: Double { Swift.max(0.0, lo - pad) }
+
+    /// Scrub readout: value + date of the pinned sample; empty until you drag.
+    @ViewBuilder private var scrubReadout: some View {
+        if let i = scrubIndex, values.indices.contains(i) {
+            HStack(spacing: 6) {
+                Text(verbatim: valueFormat(values[i]))
+                    .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
                     .foregroundStyle(accent)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                if dates.indices.contains(i) {
+                    Text(dates[i], format: .dateTime.day().month(.abbreviated))
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .padding(.bottom, 2)
+        }
+    }
+
+    /// Gridlines + y labels + the series (area, line, end/scrub dots).
+    private var chartPlot: some View {
+        let topY: Double = top
+        let botY: Double = bottom
+        return ZStack(alignment: .topLeading) {
+            // Gridlines + y labels, top→bottom; the bottom line slightly stronger (handoff).
+            VStack(spacing: 0) {
+                ForEach(0..<4, id: \.self) { (i: Int) in
+                    let span: Double = topY - botY
+                    let yVal: Double = topY - span * Double(i) / 3.0
+                    let yLabel: Int = Int(yVal.rounded())
+                    HStack(spacing: 6) {
+                        Text(verbatim: "\(yLabel)")
+                            .font(InstrumentoType.grotesk(10, weight: .semibold)).monospacedDigit()
+                            .foregroundStyle(theme.inkTertiary)
+                            .frame(width: 28, alignment: .trailing)
+                        Rectangle().fill(i == 3 ? theme.hairlineStrong : theme.hairline).frame(height: 1)
+                    }
+                    if i < 3 { Spacer(minLength: 0) }
+                }
+            }
+            // The series: area + line + end dot, inset past the y-label column.
+            GeometryReader { (geo: GeometryProxy) in
+                let w: CGFloat = geo.size.width
+                let h: CGFloat = geo.size.height
+                let denom: Double = topY - botY
+                let maxIdx: Int = max(values.count - 1, 1)
+                let points: [CGPoint] = values.enumerated().map { (idx: Int, v: Double) -> CGPoint in
+                    let nx: CGFloat = w * CGFloat(idx) / CGFloat(maxIdx)
+                    let ny: CGFloat = h * CGFloat(1.0 - (v - botY) / denom)
+                    return CGPoint(x: nx, y: ny)
+                }
+                ZStack {
+                    Path { (p: inout Path) in
+                        guard let first = points.first, let last = points.last else { return }
+                        p.move(to: CGPoint(x: first.x, y: h))
+                        points.forEach { (pt: CGPoint) in p.addLine(to: pt) }
+                        p.addLine(to: CGPoint(x: last.x, y: h))
+                        p.closeSubpath()
+                    }
+                    .fill(accent.opacity(0.10))  // token-exempt: área 10% del handoff
+                    Path { (p: inout Path) in
+                        guard let first = points.first else { return }
+                        p.move(to: first)
+                        points.dropFirst().forEach { (pt: CGPoint) in p.addLine(to: pt) }
+                    }
+                    .stroke(accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                    if let last = points.last, scrubIndex == nil {
+                        Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(last)  // token-exempt: halo del handoff
+                        Circle().fill(accent).frame(width: 9, height: 9).position(last)
+                    }
+                    // The scrub pin: vertical hairline + dot at the nearest sample.
+                    if let i = scrubIndex, points.indices.contains(i) {
+                        Path { (p: inout Path) in
+                            p.move(to: CGPoint(x: points[i].x, y: 0))
+                            p.addLine(to: CGPoint(x: points[i].x, y: h))
+                        }
+                        .stroke(theme.hairlineStrong, lineWidth: 1)
+                        Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(points[i])  // token-exempt: halo del handoff
+                        Circle().fill(accent).frame(width: 9, height: 9).position(points[i])
+                    }
+                }
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { (g: DragGesture.Value) in
+                            let wSafe: CGFloat = max(w, 1)
+                            let frac: CGFloat = max(0, min(1, g.location.x / wSafe))
+                            let i: Int = Int((frac * CGFloat(maxIdx)).rounded())
+                            if i != scrubIndex { ChartHaptics.datumChanged() }
+                            scrubIndex = i
+                        }
+                        .onEnded { (_: DragGesture.Value) in scrubIndex = nil }
+                )
             }
             .padding(.leading, 34)
+            .padding(.vertical, 5)   // keeps the line inside the first/last gridline
+        }
+        .frame(height: Self.plotHeight)
+    }
+
+    /// X captions: first month · middle month · TODAY in the hue.
+    private var xCaptions: some View {
+        HStack(spacing: 0) {
+            Text(verbatim: xFirst)
+                .font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(0.6)
+                .foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(verbatim: xMid)
+                .font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(0.6)
+                .foregroundStyle(theme.inkTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+            Text("Today").textCase(.uppercase)
+                .font(InstrumentoType.grotesk(9, weight: .bold)).tracking(0.6)
+                .foregroundStyle(accent)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(.leading, 34)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            scrubReadout
+            chartPlot
+            xCaptions
         }
         .padding(.top, CenitMetrics.cardPadding).padding(.horizontal, 14).padding(.bottom, CenitMetrics.gap)  // token-exempt: 14 del handoff
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))

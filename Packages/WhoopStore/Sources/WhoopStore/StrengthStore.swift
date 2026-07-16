@@ -626,9 +626,12 @@ extension WhoopStore {
                   AND e.weightKg IS NOT NULL AND e.reps IS NOT NULL
                 ORDER BY s.startTs ASC
                 LIMIT ?
-                """, arguments: [exerciseId, limit]).map {
-                    (startTs: $0["startTs"], weightKg: $0["weightKg"], reps: $0["reps"],
-                     optedOut: $0["optedOut"])
+                """, arguments: [exerciseId, limit]).map { (row: Row) -> (startTs: Int, weightKg: Double, reps: Int, optedOut: Bool) in
+                    let startTs: Int = row["startTs"]
+                    let weightKg: Double = row["weightKg"]
+                    let reps: Int = row["reps"]
+                    let optedOut: Bool = row["optedOut"]
+                    return (startTs: startTs, weightKg: weightKg, reps: reps, optedOut: optedOut)
                 }
         }
     }

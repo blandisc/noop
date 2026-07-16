@@ -661,12 +661,14 @@ extension Gradient {
 
 #if DEBUG
 private func sampleTrend(days: Int, base: Double, swing: Double) -> [TrendPoint] {
-    let cal = Calendar.current
-    let today = Date()
-    return (0..<days).map { i in
-        let date = cal.date(byAdding: .day, value: -(days - 1 - i), to: today)!
-        let v = base + swing * sin(Double(i) / 3.0) + Double((i * 17) % 9) - 4
-        return TrendPoint(date: date, value: max(0, v))
+    let cal: Calendar = Calendar.current
+    let today: Date = Date()
+    return (0..<days).map { (i: Int) -> TrendPoint in
+        let date: Date = cal.date(byAdding: .day, value: -(days - 1 - i), to: today)!
+        let wave: Double = swing * sin(Double(i) / 3.0)
+        let jitter: Double = Double((i * 17) % 9) - 4.0
+        let v: Double = base + wave + jitter
+        return TrendPoint(date: date, value: max(0.0, v))
     }
 }
 

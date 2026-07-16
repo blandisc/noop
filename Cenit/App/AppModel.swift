@@ -236,7 +236,7 @@ final class AppModel: ObservableObject {
     private var hrCancellables = Set<AnyCancellable>()
 
     init() {
-        let live = LiveState()
+        let live: LiveState = LiveState()
         self.live = live
         self.ble = BLEManager(state: live, deviceId: "my-whoop")
         self.repo = Repository(deviceId: "my-whoop")
@@ -244,24 +244,28 @@ final class AppModel: ObservableObject {
         self.repo.baselineEpoch = profile.baselineEpochOrNil   // FER-677: honor a persisted recalibration
         // FER-883: same HRmax as the live path. Inlined (not `effectiveHRmax`) — a computed property
         // can't be read here before all stored props are initialized.
-        self.repo.strainHRmax = profile.hrMaxOverride > 0
-            ? Double(profile.hrMaxOverride)
-            : (profile.age > 0 ? StrainScorer.tanakaHRmax(age: Double(profile.age)) : nil)
+        let hrMaxOverride: Int = profile.hrMaxOverride
+        let age: Int = profile.age
+        let strainHRmax: Double? = hrMaxOverride > 0
+            ? Double(hrMaxOverride)
+            : (age > 0 ? StrainScorer.tanakaHRmax(age: Double(age)) : nil)
+        self.repo.strainHRmax = strainHRmax
         self.repo.strainSex = profile.sex
         self.coach = AICoachEngine(repo: repo)
+        let deviceFamily: DeviceFamily = WhoopModel.persisted.deviceFamily
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
-                                               family: WhoopModel.persisted.deviceFamily)
+                                               family: deviceFamily)
         // Smooth HR centrally so it's solid everywhere it's shown.
-        live.pulse.$heartRate.sink { [weak self] _ in self?.ingestHR() }.store(in: &hrCancellables)
-        live.pulse.$rr.sink { [weak self] _ in self?.ingestHR() }.store(in: &hrCancellables)
+        live.pulse.$heartRate.sink { [weak self] (_: Int?) in self?.ingestHR() }.store(in: &hrCancellables)
+        live.pulse.$rr.sink { [weak self] (_: [Int]) in self?.ingestHR() }.store(in: &hrCancellables)
 
         // Physical-input + wear hooks (fired live by FrameRouter).
         live.onDoubleTap = { [weak self] in self?.handleDoubleTap() }
-        live.onWristChange = { [weak self] worn in self?.handleWristChange(worn) }
+        live.onWristChange = { [weak self] (worn: Bool) in self?.handleWristChange(worn) }
         // HR-zone haptic coaching watches the smoothed bpm.
-        live.pulse.$smoothedBpm.sink { [weak self] hr in self?.coachZone(hr) }.store(in: &hrCancellables)
+        live.pulse.$smoothedBpm.sink { [weak self] (hr: Int?) in self?.coachZone(hr) }.store(in: &hrCancellables)
         // FER-721: the lock-screen actions come back through the controller; apply them to the live session.
-        restActivity.onAction = { [weak self] action in self?.applyRestAction(action) }
+        restActivity.onAction = { [weak self] (action: RestActivityBridge.Action) in self?.applyRestAction(action) }
         // FER-806: the Activity now lives the WHOLE session, so we must NOT kill it unconditionally at
         // launch — that would blow away a legitimate card before crash-recovery restores its session.
         // Instead, only when FER-798's recovery finds NO recoverable session do we end any orphan (a card
@@ -278,8 +282,10 @@ final class AppModel: ObservableObject {
         // a genuine data change (a new night or a longer history) still changes the signature and fires.
         // `reevaluateIllness()` calls `evaluateIllness` directly, so a settings toggle is never deduped.
         repo.$dashboard.map(\.days)
-            .removeDuplicates { $0.count == $1.count && $0.last?.day == $1.last?.day }
-            .sink { [weak self] days in self?.evaluateIllness(days) }
+            .removeDuplicates { (a: [DailyMetric], b: [DailyMetric]) -> Bool in
+                a.count == b.count && a.last?.day == b.last?.day
+            }
+            .sink { [weak self] (days: [DailyMetric]) in self?.evaluateIllness(days) }
             .store(in: &hrCancellables)
         // Re-arm the strap's firmware alarm whenever it (re)bonds. A smart-alarm time changed while the
         // strap was away never reached it — the send is gated on bond — so the strap kept the OLD time
@@ -1189,9 +1195,13 @@ final class AppModel: ObservableObject {
     private func buildStrengthSummary(session: StrengthSessionModel, record: StrengthSession,
                                       sets: [SetEntry], prior: [String: [PRMetric: PersonalRecord]],
                                       store: WhoopStore) async -> StrengthSummary {
-        let work = sets.filter { $0.kind == .work && $0.done }
-        let volumeKg = work.reduce(0.0) { $0 + (($1.weightKg ?? 0) * Double($1.reps ?? 0)) }
-        let durationS = max(0, (record.endTs ?? record.startTs) - record.startTs)
+        let work: [SetEntry] = sets.filter { (s: SetEntry) in s.kind == .work && s.done }
+        let volumeKg: Double = work.reduce(0.0) { (acc: Double, s: SetEntry) -> Double in
+            let w: Double = s.weightKg ?? 0.0
+            let r: Double = Double(s.reps ?? 0)
+            return acc + (w * r)
+        }
+        let durationS: Int = max(0, (record.endTs ?? record.startTs) - record.startTs)
 
         // Resolve exercises (bundled catalog + user-created) for names + muscles.
         let custom = (try? await store.customExercises()) ?? []
@@ -1211,13 +1221,17 @@ final class AppModel: ObservableObject {
                 prs.append(.init(exercise: name, metric: .maxReps, valueKg: nil, reps: r,
                                  priorReps: was.reps))
             }
-            if let best = exSets.compactMap({ s -> (vol: Double, w: Double, r: Int)? in
+            if let best = exSets.compactMap({ (s: SetEntry) -> (vol: Double, w: Double, r: Int)? in
                 guard let w = s.weightKg, let r = s.reps else { return nil }
-                return (w * Double(r), w, r)
-            }).max(by: { $0.vol < $1.vol }),
-               let was = p[.maxVolume], best.vol > (was.valueKg ?? 0) * Double(was.reps ?? 0) {
-                prs.append(.init(exercise: name, metric: .maxVolume, valueKg: best.w, reps: best.r,
-                                 priorValueKg: (was.valueKg ?? 0) * Double(was.reps ?? 0)))
+                let vol: Double = w * Double(r)
+                return (vol: vol, w: w, r: r)
+            }).max(by: { (a: (vol: Double, w: Double, r: Int), b: (vol: Double, w: Double, r: Int)) in a.vol < b.vol }),
+               let was = p[.maxVolume] {
+                let priorVol: Double = (was.valueKg ?? 0.0) * Double(was.reps ?? 0)
+                if best.vol > priorVol {
+                    prs.append(.init(exercise: name, metric: .maxVolume, valueKg: best.w, reps: best.r,
+                                     priorValueKg: priorVol))
+                }
             }
         }
         prs.sort { $0.exercise < $1.exercise }
@@ -1231,12 +1245,18 @@ final class AppModel: ObservableObject {
                .first(where: { $0.routineId == rid && $0.id != record.id && $0.startTs < record.startTs }) {
             // Aggregate that one prior session directly (targeted read), instead of a full-table
             // GROUP BY over every set of every session (`sessionVolumes()`, which feeds the FER-504 list).
-            let prevWork = ((try? await store.setEntries(sessionId: prev.id)) ?? [])
-                .filter { $0.kind == .work && $0.done }
+            let prevWork: [SetEntry] = ((try? await store.setEntries(sessionId: prev.id)) ?? [])
+                .filter { (s: SetEntry) in s.kind == .work && s.done }
+            let prevVol: Double = prevWork.reduce(0.0) { (acc: Double, s: SetEntry) -> Double in
+                let w: Double = s.weightKg ?? 0.0
+                let r: Double = Double(s.reps ?? 0)
+                return acc + (w * r)
+            }
+            let prevDur: Int = max(0, (prev.endTs ?? prev.startTs) - prev.startTs)
             comparison = .init(
-                prevVolumeKg: prevWork.reduce(0.0) { $0 + (($1.weightKg ?? 0) * Double($1.reps ?? 0)) },
+                prevVolumeKg: prevVol,
                 prevSetCount: prevWork.count,
-                prevDurationS: max(0, (prev.endTs ?? prev.startTs) - prev.startTs))
+                prevDurationS: prevDur)
         }
 
         // «Por ejercicio» (FER-716): one row per exercise with logged sets, in plan order, carrying the
@@ -1675,8 +1695,12 @@ final class AppModel: ObservableObject {
     /// (clear multi-signal anomaly, no confounder) surfaces the alarming banner + notification; mild /
     /// suppressed / already-unwell / quiet stay silent — that suppression is the false-positive win.
     private func applyIllnessEvaluation(_ days: [DailyMetric], context: IllnessSignalEngine.Context) {
-        let previous = healthAlert
-        func mean(_ vals: [Double]) -> Double? { vals.isEmpty ? nil : vals.reduce(0, +) / Double(vals.count) }
+        let previous: String? = healthAlert
+        func mean(_ vals: [Double]) -> Double? {
+            if vals.isEmpty { return nil }
+            let sum: Double = vals.reduce(0.0) { (acc: Double, v: Double) in acc + v }
+            return sum / Double(vals.count)
+        }
         // FER-543 / FER-641 / FER-882 / FER-884: the HRV and resting-HR terms score against a
         // SINGLE-SOURCE history, chosen by the data-source mode. In Combined / strap-only they use the
         // STRAP-ONLY history exactly as before (regression zero): Apple-only nights carry SDNN, not the
@@ -1691,11 +1715,11 @@ final class AppModel: ObservableObject {
         // Skin temp is likewise source-routed (FER-882: each instrument has its own absolute-°C baseline).
         // Respiration IS the same physical metric across sources (both measured during sleep, breaths/min)
         // and keeps the full merged history. `appleHealthDays == []` ⇒ identity (a strap-only user → no change).
-        let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
+        let strapDays: [DailyMetric] = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
         // FER-884: the source that feeds RHR/HRV/skin-temp — Apple only when the mode excludes the band.
         let signalSource: SourceLens.Source = (repo.dataSourceMode == .appleHealthOnly) ? .apple : .band
         // RHR/HRV history: strapDays byte-for-byte in Combined/strap-only; Apple-isolated in Apple-only.
-        let vitalsDays = signalSource == .apple
+        let vitalsDays: [DailyMetric] = signalSource == .apple
             ? SourceLens.maskForBaseline(days, keep: .apple, appleDays: repo.appleHealthDays)
             : strapDays
 
@@ -1703,34 +1727,44 @@ final class AppModel: ObservableObject {
         // recent = last ~2 nights, base = the ~28 nights ending 3 days ago), then handed to the engine
         // which owns the corroboration + confounder logic. The es-MX phrase is rendered here, in the app
         // layer, so the copy stays localised; the engine only decides which phrases to surface.
-        var inputs = IllnessSignalEngine.Inputs()
+        var inputs: IllnessSignalEngine.Inputs = IllnessSignalEngine.Inputs()
         var labels: [String: String] = [:]
         func read(_ key: String, _ kp: (DailyMetric) -> Double?, higherIsWorse: Bool,
                   from src: [DailyMetric], label: (_ recent: Double, _ base: Double) -> String)
         -> IllnessSignalEngine.SignalReading? {
-            let recent = Array(src.suffix(2))
-            let base = Array(src.suffix(31).dropLast(3))
-            guard let r = mean(recent.compactMap(kp)),
-                  let dev = IllnessWatch.deviation(recentMean: r, base: base.compactMap(kp), higherIsWorse: higherIsWorse)
+            let recent: [DailyMetric] = Array(src.suffix(2))
+            let base: [DailyMetric] = Array(src.suffix(31).dropLast(3))
+            let recentVals: [Double] = recent.compactMap(kp)
+            let baseVals: [Double] = base.compactMap(kp)
+            guard let r: Double = mean(recentVals),
+                  let dev = IllnessWatch.deviation(recentMean: r, base: baseVals, higherIsWorse: higherIsWorse)
             else { return nil }
             labels[key] = label(r, dev.baseMean)
-            return IllnessSignalEngine.SignalReading(zIllnessward: dev.z)
+            let z: Double = dev.z
+            return IllnessSignalEngine.SignalReading(zIllnessward: z)
         }
-        inputs.restingHR = read("restingHR", { $0.restingHr.map(Double.init) }, higherIsWorse: true, from: vitalsDays) {
-            String(localized: "resting HR +\(Int(($0 - $1).rounded())) bpm")
+        inputs.restingHR = read("restingHR", { (d: DailyMetric) -> Double? in d.restingHr.map(Double.init) },
+                                higherIsWorse: true, from: vitalsDays) { (recent: Double, base: Double) -> String in
+            let delta: Int = Int((recent - base).rounded())
+            return String(localized: "resting HR +\(delta) bpm")
         }
         // HRV's percentage phrase needs a positive baseline; skip the whole term if the base mean is 0.
-        if let hrvBase = mean(Array(vitalsDays.suffix(31).dropLast(3)).compactMap { $0.avgHrv }), hrvBase > 0 {
-            inputs.hrv = read("hrv", { $0.avgHrv }, higherIsWorse: false, from: vitalsDays) {
-                String(localized: "HRV −\(Int(((1 - $0 / $1) * 100).rounded()))%")
+        let hrvBaseWindow: [Double] = Array(vitalsDays.suffix(31).dropLast(3)).compactMap { (d: DailyMetric) -> Double? in d.avgHrv }
+        if let hrvBase: Double = mean(hrvBaseWindow), hrvBase > 0 {
+            inputs.hrv = read("hrv", { (d: DailyMetric) -> Double? in d.avgHrv }, higherIsWorse: false, from: vitalsDays) {
+                (recent: Double, base: Double) -> String in
+                let pct: Int = Int(((1.0 - recent / base) * 100.0).rounded())
+                return String(localized: "HRV −\(pct)%")
             }
         }
         // FER-882: skin temp Δ is source-specific — route through the same baseline lens.
-        let skinTempDays = SourceLens.maskForBaseline(days, keep: signalSource, appleDays: repo.appleHealthDays)
-        inputs.skinTemp = read("skinTemp", { $0.skinTempDevC }, higherIsWorse: true, from: skinTempDays) { r, _ in
+        let skinTempDays: [DailyMetric] = SourceLens.maskForBaseline(days, keep: signalSource, appleDays: repo.appleHealthDays)
+        inputs.skinTemp = read("skinTemp", { (d: DailyMetric) -> Double? in d.skinTempDevC }, higherIsWorse: true, from: skinTempDays) {
+            (r: Double, _: Double) -> String in
             String(localized: "skin temp +\(String(format: "%.1f", r))°C")
         }
-        inputs.respiration = read("respiration", { $0.respRateBpm }, higherIsWorse: true, from: days) { _, _ in
+        inputs.respiration = read("respiration", { (d: DailyMetric) -> Double? in d.respRateBpm }, higherIsWorse: true, from: days) {
+            (_: Double, _: Double) -> String in
             String(localized: "respiration up")
         }
 

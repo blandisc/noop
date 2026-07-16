@@ -67,7 +67,10 @@ public enum WhoopCsvExporter {
         /// only an "awake" figure shouldn't claim 0 minutes asleep).
         var asleep: Double? {
             if light == nil && deep == nil && rem == nil { return nil }
-            let total: Double = (light ?? 0) + (deep ?? 0) + (rem ?? 0)
+            let l: Double = light ?? 0.0
+            let d: Double = deep ?? 0.0
+            let r: Double = rem ?? 0.0
+            let total: Double = l + d + r
             return total
         }
     }

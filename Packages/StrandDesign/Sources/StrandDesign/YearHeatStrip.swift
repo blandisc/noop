@@ -452,14 +452,17 @@ public struct Calendario90: View {
 
 #if DEBUG
 private func sampleYear() -> [RecoveryDay] {
-    let cal = Calendar.current
-    let today = Date()
-    return (0..<365).map { i in
-        let date = cal.date(byAdding: .day, value: -(364 - i), to: today)!
+    let cal: Calendar = Calendar.current
+    let today: Date = Date()
+    return (0..<365).map { (i: Int) -> RecoveryDay in
+        let date: Date = cal.date(byAdding: .day, value: -(364 - i), to: today)!
         // Some gaps + a wavy recovery profile.
-        let gap = (i % 23 == 0)
-        let v = 55 + 28 * sin(Double(i) / 11.0) + Double((i * 31) % 17) - 8
-        return RecoveryDay(date: date, score: gap ? nil : max(2, min(99, v)))
+        let gap: Bool = (i % 23 == 0)
+        let wave: Double = 28.0 * sin(Double(i) / 11.0)
+        let jitter: Double = Double((i * 31) % 17) - 8.0
+        let v: Double = 55.0 + wave + jitter
+        let score: Double? = gap ? nil : max(2.0, min(99.0, v))
+        return RecoveryDay(date: date, score: score)
     }
 }
 

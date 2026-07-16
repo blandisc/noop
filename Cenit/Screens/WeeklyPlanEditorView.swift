@@ -399,10 +399,11 @@ struct WeeklyPlanEditorView: View {
     /// «Series planeadas.» plus, when one group falls clearly behind the rest (< ¼ of the top group),
     /// the handoff's honest note naming it. Only the weakest group is named — a hint, not a scold.
     private func volumeNote(_ vol: [MuscleGroup: Int], maxV: Int) -> String {
-        let short = MuscleGroup.allCases
-            .map { ($0, vol[$0] ?? 0) }
-            .filter { $0.1 < max(1, maxV) / 4 }
-            .min { $0.1 < $1.1 }
+        let threshold: Int = max(1, maxV) / 4
+        let short: (MuscleGroup, Int)? = MuscleGroup.allCases
+            .map { (g: MuscleGroup) -> (MuscleGroup, Int) in (g, vol[g] ?? 0) }
+            .filter { (pair: (MuscleGroup, Int)) -> Bool in pair.1 < threshold }
+            .min { (a: (MuscleGroup, Int), b: (MuscleGroup, Int)) -> Bool in a.1 < b.1 }
         guard maxV > 0, let g = short else { return String(localized: "Planned sets.") }
         return String(localized: "Planned sets. \(g.0.title) fell short this week.")   // title case: prose, not the bar label
     }
