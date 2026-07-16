@@ -117,14 +117,12 @@ enum RoutineSetEditing {
 // MARK: - Per-set rest chip (→ 1e push)
 //
 // Each set carries its own rest (choque 3): the chip shows this set's EFFECTIVE rest (its own override, or the
-// exercise's rest as fallback). Time reads in ink; an HR threshold reads in the recovery green, because the
-// threshold is a datum. Tapping pushes the shared `RestEditorScreen` (1e). `timeColor` is the only visual knob
-// the two screens differ on (builder = ink, plan-day editor = inkSecondary).
+// exercise's rest as fallback). Troquel grammar (r15): the hue lives ONLY in the leading icon (♥ recovery
+// for HR, clock ember for time); the value reads in ink. Tapping pushes the shared `RestEditorScreen` (1e).
 
 struct RestChip: View {
     @Environment(\.instrumentoTheme) private var theme
     let cfg: RestConfig
-    let timeColor: Color
     let action: () -> Void
 
     var body: some View {

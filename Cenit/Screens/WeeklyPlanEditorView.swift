@@ -232,7 +232,7 @@ struct WeeklyPlanEditorView: View {
                     .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
                 if wd == today {
                     Text("today").textCase(.uppercase)
-                        .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.dataRecovery)
+                        .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.ink)
                 }
             }
             .frame(width: 52, alignment: .leading)
@@ -304,6 +304,11 @@ struct WeeklyPlanEditorView: View {
                 }
             }
             .onAppear { volumeBarsGrown = true }
+            // VoiceOver leía 4 rótulos sin valores; un solo elemento compuesto los une (auditoría a11y).
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: MuscleGroup.allCases
+                .map { String(localized: "\($0.label) \(vol[$0] ?? 0) sets") }
+                .joined(separator: ", ")))
             // Handoff: the honest footnote on a thin filete — «Series planeadas. Core quedó corto…»
             HStack(spacing: 7) {
                 Rectangle().fill(theme.inkTertiary).frame(width: 2, height: 10)  // token-exempt: filete de dato
@@ -496,7 +501,7 @@ struct WeeklyPlanEditorView: View {
                         // Unassigned reads as the honest «—» (handoff: «Movilidad 20 min · —»).
                         Text(assignedDaysText(r) ?? "—")
                             .font(InstrumentoType.grotesk(12, weight: .medium))
-                            .foregroundStyle(theme.inkSecondary)
+                            .foregroundStyle(assignedDaysText(r) == nil ? theme.inkDim : theme.inkSecondary)
                     }
                     .frame(minHeight: 56).contentShape(Rectangle())
                 }

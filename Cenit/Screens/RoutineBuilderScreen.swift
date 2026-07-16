@@ -205,15 +205,11 @@ struct RoutineBuilderScreen: View {
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: 3) {
-            // Same Grotesk voice + 96pt ink seal as the unified editor (FER-952) — one conceptual
-            // screen, one look.
+            // Same Grotesk voice as the unified editor (FER-952) — one conceptual screen, one look.
             Text("New routine").groteskOverline().foregroundStyle(theme.inkTertiary)
             TextField("Routine name", text: $name)
                 .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                 .foregroundStyle(theme.ink)
-                .overlay(alignment: .bottomLeading) {
-                    Rectangle().fill(theme.ink).frame(width: 96, height: 2).offset(y: 5)
-                }
             if !items.isEmpty {
                 if let region = builderRegion {
                     HStack(spacing: 6) {
@@ -297,14 +293,14 @@ struct RoutineBuilderScreen: View {
                 )
             }
             // Handoff (rest-per-exercise): one rest decision per exercise, as a chip under the name.
-            RestChip(cfg: exerciseRest(idx), timeColor: theme.inkSecondary) {
+            RestChip(cfg: exerciseRest(idx)) {
                 focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
             }
             columnHeader(item.exercise.type)
         }
     }
 
-    /// Quiet column header (SET · KG · REPS · REST, gated by exercise type) with a hairline underline.
+    /// Quiet column header (SET · KG · REPS, gated by exercise type) with a hairline underline.
     @ViewBuilder
     private func columnHeader(_ type: ExerciseType) -> some View {
         HStack(spacing: 8) {
@@ -317,7 +313,6 @@ struct RoutineBuilderScreen: View {
                 Text("Reps").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             Spacer(minLength: 0)
-            Text("Rest").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
         }
         .padding(.bottom, 4)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }

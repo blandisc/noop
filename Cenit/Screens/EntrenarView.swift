@@ -259,7 +259,7 @@ private struct EntrenarLanding: View {
             HStack(spacing: 7) {
                 RecoveryChipRing(score: rec).frame(width: 22, height: 22)
                 Text("\(Int(rec.rounded()))")
-                    .font(StrandFont.number(17, weight: .semibold)).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskNumber(17, weight: .semibold)).foregroundStyle(theme.ink)
             }
             .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
             .background(theme.surface, in: Capsule())
@@ -273,7 +273,7 @@ private struct EntrenarLanding: View {
     /// chip so the header stays still; `inkDim` only (no datum color); not tappable. (FER-949)
     private var recoveryChipPlaceholder: some View {
         Text(verbatim: "—")
-            .font(StrandFont.number(17, weight: .semibold))
+            .font(InstrumentoType.groteskNumber(17, weight: .semibold))
             .foregroundStyle(theme.inkDim)
             .frame(minWidth: 22, minHeight: 22)   // match the live chip's ring box so height doesn't jump
             .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
@@ -295,8 +295,7 @@ private struct EntrenarLanding: View {
             // FER-952 (owner): the recovery chip rides the «Hoy» line — trailing, at the overline's height.
             HStack(alignment: .center, spacing: 8) {
                 Text(hoyOverline)
-                    .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
-                    .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                    .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 if let rec = recovery { recoveryChip(rec) } else { recoveryChipPlaceholder }
             }
@@ -379,7 +378,7 @@ private struct EntrenarLanding: View {
     /// The CTA verb: a live session in progress makes this «Continuar» (tapping re-opens it — `startToday`
     /// ends in `startStrengthSession`, whose guard re-presents the existing session, AppModel), otherwise
     /// «Empezar». Spanish literals, matching the rest of this screen.
-    private var empezarLabel: LocalizedStringKey { model.strengthSession != nil ? "Continuar" : "Empezar" }
+    private var empezarLabel: LocalizedStringKey { model.strengthSession != nil ? "Continue" : "Empezar" }
 
     /// Re-open the live session if one is running (any day, incl. rest days), otherwise start today's.
     private func startOrResume() {
@@ -653,7 +652,6 @@ private struct EntrenarLanding: View {
                 hubToolChip("square.stack.3d.up", "Templates") { showTemplates = true }
                 hubToolChip("square.and.arrow.down", "Import") { showHubImport = true }
             }
-            .padding(.bottom, CenitMetrics.space2)
         }
         .padding(.top, CenitMetrics.space2)
     }
@@ -681,7 +679,7 @@ private struct EntrenarLanding: View {
                 weekStripCell(wd)
             }
         }
-        .padding(.vertical, CenitMetrics.space2)
+        .padding(.top, CenitMetrics.gap).padding(.bottom, CenitMetrics.space2)
     }
 
     @ViewBuilder
@@ -939,7 +937,7 @@ private struct EntrenarLanding: View {
     private func monthColumn(_ m: ConstancyMonth) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             (Text(m.label) + Text(verbatim: " · ") + Text("\(m.count)"))
-                .font(StrandFont.overline).tracking(0.6)
+                .groteskOverline()
                 .foregroundStyle(m.isCurrent ? theme.ink : theme.inkTertiary)
             monthGrid(m)
         }

@@ -94,7 +94,7 @@ struct StarterTemplatesSheet: View {
     }
 
     private func templateRow(_ t: StarterTemplate) -> some View {
-        Button { withAnimation(.snappy) { selected = t } } label: {
+        Button { withAnimation(StrandMotion.interactive) { selected = t } } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(templateName(t.id)).font(StrandFont.body).foregroundStyle(theme.ink)
@@ -116,7 +116,7 @@ struct StarterTemplatesSheet: View {
 
     private func preview(_ t: StarterTemplate) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            Button { withAnimation(.snappy) { selected = nil } } label: {
+            Button { withAnimation(StrandMotion.interactive) { selected = nil } } label: {
                 HStack(spacing: 4) {
                     StrandIcon.back.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Templates").font(StrandFont.subhead)

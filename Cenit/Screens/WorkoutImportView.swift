@@ -301,7 +301,7 @@ struct WorkoutImportView: View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             stepper(current: .confirm)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Import plan").instrumentoOverline().foregroundStyle(theme.dataStrain)
+                Text("Import plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 nameText(program.name, fallback: "Your program").font(StrandFont.title1).foregroundStyle(theme.ink)
                 Text(programSummary(program)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
@@ -452,7 +452,7 @@ struct WorkoutImportView: View {
 
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(overline).instrumentoOverline().foregroundStyle(theme.dataStrain)
+            Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
         }
     }

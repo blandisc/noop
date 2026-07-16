@@ -707,7 +707,8 @@ struct LiveStrengthSheet: View {
     /// «82,5 kg × 8» — the planned first-set prescription for an upcoming exercise.
     private func prescriptionText(_ run: StrengthSessionModel.ExerciseRun) -> String {
         guard run.type == .weightReps || run.type == .bodyweight else {
-            return "\(run.sets.count) " + String(localized: "series")
+            // FER-952 (UX M3): la clave suelta «series» traducía en→"series"; la plural ya dice set/serie bien.
+            return String(localized: "\(run.sets.count) sets")
         }
         let w = run.sets.first?.weightKg ?? 0
         let reps = run.sets.first?.reps ?? 0
@@ -893,7 +894,7 @@ struct LiveStrengthSheet: View {
     private var workSetsDivider: some View {
         HStack(spacing: 8) {
             Rectangle().fill(theme.hairline).frame(height: 1)
-            Text("WORK SETS").instrumentoOverline().foregroundStyle(theme.inkDim)
+            Text("WORK SETS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Rectangle().fill(theme.hairline).frame(height: 1)
         }
         .accessibilityLabel(Text("Work sets"))
@@ -997,6 +998,7 @@ struct LiveStrengthSheet: View {
     /// The RPE sheet content, shared by the two presenters (main body + inside the focus cover).
     private func rpeSheet(_ target: RPETarget) -> some View {
         RPESheet(theme: theme, target: target,
+                 weightLabel: "\(plateNumber(displayWeight(target.weightKg))) \(UnitFormatter.massUnit(units))",
                  onPick: { rpe in
                      session.setRPE(exercise: target.runId, set: target.id, rpe: rpe)
                      rpeTarget = nil
@@ -1124,7 +1126,7 @@ struct LiveStrengthSheet: View {
                     Text(Self.clock(elapsed))
                         .font(InstrumentoType.groteskSessionClockInline)
                         .tracking(InstrumentoType.groteskSessionClockTracking)
-                        .foregroundStyle(session.paused ? theme.inkDim : theme.ink)
+                        .foregroundStyle(session.paused ? theme.inkTertiary : theme.ink)
                         // r22: los dígitos RUEDAN en vez de parpadear — misma voz que el descanso.
                         .contentTransition(.numericText())
                         .animation(.default, value: elapsed)
@@ -3342,7 +3344,8 @@ struct LiveStrengthSheet: View {
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)
                     .padding(.horizontal, 14).padding(.vertical, 8)
                     .background(theme.dataStrain, in: Capsule())
-                    .contentShape(Capsule())
+                    .frame(minHeight: 44)          // visual 33, toque 44 (HIG §8.7-4)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
@@ -3353,7 +3356,8 @@ struct LiveStrengthSheet: View {
                         .font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.dataStrain)
                         .padding(.horizontal, 14).padding(.vertical, 8)
                         .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
-                        .contentShape(Capsule())
+                        .frame(minHeight: 44)      // visual 33, toque 44 (HIG §8.7-4)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }

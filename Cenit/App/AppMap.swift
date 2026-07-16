@@ -559,7 +559,8 @@ private struct MapSessionPillHost: View {
                     onPlayPause: {
                         if session.paused { model.resumeStrengthSessionFromPause() }
                         else { model.pauseStrengthSession() }
-                    }
+                    },
+                    playPauseAccessibilityLabel: Text(session.paused ? "Resume session" : "Pause session")
                 )
             }
         }

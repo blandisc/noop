@@ -125,16 +125,20 @@ public struct SessionPill: View {
     let action: () -> Void
     /// Optional trailing ⏸/▶ (FER-952) — pauses/resumes WITHOUT opening the session. nil hides it.
     let onPlayPause: (() -> Void)?
+    /// VoiceOver label for the ⏸/▶ («Pausar sesión» / «Reanudar sesión») — caller-localized (FER-716).
+    let playPauseAccessibilityLabel: Text?
 
     public init(routineName: String, elapsed: String, bpm: Int?,
                 detail: String? = nil, paused: Bool = false, hue: Color,
                 theme: InstrumentoTheme, accessibilityLabel: Text, accessibilityHint: Text,
-                action: @escaping () -> Void, onPlayPause: (() -> Void)? = nil) {
+                action: @escaping () -> Void, onPlayPause: (() -> Void)? = nil,
+                playPauseAccessibilityLabel: Text? = nil) {
         self.routineName = routineName; self.elapsed = elapsed; self.bpm = bpm
         self.detail = detail; self.paused = paused
         self.hue = hue; self.theme = theme
         self.accessibilityLabel = accessibilityLabel; self.accessibilityHint = accessibilityHint
         self.action = action; self.onPlayPause = onPlayPause
+        self.playPauseAccessibilityLabel = playPauseAccessibilityLabel
     }
 
     public var body: some View {
@@ -149,24 +153,30 @@ public struct SessionPill: View {
                     dot
                     Text(elapsed)
                         .font(InstrumentoType.groteskNumber(14))
-                        .foregroundStyle(paused ? theme.inkDim : theme.ink)
+                        // inkTertiary, not inkDim: the frozen clock is still READ (§8.7 — inkDim
+                        // never carries copy that must be legible).
+                        .foregroundStyle(paused ? theme.inkTertiary : theme.ink)
+                        .layoutPriority(1)
                     if let bpm {
                         dot
                         HStack(spacing: 3) {
-                            Image(systemName: "heart.fill").font(.system(size: 11)).foregroundStyle(theme.dataHeart)
-                            Text("\(bpm)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(theme.dataHeart)
+                            Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataHeart)
+                            // r26: measured datum speaks Grotesk tabular (same voice as the session header).
+                            Text("\(bpm)").font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.dataHeart)
                         }
+                        .layoutPriority(1)
                     }
                     if let detail {
                         dot
                         Text(detail)
                             .font(InstrumentoType.groteskNumber(12, weight: .medium))
                             .foregroundStyle(theme.inkSecondary)
+                            .layoutPriority(1)
                     }
                 }
                 .padding(.leading, 16)
                 .padding(.trailing, onPlayPause == nil ? 16 : 6)
-                .frame(height: 44)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
             .buttonStyle(InstrumentoPressStyle())
@@ -177,19 +187,24 @@ public struct SessionPill: View {
             if let onPlayPause {
                 Button(action: onPlayPause) {
                     Image(systemName: paused ? "play.fill" : "pause.fill")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(StrandFont.glyph(.inline, weight: .bold))
                         .foregroundStyle(theme.ink)
                         .frame(width: 34, height: 34)
                         .background(Circle().fill(theme.patternBlock))
-                        .contentShape(Circle())
+                        // 34 visual, 44 tocable — el mínimo HIG nunca se negocia (§8.7).
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(InstrumentoPressStyle())
-                .padding(.trailing, 6)
+                .accessibilityLabel(playPauseAccessibilityLabel ?? Text(verbatim: ""))
+                .padding(.trailing, 2)
             }
         }
         .background(Capsule(style: .continuous).fill(theme.surface))
         .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         .floatShadow(theme, radius: 9, y: 6, opacity: 0.12)
+        // Instrumento compacto flotante: cap de Dynamic Type (la info completa viaja en el label a11y).
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 
     private var dot: some View {

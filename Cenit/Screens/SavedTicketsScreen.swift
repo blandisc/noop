@@ -32,8 +32,8 @@ struct SavedTicketsScreen: View {
     }
 
     private let columns = [
-        GridItem(.flexible(), spacing: 11),
-        GridItem(.flexible(), spacing: 11)
+        GridItem(.flexible(), spacing: CenitMetrics.gap),
+        GridItem(.flexible(), spacing: CenitMetrics.gap)
     ]
 
     /// Filtered list for the active segment. Newest-first order is preserved from `recentSessions`.
@@ -93,7 +93,7 @@ struct SavedTicketsScreen: View {
     }
 
     private var ticketGrid: some View {
-        LazyVGrid(columns: columns, spacing: 11) {
+        LazyVGrid(columns: columns, spacing: CenitMetrics.gap) {
             ForEach(Array(filteredSessions.enumerated()), id: \.element.id) { index, session in
                 Button { openReceipt(session) } label: {
                     MiniTicketView(ticket: TicketMapping.miniTicket(
@@ -110,7 +110,7 @@ struct SavedTicketsScreen: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 11) {
+        VStack(spacing: CenitMetrics.gap) {
             Image(systemName: "doc.plaintext")
                 .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
@@ -120,7 +120,7 @@ struct SavedTicketsScreen: View {
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 34)
+        .padding(.vertical, CenitMetrics.sectionGap)
     }
 
     private var emptyTitle: LocalizedStringKey {

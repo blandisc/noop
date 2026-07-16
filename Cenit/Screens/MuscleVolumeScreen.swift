@@ -63,13 +63,14 @@ struct MuscleVolumeScreen: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("Volume per muscle")
-                        .font(InstrumentoType.grotesk(25, weight: .bold, relativeTo: .title2))
+                        .font(InstrumentoType.groteskScreenTitle)
+                        .tracking(InstrumentoType.groteskScreenTitleTracking)
                         .foregroundStyle(theme.ink)
                     // FER-952: the method note moved behind the ⓘ — it only speaks when asked.
                     Button { showMethodInfo = true } label: {
                         Image(systemName: "info.circle").font(StrandFont.glyph(.inline))
                             .foregroundStyle(theme.inkTertiary)
-                            .frame(width: 32, height: 32).contentShape(Rectangle())
+                            .frame(width: 44, height: 44).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("How this is measured"))
@@ -118,7 +119,7 @@ struct MuscleVolumeScreen: View {
             })
             .onPreferenceChange(InfoSheetHeightKey.self) { infoSheetHeight = $0 }
             .presentationDetents([.height(max(infoSheetHeight, 120))])
-            .presentationBackground(theme.surface)
+            .presentationBackground(theme.paper)
         }
     }
 
@@ -167,7 +168,7 @@ struct MuscleVolumeScreen: View {
                 .font(StrandFont.captionNumber)
                 .fontWeight(below ? .semibold : .regular)
                 .foregroundStyle(below ? theme.warning : theme.ink)
-                .frame(width: 34, alignment: .trailing)
+                .frame(minWidth: 34, alignment: .trailing)
         }
         .frame(minHeight: 46)
         .accessibilityElement(children: .ignore)

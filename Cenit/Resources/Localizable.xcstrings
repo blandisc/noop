@@ -2716,6 +2716,23 @@
         }
       }
     },
+    "%@ %lld sets" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$lld sets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$lld series"
+          }
+        }
+      }
+    },
     "%lld" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -45249,6 +45266,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Guardar en la rutina (próximas sesiones)"
+          }
+        }
+      }
+    },
+    "Saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado"
           }
         }
       }

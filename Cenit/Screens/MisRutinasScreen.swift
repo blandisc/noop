@@ -672,7 +672,7 @@ private extension View {
             .background(targeted ? fill : .clear, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))   // token-exempt: fondo condicional
             .overlay { if targeted {
                 RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous).strokeBorder(stroke, lineWidth: 1.5) } }
-            .animation(.snappy, value: targeted)
+            .animation(StrandMotion.interactive, value: targeted)
             .contentShape(Rectangle())
     }
 }

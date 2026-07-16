@@ -92,6 +92,7 @@ struct RoutineEditorScreen: View {
             }
         }
         .background(theme.paper.ignoresSafeArea())
+        .onDisappear { if dirty { persist() } }
         .toolbar(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -246,7 +247,7 @@ struct RoutineEditorScreen: View {
         ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 let grouped = RoutineSetEditing.inSuperset(items.map(\.re), idx)
                 if firstOfGroup(idx) {
-                    Text("Superset").groteskOverline().foregroundStyle(theme.dataHrv)
+                    Text("Superset").groteskOverline().foregroundStyle(theme.inkSecondary)
                         .padding(.leading, 26)  // token-exempt: gutter del riel (Serie activa)
                         .plainRow(top: CenitMetrics.sectionGap, bottom: 0)
                 }
@@ -312,7 +313,7 @@ struct RoutineEditorScreen: View {
                 Spacer(minLength: 8)
                 if !locked { exerciseMenu(idx) }
             }
-            RestChip(cfg: exerciseRest(idx), timeColor: theme.inkSecondary) {
+            RestChip(cfg: exerciseRest(idx)) {
                 focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
             }
             .disabled(locked)
@@ -323,7 +324,7 @@ struct RoutineEditorScreen: View {
             }
             if !locked { addRowPills(idx).padding(.top, 10) }
         }
-        .padding(.horizontal, 13).padding(.vertical, CenitMetrics.gap)  // token-exempt: receiptPadding (Serie activa)
+        .padding(.horizontal, CenitMetrics.receiptPadding).padding(.vertical, CenitMetrics.gap)
         .background(
             RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .fill(theme.surface)
@@ -332,22 +333,26 @@ struct RoutineEditorScreen: View {
         )
         .padding(.top, topGap)
         // The rail is a BACKGROUND of the whole row (gap included) so segments butt seam-to-seam —
-        // family tint at strokeSoft for solo exercises (the session's thread), full teal for a superset.
+        // family tint (solo) or teal (superset), both at strokeSoft: el riel es estructura, no dato.
         // The FIRST card births the thread AT its dot (Serie activa's «birth-at-the-dot»: nothing
         // above), and the dot anchors to the THUMB's center (card pad 12 + thumb 40/2).
         .background(alignment: .topLeading) {
             ZStack(alignment: .topLeading) {
                 Rectangle()
-                    .fill(grouped ? theme.dataHrv
-                                  : theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles)
-                                        .opacity(StrandOpacity.strokeSoft))
+                    .fill((grouped ? theme.dataHrv
+                                   : theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles))
+                        .opacity(StrandOpacity.strokeSoft))
                     .frame(width: 2)
                     .offset(x: -20)
                     .padding(.top, idx == 0 ? topGap + 32 : 0)
                 if !grouped {
-                    Circle().fill(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles))
-                        .frame(width: 9, height: 9)
-                        .offset(x: -23.5, y: topGap + 32 - 4.5)
+                    // Anillo de papel bajo el punto (Serie activa r18): separa el dot del hilo.
+                    ZStack {
+                        Circle().fill(theme.paper).frame(width: 15, height: 15)
+                        Circle().fill(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles))
+                            .frame(width: 9, height: 9)
+                    }
+                    .offset(x: -26.5, y: topGap + 32 - 7.5)
                 }
             }
             .allowsHitTesting(false)
@@ -387,16 +392,25 @@ struct RoutineEditorScreen: View {
                     Button {
                         withAnimation(.snappy) { armedDeleteSetId = nil; deleteSet(idx: idx, si: si) }
                     } label: {
-                        Text("Delete set").font(StrandFont.subhead).foregroundStyle(theme.critical)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(theme.surface, in: Capsule(style: .continuous))
-                            .overlay(Capsule(style: .continuous).strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+                        // Misma anatomía r21 que la Serie activa: glifo chico + caption, discreto.
+                        HStack(spacing: 5) {
+                            Image(systemName: "trash").font(StrandFont.glyph(.chevron))
+                            Text("Delete set").font(StrandFont.caption)
+                        }
+                        .foregroundStyle(theme.critical)
+                        .padding(.horizontal, 9).padding(.vertical, 5)
+                        .background(theme.surface, in: Capsule())
+                        .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+                        .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
             }
             .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-                guard !locked else { return }
+                // m2 (auditoría): la última serie no se arma — borrarla dejaría la tabla vacía;
+                // para quitar el ejercicio completo está el menú «…».
+                guard !locked, items[idx].re.sets.count > 1 else { return }
                 withAnimation(StrandMotion.gentle) { armedDeleteSetId = setId }
             })
             .simultaneousGesture(TapGesture().onEnded {
@@ -405,7 +419,7 @@ struct RoutineEditorScreen: View {
                 }
             })
             .accessibilityActions {
-                if !locked {
+                if !locked, items[idx].re.sets.count > 1 {
                     Button("Delete set") { deleteSet(idx: idx, si: si) }
                 }
             }
@@ -480,7 +494,7 @@ struct RoutineEditorScreen: View {
             }
             VStack(alignment: .leading, spacing: 8) {
                 if block.isSuperset {
-                    Text("Superset").instrumentoOverline().foregroundStyle(theme.dataHrv)
+                    Text("Superset").instrumentoOverline().foregroundStyle(theme.inkSecondary)
                 }
                 ForEach(block.items) { item in
                     HStack(spacing: 10) {
@@ -1021,6 +1035,7 @@ struct RoutineEditorScreen: View {
 
     private func markRest() {
         guard let wd = planWeekday else { return }
+        if dirty { persist() }   // C2: salir por «descanso» también autosalva (contrato Notas)
         Task {
             guard let store = await repo.storeHandle() else { return }
             try? await store.clearRoutineSchedule(weekday: wd)

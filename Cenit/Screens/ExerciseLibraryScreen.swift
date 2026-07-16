@@ -88,8 +88,7 @@ struct ExerciseLibraryScreen: View {
             // The count reflects the REAL loaded catalog (never a made-up figure) — until it loads, the
             // title falls back to the section name so nothing flashes a wrong 0.
             Text(addMode ? "Add to routine" : "Library")
-                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
             Group {
                 if loaded {
                     Text("\(exercises.count) exercises")
@@ -227,7 +226,7 @@ struct ExerciseLibraryScreen: View {
             HStack(spacing: CenitMetrics.gap) {
                 // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
                 ExerciseThumbView(exercise: ex, side: 52)   // handoff: 52px thumb · cached GIF still or paper placeholder (FER-790)
-                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: 52 * 0.22, style: .continuous)  // = clip del thumb (.tile)
                         .strokeBorder(familyTint(ex), lineWidth: 2))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)

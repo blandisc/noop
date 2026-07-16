@@ -140,9 +140,10 @@ struct WorkoutHistoryScreen: View {
                             if up { Text("↗ +\(n)% vs. last month") } else { Text("↘ −\(n)% vs. last month") }
                         }
                         .font(InstrumentoType.grotesk(11, weight: .bold))
-                        .foregroundStyle(up ? theme.dataRecovery : theme.warning)
+                        // §8.7: valence en texto <24pt usa positiveText (5.0:1), no el hue del dato.
+                        .foregroundStyle(up ? theme.positiveText : theme.warning)
                         .padding(.horizontal, 9).padding(.vertical, 3)
-                        .background((up ? theme.dataRecovery : theme.warning).opacity(StrandOpacity.tintFill),
+                        .background((up ? theme.positiveText : theme.warning).opacity(StrandOpacity.tintFill),
                                     in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                     }
                 }
@@ -170,10 +171,13 @@ struct WorkoutHistoryScreen: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 1) {
                         Group {
-                            if sel.isCurrent { Text("This week · in progress") } else { Text("Week of \(weekLabel(sel.start))") }
+                            if sel.isCurrent {
+                                Text("This week · in progress").instrumentoOverline()
+                            } else {
+                                Text("Week of \(weekLabel(sel.start))").instrumentoOverline()
+                            }
                         }
-                        .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1)
-                        .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                        .foregroundStyle(theme.inkTertiary)
                         Text("\(sel.count) sessions · tap another bar to switch")
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     }
@@ -200,8 +204,7 @@ struct WorkoutHistoryScreen: View {
     private func monthTile(_ label: LocalizedStringKey, _ value: String,
                            unit: LocalizedStringKey? = nil, caption: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(1)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value).font(InstrumentoType.groteskNumber(22)).foregroundStyle(theme.ink)
                 if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
@@ -239,6 +242,8 @@ struct WorkoutHistoryScreen: View {
                 InstrumentoSectionBand("Volume per muscle · 30 days") {
                     NavigationLink(value: MuscleVolumeRoute()) {
                         Text("See map").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            .frame(minHeight: 44)   // toque 44 (HIG §8.7-4)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -260,7 +265,7 @@ struct WorkoutHistoryScreen: View {
                             .clipShape(Capsule())
                         Text(MuscleFatigueMap.formattedSets(v.setsPerWeek))
                             .font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)
-                            .frame(width: 34, alignment: .trailing)
+                            .frame(minWidth: 34, alignment: .trailing).lineLimit(1)
                     }
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(MuscleAtlas.name(v.muscle)))
@@ -310,7 +315,7 @@ struct WorkoutHistoryScreen: View {
                                 Text(StrengthDisplay.weight(kg, system: system))
                             }
                             .font(StrandFont.caption)
-                            .foregroundStyle(theme.dataRecovery)
+                            .foregroundStyle(theme.positiveText)   // §8.7 valence <24pt
                             .monospacedDigit()
                         case .deferred(let kg):
                             HStack(spacing: 4) {
@@ -1045,10 +1050,15 @@ struct WorkoutSessionDetailScreen: View {
         HStack(spacing: 8) {
             Text("Source").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if journalRow != nil {
-                Text("Measured with your band")
-                    .font(StrandFont.caption).foregroundStyle(theme.dataHeart)
-                    .padding(.horizontal, 9).padding(.vertical, 3)
-                    .background(theme.dataHeart.opacity(0.12), in: Capsule(style: .continuous))  // token-exempt: tinte 12% del handoff
+                // Idioma de origen del sistema (OriginStamp): punto `originBand` + copy en ink —
+                // el hue del dato (dataHeart) no marca procedencia (§8.7, auditoría FER-952).
+                HStack(spacing: 5) {
+                    Circle().fill(theme.originBand).frame(width: 5, height: 5)
+                    Text("Measured with your band")
+                        .font(StrandFont.caption).foregroundStyle(theme.ink)
+                }
+                .padding(.horizontal, 9).padding(.vertical, 3)
+                .background(theme.patternBlock, in: Capsule(style: .continuous))
             } else {
                 Text("Estimated")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)

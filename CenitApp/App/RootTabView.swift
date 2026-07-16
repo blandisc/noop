@@ -184,6 +184,7 @@ struct RootTabView: View {
         .overlay(alignment: .bottom) {
             if appModel.strengthSession != nil && !appModel.strengthSheetPresented {
                 ActiveSessionPillHost(model: appModel)
+                    .padding(.horizontal, CenitMetrics.screenPadding)
                     .padding(.bottom, barHeight + CenitMetrics.space2)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -419,7 +420,8 @@ private struct ActiveSessionPillHost: View {
                     onPlayPause: {
                         if session.paused { model.resumeStrengthSessionFromPause() }
                         else { model.pauseStrengthSession() }
-                    }
+                    },
+                    playPauseAccessibilityLabel: Text(session.paused ? "Resume session" : "Pause session")
                 )
             }
         }
