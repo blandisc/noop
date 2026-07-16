@@ -276,6 +276,10 @@ enum ScreenshotFixtures {
         for s in (try? await store.recentSessions(limit: 500)) ?? [] {
             try? await store.deleteSession(id: s.id)
         }
+        // A live-session snapshot left by an earlier canvas run (Serie activa previews) would be
+        // restored by every fresh AppModel and LOCK the routine editor — the demo starts at rest.
+        try? await store.clearInProgressSession()
+        model.strengthSession = nil
         let now = Int(Date().timeIntervalSince1970)
         let cal = Calendar(identifier: .gregorian)
 
@@ -303,6 +307,8 @@ enum ScreenshotFixtures {
         try? await store.saveRoutine(c, exercises: [
             rex(c.id, "Barbell_Full_Squat", 0, sets: 4, reps: 8, kg: 100),
             rex(c.id, "Dumbbell_Lunges", 1, sets: 3, reps: 10, kg: 20),
+            // Core en el plan para que «Volumen por grupo» de Tu Plan pinte SIEMPRE las 4 barras.
+            rex(c.id, "Cable_Crunch", 2, sets: 3, reps: 15, kg: 25),
         ])
 
         // Split anchored to TODAY: today = A (hero); +2/−3 days = B; −2 days = C. Weekday numbers
