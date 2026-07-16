@@ -57,7 +57,12 @@ public struct SessionProgressBar: View {
     public struct Segment: Equatable {
         public var sets: Int
         public var done: Double
-        public init(sets: Int, done: Double) { self.sets = sets; self.done = max(0, done) }
+        /// r7 (owner): cada segmento puede llevar el hue de SU ejercicio (familia push/pull/legs);
+        /// nil cae al `hue` global de la barra.
+        public var tint: Color?
+        public init(sets: Int, done: Double, tint: Color? = nil) {
+            self.sets = sets; self.done = max(0, done); self.tint = tint
+        }
     }
     let segments: [Segment]
     let hue: Color
@@ -83,7 +88,7 @@ public struct SessionProgressBar: View {
                     let w = usable * CGFloat(seg.sets) / CGFloat(totalSets)
                     ZStack(alignment: .leading) {
                         Capsule().fill(track)
-                        Capsule().fill(hue)
+                        Capsule().fill(seg.tint ?? hue)
                             .frame(width: w * CGFloat(min(seg.done, 1)))
                     }
                     .frame(width: w)

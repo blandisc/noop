@@ -1347,7 +1347,11 @@ struct LiveStrengthSheet: View {
                         case .done:
                             doneRow(run, ei: ei)
                                 .plainRow()
-                                .transition(.opacity)
+                                // anim r7: al completarse, la fila «se guarda» — entra desde arriba
+                                // con fade, como asentándose en el riel.
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .top).combined(with: .opacity),
+                                    removal: .opacity))
                         case .upcoming:
                             comingRow(run, ei: ei)
                                 .plainRow()
@@ -1370,7 +1374,7 @@ struct LiveStrengthSheet: View {
         .environment(\.defaultMinListRowHeight, 1)
         // UX·anim #2: one clock for the exercise jump — the row collapse shares the scroll's gentle
         // spring so both read as a single continuous gesture (before: snappy vs. gentle fighting).
-        .animation(StrandMotion.gentle, value: session.currentIndex)
+        .animation(StrandMotion.gentle, value: accordionIndex)
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let cell = activeCell { keypad(for: cell) } else { statsBar }
@@ -1389,7 +1393,8 @@ struct LiveStrengthSheet: View {
         .onChange(of: accordionIndex) { _, newIndex in
             // Sugerencia 3 + r6: the narrated move happens when the ACCORDION moves — i.e. when the
             // rest ends — not when the model's index advances mid-rest.
-            withAnimation(reduceMotion ? nil : StrandMotion.gentle) {
+            // anim r7: primero respira el colapso del descanso, LUEGO desliza (secuencia narrada).
+            withAnimation(reduceMotion ? nil : StrandMotion.gentle.delay(0.15)) {
                 proxy.scrollTo("session-exercise-\(newIndex)", anchor: .center)
             }
         }
@@ -1629,26 +1634,22 @@ struct LiveStrengthSheet: View {
                            dotTint: categoryTint(run))
             .id("session-exercise-\(ei)")
         ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
-            // The rest card slots BETWEEN the set just logged and the next one (owner call): an
-            // opening of space inside the card, not an appendix under the table.
-            if restSlotIndex(run, ei: ei) == si { restCardRow(run) }
             // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows from the
             // numbered work sets — drawn on the first work row that follows a warm-up.
             let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
             VStack(spacing: 0) {
+                // r7-fix «fila gorda»: el descanso vive DENTRO de la rebanada de su fila — dos vistas
+                // condicionales por vuelta del ForEach se COALESCÍAN en una sola fila del List y la
+                // fila «heredaba» el espacio de la tarjeta de descanso.
+                if restSlotIndex(run, ei: ei) == si { restInlineSlice(run) }
                 if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
                 setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
-                    .border(.blue)   // TEMP-DEBUG r7 (fila gorda): quitar al cerrar la cacería
-                    .background(.yellow.opacity(0.15))   // TEMP-DEBUG r7b: pinta el ÁREA real de setRow
             }
-                .border(.red)   // TEMP-DEBUG r7 (fila gorda): quitar al cerrar la cacería
                 // Owner bug #3: a freshly-added set inflated its row — the slice can never stretch
                 // beyond its content's natural height.
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 14)
-                .overlay(alignment: .bottom) {
-                    if si < run.sets.count - 1 { Rectangle().fill(theme.hairline).frame(height: 1) }
-                }
+                // r7 (owner): tarjeta COMPLETA — sin divisores entre series; el ritmo separa solo.
                 .activeCardRow(top: false, bottom: false, theme: theme, railTint: railTint,
                                railVisible: showRail)
                 .swipeActions(edge: .trailing) {
@@ -1657,15 +1658,16 @@ struct LiveStrengthSheet: View {
                     } label: { Label("Delete", systemImage: "trash") }
                 }
         }
-        // Rest after the exercise's LAST set (no pending set to anchor to) — before the card closes.
-        if session.phase == .resting, ei == accordionIndex, session.summary == nil,
-           restSlotIndex(run, ei: ei) == nil {
-            restCardRow(run)
-        }
         // «Add set» closes the card as its own row — the handoff's ember pill, inside (FER-935 kin).
-        addSetButton(ei)
+        // El descanso tras la ÚLTIMA serie vive DENTRO de esta rebanada (mismo fix anti-coalescencia).
+        VStack(spacing: 0) {
+            if session.phase == .resting, ei == accordionIndex, session.summary == nil,
+               restSlotIndex(run, ei: ei) == nil {
+                restInlineSlice(run)
+            }
+            addSetButton(ei)
+        }
             .padding(.horizontal, 14).padding(.vertical, 8)
-            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
             .activeCardRow(top: false, bottom: true, theme: theme, railTint: railTint,
                            railVisible: showRail)
     }
@@ -1697,10 +1699,10 @@ struct LiveStrengthSheet: View {
         return si
     }
 
-    /// The inline rest card as a slice of the active card's flow — keeps its own float/shadow (the
-    /// «hover» the owner asked to preserve) and the auto-dismiss task for fixed rests; entering and
-    /// leaving animates as an opening/closing of space between the sets.
-    private func restCardRow(_ run: StrengthSessionModel.ExerciseRun, standalone: Bool = false) -> some View {
+    /// El descanso en línea EMBEBIDO en la rebanada de su fila (r7-fix): conserva su hover propio y el
+    /// auto-cierre de descansos fijos; entra/sale como apertura de espacio, sin fila aparte que el
+    /// List pueda fusionar.
+    private func restInlineSlice(_ run: StrengthSessionModel.ExerciseRun) -> some View {
         restInlineCard
             // A fixed rest that runs out dismisses itself — focus lands on the next active
             // set with no tap in between (HR rests keep the card up until the buzz/skip).
@@ -1711,10 +1713,7 @@ struct LiveStrengthSheet: View {
                 guard !Task.isCancelled, session.phase == .resting, !session.paused else { return }
                 withAnimation(StrandMotion.gentle) { session.skipRest() }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, standalone ? 6 : 0)
-            .activeCardRow(top: standalone, bottom: standalone, theme: theme, railTint: railTint,
-                           railVisible: showRail)
+            .padding(.vertical, 8)
             .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
@@ -1885,6 +1884,8 @@ struct LiveStrengthSheet: View {
                 SessionProgressBar(segments: progressSegments,
                                    hue: session.paused ? theme.inkDim : theme.dataStrain,
                                    track: theme.hairline, height: 3)
+                    // anim r7: el llenado del segmento se anima al palomear (antes saltaba).
+                    .animation(StrandMotion.gentle, value: session.doneCount)
                     .accessibilityLabel(Text("Session progress"))
                     .accessibilityValue(Text("\(session.doneCount) of \(sessionSetsTotal) sets"))
             }
@@ -2671,7 +2672,9 @@ struct LiveStrengthSheet: View {
         session.runs.filter { !$0.skipped }.map { run in
             let total = max(run.sets.count, 1)
             let done = run.sets.filter(\.done).count
-            return .init(sets: total, done: Double(done) / Double(total))
+            // r7 (owner): cada segmento en el hue de SU ejercicio (familia push/pull/legs).
+            return .init(sets: total, done: Double(done) / Double(total),
+                         tint: session.paused ? nil : categoryTint(run))
         }
     }
 
@@ -2780,7 +2783,10 @@ struct LiveStrengthSheet: View {
     /// Grouped by whitespace + hairlines — a registration sheet, not a grid.
     private func exerciseHeader(_ run: StrengthSessionModel.ExerciseRun, ei: Int, first: Bool) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            HStack(spacing: 12) {
+            // r7: alignment .top — con nombres largos (2-3 líneas) el HStack crecía y el thumb se
+            // centraba más abajo, dejando la bolita (fija a 34pt) descentrada. Anclado arriba, el
+            // centro del thumb SIEMPRE queda a 12+22=34, donde vive el punto.
+            HStack(alignment: .top, spacing: 12) {
                 SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
                     // Canvas pass 2026-07-15: the category dot is ANCHORED to the thumbnail itself —
                     // drawn as its overlay, vertically centered by construction (no offset math to
@@ -3334,22 +3340,17 @@ struct LiveStrengthSheet: View {
                          set: StrengthSessionModel.WorkingSet) -> some View {
         HStack(spacing: 8) {
             badge(run: run, si: si)
-                .border(.orange)   // TEMP-DEBUG r7c
             if set.id == copiedSetId, !set.done, si > 0 {
                 // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».
                 let fromNumber = run.sets.prefix(si).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
                 Text("COPIED FROM \(fromNumber)").instrumentoOverline().foregroundStyle(theme.dataStrain)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .border(.purple)   // TEMP-DEBUG r7c
             } else {
                 previousCell(ei: ei, si: si, run: run)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .border(.purple)   // TEMP-DEBUG r7c
             }
             dataCells(ei: ei, si: si, run: run, set: set)
-                .border(.green)   // TEMP-DEBUG r7c
             checkButton(ei: ei, si: si, set: set)
-                .border(.pink)   // TEMP-DEBUG r7c
         }
     }
 
@@ -3845,10 +3846,14 @@ struct LiveStrengthSheet: View {
                 .font(StrandFont.glyph(.lead))
                 .foregroundStyle(set.done ? theme.dataRecovery
                                  : isActivePending ? theme.dataStrain : theme.inkDim)
+                // anim r7: el gesto más repetido de la sesión merece su micro-momento — pop del
+                // símbolo + confirmación háptica al palomear (ReduceMotion: el bounce se omite solo).
+                .symbolEffect(.bounce, value: set.done)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .sensoryFeedback(.success, trigger: set.done)
         .frame(width: reflow ? nil : 44)
         .accessibilityLabel(Text(set.done ? "Mark set \(si + 1) as not done" : "Mark set \(si + 1) as done"))
     }
