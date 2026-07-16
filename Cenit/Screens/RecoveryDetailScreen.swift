@@ -1123,25 +1123,11 @@ struct RecoveryDetailModel {
 
     // MARK: - Build
 
-    /// Convenience: build the whole model straight from the repo. Hoy and Cuerpo both open the recovery
-    /// detail the same way, so they share this instead of each assembling the argument list (incl. the
-    /// FER-153 estimate flags). (`@MainActor` to read the repo's published state on the main actor.)
-    @MainActor
-    static func build(repo: Repository) -> RecoveryDetailModel {
-        let key = Repository.localDayKey(Date())
-        return build(days: repo.days, today: repo.today, todayKey: key,
-                     appleHealthDays: repo.appleHealthDays, loaded: repo.loaded,
-                     importedSleep: repo.importedSleep,
-                     isEstimated: repo.isRecoveryEstimated(key),
-                     confidence: repo.recoveryConfidence(key),
-                     presentPrimaryDrivers: repo.recoveryPrimaryDrivers(key),
-                     estimatedDirections: repo.recoveryEstimateDirections(key))
-    }
-
     /// Runs `build` off the MainActor (FER-954, same seam as `SleepDetailModel.buildDetached` /
     /// FER-953): snapshots the inputs from `repo` on the MainActor (value-type copies + the small
-    /// `repo.recovery*(key)` reads `build(repo:)` also does), then hops the pure derivation to a
-    /// background executor; only the finished model returns to main.
+    /// `repo.recovery*(key)` reads, incl. the FER-153 estimate flags — Hoy, Cuerpo and Entrenar all
+    /// open the recovery detail through this), then hops the pure derivation to a background
+    /// executor; only the finished model returns to main. Supersedes the synchronous `build(repo:)`.
     @MainActor
     static func buildDetached(repo: Repository) async -> RecoveryDetailModel {
         let key = Repository.localDayKey(Date())
