@@ -1012,6 +1012,12 @@ struct LiveStrengthSheet: View {
     /// row shows the handoff's «SOLTAR AQUÍ · POSICIÓN N» drop zone. Entered by long-press on any rail row
     /// or the menu's «Reordenar» item; exits via «Listo». A view-layer toggle only — the model is untouched.
     @State private var reorderMode = false
+    /// r20 (auditoría UX #6f): las celdas de captura crecen con Dynamic Type intermedio (tope 1.3×
+    /// para que la retícula SERIE/KG/REPS/RPE no desborde antes del reflow AX1).
+    @ScaledMetric(relativeTo: .body) private var cellDynamicScale: CGFloat = 1
+    /// r20: el proxy del ScrollView, capturado al aparecer — «Agregar serie» lo usa para que la
+    /// fila nueva no nazca tapada por la barra/teclado.
+    @State private var scrollProxy: ScrollViewProxy?
     /// Canvas pass 2026-07-15 (menú «Progresión»): which exercise's progression mini-sheet is open.
     struct ProgressionEditTarget: Identifiable { let id: Int }
     @State private var progressionEdit: ProgressionEditTarget?
@@ -1075,7 +1081,12 @@ struct LiveStrengthSheet: View {
     struct RestEdit: Identifiable { let id: Int; var setIndex: Int? = nil }
 
     /// The exercise + work weight (kg) the plate calculator was opened for (FER-720 · 3a).
-    struct PlatesTarget: Identifiable { let id = UUID(); let ei: Int; let weightKg: Double }
+    struct PlatesTarget: Identifiable {
+        let id = UUID(); let ei: Int; let weightKg: Double
+        // r20 (auditoría UX #6c): «Añadir calentamiento» abre la MISMA hoja pero anclada a su
+        // sección — pediste calentar, no discos.
+        var startAtWarmup = false
+    }
 
     /// Identifies which set's RPE sheet is open (FER-930): the exercise's run id + the set id (stable
     /// across re-renders, unlike an index), plus the header context (set number, weight, reps).
@@ -1278,11 +1289,19 @@ struct LiveStrengthSheet: View {
                 : (session.pendingCount > 0
                    ? String(localized: "\(session.pendingCount) sets aren't logged yet. Save keeps them; discard deletes everything.")
                    : String(localized: "Save keeps this workout. Discard deletes everything you logged.")),
-            actions: [
-                .init(String(localized: "Save workout"), role: .primary) { model.endStrengthSession(save: true) },
-                .init(String(localized: "Keep training"), role: .secondary),
-                .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
-            ]
+            // r20 (auditoría UX #2): con 0 series «Guardar» descartaba en silencio (el modelo exige
+            // doneCount > 0) — el botón hacía lo contrario de lo que decía. Sin series: quedarse es
+            // la primaria y descartar la destructiva; guardar solo existe cuando hay qué guardar.
+            actions: session.doneCount == 0
+                ? [
+                    .init(String(localized: "Keep training"), role: .primary),
+                    .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
+                ]
+                : [
+                    .init(String(localized: "Save workout"), role: .primary) { model.endStrengthSession(save: true) },
+                    .init(String(localized: "Keep training"), role: .secondary),
+                    .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
+                ]
         )
         .instrumentoConfirm(
             isPresented: $confirmDiscard,
@@ -1348,6 +1367,7 @@ struct LiveStrengthSheet: View {
             }
         }
         }
+        .onAppear { scrollProxy = proxy }
         .background(theme.paper)
         // UX·anim #2: one clock for the exercise jump — the row collapse shares the scroll's gentle
         // spring so both read as a single continuous gesture (before: snappy vs. gentle fighting).
@@ -1454,15 +1474,12 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Movement-family tint for ONE exercise's rail dot (push=ember · pull=teal · legs=indigo) — the
-    /// same mapping History (`muscleTint`) and Library use. Third screen using it: candidate to promote
-    /// into StrandDesign at close (kept local during the live-canvas pass).
+    /// Movement-family tint for ONE exercise's rail dot — r20: PROMOVIDO a StrandDesign
+    /// (`InstrumentoTheme.movementFamilyTint`), como el código prometía; History/Biblioteca
+    /// migran su copia local en un follow-up.
     private func categoryTint(_ run: StrengthSessionModel.ExerciseRun) -> Color {
         guard let ex = ExerciseCatalog.byID(run.exerciseId) else { return theme.dataStrain }
-        let m = ex.primaryMuscles.joined(separator: " ").lowercased()
-        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return theme.dataHrv }
-        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return theme.dataSleep }
-        return theme.dataStrain
+        return theme.movementFamilyTint(primaryMuscles: ex.primaryMuscles)
     }
 
     /// The «A1»/«A2» badge text for the run at `ei`: its superset letter + (position in the span + 1).
@@ -1516,12 +1533,8 @@ struct LiveStrengthSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        // FER-933: long-press any rail row to enter modo mover (`simultaneousGesture`, not
-        // `.onLongPressGesture`, so the row's own tap-to-reopen keeps working — same pattern as
-        // RoutineEditorScreen's reorder entry).
-        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-            withAnimation(.snappy) { reorderMode = true }
-        })
+        // r20 (owner, UX #4): el long-press de mover se RETIRA — chocaba con el long-press de
+        // «Quitar serie» (gestos idénticos, semánticas distintas). Mover entra SOLO por «≡».
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(supersetAccessibilityLabel(ei: ei, base: "\(run.name), done, \(doneDetailText(run))")))
         .accessibilityHint(Text("Double tap to reopen and correct a set"))
@@ -1555,10 +1568,7 @@ struct LiveStrengthSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        // FER-933: same long-press entry into modo mover as `doneRow`.
-        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-            withAnimation(.snappy) { reorderMode = true }
-        })
+        // r20 (owner, UX #4): sin long-press de mover — entra solo por «≡» (ver doneRow).
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(supersetAccessibilityLabel(ei: ei, base: "\(run.name), coming up, \(prescriptionText(run))")))
         .accessibilityHint(Text("Double tap to move focus here"))
@@ -1665,7 +1675,7 @@ struct LiveStrengthSheet: View {
         // eraser in `exerciseHeader`.
         .background(alignment: .topLeading) {
             if showRail {
-                Rectangle().fill(railTint.opacity(0.35))  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                Rectangle().fill(railTint.opacity(StrandOpacity.strokeSoft))
                     .frame(width: 2)
                     .offset(x: -20)
                     .allowsHitTesting(false)
@@ -1830,7 +1840,8 @@ struct LiveStrengthSheet: View {
                 session.insertWarmup(exercise: target.ei, sets: sets)
                 platesTarget = nil
             },
-            onClose: { platesTarget = nil }
+            onClose: { platesTarget = nil },
+            startAtWarmup: target.startAtWarmup
         )
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
@@ -1838,9 +1849,10 @@ struct LiveStrengthSheet: View {
     }
 
     /// Open the plate calculator (FER-720 · 3a) for a weight cell, seeded with that set's current load.
-    private func openPlates(ei: Int, si: Int) {
+    private func openPlates(ei: Int, si: Int, startAtWarmup: Bool = false) {
         guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
-        platesTarget = PlatesTarget(ei: ei, weightKg: session.runs[ei].sets[si].weightKg)
+        platesTarget = PlatesTarget(ei: ei, weightKg: session.runs[ei].sets[si].weightKg,
+                                    startAtWarmup: startAtWarmup)
     }
 
     /// r15 (owner): la calculadora de discos solo aplica a ejercicios de BARRA — «por lado» no
@@ -1975,6 +1987,9 @@ struct LiveStrengthSheet: View {
                         .foregroundStyle(session.paused ? theme.inkDim : theme.ink)
                         .accessibilityLabel(Text(session.paused ? "Paused at \(Self.clock(elapsed))"
                                                                  : "Elapsed \(Self.clock(elapsed))"))
+                        // r20 (auditoría UX #3): el trait le dice a VoiceOver que NO re-anuncie
+                        // cada tick — el usuario lo consulta, el reloj no lo interrumpe.
+                        .accessibilityAddTraits(.updatesFrequently)
                 }
                 // BPM fused to the clock — the app's one always-on pulse. Hidden (not dashed) with no strap.
                 PulseReader(model.live.pulse) { p in
@@ -1987,8 +2002,8 @@ struct LiveStrengthSheet: View {
                         .accessibilityLabel(Text("Heart rate \(bpm)"))
                     }
                 }
-                Text("· \(session.doneCount)/\(sessionSetsTotal)")
-                    .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                // r20 (auditoría UX #6a): el progreso estaba por TRIPLICADO (texto + filete + barra
+                // inferior) — fuera el textual; el filete de abajo y los contadores ya lo cuentan.
                 Spacer(minLength: 8)
                 headActionButtons
             }
@@ -2043,11 +2058,13 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text("Pause session"))
             // Ending the session is the one destructive-ish act in the header — it carries the
             // reserved alert hue (label + border, never a fill: primary-by-border, DNA §).
+            // r20 (auditoría UX #6d + owner): Terminar-y-guardar es el acto constructivo esperado —
+            // vestirlo de alarma desensibilizaba el rojo del Descartar real. Tinta, voz Grotesk.
             Button { finishTapped() } label: {
-                Text("Finish").font(StrandFont.subhead).foregroundStyle(theme.critical)
+                Text("Finish").font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
                     .padding(.horizontal, 12).padding(.vertical, 6)
                     .background(theme.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+                    .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Finish workout"))
@@ -2066,37 +2083,38 @@ struct LiveStrengthSheet: View {
     // MARK: _StatsBar (FER-929 — fixed bottom bar; the keypad takes this slot instead while a cell is active)
 
     private var statsBar: some View {
-        // r18 (owner): la barra deja de apilarse al centro como pie de página web — es UNA línea de
-        // recibo: los contadores (el dato) a la izquierda, y «Modo foco» como chip troquel a la
-        // derecha, hermano de los chips de Descanso/Nota. El icono deja el «viewfinder» genérico:
-        // la flecha de expandir a pantalla completa dice lo que hace (y hermana con el «×» del foco).
-        HStack(spacing: 12) {
-            // kg · series · (kcal only with a streaming strap, never dashes) — same sources as
-            // before, with the handoff's typographic contrast: Grotesk-bold values, light labels.
-            counterLineStyled
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(Text(counterLine))
-            Spacer(minLength: 12)
+        // r20 (owner): de regreso a la pila original — «Modo foco» arriba, contadores centrados
+        // abajo (la línea-de-recibo de r18 no gustó). Lo que sí se queda de r18/r19: el icono
+        // correcto (expandir a pantalla completa, validado vs HIG) — ahora en un mini-troquel de
+        // papel que le da cuerpo sin volverlo cápsula gritona — y el target de 44pt.
+        VStack(spacing: 14) {
             if !isEmptyAdHoc && session.summary == nil {
                 Button { focusMode = true } label: {
-                    Label("Focus mode", systemImage: "arrow.up.left.and.arrow.down.right")
-                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.ink)
-                        .padding(.horizontal, 12).padding(.vertical, 7)
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                        // r19 (auditoría UI): target de 44pt — el chip visual no crece.
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(StrandFont.glyph(.chevron, weight: .semibold))
+                            .foregroundStyle(theme.ink)
+                            .frame(width: 26, height: 26)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        Text("Focus mode").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Focus mode"))
                 .accessibilityHint(Text("Opens a full-screen set logger"))
             }
+            // kg · series · (kcal only with a streaming strap, never dashes) — same sources as before,
+            // now with the handoff's typographic contrast: Grotesk-bold values, light labels.
+            counterLineStyled
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(counterLine))
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 10)
+        .padding(.top, 8)
         .padding(.bottom, 10)
         .background(theme.paper)
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -2172,6 +2190,9 @@ struct LiveStrengthSheet: View {
                     }
                     Spacer(minLength: 0)
                 }
+                // r20 (owner): el foco también narra la superserie — la misma leyenda del acordeón
+                // («sin descanso entre A1 y A2»), para que el brinco A1→A2 no sorprenda.
+                supersetNoRestCaption(session.currentIndex)
 
                 switch run.type {
                 case .weightReps:
@@ -2197,7 +2218,8 @@ struct LiveStrengthSheet: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } else {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("All done").font(StrandFont.title1).foregroundStyle(theme.ink)
+                // r20 (owner): voz Grotesk también aquí — mismo cierre que completePhase.
+                Text("All done").font(InstrumentoType.grotesk(24, weight: .semibold)).foregroundStyle(theme.ink)
                 Text("No pending set. Close focus mode to finish from the list.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2596,7 +2618,9 @@ struct LiveStrengthSheet: View {
             if focusRestWantsHR, let started = session.restStartedAt {
                 PulseReader(model.live.pulse) { p in
                     TimelineView(.periodic(from: started, by: 1)) { ctx in
-                        let elapsed = max(0, Int(ctx.date.timeIntervalSince(started)))
+                        // r20 (auditoría UX #1): mismo congelamiento que la tarjeta inline.
+                        let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
+                        let elapsed = max(0, Int(tick.timeIntervalSince(started)))
                         let v = RestReadinessRule.evaluate(
                             currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
                             elapsedS: elapsed, targetHR: session.currentRestTarget)
@@ -2604,13 +2628,15 @@ struct LiveStrengthSheet: View {
                         if !noSignal {
                             focusRestHRHero(elapsed: elapsed, readiness: v)
                         } else {
-                            focusRestTimeHero(end: session.restEndsAt, now: ctx.date, noStrapFallback: noSignal)
+                            focusRestTimeHero(end: session.restEndsAt, now: tick, noStrapFallback: noSignal)
                         }
                     }
                 }
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    focusRestTimeHero(end: end, now: ctx.date, noStrapFallback: false)
+                    focusRestTimeHero(end: end,
+                                      now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date,
+                                      noStrapFallback: false)
                 }
             }
 
@@ -2743,7 +2769,9 @@ struct LiveStrengthSheet: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(remaining == 0 ? "Rest done" : "Resting, \(remaining) seconds left"))
+        // r20 (auditoría UX #3): hitos, no ticks.
+        .accessibilityLabel(Text(restA11yPhrase(remaining: remaining)))
+        .accessibilityAddTraits(.updatesFrequently)
     }
 
     /// Focus-mode FC track (FER-934): crema-on-green variant of `restHRTrack`, kept separate so the
@@ -2850,7 +2878,8 @@ struct LiveStrengthSheet: View {
     }
 
     private func counterValue(_ s: String) -> some View {
-        Text(s).font(InstrumentoType.groteskNumber(15)).monospacedDigit().foregroundStyle(theme.ink)
+        // r20 (auditoría UX #6f): también los contadores escalan con Dynamic Type intermedio.
+        Text(s).font(InstrumentoType.groteskNumber(15, relativeTo: .subheadline)).monospacedDigit().foregroundStyle(theme.ink)
     }
     private func counterLabel(_ s: String) -> some View {
         Text(s).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
@@ -2975,11 +3004,8 @@ struct LiveStrengthSheet: View {
                 exerciseMenuButton(ei: ei, run: run)
                 reorderHandle(ei: ei, run: run)
             }
-            // FER-933: long-press the active exercise's header also enters modo mover — same entry as the
-            // compressed rail rows (`doneRow`/`comingRow`).
-            .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-                withAnimation(.snappy) { reorderMode = true }
-            })
+            // r20 (owner, UX #4): el long-press de mover se retira también del header — un solo
+            // gesto por tarjeta (long-press = quitar serie); mover entra por «≡» o por el menú.
             // FER-E · 2b: the earned raise, named where you train. «↑ hoy 102,5 · por qué» toggles the
             // arithmetic card; green because the raise IS the datum.
             if let raise = run.proposedRaise {
@@ -3051,9 +3077,13 @@ struct LiveStrengthSheet: View {
                 withAnimation(.snappy) { reorderExercise(ei, by: 1) }
             })
         }
-        rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") {
-            openPlates(ei: ei, si: min(run.currentSet, max(0, run.sets.count - 1)))
-        })
+        // r20 (auditoría UX #6c): la rampa de calentamiento es matemática de BARRA (PlateMath) —
+        // en dumbbell/máquina la entrada mentía; y cuando aplica, la hoja abre YA en su sección.
+        if usesBarbell(ei) {
+            rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") {
+                openPlates(ei: ei, si: min(run.currentSet, max(0, run.sets.count - 1)), startAtWarmup: true)
+            })
+        }
         if ei < session.runs.count - 1 {
             let paired = run.supersetGroup != nil && run.supersetGroup == session.runs[ei + 1].supersetGroup
             rows.append(.init(String(localized: paired ? "Undo superset" : "Superset with next"),
@@ -3116,6 +3146,10 @@ struct LiveStrengthSheet: View {
                         if steps != 0 { withAnimation(.snappy) { reorderExercise(ei, by: steps) } }
                     }
             )
+            // r20 (owner, UX #4): TOCAR «≡» entra a modo mover — es LA entrada al modo (el
+            // long-press ambiguo de header/renglones se retiró; el menú conserva Subir/Bajar).
+            .onTapGesture { withAnimation(.snappy) { reorderMode = true } }
+            .accessibilityAddTraits(.isButton)
             .accessibilityLabel(Text("Reorder \(run.name)"))
             .accessibilityHint(Text("Drag to change the order"))
             .accessibilityAction(named: Text("Move earlier")) {
@@ -3346,7 +3380,9 @@ struct LiveStrengthSheet: View {
 
     /// Mode-aware chip text: the fixed duration, or «by HR» when the rest is heart-rate driven.
     private func restChipLabel(_ run: StrengthSessionModel.ExerciseRun) -> String {
-        run.restMode == .heartRate ? String(localized: "Rest · by HR") : restChipText(run.restSeconds)
+        // r20 (sugerencia propia aprobada): el reloj del chip ya dice «descanso» — la palabra
+        // sobraba; queda el puro valor («90 s» / «2 min» / «por FC»), el efectivo del set actual.
+        shortRest(run.effectiveRest(forSet: run.currentSet))
     }
 
     /// The «✎ Nota» chip (FER-932), next to the rest chip on the active exercise's header. Opens
@@ -3658,12 +3694,16 @@ struct LiveStrengthSheet: View {
                 // alone would cap it at 1 s), and the haptic trigger keeps its per-beat evaluation (FER-755).
                 PulseReader(model.live.pulse) { p in
                     TimelineView(.periodic(from: started, by: 1)) { ctx in
-                        let elapsed = max(0, Int(ctx.date.timeIntervalSince(started)))
+                        // r20 (auditoría UX #1): en pausa el reloj visible se CONGELA al instante de
+                        // pausedAt — el modelo ya pausaba, pero la tarjeta seguía drenando a 0:00 y
+                        // al reanudar el conteo rebotaba. El instrumento no miente en pausa.
+                        let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
+                        let elapsed = max(0, Int(tick.timeIntervalSince(started)))
                         let v = RestReadinessRule.evaluate(
                             currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
                             elapsedS: elapsed, targetHR: session.currentRestTarget)
                         if v.state == .noSignal {
-                            restCardTimeBody(end: session.restEndsAt, now: ctx.date, noStrapFallback: true)
+                            restCardTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
                         } else {
                             restCardHRBody(elapsed: elapsed, readiness: v)
                         }
@@ -3672,7 +3712,9 @@ struct LiveStrengthSheet: View {
                 }
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
-                    restCardTimeBody(end: end, now: ctx.date, noStrapFallback: false)
+                    restCardTimeBody(end: end,
+                                     now: session.paused ? (session.pausedAt ?? ctx.date) : ctx.date,
+                                     noStrapFallback: false)
                 }
             }
             restCardPills
@@ -3745,7 +3787,9 @@ struct LiveStrengthSheet: View {
         let remaining = cappedEnd.map { max(0, Int($0.timeIntervalSince(now).rounded(.up))) } ?? 0
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(noStrapFallback ? "Resting · by time" : "Resting")
+                // r20 (auditoría UX #1): en pausa el overline lo DICE — el reloj congelado sin
+                // etiqueta parecería colgado.
+                Text(session.paused ? "Paused" : (noStrapFallback ? "Resting · by time" : "Resting"))
                     .instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
             }
@@ -3760,6 +3804,20 @@ struct LiveStrengthSheet: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        // r20 (auditoría UX #3): VoiceOver oye hitos, no cada tick — label cuantizado + trait.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(session.paused ? String(localized: "Paused")
+                                                : restA11yPhrase(remaining: remaining)))
+        .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    /// r20 (auditoría UX #3): el restante del descanso para VoiceOver, en cubetas (60/30/15 s) —
+    /// el cursor encima del reloj deja de parlotear cada segundo.
+    private func restA11yPhrase(remaining: Int) -> String {
+        guard remaining > 0 else { return String(localized: "Rest done") }
+        if remaining <= 10 { return String(localized: "Resting, almost done") }
+        let bucket = remaining <= 60 ? ((remaining + 14) / 15) * 15 : ((remaining + 29) / 30) * 30
+        return String(localized: "Resting, \(bucket) seconds left")
     }
 
     private var restCardPills: some View {
@@ -3876,14 +3934,15 @@ struct LiveStrengthSheet: View {
         return Button { withAnimation(.snappy(duration: 0.22)) { activeCell = ref } } label: {
             HStack(spacing: 1) {
                 Text(shown.isEmpty ? " " : shown)
-                    .font(InstrumentoType.groteskNumber(16, weight: .medium)).monospacedDigit()
+                    // r20 (auditoría UX #6f): el numeral escala con Dynamic Type intermedio.
+                    .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
                     .foregroundStyle(done ? theme.inkSecondary : theme.ink)
                 if active {
                     Rectangle().fill(theme.ink).frame(width: 2, height: 18)   // caret
                         .opacity(0.9) // token-exempt: opacidad de caret >0.70
                 }
             }
-            .frame(width: width ?? (reflow ? 64 : cellWidth(type)), height: 44)
+            .frame(width: (width ?? (reflow ? 64 : cellWidth(type))) * min(cellDynamicScale, 1.3), height: 44)
             .contentShape(Rectangle())
             .overlay(alignment: .bottom) {
                 Rectangle().fill(active ? theme.ink : theme.hairlineStrong)
@@ -4043,7 +4102,12 @@ struct LiveStrengthSheet: View {
         Button {
             // Canvas pass 2026-07-15: a contained, gentle open — ONE row's worth of space, not a leap
             // (owner: «que se abra solamente con un nuevo renglón»).
-            withAnimation(StrandMotion.gentle) { session.addSet(exercise: ei) }
+            withAnimation(StrandMotion.gentle) {
+                session.addSet(exercise: ei)
+                // r20 (sugerencia propia aprobada): la fila nueva no nace tapada por la barra —
+                // el bloque se asoma completo (su fondo incluye al propio botón).
+                scrollProxy?.scrollTo("session-exercise-\(ei)", anchor: .bottom)
+            }
             copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
         } label: {
             // Canvas pass 2026-07-15: the handoff's ember «+ Serie» pill, living INSIDE the card as its
@@ -4452,8 +4516,9 @@ struct LiveStrengthSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             Image(systemName: "checkmark.seal.fill").font(StrandFont.glyph(.empty))
                 .foregroundStyle(theme.dataRecovery).accessibilityHidden(true)
+            // r20 (owner): el cierre habla en la voz del recibo — Grotesk, no title del sistema.
             Text(session.doneCount > 0 ? "All done" : "Nothing left")
-                .font(StrandFont.title1).foregroundStyle(theme.ink)
+                .font(InstrumentoType.grotesk(24, weight: .semibold)).foregroundStyle(theme.ink)
             Text(session.doneCount > 0
                  ? "You logged \(session.doneCount) sets. Finish to save this workout."
                  : "Every exercise was skipped. Finish to close, or resume from the hub.")
@@ -5132,8 +5197,10 @@ struct RPESheet: View {
     /// Descriptors (FER-930 spec §3, es-MX in the xcstrings catalog), no prescriptive coaching.
     private static func descriptor(_ v: Double) -> LocalizedStringKey {
         switch v {
-        case 6:   return "Moderate effort"
-        case 7:   return "Comfortable"
+        // r20 (auditoría UX #6b): escala monótona — el 7 decía «Cómodo» y sonaba más fácil que el
+        // 6 «Esfuerzo moderado»; intercambiados para que el esfuerzo solo crezca.
+        case 6:   return "Comfortable"
+        case 7:   return "Moderate effort"
         case 8:   return "Hard effort"
         case 9:   return "Very hard"
         case 9.5: return "Near failure"

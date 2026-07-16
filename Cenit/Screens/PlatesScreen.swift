@@ -21,6 +21,9 @@ struct PlatesScreen: View {
     /// Insert the warm-up ramp into the session; the sheet dismisses after.
     let onInsertWarmup: ([(weightKg: Double, reps: Int)]) -> Void
     let onClose: () -> Void
+    /// r20 (auditoría UX #6c): «Añadir calentamiento» ancla la hoja directo en su sección — quien
+    /// pidió calentar no debería aterrizar en el héroe de discos.
+    var startAtWarmup = false
 
     @State private var editingInventory = false
 
@@ -32,19 +35,23 @@ struct PlatesScreen: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                header
-                loadedTotal
-                barDiagram
-                inventorySection
-                Rectangle().fill(theme.hairline).frame(height: 1)
-                warmupSection
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                    loadedTotal
+                    barDiagram
+                    inventorySection
+                    Rectangle().fill(theme.hairline).frame(height: 1)
+                    warmupSection
+                        .id("warmup")
+                }
+                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.top, 18)
+                .padding(.bottom, CenitMetrics.screenPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 18)
-            .padding(.bottom, CenitMetrics.screenPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .onAppear { if startAtWarmup { proxy.scrollTo("warmup", anchor: .top) } }
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)

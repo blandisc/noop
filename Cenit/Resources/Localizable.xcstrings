@@ -1552,7 +1552,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@, hecha."
+            "value": "%@: listo."
           }
         }
       }

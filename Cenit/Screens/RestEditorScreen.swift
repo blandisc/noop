@@ -178,8 +178,10 @@ struct RestEditorScreen: View {
             Text(text).font(StrandFont.caption).foregroundStyle(sel ? theme.paper : theme.inkSecondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .padding(.horizontal, 11).padding(.vertical, 7)
+                // r20 (auditoría UI, O2): una sola gramática de preset en toda la hoja — rectángulo
+                // continuo + thumb de TINTA (el fill dataHrv era el único preset con hue).
                 .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .fill(sel ? theme.dataHrv : Color.clear))
+                    .fill(sel ? theme.ink : Color.clear))
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
         }
@@ -209,8 +211,10 @@ struct RestEditorScreen: View {
         return Button { reserve = frac } label: {
             Text(label).font(StrandFont.caption).foregroundStyle(sel ? theme.paper : theme.inkSecondary)
                 .padding(.horizontal, 11).padding(.vertical, 7)
-                .background(Capsule().fill(sel ? theme.ink : Color.clear))
-                .overlay(Capsule().strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .fill(sel ? theme.ink : Color.clear))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -243,8 +247,10 @@ struct RestEditorScreen: View {
         return Button { seconds = s } label: {
             Text(label).font(StrandFont.caption).monospacedDigit().foregroundStyle(sel ? theme.paper : theme.inkSecondary)
                 .padding(.horizontal, 11).padding(.vertical, 7)
-                .background(Capsule().fill(sel ? theme.ink : Color.clear))
-                .overlay(Capsule().strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .fill(sel ? theme.ink : Color.clear))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    .strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }

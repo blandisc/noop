@@ -418,6 +418,12 @@ no migradas conservan la voz de §8.3 hasta que les toque.
   del pull-to-refresh (FER-709). En **F3 (FER-711)** el `DiurnalDial` grande se **retiró del
   paquete**: su geometría compartida vive ahora en `DialGeometry.swift` (`SleepWindow` +
   `DialGeometry`, lo único que `DialSeal` necesita); el view y sus tests se borraron.
+- **Excepciones aprobadas de la sesión de fuerza (canvas 2026-07, dueño):** (a) el pill
+  **«+ Serie»** lleva fill `dataStrain` — única CTA con hue de dato como fondo; vive DENTRO del
+  recibo y ancla la familia ember de la carga (handoff Entrenar), no se replica en otros CTAs;
+  (b) los **chips troquel** de Descanso/Nota llevan su hue SOLO en el icono (reloj ember, lápiz
+  teal — propuesta B aprobada): el único color del chip es ese glifo; el valor va en tinta.
+  Ambas son excepciones nombradas a la regla 2 («color solo en el dato»), como `keyCap`.
 
 #### 8.7.1 Estados de «Hoy» + banners (FER-711)
 
