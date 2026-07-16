@@ -538,6 +538,21 @@ final class StrengthSessionModel: ObservableObject {
         runs.insert(run, at: min(currentIndex + 1, runs.count))
     }
 
+    /// Pair this exercise with the NEXT one as a superset (canvas pass 2026-07-15, menú «Superserie
+    /// con el siguiente») — or unpair them if they already share a group. Runtime-only, same contract
+    /// as the routine-seeded grouping (FER-931).
+    func toggleSupersetWithNext(_ ei: Int) {
+        guard runs.indices.contains(ei), runs.indices.contains(ei + 1) else { return }
+        if let g = runs[ei].supersetGroup, runs[ei + 1].supersetGroup == g {
+            runs[ei].supersetGroup = nil
+            runs[ei + 1].supersetGroup = nil
+        } else {
+            let g = (runs.compactMap(\.supersetGroup).max() ?? 0) + 1
+            runs[ei].supersetGroup = g
+            runs[ei + 1].supersetGroup = g
+        }
+    }
+
     /// Skip the current (pending) set: drop it from the plan. A done set is left untouched.
     func skipCurrentSet() {
         guard runs.indices.contains(currentIndex) else { return }
@@ -980,6 +995,12 @@ struct LiveStrengthSheet: View {
     /// row shows the handoff's «SOLTAR AQUÍ · POSICIÓN N» drop zone. Entered by long-press on any rail row
     /// or the menu's «Reordenar» item; exits via «Listo». A view-layer toggle only — the model is untouched.
     @State private var reorderMode = false
+    /// Canvas pass 2026-07-15 (menú «Progresión»): which exercise's progression mini-sheet is open.
+    struct ProgressionEditTarget: Identifiable { let id: Int }
+    @State private var progressionEdit: ProgressionEditTarget?
+    /// The backing routine's exercises, keyed by `RoutineExercise.id` (== `ExerciseRun.id`) — the menu's
+    /// progression subtitle and the mini-sheet read/write here; loaded once per routine.
+    @State private var routineREs: [String: RoutineExercise] = [:]
     /// The exercise index currently being dragged in modo mover, and the slot its drop would land on.
     /// nil/nil when nothing is mid-drag.
     @State private var reorderDraggingIndex: Int?
@@ -1116,22 +1137,39 @@ struct LiveStrengthSheet: View {
         // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
         // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
         .sheet(isPresented: $showLibraryPicker) {
-            VStack(alignment: .leading, spacing: 0) {
-                if !session.runs.isEmpty {
-                    Text("inserted after the current · today only")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                        .padding(.horizontal, CenitMetrics.screenPadding)
-                        .padding(.top, 12)
-                        .padding(.bottom, 4)
-                }
-                ExerciseLibraryScreen { picks in
-                    showLibraryPicker = false
-                    Task { await addExercises(picks) }
-                }
+            // Canvas pass 2026-07-15: sin leyenda (owner call) — el ejercicio se inserta después del
+            // actual y se queda PERMANENTE en la rutina (persistencia abajo en `addExercises`).
+            ExerciseLibraryScreen { picks in
+                showLibraryPicker = false
+                Task { await addExercises(picks) }
             }
-            .background(theme.paper.ignoresSafeArea())
             .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
         }
+        .onChange(of: session.phase) { _, phase in
+            if phase != .resting { restAnchorEi = nil }
+        }
+        .sheet(item: $progressionEdit) { target in
+            if session.runs.indices.contains(target.id) {
+                let run = session.runs[target.id]
+                ProgressionMiniSheet(theme: theme, exerciseName: run.name,
+                                     units: UnitFormatter.massUnit(units),
+                                     stepKg: weightStepKg,
+                                     current: routineREs[run.id],
+                                     canPersist: session.routineId != nil,
+                                     displayKg: { displayWeight($0) },
+                                     onApply: { enabled, incKg, every in
+                                         persistProgression(runId: run.id, enabled: enabled,
+                                                            incrementKg: incKg, every: every)
+                                         progressionEdit = nil
+                                     },
+                                     onClose: { progressionEdit = nil })
+                    .presentationDetents([.height(340)])
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(theme.paper)
+                    .preferredColorScheme(.light)
+            }
+        }
+        .task(id: session.routineId) { await loadRoutineREs() }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
@@ -1306,6 +1344,12 @@ struct LiveStrengthSheet: View {
                             doneRow(run, ei: ei)
                                 .plainRow()
                                 .transition(.opacity)
+                            // Owner bug #4: the rest after an exercise's LAST set stays glued under
+                            // the exercise you just finished (already collapsed to its done row) —
+                            // it does NOT travel to the next card.
+                            if session.phase == .resting, restAnchorEi == ei, session.summary == nil {
+                                restCardRow(run, standalone: true)
+                            }
                         case .upcoming:
                             comingRow(run, ei: ei)
                                 .plainRow()
@@ -1346,8 +1390,10 @@ struct LiveStrengthSheet: View {
         }
         .onChange(of: session.currentIndex) { _, newIndex in
             // Sugerencia 3: bring the newly-active card into view — a narrated move, not a teleport.
+            // Anchor .center so the rest card glued under the JUST-FINISHED exercise stays visible
+            // above the incoming card (owner bug #4).
             withAnimation(reduceMotion ? nil : StrandMotion.gentle) {
-                proxy.scrollTo("session-exercise-\(newIndex)", anchor: .top)
+                proxy.scrollTo("session-exercise-\(newIndex)", anchor: .center)
             }
         }
         }
@@ -1598,6 +1644,9 @@ struct LiveStrengthSheet: View {
                 if afterWarmup { workSetsDivider.padding(.top, 4).padding(.bottom, 6) }
                 setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
             }
+                // Owner bug #3: a freshly-added set inflated its row — the slice can never stretch
+                // beyond its content's natural height.
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 12)
                 .activeCardRow(top: false, bottom: false, theme: theme, railTint: railTint,
                                railVisible: showRail)
@@ -1608,7 +1657,7 @@ struct LiveStrengthSheet: View {
                 }
         }
         // Rest after the exercise's LAST set (no pending set to anchor to) — before the card closes.
-        if session.phase == .resting, ei == session.currentIndex, session.summary == nil,
+        if session.phase == .resting, ei == (restAnchorEi ?? session.currentIndex), session.summary == nil,
            restSlotIndex(run, ei: ei) == nil {
             restCardRow(run)
         }
@@ -1619,10 +1668,23 @@ struct LiveStrengthSheet: View {
                            railVisible: showRail)
     }
 
+    /// The exercise the current rest belongs to (canvas pass 2026-07-15, owner bug #4): registering the
+    /// LAST set advances `currentIndex` to the next exercise, but the rest card must stay GLUED under
+    /// the exercise you just finished — so every register path stamps the anchor before advancing.
+    @State private var restAnchorEi: Int?
+
+    /// Every «✓ registrar» in the view funnels here: stamp the rest's home exercise, THEN let the model
+    /// advance. The anchor clears when the rest ends (`onChange` of `session.phase`).
+    private func registerActiveSet() {
+        restAnchorEi = session.currentIndex
+        session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+    }
+
     /// The set index the inline rest card slots BEFORE (the next pending set of the resting exercise) —
     /// nil when the rest follows the exercise's last set (the card then lands after the table).
     private func restSlotIndex(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> Int? {
-        guard session.phase == .resting, ei == session.currentIndex, session.summary == nil else { return nil }
+        guard session.phase == .resting, ei == (restAnchorEi ?? session.currentIndex),
+              session.summary == nil else { return nil }
         let si = run.currentSet
         guard run.sets.indices.contains(si), !run.sets[si].done else { return nil }
         return si
@@ -1631,7 +1693,7 @@ struct LiveStrengthSheet: View {
     /// The inline rest card as a slice of the active card's flow — keeps its own float/shadow (the
     /// «hover» the owner asked to preserve) and the auto-dismiss task for fixed rests; entering and
     /// leaving animates as an opening/closing of space between the sets.
-    private func restCardRow(_ run: StrengthSessionModel.ExerciseRun) -> some View {
+    private func restCardRow(_ run: StrengthSessionModel.ExerciseRun, standalone: Bool = false) -> some View {
         restInlineCard
             // A fixed rest that runs out dismisses itself — focus lands on the next active
             // set with no tap in between (HR rests keep the card up until the buzz/skip).
@@ -1643,7 +1705,8 @@ struct LiveStrengthSheet: View {
                 withAnimation(StrandMotion.gentle) { session.skipRest() }
             }
             .padding(.horizontal, 8)
-            .activeCardRow(top: false, bottom: false, theme: theme, railTint: railTint,
+            .padding(.vertical, standalone ? 6 : 0)
+            .activeCardRow(top: standalone, bottom: standalone, theme: theme, railTint: railTint,
                            railVisible: showRail)
             .transition(.opacity.combined(with: .move(edge: .top)))
     }
@@ -1881,7 +1944,7 @@ struct LiveStrengthSheet: View {
     // MARK: _StatsBar (FER-929 — fixed bottom bar; the keypad takes this slot instead while a cell is active)
 
     private var statsBar: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 14) {   // canvas 2026-07-15: más aire entre «Modo foco» y los contadores
             // Canvas pass 2026-07-15: the handoff's «◐ Modo foco» — a quiet glyph+text, not a shouting
             // capsule; the bar's job is the counters, the entry just waits there.
             if !isEmptyAdHoc && session.summary == nil {
@@ -2088,7 +2151,7 @@ struct LiveStrengthSheet: View {
     private var focusRegisterButton: some View {
         Button {
             withAnimation(StrandMotion.gentle) {
-                session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+                registerActiveSet()
             }
         } label: {
             // Canvas pass 2026-07-15: the handoff's big ink capsule.
@@ -2277,7 +2340,7 @@ struct LiveStrengthSheet: View {
         Button {
             withAnimation(StrandMotion.gentle) {
                 if running {
-                    session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+                    registerActiveSet()
                 } else {
                     session.startSetTimer()
                 }
@@ -2353,7 +2416,7 @@ struct LiveStrengthSheet: View {
         let captured = dist > 0 || (session.currentSet?.timeS ?? 0) > 0 || running
         Button {
             withAnimation(StrandMotion.gentle) {
-                session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+                registerActiveSet()
             }
         } label: {
             Label("Register set", systemImage: "checkmark")
@@ -2798,28 +2861,57 @@ struct LiveStrengthSheet: View {
         )
     }
 
+    /// Canvas pass 2026-07-15: the handoff's `_ExMenu` set, in its order — Subir · Bajar · Añadir
+    /// calentamiento · Superserie con el siguiente · Progresión (estado) · Cambiar · Quitar. «Ver
+    /// ejercicio» dropped (tapping the name already opens it); «Saltar»/«Reordenar» dropped per the
+    /// owner's explicit list (modo mover keeps its long-press entry).
     private func exerciseMenuItems(ei: Int, run: StrengthSessionModel.ExerciseRun) -> [PaperMenuItem] {
-        var rows: [PaperMenuItem] = [
-            .init(String(localized: "View exercise"), systemImage: "info.circle") { openDetail(run) },
-            .init(String(localized: "Change exercise"), systemImage: "arrow.triangle.2.circlepath") {
-                changeExercise = ChangeTarget(ei: ei, run: run)
-            },
-            .init(String(localized: "Skip exercise"), systemImage: "forward.end") {
-                withAnimation(.snappy) { session.skipExercise(ei) }
-            },
-            // FER-933: «Reordenar» now enters modo mover — the handoff's compressed-rows + «SOLTAR AQUÍ»
-            // drag surface — instead of only hinting the header's «≡» handle (FER-936's original wiring).
-            .init(String(localized: "Reorder"), systemImage: "line.3.horizontal") {
-                withAnimation(.snappy) { reorderMode = true }
-            }
-        ]
-        // Never leave the session empty — the last exercise can only be skipped, not removed.
+        var rows: [PaperMenuItem] = []
+        if ei > 0 {
+            rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") {
+                withAnimation(.snappy) { reorderExercise(ei, by: -1) }
+            })
+        }
+        if ei < session.runs.count - 1 {
+            rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") {
+                withAnimation(.snappy) { reorderExercise(ei, by: 1) }
+            })
+        }
+        rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") {
+            openPlates(ei: ei, si: min(run.currentSet, max(0, run.sets.count - 1)))
+        })
+        if ei < session.runs.count - 1 {
+            let paired = run.supersetGroup != nil && run.supersetGroup == session.runs[ei + 1].supersetGroup
+            rows.append(.init(String(localized: paired ? "Undo superset" : "Superset with next"),
+                              systemImage: "link") {
+                withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
+            })
+        }
+        rows.append(.init(String(localized: "Progression"),
+                          subtitle: progressionSubtitle(run),
+                          systemImage: "chart.line.uptrend.xyaxis") {
+            progressionEdit = ProgressionEditTarget(id: ei)
+        })
+        rows.append(.init(String(localized: "Change exercise"), systemImage: "arrow.triangle.2.circlepath") {
+            changeExercise = ChangeTarget(ei: ei, run: run)
+        })
+        // Never leave the session empty — the last exercise can't be removed.
         if session.runs.count > 1 {
             rows.append(.init(String(localized: "Remove from session"), systemImage: "trash", isDestructive: true) {
                 withAnimation(.snappy) { session.removeExercise(at: ei) }
             })
         }
         return rows
+    }
+
+    /// «activada · +2,5 kg cada 2 ✓» / «desactivada» — the progression state, read from the backing
+    /// routine (cached at open; the session run doesn't carry progression config).
+    private func progressionSubtitle(_ run: StrengthSessionModel.ExerciseRun) -> String {
+        guard let re = routineREs[run.id] else { return String(localized: "off") }
+        guard re.progressionEnabled else { return String(localized: "off") }
+        let inc = re.progressionIncrementKg ?? 2.5
+        return String(localized: "on") + " · +\(plateNumber(displayWeight(inc))) " +
+               UnitFormatter.massUnit(units) + " " + String(localized: "every \(re.progressionSessions)") + " ✓"
     }
 
     /// The always-on, tenue reorder affordance (Sesión v21): a «≡» handle on each exercise header. Dragging
@@ -3311,7 +3403,7 @@ struct LiveStrengthSheet: View {
     private func startStopButton(running: Bool) -> some View {
         Button {
             withAnimation(.snappy) {
-                running ? session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+                running ? registerActiveSet()
                         : session.startSetTimer()
             }
         } label: {
@@ -3740,7 +3832,7 @@ struct LiveStrengthSheet: View {
         let isActivePending = ei == session.currentIndex && si == curSet && !set.done
         return Button {
             withAnimation(.snappy) {
-                if isActivePending { activeCell = nil; session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR) }
+                if isActivePending { activeCell = nil; registerActiveSet() }
                 else { session.toggleDone(exercise: ei, set: si) }
             }
         } label: {
@@ -3947,6 +4039,58 @@ struct LiveStrengthSheet: View {
                 let last = lasts[ex.id]
                 session.insertExerciseAfterCurrent(ex, lastWeightKg: last?.0, lastReps: last?.1)
             }
+            // Canvas pass 2026-07-15 (owner call): the added exercise is PERMANENT — it also lands in
+            // the backing routine, right after the active exercise's slot.
+            if session.routineId != nil { persistInsertedExercises(picks) }
+        }
+    }
+
+    /// Persist mid-session additions into the backing routine (after the active exercise's position),
+    /// renumbering positions — fire-and-forget; the live session already has its runs.
+    private func persistInsertedExercises(_ picks: [Exercise]) {
+        guard let rid = session.routineId else { return }
+        let activeRunId = session.runs.indices.contains(session.currentIndex)
+            ? session.runs[session.currentIndex].id : nil
+        Task {
+            guard let store = await model.repo.storeHandle(),
+                  var res = try? await store.routineExercises(routineId: rid),
+                  let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
+            var insertAt = activeRunId.flatMap { id in
+                res.firstIndex(where: { $0.id == id }).map { $0 + 1 }
+            } ?? res.count
+            for ex in picks {
+                let re = RoutineExercise(routineId: rid, exerciseId: ex.id, position: insertAt,
+                                         targetSets: 1, targetReps: 8,
+                                         restMode: .fixed, restSeconds: StrengthSessionModel.adHocRestSeconds)
+                res.insert(re, at: min(insertAt, res.count))
+                insertAt += 1
+            }
+            for i in res.indices { res[i].position = i }
+            try? await store.saveRoutine(routine, exercises: res)
+            await loadRoutineREs()
+        }
+    }
+
+    /// Load the backing routine's exercises into the menu/progression cache.
+    private func loadRoutineREs() async {
+        guard let rid = session.routineId, let store = await model.repo.storeHandle() else { return }
+        let res = (try? await store.routineExercises(routineId: rid)) ?? []
+        routineREs = Dictionary(uniqueKeysWithValues: res.map { ($0.id, $0) })
+    }
+
+    /// Persist a progression edit from the mini-sheet into the backing routine.
+    private func persistProgression(runId: String, enabled: Bool, incrementKg: Double, every: Int) {
+        guard let rid = session.routineId else { return }
+        Task {
+            guard let store = await model.repo.storeHandle(),
+                  var res = try? await store.routineExercises(routineId: rid),
+                  let idx = res.firstIndex(where: { $0.id == runId }),
+                  let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
+            res[idx].progressionEnabled = enabled
+            res[idx].progressionIncrementKg = incrementKg
+            res[idx].progressionSessions = every
+            try? await store.saveRoutine(routine, exercises: res)
+            routineREs[res[idx].id] = res[idx]
         }
     }
 
@@ -3991,12 +4135,18 @@ struct LiveStrengthSheet: View {
     }
 
     private var discardFooter: some View {
+        // Canvas pass 2026-07-15: dressed as the destructive sibling of the header's «Terminar» —
+        // same capsule grammar, red by border, never a fill (DNA: primary-by-border).
         Button(role: .destructive) { confirmDiscard = true } label: {
-            Text("Discard workout").font(StrandFont.subhead).foregroundStyle(theme.critical)
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
+            Text("Discard workout").font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.critical)
+                .padding(.horizontal, 18).padding(.vertical, 9)
+                .background(theme.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+                .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .padding(.vertical, 6)
         .accessibilityLabel(Text("Discard workout"))
     }
 
@@ -4799,6 +4949,99 @@ struct RPESheet: View {
 // (`dataStrain`), toggle «Guardar en:» exercise/set, «Guardar» verde, historial «NOTAS ANTERIORES»
 // separado por hairline (sin tarjeta), omitido si está vacío. Abrir el sheet no toca `restEndsAt`.
 
+/// Canvas pass 2026-07-15 — the exercise menu's «Progresión» mini-sheet: toggle + increment + cadence,
+/// persisted to the backing routine. Paper voice; the state line is the dominant datum.
+struct ProgressionMiniSheet: View {
+    let theme: InstrumentoTheme
+    let exerciseName: String
+    let units: String
+    let stepKg: Double
+    let current: RoutineExercise?
+    let canPersist: Bool
+    let displayKg: (Double) -> Double
+    let onApply: (Bool, Double, Int) -> Void
+    let onClose: () -> Void
+
+    @State private var enabled: Bool
+    @State private var incrementKg: Double
+    @State private var every: Int
+
+    init(theme: InstrumentoTheme, exerciseName: String, units: String, stepKg: Double,
+         current: RoutineExercise?, canPersist: Bool, displayKg: @escaping (Double) -> Double,
+         onApply: @escaping (Bool, Double, Int) -> Void, onClose: @escaping () -> Void) {
+        self.theme = theme; self.exerciseName = exerciseName; self.units = units; self.stepKg = stepKg
+        self.current = current; self.canPersist = canPersist; self.displayKg = displayKg
+        self.onApply = onApply; self.onClose = onClose
+        _enabled = State(initialValue: current?.progressionEnabled ?? false)
+        _incrementKg = State(initialValue: current?.progressionIncrementKg ?? 2.5)
+        _every = State(initialValue: current?.progressionSessions ?? 2)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("PROGRESSION").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(exerciseName).font(InstrumentoType.grotesk(20, weight: .semibold))
+                        .foregroundStyle(theme.ink).lineLimit(2)
+                }
+                Spacer()
+                Button(action: onClose) {
+                    StrandIcon.close.image
+                        .font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink)
+                        .frame(width: 34, height: 34)
+                        .background(theme.surface, in: Circle())
+                        .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Close"))
+            }
+            Toggle(isOn: $enabled) {
+                Text("Raise the load automatically").font(StrandFont.subhead).foregroundStyle(theme.ink)
+            }
+            .tint(theme.dataRecovery)
+            HStack {
+                Text("Increment").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Spacer()
+                Stepper(value: $incrementKg, in: stepKg...(stepKg * 8), step: stepKg) {
+                    Text("+\(plateNumber(displayKg(incrementKg))) \(units)")
+                        .font(InstrumentoType.groteskNumber(17)).foregroundStyle(theme.ink)
+                }
+                .fixedSize()
+            }
+            .opacity(enabled ? 1 : StrandOpacity.dim)
+            HStack {
+                Text("Every").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Spacer()
+                Stepper(value: $every, in: 1...5) {
+                    Text(String(localized: "\(every) sessions"))
+                        .font(InstrumentoType.groteskNumber(17)).foregroundStyle(theme.ink)
+                }
+                .fixedSize()
+            }
+            .opacity(enabled ? 1 : StrandOpacity.dim)
+            if !canPersist {
+                Text("Ad-hoc session: progression lives on saved routines.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            Spacer(minLength: 0)
+            Button {
+                onApply(enabled, incrementKg, every)
+            } label: {
+                Text("Apply").font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .frame(maxWidth: .infinity).padding(.vertical, 13)
+                    .background(canPersist ? theme.ink : theme.inkDim, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(!canPersist)
+        }
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.top, CenitMetrics.gap)
+        .padding(.bottom, CenitMetrics.screenPadding)
+        .background(theme.paper.ignoresSafeArea())
+    }
+}
+
 struct NoteSheet: View {
     /// Where a note is saved: the whole exercise (default) or just the active set (FER-932 §4).
     enum Scope { case exercise, set }
@@ -5085,9 +5328,13 @@ private extension View {
                             .padding(.leading, CenitMetrics.screenPadding + 6)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
+                    // Seamless slices (owner: sin sombra entre calentamiento y series): the hover
+                    // shadow only paints on the card's OUTER edges — per-slice shadows banded at every
+                    // internal boundary.
                     shape.fill(theme.surface)
                         .overlay(shape.strokeBorder(theme.hairline, lineWidth: 1))
-                        .shadow(color: theme.ink.opacity(0.08), radius: 8, y: 3)  // token-exempt: decorative float-shadow alpha (rest-card kin)
+                        .shadow(color: (top || bottom) ? theme.ink.opacity(0.08) : .clear,  // token-exempt: decorative float-shadow alpha (rest-card kin)
+                                radius: 8, y: top ? 1 : 3)
                         .padding(.leading, CenitMetrics.screenPadding + 26)
                         .padding(.trailing, CenitMetrics.screenPadding)
                 }
