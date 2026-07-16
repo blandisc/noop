@@ -35,6 +35,8 @@ struct MuscleVolumeScreen: View {
     }
 
     @State private var span: Span = .d30
+    /// The method note («sets per week · the 10–20 band»), shown on demand from the ⓘ (FER-952).
+    @State private var showMethodInfo = false
     /// Work sets over the trailing year, expanded to per-muscle events (one fetch; the span slices).
     @State private var events: [MuscleFatigueMap.MuscleSetEvent] = []
     @State private var loaded = false
@@ -52,14 +54,20 @@ struct MuscleVolumeScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Volume per muscle")
-                    .font(InstrumentoType.grotesk(25, weight: .bold, relativeTo: .title2))
-                    .foregroundStyle(theme.ink)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Volume per muscle")
+                        .font(InstrumentoType.grotesk(25, weight: .bold, relativeTo: .title2))
+                        .foregroundStyle(theme.ink)
+                    // FER-952: the method note moved behind the ⓘ — it only speaks when asked.
+                    Button { showMethodInfo = true } label: {
+                        Image(systemName: "info.circle").font(StrandFont.glyph(.inline))
+                            .foregroundStyle(theme.inkTertiary)
+                            .frame(width: 32, height: 32).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("How this is measured"))
+                }
                 spanPicker
-                    .padding(.top, 12)
-                Text("Sets per week · the gray band is the 10–20 range (Schoenfeld 2017)")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 12)
                 if loaded {
                     if volumes.isEmpty {
@@ -79,6 +87,24 @@ struct MuscleVolumeScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .task { await load() }
+        // The method, on demand (FER-952): what the bars count and where the band comes from.
+        .sheet(isPresented: $showMethodInfo) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                Text("Volume per muscle").groteskSheetTitle().textCase(.uppercase)
+                    .foregroundStyle(theme.inkTertiary)
+                Text("Sets per week · the gray band is the 10–20 range (Schoenfeld 2017)")
+                    .font(StrandFont.body).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Each bar counts the WORK sets that loaded that muscle as a primary mover, averaged per week over the selected span. Warm-ups don't count.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(CenitMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .presentationDetents([.fraction(0.32)])
+            .presentationBackground(theme.surface)
+        }
     }
 
     // MARK: - Span picker (30 d / 90 d / 6 m / 1 y) — the shared Instrumento segmented control
@@ -113,9 +139,10 @@ struct MuscleVolumeScreen: View {
                     RoundedRectangle(cornerRadius: 3).fill(theme.hairline)  // token-exempt: geometría de dato
                         .frame(width: w * (hi - lo), height: 14)
                         .offset(x: w * lo)
-                    // the datum
+                    // the datum — each muscle wears its movement-family hue (handoff «Mis
+                    // entrenamientos»: bars tell apart at a glance); below-band keeps the warning.
                     RoundedRectangle(cornerRadius: 3)  // token-exempt: geometría de dato
-                        .fill(below ? theme.warning : theme.ink)
+                        .fill(below ? theme.warning : theme.movementFamilyTint(primaryMuscles: [v.muscle]))
                         .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
                 }
                 .frame(height: 14, alignment: .leading)

@@ -153,10 +153,12 @@ struct WeeklyPlanEditorView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             // Handoff: the same Grotesk hero voice as the hub (FER-939) — overline 12/2.4, title 28/−0.8.
-            Text("Your plan")
+            // FER-952 (owner): «Tu Plan» IS the section — it takes the hero title; the week rides
+            // as the overline.
+            Text("This week")
                 .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
                 .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-            Text("This week")
+            Text("Your plan")
                 .font(InstrumentoType.grotesk(28, weight: .bold)).tracking(-0.8)
                 .foregroundStyle(theme.ink)
                 .padding(.top, 2)

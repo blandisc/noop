@@ -1,6 +1,40 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "How this is measured": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How this is measured"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo se mide"
+          }
+        }
+      }
+    },
+    "Each bar counts the WORK sets that loaded that muscle as a primary mover, averaged per week over the selected span. Warm-ups don't count.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each bar counts the WORK sets that loaded that muscle as a primary mover, averaged per week over the selected span. Warm-ups don't count."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada barra cuenta las series de TRABAJO que cargaron ese músculo como principal, promediadas por semana en el rango elegido. Los calentamientos no cuentan."
+          }
+        }
+      }
+    },
     "No rest between them: you rest when the round ends.": {
       "extractionState": "manual",
       "localizations": {

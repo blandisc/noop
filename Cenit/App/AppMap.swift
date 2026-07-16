@@ -2,6 +2,7 @@
 import SwiftUI
 import WhoopStore
 import StrandTraining
+import StrandDesign
 
 /// **Canvas del mapa de estados** — todas las variantes de una pantalla, lado a lado, dentro del
 /// `#Preview` de Xcode. Cada celda construye un `AppModel`, lo siembra con el MISMO `ScreenshotFixtures`
@@ -237,10 +238,18 @@ private struct RoutineEditorMapCell: View {
         // FLUJO COMPLETO (FER-952): «Empezar» arranca la sesión de verdad
         // (`model.startStrengthSession`) y aquí se presenta la Serie activa REAL — el mismo cover que
         // RootView. Cerrar la sesión (Terminar/Descartar) regresa al editor.
-        .fullScreenCover(isPresented: Binding(
-            get: { model.strengthSession != nil },
-            set: { if !$0 { model.strengthSession = nil } }
-        )) {
+        .overlay(alignment: .bottom) {
+            // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
+            if model.strengthSession != nil && !model.strengthSheetPresented {
+                MapSessionPillHost(model: model)
+                    .padding(.bottom, CenitMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
+            if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
+        }) {
             if let session = model.strengthSession {
                 LiveStrengthSheet(session: session)
                     .environmentObject(model.repo)
@@ -339,10 +348,18 @@ private struct NewRoutineFlowMapCell: View {
         .environmentObject(model)
         .environmentObject(media)
         .environmentObject(TabRouter())
-        .fullScreenCover(isPresented: Binding(
-            get: { model.strengthSession != nil },
-            set: { if !$0 { model.strengthSession = nil } }
-        )) {
+        .overlay(alignment: .bottom) {
+            // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
+            if model.strengthSession != nil && !model.strengthSheetPresented {
+                MapSessionPillHost(model: model)
+                    .padding(.bottom, CenitMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
+            if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
+        }) {
             if let session = model.strengthSession {
                 LiveStrengthSheet(session: session)
                     .environmentObject(model.repo)
@@ -418,10 +435,18 @@ private struct EntrenarFlowsMapCell: View {
         .environmentObject(historyCoordinator)
         .environmentObject(HealthKitBridge(repo: model.repo, appleDeviceId: "map-apple", noopDeviceId: "map"))
         .environment(model.live)
-        .fullScreenCover(isPresented: Binding(
-            get: { model.strengthSession != nil },
-            set: { if !$0 { model.strengthSession = nil } }
-        )) {
+        .overlay(alignment: .bottom) {
+            // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
+            if model.strengthSession != nil && !model.strengthSheetPresented {
+                MapSessionPillHost(model: model)
+                    .padding(.bottom, CenitMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
+            if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
+        }) {
             if let session = model.strengthSession {
                 LiveStrengthSheet(session: session)
                     .environmentObject(model.repo)
@@ -467,5 +492,27 @@ private struct EntrenarFlowsMapCell: View {
 
 #Preview("Entrenar · TODOS los flujos") {
     EntrenarFlowsMapCell()
+}
+
+/// El `SessionPill` flotante del app real (FER-716), replicado para las celdas del canvas: reloj vivo
+/// por `TimelineView`, BPM en vivo si hay banda, y tocar re-abre la sesión minimizada.
+private struct MapSessionPillHost: View {
+    @ObservedObject var model: AppModel
+    var body: some View {
+        if let session = model.strengthSession {
+            let theme = InstrumentoTheme.base
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                SessionPill(
+                    routineName: session.routineName,
+                    elapsed: SessionClock.format(Int(context.date.timeIntervalSince1970) - session.startTs),
+                    bpm: model.bpm,
+                    hue: theme.dataStrain,
+                    theme: theme,
+                    accessibilityLabel: Text(verbatim: session.routineName),
+                    accessibilityHint: Text("Returns to the session")
+                ) { model.resumeStrengthSession() }
+            }
+        }
+    }
 }
 #endif
