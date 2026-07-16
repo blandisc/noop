@@ -433,9 +433,21 @@ final class StrengthSessionModel: ObservableObject {
 
         // FER-715: rest is resolved per set — the active set's own override, else the exercise's default.
         let rest = runs[currentIndex].effectiveRest(forSet: i)
+        // r9 (owner): «Sin descanso» — un descanso fijo de 0 s registra y sigue de largo.
+        if rest.mode == .fixed, rest.seconds <= 0 {
+            phase = .capturing
+            clearRest()
+            advanceToNextPending()
+            return
+        }
         computeRestTarget(rest: rest, doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
         startRest(seconds: rest.seconds, now: now)
         advanceToNextPending()
+        // r9 (owner): tras el ÚLTIMO set del ÚLTIMO ejercicio no hay nada que descansar.
+        if isComplete {
+            phase = .capturing
+            clearRest()
+        }
     }
 
     /// Record (or clear, passing nil) the perceived-effort rating for one set (FER-930). Entirely
@@ -1652,6 +1664,9 @@ struct LiveStrengthSheet: View {
                 // r7 (owner): tarjeta COMPLETA — sin divisores entre series; el ritmo separa solo.
                 .activeCardRow(top: false, bottom: false, theme: theme, railTint: railTint,
                                railVisible: showRail)
+                // r9-fix fila gorda: identidad compuesta — al entrar/salir el descanso (o al nacer la
+                // fila por «+ Serie») el List re-mide en vez de reusar la altura cacheada.
+                .id("set-\(set.id)-\(restSlotIndex(run, ei: ei) == si ? "resting" : "plain")")
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
                         withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
@@ -3322,13 +3337,14 @@ struct LiveStrengthSheet: View {
         .padding(.vertical, reflow ? 8 : 2)
         // r6: sin resaltado de fila (desbordaba el borde de la tarjeta) — la serie en curso se marca
         // solo con su numeral subrayado. El divisor vive a nivel rebanada (recibo, borde a borde).
-        .overlay {
-            // FER-938: a dashed ember outline marks a just-copied, not-yet-logged set.
-            if set.id == copiedSetId, !set.done {
-                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-            }
-        }
+        // TEMP-BISECT r9: overlay punteado FER-938 desactivado para aislar la fila gorda — si con
+        // esto y el fix de identidad la fila queda normal, se re-activa para confirmar al culpable.
+        // .overlay {
+        //     if set.id == copiedSetId, !set.done {
+        //         RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+        //             .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+        //     }
+        // }
         .transition(.opacity)
         .accessibilityElement(children: .contain)
         .accessibilityActions {
@@ -5105,7 +5121,8 @@ struct NoteSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
-            scopeToggle
+            // r9 (owner): las notas son POR EJERCICIO — el alcance por-serie se retira del UI (el
+            // modelo lo conserva por si vuelve).
             editor
             if let history, !history.isEmpty {
                 historySection(history)

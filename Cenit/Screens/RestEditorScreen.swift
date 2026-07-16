@@ -220,12 +220,14 @@ struct RestEditorScreen: View {
     private var timeSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 16) {
-                stepper("minus") { seconds = max(15, seconds - 15) }
+                stepper("minus") { seconds = max(0, seconds - 15) }
                 Text(Self.clock(seconds)).groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.ink)
                 stepper("plus") { seconds = min(600, seconds + 15) }
             }
             .frame(maxWidth: .infinity, alignment: .center)
             HStack(spacing: 8) {
+                // r9 (owner): «Sin descanso» — 0 s registra y sigue de largo, sin fase de descanso.
+                secondsPreset(String(localized: "No rest"), 0)
                 secondsPreset("1:00", 60); secondsPreset("2:00", 120); secondsPreset("3:00", 180)
             }
             .frame(maxWidth: .infinity, alignment: .center)   // presets share the stepper's axis
