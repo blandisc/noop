@@ -1294,8 +1294,8 @@ private struct CuerpoLanding: View {
                 nightlyHrv: nightlyHrv,
                 hasRecovery: hasRecovery)
 
-            let stressModel: StressModel = StressModel(days: displayDays, stored: stored,
-                                          todayKey: todayKey, appleDays: appleHealthDays)
+            let stressModel: StressModel? = StressModel(days: displayDays, stored: stored,
+                                                        todayKey: todayKey, appleDays: appleHealthDays)
 
             // Carga de entrenamiento (FER-705): today's ACWR + the replayed series, from the BAND-masked
             // dashboard — the same slice the recovery detail feeds `ReadinessEngine` (FER-632), so the card,
