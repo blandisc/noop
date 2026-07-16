@@ -468,8 +468,10 @@ struct LiveStrengthSheet: View {
                 // Canvas pass 2026-07-15: no top inset — an inset is a HOLE in the rail thread; the
                 // node's breathing lives in its own taller row so the line arrives unbroken.
                 addExerciseNode.plainRow()
-                if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
-                discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
+                // FER-952 (owner): the tail breathed 28+12+24 — tightened to the compact rhythm; the
+                // stats bar below already separates the list from the edge.
+                if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.gap) }
+                discardFooter.plainRow(top: 4, bottom: CenitMetrics.gap)
             }
         }
         }
@@ -1094,14 +1096,17 @@ struct LiveStrengthSheet: View {
             // Canvas pass 2026-07-15: sin subrayado — el peso de la tipografía basta (owner call).
             // FER-952 (A2): the overline ABOVE the title retired — the title gets the full width and
             // its meta rides BELOW as its own line (family dot · exercises · sets · done).
+            // FER-952: same title voice as the editor (Grotesk screen title) — the two screens are
+            // one instrument in two moments.
             Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
-                .font(StrandFont.title2.weight(.semibold)).foregroundStyle(theme.ink)
+                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                .foregroundStyle(theme.ink)
                 .lineLimit(1).minimumScaleFactor(0.7)
 
             if !isEmptyAdHoc {
                 HStack(spacing: 8) {
                     HStack(spacing: 5) {
-                        Circle().fill(sessionRegion.tint(theme)).frame(width: 7, height: 7)
+                        Circle().fill(sessionRegion.tint(theme)).frame(width: 8, height: 8)
                         if let word = sessionRegionWord { Text(word) }
                     }
                     Text("\(session.activeExercises.count) exercises · \(sessionSetsTotal) sets · \(session.doneCount) done")
@@ -1181,10 +1186,10 @@ struct LiveStrengthSheet: View {
     /// The region as a quiet word next to the dot («push» / «pull» / «legs» / «full body»).
     private var sessionRegionWord: LocalizedStringKey? {
         switch sessionRegion {
-        case .push: return "push"
-        case .pull: return "pull"
-        case .legs: return "legs"
-        case .fullBody: return "full body"
+        case .push: return "Push"
+        case .pull: return "Pull"
+        case .legs: return "Legs"
+        case .fullBody: return "Full body"
         case nil: return nil
         }
     }
@@ -2680,8 +2685,10 @@ struct LiveStrengthSheet: View {
             // Canvas pass 2026-07-15: «PREVIOUS · REST» truncated to an unreadable «PR…» at narrow
             // widths — the rest already lives on each row's own cell, so the column header only needs
             // to name the previous value.
-            Text("PREVIOUS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .lineLimit(1).minimumScaleFactor(0.8)
+            // FER-952: at narrow widths the flexible column starved «PREVIOUS» down to a clipped «P» —
+            // the short label survives every width (the column itself stays: tap = prefill last time).
+            Text("PREV").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .lineLimit(1).minimumScaleFactor(0.6)
                 .frame(maxWidth: .infinity, alignment: .leading)
             ForEach(titles.indices, id: \.self) { i in
                 Text(titles[i]).instrumentoOverline().foregroundStyle(theme.inkTertiary)

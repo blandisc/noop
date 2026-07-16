@@ -665,6 +665,10 @@ struct WeeklyPlanEditorView: View {
         Task {
             try? await repo.saveRoutine(r, exercises: exercises)
             await load()
+            // FER-952 glitch: the library pops itself (dismiss) the moment onAdd returns — pushing the
+            // editor DURING that pop stacked transitions and the new screen flashed in and out
+            // (FER-171 lesson). Let the pop settle, then push.
+            try? await Task.sleep(nanoseconds: 550_000_000)
             openRoutine(r.id)
         }
     }

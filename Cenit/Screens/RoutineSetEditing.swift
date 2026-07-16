@@ -117,17 +117,19 @@ struct RestChip: View {
 
     var body: some View {
         let isHR = cfg.mode == .heartRate
+        // FER-952 (owner): SAME chip grammar as the live session's troquel rest chip (r15) — the hue
+        // lives ONLY in the leading icon (♥ recovery for HR, clock ember for time), value in ink.
         return Button(action: action) {
-            HStack(spacing: 5) {
-                // r26 (Serie activa): a measured datum speaks Grotesk tabular.
-                Text(RoutineSetEditing.restChipLabel(cfg)).font(InstrumentoType.groteskNumber(12, weight: .medium))
-                    .foregroundStyle(isHR ? theme.dataRecovery : timeColor).lineLimit(1)
+            HStack(spacing: 6) {
+                (isHR ? StrandIcon.heart.image : StrandIcon.clock.image)
+                    .font(StrandFont.glyph(.chevron))
+                    .foregroundStyle(isHR ? theme.dataRecovery : theme.dataStrain)
+                Text(RoutineSetEditing.restChipLabel(cfg))
+                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
+                    .foregroundStyle(theme.ink).lineLimit(1)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                .strokeBorder(isHR ? theme.dataRecovery : theme.hairlineStrong, lineWidth: 1))
+            .troquelChip(theme)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -387,9 +387,10 @@ enum ScreenshotFixtures {
         // bandas VARIADAS (pecho en banda, pierna abajo, etc.), no todo en ámbar por falta de datos.
         await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 1, kg: 120, sets: 4,
                       extras: [("Close-Grip_Front_Lat_Pulldown", 55, 4), ("Barbell_Curl", 30, 3)],
-                      avgHr: 128)
+                      strain: 12.8, avgHr: 128, energyKcal: 342, zones: true)
         await session(legsId, exerciseId: "Barbell_Full_Squat", daysAgo: 2, kg: 100, sets: 4,
-                      extras: [("Dumbbell_Lunges", 20, 3), ("Cable_Crunch", 25, 3)], avgHr: 126)
+                      extras: [("Dumbbell_Lunges", 20, 3), ("Cable_Crunch", 25, 3)],
+                      strain: 13.1, avgHr: 126, energyKcal: 358, zones: true)
         await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 3, kg: 80, sets: 5,
                       extras: [("Incline_Dumbbell_Press", 24, 4)])
         // Un empuje extra dentro de la ventana de 30 d para que PECHO cruce la banda (≥10 series/sem

@@ -932,24 +932,34 @@ struct WorkoutSessionDetailScreen: View {
     }
 
     @ViewBuilder
+    /// The support figures as a REGULAR two-column grid (FER-952: the old auto-fit row read as
+    /// off-center) — every cell speaks the heartBlock's grammar: overline on top, Grotesk 19 under.
     private var secondaries: some View {
-        let cells = Group {
-            if volumeKg > 0 { detailStat("Volume", StrengthHistoryFormat.volume(volumeKg, system: system)) }
-            detailStat("Sets", "\(setCount)")
+        LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading),
+                            GridItem(.flexible(), alignment: .leading)],
+                  alignment: .leading, spacing: CenitMetrics.sectionGapCompact) {
+            if volumeKg > 0 {
+                supportCell("Volume", StrengthHistoryFormat.volume(volumeKg, system: system))
+            }
+            supportCell("Sets", "\(setCount)")
             // Duration is the hero when there's no strain → don't repeat it as a secondary.
             if dispStrain != nil,
                let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
-                detailStat("Duration", StrengthHistoryFormat.durationText(mins))
+                supportCell("Duration", StrengthHistoryFormat.durationText(mins))
             }
-            // Avg HR moved to its own FC MEDIA/MÁX block (handoff «Progreso C») — not repeated here.
-            // Energy only when the session actually carries it (FER-715/718): a pre-v26 session leaves
-            // `energyKcal` nil → the cell is omitted (never a fabricated 0).
-            if let k = dispEnergyKcal { detailStat("Energy", StrandFormat.groupedInt(k)) }
+            // Avg HR lives in its own FC block (handoff «Progreso C») — not repeated here. Energy only
+            // when the session carries it (FER-715/718): pre-v26 → omitted, never a fabricated 0.
+            if let k = dispEnergyKcal { supportCell("Energy", StrandFormat.groupedInt(k)) }
         }
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 18) { cells; Spacer(minLength: 0) }
-            VStack(alignment: .leading, spacing: 12) { cells }
+    }
+
+    private func supportCell(_ label: LocalizedStringKey, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(verbatim: value)
+                .font(InstrumentoType.groteskNumber(19)).foregroundStyle(theme.ink)
         }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - HR zones + heart + note + source (handoff «Progreso C», FER-952)
@@ -1063,15 +1073,6 @@ struct WorkoutSessionDetailScreen: View {
         journalRow = matches.min(by: { abs($0.startTs - sStart) < abs($1.startTs - sStart) })
     }
 
-    private func detailStat(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(value).font(StrandFont.number(19, weight: .semibold)).foregroundStyle(theme.ink)
-                .monospacedDigit()
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-        }
-        .frame(minWidth: 60, alignment: .leading)
-        .accessibilityElement(children: .combine)
-    }
 
     private func exerciseBlock(_ g: (exerciseId: String, name: String, sets: [SetEntry]), index: Int) -> some View {
         VStack(alignment: .leading, spacing: 0) {

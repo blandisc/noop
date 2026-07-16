@@ -402,16 +402,25 @@ private struct ActiveSessionPillHost: View {
         if let session = model.strengthSession {
             let theme = InstrumentoTheme.base
             TimelineView(.periodic(from: .now, by: 1)) { context in
-                let elapsed = SessionClock.format(Int(context.date.timeIntervalSince1970) - session.startTs)
+                // FER-952: pause-aware clock (the raw now−start kept ticking while paused).
+                let elapsed = SessionClock.format(session.elapsedSeconds(now: context.date))
+                let total = session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
                 SessionPill(
                     routineName: session.routineName,
                     elapsed: elapsed,
                     bpm: model.bpm,
+                    detail: total > 0 ? String(localized: "set \(min(session.doneCount + 1, total))/\(total)") : nil,
+                    paused: session.paused,
                     hue: theme.dataStrain,
                     theme: theme,
                     accessibilityLabel: pillLabel(session.routineName, elapsed, model.bpm),
-                    accessibilityHint: Text("Returns to the session")
-                ) { model.resumeStrengthSession() }
+                    accessibilityHint: Text("Returns to the session"),
+                    action: { model.resumeStrengthSession() },
+                    onPlayPause: {
+                        if session.paused { model.resumeStrengthSessionFromPause() }
+                        else { model.pauseStrengthSession() }
+                    }
+                )
             }
         }
     }

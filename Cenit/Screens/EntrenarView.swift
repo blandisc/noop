@@ -112,6 +112,8 @@ private struct EntrenarLanding: View {
     @State private var showTemplates = false
     /// FER-952: the hub's Import door-chip.
     @State private var showHubImport = false
+    /// FER-952: the hub's «New routine» — pushes the unified create flow (library → editor).
+    @State private var showCreateRoutine = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
     @State private var confirmResumeStrength = false
@@ -176,6 +178,10 @@ private struct EntrenarLanding: View {
         .sheet(isPresented: $showHubImport) {
             WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // FER-952: «＋ Nueva rutina» del hub — el flujo unificado directo (Biblioteca → editor).
+        .navigationDestination(isPresented: $showCreateRoutine) {
+            ExerciseLibraryScreen { picks in createRoutineFromHub(picks) }
         }
         // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
         // doesn't cross the `.sheet` boundary, FER-162), no nested NavigationStack (FER-171). (FER-557)
@@ -421,6 +427,27 @@ private struct EntrenarLanding: View {
     /// empty and `LiveStrengthSheet` shows its own empty-state (search + freshness suggestions) until the
     /// first exercise is added. With a live session, confirm resume instead of looking like a new start
     /// (FER-950 — AppModel's guard only re-presents the existing sheet).
+    /// FER-952 unified flow, hub edition: the library's picks become a routine right here and the
+    /// unified editor opens to name and tune it (post-pop push — FER-171 lesson).
+    private func createRoutineFromHub(_ picks: [Exercise]) {
+        guard !picks.isEmpty else { return }
+        let now = Int(Date().timeIntervalSince1970)
+        let r = Routine(name: String(localized: "New routine"), createdTs: now, updatedTs: now, sortOrder: 0)
+        let exercises = picks.enumerated().map { idx, ex -> RoutineExercise in
+            let usesReps = ex.type == .weightReps || ex.type == .bodyweight
+            let reps: Int? = usesReps ? 8 : nil
+            let sets = (0..<3).map { RoutineSet(position: $0, kind: .work, reps: reps, weightKg: nil) }
+            return RoutineExercise(routineId: r.id, exerciseId: ex.id, position: idx,
+                                   targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
+        }
+        Task {
+            try? await repo.saveRoutine(r, exercises: exercises)
+            await load()
+            try? await Task.sleep(nanoseconds: 550_000_000)
+            openRoutine(r.id)
+        }
+    }
+
     private func startQuickStrength() {
         if model.strengthSession != nil {
             confirmResumeStrength = true
@@ -606,29 +633,29 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// «＋ Nueva rutina» + the three styled door-chips (FER-952) — same trio as «Tu Plan» and
-    /// «Mis Rutinas»: Templates and Import open their sheets right here; Folders lives in Tu Plan.
+    /// «＋ Nueva rutina» + the styled door-chips (FER-952). New routine goes STRAIGHT into the
+    /// unified create flow (library push → editor) — no detour through Tu Plan. Folders left the
+    /// hub: managing folders belongs where the routine list lives (Tu Plan).
     private var nuevaRutinaRow: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button { openWeeklyPlan() } label: {
-                HStack(spacing: 10) {
-                    Text(verbatim: "＋").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    Text("New routine")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    Spacer(minLength: 8)
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            Button { showCreateRoutine = true } label: {
+                HStack(spacing: 8) {
+                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    Text("New routine").font(StrandFont.subhead.weight(.semibold))
                 }
-                .padding(.vertical, 11)
-                .frame(minHeight: 44)   // HIG tap target (FER-944)
+                .foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             HStack(spacing: CenitMetrics.space2) {
                 hubToolChip("square.stack.3d.up", "Templates") { showTemplates = true }
                 hubToolChip("square.and.arrow.down", "Import") { showHubImport = true }
-                hubToolChip("folder", "Folders") { openWeeklyPlan() }
             }
             .padding(.bottom, CenitMetrics.space2)
         }
+        .padding(.top, CenitMetrics.space2)
     }
 
     private func hubToolChip(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
