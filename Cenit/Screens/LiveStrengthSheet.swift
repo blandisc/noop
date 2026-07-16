@@ -5378,8 +5378,17 @@ private extension View {
                     // internal boundary.
                     // «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra; las
                     // filas se separan con filetes, no con profundidad.
+                    // r8d — EL verdadero origen de los «divisores» que no morían: cada rebanada
+                    // trazaba su borde COMPLETO, pintando una línea horizontal en cada frontera
+                    // interna. La máscara oculta las orillas horizontales internas: los lados
+                    // verticales corren siempre; arriba/abajo solo donde la tarjeta empieza/termina.
                     shape.fill(theme.surface)
-                        .overlay(shape.strokeBorder(theme.hairline, lineWidth: 1))
+                        .overlay(
+                            shape.strokeBorder(theme.hairline, lineWidth: 1)
+                                .mask(Rectangle()
+                                    .padding(.top, top ? 0 : 1)
+                                    .padding(.bottom, bottom ? 0 : 1))
+                        )
                         .padding(.leading, CenitMetrics.screenPadding + 26)
                         .padding(.trailing, CenitMetrics.screenPadding)
                 }
