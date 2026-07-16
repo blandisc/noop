@@ -2682,9 +2682,10 @@ struct LiveStrengthSheet: View {
     /// The quiet column header (overline). Hidden at accessibility sizes — each reflowed cell self-labels.
     private func columnHeader(_ type: ExerciseType) -> some View {
         let titles = columnTitles(type)
-        return HStack(spacing: 8) {
-            // FER-952: 44 desalineaba el header con el badge real de 26 y le robaba 18pt a PREV.
-            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 26, alignment: .center)
+        return HStack(spacing: 6) {   // = spacing de gridRow: header y datos comparten geometría
+            // El badge vive en un frame de 44 (26 visual + aire): el header usa el MISMO ancho,
+            // si no, todas las columnas arrancan corridas (bug de alineación, canvas 2026-07-16).
+            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
             // Canvas pass 2026-07-15: «PREVIOUS · REST» truncated to an unreadable «PR…» at narrow
             // widths — the rest already lives on each row's own cell, so the column header only needs
             // to name the previous value.
@@ -3079,13 +3080,12 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text(isWarmup ? "Warm-up set" : "Set \(workNumber)"))
     }
 
-    /// «ANTERIOR · DESCANSO» — last time's value + this set's own rest (FER-716, per-set since F0);
-    /// tap to copy last time into this row. «—» (and inert) when there's neither.
+    /// «ANTERIOR» — last time's value; tap to copy it into this row. «—» (inert) without a record.
+    /// El descanso salió de la celda (FER-952): es por ejercicio y ya habla en el chip troquel.
     @ViewBuilder private func previousCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
-        let rest = shortRest(run.effectiveRest(forSet: si))
         if let text = previousText(run) {
             Button { prefillTapped(ei: ei, si: si, run: run) } label: {
-                Text(reflow ? "Previous: \(text)" : "\(text) · \(rest)")
+                Text(reflow ? "Previous: \(text)" : text)
                     // r26: la celda ANTERIOR es dato medido → Grotesk tabular.
                     .font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.8)
@@ -3095,8 +3095,7 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text("Previous, \(text)"))
             .accessibilityHint(Text("Copies it to this set"))
         } else {
-            Text(verbatim: "— · \(rest)").font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkDim) // token-exempt: glifo «sin registro previo» (—), no es copy conector
-                .lineLimit(1).minimumScaleFactor(0.8)
+            Text(verbatim: "—").font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkDim) // token-exempt: glifo «sin registro previo» (—), no es copy conector
                 .accessibilityLabel(Text("No previous record"))
         }
     }

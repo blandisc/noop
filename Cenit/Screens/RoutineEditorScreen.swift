@@ -1035,8 +1035,8 @@ struct RoutineEditorScreen: View {
 
     private func markRest() {
         guard let wd = planWeekday else { return }
-        if dirty { persist() }   // C2: salir por «descanso» también autosalva (contrato Notas)
         Task {
+            if dirty { await persistNow() }   // C2: salir por «descanso» también autosalva (contrato Notas)
             guard let store = await repo.storeHandle() else { return }
             try? await store.clearRoutineSchedule(weekday: wd)
             dismiss()
@@ -1046,8 +1046,13 @@ struct RoutineEditorScreen: View {
     // MARK: - Navigation (Notes-style: every origin autosaves on leave when dirty)
 
     private func back() {
-        if dirty { persist() }
-        dismiss()
+        guard dirty else { dismiss(); return }
+        // Guardar ANTES de salir: el hub recarga en el onAppear del pop y leería el plan viejo si el
+        // save siguiera en vuelo (bug «agregué ejercicios y no se ven», canvas 2026-07-16).
+        Task {
+            await persistNow()
+            dismiss()
+        }
     }
 
     /// Restore the load-time prescription, clear dirty, and re-persist so disk matches the undo.
@@ -1128,6 +1133,10 @@ struct RoutineEditorScreen: View {
     }
 
     private func persist() {
+        Task { await persistNow() }
+    }
+
+    private func persistNow() async {
         guard let r = routine else { return }
         let now = Int(Date().timeIntervalSince1970)
         let updated = Routine(id: r.id, name: r.name, tag: r.tag, folderId: r.folderId,
@@ -1135,7 +1144,7 @@ struct RoutineEditorScreen: View {
         let exercises = items.enumerated().map { idx, item -> RoutineExercise in
             var re = item.re; re.position = idx; re.routineId = r.id; return re
         }
-        Task { try? await repo.saveRoutine(updated, exercises: exercises) }
+        try? await repo.saveRoutine(updated, exercises: exercises)
     }
 }
 
