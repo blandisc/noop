@@ -390,8 +390,14 @@ enum ScreenshotFixtures {
                       avgHr: 128)
         await session(legsId, exerciseId: "Barbell_Full_Squat", daysAgo: 2, kg: 100, sets: 4,
                       extras: [("Dumbbell_Lunges", 20, 3), ("Cable_Crunch", 25, 3)], avgHr: 126)
-        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 3, kg: 80, sets: 4,
+        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 3, kg: 80, sets: 5,
                       extras: [("Incline_Dumbbell_Press", 24, 4)])
+        // Un empuje extra dentro de la ventana de 30 d para que PECHO cruce la banda (≥10 series/sem
+        // ponderadas) y el color de familia conviva con el ámbar de los que quedan abajo.
+        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 8, kg: 80, sets: 5,
+                      extras: [("Incline_Dumbbell_Press", 24, 4)])
+        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 9, kg: 77.5, sets: 4,
+                      extras: [("Incline_Dumbbell_Press", 24, 3)])
         await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 5, kg: 117.5, sets: 4,
                       extras: [("Close-Grip_Front_Lat_Pulldown", 52.5, 4)])
         await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 6, kg: 80, sets: 4,

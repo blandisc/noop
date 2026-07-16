@@ -110,6 +110,8 @@ private struct EntrenarLanding: View {
     @State private var constancyPopup: ConstancyPopup? = nil
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
     @State private var showTemplates = false
+    /// FER-952: the hub's Import door-chip.
+    @State private var showHubImport = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
     @State private var confirmResumeStrength = false
@@ -127,12 +129,7 @@ private struct EntrenarLanding: View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 // FER-952 (owner): the «Train» wordmark + tab glyph row retired — the dock already
-                // names the tab. The recovery chip keeps its own quiet row, a notch lower.
-                HStack {
-                    Spacer(minLength: 0)
-                    if let rec = recovery { recoveryChip(rec) } else { recoveryChipPlaceholder }
-                }
-                .padding(.top, CenitMetrics.space2)
+                // names the tab; the recovery chip now rides the hero's «Hoy» line (see heroSection).
                 if loaded {
                     if loadFailed {
                         loadErrorState       // store couldn't be read — «No pudimos leer tus rutinas · Reintentar»
@@ -173,6 +170,11 @@ private struct EntrenarLanding: View {
         // reloads out of the empty state on dismiss.
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // FER-952: the hub's Import chip opens the importer right here (same sheet as Tu Plan).
+        .sheet(isPresented: $showHubImport) {
+            WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
@@ -284,9 +286,14 @@ private struct EntrenarLanding: View {
 
     private var heroSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(hoyOverline)
-                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            // FER-952 (owner): the recovery chip rides the «Hoy» line — trailing, at the overline's height.
+            HStack(alignment: .center, spacing: 8) {
+                Text(hoyOverline)
+                    .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
+                    .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                if let rec = recovery { recoveryChip(rec) } else { recoveryChipPlaceholder }
+            }
             if let r = todayRoutine {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt: geometría de dato
@@ -599,18 +606,40 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// «＋ Nueva rutina · plantillas · importar» — one quiet row into the weekly plan editor, where
-    /// creating, templates and import all live.
+    /// «＋ Nueva rutina» + the three styled door-chips (FER-952) — same trio as «Tu Plan» and
+    /// «Mis Rutinas»: Templates and Import open their sheets right here; Folders lives in Tu Plan.
     private var nuevaRutinaRow: some View {
-        Button { openWeeklyPlan() } label: {
-            HStack(spacing: 10) {
-                Text(verbatim: "＋").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Text("New routine · templates · import")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 8)
+        VStack(alignment: .leading, spacing: 0) {
+            Button { openWeeklyPlan() } label: {
+                HStack(spacing: 10) {
+                    Text(verbatim: "＋").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Text("New routine")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    Spacer(minLength: 8)
+                }
+                .padding(.vertical, 11)
+                .frame(minHeight: 44)   // HIG tap target (FER-944)
+                .contentShape(Rectangle())
             }
-            .padding(.vertical, 11)
-            .frame(minHeight: 44)   // HIG tap target (FER-944)
+            .buttonStyle(.plain)
+            HStack(spacing: CenitMetrics.space2) {
+                hubToolChip("square.stack.3d.up", "Templates") { showTemplates = true }
+                hubToolChip("square.and.arrow.down", "Import") { showHubImport = true }
+                hubToolChip("folder", "Folders") { openWeeklyPlan() }
+            }
+            .padding(.bottom, CenitMetrics.space2)
+        }
+    }
+
+    private func hubToolChip(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(StrandFont.glyph(.chevron, weight: .medium))
+                Text(title).font(StrandFont.subhead.weight(.medium))
+            }
+            .foregroundStyle(theme.ink)
+            .frame(maxWidth: .infinity, minHeight: 40)
+            .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

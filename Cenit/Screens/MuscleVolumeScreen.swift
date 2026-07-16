@@ -82,8 +82,9 @@ struct MuscleVolumeScreen: View {
                     } else {
                         rows.padding(.top, 6)
                         railAxisMarks.padding(.top, 4)
-                        // FER-952: the verdict line moved into the ⓘ sheet — the screen stays quiet.
-                        methodNote.padding(.top, 12)
+                        // FER-952 v2 (owner): the VERDICT stays on screen (it's today's datum); the
+                        // METHOD paragraph moved behind the ⓘ.
+                        insightLine.padding(.top, 12)
                     }
                 }
             }
@@ -106,15 +107,9 @@ struct MuscleVolumeScreen: View {
                 Text("Each bar counts the WORK sets that loaded that muscle as a primary mover, averaged per week over the selected span. Warm-ups don't count.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Circle().fill(belowBand.isEmpty ? theme.verdict : theme.warning)
-                        .frame(width: 8, height: 8)
-                        .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
-                    insightText
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.top, 2)
+                Text("The 10–20 band is a hypertrophy guide per muscle group (Schoenfeld 2017); the number shown is sets weighted by involvement, so secondary muscles count less.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -238,13 +233,18 @@ struct MuscleVolumeScreen: View {
         }
     }
 
-    // MARK: - Method note — how to read the band and the number honestly
-
-    private var methodNote: some View {
-        Text("The 10–20 band is a hypertrophy guide per muscle group (Schoenfeld 2017); the number shown is sets weighted by involvement, so secondary muscles count less.")
-            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+    /// The verdict line, ON the screen (FER-952 v2): which muscles sit below the band today.
+    private var insightLine: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Circle().fill(belowBand.isEmpty ? theme.verdict : theme.warning)
+                .frame(width: 8, height: 8)
+                .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
+            insightText
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Empty

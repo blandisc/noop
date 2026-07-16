@@ -143,16 +143,11 @@ struct WeeklyPlanEditorView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Handoff: the same Grotesk hero voice as the hub (FER-939) — overline 12/2.4, title 28/−0.8.
-            // FER-952 (owner): «Tu Plan» IS the section — it takes the hero title; the week rides
-            // as the overline.
-            Text("This week")
-                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-            Text("Your plan")
+            // FER-952 (owner, propuesta C aprobada): ONE integrated hero title — «Your weekly plan» —
+            // no overline; the count rides as the subtitle. Nothing else on the screen changes.
+            Text("Your weekly plan")
                 .font(InstrumentoType.grotesk(28, weight: .bold)).tracking(-0.8)
                 .foregroundStyle(theme.ink)
-                .padding(.top, 2)
             if loaded && !routines.isEmpty {
                 // Handoff v4b: a terse count («4 días · 3 rutinas»), not an opinion.
                 Text("\(assignedCount) days · \(routines.count) routines")
