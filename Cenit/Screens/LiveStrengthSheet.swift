@@ -2681,7 +2681,8 @@ struct LiveStrengthSheet: View {
     private func columnHeader(_ type: ExerciseType) -> some View {
         let titles = columnTitles(type)
         return HStack(spacing: 8) {
-            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
+            // FER-952: 44 desalineaba el header con el badge real de 26 y le robaba 18pt a PREV.
+            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 26, alignment: .center)
             // Canvas pass 2026-07-15: «PREVIOUS · REST» truncated to an unreadable «PR…» at narrow
             // widths — the rest already lives on each row's own cell, so the column header only needs
             // to name the previous value.
@@ -2711,10 +2712,12 @@ struct LiveStrengthSheet: View {
     private var massUnitTitle: LocalizedStringKey { imperial ? "LB" : "KG" }
     private func cellWidth(_ type: ExerciseType) -> CGFloat {
         switch type {
-        case .weightReps: return 56
-        case .bodyweight: return 60
+        // FER-952 (owner): 56 starved the flexible PREV column to ~5pt inside the card's gutter —
+        // 50 across the board (time keeps 70 for the mm:ss) buys «anterior» its ~40pt back.
+        case .weightReps: return 50
+        case .bodyweight: return 54
         case .time:       return 70
-        case .distance:   return 56
+        case .distance:   return 50
         }
     }
 
@@ -2749,7 +2752,7 @@ struct LiveStrengthSheet: View {
 
     private func gridRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
                          set: StrengthSessionModel.WorkingSet) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {   // token-exempt: 6 — compresión FER-952 para que PREV se vea
             badge(run: run, si: si)
             if set.id == copiedSetId, !set.done, si > 0 {
                 // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».

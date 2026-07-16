@@ -56,9 +56,21 @@ enum RoutineSetEditing {
     /// localized on its own so the literal «%» never lands in a format-string key.
     static func restChipLabel(_ cfg: RestConfig) -> String {
         if cfg.mode == .heartRate {
-            let pct = Int((cfg.hrValue * 100).rounded())
-            guard pct > 0 else { return String(localized: "by HR") }
-            return String(localized: "HR", comment: "compact chip prefix for a heart-rate rest threshold") + " · \(pct)%"
+            // FER-952 bug: `hrValue` is a FRACTION only for peakDrop/karvonen — formatting it as a
+            // percent regardless turned a fixed 160 bpm into «1600%» and restingMargin into noise.
+            let hr = String(localized: "HR", comment: "compact chip prefix for a heart-rate rest threshold")
+            switch cfg.hrReference {
+            case .peakDrop, .karvonenReserve:
+                let pct = Int((cfg.hrValue * 100).rounded())
+                guard pct > 0 else { return String(localized: "by HR") }
+                return hr + " · \(pct)%"
+            case .fixedBpm:
+                let bpm = Int(cfg.hrValue.rounded())
+                guard bpm > 0 else { return String(localized: "by HR") }
+                return hr + " · \(bpm) bpm"
+            case .restingMargin:
+                return String(localized: "by HR")   // target = resting + margin; no number to promise
+            }
         }
         let s = cfg.seconds
         return s % 60 == 0 ? String(localized: "\(s / 60) min") : String(localized: "\(s) s")
