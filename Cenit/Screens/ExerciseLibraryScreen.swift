@@ -25,10 +25,9 @@ struct ExerciseLibraryScreen: View {
     @State private var equipmentOptions: [String] = []
     /// Exercise ids the user has logged work sets for (v3 · 1f) — surfaces «Con historial tuyo» first.
     @State private var historyIds: Set<String> = []
-    /// Per-exercise best-weight PR + a max-weight-by-day sparkline, for the «Con historial tuyo» rows. Only
-    /// built for the (small) set of exercises with history, so it stays cheap.
+    /// Per-exercise best-weight PR for the «Con historial tuyo» rows — only built for the (small)
+    /// set of exercises with history, so it stays cheap.
     @State private var bestKg: [String: Double] = [:]
-    @State private var sparklines: [String: [Double]] = [:]
     @State private var loaded = false
     @State private var search = ""
     @State private var muscle: String? = nil
@@ -236,15 +235,8 @@ struct ExerciseLibraryScreen: View {
                     Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                // The quiet weight-over-time sparkline stays (a Cénit extra the handoff didn't draw).
-                if showsHistory, let s = sparklines[ex.id], s.count >= 2 {
-                    Sparkline(values: s,
-                              gradient: Gradient(colors: [theme.inkTertiary, theme.inkSecondary]),
-                              bandColor: theme.hairlineStrong,
-                              showsHead: false, showsScrub: false)
-                        .frame(width: 46, height: 18)
-                        .accessibilityHidden(true)
-                }
+                // No sparkline here (FER-951): with long catalog names it starved the title into a
+                // 4-line wrap. The record datum carries the story; the full trend lives in the detail.
                 // Handoff: the best mark as the right-hand datum, in the family hue («82,5 kg / tu récord»).
                 if showsHistory, let kg = bestKg[ex.id] {
                     VStack(alignment: .trailing, spacing: 1) {
@@ -340,29 +332,20 @@ struct ExerciseLibraryScreen: View {
         loaded = true
     }
 
-    /// «Con historial tuyo» (1f): the exercises the user has ever logged, plus each one's best weight and a
-    /// weight-by-day sparkline. `recentWorkSets(sinceTs: 0)` gives the id set cheaply; the per-exercise
-    /// history is fetched only for that (small) set, so a huge catalog stays fast.
+    /// «Con historial tuyo» (1f): the exercises the user has ever logged, plus each one's best weight.
+    /// `recentWorkSets(sinceTs: 0)` gives the id set cheaply; the per-exercise history is fetched only
+    /// for that (small) set, so a huge catalog stays fast.
     private func loadHistory() async {
         let events = await repo.recentWorkSets(sinceTs: 0)
         let ids = Set(events.map(\.exerciseId))
         historyIds = ids
         var best: [String: Double] = [:]
-        var sparks: [String: [Double]] = [:]
         for id in ids {
             let hist = await repo.exerciseHistory(exerciseId: id)   // oldest→newest (startTs, weightKg, reps)
             guard !hist.isEmpty else { continue }
             best[id] = hist.map(\.weightKg).max()
-            // Max weight per day, oldest→newest — a quiet progress trace.
-            var byDay: [String: Double] = [:]
-            for h in hist {
-                let key = Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval(h.startTs)))
-                byDay[key] = Swift.max(byDay[key] ?? 0, h.weightKg)
-            }
-            sparks[id] = byDay.sorted { $0.key < $1.key }.map(\.value)
         }
         bestKg = best
-        sparklines = sparks
     }
 
     private func toggle(_ ex: Exercise) {
