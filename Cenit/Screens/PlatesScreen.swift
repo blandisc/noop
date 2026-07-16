@@ -237,7 +237,7 @@ struct PlatesScreen: View {
                             Text(warmupLabel(set)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             Spacer()
                             Text("\(kg(set.weightKg)) kg")
-                                .font(StrandFont.subhead).fontWeight(.medium).monospacedDigit()
+                                .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
                                 .foregroundStyle(theme.ink)
                         }
                         .padding(.vertical, 10)
@@ -299,13 +299,15 @@ struct PlateChips: View {
     @Environment(\.instrumentoTheme) private var theme
 
     var body: some View {
-        // A lazy grid wraps naturally at this width without a custom layout.
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 54), spacing: 6)], alignment: .leading, spacing: 6) {
+        // Canvas pass 2026-07-15 (owner): ONE row, never two — compact chips, Grotesk numerals
+        // (handoff voice), sharing the width equally.
+        HStack(spacing: 6) {
             ForEach(items) { chip in
                 Text(chip.label)
-                    .font(StrandFont.subhead).monospacedDigit()
+                    .font(InstrumentoType.groteskNumber(13)).monospacedDigit()
                     .foregroundStyle(chip.owned ? theme.ink : theme.inkTertiary)
-                    .padding(.horizontal, 12).frame(height: 34)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .padding(.horizontal, 8).frame(height: 30).frame(maxWidth: .infinity)
                     .background(Capsule().fill(chip.owned ? theme.surface : Color.clear))
                     .overlay(Capsule().strokeBorder(chip.owned ? theme.hairlineStrong : theme.hairline,
                                                     style: StrokeStyle(lineWidth: 1, dash: chip.owned ? [] : [3, 3])))

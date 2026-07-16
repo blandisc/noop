@@ -3456,7 +3456,7 @@ struct LiveStrengthSheet: View {
             stepper(system: "minus", size: 26) { session.bumpDistance(byMeters: -distanceStepM) }
                 .accessibilityLabel(Text("Decrease distance"))
             HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(distanceNumber(meters)).font(StrandFont.number(18, weight: .regular)).monospacedDigit()
+                Text(distanceNumber(meters)).font(InstrumentoType.groteskNumber(18, weight: .medium)).monospacedDigit()
                     .foregroundStyle(theme.ink)
                 Text(imperial ? "mi" : "km").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
@@ -3616,7 +3616,7 @@ struct LiveStrengthSheet: View {
         // its numeral — the same ink language as the block's rule, no color accent, survives
         // «Differentiate without color» by shape alone.
         let isCurrent = si == run.currentSet && !run.sets[si].done
-        return Text(label).font(StrandFont.caption).monospacedDigit()
+        return Text(label).font(InstrumentoType.groteskNumber(12, weight: .medium)).monospacedDigit()
             .foregroundStyle(isWarmup ? theme.dataStrain.opacity(StrandOpacity.dim) : theme.dataStrain)  // token-exempt: warm-up badge tenue (handoff «C»)
             .frame(width: 26, height: 26)
             .overlay(Circle().strokeBorder(theme.dataStrain.opacity(isWarmup ? StrandOpacity.dim : 1), lineWidth: 1.5))  // token-exempt: warm-up ring tenue
@@ -3698,7 +3698,7 @@ struct LiveStrengthSheet: View {
         return Button { withAnimation(.snappy(duration: 0.22)) { activeCell = ref } } label: {
             HStack(spacing: 1) {
                 Text(shown.isEmpty ? " " : shown)
-                    .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
+                    .font(InstrumentoType.groteskNumber(16, weight: .medium)).monospacedDigit()
                     .foregroundStyle(done ? theme.inkSecondary : theme.ink)
                 if active {
                     Rectangle().fill(theme.ink).frame(width: 2, height: 18)   // caret
@@ -3782,7 +3782,7 @@ struct LiveStrengthSheet: View {
             Group {
                 if let rpe = set.rpe {
                     Text(Self.formatDecimalComma(rpe))
-                        .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
+                        .font(InstrumentoType.groteskNumber(16, weight: .medium)).monospacedDigit()
                         .foregroundStyle(theme.dataEffort)
                 } else {
                     Text("RPE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -3811,7 +3811,7 @@ struct LiveStrengthSheet: View {
         Button { withAnimation(StrandMotion.gentle) { session.select(exerciseIndex: ei, setIndex: si) } } label: {
             Group {
                 if let text {
-                    Text(text).font(StrandFont.number(16, weight: .regular)).monospacedDigit().foregroundStyle(theme.ink)
+                    Text(text).font(InstrumentoType.groteskNumber(16, weight: .medium)).monospacedDigit().foregroundStyle(theme.ink)
                 } else {
                     Image(systemName: "play.circle").font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkTertiary)
                 }
@@ -4809,8 +4809,9 @@ struct RPESheet: View {
     let onPick: (Double?) -> Void
     let onClose: () -> Void
 
-    /// The scale offered (FER-930 spec §3): 8 stops, half-steps from 8 up.
-    private static let scale: [Double] = [6, 7, 7.5, 8, 8.5, 9, 9.5, 10]
+    /// The scale offered (canvas pass 2026-07-15, owner trim): 6 stops — 7,5/8,5 dropped, 9,5 kept —
+    /// so the whole scale fits ONE row, no slide.
+    private static let scale: [Double] = [6, 7, 8, 9, 9.5, 10]
 
     @State private var selected: Double
 
@@ -4841,7 +4842,8 @@ struct RPESheet: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text("RPE LOG").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                // Canvas pass 2026-07-15: it's a TITLE, not a label — Grotesk bold with real air above.
+                Text("RPE").font(InstrumentoType.grotesk(22, weight: .bold)).foregroundStyle(theme.ink)
                 Spacer()
                 Button(action: onClose) {
                     StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
@@ -4852,7 +4854,7 @@ struct RPESheet: View {
             Text("Set \(target.setNumber) · \(LiveStrengthSheet.formatDecimalComma(target.weightKg)) kg × \(target.reps) reps")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
         }
-        .padding(.top, 12)
+        .padding(.top, CenitMetrics.sectionGap)
         .padding(.bottom, 8)
     }
 
@@ -4871,10 +4873,9 @@ struct RPESheet: View {
     }
 
     private var scale: some View {
-        // Canvas pass 2026-07-15: the whole scale visible at once — no horizontal slide. Two rows of
-        // four, split semantically at the 8 («below 8 / 8 and above»), tiles ≥56pt (HIG), rounded-rect
-        // (a 2×4 grid reads as tiles, not as pills of one row).
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: CenitMetrics.gap), count: 4),
+        // Canvas pass 2026-07-15: the whole scale visible at once — ONE row of six (7,5/8,5 dropped),
+        // tiles ≥56pt (HIG), rounded-rect.
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6),
                   spacing: CenitMetrics.gap) {
             ForEach(Self.scale, id: \.self) { value in
                 let sel = value == selected

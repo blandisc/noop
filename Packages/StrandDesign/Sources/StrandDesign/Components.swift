@@ -96,10 +96,14 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// (iOS HIG minimum) instead of the compact 28pt — used for the Tendencias landing selector. Only
     /// meaningful with a `theme`; default keeps the compact height.
     var tall: Bool = false
+    /// Canvas pass 2026-07-15: optional thumb tint — the rest editor's HR variant paints the active
+    /// segment in the data hue (handoff); default stays ink.
+    var thumbTint: Color? = nil
     public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme,
-                inkThumb: Bool = false, tall: Bool = false, label: @escaping (T) -> String) {
+                inkThumb: Bool = false, tall: Bool = false, thumbTint: Color? = nil,
+                label: @escaping (T) -> String) {
         self.items = items; self._selection = selection; self.theme = theme
-        self.inkThumb = inkThumb; self.tall = tall; self.label = label
+        self.inkThumb = inkThumb; self.tall = tall; self.thumbTint = thumbTint; self.label = label
     }
     public var body: some View {
         HStack(spacing: 4) {
@@ -114,8 +118,11 @@ public struct SegmentedPillControl<T: Hashable>: View {
             }
         }
         .padding(3)
-        .background(trackFill, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).strokeBorder(trackStroke, lineWidth: 1))
+        // Canvas pass 2026-07-15 (handoff, owner call): the selector is RECTANGULAR — the library's
+        // rounded-rect segmented, one grammar across every screen; the capsule is retired here.
+        .background(trackFill, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+            .strokeBorder(trackStroke, lineWidth: 1))
     }
 
     /// One segment. Instrumento: the active «thumb» HUGS the label to the WIDTH (content-width, centered in
@@ -136,7 +143,10 @@ public struct SegmentedPillControl<T: Hashable>: View {
             .padding(.horizontal, 12)
             .frame(height: tall ? 44 : 34)
             .background {
-                if sel { Capsule(style: .continuous).fill(theme.ink) }
+                if sel {
+                    RoundedRectangle(cornerRadius: CenitMetrics.controlRadius - 2, style: .continuous)
+                        .fill(thumbTint ?? theme.ink)
+                }
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())

@@ -79,8 +79,9 @@ struct RestEditorScreen: View {
                 InstrumentoFlowTitle(
                     overline: Text(setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName),
                     Text("Rest when you finish"))
+                // Canvas pass 2026-07-15: FC carries its heart glyph (handoff «♥ FC»).
                 SegmentedPillControl([RestMode.fixed, .heartRate], selection: $mode, theme: theme, inkThumb: true) {
-                    $0 == .fixed ? String(localized: "By time") : String(localized: "By heart rate")
+                    $0 == .fixed ? String(localized: "By time") : "♥ " + String(localized: "By heart rate")
                 }
                 if mode == .heartRate {
                     hrSection
@@ -130,7 +131,15 @@ struct RestEditorScreen: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Rest ends when your pulse drops to the threshold. The strap buzzes when you're ready.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
-            SegmentedPillControl([HRRestReference.restingMargin, .karvonenReserve], selection: $hrRef, theme: theme, inkThumb: true) {
+            // Owner call 2026-07-15: your OWN resting HR named up front — the anchor every margin
+            // below is computed against.
+            if let resting = restingHR {
+                Text(String(localized: "your rest") + ": " + "\(Int(resting.rounded())) bpm")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            // The method selector rides the data hue (handoff: HR selector in the HRV blue-teal).
+            SegmentedPillControl([HRRestReference.restingMargin, .karvonenReserve], selection: $hrRef,
+                                 theme: theme, inkThumb: true, thumbTint: theme.dataHrv) {
                 $0 == .restingMargin ? String(localized: "Over your rest") : String(localized: "Karvonen")
             }
             if hrRef == .restingMargin { marginBody } else { reserveBody }
@@ -150,20 +159,27 @@ struct RestEditorScreen: View {
             Slider(value: Binding(get: { Double(margin) }, set: { margin = Int($0.rounded()) }),
                    in: 5...30, step: 1).tint(theme.dataRecovery)
             HStack(spacing: 8) {
-                marginPreset(String(localized: "Close · +10"), 10)
-                marginPreset(String(localized: "Normal · +15"), 15)
-                marginPreset(String(localized: "Easy · +20"), 20)
+                marginPreset(String(localized: "Close"), 10)
+                marginPreset(String(localized: "Normal"), 15)
+                marginPreset(String(localized: "Easy"), 20)
             }
         }
     }
 
+    /// Preset chips say the RESULT, not the arithmetic (owner call 2026-07-15): with a resting HR of
+    /// 50, «Easy» reads «Easy · hasta 70» — the bpm you'll rest down to — instead of «+20».
     private func marginPreset(_ label: String, _ m: Int) -> some View {
         let sel = margin == m
+        let text = restingHR.map { label + " · " + String(localized: "down to \(Int($0.rounded()) + m)") }
+            ?? "\(label) · +\(m)"
         return Button { margin = m } label: {
-            Text(label).font(StrandFont.caption).foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+            Text(text).font(StrandFont.caption).foregroundStyle(sel ? theme.paper : theme.inkSecondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
                 .padding(.horizontal, 11).padding(.vertical, 7)
-                .background(Capsule().fill(sel ? theme.ink : Color.clear))
-                .overlay(Capsule().strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(sel ? theme.dataHrv : Color.clear))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(sel ? Color.clear : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
