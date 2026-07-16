@@ -1000,6 +1000,8 @@ struct LiveStrengthSheet: View {
     /// FER-938: the id of a set just appended via «+ Serie», so its row shows the «COPIADA DE LA N» hint +
     /// dashed border until it's logged (the guard `!set.done` retires the hint the moment it's marked).
     @State private var copiedSetId: String?
+    /// r15: la fila «armada» para borrar (long-press) — brinca en su lugar y ofrece «Quitar serie».
+    @State private var armedDeleteSetId: String?
     /// FER-936: which exercise's «≡» reorder handle is momentarily emphasised (ember) after picking
     /// «Reordenar» from its menu — a discoverability nudge toward the drag that already reorders.
     @State private var reorderHint: Int?
@@ -1217,70 +1219,20 @@ struct LiveStrengthSheet: View {
             .instrumentoTheme(theme).preferredColorScheme(.light)
             .presentationBackground(theme.paper)
         }
-        .sheet(item: $restEdit) { edit in
-            if session.runs.indices.contains(edit.id) {
-                let run = session.runs[edit.id]
-                let si = edit.setIndex
-                let current: RestConfig = (si.flatMap { run.sets.indices.contains($0) ? run.sets[$0].rest : nil }) ?? run.restConfig
-                RestEditorScreen(
-                    theme: theme, exerciseName: run.name,
-                    setNumber: si.map { $0 + 1 },
-                    current: current,
-                    persistsToRoutine: session.routineId != nil,
-                    restingHR: restingBaseline, maxHR: profileMaxHR,
-                    defaultApplyToAll: si == nil,
-                    closeAsDismiss: true,   // FER-831: presented as a .sheet here → close with ✕, not a back chevron
-                    onCancel: { restEdit = nil },
-                    onApply: { config, applyToAll, saveToRoutine in
-                        applyRestEdit(ei: edit.id, si: si, config: config, applyToAll: applyToAll, saveToRoutine: saveToRoutine)
-                        restEdit = nil
-                    }
-                )
-                .preferredColorScheme(.light)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.hidden)
-                .presentationBackground(theme.paper)
-            }
+        // r15: durante el modo foco estos cuatro presentadores externos se SILENCIAN (binding
+        // constante nil) — el cover cuelga sus propias copias adentro; dos presentadores vivos
+        // sobre el mismo estado peleaban la presentación y tumbaban el foco a la pantalla base.
+        .sheet(item: focusMode ? .constant(nil) : $restEdit) { edit in
+            restEditorSheet(edit)
         }
-        .sheet(item: $platesTarget) { target in
+        .sheet(item: focusMode ? .constant(nil) : $platesTarget) { target in
             platesSheet(target)
         }
-        .sheet(item: $rpeTarget) { target in
-            RPESheet(theme: theme, target: target,
-                     onPick: { rpe in
-                         session.setRPE(exercise: target.runId, set: target.id, rpe: rpe)
-                         rpeTarget = nil
-                     },
-                     onClose: { rpeTarget = nil })
-                .presentationDetents([.height(560)])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
+        .sheet(item: focusMode ? .constant(nil) : $rpeTarget) { target in
+            rpeSheet(target)
         }
-        .sheet(item: $noteTarget) { target in
-            if let run = session.runs.first(where: { $0.id == target.id }) {
-                NoteSheet(
-                    theme: theme, target: target,
-                    initialScope: .exercise,
-                    exerciseText: run.note ?? "",
-                    setText: run.sets.first(where: { $0.id == target.setId })?.note ?? "",
-                    history: noteHistory,
-                    onSave: { scope, text in
-                        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                        let value: String? = trimmed.isEmpty ? nil : trimmed
-                        switch scope {
-                        case .exercise: session.setExerciseNote(exercise: target.id, text: value)
-                        case .set: session.setSetNote(exercise: target.id, set: target.setId, text: value)
-                        }
-                        noteTarget = nil
-                    },
-                    onClose: { noteTarget = nil }
-                )
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-            }
+        .sheet(item: focusMode ? .constant(nil) : $noteTarget) { target in
+            noteSheet(target)
         }
         .fullScreenCover(item: $shareReceipt) { ref in
             if let summary = session.summary {
@@ -1294,12 +1246,21 @@ struct LiveStrengthSheet: View {
             }
         }
         .fullScreenCover(isPresented: $focusMode) {
-            // Canvas pass 2026-07-15 (UI·discos): the plates sheet must ALSO hang inside the cover —
-            // the outer `.sheet` presenter is covered while focus mode is up, so «⛓ discos» from the
-            // focus KG card silently failed to present (the reported «rota»).
+            // r15: TODA la interacción del foco ocurre DENTRO del cover — discos, RPE, nota y el
+            // editor de descanso cuelgan aquí (los presentadores externos quedan silenciados
+            // mientras el foco está arriba). Un sheet presentado desde la base tumbaba el cover.
             focusModeView
                 .sheet(item: $platesTarget) { target in
                     platesSheet(target)
+                }
+                .sheet(item: $rpeTarget) { target in
+                    rpeSheet(target)
+                }
+                .sheet(item: $noteTarget) { target in
+                    noteSheet(target)
+                }
+                .sheet(item: $restEdit) { edit in
+                    restEditorSheet(edit)
                 }
         }
         // S-2 (FER-830) → FER-837: one destructive-confirmation pattern across the flow, now the
@@ -1648,18 +1609,32 @@ struct LiveStrengthSheet: View {
                     // El descanso vive DENTRO del bloque, pegado a su fila (r7/r12).
                     if restSlotIndex(run, ei: ei) == si { restInlineSlice(run) }
                     if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
+                    // r15 (owner): borrar es interacción PROPIA — el contextMenu del sistema es
+                    // por CELDA (todos los long-press caían en la fila 1) y su lift fotografiaba
+                    // la tarjeta entera. Ahora la fila armada brinca EN SU LUGAR sobre la tarjeta
+                    // (scale + hover, mismo lenguaje que la tarjeta de descanso) y ofrece la
+                    // pastilla «Quitar serie»; cualquier otro toque la desarma.
                     setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
-                        // r14 (owner): the system lift snapshotted the WHOLE cell — the custom
-                        // preview lifts just this row, quiet and on-language.
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
-                            } label: { Label("Delete set", systemImage: "trash") }
-                        } preview: {
-                            setRowPreview(run: run, si: si, set: set)
+                        .scaleEffect(armedDeleteSetId == set.id ? 1.03 : 1)
+                        .shadow(color: .black.opacity(armedDeleteSetId == set.id ? 0.10 : 0),  // token-exempt: sombra transitoria de lift (hover), no superficie
+                                radius: 10, y: 4)
+                        .overlay(alignment: .trailing) {
+                            if armedDeleteSetId == set.id { deleteSetPill(ei: ei, si: si) }
+                        }
+                        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                            withAnimation(StrandMotion.gentle) { armedDeleteSetId = set.id }
+                        })
+                        .simultaneousGesture(TapGesture().onEnded {
+                            if armedDeleteSetId != nil {
+                                withAnimation(StrandMotion.gentle) { armedDeleteSetId = nil }
+                            }
+                        })
+                        .accessibilityActions {
+                            Button("Delete set") { withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) } }
                         }
                 }
                 .padding(.horizontal, 14)
+                .zIndex(armedDeleteSetId == set.id ? 2 : 0)
             }
             // «Add set» closes the card — the handoff's ember pill, inside (FER-935 kin).
             // El descanso tras la ÚLTIMA serie vive aquí (r7/r12).
@@ -1687,8 +1662,11 @@ struct LiveStrengthSheet: View {
             if showRail {
                 VStack(spacing: 0) {
                     if ei == firstRailIndex { Color.clear.frame(height: 12 + 22) }
-                    Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                    Rectangle().fill(railTint.opacity(0.35))  // token-exempt: decorative rail-thread alpha (structure, not datum)
                 }
+                // r15: el ancho vive en el VStack — un Color.clear suelto es flexible en X y
+                // estiraba el stack al ancho de la tarjeta (el hilo aparecía por su CENTRO).
+                .frame(width: 2)
                 .offset(x: -20)
                 .allowsHitTesting(false)
             }
@@ -1698,22 +1676,26 @@ struct LiveStrengthSheet: View {
         .id("session-exercise-\(ei)")
     }
 
-    /// The lifted preview for a set row's context menu — JUST the row, restated as a quiet receipt
-    /// line on a surface chip (the interactive row itself can't be snapshotted without its cell).
-    private func setRowPreview(run: StrengthSessionModel.ExerciseRun,
-                               si: Int, set: StrengthSessionModel.WorkingSet) -> some View {
-        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
-        return HStack(spacing: 10) {
-            Text(set.kind == .warmup ? String(localized: "C") : "\(workNumber)")
-                .font(InstrumentoType.groteskNumber(12, weight: .medium)).monospacedDigit()
-                .foregroundStyle(theme.dataStrain)
-                .frame(width: 26, height: 26)
-                .overlay(Circle().strokeBorder(theme.dataStrain, lineWidth: 1.5))
-            Text(verbatim: "\(massText(set.weightKg)) × \(set.reps)")
-                .font(StrandFont.body).monospacedDigit().foregroundStyle(theme.ink)
+    /// The armed row's destructive affordance (r15) — a quiet critical-outline pill riding the
+    /// lifted row's trailing edge (it covers the check so the only offered act is the deletion).
+    private func deleteSetPill(ei: Int, si: Int) -> some View {
+        Button {
+            withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
+            armedDeleteSetId = nil
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "trash").font(StrandFont.glyph(.chevron))
+                Text("Delete set").font(StrandFont.caption.weight(.semibold))
+            }
+            .foregroundStyle(theme.critical)
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.critical, lineWidth: 1))
+            .contentShape(Capsule())
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .background(theme.surface)
+        .buttonStyle(.plain)
+        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+        .accessibilityLabel(Text("Delete set"))
     }
 
     /// The exercise the current rest belongs to (canvas pass 2026-07-15, owner bug #4): registering the
@@ -1762,12 +1744,12 @@ struct LiveStrengthSheet: View {
                 withAnimation(StrandMotion.gentle) { session.skipRest() }
             }
             .padding(.vertical, 8)
-            // r14 (owner): al terminar, el descanso «se echa para atrás» — se hunde en el papel
-            // (escala hacia abajo + fade) mientras las filas se cierran, en vez de brincar hacia
-            // el frente; la entrada sigue abriendo espacio desde su fila.
+            // r15 (owner, 2ª pulida): la salida se hunde ANCLADA A SU TOPE — escala 0.92 hacia la
+            // fila que la parió mientras las filas de abajo se cierran sobre ella; el anchor .top
+            // evita el «brinco hacia enfrente» que daba el anclaje al centro.
             .transition(.asymmetric(
                 insertion: .opacity.combined(with: .move(edge: .top)),
-                removal: .opacity.combined(with: .scale(scale: 0.94))))
+                removal: .opacity.combined(with: .scale(scale: 0.92, anchor: .top))))
     }
 
     /// FER-937: the «SERIES DE TRABAJO» rule between the warm-up «C» rows and the numbered work sets —
@@ -1821,7 +1803,8 @@ struct LiveStrengthSheet: View {
             theme: theme,
             stepLabel: isWeightCell(cell) ? (imperial ? "±5" : "±2,5") : "±1",
             canCopyPrevious: run.map { previousText($0) != nil } ?? false,
-            platesEnabled: isWeightCell(cell),
+            // r15 (owner): discos solo para ejercicios de BARRA — un dumbbell no se carga por lado.
+            platesEnabled: isWeightCell(cell) && usesBarbell(ei),
             onDigit: { keypadInput(String($0)) },
             onComma: { keypadComma() },
             onBackspace: { keypadBackspace() },
@@ -1857,6 +1840,83 @@ struct LiveStrengthSheet: View {
     private func openPlates(ei: Int, si: Int) {
         guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
         platesTarget = PlatesTarget(ei: ei, weightKg: session.runs[ei].sets[si].weightKg)
+    }
+
+    /// r15 (owner): la calculadora de discos solo aplica a ejercicios de BARRA — «por lado» no
+    /// significa nada en un dumbbell/máquina. free-exercise-db: «barbell» y «e-z curl bar».
+    private func usesBarbell(_ ei: Int) -> Bool {
+        guard session.runs.indices.contains(ei),
+              let eq = ExerciseCatalog.byID(session.runs[ei].exerciseId)?.equipment?.lowercased()
+        else { return false }
+        return eq.contains("barbell") || eq.contains("curl bar")
+    }
+
+    /// The RPE sheet content, shared by the two presenters (main body + inside the focus cover).
+    private func rpeSheet(_ target: RPETarget) -> some View {
+        RPESheet(theme: theme, target: target,
+                 onPick: { rpe in
+                     session.setRPE(exercise: target.runId, set: target.id, rpe: rpe)
+                     rpeTarget = nil
+                 },
+                 onClose: { rpeTarget = nil })
+            .presentationDetents([.height(560)])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(theme.paper)
+            .preferredColorScheme(.light)
+    }
+
+    /// The note sheet content, shared by the two presenters (main body + inside the focus cover).
+    @ViewBuilder private func noteSheet(_ target: NoteTarget) -> some View {
+        if let run = session.runs.first(where: { $0.id == target.id }) {
+            NoteSheet(
+                theme: theme, target: target,
+                initialScope: .exercise,
+                exerciseText: run.note ?? "",
+                setText: run.sets.first(where: { $0.id == target.setId })?.note ?? "",
+                history: noteHistory,
+                onSave: { scope, text in
+                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let value: String? = trimmed.isEmpty ? nil : trimmed
+                    switch scope {
+                    case .exercise: session.setExerciseNote(exercise: target.id, text: value)
+                    case .set: session.setSetNote(exercise: target.id, set: target.setId, text: value)
+                    }
+                    noteTarget = nil
+                },
+                onClose: { noteTarget = nil }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(theme.paper)
+            .preferredColorScheme(.light)
+        }
+    }
+
+    /// The rest-editor sheet content, shared by the two presenters (main body + inside the focus cover).
+    @ViewBuilder private func restEditorSheet(_ edit: RestEdit) -> some View {
+        if session.runs.indices.contains(edit.id) {
+            let run = session.runs[edit.id]
+            let si = edit.setIndex
+            let current: RestConfig = (si.flatMap { run.sets.indices.contains($0) ? run.sets[$0].rest : nil }) ?? run.restConfig
+            RestEditorScreen(
+                theme: theme, exerciseName: run.name,
+                setNumber: si.map { $0 + 1 },
+                current: current,
+                persistsToRoutine: session.routineId != nil,
+                restingHR: restingBaseline, maxHR: profileMaxHR,
+                defaultApplyToAll: si == nil,
+                closeAsDismiss: true,   // FER-831: presented as a .sheet here → close with ✕, not a back chevron
+                onCancel: { restEdit = nil },
+                onApply: { config, applyToAll, saveToRoutine in
+                    applyRestEdit(ei: edit.id, si: si, config: config, applyToAll: applyToAll, saveToRoutine: saveToRoutine)
+                    restEdit = nil
+                }
+            )
+            .preferredColorScheme(.light)
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(theme.paper)
+        }
     }
 
     private static func indices(_ ref: CellRef) -> (Int, Int) {
@@ -2248,17 +2308,23 @@ struct LiveStrengthSheet: View {
                          minusLabel: "Decrease weight", plusLabel: "Increase weight",
                          minus: { session.bumpWeight(byKg: -weightStepKg) },
                          plus: { session.bumpWeight(byKg: weightStepKg) }) {
-            Button {
-                platesTarget = PlatesTarget(ei: session.currentIndex,
-                                            weightKg: session.currentSet?.weightKg ?? 0)
-            } label: {
-                // r14: fuera el glifo «⛓» (tofu en Grotesk) y la clave «plates» ya vive en el
-                // catálogo — la leyenda queda «±2,5 · discos» en una sola línea.
-                Text("±\(plateNumber(displayWeight(weightStepKg))) · " + String(localized: "plates"))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
-                    .lineLimit(1)
+            // r15 (owner): el atajo a discos solo existe en ejercicios de BARRA — en dumbbell/
+            // máquina la leyenda queda en el puro paso «±2,5».
+            if usesBarbell(session.currentIndex) {
+                Button {
+                    platesTarget = PlatesTarget(ei: session.currentIndex,
+                                                weightKg: session.currentSet?.weightKg ?? 0)
+                } label: {
+                    // r14: fuera el glifo «⛓» (tofu en Grotesk) — la leyenda queda «±2,5 · discos».
+                    Text("±\(plateNumber(displayWeight(weightStepKg))) · " + String(localized: "plates"))
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
+                        .lineLimit(1)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("±\(plateNumber(displayWeight(weightStepKg)))")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
-            .buttonStyle(.plain)
         }
     }
 
@@ -3230,17 +3296,21 @@ struct LiveStrengthSheet: View {
     }
 
     /// A quiet, tappable chip showing this exercise's rest — tap to edit it mid-session (FER-540).
+    /// r15 (owner, propuesta B): chips «troquel» — papel hundido sobre la tarjeta (paper dentro de
+    /// surface, borde hairlineStrong, esquina continua), el ÚNICO color vive en el icono y el valor
+    /// va en tinta media. Misma familia que los discos troquel del hub.
     private func restChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         Button { openRestEditor(ei: ei) } label: {
             HStack(spacing: 6) {
-                StrandIcon.clock.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
-                Text(restChipLabel(run)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                StrandIcon.clock.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataStrain)
+                Text(restChipLabel(run)).font(StrandFont.caption.weight(.medium)).foregroundStyle(theme.ink)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, 9).padding(.vertical, 4)
-            .background(theme.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
-            .contentShape(Capsule())
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Edit rest"))
@@ -3256,19 +3326,23 @@ struct LiveStrengthSheet: View {
     /// `NoteSheet` without touching `restEndsAt` — a running rest keeps counting behind it. Fills when
     /// this run (or any of its sets) already carries a note.
     private func noteChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        // r15 (owner, propuesta B): troquel hermano del chip de descanso — icono teal, punto ámbar
+        // solo cuando ya hay nota (el estado es el datum).
         Button { openNote(exercise: run, ei: ei) } label: {
             HStack(spacing: 6) {
-                Image(systemName: run.hasNote ? "square.and.pencil" : "square.and.pencil")
-                    .font(StrandFont.glyph(.chevron)).foregroundStyle(run.hasNote ? theme.dataStrain : theme.inkTertiary)
-                Text("Note").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Image(systemName: "square.and.pencil")
+                    .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataHrv)
+                Text("Note").font(StrandFont.caption.weight(.medium))
+                    .foregroundStyle(run.hasNote ? theme.ink : theme.inkSecondary)
                 if run.hasNote {
                     Circle().fill(theme.dataStrain).frame(width: 5, height: 5)
                 }
             }
-            .padding(.horizontal, 9).padding(.vertical, 4)
-            .background(theme.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
-            .contentShape(Capsule())
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(run.hasNote ? "Edit note, has a note" : "Add note"))
