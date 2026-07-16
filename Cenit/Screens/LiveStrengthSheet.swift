@@ -2800,14 +2800,12 @@ struct LiveStrengthSheet: View {
                 }
                 // Tap the name → the exercise's Detail (how-to, trend, records) as a sheet (FER-538).
                 Button { openDetail(run) } label: {
-                    HStack(spacing: 8) {
-                        Text(run.name).font(StrandFont.headline).foregroundStyle(theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        StrandIcon.disclosure.image
-                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                    }
-                    .contentShape(Rectangle())
+                    // r8b (owner): sin chevron junto al nombre — el toque al nombre sigue abriendo el
+                    // detalle; la flecha era ruido.
+                    Text(run.name).font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(run.name))
