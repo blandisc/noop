@@ -3334,17 +3334,22 @@ struct LiveStrengthSheet: View {
                          set: StrengthSessionModel.WorkingSet) -> some View {
         HStack(spacing: 8) {
             badge(run: run, si: si)
+                .border(.orange)   // TEMP-DEBUG r7c
             if set.id == copiedSetId, !set.done, si > 0 {
                 // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».
                 let fromNumber = run.sets.prefix(si).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
                 Text("COPIED FROM \(fromNumber)").instrumentoOverline().foregroundStyle(theme.dataStrain)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .border(.purple)   // TEMP-DEBUG r7c
             } else {
                 previousCell(ei: ei, si: si, run: run)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .border(.purple)   // TEMP-DEBUG r7c
             }
             dataCells(ei: ei, si: si, run: run, set: set)
+                .border(.green)   // TEMP-DEBUG r7c
             checkButton(ei: ei, si: si, set: set)
+                .border(.pink)   // TEMP-DEBUG r7c
         }
     }
 

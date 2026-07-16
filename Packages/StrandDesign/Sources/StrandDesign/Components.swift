@@ -102,12 +102,15 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// accepted but no longer changes the shape. `thumbTint` paints the active segment in a data hue.
     var squared: Bool = false
     var thumbTint: Color? = nil
+    /// SF Symbol opcional por segmento (r7: «♥» como carácter era tofu en Grotesk — el ícono va real).
+    var icon: (T) -> String? = { _ in nil }
     public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme,
                 inkThumb: Bool = false, tall: Bool = false, squared: Bool = false,
-                thumbTint: Color? = nil, label: @escaping (T) -> String) {
+                thumbTint: Color? = nil, icon: @escaping (T) -> String? = { _ in nil },
+                label: @escaping (T) -> String) {
         self.items = items; self._selection = selection; self.theme = theme
         self.inkThumb = inkThumb; self.tall = tall; self.squared = squared
-        self.thumbTint = thumbTint; self.label = label
+        self.thumbTint = thumbTint; self.icon = icon; self.label = label
     }
     public var body: some View {
         HStack(spacing: squared ? 3 : 4) {
@@ -135,24 +138,28 @@ public struct SegmentedPillControl<T: Hashable>: View {
         // not the old quiet surface thumb — the bolder look the CompactTrendToggle already uses. The
         // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
         // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
-        Text(label(item))
-            .font(squared ? InstrumentoType.grotesk(13, weight: .semibold)
-                          : InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
-            .tracking(squared ? 0 : 1.6)
-            .lineLimit(1).minimumScaleFactor(0.85)
-            .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
-            .padding(.horizontal, 12)
-            .frame(height: tall ? 44 : 34)
-            // Squared (handoff): the ink thumb fills the WHOLE segment, not just the label.
-            .frame(maxWidth: squared ? .infinity : nil)
-            .background {
-                if sel {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(thumbTint ?? theme.ink)
-                }
+        // r7 (owner): el thumb LLENA su segmento SIEMPRE (frame antes del background) y el ícono es
+        // un SF Symbol real — «♥» como carácter era tofu en Grotesk.
+        HStack(spacing: 5) {
+            if let symbol = icon(item) {
+                Image(systemName: symbol).font(.system(size: 11, weight: .semibold))
             }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
+            Text(label(item))
+                .font(InstrumentoType.grotesk(12, weight: sel ? .bold : .medium))
+                .tracking(0.6)
+                .lineLimit(1).minimumScaleFactor(0.85)
+        }
+        .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity)
+        .frame(height: tall ? 44 : 34)
+        .background {
+            if sel {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(thumbTint ?? theme.ink)
+            }
+        }
+        .contentShape(Rectangle())
     }
 
     // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); the border stays.
