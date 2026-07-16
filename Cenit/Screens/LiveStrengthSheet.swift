@@ -1785,8 +1785,8 @@ struct LiveStrengthSheet: View {
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(resting ? theme.paper : theme.ink)
                         .frame(width: 38, height: 38)
-                        .background(resting ? theme.paper.opacity(0.14) : theme.surface, in: Circle())
-                        .overlay(Circle().strokeBorder(resting ? theme.paper.opacity(0.3) : theme.hairlineStrong, lineWidth: 1))
+                        .background(resting ? theme.paper.opacity(StrandOpacity.tintFillStrong) : theme.surface, in: Circle())
+                        .overlay(Circle().strokeBorder(resting ? theme.paper.opacity(StrandOpacity.strokeSoft) : theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Close focus mode"))
@@ -2042,7 +2042,7 @@ struct LiveStrengthSheet: View {
     /// vestment changes, the rest engine (`extendRest`/`skipRest`/`computeRestTarget`) is untouched.
     private var focusRestPhase: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))
+            Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))  // token-exempt: crema al 0.8 sobre verde · subtítulo del descanso (arriba del techo de muted, FER-934)
 
             if session.currentRestMode == .heartRate, let started = session.restStartedAt {
                 PulseReader(model.live.pulse) { p in
@@ -2107,7 +2107,7 @@ struct LiveStrengthSheet: View {
                 }
             }
             .padding(3)
-            .background(theme.paper.opacity(0.14), in: Capsule())
+            .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: Capsule())
         }
     }
 
@@ -2133,21 +2133,21 @@ struct LiveStrengthSheet: View {
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                     Text("\(bpm)").instrumentoHero(100).monospacedDigit().foregroundStyle(theme.paper)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.paper.opacity(0.7))
+                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 }
             }
             if let target, !ready {
                 (Text(String(localized: "dropping toward "))
                  + Text("\(target) bpm").bold()
                  + Text(" · " + String(localized: "the strap will buzz")))
-                    .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                    .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
             } else if let toReady = v.bpmToReady, !ready {
                 Text("\(toReady) bpm to ready")
-                    .font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.7))
+                    .font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
             }
             focusRestHRTrack(bpm: bpm, target: target)
             Text("\(Self.clock(elapsed)) " + String(localized: "of rest · the strap buzzes on arrival"))
-                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -2161,7 +2161,7 @@ struct LiveStrengthSheet: View {
         let total = max(1, cappedEnd.map { Int($0.timeIntervalSince(session.restStartedAt ?? now)) } ?? remaining)
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             ZStack {
-                Circle().stroke(theme.paper.opacity(0.22), lineWidth: 10)
+                Circle().stroke(theme.paper.opacity(0.22), lineWidth: 10)  // token-exempt: pista sin llenar del anillo de progreso (geometría, FER-934)
                 Circle()
                     .trim(from: 0, to: max(0, min(1, Double(remaining) / Double(total))))
                     .stroke(theme.paper, style: StrokeStyle(lineWidth: 10, lineCap: .round))
@@ -2171,14 +2171,14 @@ struct LiveStrengthSheet: View {
                         .instrumentoHero(72).monospacedDigit().foregroundStyle(theme.paper)
                         .contentTransition(.numericText())
                     Text(String(localized: "of \(total) s"))
-                        .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                        .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 }
             }
             .frame(width: 232, height: 232)
             .frame(maxWidth: .infinity)
             Text(noStrapFallback ? String(localized: "No strap signal: resting by time, 5 min cap")
                                   : String(localized: "Rings and buzzes when it ends."))
-                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2195,7 +2195,7 @@ struct LiveStrengthSheet: View {
             let lo = Double(target ?? bpm)
             let frac = hi > lo ? max(0, min(1, (hi - Double(bpm)) / (hi - lo))) : 1
             ZStack(alignment: .leading) {
-                Capsule().fill(theme.paper.opacity(0.22))
+                Capsule().fill(theme.paper.opacity(0.22))  // token-exempt: pista sin llenar de la barra de FC (geometría, FER-934)
                 Capsule().fill(theme.paper).frame(width: w * frac)
                 Rectangle().fill(theme.paper).frame(width: 2, height: 14)
                     .offset(x: w - 1)
@@ -2209,9 +2209,9 @@ struct LiveStrengthSheet: View {
             Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.paper)
                 .frame(width: 56)
                 .padding(.vertical, CenitMetrics.sectionGap)
-                .background(theme.paper.opacity(0.14), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.paper.opacity(0.3), lineWidth: 1))
+                    .strokeBorder(theme.paper.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
@@ -2227,7 +2227,7 @@ struct LiveStrengthSheet: View {
             let load = run.sets.indices.contains(si) ? run.sets[si].weightKg : nil
             VStack(alignment: .leading, spacing: 2) {
                 Text("Next").font(StrandFont.caption).fontWeight(.semibold)
-                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.paper.opacity(0.6))
+                    .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 if let load, load > 0 {
                     Text("\(run.name) · " + String(localized: "set \(n)") + " · \(massText(load))")
                         .font(StrandFont.subhead).foregroundStyle(theme.paper)
@@ -2238,7 +2238,7 @@ struct LiveStrengthSheet: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 14).padding(.vertical, 12)
-            .background(theme.paper.opacity(0.14), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         }
     }
 
