@@ -3039,12 +3039,14 @@ struct LiveStrengthSheet: View {
                 reorderDropZone(position: target)
             }
             HStack(spacing: 12) {
-                Image(systemName: "line.3.horizontal")
-                    .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(run.sets.allSatisfy(\.done) ? doneDetailText(run) : prescriptionText(run))
                     .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary).lineLimit(1)
+                // r8 (owner): la manija vive a la DERECHA — es donde estaba el pulgar al entrar al
+                // modo (la «≡» del header); antes brincaba al lado izquierdo y había que cruzar.
+                Image(systemName: "line.3.horizontal")
+                    .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .frame(minHeight: 44)
