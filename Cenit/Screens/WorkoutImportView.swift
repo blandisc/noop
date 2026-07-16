@@ -118,7 +118,7 @@ struct WorkoutImportView: View {
     /// Handoff: la promesa offline como tarjeta con barra verde — es la garantía del flujo, no letra chica.
     private var privacyNote: some View {
         HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            RoundedRectangle(cornerRadius: 1.5)
+            RoundedRectangle(cornerRadius: 1.5)  // token-exempt: geometría de la barra de acento (3pt de ancho)
                 .fill(theme.verdict).frame(width: 3)
             Text("Your routines are created on your iPhone. Cénit never connects: you run the AI step yourself.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
@@ -137,7 +137,7 @@ struct WorkoutImportView: View {
             Text(title)
                 .font(StrandFont.headline).foregroundStyle(theme.paperHi)
                 .padding(.horizontal, 18).padding(.vertical, 10)
-                .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -234,7 +234,7 @@ struct WorkoutImportView: View {
                     }
                     .foregroundStyle(theme.verdict)
                     .padding(.horizontal, 9).padding(.vertical, 3)
-                    .background(theme.verdict.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(theme.verdict.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                     Spacer(minLength: CenitMetrics.space2)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
                 }
@@ -256,11 +256,11 @@ struct WorkoutImportView: View {
                                 Spacer(minLength: CenitMetrics.space2)
                                 Text("Use").font(StrandFont.caption.weight(.bold)).foregroundStyle(theme.paperHi)
                                     .padding(.horizontal, 11).padding(.vertical, 4)
-                                    .background(theme.ink, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                             }
                             .padding(.horizontal, 10).padding(.vertical, 8)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                                 .strokeBorder(theme.hairline, lineWidth: 1))
                             .contentShape(Rectangle())
                         }
@@ -332,7 +332,7 @@ struct WorkoutImportView: View {
             RoutineRegionGlyph(glyphKind(region), tint: accent)
                 .frame(width: 22, height: 22)
                 .frame(width: 40, height: 40)
-                .background(accent.opacity(0.12),
+                .background(accent.opacity(StrandOpacity.tintFill),
                             in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .strokeBorder(accent, lineWidth: 1.5))
@@ -378,9 +378,9 @@ struct WorkoutImportView: View {
 
             VStack(spacing: CenitMetrics.sectionGap) {
                 ZStack {
-                    Circle().fill(theme.verdict.opacity(0.12)).frame(width: 116, height: 116)
+                    Circle().fill(theme.verdict.opacity(StrandOpacity.tintFill)).frame(width: 116, height: 116)
                     Image(systemName: "checkmark")
-                        .font(.system(size: 44, weight: .semibold)).foregroundStyle(theme.verdict)
+                        .font(.system(size: 44, weight: .semibold)).foregroundStyle(theme.verdict)  // token-exempt: glifo héroe del cierre (44pt, pareado al círculo de 116)
                 }
                 .scaleEffect(celebrate ? 1 : 0.72)
                 .opacity(celebrate ? 1 : 0)
