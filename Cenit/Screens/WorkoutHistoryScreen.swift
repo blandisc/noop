@@ -738,12 +738,29 @@ struct WorkoutSessionDetailScreen: View {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 heading
                 hero
+                // Handoff «Progreso C» (FER-952): zones ramp → FC media/máx → supports → note → source,
+                // each block on a thin hairline.
+                if let zones = WorkoutZones.percents(journalRow?.zonesJSON) {
+                    Divider().overlay(theme.hairline)
+                    zonesBlock(zones)
+                }
+                if dispAvgHr != nil || journalRow?.maxHr != nil {
+                    Divider().overlay(theme.hairline)
+                    heartBlock
+                }
                 Divider().overlay(theme.hairline)
                 secondaries
+                if let note = fullSession?.notes, !note.isEmpty {
+                    noteBlock(note)
+                }
+                sourceBadge
                 if loaded {
-                    ForEach(Array(groups.enumerated()), id: \.element.exerciseId) { idx, g in
-                        Divider().overlay(theme.hairline)
-                        exerciseBlock(g, index: idx)
+                    // Handoff: exercise blocks breathe compact (16), not the section's 28.
+                    VStack(alignment: .leading, spacing: CenitMetrics.sectionGapCompact) {
+                        ForEach(Array(groups.enumerated()), id: \.element.exerciseId) { idx, g in
+                            Divider().overlay(theme.hairline)
+                            exerciseBlock(g, index: idx)
+                        }
                     }
                     Divider().overlay(theme.hairline)
                     actions
@@ -923,7 +940,7 @@ struct WorkoutSessionDetailScreen: View {
                let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
                 detailStat("Duration", StrengthHistoryFormat.durationText(mins))
             }
-            if let hr = dispAvgHr { detailStat("Avg HR", "\(hr)") }
+            // Avg HR moved to its own FC MEDIA/MÁX block (handoff «Progreso C») — not repeated here.
             // Energy only when the session actually carries it (FER-715/718): a pre-v26 session leaves
             // `energyKcal` nil → the cell is omitted (never a fabricated 0).
             if let k = dispEnergyKcal { detailStat("Energy", StrandFormat.groupedInt(k)) }
@@ -932,6 +949,117 @@ struct WorkoutSessionDetailScreen: View {
             HStack(alignment: .top, spacing: 18) { cells; Spacer(minLength: 0) }
             VStack(alignment: .leading, spacing: 12) { cells }
         }
+    }
+
+    // MARK: - HR zones + heart + note + source (handoff «Progreso C», FER-952)
+
+    /// Time-overlapping journal `WorkoutRow` — zones/max HR live only on the journal (no FK).
+    @State private var journalRow: WorkoutRow? = nil
+
+    /// The handoff's continuous warm ramp: one 34pt bar sliced by zone share, Z-labels + % below.
+    /// Shares `theme.hrZoneRamp` (1 of 3 distinct HR-zone surfaces — palettes shared, geometry not, FER-908).
+    private func zonesBlock(_ percents: [Double]) -> some View {
+        let total = max(percents.reduce(0, +), 0.001)
+        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            Text("Heart-rate zones").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    ForEach(percents.indices, id: \.self) { i in
+                        Rectangle().fill(theme.hrZoneRamp[i])
+                            .frame(width: max(0, (geo.size.width - 8) * percents[i] / total))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            }
+            .frame(height: 34)  // token-exempt: barra de zonas 34 del handoff
+            HStack(spacing: 0) {
+                ForEach(percents.indices, id: \.self) { i in
+                    VStack(spacing: 2) {
+                        Text(verbatim: "Z\(i + 1)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        Text(verbatim: "\(Int(percents[i].rounded()))%")
+                            .font(InstrumentoType.groteskNumber(12, weight: .semibold)).foregroundStyle(theme.ink)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Heart-rate zones"))
+        .accessibilityValue(Text(verbatim: percents.enumerated()
+            .map { "Z\($0.offset + 1) \(Int($0.element.rounded()))%" }.joined(separator: ", ")))
+    }
+
+    /// «FC MEDIA / FC MÁX» — the wine-hued pair (handoff): Grotesk 19 numerals, unit quiet.
+    private var heartBlock: some View {
+        HStack(spacing: 44) {  // token-exempt: 44 del handoff
+            if let hr = dispAvgHr {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Avg HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(verbatim: "\(hr)")
+                            .font(InstrumentoType.groteskNumber(19)).foregroundStyle(theme.dataHeart)
+                        Text(verbatim: "bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+            }
+            if let maxHr = journalRow?.maxHr {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Max HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(verbatim: "\(maxHr)")
+                            .font(InstrumentoType.groteskNumber(19)).foregroundStyle(theme.dataHeart)
+                        Text(verbatim: "bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «NOTA» — the session's own words, on the sunken block (handoff).
+    private func noteBlock(_ note: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Note").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(note).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(CenitMetrics.gap)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+        }
+    }
+
+    /// «FUENTE» — measured with the band (journal join) vs estimated; honest, quiet, never a guess.
+    private var sourceBadge: some View {
+        HStack(spacing: 8) {
+            Text("Source").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if journalRow != nil {
+                Text("Measured with your band")
+                    .font(StrandFont.caption).foregroundStyle(theme.dataHeart)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .background(theme.dataHeart.opacity(0.12), in: Capsule(style: .continuous))  // token-exempt: tinte 12% del handoff
+            } else {
+                Text("Estimated")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .background(theme.patternBlock, in: Capsule(style: .continuous))
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Match this strength session to a journal workout by interval overlap
+    /// (`a.start < b.end && b.start < a.end`); closest `startTs` wins.
+    private func loadJournalRow() async {
+        journalRow = nil
+        let sStart = dispStart
+        let sEnd = dispEnd ?? dispStart + 1
+        let now = Int(Date().timeIntervalSince1970)
+        let daysBack = max(3, (now - sStart) / 86_400 + 3)
+        let rows = await repo.workoutRows(days: min(daysBack, 90))
+        let matches = rows.filter { r in sStart < r.endTs && r.startTs < sEnd }
+        journalRow = matches.min(by: { abs($0.startTs - sStart) < abs($1.startTs - sStart) })
     }
 
     private func detailStat(_ label: LocalizedStringKey, _ value: String) -> some View {
@@ -1062,6 +1190,9 @@ struct WorkoutSessionDetailScreen: View {
         var prMap: [String: [PersonalRecord]] = [:]
         for id in order { prMap[id] = await repo.personalRecords(exerciseId: id) }
         prsByExercise = prMap
+
+        // Journal join (zones / max HR live only on the journal — handoff «Progreso C», FER-952).
+        await loadJournalRow()
 
         loaded = true
     }
