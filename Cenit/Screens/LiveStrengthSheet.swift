@@ -1090,19 +1090,26 @@ struct LiveStrengthSheet: View {
             }
             .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
 
-            // Overline: hidden in ad-hoc (no plan to name). No per-day schedule is exposed by
-            // `StrengthSessionModel` today, so this counts exercises rather than inventing a day count.
-            if !isEmptyAdHoc {
-                Text("ROUTINE · \(session.activeExercises.count) EXERCISES")
-                    .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .accessibilityHidden(true)
-            }
-
             // Title, underlined solid `ink` (not the dotted neutral rule reserved for table values).
             // Canvas pass 2026-07-15: sin subrayado — el peso de la tipografía basta (owner call).
+            // FER-952 (A2): the overline ABOVE the title retired — the title gets the full width and
+            // its meta rides BELOW as its own line (family dot · exercises · sets · done).
             Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
                 .font(StrandFont.title2.weight(.semibold)).foregroundStyle(theme.ink)
                 .lineLimit(1).minimumScaleFactor(0.7)
+
+            if !isEmptyAdHoc {
+                HStack(spacing: 8) {
+                    HStack(spacing: 5) {
+                        Circle().fill(sessionRegion.tint(theme)).frame(width: 7, height: 7)
+                        if let word = sessionRegionWord { Text(word) }
+                    }
+                    Text("\(session.activeExercises.count) exercises · \(sessionSetsTotal) sets · \(session.doneCount) done")
+                        .monospacedDigit()
+                }
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .accessibilityHidden(true)   // the progress bar's a11y value already tells this story
+            }
 
             // Metrics: clock (dims + freezes while paused, FER-823) · BPM (strap-only, never «♥ --») ·
             // done/total · Spacer · Pausa/Reanuda + Terminar (or Discard for an empty ad-hoc session).
@@ -1160,6 +1167,26 @@ struct LiveStrengthSheet: View {
         .background(theme.paper)
         // Canvas pass 2026-07-15: the bottom hairline under the progress bar is gone — the whitespace
         // and the rail thread separate head from list on their own (owner call, punto 6).
+    }
+
+    /// The session's movement region (push/pull/legs), classified from its runs' exercises — the same
+    /// single-source rule every routine surface uses (FER-898). Feeds the header's meta dot (A2).
+    private var sessionRegion: RoutineRegion? {
+        let per = session.runs.map { run in
+            ExerciseCatalog.all.first(where: { $0.id == run.exerciseId })?.primaryMuscles ?? []
+        }
+        return RoutineClassifier.classify(primaryMusclesPerExercise: per)
+    }
+
+    /// The region as a quiet word next to the dot («push» / «pull» / «legs» / «full body»).
+    private var sessionRegionWord: LocalizedStringKey? {
+        switch sessionRegion {
+        case .push: return "push"
+        case .pull: return "pull"
+        case .legs: return "legs"
+        case .fullBody: return "full body"
+        case nil: return nil
+        }
     }
 
     /// r21 (deuda front): los botones-cápsula del header salen de UNA fábrica — misma gramática

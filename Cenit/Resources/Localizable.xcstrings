@@ -1,6 +1,91 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "push": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "push"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "empuje"
+          }
+        }
+      }
+    },
+    "pull": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pull"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jalón"
+          }
+        }
+      }
+    },
+    "legs": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "legs"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pierna"
+          }
+        }
+      }
+    },
+    "full body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "full body"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cuerpo completo"
+          }
+        }
+      }
+    },
+    "%lld exercises · %lld sets · %lld done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld exercises · %lld sets · %lld done"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ejercicios · %lld series · %lld hechas"
+          }
+        }
+      }
+    },
     "Your weekly plan": {
       "extractionState": "manual",
       "localizations": {
