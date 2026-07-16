@@ -85,18 +85,19 @@ struct RoutineBuilderScreen: View {
             // 1e as a push (choque 3): the shared `RestEditorScreen` edits one set's rest, with a
             // «this set / all sets» scope. In the builder every change lands on the routine at «Save», so
             // the «save to routine» toggle is off (persistsToRoutine: false).
+            // Rest is per EXERCISE (FER-952) — same semantics as the unified editor.
             .navigationDestination(item: $restTarget) { t in
                 RestEditorScreen(
                     theme: theme,
                     exerciseName: StrengthDisplay.name(items[t.ei].exercise),
-                    setNumber: RoutineSetEditing.workSetNumber(items[t.ei].re, t.si),
-                    current: RoutineSetEditing.effectiveRest(items[t.ei].re, t.si),
+                    setNumber: nil,
+                    current: exerciseRest(t.ei),
                     persistsToRoutine: false,
                     restingHR: nil, maxHR: nil,
-                    defaultApplyToAll: false,
+                    defaultApplyToAll: true,
                     onCancel: { restTarget = nil },
-                    onApply: { config, applyToAll, _ in
-                        RoutineSetEditing.applyRest(to: &items[t.ei].re, si: t.si, config: config, applyToAll: applyToAll)
+                    onApply: { config, _, _ in
+                        RoutineSetEditing.applyRest(to: &items[t.ei].re, si: 0, config: config, applyToAll: true)
                         restTarget = nil
                     }
                 )
@@ -286,7 +287,7 @@ struct RoutineBuilderScreen: View {
                 Spacer(minLength: 8)
                 Button { menuExerciseIndex = idx } label: {
                     Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
+                        .foregroundStyle(theme.inkTertiary).frame(width: 30, height: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .paperMenu(
@@ -294,6 +295,10 @@ struct RoutineBuilderScreen: View {
                                          set: { if !$0 { menuExerciseIndex = nil } }),
                     items: exerciseMenuItems(idx, item: item)
                 )
+            }
+            // Handoff (rest-per-exercise): one rest decision per exercise, as a chip under the name.
+            RestChip(cfg: exerciseRest(idx), timeColor: theme.inkSecondary) {
+                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
             }
             columnHeader(item.exercise.type)
         }
@@ -335,9 +340,6 @@ struct RoutineBuilderScreen: View {
                 cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad)
             }
             Spacer(minLength: 6)
-            RestChip(cfg: RoutineSetEditing.effectiveRest(items[idx].re, si), timeColor: theme.ink) {
-                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
-            }
         }
         .frame(minHeight: 44)
         // Hairline BELOW the row, like the editor and the handoff's border-bottom.
@@ -478,6 +480,13 @@ struct RoutineBuilderScreen: View {
 
     private func inSuperset(_ i: Int) -> Bool { RoutineSetEditing.inSuperset(items.map(\.re), i) }
     private func sameGroup(_ a: Int, _ b: Int) -> Bool { RoutineSetEditing.sameGroup(items.map(\.re), a, b) }
+
+    /// The exercise-level rest rule (FER-952: rest is per exercise now).
+    private func exerciseRest(_ idx: Int) -> RestConfig {
+        let re = items[idx].re
+        return RestConfig(mode: re.restMode, seconds: re.restSeconds,
+                          hrReference: re.hrRestReference, hrValue: re.hrRestValue)
+    }
     /// First member of a superset group (shows the «Superset» header above it).
     private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
 

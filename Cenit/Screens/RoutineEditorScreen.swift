@@ -98,18 +98,20 @@ struct RoutineEditorScreen: View {
         }
         // 1e as a push: the shared rest editor edits one set's rest with a «this set / all sets» scope.
         // Changes land on the routine with the screen's own save flow, so the routine toggle is off.
+        // Rest is per EXERCISE (FER-952): `setNumber: nil` hides the editor's set-scope section and
+        // every apply writes the exercise default (clearing any legacy per-set overrides).
         .navigationDestination(item: $restTarget) { t in
             RestEditorScreen(
                 theme: theme,
                 exerciseName: StrengthDisplay.name(items[t.ei].exercise),
-                setNumber: RoutineSetEditing.workSetNumber(items[t.ei].re, t.si),
-                current: RoutineSetEditing.effectiveRest(items[t.ei].re, t.si),
+                setNumber: nil,
+                current: exerciseRest(t.ei),
                 persistsToRoutine: false,
                 restingHR: nil, maxHR: nil,
-                defaultApplyToAll: false,
+                defaultApplyToAll: true,
                 onCancel: { restTarget = nil },
-                onApply: { config, applyToAll, _ in
-                    RoutineSetEditing.applyRest(to: &items[t.ei].re, si: t.si, config: config, applyToAll: applyToAll)
+                onApply: { config, _, _ in
+                    RoutineSetEditing.applyRest(to: &items[t.ei].re, si: 0, config: config, applyToAll: true)
                     dirty = true
                     restTarget = nil
                 }
@@ -482,6 +484,12 @@ struct RoutineEditorScreen: View {
                 Spacer(minLength: 8)
                 if !locked { exerciseMenu(idx) }
             }
+            // Handoff (rest-per-exercise): the rest rule is ONE decision per exercise — a chip under
+            // the name, teal-worded when it waits on heart rate. Editing applies to every set.
+            RestChip(cfg: exerciseRest(idx), timeColor: theme.inkSecondary) {
+                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
+            }
+            .disabled(locked)
             columnHeader(item.exercise.type)
         }
         // Long-press enters reorder mode (6a): rows compact, ≡ handles appear, one drop reorders and
@@ -558,6 +566,8 @@ struct RoutineEditorScreen: View {
 
     @ViewBuilder
     private func columnHeader(_ type: ExerciseType) -> some View {
+        // Handoff (FER-952, rest-per-exercise): SERIE / KG / REPS only — rest left the table for the
+        // exercise-level chip under the name.
         HStack(spacing: 8) {
             Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
                 .lineLimit(1).minimumScaleFactor(0.7).frame(width: 40, alignment: .center)
@@ -569,7 +579,6 @@ struct RoutineEditorScreen: View {
                 Text("Reps").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             Spacer(minLength: 0)
-            Text("Rest").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
         }
         .padding(.bottom, 4)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -580,7 +589,6 @@ struct RoutineEditorScreen: View {
     private func setRow(idx: Int, si: Int) -> some View {
         let set = items[idx].re.sets[si]
         let type = items[idx].exercise.type
-        let rest = RoutineSetEditing.effectiveRest(items[idx].re, si)
         return HStack(spacing: 8) {
             numeralRing(idx: idx, si: si).frame(width: 40)
             if showsWeight(type) {
@@ -599,12 +607,6 @@ struct RoutineEditorScreen: View {
                     .minimumScaleFactor(0.7)
             }
             Spacer(minLength: 6)
-            // (The old ♥HR mini-label was redundant — the RestChip already says «HR · 65%» in its own
-            // hue; two hues for the same datum in one row read as noise.)
-            RestChip(cfg: rest, timeColor: theme.inkSecondary) {
-                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
-            }
-            .disabled(locked)
         }
         .frame(minHeight: 44)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -839,6 +841,14 @@ struct RoutineEditorScreen: View {
         } else {
             content().padding(.top, topPad)
         }
+    }
+
+    /// The exercise-level rest rule (FER-952: rest is per exercise now — the model's set overrides
+    /// remain readable, but every edit writes the exercise default and clears them).
+    private func exerciseRest(_ idx: Int) -> RestConfig {
+        let re = items[idx].re
+        return RestConfig(mode: re.restMode, seconds: re.restSeconds,
+                          hrReference: re.hrRestReference, hrValue: re.hrRestValue)
     }
 
     /// The last member of a superset group — anchors the handoff's rest-rule caption.

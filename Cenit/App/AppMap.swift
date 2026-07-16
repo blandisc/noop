@@ -234,6 +234,23 @@ private struct RoutineEditorMapCell: View {
         .environmentObject(model)
         .environmentObject(media)
         .environmentObject(TabRouter())
+        // FLUJO COMPLETO (FER-952): «Empezar» arranca la sesión de verdad
+        // (`model.startStrengthSession`) y aquí se presenta la Serie activa REAL — el mismo cover que
+        // RootView. Cerrar la sesión (Terminar/Descartar) regresa al editor.
+        .fullScreenCover(isPresented: Binding(
+            get: { model.strengthSession != nil },
+            set: { if !$0 { model.strengthSession = nil } }
+        )) {
+            if let session = model.strengthSession {
+                LiveStrengthSheet(session: session)
+                    .environmentObject(model.repo)
+                    .environmentObject(model)
+                    .environmentObject(TabRouter())
+                    .environmentObject(media)
+                    .environment(model.live)
+                    .preferredColorScheme(.light)
+            }
+        }
         .preferredColorScheme(.light)
         .frame(width: 393, height: 852)
         .task {
