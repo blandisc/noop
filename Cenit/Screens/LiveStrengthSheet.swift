@@ -1703,13 +1703,17 @@ struct LiveStrengthSheet: View {
         session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
     }
 
-    /// The set index the inline rest card slots BEFORE (the next pending set of the resting exercise) —
-    /// nil when the rest follows the exercise's last set (the card then lands after the table).
+    /// The set index the inline rest card slots BEFORE — nil when the rest follows the exercise's
+    /// last set (the card then lands after the table). r12 (owner): the card hangs off the LAST
+    /// DONE row, always. Slotting before `currentSet` let the card wander: un-checking a row ABOVE
+    /// moved `currentSet` up and dragged the resting card with it, away from the set just finished.
     private func restSlotIndex(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> Int? {
         guard session.phase == .resting, ei == accordionIndex, session.summary == nil else { return nil }
-        let si = run.currentSet
-        guard run.sets.indices.contains(si), !run.sets[si].done else { return nil }
-        return si
+        guard let lastDone = run.sets.lastIndex(where: { $0.done }) else {
+            return run.sets.isEmpty ? nil : 0
+        }
+        let si = run.sets.index(after: lastDone)
+        return run.sets.indices.contains(si) ? si : nil
     }
 
     /// El descanso en línea EMBEBIDO en la rebanada de su fila (r7-fix): conserva su hover propio y el
@@ -3359,14 +3363,13 @@ struct LiveStrengthSheet: View {
         .padding(.vertical, reflow ? 8 : 2)
         // r6: sin resaltado de fila (desbordaba el borde de la tarjeta) — la serie en curso se marca
         // solo con su numeral subrayado. El divisor vive a nivel rebanada (recibo, borde a borde).
-        // TEMP-BISECT r9: overlay punteado FER-938 desactivado para aislar la fila gorda — si con
-        // esto y el fix de identidad la fila queda normal, se re-activa para confirmar al culpable.
-        // .overlay {
-        //     if set.id == copiedSetId, !set.done {
-        //         RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-        //             .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-        //     }
-        // }
+        // r12: overlay FER-938 reactivado — el bisect r9 lo exoneró (la fila siguió gorda con él apagado).
+        .overlay {
+            if set.id == copiedSetId, !set.done {
+                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            }
+        }
         .transition(.opacity)
         .accessibilityElement(children: .contain)
         .accessibilityActions {
@@ -5068,7 +5071,7 @@ struct NoteSheet: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 24)   // r10 (owner): más aire aún — el grabber respira lejos del título
+        .padding(.top, 32)   // r12 (owner): más aire aún — el grabber respira lejos del título
         .padding(.bottom, CenitMetrics.screenPadding)
         .background(theme.paper.ignoresSafeArea())
         .onChange(of: scope) { _, newScope in
