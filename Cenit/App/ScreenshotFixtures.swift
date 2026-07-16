@@ -266,18 +266,15 @@ enum ScreenshotFixtures {
     @MainActor
     static func seedTrainingPlan(_ model: AppModel) async {
         guard let store = await model.repo.storeHandle() else { return }
-        // Idempotent: the fixture relaunches between captures and the store persists — seeding again
-        // would duplicate the routines (first capture showed «18 rutinas»: 6× each). But routines
-        // WITHOUT sessions (e.g. a store `seed(state: "train")` populated earlier) still fall through
-        // to the session block below, hanging the demo history off the existing plan (FER-951).
-        if let existing = try? await store.routines(), !existing.isEmpty {
-            let sessions = (try? await store.recentSessions(limit: 1)) ?? []
-            guard sessions.isEmpty else { return }
-            let rid = existing[0].id
-            await seedSessions(store: store, pushId: rid,
-                               pullId: existing.count > 1 ? existing[1].id : rid,
-                               legsId: existing.count > 2 ? existing[2].id : rid)
-            return
+        // WIPE + RESEED, always: the preview store PERSISTS across canvas runs, so any stale demo
+        // (yesterday's weekday split → «No routine» today; an old seed without sessions/zones) would
+        // shadow the fresh one forever. Deleting the demo first also keeps the old idempotence promise
+        // — no duplicated routines — while re-anchoring the split to TODAY on every run (FER-952).
+        if let stale = try? await store.routines() {
+            for r in stale { try? await store.deleteRoutine(id: r.id) }
+        }
+        for s in (try? await store.recentSessions(limit: 500)) ?? [] {
+            try? await store.deleteSession(id: s.id)
         }
         let now = Int(Date().timeIntervalSince1970)
         let cal = Calendar(identifier: .gregorian)
