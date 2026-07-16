@@ -536,11 +536,16 @@ struct RoutineEditorScreen: View {
                 if isPlanDay { dayMenu }
             }
             // Serie activa look (FER-952 approved mock): no ink seal — the session header is bare.
-            Text(routine?.name ?? "")
-                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                .foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // The title is EDITABLE here (unified flow: a routine born from the library arrives as
+            // «New routine» and gets its real name right where you see it). Autosaves like the rest.
+            TextField("Routine name", text: Binding(
+                get: { routine?.name ?? "" },
+                set: { routine?.name = $0; dirty = true }
+            ))
+            .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+            .foregroundStyle(theme.ink)
+            .disabled(locked)
+            .frame(maxWidth: .infinity, alignment: .leading)
             metaLine
         }
     }

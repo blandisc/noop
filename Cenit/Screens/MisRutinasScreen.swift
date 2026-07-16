@@ -35,7 +35,6 @@ struct MisRutinasScreen: View {
     @State private var showBuilder = false
     /// The routine the builder just created; pushed onto «Rutina» when its sheet finishes dismissing
     /// (pushing mid-dismiss stacks transitions, FER-171 lesson).
-    @State private var savedRoutineId: String? = nil
     @State private var showTemplates = false
     @State private var showImport = false
     @State private var swipedRoutineId: String? = nil
@@ -69,16 +68,11 @@ struct MisRutinasScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .overlay(alignment: .bottom) { if let d = pendingUndo { undoBanner(d) } }
         .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
-        // Create-only builder (FER-840): saving hands back the new routine's id, and the dismissed sheet
-        // opens it straight on the unified «Rutina» editor.
-        .sheet(isPresented: $showBuilder, onDismiss: {
-            if let id = savedRoutineId { savedRoutineId = nil; openRoutine(id) }
-        }) {
-            RoutineBuilderScreen { id in
-                savedRoutineId = id
-                await load()
-            }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        // FER-952 unified flow: «＋ Nueva rutina» PUSHES the library as a screen (no sheet). Adding
+        // the picks creates the routine on the spot and lands straight on the unified «Rutina» editor
+        // — one editor for born-new and existing routines alike.
+        .navigationDestination(isPresented: $showBuilder) {
+            ExerciseLibraryScreen { picks in createRoutine(picks) }
         }
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
@@ -516,6 +510,26 @@ struct MisRutinasScreen: View {
     }
 
     // MARK: - Data
+
+    /// FER-952 unified flow: the library's picks become a routine RIGHT HERE («New routine», 3×8 per
+    /// exercise — the builder's defaults) and the unified editor opens to name and tune it.
+    private func createRoutine(_ picks: [Exercise]) {
+        guard !picks.isEmpty else { return }
+        let now = Int(Date().timeIntervalSince1970)
+        let r = Routine(name: String(localized: "New routine"), createdTs: now, updatedTs: now, sortOrder: 0)
+        let exercises = picks.enumerated().map { idx, ex -> RoutineExercise in
+            let usesReps = ex.type == .weightReps || ex.type == .bodyweight
+            let reps: Int? = usesReps ? 8 : nil
+            let sets = (0..<3).map { RoutineSet(position: $0, kind: .work, reps: reps, weightKg: nil) }
+            return RoutineExercise(routineId: r.id, exerciseId: ex.id, position: idx,
+                                   targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
+        }
+        Task {
+            try? await repo.saveRoutine(r, exercises: exercises)
+            await load()
+            openRoutine(r.id)
+        }
+    }
 
     private func load() async {
         guard let store = await repo.storeHandle() else { loaded = true; return }
