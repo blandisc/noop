@@ -1329,6 +1329,7 @@ struct LiveStrengthSheet: View {
                 .init(String(localized: "Pair here"), role: .primary) {
                     if let ei = confirmSupersetSteal {
                         withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
+                        persistSupersetGroups()   // r30: también el robo consentido queda en la rutina
                     }
                     confirmSupersetSteal = nil
                 },
@@ -3184,6 +3185,7 @@ struct LiveStrengthSheet: View {
                     confirmSupersetSteal = ei
                 } else {
                     withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
+                    persistSupersetGroups()   // r30: la pareja (o su deshecho) queda en la rutina
                 }
             })
         }
@@ -4440,6 +4442,24 @@ struct LiveStrengthSheet: View {
 
     /// Persist the FULL progression config (r7 — the real ProgressionSetupScreen fields) into the
     /// backing routine, including the rep goal onto the plan's work sets.
+    /// r30 (owner): «si algo se determina como superset, SE QUEDA como superset» — cada cambio de
+    /// pareja hecho en la sesión se escribe a la RUTINA (el mismo camino que la progresión), así
+    /// la próxima sesión nace con las mismas parejas. Ad-hoc (sin rutina) no tiene dónde persistir.
+    private func persistSupersetGroups() {
+        guard let rid = session.routineId else { return }
+        let groups = Dictionary(uniqueKeysWithValues: session.runs.map { ($0.id, $0.supersetGroup) })
+        Task {
+            guard let store = await model.repo.storeHandle(),
+                  var res = try? await store.routineExercises(routineId: rid),
+                  let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
+            for i in res.indices where groups.keys.contains(res[i].id) {
+                res[i].supersetGroup = groups[res[i].id] ?? nil
+            }
+            try? await store.saveRoutine(routine, exercises: res)
+            for re in res { routineREs[re.id] = re }
+        }
+    }
+
     private func persistProgressionFull(runId: String, enabled: Bool, targetReps: Int, sessions: Int,
                                         incrementKg: Double?, deload: DeloadPolicy, ignoreRecovery: Bool) {
         guard let rid = session.routineId else { return }
