@@ -2695,8 +2695,9 @@ struct LiveStrengthSheet: View {
                 .lineLimit(1).minimumScaleFactor(0.6)
                 .frame(maxWidth: .infinity, alignment: .leading)
             ForEach(titles.indices, id: \.self) { i in
+                let isRPE = hasRPEColumn(type) && i == titles.indices.last
                 Text(titles[i]).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .frame(width: cellWidth(type), alignment: .center)
+                    .frame(width: isRPE ? rpeColumnWidth : cellWidth(type), alignment: .center)
             }
             Color.clear.frame(width: 44, height: 1)
         }
@@ -2713,6 +2714,12 @@ struct LiveStrengthSheet: View {
         }
     }
     private var massUnitTitle: LocalizedStringKey { imperial ? "LB" : "KG" }
+    /// La columna RPE: más angosta que las de captura (su contenido es «RPE» o «9,5»).
+    private let rpeColumnWidth: CGFloat = 40
+    /// ¿La última columna de este tipo es RPE? (weightReps/bodyweight sí; time/distance no.)
+    private func hasRPEColumn(_ type: ExerciseType) -> Bool {
+        type == .weightReps || type == .bodyweight
+    }
     private func cellWidth(_ type: ExerciseType) -> CGFloat {
         switch type {
         // FER-952 (owner): 56 starved the flexible PREV column to ~5pt inside the card's gutter —
@@ -3239,7 +3246,7 @@ struct LiveStrengthSheet: View {
                     Text("RPE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 }
             }
-            .frame(width: reflow ? nil : cellWidth(run.type), height: 44)
+            .frame(width: reflow ? nil : rpeColumnWidth, height: 44)
             .contentShape(Rectangle())
             .overlay(alignment: .bottom) {
                 Rectangle().fill(theme.hairline).frame(height: 1).padding(.bottom, 6)
@@ -3695,11 +3702,11 @@ struct LiveStrengthSheet: View {
         switch run.type {
         case .weightReps:
             guard let w = run.lastWeightKg, let r = run.lastReps else { return nil }
-            return "\(massText(w)) × \(r)"
+            return "\(massText(w))×\(r)"
         case .bodyweight:
             guard let r = run.lastReps else { return nil }
             let w = run.lastWeightKg ?? 0
-            return "+\(plateNumber(displayWeight(w))) × \(r)"
+            return "+\(plateNumber(displayWeight(w)))×\(r)"
         case .time:
             guard let t = run.lastTimeS else { return nil }
             return Self.clock(t)

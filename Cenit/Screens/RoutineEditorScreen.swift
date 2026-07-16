@@ -92,7 +92,7 @@ struct RoutineEditorScreen: View {
             }
         }
         .background(theme.paper.ignoresSafeArea())
-        .onDisappear { if dirty { persist() } }
+        .onDisappear { if dirty, !isOrphan { persist() } }
         .toolbar(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -375,11 +375,14 @@ struct RoutineEditorScreen: View {
         var i = idx
         while i > 0, RoutineSetEditing.sameGroup(res, i - 1, i) { n += 1; i -= 1 }
         let letter = String(UnicodeScalar(64 + min(max(groups.count, 1), 26))!)
-        return Text(verbatim: "\(letter)\(n)")
-            .font(InstrumentoType.grotesk(11, weight: .bold)).monospacedDigit()
-            .foregroundStyle(theme.dataHrv)
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .background(theme.dataHrv.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))  // token-exempt: badge A1/A2 (Serie activa)
+        // Decisión Fer (auditoría G): UNA sola forma para A1/A2 en todo el flujo — el círculo teal
+        // relleno de la Serie activa (antes aquí era chip de texto sobre tinte).
+        return Circle().fill(theme.dataHrv)
+            .frame(width: 17, height: 17)
+            .overlay {
+                Text(verbatim: "\(letter)\(n)").font(StrandFont.footnote).fontWeight(.semibold)
+                    .foregroundStyle(theme.paper)
+            }
     }
 
     /// A set row + the Serie activa's armed-delete gesture: long-press lifts the row and offers the
@@ -560,6 +563,13 @@ struct RoutineEditorScreen: View {
             .foregroundStyle(theme.ink)
             .disabled(locked)
             .frame(maxWidth: .infinity, alignment: .leading)
+            if locked {
+                // El porqué del bloqueo, dicho — controles muertos sin explicación era la queja
+                // «no me deja editar» (canvas 2026-07-16).
+                Text("Session in progress · finish it to edit")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .padding(.top, 2)
+            }
             metaLine
         }
     }
@@ -1046,6 +1056,10 @@ struct RoutineEditorScreen: View {
     // MARK: - Navigation (Notes-style: every origin autosaves on leave when dirty)
 
     private func back() {
+        if isOrphan {
+            Task { await discardOrphan(); dismiss() }
+            return
+        }
         guard dirty else { dismiss(); return }
         // Guardar ANTES de salir: el hub recarga en el onAppear del pop y leería el plan viejo si el
         // save siguiera en vuelo (bug «agregué ejercicios y no se ven», canvas 2026-07-16).
@@ -1053,6 +1067,18 @@ struct RoutineEditorScreen: View {
             await persistNow()
             dismiss()
         }
+    }
+
+    /// C1 (decisión Fer): quedó vacía y con el nombre de fábrica — el flujo de creación la persiste
+    /// antes de abrir el editor, así que salir así dejaría una «Nueva rutina» fantasma en la lista.
+    private var isOrphan: Bool {
+        guard let r = routine else { return false }
+        return items.isEmpty && r.name == String(localized: "New routine")
+    }
+
+    private func discardOrphan() async {
+        guard let r = routine else { return }
+        try? await repo.deleteRoutine(id: r.id)
     }
 
     /// Restore the load-time prescription, clear dirty, and re-persist so disk matches the undo.

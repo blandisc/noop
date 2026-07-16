@@ -685,6 +685,12 @@ final class AppModel: ObservableObject {
     /// restoring — no double receipt. No recoverable session → fire `onNoRecoverableStrengthSession`
     /// (FER-806's hook to close any orphaned Live Activity).
     func restoreInProgressStrengthSessionIfNeeded() async {
+        #if DEBUG
+        // Canvas/previews: la restauración post-crash corría en CARRERA con el seed de fixtures y
+        // resucitaba una sesión vieja del store compartido — editor bloqueado sin razón visible
+        // (canvas 2026-07-16). Los previews arrancan sesiones solo de forma explícita.
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" { return }
+        #endif
         guard strengthSession == nil else { return }                 // never clobber a live session
         guard let store = await repo.storeHandle() else { return }   // no store yet → retry next launch
         guard let snap = (try? await store.inProgressSession()) ?? nil else {

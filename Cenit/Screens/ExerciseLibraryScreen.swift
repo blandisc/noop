@@ -10,6 +10,9 @@ import StrandTraining
 // papel»: ink on paper, no datum here so no color; selection is quiet ink chrome.
 
 struct ExerciseLibraryScreen: View {
+    /// M8 (decisión Fer): el flujo de CREACIÓN inyecta su contexto — el título dice «Nueva rutina»
+    /// en vez del genérico «Agregar a rutina» (todavía no existe rutina a la cual agregar).
+    var createFlow: Bool = false
     /// Non-nil → ADD mode: multi-select with an "Add N" action that returns the picks. Nil → BROWSE.
     var onAdd: (([Exercise]) -> Void)? = nil
 
@@ -87,7 +90,7 @@ struct ExerciseLibraryScreen: View {
             // Handoff: overline «BIBLIOTECA» + the COUNT as the Grotesk hero title («873 ejercicios»).
             // The count reflects the REAL loaded catalog (never a made-up figure) — until it loads, the
             // title falls back to the section name so nothing flashes a wrong 0.
-            Text(addMode ? "Add to routine" : "Library")
+            Text(createFlow ? "New routine · pick exercises" : (addMode ? "Add to routine" : "Library"))
                 .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
             Group {
                 if loaded {

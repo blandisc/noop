@@ -181,7 +181,7 @@ private struct EntrenarLanding: View {
         }
         // FER-952: «＋ Nueva rutina» del hub — el flujo unificado directo (Biblioteca → editor).
         .navigationDestination(isPresented: $showCreateRoutine) {
-            ExerciseLibraryScreen { picks in createRoutineFromHub(picks) }
+            ExerciseLibraryScreen(createFlow: true) { picks in createRoutineFromHub(picks) }
         }
         // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
         // doesn't cross the `.sheet` boundary, FER-162), no nested NavigationStack (FER-171). (FER-557)
@@ -393,24 +393,12 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// Routine-day CTA: same chrome as `StrandCTAButton` solid, but fill uses the routine's region tint
-    /// instead of `theme.ink` (shared component stays ink-only for other screens).
+    /// Routine-day CTA: `StrandCTAButton` con el tinte de región de la rutina (auditoría FER-952:
+    /// el chrome se copiaba a mano; ahora el componente acepta `tint`).
     private var tintedEmpezarButton: some View {
-        let tint = routineTint(region(name: todayRoutine?.name ?? ""))
-        return Button(action: startOrResume) {
-            Text(empezarLabel)
-                .font(InstrumentoType.grotesk(15, weight: .bold))
-                .tracking(0.3)
-                .foregroundStyle(theme.paperHi)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 15)
-                .background(
-                    RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
-                        .fill(tint)
-                )
-                .contentShape(Rectangle())
+        StrandCTAButton(empezarLabel, tint: routineTint(region(name: todayRoutine?.name ?? ""))) {
+            startOrResume()
         }
-        .buttonStyle(.plain)
     }
 
     /// F1: a day with a routine starts the guided session in one tap (slots prefetched on load); an empty
@@ -649,25 +637,11 @@ private struct EntrenarLanding: View {
             }
             .buttonStyle(.plain)
             HStack(spacing: CenitMetrics.space2) {
-                hubToolChip("square.stack.3d.up", "Templates") { showTemplates = true }
-                hubToolChip("square.and.arrow.down", "Import") { showHubImport = true }
+                InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
+                InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showHubImport = true }
             }
         }
         .padding(.top, CenitMetrics.space2)
-    }
-
-    private func hubToolChip(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: symbol).font(StrandFont.glyph(.chevron, weight: .medium))
-                Text(title).font(StrandFont.subhead.weight(.medium))
-            }
-            .foregroundStyle(theme.ink)
-            .frame(maxWidth: .infinity, minHeight: 40)
-            .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     /// Mon→Sun strip of the weekly split under «Also in your plan»: one equal cell per weekday, tinted

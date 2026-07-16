@@ -151,30 +151,13 @@ struct StarterTemplatesSheet: View {
                 if let onStart {
                     // «Do it now» context (the planner's softer suggestion): start the session now is primary;
                     // saving it for later is the quiet secondary.
-                    // FER-952: «Empezar» = the module's ember door with the play glyph (same CTA
-                    // grammar as the routine editor), at ctaRadius.
-                    Button { start(t, via: onStart) } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "play.fill").font(.system(size: 13, weight: .bold))  // token-exempt: glifo del CTA
-                            Text("Empezar").font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                        }
-                        .foregroundStyle(theme.paper)
-                        .frame(maxWidth: .infinity).padding(.vertical, 15)
-                        .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
+                    // FER-952: «Empezar» = la puerta ámbar del módulo con el glifo play — ahora vía
+                    // StrandCTAButton(tint:), el chrome ya no se copia a mano (auditoría D).
+                    StrandCTAButton("Empezar", systemImage: "play.fill", tint: theme.dataStrain) {
+                        start(t, via: onStart)
                     }
-                    .buttonStyle(.plain)
-
-                    Button { add(t) } label: {
-                        Text("Add to my routines")
-                            .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                            .foregroundStyle(theme.ink)
-                            .frame(maxWidth: .infinity).padding(.vertical, 15)
-                            .background(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
-                                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(saving)
-                    .opacity(saving ? 0.6 : 1)
+                    StrandCTAButton("Add to my routines", kind: .outline) { add(t) }
+                        .disabled(saving)
                 } else {
                     Button { add(t) } label: {
                         Text("Add to my routines")

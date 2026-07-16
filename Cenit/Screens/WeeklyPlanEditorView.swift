@@ -61,6 +61,7 @@ struct WeeklyPlanEditorView: View {
     @State private var showImport = false
     @State private var swipedRoutineId: String? = nil
     @State private var pendingUndo: DeletedRoutine? = nil
+    @State private var pendingFolderUndo: DeletedFolder? = nil
     @State private var showNewFolder = false
     @State private var newFolderName = ""
     @State private var pendingMove: Routine? = nil
@@ -100,12 +101,15 @@ struct WeeklyPlanEditorView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .overlay(alignment: .bottom) { if let d = pendingUndo { undoBanner(d) } }
+        .overlay(alignment: .bottom) {
+            if let d = pendingUndo { undoBanner(d) }
+            else if let fd = pendingFolderUndo { folderUndoBanner(fd) }
+        }
         .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
         // FER-952 unified flow: «＋ Nueva rutina» PUSHES the library as a screen (no sheet); adding
         // the picks creates the routine on the spot and lands on the unified «Rutina» editor.
         .navigationDestination(isPresented: $showBuilder) {
-            ExerciseLibraryScreen { picks in createRoutine(picks) }
+            ExerciseLibraryScreen(createFlow: true) { picks in createRoutine(picks) }
         }
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
@@ -397,26 +401,12 @@ struct WeeklyPlanEditorView: View {
     /// Folders anchors the folder-management paper menu (new / rename / delete).
     private var toolsChipsRow: some View {
         HStack(spacing: CenitMetrics.space2) {
-            toolChip("square.stack.3d.up", "Templates") { showTemplates = true }
-            toolChip("square.and.arrow.down", "Import") { showImport = true }
-            toolChip("folder", "Folders") { showToolsMenu = true }
+            InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
+            InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showImport = true }
+            InstrumentoToolChip(systemImage: "folder", label: Text("Folders")) { showToolsMenu = true }
                 .paperMenu(isPresented: $showToolsMenu, items: folderMenuItems)
         }
         .padding(.vertical, CenitMetrics.space2)
-    }
-
-    private func toolChip(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: symbol).font(StrandFont.glyph(.chevron, weight: .medium))
-                Text(title).font(StrandFont.subhead.weight(.medium))
-            }
-            .foregroundStyle(theme.ink)
-            .frame(maxWidth: .infinity, minHeight: 40)
-            .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     private var folderMenuItems: [PaperMenuItem] {
@@ -624,12 +614,52 @@ struct WeeklyPlanEditorView: View {
     }
 
     private func deleteFolder(_ f: RoutineFolder) {
+        let members = routines.filter { $0.folderId == f.id }.map(\.id)
         Task {
             guard let store = await repo.storeHandle() else { return }
             try? await store.deleteFolder(id: f.id)
             await load()
+            withAnimation { pendingFolderUndo = DeletedFolder(folder: f, memberIds: members) }
         }
     }
+    /// M5 (decisión Fer): borrar carpeta era destructivo inmediato — mismo contrato de undo 4 s
+    /// que borrar rutina. Las rutinas miembro se restauran a la carpeta si el usuario se arrepiente.
+    private struct DeletedFolder: Identifiable {
+        let id = UUID()
+        let folder: RoutineFolder
+        let memberIds: [String]
+    }
+
+    private func undoDeleteFolder(_ d: DeletedFolder) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.saveFolder(d.folder)
+            for rid in d.memberIds { try? await store.setRoutineFolder(routineId: rid, folderId: d.folder.id) }
+            await load()
+            withAnimation { pendingFolderUndo = nil }
+        }
+    }
+
+    private func folderUndoBanner(_ d: DeletedFolder) -> some View {
+        HStack(spacing: 12) {
+            Text("Folder deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
+            Spacer(minLength: 8)
+            Button { undoDeleteFolder(d) } label: {
+                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 14)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.bottom, 8)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .task(id: d.id) {
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            withAnimation { if pendingFolderUndo?.id == d.id { pendingFolderUndo = nil } }
+        }
+    }
+
 
     private func move(_ r: Routine, to folderId: String?) {
         Task {
