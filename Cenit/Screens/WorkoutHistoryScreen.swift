@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
+import WhoopStore   // WorkoutRow — the journal join that carries zones / max HR (FER-952)
 
 // WorkoutHistoryScreen.swift — «Mis entrenamientos» (FER-504): the completed strength sessions, newest
 // first, each opening a per-exercise breakdown. Read-only — it never edits or deletes a session. Pure
