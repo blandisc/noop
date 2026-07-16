@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La pestaña de Tendencias entra más fluida / The Trends tab loads smoother.**
+  **ES** — Al entrar a Tendencias (y en cada sincronización), todos los cálculos de las tarjetas — estrés, carga de entrenamiento, vitalidad/edad corporal, edad física, calibración de recuperación — corren ahora en segundo plano en vez de bloquear la pantalla. Mismos números, sin tirones.
+  **EN** — Entering Trends (and every sync), all the card math — stress, training load, vitality/body age, fitness age, recovery calibration — now runs in the background instead of blocking the screen. Same numbers, no hitches.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
 - **Recuperación, Esfuerzo y Estrés también abren al instante / Recovery, Strain and Stress also open instantly.**
   **ES** — El mismo arreglo del Detalle de Sueño, ahora en el resto de Tendencias: Recuperación (también desde Hoy y Entrenar) y Esfuerzo se deslizan de inmediato con su estado de carga mientras el cálculo corre en segundo plano; Estrés y Temperatura de la piel ya no compiten con la animación al preparar su calendario e historial. Los valores no cambian — solo dónde se calculan.
   **EN** — The Sleep Detail fix, now across the rest of Trends: Recovery (also from Today and Train) and Strain slide in immediately with their loading state while the math runs in the background; Stress and Skin Temperature no longer fight the animation while preparing their calendar and history. Values unchanged — only where they're computed.

@@ -154,6 +154,17 @@ private enum CuerpoSheet: Identifiable {
 
 // MARK: - Landing
 
+/// Off-main engines payload for `CuerpoLanding.loadAll` — pure value types crossed via
+/// `Task.detached` (FER-955).
+private struct CuerpoLandingEngines: Sendable {
+    let recoveryCalibration: Int?
+    let stressModel: StressModel?
+    let trainingLoad: TrainingLoadModel?
+    let fitnessAge: FitnessAgeSnapshot
+    let vitalityInputs: VitalityEngine.Inputs
+    let vitalityResult: VitalityEngine.Result?
+}
+
 private struct CuerpoLanding: View {
     @EnvironmentObject var repo: Repository
     @Environment(LiveState.self) var live
@@ -1022,7 +1033,7 @@ private struct CuerpoLanding: View {
     }
 
     /// Build the Fitness Age snapshot from the trailing 7-day display window + profile. Pure + cheap;
-    /// memoized into `fitnessAge` by `loadAll`, recomputed on demand as the sheet's fallback.
+    /// primary path is the off-main hop in `loadAll` (FER-955); kept as the sheet's on-demand fallback.
     private func computeFitnessAge() -> FitnessAgeSnapshot {
         let last7 = trailingDisplay(7)
         return FitnessAgeEngine.snapshot(
@@ -1216,10 +1227,12 @@ private struct CuerpoLanding: View {
 
     // MARK: - Loading (memoize once per refresh)
 
+    /// Loads query-backed `@State` on MainActor, then runs the pure StrandAnalytics engines off-main
+    /// (FER-955 — same snapshot → `Task.detached` seam as `SleepDetailModel.buildDetached`).
     private func loadAll() async {
-        recoveryCalibration = RecoveryScorer.calibrationNights(
-            nightlyHrv: repo.days.map(\.avgHrv),
-            hasRecovery: repo.today?.recovery != nil)
+        // Stale-refresh guard: `.task(id: repo.refreshSeq)` re-runs this when the seq bumps, but the
+        // detached engines task is not auto-cancelled — discard results if a newer refresh won (FER-955).
+        let seq = repo.refreshSeq
 
         // The sparklines (hero + every stat) are computed properties windowed by `selectedPeriod` straight
         // off `repo.displayDays`, so they re-window on selector change without a reload (FER-566). Only the
@@ -1261,54 +1274,99 @@ private struct CuerpoLanding: View {
         // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
         let stored = await stressRows
         stressSeries = stored   // for the Stress stat's sparkline (FER-566)
-        let stress = StressModel(days: repo.displayDays, stored: stored,
-                                 todayKey: Repository.localDayKey(Date()), appleDays: repo.appleHealthDays)
-        stressModel = stress
 
-        fitnessAge = computeFitnessAge()
+        // Value-type snapshots for the off-main engines hop (FER-955).
+        let days = repo.days
+        let displayDays = repo.displayDays
+        let appleHealthDays = repo.appleHealthDays
+        let hasRecovery = repo.today?.recovery != nil
+        let sleeps = repo.sleeps
+        let age = model.profile.age
+        let sex = model.profile.sex
+        let todayKey = Repository.localDayKey(Date())
+        let regularityCutoff = Int(Date().timeIntervalSince1970) - 35 * 86_400
 
-        // Carga de entrenamiento (FER-705): today's ACWR + the replayed series, from the BAND-masked
-        // dashboard — the same slice the recovery detail feeds `ReadinessEngine` (FER-632), so the card,
-        // the «Your patterns» line and the verdict signal can never disagree on the band.
-        let bandMasked = SourceLens.maskForBaseline(repo.days, keep: .band, appleDays: repo.appleHealthDays)
-        let readiness = ReadinessEngine.evaluate(days: bandMasked, today: Repository.localDayKey(Date()))
-        trainingLoad = TrainingLoadModel(
-            acwr: readiness.acwr,
-            series: ReadinessEngine.acwrSeries(days: bandMasked).map { (day: $0.day, value: $0.ratio) },
-            days: bandMasked)
+        // Pure StrandAnalytics engines off MainActor (FER-955). Same expressions as before; only the
+        // executor moves. Assignments return to main below, gated by `seq`.
+        let engines = await Task.detached(priority: .userInitiated) { () -> CuerpoLandingEngines in
+            let recoveryCalibration = RecoveryScorer.calibrationNights(
+                nightlyHrv: days.map(\.avgHrv),
+                hasRecovery: hasRecovery)
 
-        // Longevity (FER-145 + FER-214): Body Age + Vitality from a 28-night window. Regularity uses the
-        // real Sleep Regularity Index when there's coverage (FER-214), else the documented duration proxy;
-        // VO₂max needs a waist the profile doesn't collect, so the cardio signal flows through resting HR.
-        // Mask cross-source columns to the BAND before the engine folds them (FER-640): `nightlyRMSSD`
-        // takes the MEDIAN of `avgHrv` and `VitalityEngine` scores it against an RMSSD-by-age norm, but
-        // `displayDays` back-fills Apple **SDNN** on band-less nights (FER-149) — a different construct with
-        // no published conversion (Task Force 1996; Shaffer & Ginsberg 2017), so a few Apple nights bias
-        // Body Age by source, not physiology. The same `SourceLens.maskForBaseline(keep:.band)` (FER-631)
-        // also nils Apple's resting HR (band −12.7 bpm offset), which likewise scores against a band-domain
-        // norm — so both nocturnal inputs stay single-source. Single-source columns (steps) and cross-source-
-        // comparable ones (sleep duration) are untouched. If the user is Apple-only, band RMSSD is empty →
-        // `VitalityInputsBuilder`'s coverage gate drops the HRV factor rather than comparing SDNN to the
-        // band norm. A strap-only user is the identity — `recentBand == recent`.
-        let recent = trailingDisplay(28)
-        let recentBand = SourceLens.maskForBaseline(recent, keep: .band, appleDays: repo.appleHealthDays)
-        let vInputs = VitalityInputsBuilder.build(.init(
-            chronoAge: Double(model.profile.age),
-            nightlyRestingHR: recentBand.compactMap { $0.restingHr.map(Double.init) },
-            nightlyRMSSD: recentBand.compactMap { $0.avgHrv },
-            nightlySleepHours: recent.compactMap { $0.totalSleepMin.map { $0 / 60 } },
-            dailySteps: recent.compactMap { $0.steps.map(Double.init) },
-            sleepRegularity: computeSleepRegularity()))
-        vitalityInputs = vInputs
-        vitalityResult = VitalityEngine.compute(vInputs)
-    }
+            let stressModel = StressModel(days: displayDays, stored: stored,
+                                          todayKey: todayKey, appleDays: appleHealthDays)
 
-    /// The real Sleep Regularity Index (FER-214) over a trailing window of persisted sleep sessions, as a
-    /// 0–1 input for the engine (SRI/100). The session→timeline mapping is the pure
-    /// `SleepRegularityIndex.fromSessions`; the view only supplies the window. nil → the builder's proxy.
-    private func computeSleepRegularity() -> Double? {
-        let cutoff = Int(Date().timeIntervalSince1970) - 35 * 86_400
-        return SleepRegularityIndex.fromSessions(repo.sleeps.filter { $0.startTs >= cutoff }).map { $0 / 100 }
+            // Carga de entrenamiento (FER-705): today's ACWR + the replayed series, from the BAND-masked
+            // dashboard — the same slice the recovery detail feeds `ReadinessEngine` (FER-632), so the card,
+            // the «Your patterns» line and the verdict signal can never disagree on the band.
+            let bandMasked = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleHealthDays)
+            let readiness = ReadinessEngine.evaluate(days: bandMasked, today: todayKey)
+            let trainingLoad = TrainingLoadModel(
+                acwr: readiness.acwr,
+                series: ReadinessEngine.acwrSeries(days: bandMasked).map { (day: $0.day, value: $0.ratio) },
+                days: bandMasked)
+
+            // Trailing-N of `displayDays` — same cutoff+filter as `trailingDisplay`, inlined so we never
+            // call MainActor-isolated helpers from this detached task. `DayKey.localFormatter` is the
+            // same object `Repository.localDayKey` uses (nonisolated; FER-955).
+            func trailing(_ n: Int) -> [DailyMetric] {
+                let cutoff = DayKey.localFormatter.string(
+                    from: Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date())
+                return displayDays.filter { $0.day >= cutoff }
+            }
+
+            let last7 = trailing(7)
+            let fitnessAge = FitnessAgeEngine.snapshot(
+                rhrLast7: last7.map { $0.restingHr },
+                strainLast7: last7.map { $0.strain },
+                age: age, sex: sex,
+                hasHeightWeight: true)
+
+            // Longevity (FER-145 + FER-214): Body Age + Vitality from a 28-night window. Regularity uses the
+            // real Sleep Regularity Index when there's coverage (FER-214), else the documented duration proxy;
+            // VO₂max needs a waist the profile doesn't collect, so the cardio signal flows through resting HR.
+            // Mask cross-source columns to the BAND before the engine folds them (FER-640): `nightlyRMSSD`
+            // takes the MEDIAN of `avgHrv` and `VitalityEngine` scores it against an RMSSD-by-age norm, but
+            // `displayDays` back-fills Apple **SDNN** on band-less nights (FER-149) — a different construct with
+            // no published conversion (Task Force 1996; Shaffer & Ginsberg 2017), so a few Apple nights bias
+            // Body Age by source, not physiology. The same `SourceLens.maskForBaseline(keep:.band)` (FER-631)
+            // also nils Apple's resting HR (band −12.7 bpm offset), which likewise scores against a band-domain
+            // norm — so both nocturnal inputs stay single-source. Single-source columns (steps) and cross-source-
+            // comparable ones (sleep duration) are untouched. If the user is Apple-only, band RMSSD is empty →
+            // `VitalityInputsBuilder`'s coverage gate drops the HRV factor rather than comparing SDNN to the
+            // band norm. A strap-only user is the identity — `recentBand == recent`.
+            let recent = trailing(28)
+            let recentBand = SourceLens.maskForBaseline(recent, keep: .band, appleDays: appleHealthDays)
+            // Sleep Regularity Index (FER-214) over a trailing ~35d of sessions, as 0–1 for the engine (SRI/100).
+            // nil → the builder's duration proxy. Was `computeSleepRegularity()`; inlined for the hop (FER-955).
+            let sleepRegularity = SleepRegularityIndex.fromSessions(
+                sleeps.filter { $0.startTs >= regularityCutoff }).map { $0 / 100 }
+            let vInputs = VitalityInputsBuilder.build(.init(
+                chronoAge: Double(age),
+                nightlyRestingHR: recentBand.compactMap { $0.restingHr.map(Double.init) },
+                nightlyRMSSD: recentBand.compactMap { $0.avgHrv },
+                nightlySleepHours: recent.compactMap { $0.totalSleepMin.map { $0 / 60 } },
+                dailySteps: recent.compactMap { $0.steps.map(Double.init) },
+                sleepRegularity: sleepRegularity))
+            let vResult = VitalityEngine.compute(vInputs)
+
+            return CuerpoLandingEngines(
+                recoveryCalibration: recoveryCalibration,
+                stressModel: stressModel,
+                trainingLoad: trainingLoad,
+                fitnessAge: fitnessAge,
+                vitalityInputs: vInputs,
+                vitalityResult: vResult)
+        }.value
+
+        guard repo.refreshSeq == seq else { return }
+
+        recoveryCalibration = engines.recoveryCalibration
+        stressModel = engines.stressModel
+        trainingLoad = engines.trainingLoad
+        fitnessAge = engines.fitnessAge
+        vitalityInputs = engines.vitalityInputs
+        vitalityResult = engines.vitalityResult
     }
 
     // MARK: - Trend / curve loaders for the light sheet (mirror Today)
