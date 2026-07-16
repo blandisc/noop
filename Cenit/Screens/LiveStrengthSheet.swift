@@ -3369,4 +3369,51 @@ private extension View {
     }
 }
 
+/// Minimal flow layout: lays subviews left-to-right, wrapping to a new row when the next would overflow
+/// the proposed width. Used for the summary's muscle chips (FER-409) so they wrap instead of truncating
+/// at large Dynamic Type sizes.
+private struct ChipFlow: Layout {
+    var spacing: CGFloat = 7
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxW = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
+        for v in subviews {
+            let sz = v.sizeThatFits(.unspecified)
+            if x > 0, x + sz.width > maxW { x = 0; y += rowH + spacing; rowH = 0 }
+            x += sz.width + spacing
+            rowH = max(rowH, sz.height)
+        }
+        return CGSize(width: maxW.isFinite ? maxW : x, height: y + rowH)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
+        for v in subviews {
+            let sz = v.sizeThatFits(.unspecified)
+            if x > 0, x + sz.width > bounds.width { x = 0; y += rowH + spacing; rowH = 0 }
+            v.place(at: CGPoint(x: bounds.minX + x, y: bounds.minY + y), proposal: ProposedViewSize(sz))
+            x += sz.width + spacing
+            rowH = max(rowH, sz.height)
+        }
+    }
+}
+
+// MARK: - Live BPM dot (FER-716)
+
+/// The one always-on pulse of the app: the session header's live-BPM dot, breathing at 1.1 s. Falls
+/// back to a static dot under Reduce Motion (the preset does not self-disable).
+private struct BpmPulseDot: View {
+    let color: Color
+    var animated: Bool = true
+    @State private var pulsing = false
+    var body: some View {
+        Circle().fill(color).frame(width: 7, height: 7)
+            .scaleEffect(animated && pulsing ? 1.35 : 1.0)
+            .opacity(animated && pulsing ? 0.65 : 1.0)
+            .onAppear { if animated { withAnimation(StrandMotion.livePulse) { pulsing = true } } }
+            .accessibilityHidden(true)
+    }
+}
+
 #endif
