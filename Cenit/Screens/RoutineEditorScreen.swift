@@ -233,13 +233,16 @@ struct RoutineEditorScreen: View {
     @ViewBuilder
     private var fullList: some View {
         ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
+                let grouped = RoutineSetEditing.inSuperset(items.map(\.re), idx)
                 if firstOfGroup(idx) {
                     // Handoff: the superset overline carries the teal — it IS the datum here.
-                    Text("Superset").instrumentoOverline().foregroundStyle(theme.dataHrv)
+                    Text("Superset").groteskOverline().foregroundStyle(theme.dataHrv)
                         .plainRow(top: CenitMetrics.sectionGap, bottom: 2)
                 }
-                exerciseHeader(idx)
-                    .plainRow(top: firstOfGroup(idx) || idx == 0 ? CenitMetrics.gap : CenitMetrics.sectionGap)
+                // Grouped rows ride the handoff's continuous 2.5pt teal rail; their breathing lives
+                // INSIDE the row (canvas r18: List insets would slice the rail into segments).
+                railed(grouped, topPad: grouped ? CenitMetrics.gap : 0) { exerciseHeader(idx) }
+                    .plainRow(top: grouped ? 0 : (idx == 0 ? CenitMetrics.gap : CenitMetrics.sectionGap))
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         if !locked {
                             Button { duplicate(idx) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
@@ -247,7 +250,7 @@ struct RoutineEditorScreen: View {
                         }
                     }
                 ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
-                    setRow(idx: idx, si: si).plainRow(top: 0, bottom: 0)
+                    railed(grouped) { setRow(idx: idx, si: si) }.plainRow(top: 0, bottom: 0)
                         .swipeActions(edge: .trailing) {
                             if !locked {
                                 Button(role: .destructive) { deleteSet(idx: idx, si: si) } label: {
@@ -256,12 +259,17 @@ struct RoutineEditorScreen: View {
                             }
                         }
                 }
-                if !locked { addSetRow(idx).plainRow(top: 4) }
+                if !locked {
+                    railed(grouped, topPad: grouped ? 4 : 0) { addSetRow(idx) }
+                        .plainRow(top: grouped ? 0 : 4)
+                }
                 if isLastOfGroup(idx) {
-                    // Handoff (regla 5): the superset's rest rule, spelled out at the decision point.
+                    // Handoff (regla 5): the superset's rest rule, spelled out at the decision point,
+                    // hanging off the rail's indent.
                     Text("No rest between them: you rest when the round ends.")
                         .font(StrandFont.caption).foregroundStyle(theme.dataHrv)
                         .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, 13)  // token-exempt: 13 del handoff (indent del riel)
                         .plainRow(top: 6)
                 }
             }
@@ -346,7 +354,7 @@ struct RoutineEditorScreen: View {
                             .font(StrandFont.subhead).foregroundStyle(theme.ink).lineLimit(1)
                         Spacer(minLength: 8)
                         Text(compactSummary(item.re))
-                            .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                            .font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
                     }
                 }
             }
@@ -373,6 +381,14 @@ struct RoutineEditorScreen: View {
             items = blocks.flatMap(\.items)
             reordering = false        // dropping reopens the tables (6a)
         }
+        dirty = true
+    }
+
+    /// One-step move from the «···» menu (r20 parity with the live session). A plain item swap —
+    /// crossing a superset boundary just leaves/joins visually; groups are preserved by their ids.
+    private func moveExercise(_ idx: Int, to dest: Int) {
+        guard items.indices.contains(idx), items.indices.contains(dest) else { return }
+        withAnimation(.snappy) { items.swapAt(idx, dest) }
         dirty = true
     }
 
@@ -415,7 +431,7 @@ struct RoutineEditorScreen: View {
     private var dayMenu: some View {
         Button { showDayMenu = true } label: {
             Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary).frame(width: 40, height: 40).contentShape(Rectangle())
+                .foregroundStyle(theme.inkTertiary).frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Day options"))
@@ -436,7 +452,11 @@ struct RoutineEditorScreen: View {
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack(spacing: 11) {
                 Button { detailExercise = item.exercise } label: {
+                    // r25 (Serie activa): the thumb wears its movement family — 2pt frame in the hue,
+                    // corner matching ExerciseThumbnail's own clip (side × 0.22).
                     ExerciseThumbView(exercise: item.exercise, side: 40)
+                        .overlay(RoundedRectangle(cornerRadius: 40 * 0.22, style: .continuous)
+                            .strokeBorder(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles), lineWidth: 2))
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint(Text("Opens the exercise"))
@@ -484,7 +504,7 @@ struct RoutineEditorScreen: View {
     private func exerciseMenu(_ idx: Int) -> some View {
         Button { menuExerciseIndex = idx } label: {
             Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
+                .foregroundStyle(theme.inkTertiary).frame(width: 30, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .paperMenu(
@@ -503,6 +523,13 @@ struct RoutineEditorScreen: View {
         // Handoff hierarchy (FER-952): order → structure → plan → destructive. «Reorder» leads (where
         // the handoff's Subir/Bajar sit — FER-841/847 replaced them with drag).
         let res = items.map(\.re)
+        // Serie activa r20: Move up / Move down lead the menu; «Reorder» keeps the drag-mode door.
+        if idx > 0 {
+            rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") { moveExercise(idx, to: idx - 1) })
+        }
+        if idx < items.count - 1 {
+            rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") { moveExercise(idx, to: idx + 1) })
+        }
         rows.append(.init(String(localized: "Reorder exercises"), systemImage: "line.3.horizontal") {
             focusedCell = nil
             withAnimation(.snappy) { reordering = true }
@@ -511,7 +538,7 @@ struct RoutineEditorScreen: View {
             rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
         }
         if RoutineSetEditing.inSuperset(res, idx) {
-            rows.append(.init(String(localized: "Break superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
+            rows.append(.init(String(localized: "Break superset"), systemImage: "link") { breakSuperset(idx) })
         }
         if item.exercise.type == .weightReps {
             rows.append(.init(String(localized: "Progression"),
@@ -562,26 +589,18 @@ struct RoutineEditorScreen: View {
             if showsReps(type) {
                 cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad, width: 74)
             }
-            // «la última vez» — grey history from session seed, one entry per set position.
+            // «la última vez» — grey history from session seed, one entry per set position (r26:
+            // measured datum → Grotesk tabular, the live session's previous-cell voice).
             if let prev = lastSetHistoryLabel(idx: idx, si: si, type: type) {
                 Text(prev)
-                    .font(StrandFont.caption)
-                    .monospacedDigit()
+                    .font(InstrumentoType.groteskNumber(12, weight: .regular))
                     .foregroundStyle(theme.inkTertiary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
             Spacer(minLength: 6)
-            if rest.mode == .heartRate {
-                HStack(spacing: 2) {
-                    StrandIcon.heart.image
-                        .font(StrandFont.glyph(.chevron))
-                    Text(String(localized: "HR"))
-                        .font(StrandFont.caption)
-                }
-                .foregroundStyle(theme.dataHeart)
-                .accessibilityLabel(Text("Heart-rate rest"))
-            }
+            // (The old ♥HR mini-label was redundant — the RestChip already says «HR · 65%» in its own
+            // hue; two hues for the same datum in one row read as noise.)
             RestChip(cfg: rest, timeColor: theme.inkSecondary) {
                 focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
             }
@@ -616,7 +635,7 @@ struct RoutineEditorScreen: View {
     }
 
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType, width: CGFloat) -> some View {
-        TextField("·", text: text)
+        TextField("—", text: text)
             .keyboardType(keyboard)
             .multilineTextAlignment(.center)
             // Handoff: the prescription's figures speak Grotesk (400 15), like every datum on paper.
@@ -803,6 +822,24 @@ struct RoutineEditorScreen: View {
 
     /// First member of a superset group (shows the «Superset» overline above it).
     private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
+
+    /// Wraps a superset member's row with the handoff's continuous teal rail: a 2.5pt `dataHrv` bar on
+    /// the leading edge (filling the WHOLE row, padding included, so segments meet seamlessly) and the
+    /// content indented 13pt. Non-grouped rows pass through untouched.
+    @ViewBuilder
+    private func railed<V: View>(_ grouped: Bool, topPad: CGFloat = 0, @ViewBuilder content: () -> V) -> some View {
+        if grouped {
+            content()
+                .padding(.top, topPad)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 15.5)  // token-exempt: riel 2.5 + indent 13 del handoff
+                .overlay(alignment: .leading) {
+                    Rectangle().fill(theme.dataHrv).frame(width: 2.5)  // token-exempt: riel 2.5 del handoff
+                }
+        } else {
+            content().padding(.top, topPad)
+        }
+    }
 
     /// The last member of a superset group — anchors the handoff's rest-rule caption.
     private func isLastOfGroup(_ i: Int) -> Bool {

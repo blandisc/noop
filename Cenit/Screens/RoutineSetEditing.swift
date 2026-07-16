@@ -119,14 +119,15 @@ struct RestChip: View {
         let isHR = cfg.mode == .heartRate
         return Button(action: action) {
             HStack(spacing: 5) {
-                Text(RoutineSetEditing.restChipLabel(cfg)).font(StrandFont.caption).monospacedDigit()
+                // r26 (Serie activa): a measured datum speaks Grotesk tabular.
+                Text(RoutineSetEditing.restChipLabel(cfg)).font(InstrumentoType.groteskNumber(12, weight: .medium))
                     .foregroundStyle(isHR ? theme.dataRecovery : timeColor).lineLimit(1)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 9).padding(.vertical, 5)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                .strokeBorder(isHR ? theme.dataRecovery : theme.hairline, lineWidth: 1))
+                .strokeBorder(isHR ? theme.dataRecovery : theme.hairlineStrong, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

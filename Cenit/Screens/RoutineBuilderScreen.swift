@@ -179,10 +179,13 @@ struct RoutineBuilderScreen: View {
             nameField.plainRow(top: 8, bottom: 8)
             ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 if firstOfGroup(idx) {
-                    Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    // Same voice + hue as the unified editor: the superset overline IS the datum.
+                    Text("Superset").groteskOverline().foregroundStyle(theme.dataHrv)
                         .plainRow(top: CenitMetrics.sectionGap, bottom: 2)
                 }
-                exerciseHeader(idx).plainRow(top: firstOfGroup(idx) || idx == 0 ? CenitMetrics.gap : CenitMetrics.sectionGap)
+                // Proximity = grouping: members of a superset breathe `gap`, strangers `sectionGap`.
+                exerciseHeader(idx).plainRow(top: firstOfGroup(idx) || idx == 0 ? CenitMetrics.gap
+                    : (RoutineSetEditing.sameGroup(items.map(\.re), idx - 1, idx) ? CenitMetrics.gap : CenitMetrics.sectionGap))
                 ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
                     setRow(idx: idx, si: si).plainRow(top: 0, bottom: 0)
                         .swipeActions(edge: .trailing) {
@@ -256,7 +259,10 @@ struct RoutineBuilderScreen: View {
             HStack(spacing: 11) {
                 // Tapping the thumb/name opens the exercise info sheet (parity with the library, FER-776).
                 Button { detail = item.exercise } label: {
+                    // r25: the thumb wears its movement family (same frame as editor + Serie activa).
                     ExerciseThumbView(exercise: item.exercise, side: 40)   // cached GIF still, or paper placeholder (FER-790)
+                        .overlay(RoundedRectangle(cornerRadius: 40 * 0.22, style: .continuous)
+                            .strokeBorder(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles), lineWidth: 2))
                 }
                 .buttonStyle(.plain)
                 VStack(alignment: .leading, spacing: 1) {
@@ -306,7 +312,7 @@ struct RoutineBuilderScreen: View {
                 Text("Reps").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             Spacer(minLength: 0)
-            Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Rest").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
         }
         .padding(.bottom, 4)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -333,8 +339,9 @@ struct RoutineBuilderScreen: View {
                 focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
             }
         }
-        .frame(minHeight: 46)
-        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
+        .frame(minHeight: 44)
+        // Hairline BELOW the row, like the editor and the handoff's border-bottom.
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType) -> some View {
@@ -363,9 +370,14 @@ struct RoutineBuilderScreen: View {
     }
 
     private var addExerciseRow: some View {
+        // The same centered outline door as the unified editor (handoff spec).
         Button { showLibrary = true } label: {
-            Label("Add exercise", systemImage: "plus").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+            Label("Add exercise", systemImage: "plus")
+                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity).padding(.vertical, 13)  // token-exempt: 13 del handoff
+                .contentShape(Rectangle())
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
+                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
