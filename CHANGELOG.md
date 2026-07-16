@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Recuperación, Esfuerzo y Estrés también abren al instante / Recovery, Strain and Stress also open instantly.**
+  **ES** — El mismo arreglo del Detalle de Sueño, ahora en el resto de Tendencias: Recuperación (también desde Hoy y Entrenar) y Esfuerzo se deslizan de inmediato con su estado de carga mientras el cálculo corre en segundo plano; Estrés y Temperatura de la piel ya no compiten con la animación al preparar su calendario e historial. Los valores no cambian — solo dónde se calculan.
+  **EN** — The Sleep Detail fix, now across the rest of Trends: Recovery (also from Today and Train) and Strain slide in immediately with their loading state while the math runs in the background; Stress and Skin Temperature no longer fight the animation while preparing their calendar and history. Values unchanged — only where they're computed.
+  ([RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift), [StrainDetailScreen.swift](Cenit/Screens/StrainDetailScreen.swift), [StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift), [SkinTempDetailScreen.swift](Cenit/Screens/SkinTempDetailScreen.swift))
+
 - **El Detalle de Sueño abre al instante / Sleep Detail opens instantly.**
   **ES** — Abrir Sueño desde Tendencias (o desde Hoy) ya no congela la pantalla: el detalle se desliza de inmediato con su estado de carga y los números aparecen en cuanto están listos. Todo el cálculo pesado (regularidad, tendencias, calendario de 90 noches, forma de la noche, reserva nocturna) ahora corre en segundo plano en vez de bloquear el toque. Los valores son idénticos a antes — solo cambió dónde se calculan.
   **EN** — Opening Sleep from Trends (or from Today) no longer freezes the screen: the detail slides in immediately with its loading state and the numbers appear as soon as they're ready. All the heavy math (regularity, trends, the 90-night calendar, night shape, nocturnal reserve) now runs in the background instead of blocking the tap. Values are identical to before — only where they're computed changed.

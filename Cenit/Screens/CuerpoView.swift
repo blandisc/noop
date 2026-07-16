@@ -734,7 +734,16 @@ private struct CuerpoLanding: View {
         let showSpark = spark.count > 1 && score != nil
         let color = score.map(recoveryColor) ?? theme.inkTertiary
         return Button {
-            recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(repo: repo))
+            // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
+            // in under the same id (same pattern as `sleepStat`, FER-953).
+            let item = RecoveryDetailItem(model: .loading)
+            recoveryDetail = item
+            Task {
+                let m = await RecoveryDetailModel.buildDetached(repo: repo)
+                if recoveryDetail?.id == item.id {
+                    recoveryDetail = RecoveryDetailItem(id: item.id, model: m)
+                }
+            }
         } label: {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {
@@ -844,10 +853,17 @@ private struct CuerpoLanding: View {
                           spark: windowedSpark { $0.strain }) {
             // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
             // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses
-            // `MetricInfo.strain`/`MetricInfoSheet`.)
-            strainDetail = StrainDetailItem(model: StrainDetailModel.build(
-                days: repo.days, today: repo.today, loaded: repo.loaded),
-                estimated: repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date())))
+            // `MetricInfo.strain`/`MetricInfoSheet`.) FER-954: present the loading state IMMEDIATELY;
+            // the model builds off-main and swaps in under the same id (same pattern as `sleepStat`).
+            let estimatedNow = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
+            let item = StrainDetailItem(model: .loading, estimated: estimatedNow)
+            strainDetail = item
+            Task {
+                let m = await StrainDetailModel.buildDetached(repo: repo)
+                if strainDetail?.id == item.id {
+                    strainDetail = StrainDetailItem(id: item.id, model: m, estimated: estimatedNow)
+                }
+            }
         }
     }
 

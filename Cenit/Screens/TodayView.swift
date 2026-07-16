@@ -604,7 +604,16 @@ struct TodayView: View {
         switch id {
         case "recovery":
             present = {
-                recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(repo: repo))
+                // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
+                // in under the same id (same pattern as `sleep` above, FER-953).
+                let item = RecoveryDetailItem(model: .loading)
+                recoveryDetail = item
+                Task {
+                    let m = await RecoveryDetailModel.buildDetached(repo: repo)
+                    if recoveryDetail?.id == item.id {
+                        recoveryDetail = RecoveryDetailItem(id: item.id, model: m)
+                    }
+                }
             }
         case "sleep":
             present = {
@@ -621,9 +630,17 @@ struct TodayView: View {
             }
         case "strain":
             present = {
-                strainDetail = StrainDetailItem(model: StrainDetailModel.build(
-                    days: repo.days, today: repo.today, loaded: repo.loaded),
-                    estimated: repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date())))
+                // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
+                // in under the same id (same pattern as `sleep` above, FER-953).
+                let estimatedNow = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
+                let item = StrainDetailItem(model: .loading, estimated: estimatedNow)
+                strainDetail = item
+                Task {
+                    let m = await StrainDetailModel.buildDetached(repo: repo)
+                    if strainDetail?.id == item.id {
+                        strainDetail = StrainDetailItem(id: item.id, model: m, estimated: estimatedNow)
+                    }
+                }
             }
         case "stress":
             present = {
