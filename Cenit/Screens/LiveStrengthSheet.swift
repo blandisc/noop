@@ -3342,4 +3342,31 @@ struct LiveStrengthSheet: View {
     static func clock(_ seconds: Int) -> String { SessionClock.format(seconds) }
 }
 
+/// Strips a `List` row down to the warm-paper language: one screen margin, no native background, no native
+/// separator (the table draws its own hairlines). `top`/`bottom` tune the vertical rhythm per row. FER-497.
+private extension View {
+    func plainRow(top: CGFloat = 0, bottom: CGFloat = 0) -> some View {
+        self
+            .listRowInsets(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
+                                      bottom: bottom, trailing: CenitMetrics.screenPadding))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    /// FER-929: the active exercise's set table lives inside one `surface` card (spec §3) — `top`/`bottom`
+    /// round only the first/last row's corresponding corners so the stack of rows reads as one card.
+    func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme) -> some View {
+        let shape = UnevenRoundedRectangle(
+            topLeadingRadius: top ? CenitMetrics.cardRadius : 0,
+            bottomLeadingRadius: bottom ? CenitMetrics.cardRadius : 0,
+            bottomTrailingRadius: bottom ? CenitMetrics.cardRadius : 0,
+            topTrailingRadius: top ? CenitMetrics.cardRadius : 0)
+        return self
+            .listRowInsets(EdgeInsets(top: 0, leading: CenitMetrics.screenPadding,
+                                      bottom: 0, trailing: CenitMetrics.screenPadding))
+            .listRowBackground(shape.fill(theme.surface).overlay(shape.strokeBorder(theme.hairline, lineWidth: 1)))
+            .listRowSeparator(.hidden)
+    }
+}
+
 #endif
