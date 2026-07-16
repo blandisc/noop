@@ -234,7 +234,8 @@ struct RoutineEditorScreen: View {
     private var fullList: some View {
         ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 if firstOfGroup(idx) {
-                    Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    // Handoff: the superset overline carries the teal — it IS the datum here.
+                    Text("Superset").instrumentoOverline().foregroundStyle(theme.dataHrv)
                         .plainRow(top: CenitMetrics.sectionGap, bottom: 2)
                 }
                 exerciseHeader(idx)
@@ -256,6 +257,13 @@ struct RoutineEditorScreen: View {
                         }
                 }
                 if !locked { addSetRow(idx).plainRow(top: 4) }
+                if isLastOfGroup(idx) {
+                    // Handoff (regla 5): the superset's rest rule, spelled out at the decision point.
+                    Text("No rest between them: you rest when the round ends.")
+                        .font(StrandFont.caption).foregroundStyle(theme.dataHrv)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .plainRow(top: 6)
+                }
             }
         if !locked { addExerciseRow.plainRow(top: CenitMetrics.sectionGap, bottom: CenitMetrics.screenPadding) }
     }
@@ -382,7 +390,8 @@ struct RoutineEditorScreen: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .overlay(alignment: .bottomLeading) {
-                    Rectangle().fill(theme.ink).frame(height: 2).offset(y: 5)
+                    // Handoff: a 96pt ink seal under the title — an accent, not a section rule.
+                    Rectangle().fill(theme.ink).frame(width: 96, height: 2).offset(y: 5)
                 }
             metaLine
         }
@@ -491,16 +500,19 @@ struct RoutineEditorScreen: View {
         let item = items[idx]
         var rows: [PaperMenuItem] = []
         // «Add warm-up» is a visible button next to «Add set» when none exist yet — not in the menu.
+        // Handoff hierarchy (FER-952): order → structure → plan → destructive. «Reorder» leads (where
+        // the handoff's Subir/Bajar sit — FER-841/847 replaced them with drag).
         let res = items.map(\.re)
+        rows.append(.init(String(localized: "Reorder exercises"), systemImage: "line.3.horizontal") {
+            focusedCell = nil
+            withAnimation(.snappy) { reordering = true }
+        })
         if idx < items.count - 1 && !RoutineSetEditing.sameGroup(res, idx, idx + 1) {
             rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
         }
         if RoutineSetEditing.inSuperset(res, idx) {
             rows.append(.init(String(localized: "Break superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
         }
-        rows.append(.init(String(localized: "Replace exercise"), systemImage: "arrow.triangle.2.circlepath") {
-            replaceIndex = idx; showLibrary = true
-        })
         if item.exercise.type == .weightReps {
             rows.append(.init(String(localized: "Progression"),
                               subtitle: item.re.progressionEnabled ? ProgressionChip.summary(item.re, system: system) : nil,
@@ -508,11 +520,8 @@ struct RoutineEditorScreen: View {
                 progressionTarget = ProgressionTarget(ei: idx)
             })
         }
-        // A discoverable door into the drag mode (FER-847) — still no «move up/down»: the row only
-        // enters the same drag-to-reorder the long-press does.
-        rows.append(.init(String(localized: "Reorder exercises"), systemImage: "line.3.horizontal") {
-            focusedCell = nil
-            withAnimation(.snappy) { reordering = true }
+        rows.append(.init(String(localized: "Replace exercise"), systemImage: "arrow.triangle.2.circlepath") {
+            replaceIndex = idx; showLibrary = true
         })
         rows.append(.init(String(localized: "Remove from routine"), systemImage: "trash", isDestructive: true) {
             deleteExercise(idx)
@@ -526,10 +535,11 @@ struct RoutineEditorScreen: View {
             Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
                 .lineLimit(1).minimumScaleFactor(0.7).frame(width: 40, alignment: .center)
             if showsWeight(type) {
-                Text(StrengthDisplay.weightUnit(system)).groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 78)
+                Text(StrengthDisplay.weightUnit(system)).groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             if showsReps(type) {
-                Text("Reps").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 58)
+                // Handoff: KG and REPS weigh the same — twin 74pt columns.
+                Text("Reps").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             Spacer(minLength: 0)
             Text("Rest").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
@@ -547,10 +557,10 @@ struct RoutineEditorScreen: View {
         return HStack(spacing: 8) {
             numeralRing(idx: idx, si: si).frame(width: 40)
             if showsWeight(type) {
-                cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad, width: 78)
+                cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad, width: 74)
             }
             if showsReps(type) {
-                cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad, width: 58)
+                cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad, width: 74)
             }
             // «la última vez» — grey history from session seed, one entry per set position.
             if let prev = lastSetHistoryLabel(idx: idx, si: si, type: type) {
@@ -596,14 +606,13 @@ struct RoutineEditorScreen: View {
         return parts.joined(separator: "×")
     }
 
-    /// The set numeral in a 23 px ring of the routine hue («C» for a warm-up set, at half opacity).
+    /// The set numeral, plain ink («C» for a warm-up set, in tertiary). Handoff: no ring — a tinted
+    /// ring per row is color-as-decoration (§8.4); the hue lives only in the meta dot and rails.
     private func numeralRing(idx: Int, si: Int) -> some View {
         let warmup = items[idx].re.sets[si].kind == .warmup
         return Text(RoutineSetEditing.setLabel(items[idx].re, si))
-            .font(InstrumentoType.grotesk(11, weight: .semibold)).monospacedDigit()
-            .foregroundStyle(routineTint)
-            .frame(width: 23, height: 23)
-            .overlay(Circle().strokeBorder(routineTint.opacity(warmup ? 0.5 : 1), lineWidth: 1.5))
+            .font(InstrumentoType.grotesk(13, weight: .semibold)).monospacedDigit()
+            .foregroundStyle(warmup ? theme.inkTertiary : theme.ink)
     }
 
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType, width: CGFloat) -> some View {
@@ -614,7 +623,7 @@ struct RoutineEditorScreen: View {
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
             .disabled(locked)
-            .frame(width: width, height: 31)
+            .frame(width: width, height: 32)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
@@ -646,9 +655,14 @@ struct RoutineEditorScreen: View {
     }
 
     private var addExerciseRow: some View {
+        // Handoff: the structural CTA of the screen — a centered outline door, not a quiet row.
         Button { replaceIndex = nil; showLibrary = true } label: {
-            Label("Add exercise", systemImage: "plus").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading).frame(minHeight: 44).contentShape(Rectangle())
+            Label("Add exercise", systemImage: "plus")
+                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity).padding(.vertical, 13)  // token-exempt: 13 del handoff
+                .contentShape(Rectangle())
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
+                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -788,6 +802,13 @@ struct RoutineEditorScreen: View {
 
     /// First member of a superset group (shows the «Superset» overline above it).
     private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
+
+    /// The last member of a superset group — anchors the handoff's rest-rule caption.
+    private func isLastOfGroup(_ i: Int) -> Bool {
+        let res = items.map(\.re)
+        guard RoutineSetEditing.inSuperset(res, i) else { return false }
+        return i == items.count - 1 || !RoutineSetEditing.sameGroup(res, i, i + 1)
+    }
 
     private func supersetWithNext(_ i: Int) {
         var res = items.map(\.re)
