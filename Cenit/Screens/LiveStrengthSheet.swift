@@ -1149,24 +1149,39 @@ struct LiveStrengthSheet: View {
             if phase != .resting { restAnchorEi = nil }
         }
         .sheet(item: $progressionEdit) { target in
+            // r7: la pantalla de progresión COMPLETA (la misma del editor de rutina, con deload e
+            // ignorar-recuperación) — el dueño la recordaba bien; la mini-hoja lean se retira.
             if session.runs.indices.contains(target.id) {
                 let run = session.runs[target.id]
-                ProgressionMiniSheet(theme: theme, exerciseName: run.name,
-                                     units: UnitFormatter.massUnit(units),
-                                     stepKg: weightStepKg,
-                                     current: routineREs[run.id],
-                                     canPersist: session.routineId != nil,
-                                     displayKg: { displayWeight($0) },
-                                     onApply: { enabled, incKg, every in
-                                         persistProgression(runId: run.id, enabled: enabled,
-                                                            incrementKg: incKg, every: every)
-                                         progressionEdit = nil
-                                     },
-                                     onClose: { progressionEdit = nil })
-                    .presentationDetents([.height(340)])
+                if let re = routineREs[run.id] {
+                    ProgressionSetupScreen(
+                        theme: theme, exercise: re, exerciseName: run.name,
+                        currentWeightKg: run.sets.first?.weightKg,
+                        derivedIncrementKg: weightStepKg,
+                        onBack: { progressionEdit = nil },
+                        onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                            persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
+                                                   sessions: sessions, incrementKg: incrementKg,
+                                                   deload: deload, ignoreRecovery: ignoreRecovery)
+                            progressionEdit = nil
+                        }
+                    )
+                    .padding(.top, CenitMetrics.gap)
                     .presentationDragIndicator(.visible)
                     .presentationBackground(theme.paper)
                     .preferredColorScheme(.light)
+                } else {
+                    // Sesión ad-hoc: sin rutina no hay plan que progresar.
+                    VStack(spacing: 10) {
+                        Text("Progression lives on saved routines.")
+                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        Button(String(localized: "Close")) { progressionEdit = nil }
+                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    }
+                    .padding(CenitMetrics.screenPadding)
+                    .presentationDetents([.height(160)])
+                    .presentationBackground(theme.paper)
+                }
             }
         }
         .task(id: session.routineId) { await loadRoutineREs() }
@@ -1622,7 +1637,8 @@ struct LiveStrengthSheet: View {
             .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
             .activeCardRow(top: true, bottom: false, theme: theme, railTint: railTint,
                            railVisible: showRail,
-                           railTopInset: ei == firstRailIndex ? 12 + 22 : 0)
+                           railTopInset: ei == firstRailIndex ? 12 + 22 : 0,
+                           dotTint: categoryTint(run))
             .id("session-exercise-\(ei)")
         ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
             // The rest card slots BETWEEN the set just logged and the next one (owner call): an
@@ -1634,7 +1650,9 @@ struct LiveStrengthSheet: View {
             VStack(spacing: 0) {
                 if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
                 setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+                    .border(.blue)   // TEMP-DEBUG r7 (fila gorda): quitar al cerrar la cacería
             }
+                .border(.red)   // TEMP-DEBUG r7 (fila gorda): quitar al cerrar la cacería
                 // Owner bug #3: a freshly-added set inflated its row — the slice can never stretch
                 // beyond its content's natural height.
                 .fixedSize(horizontal: false, vertical: true)
@@ -2446,7 +2464,7 @@ struct LiveStrengthSheet: View {
                 Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))
             }
 
-            if session.currentRestMode == .heartRate, let started = session.restStartedAt {
+            if focusRestWantsHR, let started = session.restStartedAt {
                 PulseReader(model.live.pulse) { p in
                     TimelineView(.periodic(from: started, by: 1)) { ctx in
                         let elapsed = max(0, Int(ctx.date.timeIntervalSince(started)))
@@ -2454,7 +2472,7 @@ struct LiveStrengthSheet: View {
                             currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
                             elapsedS: elapsed, targetHR: session.currentRestTarget)
                         let noSignal = v.state == .noSignal
-                        if (focusRestShowsHR ?? true) && !noSignal {
+                        if !noSignal {
                             focusRestHRHero(elapsed: elapsed, readiness: v)
                         } else {
                             focusRestTimeHero(end: session.restEndsAt, now: ctx.date, noStrapFallback: noSignal)
@@ -2500,8 +2518,10 @@ struct LiveStrengthSheet: View {
     /// Tiempo/FC segmented toggle (FER-934 §3.2) — only shown when the active rest actually resolved a
     /// heart-rate target; a fixed-time rest has nothing to switch to. Defaults to FC (`nil` ≙ true).
     @ViewBuilder private var focusRestModeToggle: some View {
-        if session.currentRestMode == .heartRate {
-            let showsHR = focusRestShowsHR ?? true
+        // r7: el toggle vive SIEMPRE en el descanso (handoff) — en descansos por tiempo arranca en
+        // «Tiempo»; la pestaña FC muestra el pulso en vivo (y cae a tiempo si no hay señal).
+        Group {
+            let showsHR = focusRestShowsHR ?? (session.currentRestMode == .heartRate)
             HStack(spacing: 2) {
                 focusRestModeTab(String(localized: "Time"), systemImage: "timer", active: !showsHR) {
                     focusRestShowsHR = false
@@ -2516,6 +2536,10 @@ struct LiveStrengthSheet: View {
                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
+
+    /// El héroe del descanso respeta el toggle también en descansos POR TIEMPO (r7): si el usuario
+    /// pide FC y hay pulso, lo enseña aunque el descanso sea fijo.
+    private var focusRestWantsHR: Bool { focusRestShowsHR ?? (session.currentRestMode == .heartRate) }
 
     private func focusRestModeTab(_ label: String, systemImage: String, active: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -2772,18 +2796,7 @@ struct LiveStrengthSheet: View {
                     // Canvas pass 2026-07-15: the category dot is ANCHORED to the thumbnail itself —
                     // drawn as its overlay, vertically centered by construction (no offset math to
                     // drift), pushed left into the rail lane (thumb leading sits 31pt right of it).
-                    .overlay(alignment: .leading) {
-                        if showRail {
-                            // Punto SÓLIDO (owner r6): sin aura — un respaldo de papel oculta la línea
-                            // detrás, así el hilo muere centrado en el punto.
-                            ZStack {
-                                Circle().fill(theme.paper).frame(width: 17, height: 17)
-                                Circle().fill(categoryTint(run)).frame(width: 11, height: 11)
-                            }
-                            .offset(x: -39.5)
-                            .accessibilityHidden(true)
-                        }
-                    }
+
                 VStack(alignment: .leading, spacing: 2) {
                 supersetTag(ei)
                 if run.type != .weightReps {
@@ -4075,8 +4088,10 @@ struct LiveStrengthSheet: View {
         routineREs = Dictionary(uniqueKeysWithValues: res.map { ($0.id, $0) })
     }
 
-    /// Persist a progression edit from the mini-sheet into the backing routine.
-    private func persistProgression(runId: String, enabled: Bool, incrementKg: Double, every: Int) {
+    /// Persist the FULL progression config (r7 — the real ProgressionSetupScreen fields) into the
+    /// backing routine, including the rep goal onto the plan's work sets.
+    private func persistProgressionFull(runId: String, enabled: Bool, targetReps: Int, sessions: Int,
+                                        incrementKg: Double?, deload: DeloadPolicy, ignoreRecovery: Bool) {
         guard let rid = session.routineId else { return }
         Task {
             guard let store = await model.repo.storeHandle(),
@@ -4084,8 +4099,14 @@ struct LiveStrengthSheet: View {
                   let idx = res.firstIndex(where: { $0.id == runId }),
                   let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
             res[idx].progressionEnabled = enabled
+            res[idx].progressionSessions = sessions
             res[idx].progressionIncrementKg = incrementKg
-            res[idx].progressionSessions = every
+            res[idx].progressionDeload = deload
+            res[idx].progressionIgnoreRecovery = ignoreRecovery
+            res[idx].targetReps = targetReps
+            for i in res[idx].sets.indices where res[idx].sets[i].kind == .work {
+                res[idx].sets[i].reps = targetReps
+            }
             try? await store.saveRoutine(routine, exercises: res)
             routineREs[res[idx].id] = res[idx]
         }
@@ -5307,7 +5328,8 @@ private extension View {
     /// centered to the 44pt thumbnail (`dotTint`/`dotTopOffset`). `railVisible: false` hides the
     /// thread/dot in single-exercise sessions where a rail would hang orphaned.
     func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme, railTint: Color,
-                       railVisible: Bool = true, railTopInset: CGFloat = 0) -> some View {
+                       railVisible: Bool = true, railTopInset: CGFloat = 0,
+                       dotTint: Color? = nil) -> some View {
         let shape = UnevenRoundedRectangle(
             topLeadingRadius: top ? CenitMetrics.cardRadius : 0,
             bottomLeadingRadius: bottom ? CenitMetrics.cardRadius : 0,
@@ -5325,6 +5347,18 @@ private extension View {
                             .padding(.top, railTopInset)
                             .padding(.leading, CenitMetrics.screenPadding + 6)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    }
+                    if railVisible, let dotTint {
+                        // r7: el punto se dibuja AQUÍ, en el mismo espacio que la línea — misma X por
+                        // construcción (centrado exacto) y a la altura del centro del thumbnail (12 de
+                        // padding + 22 = mitad de los 44pt). El respaldo de papel tapa la línea: el
+                        // hilo muere/pasa DETRÁS del punto, nunca encima.
+                        ZStack {
+                            Circle().fill(theme.paper).frame(width: 17, height: 17)
+                            Circle().fill(dotTint).frame(width: 11, height: 11)
+                        }
+                        .padding(.leading, CenitMetrics.screenPadding + 7 - 8.5)
+                        .padding(.top, 12 + 22 - 8.5)
                     }
                     // Seamless slices (owner: sin sombra entre calentamiento y series): the hover
                     // shadow only paints on the card's OUTER edges — per-slice shadows banded at every
