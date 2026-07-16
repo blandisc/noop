@@ -412,22 +412,25 @@ final class StrengthSessionModel: ObservableObject {
         runs[currentIndex].sets[i].done = true
         runs[currentIndex].sets[i].doneTs = doneTs
 
-        // FER-931: superset round-robin — A1 done moves straight to A2's same round, no rest in between.
-        // Warm-ups don't participate; only `.work` cycles the group. A standalone exercise (group of one)
-        // takes this branch's condition to false immediately, so its rest/advance is byte-for-byte the
-        // pre-931 path below.
+        // FER-931: superset round-robin — A1 done moves straight to A2, no rest in between; the rest
+        // lands when the ROUND closes (the last member with pending work). r18 (owner edge case):
+        // the partner is found by its NEXT PENDING work set, not by the same round index — with
+        // staggered counts (A on its 5th set, B on its 1st) index-pairing broke the superset and a
+        // rest leaked between A and B. While any LATER member of the group still has pending work,
+        // the jump is rest-free. Warm-ups don't participate; only `.work` cycles the group. A
+        // standalone exercise (group of one) skips this entirely — pre-931 path below, untouched.
         let group = supersetMembers(at: currentIndex)
         if justCompletedKind == .work, group.count > 1,
-           let posInGroup = group.firstIndex(of: currentIndex), posInGroup < group.count - 1 {
-            let nextMember = group[posInGroup + 1]
-            if !runs[nextMember].skipped, runs[nextMember].sets.indices.contains(i),
-               !runs[nextMember].sets[i].done, runs[nextMember].sets[i].kind == .work {
-                phase = .capturing
-                clearRest()
-                timerStart = nil
-                currentIndex = nextMember
-                runs[nextMember].currentSet = i
-                return
+           let posInGroup = group.firstIndex(of: currentIndex) {
+            for nextMember in group.dropFirst(posInGroup + 1) where !runs[nextMember].skipped {
+                if let si = runs[nextMember].sets.firstIndex(where: { !$0.done && $0.kind == .work }) {
+                    phase = .capturing
+                    clearRest()
+                    timerStart = nil
+                    currentIndex = nextMember
+                    runs[nextMember].currentSet = si
+                    return
+                }
             }
         }
 
@@ -1296,15 +1299,17 @@ struct LiveStrengthSheet: View {
     // MARK: Inline session (the default view — the Hevy-style logging table, FER-497)
 
     private var inlineSession: some View {
-        // A flat List styled down to the warm-paper language — no native separators / background, our
-        // own hairlines. FER-497. (r13: deleting a set moved from swipe to a long-press context menu —
-        // the active block is one row now, so per-set swipeActions no longer exist.)
+        // r18: ScrollView + VStack, ya NO `List` — the List's cells carried unpredictable per-row
+        // slack that broke the rail thread at a different seam every round (r7–r17 chased it seam by
+        // seam); a plain stack lays rows out exactly, so the thread segments butt by construction.
+        // The List's one justification (per-set swipe-to-delete) died in r13 (long-press menu).
         // FER-929: rail + accordion — only the active exercise expands into its table; done/upcoming
         // exercises collapse to one line each, hung off a vertical rail (`railColumn`).
         // Canvas pass 2026-07-15 (sugerencia 3): the jump to the next exercise is NARRATED — when the
         // guided focus moves, the list scrolls the new active card into view instead of teleporting.
         ScrollViewReader { proxy in
-        List {
+        ScrollView {
+        VStack(alignment: .leading, spacing: 0) {
             // FER-933: modo mover — every exercise compresses to a draggable row with a «SOLTAR AQUÍ ·
             // POSICIÓN N» drop zone; the accordion (`activeExerciseBlock`) stays closed for the duration.
             if reorderMode { reorderModeBar.plainRow(top: CenitMetrics.gap, bottom: 4).transition(.opacity) }
@@ -1336,16 +1341,14 @@ struct LiveStrengthSheet: View {
             }
             if !reorderMode {
                 // Canvas pass 2026-07-15: no top inset — an inset is a HOLE in the rail thread; the
-                // node's breathing lives in its own taller cell so the line arrives unbroken.
+                // node's breathing lives in its own taller row so the line arrives unbroken.
                 addExerciseNode.plainRow()
                 if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
                 discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
             }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
+        }
         .background(theme.paper)
-        .environment(\.defaultMinListRowHeight, 1)
         // UX·anim #2: one clock for the exercise jump — the row collapse shares the scroll's gentle
         // spring so both read as a single continuous gesture (before: snappy vs. gentle fighting).
         .animation(StrandMotion.gentle, value: accordionIndex)
@@ -1398,20 +1401,17 @@ struct LiveStrengthSheet: View {
     private func railColumn(_ state: RailState, superset: Bool, badgeText: String? = nil,
                             tint: Color, dotTopOffset: CGFloat? = nil, clipTop: Bool = false) -> some View {
         ZStack(alignment: dotTopOffset == nil ? .center : .top) {
-            // The thread fills the WHOLE cell height and OVERSHOOTS 30pt past its edges (r17): the
-            // List's cells carry unpredictable slack at their seams, so neighboring segments overlap
-            // in the lane instead of trying to butt exactly — overlap is invisible, a gap never is.
-            // `clipTop` (first exercise) starts the thread AT the dot — nothing hangs above, so that
-            // row only overshoots downward.
+            // The thread fills the WHOLE row height — rows butt exactly in the r18 stack layout, so
+            // segments join seam-to-seam with no overshoot (r17's ±30 overlapped two 35%-alpha
+            // rectangles and the doubled alpha DARKENED the lane — «overlap» visible). `clipTop`
+            // (first exercise) starts the thread AT the dot — nothing hangs above.
             if clipTop {
                 VStack(spacing: 0) {
                     Color.clear
                     Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
-                        .padding(.bottom, -30)
                 }
             } else {
                 Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
-                    .padding(.vertical, -30)
             }
             Group {
                 if let badgeText {
@@ -1658,17 +1658,15 @@ struct LiveStrengthSheet: View {
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
         )
-        // r16/r17: the thread is a BACKGROUND of the card (behind the dot), 19pt into the gutter
-        // (26 − 7). It overshoots 34pt past BOTH card edges — the List's cells carry unpredictable
-        // slack at their seams and every seam is a potential break, so neighboring segments overlap
-        // in the lane instead of trying to butt exactly (overlap is invisible, a gap never is).
-        // The FIRST exercise's birth-at-the-dot is a thumb-anchored eraser in `exerciseHeader`,
-        // tall enough to also swallow this upward overshoot.
+        // r16/r18: the thread is a BACKGROUND of the card (behind the dot), 19pt into the gutter
+        // (26 − 7), spanning exactly the card's height — in the r18 stack layout the card IS the
+        // row, so the segment butts its neighbors seam-to-seam (no overshoot: doubled 35%-alpha
+        // overlap darkened the lane). The FIRST exercise's birth-at-the-dot is a thumb-anchored
+        // eraser in `exerciseHeader`.
         .background(alignment: .topLeading) {
             if showRail {
                 Rectangle().fill(railTint.opacity(0.35))  // token-exempt: decorative rail-thread alpha (structure, not datum)
                     .frame(width: 2)
-                    .padding(.vertical, -34)
                     .offset(x: -20)
                     .allowsHitTesting(false)
             }
@@ -2068,27 +2066,35 @@ struct LiveStrengthSheet: View {
     // MARK: _StatsBar (FER-929 — fixed bottom bar; the keypad takes this slot instead while a cell is active)
 
     private var statsBar: some View {
-        VStack(spacing: 14) {   // canvas 2026-07-15: más aire entre «Modo foco» y los contadores
-            // Canvas pass 2026-07-15: the handoff's «◐ Modo foco» — a quiet glyph+text, not a shouting
-            // capsule; the bar's job is the counters, the entry just waits there.
+        // r18 (owner): la barra deja de apilarse al centro como pie de página web — es UNA línea de
+        // recibo: los contadores (el dato) a la izquierda, y «Modo foco» como chip troquel a la
+        // derecha, hermano de los chips de Descanso/Nota. El icono deja el «viewfinder» genérico:
+        // la flecha de expandir a pantalla completa dice lo que hace (y hermana con el «×» del foco).
+        HStack(spacing: 12) {
+            // kg · series · (kcal only with a streaming strap, never dashes) — same sources as
+            // before, with the handoff's typographic contrast: Grotesk-bold values, light labels.
+            counterLineStyled
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(counterLine))
+            Spacer(minLength: 12)
             if !isEmptyAdHoc && session.summary == nil {
                 Button { focusMode = true } label: {
-                    Label("Focus mode", systemImage: "viewfinder")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .padding(.vertical, 2).contentShape(Rectangle())
+                    Label("Focus mode", systemImage: "arrow.up.left.and.arrow.down.right")
+                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.ink)
+                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Focus mode"))
                 .accessibilityHint(Text("Opens a full-screen set logger"))
             }
-            // kg · series · (kcal only with a streaming strap, never dashes) — same sources as before,
-            // now with the handoff's typographic contrast: Grotesk-bold values, light labels.
-            counterLineStyled
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(Text(counterLine))
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.top, 10)
         .padding(.bottom, 10)
         .background(theme.paper)
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -2921,8 +2927,8 @@ struct LiveStrengthSheet: View {
                     .overlay(alignment: .topLeading) {
                         if showRail, ei == firstRailIndex {
                             Rectangle().fill(theme.paper)
-                                .frame(width: 6, height: 96)
-                                .offset(x: -36, y: 22 - 96)
+                                .frame(width: 6, height: 60)
+                                .offset(x: -36, y: 22 - 60)
                                 .allowsHitTesting(false)
                         }
                     }
@@ -5408,11 +5414,13 @@ struct ChangeExerciseSheet: View {
 /// separator (the table draws its own hairlines). `top`/`bottom` tune the vertical rhythm per row. FER-497.
 private extension View {
     func plainRow(top: CGFloat = 0, bottom: CGFloat = 0) -> some View {
+        // r18: the session left `List` for ScrollView+VStack — same screen margin and rhythm knobs
+        // as the old listRowInsets version, but real stack layout: row seams are exact, so the rail
+        // thread butts segment-to-segment with no overshoot and no double-alpha overlap.
         self
-            .listRowInsets(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
-                                      bottom: bottom, trailing: CenitMetrics.screenPadding))
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
+                                bottom: bottom, trailing: CenitMetrics.screenPadding))
     }
 
 }
