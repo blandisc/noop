@@ -1298,11 +1298,13 @@ struct LiveStrengthSheet: View {
         List {
             // FER-933: modo mover — every exercise compresses to a draggable row with a «SOLTAR AQUÍ ·
             // POSICIÓN N» drop zone; the accordion (`activeExerciseBlock`) stays closed for the duration.
-            if reorderMode { reorderModeBar.plainRow(top: CenitMetrics.gap, bottom: 4) }
+            if reorderMode { reorderModeBar.plainRow(top: CenitMetrics.gap, bottom: 4).transition(.opacity) }
             ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
                 if !run.skipped {
                     if reorderMode {
-                        reorderRow(run, ei: ei).plainRow(top: 4, bottom: 4)
+                        // UX·anim #3: mode changes fade explicitly — the row TYPE swap (riel ↔ mover)
+                        // had no declared transition and read as a flicker.
+                        reorderRow(run, ei: ei).plainRow(top: 4, bottom: 4).transition(.opacity)
                     } else {
                         switch railState(ei: ei, run: run) {
                         case .active:
@@ -1320,7 +1322,9 @@ struct LiveStrengthSheet: View {
                 }
             }
             if !reorderMode {
-                addExerciseNode.plainRow(top: CenitMetrics.gap)
+                // Canvas pass 2026-07-15: no top inset — an inset is a HOLE in the rail thread; the
+                // node's breathing lives in its own taller cell so the line arrives unbroken.
+                addExerciseNode.plainRow()
                 if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.sectionGap) }
                 discardFooter.plainRow(top: CenitMetrics.gap, bottom: CenitMetrics.screenPadding)
             }
@@ -1329,7 +1333,9 @@ struct LiveStrengthSheet: View {
         .scrollContentBackground(.hidden)
         .background(theme.paper)
         .environment(\.defaultMinListRowHeight, 1)
-        .animation(.snappy(duration: 0.22), value: session.currentIndex)
+        // UX·anim #2: one clock for the exercise jump — the row collapse shares the scroll's gentle
+        // spring so both read as a single continuous gesture (before: snappy vs. gentle fighting).
+        .animation(StrandMotion.gentle, value: session.currentIndex)
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let cell = activeCell { keypad(for: cell) } else { statsBar }
@@ -1375,13 +1381,20 @@ struct LiveStrengthSheet: View {
     /// teal — the badge/tag alone carry the superset, so rail-color and superset don't compete).
     /// Purely decorative — `accessibilityHidden`, the row's own label carries the state to VoiceOver.
     private func railColumn(_ state: RailState, superset: Bool, badgeText: String? = nil,
-                            tint: Color, dotTopOffset: CGFloat? = nil, lineTint: Color? = nil) -> some View {
+                            tint: Color, dotTopOffset: CGFloat? = nil, clipTop: Bool = false) -> some View {
         ZStack(alignment: dotTopOffset == nil ? .center : .top) {
             // The thread fills the WHOLE cell height (rows carry no outer vertical insets anymore —
             // their breathing lives inside the content), so adjacent cells butt up and the line reads
-            // as one continuous hilo. Through the ACTIVE block the thread thickens into the ink rule
-            // (`lineTint`, propuesta C «Regla de tinta») — same lane, heavier ink.
-            Rectangle().fill(lineTint ?? railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+            // as one continuous hilo. `clipTop` (first exercise) starts the thread AT the dot — the
+            // dot is its birthplace, nothing hangs above.
+            if clipTop {
+                VStack(spacing: 0) {
+                    Color.clear
+                    Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                }
+            } else {
+                Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+            }
             Group {
                 if let badgeText {
                     Circle()
@@ -1412,6 +1425,9 @@ struct LiveStrengthSheet: View {
     /// The rail only exists with 2+ exercises — a thread through a single stop reads orphaned
     /// (canvas pass 2026-07-15, sugerencia 2).
     private var showRail: Bool { session.runs.filter { !$0.skipped }.count > 1 }
+
+    /// The first visible (non-skipped) exercise — its dot is the thread's BIRTHPLACE: no line above it.
+    private var firstRailIndex: Int? { session.runs.firstIndex { !$0.skipped } }
 
     /// The routine's own family tint — the color of the rail thread. Classified from what the session
     /// actually contains (same `RoutineClassifier` the hub/plan use), so an ad-hoc session earns a color
@@ -1464,7 +1480,7 @@ struct LiveStrengthSheet: View {
         } label: {
             HStack(spacing: 12) {
                 railColumn(.done, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei),
-                           tint: categoryTint(run))
+                           tint: categoryTint(run), clipTop: ei == firstRailIndex)
                 // Canvas pass: dim the CONTENT, not the whole row — the rail thread and its dot stay at
                 // full strength so the hilo reads continuous while the finished exercise recedes. The
                 // row's breathing lives HERE (vertical padding), not in list insets, so cells butt up.
@@ -1505,7 +1521,7 @@ struct LiveStrengthSheet: View {
         } label: {
             HStack(spacing: 12) {
                 railColumn(.upcoming, superset: session.isInSuperset(ei), badgeText: supersetBadgeText(ei: ei),
-                           tint: categoryTint(run))
+                           tint: categoryTint(run), clipTop: ei == firstRailIndex)
                 // Canvas pass: upcoming rows now dim exactly like done rows (the row that «se escapaba»)
                 // — content only, so the rail thread stays alive. Breathing inside the content.
                 HStack(spacing: 12) {
@@ -1575,7 +1591,8 @@ struct LiveStrengthSheet: View {
         exerciseHeader(run, ei: ei, first: true)
             .padding(.top, 12).padding(.horizontal, 12)
             .activeCardRow(top: true, bottom: false, theme: theme, railTint: railTint,
-                           railVisible: showRail, dotTint: categoryTint(run), dotTopOffset: 12 + 22)
+                           railVisible: showRail,
+                           railTopInset: ei == firstRailIndex ? 12 + 22 : 0)
             .id("session-exercise-\(ei)")
         ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
             // The rest card slots BETWEEN the set just logged and the next one (owner call): an
@@ -1616,19 +1633,6 @@ struct LiveStrengthSheet: View {
         let si = run.currentSet
         guard run.sets.indices.contains(si), !run.sets[si].done else { return nil }
         return si
-    }
-
-    /// The next step's thumb + one-liner for the inline rest card («sigue: Press militar · serie 2 ·
-    /// 26 kg») — precomputed as data so the card body stays cheap to type-check.
-    private var inlineNextStep: (exerciseId: String, text: String)? {
-        guard let run = session.current else { return nil }
-        let n = run.sets.prefix(run.currentSet + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
-        var text = "\(run.name) · " + String(localized: "set \(n)")
-        if run.sets.indices.contains(run.currentSet) {
-            let load = run.sets[run.currentSet].weightKg
-            if load > 0 { text += " · \(massText(load))" }
-        }
-        return (run.exerciseId, text)
     }
 
     /// The inline rest card as a slice of the active card's flow — keeps its own float/shadow (the
@@ -1687,7 +1691,7 @@ struct LiveStrengthSheet: View {
                 Text("Add exercise").font(StrandFont.subhead).foregroundStyle(theme.ink)
                 Spacer(minLength: 0)
             }
-            .frame(minHeight: 44)
+            .frame(minHeight: 44 + CenitMetrics.gap)   // the row's own breathing — not an inset hole
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1759,13 +1763,10 @@ struct LiveStrengthSheet: View {
             }
 
             // Title, underlined solid `ink` (not the dotted neutral rule reserved for table values).
+            // Canvas pass 2026-07-15: sin subrayado — el peso de la tipografía basta (owner call).
             Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
-                .font(StrandFont.title2).foregroundStyle(theme.ink)
+                .font(StrandFont.title2.weight(.semibold)).foregroundStyle(theme.ink)
                 .lineLimit(1).minimumScaleFactor(0.7)
-                .overlay(alignment: .bottomLeading) {
-                    Rectangle().fill(theme.ink).frame(height: 2).offset(y: 3)
-                }
-                .padding(.bottom, 3)
 
             // Metrics: clock (dims + freezes while paused, FER-823) · BPM (strap-only, never «♥ --») ·
             // done/total · Spacer · Pausa/Reanuda + Terminar (or Discard for an empty ad-hoc session).
@@ -2682,6 +2683,21 @@ struct LiveStrengthSheet: View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack(spacing: 12) {
                 SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
+                    // Canvas pass 2026-07-15: the category dot is ANCHORED to the thumbnail itself —
+                    // drawn as its overlay, vertically centered by construction (no offset math to
+                    // drift), pushed left into the rail lane (thumb leading sits 31pt right of it).
+                    .overlay(alignment: .leading) {
+                        if showRail {
+                            Circle().fill(categoryTint(run))
+                                .frame(width: 9, height: 9)
+                                .overlay {
+                                    Circle().strokeBorder(categoryTint(run).opacity(0.3), lineWidth: 3)  // token-exempt: decorative active-node halo ring alpha
+                                        .frame(width: 19, height: 19)
+                                }
+                                .offset(x: -35.5)
+                                .accessibilityHidden(true)
+                        }
+                    }
                 VStack(alignment: .leading, spacing: 2) {
                 supersetTag(ei)
                 if run.type != .weightReps {
@@ -3192,8 +3208,14 @@ struct LiveStrengthSheet: View {
             }
         }
         .overlay(alignment: .bottom) {
-            if !last { Rectangle().fill(theme.hairline).frame(height: 1) }
+            // Canvas pass 2026-07-15: subtler set dividers (owner call) — softer ink, inset from the
+            // card edges so they read as breath, not as grid.
+            if !last {
+                Rectangle().fill(theme.hairline.opacity(0.55)).frame(height: 1)  // token-exempt: divisor tenue (owner: «más sutiles»)
+                    .padding(.horizontal, 6)
+            }
         }
+        .transition(.opacity)
         .accessibilityElement(children: .contain)
         .accessibilityActions {
             Button("Delete set") { withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) } }
@@ -3368,16 +3390,8 @@ struct LiveStrengthSheet: View {
                 }
             }
             restCardPills
-            // Canvas pass 2026-07-15 (sugerencia 1): the full-screen rest already names what's next —
-            // the inline card earns the same one-liner, so you can decide to skip without opening it.
-            if let next = inlineNextStep {
-                HStack(spacing: 8) {
-                    SessionRunThumb(exerciseId: next.exerciseId, side: 22)
-                    Text("Next").font(StrandFont.caption).fontWeight(.semibold)
-                        .tracking(0.8).textCase(.uppercase).foregroundStyle(theme.inkDim)
-                    Text(next.text).font(StrandFont.caption).foregroundStyle(theme.inkSecondary).lineLimit(1)
-                }
-            }
+            // (El «SIGUE» vive solo en el descanso a pantalla completa — owner call 2026-07-15: dentro
+            // del mismo ejercicio ya sabes qué sigue, la tarjeta en línea no lo repite.)
         }
         .padding(.horizontal, 17).padding(.vertical, 15)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
@@ -3571,7 +3585,9 @@ struct LiveStrengthSheet: View {
                             type: ExerciseType, width: CGFloat? = nil) -> some View {
         let active = activeCell == ref
         let shown = active ? buffer : formatCell(value, isInt: isInt)
-        return Button { activeCell = ref } label: {
+        // Canvas pass 2026-07-15 (UX·anim #1): opening the keypad animates like closing it — the
+        // `.move(edge: .bottom)` transition only runs inside withAnimation; bare assignment popped.
+        return Button { withAnimation(.snappy(duration: 0.22)) { activeCell = ref } } label: {
             HStack(spacing: 1) {
                 Text(shown.isEmpty ? " " : shown)
                     .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
@@ -3726,7 +3742,9 @@ struct LiveStrengthSheet: View {
 
     private func addSetButton(_ ei: Int) -> some View {
         Button {
-            withAnimation(.snappy) { session.addSet(exercise: ei) }
+            // Canvas pass 2026-07-15: a contained, gentle open — ONE row's worth of space, not a leap
+            // (owner: «que se abra solamente con un nuevo renglón»).
+            withAnimation(StrandMotion.gentle) { session.addSet(exercise: ei) }
             copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
         } label: {
             // Canvas pass 2026-07-15: the handoff's ember «+ Serie» pill, living INSIDE the card as its
@@ -5026,8 +5044,7 @@ private extension View {
     /// centered to the 44pt thumbnail (`dotTint`/`dotTopOffset`). `railVisible: false` hides the
     /// thread/dot in single-exercise sessions where a rail would hang orphaned.
     func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme, railTint: Color,
-                       railVisible: Bool = true, dotTint: Color? = nil,
-                       dotTopOffset: CGFloat = 34) -> some View {
+                       railVisible: Bool = true, railTopInset: CGFloat = 0) -> some View {
         let shape = UnevenRoundedRectangle(
             topLeadingRadius: top ? CenitMetrics.cardRadius : 0,
             bottomLeadingRadius: bottom ? CenitMetrics.cardRadius : 0,
@@ -5039,7 +5056,10 @@ private extension View {
             .listRowBackground(
                 ZStack(alignment: .topLeading) {
                     if railVisible {
+                        // `railTopInset` clips the thread's start on the FIRST exercise's header —
+                        // the dot is the thread's birthplace, nothing hangs above it.
                         Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                            .padding(.top, railTopInset)
                             .padding(.leading, CenitMetrics.screenPadding + 6)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
@@ -5048,16 +5068,6 @@ private extension View {
                         .shadow(color: theme.ink.opacity(0.08), radius: 8, y: 3)  // token-exempt: decorative float-shadow alpha (rest-card kin)
                         .padding(.leading, CenitMetrics.screenPadding + 26)
                         .padding(.trailing, CenitMetrics.screenPadding)
-                    if let dotTint, railVisible {
-                        Circle().fill(dotTint)
-                            .frame(width: 9, height: 9)
-                            .overlay {
-                                Circle().strokeBorder(dotTint.opacity(0.3), lineWidth: 3)  // token-exempt: decorative active-node halo ring alpha
-                                    .frame(width: 19, height: 19)
-                            }
-                            .padding(.leading, CenitMetrics.screenPadding + 2.5)
-                            .padding(.top, dotTopOffset - 4.5)
-                    }
                 }
             )
             .listRowSeparator(.hidden)
