@@ -214,23 +214,6 @@ struct MisRutinasScreen: View {
         .buttonStyle(.plain)
     }
 
-    /// Like `actionRow` but reveals a paper menu (mock 1c's «Plantillas · Importar · Carpetas»), with a chevron.
-    private func actionMenuRow(_ symbol: String, _ title: LocalizedStringKey,
-                               isPresented: Binding<Bool>, items: [PaperMenuItem]) -> some View {
-        Button { isPresented.wrappedValue = true } label: {
-            HStack(spacing: 12) {
-                Image(systemName: symbol).frame(width: 30)
-                    .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
-                Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 0)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 44).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .paperMenu(isPresented: isPresented, items: items)
-    }
-
     /// The one-line metadata under a routine name (mock 1c): exercise count, then its top primary muscles.
     private func metadataLine(_ r: Routine) -> String {
         var parts = [exerciseCountText(exerciseCounts[r.id] ?? 0)]
