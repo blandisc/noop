@@ -85,6 +85,10 @@ private struct EntrenarLanding: View {
     @State private var split: [Int: String] = [:]
     /// Completed strength sessions (newest first), for the week strip's day states and the daily streak.
     @State private var sessions: [StrengthSession] = []
+    /// Constancia month buckets (last ~90 days), computed once per `load()` — not on every body pass.
+    /// `trainedThisWeek` and the Constancia grid both read this; re-bucketing 200 sessions per access
+    /// was ~9–10× work per layout evaluation (FER-948).
+    @State private var constancyMonthsCache: [ConstancyMonth] = []
     /// Today's routine resolved into guided-session slots, prefetched on load so «Empezar» starts in one
     /// tap (F1). Empty when today is a rest day or the routine has no exercises.
     @State private var todaySlots: [StrengthSessionModel.PlanSlot] = []
@@ -106,6 +110,9 @@ private struct EntrenarLanding: View {
     @State private var constancyPopup: ConstancyPopup? = nil
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
     @State private var showTemplates = false
+    /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
+    /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
+    @State private var confirmResumeStrength = false
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -177,6 +184,20 @@ private struct EntrenarLanding: View {
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
         }
+        // FER-950: disc said «Rápido»/«Movilidad» but AppModel only re-opens the live session — make
+        // that resume path explicit (ConfirmCard), never clobber.
+        .instrumentoConfirm(
+            isPresented: $confirmResumeStrength,
+            title: String(localized: "You have a session in progress. Resume it?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: String(localized: "A new routine can't start until this one ends."),
+            actions: [
+                .init(String(localized: "Resume session"), role: .primary) {
+                    model.resumeStrengthSession()
+                },
+                .init(String(localized: "Not now"), role: .secondary)
+            ]
+        )
         // The guided strength session (FER-347) is now presented at the shell (`RootTabView`) as a
         // full-screen cover with a floating pill on all five tabs (FER-716), so it survives tab switches
         // and no longer needs a «Resume» row here. The session lives in AppModel.
@@ -215,14 +236,30 @@ private struct EntrenarLanding: View {
             Image(systemName: "figure.strengthtraining.functional")
                 .font(.system(size: 20)).foregroundStyle(theme.ink)  // token-exempt: glifo 20pt fuera de banda lead
         } trailing: {
-            if let rec = recovery { recoveryChip(rec) }   // hidden while calibrating (no score)
+            // Same trailing slot always occupied so the header doesn't jump when the score appears. (FER-949)
+            if let rec = recovery {
+                recoveryChip(rec)
+            } else {
+                recoveryChipPlaceholder
+            }
         }
     }
 
     /// The recovery chip: a small arc (`dataRecovery`) + the numeral. Tapping opens the Recovery Detail
     /// sheet (same as Today/Cuerpo) — it does NOT switch tabs. The one glanceable point of color here.
     private func recoveryChip(_ rec: Double) -> some View {
-        Button { recoveryDetail = RecoveryDetailItem(model: RecoveryDetailModel.build(repo: repo)) } label: {
+        Button {
+            // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
+            // in under the same id (same pattern as Tendencias/Hoy).
+            let item = RecoveryDetailItem(model: .loading)
+            recoveryDetail = item
+            Task {
+                let m = await RecoveryDetailModel.buildDetached(repo: repo)
+                if recoveryDetail?.id == item.id {
+                    recoveryDetail = RecoveryDetailItem(id: item.id, model: m)
+                }
+            }
+        } label: {
             HStack(spacing: 7) {
                 RecoveryChipRing(score: rec).frame(width: 22, height: 22)
                 Text("\(Int(rec.rounded()))")
@@ -234,6 +271,20 @@ private struct EntrenarLanding: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Recuperación \(Int(rec.rounded())). Ver detalle."))
+    }
+
+    /// Quiet chrome while recovery is still calibrating (no score). Same capsule + height as the live
+    /// chip so the header stays still; `inkDim` only (no datum color); not tappable. (FER-949)
+    private var recoveryChipPlaceholder: some View {
+        Text(verbatim: "—")
+            .font(StrandFont.number(17, weight: .semibold))
+            .foregroundStyle(theme.inkDim)
+            .frame(minWidth: 22, minHeight: 22)   // match the live chip's ring box so height doesn't jump
+            .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Recovery, calibrating"))
     }
 
     // MARK: - ① Open hero + «Empezar» + discs (handoff v4b, FER-939)
@@ -274,8 +325,10 @@ private struct EntrenarLanding: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)
             }
-            empezarButton.padding(.top, 14)
-            formasDiscos.padding(.top, 12)
+            // FER-944 rhythm: the datum→action border (16) reads clearly wider than the hero's inner
+            // gaps (4/8), so the block squints as three masses — text, button, discs.
+            empezarButton.padding(.top, CenitMetrics.sectionGapCompact)
+            formasDiscos.padding(.top, CenitMetrics.gap)
         }
     }
 
@@ -371,9 +424,23 @@ private struct EntrenarLanding: View {
 
     /// «Entrenamiento rápido de fuerza» (mock 1p, FER-762): no routine, no slots — the session starts
     /// empty and `LiveStrengthSheet` shows its own empty-state (search + freshness suggestions) until the
-    /// first exercise is added.
+    /// first exercise is added. With a live session, confirm resume instead of looking like a new start
+    /// (FER-950 — AppModel's guard only re-presents the existing sheet).
     private func startQuickStrength() {
+        if model.strengthSession != nil {
+            confirmResumeStrength = true
+            return
+        }
         model.startStrengthSession(routineId: nil, routineName: String(localized: "Quick strength"), slots: [])
+    }
+
+    /// Mobility disc: one-off guided session, or explicit resume confirm when one is already live (FER-950).
+    private func startMobilityFromDisc() {
+        if model.strengthSession != nil {
+            confirmResumeStrength = true
+            return
+        }
+        model.startMobilityOneOff()
     }
 
     // MARK: - ③ «LA SESIÓN DE HOY» (handoff v4b: the day's detail in its own band section)
@@ -401,6 +468,7 @@ private struct EntrenarLanding: View {
                             StrandIcon.disclosure.image
                                 .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                         }
+                        .frame(minHeight: 44)   // HIG tap target — the row is one thin subhead line (FER-944)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -424,27 +492,36 @@ private struct EntrenarLanding: View {
     /// «~50 min · 6 ejercicios · 18 series» — each numeral big (Grotesk 20), its unit word quiet.
     private func sesionMetrics(_ rid: String) -> some View {
         let sets = todaySlots.reduce(0) { $0 + max(0, $1.re.targetSets) }
+        // The three numerals share ONE accent — the routine's tint (same hue as the hero dot and
+        // «Empezar»). They're a single piece of information (today's session shape), so one hue, not
+        // three: three colours here would compete with the five coloured discs right above. The unit
+        // words stay quiet ink. (FER-944)
+        let accent = routineTint(region(name: todayRoutine?.name ?? ""))
         return HStack(alignment: .firstTextBaseline, spacing: 6) {
             if estMinutes > 0 {
-                bigStat(Text(verbatim: "~\(estMinutes)"), unit: Text("min"))
+                bigStat(Text(verbatim: "~\(estMinutes)"), unit: Text("min"), valueColor: accent)
                 dotSeparator
             }
-            bigStat(Text(verbatim: "\(exerciseCounts[rid] ?? 0)"), unit: Text("exercises"))
+            bigStat(Text(verbatim: "\(exerciseCounts[rid] ?? 0)"), unit: Text("exercises"), valueColor: accent)
             if sets > 0 {
                 dotSeparator
-                bigStat(Text(verbatim: "\(sets)"), unit: Text("sets"))
+                bigStat(Text(verbatim: "\(sets)"), unit: Text("sets"), valueColor: accent)
             }
         }
+        // VoiceOver reads the cluster as ONE phrase — the numerals combine into their unit words and
+        // the «·» separators are hidden, so it says «~50 min, 6 exercises, 18 sets», not the glyphs. (FER-944)
+        .accessibilityElement(children: .combine)
     }
 
-    private func bigStat(_ value: Text, unit: Text) -> Text {
-        value.font(InstrumentoType.groteskNumber(20)).foregroundStyle(theme.ink)
+    private func bigStat(_ value: Text, unit: Text, valueColor: Color? = nil) -> Text {
+        value.font(InstrumentoType.groteskNumber(20)).foregroundStyle(valueColor ?? theme.ink)
             + Text(verbatim: " ")
             + unit.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
     }
 
-    private var dotSeparator: Text {
+    private var dotSeparator: some View {
         Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+            .accessibilityHidden(true)   // VoiceOver reads the cluster as a phrase, not the «·» glyphs (FER-944)
     }
 
     /// «Hoy subes Press banca · 82,5 kg y Press militar · 26 kg» — the names+loads in the raise green.
@@ -545,6 +622,7 @@ private struct EntrenarLanding: View {
                 Spacer(minLength: 8)
             }
             .padding(.vertical, 11)
+            .frame(minHeight: 44)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -572,10 +650,12 @@ private struct EntrenarLanding: View {
         // routine tint and takes a paper check; today is a paper square ringed in its routine's tint;
         // an assigned future day keeps its tinted letter over the wash; a rest day is just wash.
         let doneTint = trainedThisWeek(wd).map { routineTint(self.region(name: $0)) }   // `region` local shadows the func
+        let a11y = weekStripAccessibilityLabel(wd)
         let cell = VStack(spacing: 5) {
             Text(weekdayLetter(wd))
                 .font(InstrumentoType.grotesk(10, weight: .semibold))
                 .foregroundStyle(isToday ? theme.ink : (hasRoutine ? routineTint(region) : theme.inkTertiary))
+                .accessibilityHidden(true)
             ZStack {
                 if let doneTint {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(doneTint)
@@ -590,16 +670,37 @@ private struct EntrenarLanding: View {
                 }
             }
             .frame(width: 26, height: 26)
+            .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity)
+        .frame(minHeight: 44)   // HIG tap target (FER-947) — square stays 26pt; cell absorbs the rest
         .contentShape(Rectangle())
 
         if let routineId {
             Button { openRoutine(routineId) } label: { cell }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text(verbatim: a11y))
         } else {
             cell
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: a11y))
         }
+    }
+
+    /// VoiceOver label for a week-strip day: weekday + trained / assigned / rest (and «today» when it is).
+    private func weekStripAccessibilityLabel(_ wd: Int) -> String {
+        let head: String = {
+            if wd == todayWeekday { return String(localized: "Today") }
+            return Calendar.current.standaloneWeekdaySymbols[(wd - 1) % 7]
+        }()
+        if let name = trainedThisWeek(wd) {
+            if name.isEmpty { return String(localized: "\(head), trained") }
+            return String(localized: "\(head), you trained \(name)")
+        }
+        if let rid = split[wd], let name = routinesById[rid]?.name {
+            return String(localized: "\(head), assigned to \(name)")
+        }
+        return String(localized: "\(head), rest day")
     }
 
     // MARK: - «Formas de entrenar» — the six training doors, always visible at the foot (FER-787)
@@ -609,28 +710,42 @@ private struct EntrenarLanding: View {
     // paper), so no raw hex or new tokens.
 
     private struct FormOption: Identifiable {
-        let icon: String
+        let icon: String            // SF Symbol — native, static
         let label: LocalizedStringKey
+        let hint: LocalizedStringKey
         let tint: Color
         let action: () -> Void
         var id: String { icon }
     }
 
     /// The five training doors in the icon grid. Diet sits as a quiet full-width row below (not a chip).
+    /// Icons are native SF Symbols, static (FER-944, «reposo + toque»). Labels + hints are
+    /// `LocalizedStringKey`, so the disc row follows the app language (es/en).
     private var formOptions: [FormOption] {
         [
-            FormOption(icon: "bolt", label: "Quick", tint: theme.dataStrain) { startQuickStrength() },
-            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live", tint: theme.dataHeart) { startLive() },
-            FormOption(icon: "timer", label: "Interval", tint: theme.dataSleep) { openIntervals() },
-            FormOption(icon: "figure.flexibility", label: "Mobility", tint: theme.dataHrv) { model.startMobilityOneOff() },
-            FormOption(icon: "wind", label: "Breathe", tint: theme.dataRecovery) { openBreathe() },
+            FormOption(icon: "bolt.fill", label: "Quick",
+                       hint: "Starts a quick strength session, no routine.",
+                       tint: theme.dataStrain) { startQuickStrength() },
+            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live",
+                       hint: "Starts a live workout with heart rate.",
+                       tint: theme.dataHeart) { startLive() },
+            FormOption(icon: "timer", label: "Intervals",
+                       hint: "Opens the interval timer.",
+                       tint: theme.dataSleep) { openIntervals() },
+            FormOption(icon: "figure.run", label: "Mobility",
+                       hint: "Starts a guided mobility session.",
+                       tint: theme.dataHrv) { startMobilityFromDisc() },
+            FormOption(icon: "wind", label: "Breathe",
+                       hint: "Opens guided breathing.",
+                       tint: theme.dataRecovery) { openBreathe() },
         ]
     }
 
     /// The five discs alone — they now ride the hero, directly under «Empezar» (FER-939, the FER-920
-    /// placement decision finally applied). No overline: their position IS the label.
+    /// placement decision finally applied). No overline: their position IS the label. Static icons at
+    /// rest; the only motion is the press feedback when you tap one (FER-944, «reposo + toque»).
     private var formasDiscos: some View {
-        HStack(alignment: .top, spacing: 6) {
+        HStack(alignment: .top, spacing: CenitMetrics.space2) {
             ForEach(formOptions) { opt in
                 formChip(opt)
             }
@@ -661,7 +776,7 @@ private struct EntrenarLanding: View {
                     .foregroundStyle(theme.inkDim)
             }
             .padding(.vertical, CenitMetrics.gap)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -669,30 +784,37 @@ private struct EntrenarLanding: View {
 
     /// One card chip in the «Formas de entrenar» row (FER-939): the handoff's square card SHAPE
     /// (rounded rect, label inside) carrying the FER-920 «troquel» color — solid data-token fill,
-    /// glyph AND label knocked out in paper, rimmed a step deeper (`dataEdge`) so it reads as a
-    /// die-cut token rather than a colored sticker. Runs its door's action.
+    /// glyph AND label knocked out in paper. The dark `dataEdge` rim is gone (FER-944): the solid
+    /// fill on paper cuts itself out; less line, more instrument. Static native icon; the only motion
+    /// is the press feedback (`DiscPressStyle`). Runs its door's action.
     private func formChip(_ opt: FormOption) -> some View {
         Button {
             opt.action()
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: CenitMetrics.space1 + 1) {
                 Image(systemName: opt.icon).font(StrandFont.glyph(.lead, weight: .semibold))
                     .foregroundStyle(theme.paper)
-                    .frame(height: 22)   // equal glyph slot — SF symbols vary in intrinsic height
+                    .frame(height: 20)   // equal glyph slot — SF symbols vary in intrinsic height
                     .accessibilityHidden(true)
-                Text(opt.label).font(StrandFont.overline).foregroundStyle(theme.paper)
-                    .lineLimit(1).minimumScaleFactor(0.65)
+                // Uniform label (FER-944): the real cause of the uneven look was the 2pt letter-spacing,
+                // which inflated the long words («Intervalos»/«Movilidad») until they scaled down while
+                // the short ones didn't. Tight tracking at 9pt lets ALL five fit on one line at the SAME
+                // size; the minimumScaleFactor is only a safety net for the largest Dynamic Type steps.
+                Text(opt.label)
+                    .font(InstrumentoType.groteskOverlineSmall).tracking(0.2)
+                    .foregroundStyle(theme.paper)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2).minimumScaleFactor(0.9)   // AX5: the long labels wrap instead of truncating
             }
-            .padding(.vertical, 9)
-            .padding(.horizontal, 2)
-            .frame(maxWidth: .infinity, minHeight: 44)   // HIG: keep the whole chip a ≥44pt tap target
+            .padding(.vertical, CenitMetrics.gap - 1)
+            .padding(.horizontal, CenitMetrics.space1)
+            .frame(maxWidth: .infinity, minHeight: 52)   // HIG tap target + a touch taller for even discs
             .background(opt.tint, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                .strokeBorder(theme.dataEdge(opt.tint), lineWidth: 1))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DiscPressStyle())
         .accessibilityLabel(opt.label)
+        .accessibilityHint(opt.hint)
     }
 
     /// «En vivo» from the expanded pill: start (or resume) the live HR workout and present its sheet — the
@@ -748,7 +870,7 @@ private struct EntrenarLanding: View {
     // strength sessions, bucketed by day and routine.
 
     private var constanciaSection: some View {
-        let months = constancyMonths
+        let months = constancyMonthsCache
         let total = months.reduce(0) { $0 + $1.count }
         return VStack(alignment: .leading, spacing: 12) {
             InstrumentoSectionBand("Consistency") {
@@ -799,10 +921,15 @@ private struct EntrenarLanding: View {
 
     @ViewBuilder
     private func dayCell(_ m: ConstancyMonth, day: Int, cell: CGFloat) -> some View {
+        // Expand the hit/VO frame to ≥44pt without growing the visible 14pt dot: pad out, shape, then
+        // cancel the layout growth with equal negative padding (FER-947).
+        let hitPad = max(0, (44 - cell) / 2)
+        let inMonth = day <= m.daysInMonth
+        let trainedName = inMonth ? m.trained[day] : nil
         ZStack {
-            if day <= m.daysInMonth {
+            if inMonth {
                 Circle().fill(theme.hairlineStrong).frame(width: 4, height: 4)
-                if let name = m.trained[day] {
+                if let name = trainedName {
                     Circle().fill(routineFill(region(name: name))).frame(width: 9, height: 9)
                 }
                 if m.isCurrent && day == todayDayOfMonth {
@@ -813,17 +940,40 @@ private struct EntrenarLanding: View {
             }
         }
         .frame(width: cell, height: cell)
+        .padding(hitPad)
         .contentShape(Rectangle())
         .onTapGesture {
-            guard day <= m.daysInMonth, let name = m.trained[day] else { return }
+            guard let name = trainedName else { return }
             constancyPopup = ConstancyPopup(monthId: m.id, day: day, name: name)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: inMonth ? dayCellAccessibilityLabel(m, day: day) : ""))
+        .accessibilityAddTraits(trainedName != nil ? .isButton : [])
+        .accessibilityHidden(!inMonth)
+        .padding(-hitPad)
         .popover(isPresented: Binding(
             get: { constancyPopup?.monthId == m.id && constancyPopup?.day == day },
             set: { if !$0 { constancyPopup = nil } }
         )) {
             if let popup = constancyPopup { constancyPopoverContent(popup, month: m) }
         }
+    }
+
+    /// VoiceOver label for a Constancia day: date + trained-with-routine / no training / today.
+    private func dayCellAccessibilityLabel(_ m: ConstancyMonth, day: Int) -> String {
+        let isToday = m.isCurrent && day == todayDayOfMonth
+        let head: String = {
+            if isToday { return String(localized: "Today") }
+            guard let date = Calendar.current.date(from: DateComponents(year: m.year, month: m.month, day: day)) else {
+                return "\(day)"
+            }
+            return date.formatted(.dateTime.day().month(.wide))
+        }()
+        if let name = m.trained[day] {
+            if name.isEmpty { return String(localized: "\(head), trained") }
+            return String(localized: "\(head), you trained \(name)")
+        }
+        return String(localized: "\(head), no training")
     }
 
     /// The «hoy» ring tint: today's scheduled routine, or a neutral hairline on a rest day.
@@ -841,7 +991,7 @@ private struct EntrenarLanding: View {
             let y = cal.component(.year, from: date)
             let mo = cal.component(.month, from: date)
             let d = cal.component(.day, from: date)
-            return constancyMonths.first { $0.year == y && $0.month == mo }?.trained[d]
+            return constancyMonthsCache.first { $0.year == y && $0.month == mo }?.trained[d]
         }
         return nil
     }
@@ -865,7 +1015,9 @@ private struct EntrenarLanding: View {
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
-        .background(theme.surface)
+        // `presentationBackground` paints the popover container AND its anchor arrow in one paper
+        // piece — a plain `.background` leaves the arrow in the system tint (same seam PaperMenu had).
+        .presentationBackground(theme.surface)
         .presentationCompactAdaptation(.popover)
     }
 
@@ -925,11 +1077,11 @@ private struct EntrenarLanding: View {
     private var loadErrorState: some View {
         card {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("No pudimos leer tus rutinas").font(StrandFont.title3).foregroundStyle(theme.ink)
-                Text("Algo falló al abrir tus datos.")
+                Text("We couldn't read your routines").font(StrandFont.title3).foregroundStyle(theme.ink)
+                Text("Something went wrong opening your data.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                StrandCTAButton("Reintentar", kind: .outline) { Task { await load() } }
+                StrandCTAButton("Retry", kind: .outline) { Task { await load() } }
             }
         }
     }
@@ -981,7 +1133,8 @@ private struct EntrenarLanding: View {
     /// The last three calendar months (oldest → current) as dot-grid data: for each, the days you trained
     /// keyed to the latest routine that day, plus the session count. Read from the last-200 completed
     /// sessions (well over 90 days' worth). No streak, no adherence — just the pattern.
-    private var constancyMonths: [ConstancyMonth] {
+    /// Called once per `load()` into `constancyMonthsCache` (FER-948) — not from the view body.
+    private func computeConstancyMonths() -> [ConstancyMonth] {
         let cal = Calendar.current
         guard let startOfThisMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date())) else { return [] }
         // Bucket completed sessions by (year, month); within a month keep the first-seen (latest) routine per day.
@@ -1115,6 +1268,8 @@ private struct EntrenarLanding: View {
         split = splitMap
         todaySlots = slots
         sessions = (try? await store.recentSessions(limit: 200)) ?? []
+        // After sessions + routines (→ routinesById): bucket once for Constancia + week strip (FER-948).
+        constancyMonthsCache = computeConstancyMonths()
         loaded = true
         // A «Empezar» from the Daily Brief that arrived before the prefetch finished now has its slots (FER-613).
         if startWhenLoaded { startWhenLoaded = false; startToday() }
@@ -1139,6 +1294,22 @@ private struct EntrenarLanding: View {
             return a != b ? a > b : (idx[$0] ?? 0) < (idx[$1] ?? 0)
         }.prefix(3)
         return top.map { MuscleVocabulary.es[$0] ?? $0.capitalized }
+    }
+}
+
+// MARK: - Disc press feedback (FER-944 · «reposo + toque»)
+//
+// The discs sit still; the only motion is the tactile press — the chip dips slightly and springs back
+// when tapped, so the tap registers physically. Feedback, not decoration (HIG). Reduce Motion drops
+// the scale to a plain opacity dip so there's still a press cue without movement.
+
+private struct DiscPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(!reduceMotion && configuration.isPressed ? 0.93 : 1)
+            .opacity(reduceMotion && configuration.isPressed ? 0.7 : 1)
+            .animation(StrandMotion.interactive, value: configuration.isPressed)
     }
 }
 

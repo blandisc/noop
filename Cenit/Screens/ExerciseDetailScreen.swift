@@ -30,11 +30,9 @@ struct ExerciseDetailScreen: View {
     /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
     @State private var history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] = []
     /// Stored best-per-metric records for this exercise (FER-504/505). Read-only; derived on save.
-    @State private var prs: [PersonalRecord] = []
     /// Where this exercise's progression cycle stands (FER-F); nil = no slot opted in.
     @State private var cycleState: ProgressionState? = nil
     /// Which series the progress chart shows (FER-505). Est. 1RM is the default hero trend.
-    @State private var metric: ProgressMetric = .oneRM
     /// The v3 · 1g/1h segmented view: Guide (muscles + how-to) / Progress (trend + records) / History (per-day sets).
     @State private var tab: DetailTab = .guide
     @State private var loaded = false
@@ -47,11 +45,11 @@ struct ExerciseDetailScreen: View {
     private enum DetailTab: String, CaseIterable, Identifiable {
         case guide, progress, history
         var id: String { rawValue }
-        var label: LocalizedStringKey {
+        var label: String {
             switch self {
-            case .guide:    return "Guide"
-            case .progress: return "Progress"
-            case .history:  return "History"
+            case .guide:    return String(localized: "Guide")
+            case .progress: return String(localized: "Progress")
+            case .history:  return String(localized: "History")
             }
         }
     }
@@ -63,38 +61,32 @@ struct ExerciseDetailScreen: View {
     @State private var showTypeMenu = false
     private var effectiveType: ExerciseType { shownType ?? exercise.type }
 
-    /// The metric the progress chart plots over time.
-    private enum ProgressMetric: String, CaseIterable, Identifiable {
+    /// A per-day metric the progress views derive from the raw history.
+    private enum ProgressMetric {
         case weight, oneRM, volume
-        var id: String { rawValue }
-        var label: LocalizedStringKey {
-            switch self {
-            case .weight: return "Max weight"
-            case .oneRM:  return "Est. 1RM"
-            case .volume: return "Volume"
-            }
-        }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                header
-                // Reserved media hero (FER-751, handoff 1g/1h): sits between the title and the
-                // segmented control. FER-722/778 fill this same slot with the cached loop/thumb
-                // (auto-play + top-right play/pause) without shifting the layout.
-                heroSection
-                Picker("View", selection: $tab) {
-                    ForEach(DetailTab.allCases) { t in Text(t.label).tag(t) }
+                // Two-speed rhythm (handoff): the chrome block — title, hero, segmented — sits
+                // tight at `gap`; `sectionGap` breathes only between the block and the tab content.
+                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                    header
+                    // Reserved media hero (FER-751, handoff 1g/1h): sits between the title and the
+                    // segmented control. FER-722/778 fill this same slot with the cached loop/thumb
+                    // (auto-play + top-right play/pause) without shifting the layout.
+                    heroSection
+                    SegmentedPillControl(DetailTab.allCases, selection: $tab, theme: theme,
+                                         squared: true) { $0.label }
                 }
-                .pickerStyle(.segmented)
                 switch tab {
                 case .guide:    guideTab
                 case .progress: progressTab
                 case .history:  historyTab
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, CenitMetrics.gap)
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -102,9 +94,8 @@ struct ExerciseDetailScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .task(id: exercise.id) {
             async let h = repo.exerciseHistory(exerciseId: exercise.id)
-            async let p = repo.personalRecords(exerciseId: exercise.id)
             async let ov = repo.exerciseTypeOverride(exercise.id)
-            (history, prs) = await (h, p)
+            history = await h
             hasTypeOverride = await ov != nil
             // FER-F: where the progression cycle stands — only if some routine slot opted in for this
             // exercise (first enabled slot wins; multi-routine overlap is rare and reads the same history).
@@ -176,7 +167,9 @@ struct ExerciseDetailScreen: View {
         if mediaCoordinator.isEnabled, let mediaURL, UIImage(contentsOfFile: mediaURL.path) != nil {
             ZStack(alignment: .topTrailing) {
                 AnimatedGIFView(url: mediaURL, isPlaying: isLoopPlaying)
-                    .aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
+                    // Handoff: the hero is a fixed 176pt banner, not a full-width square — the
+                    // segmented control and the datum stay above the fold.
+                    .frame(maxWidth: .infinity).frame(height: ExerciseThumbnail.heroHeight)
                     .clipShape(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous))
                     .accessibilityHidden(true)
                 Button { isLoopPlaying.toggle() } label: {
@@ -187,6 +180,10 @@ struct ExerciseDetailScreen: View {
                 .buttonStyle(.plain).padding(10)
                 .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
             }
+            // Handoff: the hero carries a 2px frame in the movement family's hue — the same frame
+            // the Library draws on its thumbnails.
+            .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous)
+                .strokeBorder(familyTint, lineWidth: 2))
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text("\(exercise.name) preview"))
         } else {
@@ -195,9 +192,21 @@ struct ExerciseDetailScreen: View {
                     ExerciseThumbnail(hero: nil)
                     if loadingMedia { ProgressView().tint(theme.inkTertiary) }
                 }
+                .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous)
+                    .strokeBorder(familyTint, lineWidth: 2))
                 if !mediaCoordinator.isEnabled { mediaOffHint }
             }
         }
+    }
+
+    /// The movement-family hue (push=ember · pull=teal · legs=indigo) — the same mapping the Library
+    /// uses on its thumbnails, so the frame, the primary-muscle chips and the how-to numbers agree.
+    private var familyTint: Color {
+        let m = (exercise.primaryMuscles.first ?? "").lowercased()
+        if ["chest", "shoulders", "triceps"].contains(where: m.contains) { return theme.dataStrain }
+        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return theme.dataHrv }
+        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return theme.dataSleep }
+        return theme.dataStrain
     }
 
     /// Discreet nudge shown only when the media download toggle is off — never when it's on and this
@@ -217,36 +226,91 @@ struct ExerciseDetailScreen: View {
         .buttonStyle(.plain)
     }
 
-    /// «Progreso» — the metric trend + personal records (or an honest empty when nothing's logged).
+    /// «Progreso» — the handoff's fixed composition: the estimated-1RM hero + delta chip, the axis
+    /// chart in a card, and the BEST SET / VOLUME-PER-WEEK mini cards (or an honest empty).
     @ViewBuilder private var progressTab: some View {
         if loaded {
-            if history.isEmpty { emptyHistory } else { progressSection; recordsSection; trendsLink }
+            if history.isEmpty { emptyHistory } else {
+                progressSection
+                cycleBlock
+                Text("From your best set with the Epley (1985) formula. A progress signal, not a target to load.")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
-    /// «Historial» — every logged day for this exercise (its best set that day), newest first.
+    /// «Historial» — every logged day for this exercise, newest first.
     @ViewBuilder private var historyTab: some View {
         if loaded {
             if history.isEmpty { emptyHistory } else { historyList }
         }
     }
 
-    /// One row per logged day (its heaviest work set), newest first — the per-exercise history (1h).
+    /// Handoff: one block per logged day — family-hue dot + date, a RECORD badge on the day that set
+    /// the all-time top weight, and EVERY set of that day as quiet «82,5 × 8» chips.
     private var historyList: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Every session").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.bottom, 6)
-            ForEach(Array(historyDays.enumerated()), id: \.offset) { idx, day in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(historyDate(day.ts)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    Spacer(minLength: 8)
-                    Text("\(StrengthDisplay.weight(day.weightKg, system: system)) × \(day.reps)")
-                        .font(StrandFont.subhead).foregroundStyle(theme.ink).monospacedDigit()
+        let sessions = historySessions
+        return VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(sessions.enumerated()), id: \.offset) { idx, day in
+                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                    HStack(spacing: CenitMetrics.space2) {
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría del punto de familia (8×8)
+                            .fill(familyTint).frame(width: 8, height: 8)
+                        historyDayText(day.ts)
+                            .font(StrandFont.body.weight(.medium)).foregroundStyle(theme.ink)
+                        Spacer(minLength: 8)
+                        if day.isRecord {
+                            Text("RECORD")
+                                .font(InstrumentoType.grotesk(10, weight: .bold)).tracking(0.5)
+                                .foregroundStyle(theme.paper)
+                                .padding(.horizontal, 7).padding(.vertical, 2)  // token-exempt: badge del handoff
+                                .background(familyTint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))  // token-exempt: radio 7 del handoff
+                        }
+                    }
+                    ChipFlow(spacing: 7) {
+                        ForEach(Array(day.sets.enumerated()), id: \.offset) { _, s in
+                            Text(verbatim: "\(StrengthDisplay.weightNumber(s.kg, system: system)) × \(s.reps)")
+                                .font(InstrumentoType.grotesk(13, weight: .semibold)).monospacedDigit()
+                                .foregroundStyle(theme.ink)
+                                .padding(.horizontal, 9).padding(.vertical, 4)  // token-exempt: chip 9/4 del handoff
+                                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                        }
+                    }
                 }
-                .padding(.vertical, 7)
-                .overlay(alignment: .top) { if idx > 0 { Divider().overlay(theme.hairline) } }
+                .padding(.vertical, CenitMetrics.gap)
                 .accessibilityElement(children: .combine)
+                if idx < sessions.count - 1 { Divider().overlay(theme.hairline) }
             }
         }
+    }
+
+    /// All sets grouped by day, newest first; `isRecord` marks the newest day that reached the
+    /// all-time top weight.
+    private var historySessions: [(ts: Int, sets: [(kg: Double, reps: Int)], isRecord: Bool)] {
+        var byDay: [String: (ts: Int, sets: [(kg: Double, reps: Int)])] = [:]
+        for h in history.sorted(by: { $0.startTs < $1.startTs }) {
+            let key = dayKey(h.startTs)
+            var entry = byDay[key] ?? (h.startTs, [])
+            entry.sets.append((h.weightKg, h.reps))
+            byDay[key] = entry
+        }
+        let days = byDay.values.sorted { $0.ts > $1.ts }
+        let maxKg = history.map(\.weightKg).max() ?? 0
+        var recordMarked = false
+        return days.map { day in
+            let hits = maxKg > 0 && day.sets.contains { $0.kg >= maxKg - 0.0001 }
+            let isRecord = hits && !recordMarked
+            if isRecord { recordMarked = true }
+            return (day.ts, day.sets, isRecord)
+        }
+    }
+
+    /// «Hoy» for today, else a short day-month («8 jul») — a `Text` so it follows the view's locale.
+    private func historyDayText(_ ts: Int) -> Text {
+        let date = Date(timeIntervalSince1970: TimeInterval(ts))
+        if Calendar.current.isDateInToday(date) { return Text("Today") }
+        return Text(date, format: .dateTime.day().month(.abbreviated))
     }
 
     /// The best (heaviest) work set per day, newest first, for the history list.
@@ -260,17 +324,6 @@ struct ExerciseDetailScreen: View {
         return byDay.values.sorted { $0.ts > $1.ts }
     }
 
-    private func historyDate(_ ts: Int) -> String {
-        Self.relativeFormatter.localizedString(for: Date(timeIntervalSince1970: TimeInterval(ts)), relativeTo: Date())
-    }
-
-    /// «Ver más en Tendencias» — a quiet hand-off to the deeper trend view. Cross-tab from a sheet isn't
-    /// wired here, so it's an honest label pointing to where the full trend lives (no dead jump).
-    private var trendsLink: some View {
-        Text("See more in Trends")
-            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-    }
-
     // MARK: - Header
 
     private var header: some View {
@@ -278,20 +331,24 @@ struct ExerciseDetailScreen: View {
             Text(metaLine)
                 .instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(StrengthDisplay.name(exercise))
-                .font(StrandFont.title1).foregroundStyle(theme.ink)
+                // §8.7: redesigned sheets title in Grotesk (handoff: 700 26px, tight tracking).
+                .font(InstrumentoType.grotesk(26, weight: .bold)).tracking(InstrumentoType.groteskHeroTrackingScaled(26))
+                .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    /// The overline under the title: «equipment · type» (e.g. «Barra · Peso × reps»). Collapses to a
-    /// single term when they'd read the same (a bodyweight exercise's equipment «body only» and its type
-    /// both localize to «Peso corporal») — fixing the doubled-equipment overline (FER-739).
+    /// The overline over the title (handoff): «primary muscle(s) · equipment» — «PECHO · BARRA», or
+    /// «PIERNA / ESPALDA · BARRA» for a compound with two primaries. Falls back to the measurement
+    /// type when the exercise carries neither (a bare custom one).
     private var metaLine: String {
-        let type = StrengthDisplay.typeName(effectiveType)
-        guard let eq = exercise.equipment, !eq.isEmpty else { return type }
-        let eqLabel = StrengthDisplay.equipment(eq)
-        if eqLabel.caseInsensitiveCompare(type) == .orderedSame { return type }
-        return "\(eqLabel) · \(type)"
+        let muscles = exercise.primaryMuscles.prefix(2).map { StrengthDisplay.muscle($0) }
+        let equip = exercise.equipment.flatMap { $0.isEmpty ? nil : StrengthDisplay.equipment($0) }
+        var parts: [String] = []
+        if !muscles.isEmpty { parts.append(muscles.joined(separator: " / ")) }
+        if let equip { parts.append(equip) }
+        guard !parts.isEmpty else { return StrengthDisplay.typeName(effectiveType) }
+        return parts.joined(separator: " · ")
     }
 
     // MARK: - Measurement type (FER-541) — let the user re-type any exercise, incl. a catalog one
@@ -349,30 +406,37 @@ struct ExerciseDetailScreen: View {
 
     @ViewBuilder private var musclesSection: some View {
         if !exercise.primaryMuscles.isEmpty || !exercise.secondaryMuscles.isEmpty {
-            VStack(alignment: .leading, spacing: 11) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 Text("Muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 ChipFlow(spacing: 8) {
                     ForEach(exercise.primaryMuscles, id: \.self) { m in muscleChip(m, primary: true) }
                     ForEach(exercise.secondaryMuscles, id: \.self) { m in muscleChip(m, primary: false) }
                 }
                 if !exercise.secondaryMuscles.isEmpty {
-                    Text("Primary at full ink · assisting at half")
+                    Text("Primary in color · assisting in gray")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
             }
         }
     }
 
+    /// Handoff: the primary mover is the datum — its chip carries the family hue on a 12% tint
+    /// («Pecho · principal»); assistants sit quiet on the sunken gray. Rounded rects, not capsules.
     private func muscleChip(_ muscle: String, primary: Bool) -> some View {
-        Text(StrengthDisplay.muscle(muscle))
-            .font(StrandFont.subhead)
-            .foregroundStyle(primary ? theme.paper : theme.inkSecondary)
-            .padding(.horizontal, 13).padding(.vertical, 6)
-            .background(primary ? theme.ink : Color.clear, in: Capsule(style: .continuous))
-            .overlay(Capsule(style: .continuous)
-                .strokeBorder(primary ? theme.ink : theme.hairlineStrong, lineWidth: 1))
-            .accessibilityElement()
-            .accessibilityLabel("\(StrengthDisplay.muscle(muscle)), \(String(localized: primary ? "primary" : "assisting"))")
+        Group {
+            if primary {
+                Text("\(StrengthDisplay.muscle(muscle)) · \(String(localized: "primary"))")
+                    .font(StrandFont.subhead).foregroundStyle(familyTint)
+            } else {
+                Text(StrengthDisplay.muscle(muscle))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+        }
+        .padding(.horizontal, 11).padding(.vertical, 5)  // token-exempt: chip 11/5 del handoff
+        .background(primary ? familyTint.opacity(0.12) : theme.patternBlock,  // token-exempt: tinte 12% del handoff
+                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+        .accessibilityElement()
+        .accessibilityLabel("\(StrengthDisplay.muscle(muscle)), \(String(localized: primary ? "primary" : "assisting"))")
     }
 
     // MARK: - Variants (FER-739) — other catalog exercises for the same primary muscle
@@ -382,8 +446,8 @@ struct ExerciseDetailScreen: View {
     /// exercise or one whose primary muscle nothing else shares.
     @ViewBuilder private var variantsSection: some View {
         if !variants.isEmpty {
-            VStack(alignment: .leading, spacing: 11) {
-                Divider().overlay(theme.hairline).padding(.bottom, 4)
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                Divider().overlay(theme.hairline).padding(.bottom, CenitMetrics.space1)
                 Text("Variants").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 ChipFlow(spacing: 8) {
                     ForEach(variants) { ex in variantChip(ex) }
@@ -396,8 +460,9 @@ struct ExerciseDetailScreen: View {
         Button { variant = ex } label: {
             Text(StrengthDisplay.name(ex))
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                .padding(.horizontal, 13).padding(.vertical, 6)
-                .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .padding(.horizontal, 11).padding(.vertical, 5)  // token-exempt: chip 11/5 del handoff
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(StrengthDisplay.name(ex)))
@@ -418,23 +483,28 @@ struct ExerciseDetailScreen: View {
     // MARK: - How to (offline text cues from the bundled catalog · FER-387)
 
     private var howToSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Divider().overlay(theme.hairline)
-            Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, 18)
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(Array(exercise.displayInstructions(localized: StrengthDisplay.localized).enumerated()), id: \.offset) { index, cue in
-                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+        let cues = exercise.displayInstructions(localized: StrengthDisplay.localized)
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(cues.enumerated()), id: \.offset) { index, cue in
+                    // Handoff: the step number leads in the family hue (Grotesk 15 bold), the cue in
+                    // ink, hairline-divided rows.
+                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                         Text(verbatim: "\(index + 1)")
-                            .font(StrandFont.captionNumber).foregroundStyle(theme.inkTertiary)
-                            .frame(width: 18, alignment: .trailing)
+                            .font(InstrumentoType.grotesk(15, weight: .bold)).monospacedDigit()
+                            .foregroundStyle(familyTint)
+                            .frame(width: 15, alignment: .leading)
                         Text(cue)
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .padding(.vertical, 11)  // token-exempt: fila 11pt del handoff
+                    if index < cues.count - 1 { Divider().overlay(theme.hairline) }
                 }
             }
-            .padding(.top, 11)
+            .padding(.top, 2)
         }
     }
 
@@ -451,21 +521,24 @@ struct ExerciseDetailScreen: View {
                 openURL(url)
             }
         } label: {
-            HStack(spacing: 11) {
-                Image(systemName: "play.rectangle").foregroundStyle(theme.inkSecondary)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Watch on YouTube").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                    Text("Opens outside the app · uses the internet")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            // Handoff: a flat row over a top hairline — no card. The icon sits in a small sunken square.
+            VStack(spacing: 0) {
+                Divider().overlay(theme.hairline)
+                HStack(spacing: CenitMetrics.gap) {
+                    Image(systemName: "play.rectangle").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkSecondary)
+                        .frame(width: 34, height: 34)
+                        .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Watch on YouTube").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        Text("Opens outside the app · uses the internet")
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                    Spacer(minLength: 8)
+                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
-                Spacer(minLength: 8)
-                Image(systemName: "arrow.up.forward").font(.caption).foregroundStyle(theme.inkTertiary)
+                .padding(.top, CenitMetrics.gap)
             }
-            .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
@@ -476,130 +549,148 @@ struct ExerciseDetailScreen: View {
     // MARK: - Progress (a metric-switchable trend: max weight / estimated 1RM / volume · FER-505)
 
     private var progressSection: some View {
-        let values = series(metric)
-        return VStack(alignment: .leading, spacing: 10) {
-            Divider().overlay(theme.hairline).padding(.bottom, 8)
-            Text("Progress").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-
-            Picker("Progress metric", selection: $metric) {
-                ForEach(ProgressMetric.allCases) { m in Text(m.label).tag(m) }
-            }
-            .pickerStyle(.segmented)
-
-            HStack(alignment: .firstTextBaseline) {
-                Text(metric.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                if let latest = values.last {
-                    Text(latestText(latest))
-                        .font(StrandFont.number(22, weight: .semibold)).foregroundStyle(theme.ink)
-                        .monospacedDigit()
-                }
-            }
-            .padding(.top, 2)
-
-            StatTile(label: String(localized: "VOLUME"),
-                     value: weeklyVolumeText,
-                     unit: String(localized: "/ WEEK"),
-                     theme: theme)
-
-            if values.count >= 2 {
-                if metric == .weight {
-                    // FER-F · 2d: the working weight moves in JUMPS — a step render is the honest shape.
-                    // Green dot = confirmed raise; amber dot = a deload (the drop is the datum too).
-                    StepChart(values: values, line: theme.ink.opacity(0.75),   // token-exempt: alfa de línea de dato (StepChart)
-                              raiseDot: theme.dataRecovery, deloadDot: theme.warning)
-                        .frame(height: 64)
-                        .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
-                    weightStrip(values)
-                } else {
-                    // Quiet axis grid + month/TODAY labels — local to this screen only (shared Sparkline stays bare).
-                    ZStack(alignment: .leading) {
-                        VStack(spacing: 0) {
-                            ForEach(0..<4, id: \.self) { i in
-                                Rectangle().fill(theme.hairline).frame(height: 1)
-                                if i < 3 { Spacer(minLength: 0) }
-                            }
-                        }
-                        .frame(height: 64)
-                        Sparkline(values: values,
-                                  gradient: ChartWell.fillGradient(theme.dataStrain),
-                                  bandColor: theme.hairlineStrong,
-                                  showsScrub: true,
-                                  valueFormat: { latestText($0) })
-                            .frame(height: 64)
+        let oneRM = series(.oneRM)
+        return VStack(alignment: .leading, spacing: 0) {
+            // Handoff: overline + the tab's ONE dominant number — today's estimated 1RM — with a
+            // quiet green delta chip when the trend is up.
+            Text("ESTIMATED 1RM · TODAY").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
+                if let latest = oneRM.last {
+                    HStack(alignment: .firstTextBaseline, spacing: 3) {
+                        Text(verbatim: StrengthDisplay.weightNumber(latest, system: system))
+                            .font(InstrumentoType.groteskHeroNumeral(44)).tracking(InstrumentoType.groteskHeroTrackingScaled(44))
+                            .foregroundStyle(theme.ink).monospacedDigit()
+                        Text(verbatim: StrengthDisplay.weightUnit(system))
+                            .font(InstrumentoType.grotesk(22, weight: .bold)).foregroundStyle(theme.inkTertiary)
                     }
-                    .accessibilityLabel(Text(metric.label) + Text(verbatim: " trend"))
-                    progressAxisLabels
+                }
+                if let first = oneRM.first, let last = oneRM.last, last > first + 0.05 {
+                    Text("↗ +\(StrengthDisplay.weight(last - first, system: system)) / \(weeksSpan) wk")
+                        .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
+                        .foregroundStyle(theme.dataRecovery)
+                        .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: chip delta del handoff
+                        .background(theme.dataRecovery.opacity(0.12),   // token-exempt: tinte 12% del handoff
+                                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                 }
             }
-            cycleBlock
-            Text(metricNote)
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
+            .padding(.top, 3)
 
-    /// Total volume (weight × reps) logged in the last 7 days, for the VOLUME / WEEK tile.
-    private var weeklyVolumeText: String {
-        let cutoff = Int(Date().timeIntervalSince1970) - 7 * 24 * 3600
-        let total = history
-            .filter { $0.startTs >= cutoff }
-            .reduce(0.0) { $0 + $1.weightKg * Double($1.reps) }
-        return StrengthHistoryFormat.volume(total, system: system)
-    }
-
-    /// Three quiet captions under the 1RM/volume sparkline: first month · middle month · TODAY.
-    @ViewBuilder private var progressAxisLabels: some View {
-        // Chronological (oldest→newest) so left→right matches the sparkline series.
-        let days = historyDays.sorted { $0.ts < $1.ts }
-        if days.count >= 3 {
-            let first = Self.monthAbbrev(days.first!.ts)
-            let middle = Self.monthAbbrev(days[days.count / 2].ts)
-            HStack(spacing: 0) {
-                Text(first)
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(middle)
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                Text("TODAY")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+            // The axis chart, in a raised card (handoff: gridlines + y labels + MAY/JUN/HOY).
+            if oneRM.count >= 2, !historyDays.isEmpty {
+                TrendAxisChart(values: oneRM,
+                               dates: historyDays.sorted { $0.ts < $1.ts }
+                                   .map { Date(timeIntervalSince1970: TimeInterval($0.ts)) },
+                               xFirst: monthLabel(historyDays.last?.ts),
+                               xMid: monthLabel(historyDays[historyDays.count / 2].ts),
+                               accent: familyTint, theme: theme,
+                               valueFormat: { StrengthDisplay.weight($0, system: system) })
+                    .padding(.top, CenitMetrics.cardPadding)
+                    .accessibilityLabel(Text("Est. 1RM") + Text(verbatim: " trend"))
             }
+
+            // BEST SET · VOLUME / WK — two mini cards, each with its own mini chart.
+            HStack(alignment: .top, spacing: CenitMetrics.gap) {
+                bestSetCard
+                volumeCard
+            }
+            .padding(.top, 14)  // token-exempt: 14 del handoff
         }
     }
 
-    private static func monthAbbrev(_ ts: Int) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "MMM"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: Date(timeIntervalSince1970: TimeInterval(ts))).uppercased()
+    /// The whole logged span in weeks (≥1), for the delta chip and card captions.
+    private var weeksSpan: Int {
+        let days = historyDays
+        guard days.count >= 2 else { return 1 }
+        return max(1, (days.first!.ts - days.last!.ts) / 604_800)
     }
 
-    // MARK: Weight strip + current cycle (FER-F · 2d)
+    /// A short uppercase month for the chart's x axis («MAY»), localized.
+    private func monthLabel(_ ts: Int?) -> String {
+        guard let ts else { return "" }
+        return Date(timeIntervalSince1970: TimeInterval(ts))
+            .formatted(.dateTime.month(.abbreviated)).uppercased()
+    }
 
-    /// Under the step chart: Now (green — it's the datum) · raises («N · X wk») · change (+%).
-    private func weightStrip(_ values: [Double]) -> some View {
-        let raises = zip(values, values.dropFirst()).filter { $1 > $0 + 0.0001 }.count
-        let weeks = historyDays.count >= 2
-            ? max(1, (historyDays.last!.ts - historyDays.first!.ts) / 604_800) : 0
-        let change = (values.first ?? 0) > 0 ? ((values.last! - values.first!) / values.first!) * 100 : 0
-        return HStack(spacing: 14) {
-            stripStat(Text("Now"), Text(verbatim: StrengthDisplay.weight(values.last ?? 0, system: system)),
-                      color: theme.dataRecovery)
-            stripStat(Text("Raises"), Text(verbatim: "\(raises) · \(weeks) wk"), color: theme.ink)
-            stripStat(Text("Change"),
-                      Text(verbatim: (change >= 0 ? "+" : "") + change.formatted(.number.precision(.fractionLength(0...1))) + " %"),
-                      color: change >= 0 ? theme.dataRecovery : theme.warning)
-            Spacer(minLength: 0)
+    /// «MEJOR SERIE» — the all-time heaviest set + the max-weight-by-day mini sparkline.
+    @ViewBuilder private var bestSetCard: some View {
+        if let best = history.max(by: { $0.weightKg < $1.weightKg }) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Best set").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(verbatim: StrengthDisplay.weightNumber(best.weightKg, system: system))
+                        .font(InstrumentoType.grotesk(20, weight: .bold)).monospacedDigit()
+                        .foregroundStyle(theme.ink)
+                    Text(verbatim: "× \(best.reps)")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                }
+                Sparkline(values: series(.weight),
+                          gradient: Gradient(colors: [familyTint, familyTint]),
+                          bandColor: .clear, showsArea: false, showsHead: true, showsScrub: true,
+                          valueFormat: { StrengthDisplay.weight($0, system: system) })
+                    .frame(height: 36)
+                    .padding(.top, 7)  // token-exempt: 7 del handoff
+                    .accessibilityHidden(true)
+                Text("max weight · \(weeksSpan) wk")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .padding(.top, 4)
+            }
+            .padding(.horizontal, 13).padding(.vertical, CenitMetrics.gap)  // token-exempt: 13 del handoff
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))  // token-exempt: radio 14 del handoff
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))  // token-exempt: radio 14 del handoff
+            .accessibilityElement(children: .combine)
         }
     }
 
-    private func stripStat(_ label: Text, _ value: Text, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            label.instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            value.font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit().foregroundStyle(color)
+    /// «VOLUMEN / SEM» — last week's tonnage + seven weekly bars (the current week in full hue).
+    private var volumeCard: some View {
+        let vols = weeklyVolumes
+        var streak = 0
+        var i = vols.count - 1
+        while i > 0, vols[i] > vols[i - 1] + 0.0001 { streak += 1; i -= 1 }
+        return VStack(alignment: .leading, spacing: 3) {
+            Text("Volume / wk").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(verbatim: StrengthHistoryFormat.volume(vols.last ?? 0, system: system))
+                .font(InstrumentoType.grotesk(20, weight: .bold)).monospacedDigit()
+                .foregroundStyle(theme.ink)
+            weeklyBars(vols)
+                .frame(height: 36)
+                .padding(.top, 7)  // token-exempt: 7 del handoff
+                .accessibilityHidden(true)
+            Group {
+                if streak >= 1 {
+                    Text("↗ up \(streak) wk").foregroundStyle(theme.dataRecovery)
+                } else {
+                    Text("steady").foregroundStyle(theme.inkTertiary)
+                }
+            }
+            .font(StrandFont.caption)
+            .padding(.top, 4)
         }
+        .padding(.horizontal, 13).padding(.vertical, CenitMetrics.gap)  // token-exempt: 13 del handoff
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))  // token-exempt: radio 14 del handoff
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))  // token-exempt: radio 14 del handoff
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Volume (weight × reps) per calendar week, oldest→newest, over the last 7 weeks.
+    private var weeklyVolumes: [Double] {
+        let cal = Calendar.current
+        guard let thisWeek = cal.dateInterval(of: .weekOfYear, for: Date())?.start else { return [] }
+        return (0..<7).reversed().map { back in
+            guard let start = cal.date(byAdding: .weekOfYear, value: -back, to: thisWeek),
+                  let end = cal.date(byAdding: .weekOfYear, value: 1, to: start) else { return 0 }
+            let s = Int(start.timeIntervalSince1970), e = Int(end.timeIntervalSince1970)
+            return history.filter { $0.startTs >= s && $0.startTs < e }
+                .reduce(0.0) { $0 + $1.weightKg * Double($1.reps) }
+        }
+    }
+
+    /// Seven rounded weekly bars — tints of the family hue, the latest week in full hue.
+    private func weeklyBars(_ vols: [Double]) -> some View {
+        WeeklyBarsChart(vols: vols, accent: familyTint, theme: theme,
+                        valueFormat: { StrengthHistoryFormat.volume($0, system: system) })
     }
 
     /// «CICLO ACTUAL» — where this exercise's progression stands, in one sentence with real numbers.
@@ -634,24 +725,7 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    /// Formats the headline + tooltip value for the selected metric (weights in the user's unit; volume
-    /// grouped with thousands, reusing the history screen's formatter).
-    private func latestText(_ v: Double) -> String {
-        switch metric {
-        case .weight, .oneRM: return StrengthDisplay.weight(v, system: system)
-        case .volume:         return StrengthHistoryFormat.volume(v, system: system)
-        }
-    }
-
-    private var metricNote: LocalizedStringKey {
-        switch metric {
-        case .weight: return "The heaviest set you logged, by day."
-        case .oneRM:  return "From your best set with the Epley (1985) formula. A progress signal, not a target to load."
-        case .volume: return "Weight × reps per day."
-        }
-    }
-
-    /// The selected metric as a per-day series, oldest→newest. Max-weight takes the day's heaviest set;
+    /// A metric as a per-day series, oldest→newest. Max-weight takes the day's heaviest set;
     /// volume sums weight×reps over the day; 1RM reuses the cited `OneRepMax.dailySparkline`.
     private func series(_ metric: ProgressMetric) -> [Double] {
         switch metric {
@@ -676,61 +750,12 @@ struct ExerciseDetailScreen: View {
         Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval(ts)))
     }
 
-    // MARK: - Personal records (best-per-metric, stored on save · FER-505)
-
-    @ViewBuilder
-    private var recordsSection: some View {
-        let rows = recordRows
-        if !rows.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Divider().overlay(theme.hairline).padding(.vertical, 8)
-                Text("Personal records").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                ForEach(rows, id: \.id) { row in
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(row.label).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                            if let detail = row.detail {
-                                Text(detail).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                            }
-                        }
-                        Spacer(minLength: 8)
-                        Text(row.value).font(StrandFont.number(17, weight: .semibold))
-                            .foregroundStyle(theme.ink).monospacedDigit()
-                    }
-                    .padding(.vertical, 5)
-                    .accessibilityElement(children: .combine)
-                }
-            }
-        }
-    }
-
-    private struct RecordRow { let id: String; let label: LocalizedStringKey; let detail: String?; let value: String }
-
-    /// The stored PRs (maxWeight / maxReps / maxVolume) as display rows, in that fixed order.
-    private var recordRows: [RecordRow] {
-        let byMetric = Dictionary(prs.map { ($0.metric, $0) }, uniquingKeysWith: { a, _ in a })
-        var rows: [RecordRow] = []
-        if let pr = byMetric[.maxWeight], let kg = pr.valueKg {
-            rows.append(RecordRow(id: "weight", label: "Max weight", detail: relative(pr.ts),
-                                  value: StrengthDisplay.weight(kg, system: system)))
-        }
-        if let pr = byMetric[.maxReps], let reps = pr.reps {
-            rows.append(RecordRow(id: "reps", label: "Most reps", detail: relative(pr.ts), value: "\(reps)"))
-        }
-        if let pr = byMetric[.maxVolume], let kg = pr.valueKg, let reps = pr.reps {
-            rows.append(RecordRow(id: "volume", label: "Best set volume",
-                                  detail: "\(StrengthDisplay.weight(kg, system: system)) × \(reps) · \(relative(pr.ts))",
-                                  value: StrengthHistoryFormat.volume(kg * Double(reps), system: system)))
-        }
-        return rows
-    }
-
     // MARK: - Honest empty
 
     private var emptyHistory: some View {
         VStack(alignment: .leading, spacing: 0) {
             Divider().overlay(theme.hairline)
-            VStack(spacing: 11) {
+            VStack(spacing: CenitMetrics.space2) {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 30)).foregroundStyle(theme.inkTertiary) // token-exempt: 30pt, .empty(34) sería +4pt (>±1pt)
                 Text("Not logged yet").font(StrandFont.title2).foregroundStyle(theme.ink)
@@ -740,18 +765,183 @@ struct ExerciseDetailScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 22)
+            .padding(.vertical, CenitMetrics.cardPadding)
         }
     }
 
-    // MARK: - Derived + formatting
+}
 
-    private static let relativeFormatter: RelativeDateTimeFormatter = {
-        let f = RelativeDateTimeFormatter(); f.unitsStyle = .short; return f
-    }()
+// MARK: - Weekly volume bars (handoff «Detalle · Progreso», mini card)
 
-    private func relative(_ ts: Int) -> String {
-        Self.relativeFormatter.localizedString(for: Date(timeIntervalSince1970: TimeInterval(ts)), relativeTo: Date())
+/// Seven weekly tonnage bars; dragging pins a week (full hue) and shows its value above — the same
+/// scrub reading model as the line charts.
+private struct WeeklyBarsChart: View {
+    let vols: [Double]
+    let accent: Color
+    let theme: InstrumentoTheme
+    let valueFormat: (Double) -> String
+
+    @State private var scrubIndex: Int? = nil
+
+    var body: some View {
+        let top = max(vols.max() ?? 1, 0.0001)
+        return GeometryReader { geo in
+            HStack(alignment: .bottom, spacing: 5) {
+                ForEach(Array(vols.enumerated()), id: \.offset) { idx, v in
+                    let active = scrubIndex.map { $0 == idx } ?? (idx == vols.count - 1)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de barra del sparkline
+                        .fill(active ? accent : accent.opacity(0.28))  // token-exempt: tinte 28% del handoff
+                        .frame(height: max(3, geo.size.height * v / top))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: geo.size.height, alignment: .bottom)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { g in
+                        let frac = max(0, min(0.999, g.location.x / max(geo.size.width, 1)))
+                        scrubIndex = Int(frac * CGFloat(vols.count))
+                    }
+                    .onEnded { _ in scrubIndex = nil }
+            )
+            .overlay(alignment: .top) {
+                if let i = scrubIndex, vols.indices.contains(i) {
+                    Text(verbatim: valueFormat(vols[i]))
+                        .font(InstrumentoType.grotesk(11, weight: .bold)).monospacedDigit()
+                        .foregroundStyle(accent)
+                        .padding(.horizontal, 5).padding(.vertical, 1)
+                        .background(theme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 4, style: .continuous))  // token-exempt: tooltip
+                        .offset(y: -14)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Trend chart with axes (handoff «Detalle · Progreso»)
+
+/// The 1RM trend in the handoff's chart card: four hairline gridlines with Grotesk y labels, the
+/// series as a hue line over a soft area fill, an end dot with halo, and MAY/JUN/TODAY x captions.
+/// Dragging scrubs the series — a hairline + dot pin the nearest sample and the header swaps to
+/// «value · date», same reading model as the Trends charts.
+private struct TrendAxisChart: View {
+    let values: [Double]
+    let dates: [Date]
+    let xFirst: String
+    let xMid: String
+    let accent: Color
+    let theme: InstrumentoTheme
+    let valueFormat: (Double) -> String
+
+    @State private var scrubIndex: Int? = nil
+    private static let plotHeight: CGFloat = 150
+
+    var body: some View {
+        let lo = values.min() ?? 0
+        let hi = Swift.max(values.max() ?? 1, lo + 1)
+        let pad = (hi - lo) * 0.18 + 0.001
+        let top = hi + pad, bottom = Swift.max(0, lo - pad)
+        VStack(alignment: .leading, spacing: 6) {
+            // Scrub readout: value + date of the pinned sample; empty until you drag.
+            if let i = scrubIndex, values.indices.contains(i) {
+                HStack(spacing: 6) {
+                    Text(verbatim: valueFormat(values[i]))
+                        .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
+                        .foregroundStyle(accent)
+                    if dates.indices.contains(i) {
+                        Text(dates[i], format: .dateTime.day().month(.abbreviated))
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+                .padding(.bottom, 2)
+            }
+            ZStack(alignment: .topLeading) {
+                // Gridlines + y labels, top→bottom; the bottom line slightly stronger (handoff).
+                VStack(spacing: 0) {
+                    ForEach(0..<4, id: \.self) { i in
+                        HStack(spacing: 6) {
+                            Text(verbatim: "\(Int((top - (top - bottom) * Double(i) / 3).rounded()))")
+                                .font(InstrumentoType.grotesk(10, weight: .semibold)).monospacedDigit()
+                                .foregroundStyle(theme.inkTertiary)
+                                .frame(width: 28, alignment: .trailing)
+                            Rectangle().fill(i == 3 ? theme.hairlineStrong : theme.hairline).frame(height: 1)
+                        }
+                        if i < 3 { Spacer(minLength: 0) }
+                    }
+                }
+                // The series: area + line + end dot, inset past the y-label column.
+                GeometryReader { geo in
+                    let w = geo.size.width, h = geo.size.height
+                    let points = values.enumerated().map { idx, v in
+                        CGPoint(x: w * CGFloat(idx) / CGFloat(max(values.count - 1, 1)),
+                                y: h * CGFloat(1 - (v - bottom) / (top - bottom)))
+                    }
+                    ZStack {
+                        Path { p in
+                            guard let first = points.first, let last = points.last else { return }
+                            p.move(to: CGPoint(x: first.x, y: h))
+                            points.forEach { p.addLine(to: $0) }
+                            p.addLine(to: CGPoint(x: last.x, y: h))
+                            p.closeSubpath()
+                        }
+                        .fill(accent.opacity(0.10))  // token-exempt: área 10% del handoff
+                        Path { p in
+                            guard let first = points.first else { return }
+                            p.move(to: first)
+                            points.dropFirst().forEach { p.addLine(to: $0) }
+                        }
+                        .stroke(accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                        if let last = points.last, scrubIndex == nil {
+                            Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(last)  // token-exempt: halo del handoff
+                            Circle().fill(accent).frame(width: 9, height: 9).position(last)
+                        }
+                        // The scrub pin: vertical hairline + dot at the nearest sample.
+                        if let i = scrubIndex, points.indices.contains(i) {
+                            Path { p in
+                                p.move(to: CGPoint(x: points[i].x, y: 0))
+                                p.addLine(to: CGPoint(x: points[i].x, y: h))
+                            }
+                            .stroke(theme.hairlineStrong, lineWidth: 1)
+                            Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(points[i])  // token-exempt: halo del handoff
+                            Circle().fill(accent).frame(width: 9, height: 9).position(points[i])
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { g in
+                                let frac = max(0, min(1, g.location.x / max(w, 1)))
+                                scrubIndex = Int((frac * CGFloat(max(values.count - 1, 1))).rounded())
+                            }
+                            .onEnded { _ in scrubIndex = nil }
+                    )
+                }
+                .padding(.leading, 34)
+                .padding(.vertical, 5)   // keeps the line inside the first/last gridline
+            }
+            .frame(height: Self.plotHeight)
+            // X captions: first month · middle month · TODAY in the hue.
+            HStack(spacing: 0) {
+                Text(verbatim: xFirst)
+                    .font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(0.6)
+                    .foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(verbatim: xMid)
+                    .font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(0.6)
+                    .foregroundStyle(theme.inkTertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                Text("Today").textCase(.uppercase)
+                    .font(InstrumentoType.grotesk(9, weight: .bold)).tracking(0.6)
+                    .foregroundStyle(accent)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .padding(.leading, 34)
+        }
+        .padding(.top, CenitMetrics.cardPadding).padding(.horizontal, 14).padding(.bottom, CenitMetrics.gap)  // token-exempt: 14 del handoff
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
     }
 }
 

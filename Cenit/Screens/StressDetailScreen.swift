@@ -103,15 +103,34 @@ struct StressDetailScreen: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .sheetPaper(theme)
+        // FER-954: hop the parse + 90-day heat build off-main (same seam as Sueño/Recuperación/
+        // Esfuerzo, FER-953). The async loaders stay exactly as they were.
         .task {
             range = .month
-            parsed = (model?.fullTrend ?? []).map {
-                (Self.dayParser.string(from: $0.date), $0.date, $0.value)
-            }
-            stressHeatCache = buildStressHeat()
+            let fullTrend = model?.fullTrend ?? []
+            let todayKey = Repository.localDayKey(Date())   // main-isolated: resolve before the hop
+            let (newParsed, heat) = await Task.detached(priority: .userInitiated) {
+                Self.parseAndBuildHeat(fullTrend: fullTrend, todayKey: todayKey)
+            }.value
+            parsed = newParsed
+            stressHeatCache = heat
             if let patternsLoader { patterns = await patternsLoader() }
             if let eventPatternsLoader { eventPatterns = await eventPatternsLoader() }
         }
+    }
+
+    /// Off-main parse + heat build (FER-954): the `.task`'s single hop, kept as one `nonisolated`
+    /// helper so `Self.dayParser` reads the same static formatter used everywhere else on the screen.
+    private nonisolated static func parseAndBuildHeat(
+        fullTrend: [TrendPoint], todayKey: String
+    ) -> (parsed: [(day: String, date: Date?, value: Double)], heat: [RecoveryDay]) {
+        let parsed = fullTrend.map {
+            (Self.dayParser.string(from: $0.date), Optional($0.date), $0.value)
+        }
+        let heat = Self.buildStressHeat(
+            values: fullTrend.map { (Self.dayParser.string(from: $0.date), $0.value) },
+            todayKey: todayKey)
+        return (parsed, heat)
     }
 
     /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).
@@ -483,15 +502,19 @@ struct StressDetailScreen: View {
         }
     }
 
-    private func buildStressHeat() -> [RecoveryDay] {
+    /// Builds the 90-day heat grid from a parsed value snapshot (FER-954: pure / off-main-safe, same
+    /// shape as `SleepDetailScreen.buildSleepHeat`). `todayKey` llega del caller en MainActor
+    /// (`Repository.localDayKey` es main-isolated).
+    private nonisolated static func buildStressHeat(values: [(day: String, value: Double)],
+                                                     todayKey: String) -> [RecoveryDay] {
         var vals: [String: Double] = [:]
-        for r in parsed { vals[r.day] = r.value }
+        for r in values { vals[r.day] = r.value }
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
         // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
         // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
         // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano. Asi los cuatro
         // calendarios (Recuperacion, Sueno, Esfuerzo, Estres) miden igual. (FER calendarios mismo tamano)
-        guard let today = Repository.parseDayKey(Repository.localDayKey(Date())) else { return [] }
+        guard let today = Repository.parseDayKey(todayKey) else { return [] }
         return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
             guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
             return RecoveryDay(date: date.addingTimeInterval(12 * 3600),

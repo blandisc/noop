@@ -2507,7 +2507,7 @@ struct LiveStrengthSheet: View {
                 }
             }
             .padding(3)
-            .background(theme.paper.opacity(0.14), in: Capsule())
+            .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: Capsule())
         }
     }
 
@@ -2533,21 +2533,21 @@ struct LiveStrengthSheet: View {
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                     Text("\(bpm)").instrumentoHero(100).monospacedDigit().foregroundStyle(theme.paper)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.paper.opacity(0.7))
+                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 }
             }
             if let target, !ready {
                 (Text(String(localized: "dropping toward "))
                  + Text("\(target) bpm").bold()
                  + Text(" · " + String(localized: "the strap will buzz")))
-                    .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                    .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
             } else if let toReady = v.bpmToReady, !ready {
                 Text("\(toReady) bpm to ready")
-                    .font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.7))
+                    .font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
             }
             focusRestHRTrack(bpm: bpm, target: target)
             Text("\(Self.clock(elapsed)) " + String(localized: "of rest · the strap buzzes on arrival"))
-                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -2561,7 +2561,7 @@ struct LiveStrengthSheet: View {
         let total = max(1, cappedEnd.map { Int($0.timeIntervalSince(session.restStartedAt ?? now)) } ?? remaining)
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             ZStack {
-                Circle().stroke(theme.paper.opacity(0.22), lineWidth: 10)
+                Circle().stroke(theme.paper.opacity(0.22), lineWidth: 10)  // token-exempt: pista sin llenar del anillo de progreso (geometría, FER-934)
                 Circle()
                     .trim(from: 0, to: max(0, min(1, Double(remaining) / Double(total))))
                     .stroke(theme.paper, style: StrokeStyle(lineWidth: 10, lineCap: .round))
@@ -2571,14 +2571,14 @@ struct LiveStrengthSheet: View {
                         .instrumentoHero(72).monospacedDigit().foregroundStyle(theme.paper)
                         .contentTransition(.numericText())
                     Text(String(localized: "of \(total) s"))
-                        .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                        .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 }
             }
             .frame(width: 232, height: 232)
             .frame(maxWidth: .infinity)
             Text(noStrapFallback ? String(localized: "No strap signal: resting by time, 5 min cap")
                                   : String(localized: "Rings and buzzes when it ends."))
-                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(0.7))
+                .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2595,7 +2595,7 @@ struct LiveStrengthSheet: View {
             let lo = Double(target ?? bpm)
             let frac = hi > lo ? max(0, min(1, (hi - Double(bpm)) / (hi - lo))) : 1
             ZStack(alignment: .leading) {
-                Capsule().fill(theme.paper.opacity(0.22))
+                Capsule().fill(theme.paper.opacity(0.22))  // token-exempt: pista sin llenar de la barra de FC (geometría, FER-934)
                 Capsule().fill(theme.paper).frame(width: w * frac)
                 Rectangle().fill(theme.paper).frame(width: 2, height: 14)
                     .offset(x: w - 1)
@@ -2609,9 +2609,9 @@ struct LiveStrengthSheet: View {
             Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.paper)
                 .frame(width: 56)
                 .padding(.vertical, CenitMetrics.sectionGap)
-                .background(theme.paper.opacity(0.14), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.paper.opacity(0.3), lineWidth: 1))
+                    .strokeBorder(theme.paper.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
@@ -2642,7 +2642,7 @@ struct LiveStrengthSheet: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 14).padding(.vertical, 12)
-            .background(theme.paper.opacity(0.14), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         }
     }
 
@@ -3002,9 +3002,9 @@ struct LiveStrengthSheet: View {
             .foregroundStyle(theme.dataStrain)
             .frame(maxWidth: .infinity)
             .frame(height: 46)
-            .background(theme.dataStrain.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))  // token-exempt: decorative drop-zone tint alpha
+            .background(theme.dataStrain.opacity(0.06), in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))  // token-exempt: decorative drop-zone tint alpha
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
             }
             .padding(.bottom, 6)
@@ -3033,9 +3033,9 @@ struct LiveStrengthSheet: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .frame(minHeight: 44)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .strokeBorder(dragging ? theme.dataStrain : theme.hairlineStrong, lineWidth: dragging ? 2 : 1)
             }
             .shadow(color: dragging ? theme.dataStrain.opacity(0.25) : .clear,  // token-exempt: decorative lift-shadow alpha

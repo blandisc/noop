@@ -267,8 +267,18 @@ enum ScreenshotFixtures {
     static func seedTrainingPlan(_ model: AppModel) async {
         guard let store = await model.repo.storeHandle() else { return }
         // Idempotent: the fixture relaunches between captures and the store persists — seeding again
-        // would duplicate the routines (first capture showed «18 rutinas»: 6× each).
-        if let existing = try? await store.routines(), !existing.isEmpty { return }
+        // would duplicate the routines (first capture showed «18 rutinas»: 6× each). But routines
+        // WITHOUT sessions (e.g. a store `seed(state: "train")` populated earlier) still fall through
+        // to the session block below, hanging the demo history off the existing plan (FER-951).
+        if let existing = try? await store.routines(), !existing.isEmpty {
+            let sessions = (try? await store.recentSessions(limit: 1)) ?? []
+            guard sessions.isEmpty else { return }
+            let rid = existing[0].id
+            await seedSessions(store: store, pushId: rid,
+                               pullId: existing.count > 1 ? existing[1].id : rid,
+                               legsId: existing.count > 2 ? existing[2].id : rid)
+            return
+        }
         let now = Int(Date().timeIntervalSince1970)
         let cal = Calendar(identifier: .gregorian)
 
@@ -308,8 +318,15 @@ enum ScreenshotFixtures {
         try? await store.setRoutineSchedule(weekday: wd(-3), routineId: b.id)
         try? await store.setRoutineSchedule(weekday: wd(-2), routineId: c.id)
 
-        // Completed sessions: two earlier this week (check-marked week squares) and a few across
-        // the prior weeks so the 90-day Constancia grid reads as a real, tinted pattern.
+        await seedSessions(store: store, pushId: a.id, pullId: b.id, legsId: c.id)
+    }
+
+    /// Completed demo sessions: squat/deadlift days across the prior weeks (a real, tinted Constancia)
+    /// plus a dense 8-week bench progression (2 sessions/week, a raise every ~2) so «Detalle · Progreso»
+    /// draws real charts — 1RM trend, best-set sparkline, weekly volume bars — and «Historial» shows
+    /// day blocks with set chips + the RÉCORD badge on today (FER-951).
+    private static func seedSessions(store: WhoopStore, pushId: String, pullId: String, legsId: String) async {
+        let cal = Calendar(identifier: .gregorian)
         func session(_ rid: String, exerciseId: String, daysAgo: Int, kg: Double) async {
             guard let day = cal.date(byAdding: .day, value: -daysAgo, to: Date()) else { return }
             let start = Int(cal.startOfDay(for: day).timeIntervalSince1970) + 18 * 3600
@@ -320,13 +337,19 @@ enum ScreenshotFixtures {
             }
             try? await store.saveSession(s, sets: sets)
         }
-        await session(c.id, exerciseId: "Barbell_Full_Squat", daysAgo: 2, kg: 100)
-        await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 3, kg: 120)
-        await session(a.id, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 7, kg: 80)
-        await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 10, kg: 115)
-        await session(c.id, exerciseId: "Barbell_Full_Squat", daysAgo: 16, kg: 95)
-        await session(a.id, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 23, kg: 77.5)
-        await session(b.id, exerciseId: "Barbell_Deadlift", daysAgo: 31, kg: 110)
+        await session(legsId, exerciseId: "Barbell_Full_Squat", daysAgo: 2, kg: 100)
+        await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 3, kg: 120)
+        await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 10, kg: 115)
+        await session(legsId, exerciseId: "Barbell_Full_Squat", daysAgo: 16, kg: 95)
+        await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 31, kg: 110)
+        let benchRamp: [(daysAgo: Int, kg: Double)] = [
+            (0, 82.5), (4, 80), (7, 80), (11, 80), (14, 77.5), (18, 77.5), (21, 77.5), (25, 75),
+            (28, 75), (32, 75), (35, 72.5), (39, 72.5), (42, 72.5), (46, 70), (49, 70), (53, 70),
+        ]
+        for step in benchRamp {
+            await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip",
+                          daysAgo: step.daysAgo, kg: step.kg)
+        }
     }
 }
 #endif

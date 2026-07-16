@@ -1,6 +1,125 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "ESTIMATED 1RM · TODAY": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ESTIMATED 1RM · TODAY"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1RM ESTIMADO · HOY"
+          }
+        }
+      }
+    },
+    "↗ +%@ / %lld wk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ +%@ / %lld wk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ +%@ / %lld sem"
+          }
+        }
+      }
+    },
+    "max weight · %lld wk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "max weight · %lld wk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "peso máx · %lld sem"
+          }
+        }
+      }
+    },
+    "Volume / wk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume / wk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen / sem"
+          }
+        }
+      }
+    },
+    "↗ up %lld wk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ up %lld wk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ sube %lld sem"
+          }
+        }
+      }
+    },
+    "RECORD": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RECORD"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RÉCORD"
+          }
+        }
+      }
+    },
+    "Primary in color · assisting in gray": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primary in color · assisting in gray"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Principal en color · asistentes en gris"
+          }
+        }
+      }
+    },
     "Map": {
       "extractionState": "manual",
       "localizations": {
@@ -25875,6 +25994,23 @@
         }
       }
     },
+    "Opens guided breathing.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens guided breathing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre la respiración guiada."
+          }
+        }
+      }
+    },
     "Opens the GitHub releases page in your browser. Cénit itself makes no network connections — the macOS sandbox has no network entitlement.": {
       "extractionState": "stale",
       "localizations": {
@@ -25981,6 +26117,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abre el detalle completo"
+          }
+        }
+      }
+    },
+    "Opens the interval timer.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the interval timer."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre el temporizador de intervalos."
           }
         }
       }
@@ -28915,6 +29068,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recuperación, promedio móvil de 7 días"
+          }
+        }
+      }
+    },
+    "Recovery, calibrating": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recovery, calibrating"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recuperación, calibrando"
           }
         }
       }
@@ -32737,6 +32906,23 @@
         }
       }
     },
+    "Something went wrong opening your data.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong opening your data."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Algo falló al abrir tus datos."
+          }
+        }
+      }
+    },
     "Soon": {
       "extractionState": "manual",
       "localizations": {
@@ -33315,6 +33501,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Iniciar entrenamiento"
+          }
+        }
+      }
+    },
+    "Starts a guided mobility session.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts a guided mobility session."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza una sesión guiada de movilidad."
+          }
+        }
+      }
+    },
+    "Starts a live workout with heart rate.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts a live workout with heart rate."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza un entrenamiento en vivo con frecuencia cardiaca."
+          }
+        }
+      }
+    },
+    "Starts a quick strength session, no routine.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts a quick strength session, no routine."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza un entrenamiento rápido de fuerza, sin rutina."
           }
         }
       }
@@ -38626,6 +38863,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "No pudimos leer eso como un archivo de plan. Pega el resultado completo que te dio tu IA, o sube el .json."
+          }
+        }
+      }
+    },
+    "We couldn't read your routines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't read your routines"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No pudimos leer tus rutinas"
           }
         }
       }
@@ -60532,6 +60786,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "SOLTAR AQUÍ · POSICIÓN %d"
+          }
+        }
+      }
+    },
+    "You have a session in progress. Resume it?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have a session in progress. Resume it?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tienes una sesión en curso. ¿Reanudarla?"
+          }
+        }
+      }
+    },
+    "A new routine can't start until this one ends.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new routine can't start until this one ends."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se puede empezar otra rutina hasta terminar esta."
+          }
+        }
+      }
+    },
+    "%@, you trained %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, you trained %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, entrenaste %@"
+          }
+        }
+      }
+    },
+    "%@, no training": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, no training"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, sin entrenar"
+          }
+        }
+      }
+    },
+    "%@, assigned to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, assigned to %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, asignado a %@"
+          }
+        }
+      }
+    },
+    "%@, rest day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, rest day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, día de descanso"
+          }
+        }
+      }
+    },
+    "%@, trained": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, trained"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, entrenaste"
           }
         }
       }

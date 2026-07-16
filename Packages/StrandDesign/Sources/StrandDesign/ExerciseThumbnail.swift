@@ -32,6 +32,10 @@ public struct ExerciseThumbnail: View {
     /// video loop, FER-778) can clip it to the exact same shape as the reserved slot.
     public static let heroCornerRadius: CGFloat = 16
 
+    /// The hero banner's fixed height (handoff «Detalle de Ejercicio»: 176px) — full-width but no
+    /// longer a square, so the segmented control and the datum stay above the fold on a 390pt phone.
+    public static let heroHeight: CGFloat = 176
+
     /// A square row thumbnail (1d 40 · 1j/1k 44 · 1f 48 · 1i 54 pt).
     public init(side: CGFloat, image: Image? = nil) {
         self.form = .tile(side: side)
@@ -79,7 +83,7 @@ public struct ExerciseThumbnail: View {
             case .tile(let side):
                 content.frame(width: side, height: side)
             case .hero:
-                content.aspectRatio(1, contentMode: .fit).frame(maxWidth: .infinity)
+                content.frame(maxWidth: .infinity).frame(height: ExerciseThumbnail.heroHeight)
             }
         }
     }

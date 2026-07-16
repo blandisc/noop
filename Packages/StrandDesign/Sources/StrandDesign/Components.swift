@@ -30,6 +30,7 @@ public enum CenitMetrics {
     public static let tileRadius: CGFloat = 17         // «Hoy» metric tile corner (handoff «Hoy · Estados»)
     public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
     public static let insetRadius: CGFloat = 10        // sub-tarjeta anidada dentro de otra tarjeta (auditoría jul-2026, H3 — absorbe 9/10/11)
+    public static let rowVPad: CGFloat = 10            // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
 
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
@@ -96,17 +97,20 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// (iOS HIG minimum) instead of the compact 28pt — used for the Tendencias landing selector. Only
     /// meaningful with a `theme`; default keeps the compact height.
     var tall: Bool = false
-    /// Canvas pass 2026-07-15: optional thumb tint — the rest editor's HR variant paints the active
-    /// segment in the data hue (handoff); default stays ink.
+    /// «Squared» (handoff FER-951) kept for call-site compat — the selector is now ALWAYS the
+    /// rounded-RECT look (owner call 2026-07-15: one rectangular grammar everywhere), so the flag is
+    /// accepted but no longer changes the shape. `thumbTint` paints the active segment in a data hue.
+    var squared: Bool = false
     var thumbTint: Color? = nil
     public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme,
-                inkThumb: Bool = false, tall: Bool = false, thumbTint: Color? = nil,
-                label: @escaping (T) -> String) {
+                inkThumb: Bool = false, tall: Bool = false, squared: Bool = false,
+                thumbTint: Color? = nil, label: @escaping (T) -> String) {
         self.items = items; self._selection = selection; self.theme = theme
-        self.inkThumb = inkThumb; self.tall = tall; self.thumbTint = thumbTint; self.label = label
+        self.inkThumb = inkThumb; self.tall = tall; self.squared = squared
+        self.thumbTint = thumbTint; self.label = label
     }
     public var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: squared ? 3 : 4) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 let sel = item == selection
                 Button { withAnimation(StrandMotion.interactive) { selection = item } } label: {
@@ -118,11 +122,7 @@ public struct SegmentedPillControl<T: Hashable>: View {
             }
         }
         .padding(3)
-        // Canvas pass 2026-07-15 (handoff, owner call): the selector is RECTANGULAR — the library's
-        // rounded-rect segmented, one grammar across every screen; the capsule is retired here.
-        .background(trackFill, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-            .strokeBorder(trackStroke, lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(trackFill))
     }
 
     /// One segment. Instrumento: the active «thumb» HUGS the label to the WIDTH (content-width, centered in
@@ -136,15 +136,18 @@ public struct SegmentedPillControl<T: Hashable>: View {
         // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
         // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
         Text(label(item))
-            .font(InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
-            .tracking(1.6)
+            .font(squared ? InstrumentoType.grotesk(13, weight: .semibold)
+                          : InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
+            .tracking(squared ? 0 : 1.6)
             .lineLimit(1).minimumScaleFactor(0.85)
             .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
             .padding(.horizontal, 12)
             .frame(height: tall ? 44 : 34)
+            // Squared (handoff): the ink thumb fills the WHOLE segment, not just the label.
+            .frame(maxWidth: squared ? .infinity : nil)
             .background {
                 if sel {
-                    RoundedRectangle(cornerRadius: CenitMetrics.controlRadius - 2, style: .continuous)
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(thumbTint ?? theme.ink)
                 }
             }

@@ -125,6 +125,14 @@ public extension InstrumentoType {
     /// Tracking for pager tabs.
     static let groteskTabTracking: CGFloat = 2
 
+    /// The tab/landing wordmark («Entrenar» / «Tendencias» / «Patrones» / «Ajustes») — 21/600,
+    /// tracking −0.5. Same size/weight as the retired SF `tabTitle` so the lockup keeps its height
+    /// and baseline across tabs (FER-557); Grotesk sets wider, hence the softer negative tracking.
+    /// FIXED chrome (same no-Dynamic-Type criterion as `tabTitle`). FER-944.
+    static let groteskTabTitle = grotesk(21, weight: .semibold)
+    /// Tracking for the tab wordmark.
+    static let groteskTabTitleTracking: CGFloat = -0.5
+
     /// The active-lane label over a chart («EQUILIBRADO · HOY») — 12/700, tracking 1.8.
     static let groteskLane = grotesk(12, weight: .bold)
     /// Tracking for lane labels.
@@ -207,6 +215,7 @@ public extension Text {
                 Text("SEÑALES").font(InstrumentoType.groteskTab).tracking(InstrumentoType.groteskTabTracking).foregroundStyle(t.ink)
                 Text("BRIEF").font(InstrumentoType.groteskTab).tracking(InstrumentoType.groteskTabTracking).foregroundStyle(t.inkMuted)
             }
+            Text("Entrenar").font(InstrumentoType.groteskTabTitle).tracking(InstrumentoType.groteskTabTitleTracking).foregroundStyle(t.ink)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text("7:12").font(InstrumentoType.groteskTileValue).foregroundStyle(t.dataSleep)
                 Text("h").font(StrandFont.footnote).foregroundStyle(t.inkTertiary)

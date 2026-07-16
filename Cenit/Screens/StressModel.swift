@@ -57,7 +57,7 @@ extension StressBand {
 
 // MARK: - Stress model shim (math in StrandAnalytics + copy here)
 
-struct StressModel {
+struct StressModel: Sendable {
     let score: Double            // 0–3 (today)
     let band: StressBand
     let explanation: String
