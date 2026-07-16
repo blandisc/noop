@@ -187,7 +187,9 @@ struct RoutineEditorScreen: View {
         locked ? String(localized: "Resume") : String(localized: "Empezar")
     }
 
-    private var startsSession: Bool { if case .today = origin { return true } else { return false } }
+    // FER-952: EVERY origin can start the session from the editor (the owner's ask) — not just
+    // «Rutina de hoy». The CTA hides only while the routine is empty or still loading.
+    private var startsSession: Bool { routine != nil && !items.isEmpty }
     private var isPlanDay: Bool { if case .planDay = origin { return true } else { return false } }
 
     // MARK: - Header (own back + Saved/Undo, over the hidden nav bar)
@@ -265,7 +267,9 @@ struct RoutineEditorScreen: View {
                         .plainRow(top: 8)
                 }
             }
-        if !locked { addExerciseRow.plainRow(top: CenitMetrics.sectionGap, bottom: CenitMetrics.screenPadding) }
+        // top: 0 — the node's thread must butt the last card's rail seam-to-seam; its breathing
+        // lives inside the row (minHeight 44 + gap), not in an inset hole.
+        if !locked { addExerciseRow.plainRow(top: 0, bottom: CenitMetrics.screenPadding) }
     }
 
     /// One exercise as a Serie activa «recibo» card: header row (badge + thumb + name + «···»), the
@@ -329,6 +333,8 @@ struct RoutineEditorScreen: View {
         .padding(.top, topGap)
         // The rail is a BACKGROUND of the whole row (gap included) so segments butt seam-to-seam —
         // family tint at strokeSoft for solo exercises (the session's thread), full teal for a superset.
+        // The FIRST card births the thread AT its dot (Serie activa's «birth-at-the-dot»: nothing
+        // above), and the dot anchors to the THUMB's center (card pad 12 + thumb 40/2).
         .background(alignment: .topLeading) {
             ZStack(alignment: .topLeading) {
                 Rectangle()
@@ -337,10 +343,11 @@ struct RoutineEditorScreen: View {
                                         .opacity(StrandOpacity.strokeSoft))
                     .frame(width: 2)
                     .offset(x: -20)
+                    .padding(.top, idx == 0 ? topGap + 32 : 0)
                 if !grouped {
                     Circle().fill(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles))
                         .frame(width: 9, height: 9)
-                        .offset(x: -23.5, y: topGap + 14)
+                        .offset(x: -23.5, y: topGap + 32 - 4.5)
                 }
             }
             .allowsHitTesting(false)
@@ -748,17 +755,39 @@ struct RoutineEditorScreen: View {
         }
     }
 
+    /// The rail's terminal node (Serie activa's grammar, FER-952): the thread drops from the last card
+    /// and dies exactly at a dotted ember ring with a «＋» — one more stop on the line, not a door.
     private var addExerciseRow: some View {
-        // Handoff: the structural CTA of the screen — a centered outline door, not a quiet row.
-        Button { replaceIndex = nil; showLibrary = true } label: {
-            Label("Add exercise", systemImage: "plus")
-                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity).padding(.vertical, 13)  // token-exempt: 13 del handoff
-                .contentShape(Rectangle())
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
-                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        let lastTint: Color = {
+            guard let last = items.last else { return theme.dataStrain }
+            let res = items.map(\.re)
+            if RoutineSetEditing.inSuperset(res, items.count - 1) { return theme.dataHrv }
+            return theme.movementFamilyTint(primaryMuscles: last.exercise.primaryMuscles)
+        }()
+        return Button { replaceIndex = nil; showLibrary = true } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    VStack(spacing: 0) {
+                        Rectangle().fill(lastTint.opacity(StrandOpacity.strokeSoft)).frame(width: 2)
+                        Color.clear
+                    }
+                    Circle().fill(theme.paper)
+                        .overlay(Circle().strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])))
+                        .frame(width: 18, height: 18)
+                        .overlay(
+                            Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)  // token-exempt: tiny plus glyph sized to the 18pt dotted add-node
+                        )
+                }
+                .frame(width: 14)
+                .padding(.leading, 0)
+                Text("Add exercise").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 44 + CenitMetrics.gap)   // the row's own breathing — not an inset hole
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text("Add exercise"))
     }
 
     // MARK: - Pinned CTA (`.today` only — start / resume the guided session)
