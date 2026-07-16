@@ -1708,6 +1708,10 @@ struct LiveStrengthSheet: View {
         .padding(.leading, 26)
         .plainRow()
         .id("session-exercise-\(ei)")
+        // r24 (owner): la bolita/tarjeta activa hace CROSSFADE al cambiar de ejercicio — antes el
+        // bloque nuevo aparecía en seco mientras el viejo se comprimía; el fade cuenta la
+        // continuidad del foco sobre el riel (comparte el reloj gentle del acordeón).
+        .transition(.opacity)
     }
 
     /// The armed row's destructive affordance (r15) — a quiet critical-outline pill riding the
@@ -2073,12 +2077,15 @@ struct LiveStrengthSheet: View {
     }
 
     /// r21 (deuda front): los botones-cápsula del header salen de UNA fábrica — misma gramática
-    /// (surface + hairlineStrong, padding 12/6), solo cambia el contenido.
+    /// (surface + hairlineStrong), solo cambia el contenido. r24 (owner): altura FIJA en vez de
+    /// padding vertical — Pausar (SF subhead) y Terminar (Grotesk) tienen métricas de fuente
+    /// distintas y sus cápsulas salían de tamaños diferentes.
     private func headerCapsule<Content: View>(action: @escaping () -> Void,
                                               @ViewBuilder content: () -> Content) -> some View {
         Button(action: action) {
             content()
-                .padding(.horizontal, 12).padding(.vertical, 6)
+                .padding(.horizontal, 12)
+                .frame(height: 32)
                 .background(theme.surface, in: Capsule())
                 .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
@@ -2092,14 +2099,15 @@ struct LiveStrengthSheet: View {
         if session.paused {
             headerCapsule(action: { model.resumeStrengthSessionFromPause() }) {
                 Label("Resume", systemImage: "play.fill").labelStyle(.titleAndIcon)
-                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
             }
             .accessibilityLabel(Text("Resume session"))
         } else if !isEmptyAdHoc {
             // Canvas pass 2026-07-15: Pausa dresses like Terminar's sibling — same capsule grammar.
             headerCapsule(action: { model.pauseStrengthSession() }) {
+                // r24 (owner): misma voz Grotesk que Terminar — ópticamente gemelos.
                 Label("Pause", systemImage: "pause.fill").labelStyle(.titleAndIcon)
-                    .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
             }
             .accessibilityLabel(Text("Pause session"))
             // r20 (auditoría UX #6d + owner): Terminar-y-guardar es el acto constructivo esperado —
