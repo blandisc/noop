@@ -29,6 +29,9 @@ private struct SerieActivaPreviewCell: View {
                     .environmentObject(model.repo)
                     .environmentObject(model)
                     .environmentObject(TabRouter())
+                    // Sin este coordinador, abrir «Agregar ejercicio» (ExerciseLibraryScreen lo exige
+                    // como @EnvironmentObject) CRASHEA el preview — el app real lo inyecta en Root.
+                    .environmentObject(MediaDownloadCoordinator())
                     .environment(model.live)
                     .environment(\.locale, Locale(identifier: "es-MX"))
                     .preferredColorScheme(.light)
@@ -76,8 +79,14 @@ private struct SerieActivaPreviewCell: View {
                 rex("Barbell_Full_Squat", 3, sets: 3, reps: 8, kg: 100),
             ]
         }
-        let slots = res.map {
-            StrengthSessionModel.PlanSlot(re: $0, exercise: ExerciseCatalog.byID($0.exerciseId), lastSets: [])
+        let slots = res.map { re in
+            // «La última vez»: una entrada previa por ejercicio (un pelín por debajo del plan) para que
+            // el modo foco y las celdas ANTERIOR tengan historia que enseñar.
+            let prev = SetEntry(sessionId: "preview-prev", exerciseId: re.exerciseId, position: 0,
+                                kind: .work, weightKg: (re.targetWeightKg ?? 20) - 2.5,
+                                reps: max(1, (re.targetReps ?? 8) - 1), done: true, ts: 0)
+            return StrengthSessionModel.PlanSlot(re: re, exercise: ExerciseCatalog.byID(re.exerciseId),
+                                                 lastSets: [prev])
         }
         let name = scenario == .plan ? "Día A — Empuje" : "Full body — Superserie"
         let session = StrengthSessionModel.make(routineId: "preview", routineName: name,
