@@ -80,8 +80,10 @@ struct RestEditorScreen: View {
                     overline: Text(setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName),
                     Text("Rest when you finish"))
                 // Canvas pass 2026-07-15: FC carries its heart glyph (handoff «♥ FC»).
-                SegmentedPillControl([RestMode.fixed, .heartRate], selection: $mode, theme: theme, inkThumb: true) {
-                    $0 == .fixed ? String(localized: "By time") : "♥ " + String(localized: "By heart rate")
+                SegmentedPillControl([RestMode.fixed, .heartRate], selection: $mode, theme: theme,
+                                     inkThumb: true,
+                                     icon: { $0 == .heartRate ? "heart.fill" : nil }) {
+                    $0 == .fixed ? String(localized: "By time") : String(localized: "By heart rate")
                 }
                 if mode == .heartRate {
                     hrSection
