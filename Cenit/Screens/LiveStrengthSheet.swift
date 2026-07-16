@@ -2321,7 +2321,8 @@ struct LiveStrengthSheet: View {
                 stepper(system: "minus", size: 34) { session.bumpReps(-1) }
                     .accessibilityLabel(Text("Decrease reps"))
                 Text("\(session.currentSet?.reps ?? 0)")
-                    .font(StrandFont.title2).monospacedDigit().foregroundStyle(theme.ink)
+                    // r26: valor vivo → Grotesk tabular.
+                    .font(InstrumentoType.groteskNumber(22, weight: .medium)).foregroundStyle(theme.ink)
                     .frame(minWidth: 34)
                 stepper(system: "plus", size: 34) { session.bumpReps(1) }
                     .accessibilityLabel(Text("Increase reps"))
@@ -2344,7 +2345,7 @@ struct LiveStrengthSheet: View {
                     .accessibilityLabel(Text("Decrease added weight"))
                 Text("+\(plateNumber(displayWeight(kg))) \(UnitFormatter.massUnit(units))")
                     .lineLimit(1).fixedSize(horizontal: true, vertical: false)
-                    .font(StrandFont.title2).monospacedDigit()
+                    .font(InstrumentoType.groteskNumber(22, weight: .medium))
                     .foregroundStyle(kg > 0 ? theme.ink : theme.inkTertiary)
                 stepper(system: "plus", size: 34) { session.bumpWeight(byKg: weightStepKg) }
                     .accessibilityLabel(Text("Increase added weight"))
@@ -2611,7 +2612,8 @@ struct LiveStrengthSheet: View {
             if running {
                 TimelineView(.periodic(from: Date(), by: 1)) { ctx in
                     Text(Self.clock(session.timerElapsed(now: ctx.date)))
-                        .font(StrandFont.title2).monospacedDigit().foregroundStyle(theme.ink)
+                        .font(InstrumentoType.groteskNumber(22, weight: .medium)).foregroundStyle(theme.ink)
+                        .contentTransition(.numericText())
                         .frame(maxWidth: .infinity)
                 }
             } else {
@@ -3305,7 +3307,7 @@ struct LiveStrengthSheet: View {
                 Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(run.sets.allSatisfy(\.done) ? doneDetailText(run) : prescriptionText(run))
-                    .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary).lineLimit(1)
+                    .font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary).lineLimit(1)
                 // r8 (owner): la manija vive a la DERECHA — es donde estaba el pulgar al entrar al
                 // modo (la «≡» del header); antes brincaba al lado izquierdo y había que cruzar.
                 Image(systemName: "line.3.horizontal")
@@ -4849,7 +4851,7 @@ struct LiveStrengthSheet: View {
                 }
             }
             .frame(height: 8)
-            Text(delta).font(StrandFont.caption).monospacedDigit()
+            Text(delta).font(InstrumentoType.groteskNumber(12, weight: .regular))
                 .foregroundStyle(positive ? theme.positiveText : theme.inkSecondary)
                 .frame(width: 56, alignment: .trailing)
                 .lineLimit(1).minimumScaleFactor(0.8)
@@ -4879,7 +4881,8 @@ struct LiveStrengthSheet: View {
                     (Text(verbatim: prPriorText(pr)).foregroundColor(theme.inkTertiary)
                         + Text(verbatim: " → ")
                         + Text(verbatim: prValue(pr)).fontWeight(.semibold).foregroundColor(theme.ink))
-                        .font(StrandFont.caption).monospacedDigit()
+                        // r26: los récords del recibo son valores → Grotesk tabular.
+                        .font(InstrumentoType.groteskNumber(12, weight: .regular))
                 }
                 .frame(minHeight: 38)
                 .overlay(alignment: .bottom) {
