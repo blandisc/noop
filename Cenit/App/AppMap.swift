@@ -212,4 +212,39 @@ private struct ExerciseDetailMapCell: View {
 #Preview("Detalle · Press banca (con datos)") {
     ExerciseDetailMapCell()
 }
+
+/// El editor de rutina REAL (Crear/Editar Rutina, FER-952), sembrado con el plan del fixture y
+/// abierto en la rutina de HOY («Día A — Empuje»: banca + inclinado + laterales) — para iterar la
+/// fidelidad al hand-off «Rediseño - Crear Rutina» en el canvas: header, tabla SERIE/KG/REPS,
+/// superserie, chips de descanso/nota y el menú «···».
+private struct RoutineEditorMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @State private var seeded = false
+
+    var body: some View {
+        Group {
+            if seeded {
+                NavigationStack { RoutineEditorScreen(origin: .today(routineId: nil)) }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            seeded = true
+        }
+    }
+}
+
+#Preview("Crear Rutina · Día A (con plan)") {
+    RoutineEditorMapCell()
+}
 #endif
