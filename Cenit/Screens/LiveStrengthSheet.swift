@@ -2224,6 +2224,9 @@ struct LiveStrengthSheet: View {
                 // left-aligned (long names get the room), the whole block vertically centered.
                 HStack(spacing: 14) {
                     SessionRunThumb(exerciseId: run.exerciseId, side: 56)
+                        // r25 (owner): mismo marco de familia que la Biblioteca y la tarjeta activa.
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                            .strokeBorder(categoryTint(run), lineWidth: 2))
                     VStack(alignment: .leading, spacing: 3) {
                         Text(run.name).font(InstrumentoType.grotesk(24, weight: .semibold))
                             .foregroundStyle(theme.ink)
@@ -3010,6 +3013,10 @@ struct LiveStrengthSheet: View {
             // centro del thumb SIEMPRE queda a 12+22=34, donde vive el punto.
             HStack(alignment: .top, spacing: 12) {
                 SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
+                    // r25 (owner): el marco de 2pt en el hue de familia — la MISMA receta de la
+                    // Biblioteca (handoff), así el thumb dice su familia igual en todo el app.
+                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                        .strokeBorder(categoryTint(run), lineWidth: 2))
                     // r16: el NACIMIENTO del hilo también se ancla al thumb — un borrador de papel
                     // tapa el hilo desde arriba de la tarjeta hasta el CENTRO del thumb (donde vive
                     // la bolita); el anillo remata la orilla. La constante «34 desde la tarjeta» de
