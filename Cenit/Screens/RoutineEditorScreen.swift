@@ -619,7 +619,8 @@ struct RoutineEditorScreen: View {
         TextField("·", text: text)
             .keyboardType(keyboard)
             .multilineTextAlignment(.center)
-            .font(StrandFont.bodyNumber)
+            // Handoff: the prescription's figures speak Grotesk (400 15), like every datum on paper.
+            .font(InstrumentoType.grotesk(15)).monospacedDigit()
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
             .disabled(locked)
