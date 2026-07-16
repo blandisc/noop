@@ -255,7 +255,7 @@ struct ExerciseDetailScreen: View {
             ForEach(Array(sessions.enumerated()), id: \.offset) { idx, day in
                 VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                     HStack(spacing: CenitMetrics.space2) {
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría del punto de familia (8×8)
                             .fill(familyTint).frame(width: 8, height: 8)
                         historyDayText(day.ts)
                             .font(StrandFont.body.weight(.medium)).foregroundStyle(theme.ink)
@@ -637,7 +637,7 @@ struct ExerciseDetailScreen: View {
             .padding(.horizontal, 13).padding(.vertical, CenitMetrics.gap)  // token-exempt: 13 del handoff
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))  // token-exempt: radio 14 del handoff
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))  // token-exempt: radio 14 del handoff
             .accessibilityElement(children: .combine)
         }
     }
@@ -670,7 +670,7 @@ struct ExerciseDetailScreen: View {
         .padding(.horizontal, 13).padding(.vertical, CenitMetrics.gap)  // token-exempt: 13 del handoff
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))  // token-exempt: radio 14 del handoff
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))  // token-exempt: radio 14 del handoff
         .accessibilityElement(children: .combine)
     }
 
@@ -789,7 +789,7 @@ private struct WeeklyBarsChart: View {
             HStack(alignment: .bottom, spacing: 5) {
                 ForEach(Array(vols.enumerated()), id: \.offset) { idx, v in
                     let active = scrubIndex.map { $0 == idx } ?? (idx == vols.count - 1)
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de barra del sparkline
                         .fill(active ? accent : accent.opacity(0.28))  // token-exempt: tinte 28% del handoff
                         .frame(height: max(3, geo.size.height * v / top))
                         .frame(maxWidth: .infinity)
