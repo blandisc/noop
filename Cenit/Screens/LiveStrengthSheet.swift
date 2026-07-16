@@ -1634,7 +1634,6 @@ struct LiveStrengthSheet: View {
         // row backgrounds so the hilo never breaks.
         exerciseHeader(run, ei: ei, first: true)
             .padding(.top, 12).padding(.horizontal, 14).padding(.bottom, 8)
-            .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
             .activeCardRow(top: true, bottom: false, theme: theme, railTint: railTint,
                            railVisible: showRail,
                            railTopInset: ei == firstRailIndex ? 12 + 22 : 0,
@@ -2458,8 +2457,8 @@ struct LiveStrengthSheet: View {
             // Canvas pass 2026-07-15: the exercise's thumbnail anchors the caption — you know whose
             // rest this is at a glance, same as the list.
             HStack(spacing: 10) {
-                if session.runs.indices.contains(session.currentIndex) {
-                    SessionRunThumb(exerciseId: session.runs[session.currentIndex].exerciseId, side: 28)
+                if session.runs.indices.contains(accordionIndex) {
+                    SessionRunThumb(exerciseId: session.runs[accordionIndex].exerciseId, side: 28)
                 }
                 Text(focusRestCaption).font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(0.8))
             }
@@ -2507,8 +2506,8 @@ struct LiveStrengthSheet: View {
 
     /// «<ejercicio> · serie N ✓» — the just-completed set, for orientation while the screen is all green.
     private var focusRestCaption: String {
-        guard session.runs.indices.contains(session.currentIndex) else { return String(localized: "Rest") }
-        let run = session.runs[session.currentIndex]
+        guard session.runs.indices.contains(accordionIndex) else { return String(localized: "Rest") }
+        let run = session.runs[accordionIndex]
         let doneIndex = run.currentSet - 1
         guard run.sets.indices.contains(doneIndex) else { return run.name }
         let n = run.sets.prefix(doneIndex + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
