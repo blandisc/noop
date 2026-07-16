@@ -17,7 +17,7 @@ import Foundation
 
 /// Todo lo que la franja, la hoja y la tarjeta de Tendencias dibujan, construido una vez desde el
 /// dashboard band-masked (`CuerpoView.loadAll` / `TodayView.recomputeDerived`). `acwr == nil` → calibrando.
-struct TrainingLoadModel {
+struct TrainingLoadModel: Sendable {
     /// El ratio agudo:crónico de hoy (nil mientras no hay ~2 semanas de esfuerzo).
     let acwr: Double?
     /// El ratio replay por día (viejo → nuevo) para la tarjeta de Tendencias — `ReadinessEngine.acwrSeries` (28).
