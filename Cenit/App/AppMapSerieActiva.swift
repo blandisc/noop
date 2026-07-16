@@ -16,7 +16,7 @@ import StrandTraining
 /// La sesión se construye con `StrengthSessionModel.make` (puro) en vez de `startStrengthSession`,
 /// para NO disparar los efectos de una sesión real (stream de HR, persistencia, buzz, Apple Watch).
 private struct SerieActivaPreviewCell: View {
-    enum Scenario { case plan, superserie }
+    enum Scenario { case plan, superserie, serieNueva }
     var scenario: Scenario = .plan
 
     @StateObject private var model = AppModel()
@@ -69,6 +69,13 @@ private struct SerieActivaPreviewCell: View {
                 rex("Incline_Dumbbell_Press", 1, sets: 3, reps: 10, kg: 26),
                 rex("Dumbbell_Lying_One-Arm_Rear_Lateral_Raise", 2, sets: 3, reps: 12, kg: 8),
             ]
+        case .serieNueva:
+            // Cacería de la «fila gorda»: 3 series hechas + una CUARTA recién agregada pendiente —
+            // el estado exacto donde el dueño ve la fila inflada tras «+ Serie».
+            res = [
+                rex("Barbell_Bench_Press_-_Medium_Grip", 0, sets: 3, reps: 8, kg: 80),
+                rex("Incline_Dumbbell_Press", 1, sets: 3, reps: 10, kg: 26),
+            ]
         case .superserie:
             // Par A1/A2 (curl + jalón agrupados) entre un empuje hecho y una pierna por venir —
             // mezcla de familias para ver los puntos de categoría conviviendo.
@@ -96,6 +103,10 @@ private struct SerieActivaPreviewCell: View {
             // Ej0 completo → doneRow; ej1 activo → tarjeta flotante; ej2 → comingRow.
             for i in session.runs[0].sets.indices { session.runs[0].sets[i].done = true }
             session.currentIndex = 1
+        case .serieNueva:
+            for i in session.runs[0].sets.indices { session.runs[0].sets[i].done = true }
+            session.addSet(exercise: 0)   // la 4ª, recién copiada, pendiente
+            session.currentIndex = 0
         case .superserie:
             // Empuje hecho; A1 registró su primera serie; el foco round-robin quedó en A2.
             for i in session.runs[0].sets.indices { session.runs[0].sets[i].done = true }
@@ -112,5 +123,8 @@ private struct SerieActivaPreviewCell: View {
 }
 #Preview("Serie activa · superserie A1/A2") {
     SerieActivaPreviewCell(scenario: .superserie)
+}
+#Preview("Serie activa · serie recién agregada") {
+    SerieActivaPreviewCell(scenario: .serieNueva)
 }
 #endif

@@ -1344,12 +1344,6 @@ struct LiveStrengthSheet: View {
                             doneRow(run, ei: ei)
                                 .plainRow()
                                 .transition(.opacity)
-                            // Owner bug #4: the rest after an exercise's LAST set stays glued under
-                            // the exercise you just finished (already collapsed to its done row) —
-                            // it does NOT travel to the next card.
-                            if session.phase == .resting, restAnchorEi == ei, session.summary == nil {
-                                restCardRow(run, standalone: true)
-                            }
                         case .upcoming:
                             comingRow(run, ei: ei)
                                 .plainRow()
@@ -1388,10 +1382,9 @@ struct LiveStrengthSheet: View {
                 buffer = ""; bufferTyped = false
             }
         }
-        .onChange(of: session.currentIndex) { _, newIndex in
-            // Sugerencia 3: bring the newly-active card into view — a narrated move, not a teleport.
-            // Anchor .center so the rest card glued under the JUST-FINISHED exercise stays visible
-            // above the incoming card (owner bug #4).
+        .onChange(of: accordionIndex) { _, newIndex in
+            // Sugerencia 3 + r6: the narrated move happens when the ACCORDION moves — i.e. when the
+            // rest ends — not when the model's index advances mid-rest.
             withAnimation(reduceMotion ? nil : StrandMotion.gentle) {
                 proxy.scrollTo("session-exercise-\(newIndex)", anchor: .center)
             }
@@ -1407,7 +1400,7 @@ struct LiveStrengthSheet: View {
     private enum RailState { case active, done, upcoming }
 
     private func railState(ei: Int, run: StrengthSessionModel.ExerciseRun) -> RailState {
-        if ei == session.currentIndex { return .active }
+        if ei == accordionIndex { return .active }
         if ei < session.currentIndex || run.sets.allSatisfy(\.done) { return .done }
         return .upcoming
     }
@@ -1444,15 +1437,10 @@ struct LiveStrengthSheet: View {
                                 .foregroundStyle(theme.paper)
                         }
                 } else {
-                    Circle()
-                        .fill(tint)
-                        .frame(width: 9, height: 9)
-                        .overlay {
-                            if state == .active {
-                                Circle().strokeBorder(tint.opacity(0.3), lineWidth: 3)  // token-exempt: decorative active-node halo ring alpha
-                                    .frame(width: 19, height: 19)
-                            }
-                        }
+                    ZStack {
+                        Circle().fill(theme.paper).frame(width: 15, height: 15)
+                        Circle().fill(tint).frame(width: 9, height: 9)
+                    }
                 }
             }
             .padding(.top, dotTopOffset.map { $0 - 4.5 } ?? 0)
@@ -1513,6 +1501,7 @@ struct LiveStrengthSheet: View {
     /// check. Still tappable — re-opens the accordion on its first not-done set so a set can be corrected.
     private func doneRow(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         Button {
+            restAnchorEi = nil   // switching by hand releases the rest-held accordion
             withAnimation(.snappy(duration: 0.22)) {
                 session.select(exerciseIndex: ei, setIndex: run.sets.firstIndex { !$0.done } ?? 0)
             }
@@ -1556,6 +1545,7 @@ struct LiveStrengthSheet: View {
     /// the guided focus here (the same `select` the plan navigator already used).
     private func comingRow(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         Button {
+            restAnchorEi = nil   // switching by hand releases the rest-held accordion
             withAnimation(.snappy(duration: 0.22)) { session.select(exerciseIndex: ei, setIndex: 0) }
         } label: {
             HStack(spacing: 12) {
@@ -1628,7 +1618,8 @@ struct LiveStrengthSheet: View {
         // runs BEHIND the card and the category dot centers on the 44pt thumbnail, both painted by the
         // row backgrounds so the hilo never breaks.
         exerciseHeader(run, ei: ei, first: true)
-            .padding(.top, 12).padding(.horizontal, 12)
+            .padding(.top, 12).padding(.horizontal, 14).padding(.bottom, 8)
+            .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
             .activeCardRow(top: true, bottom: false, theme: theme, railTint: railTint,
                            railVisible: showRail,
                            railTopInset: ei == firstRailIndex ? 12 + 22 : 0)
@@ -1641,13 +1632,16 @@ struct LiveStrengthSheet: View {
             // numbered work sets — drawn on the first work row that follows a warm-up.
             let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
             VStack(spacing: 0) {
-                if afterWarmup { workSetsDivider.padding(.top, 4).padding(.bottom, 6) }
+                if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
                 setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
             }
                 // Owner bug #3: a freshly-added set inflated its row — the slice can never stretch
                 // beyond its content's natural height.
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 14)
+                .overlay(alignment: .bottom) {
+                    if si < run.sets.count - 1 { Rectangle().fill(theme.hairline).frame(height: 1) }
+                }
                 .activeCardRow(top: false, bottom: false, theme: theme, railTint: railTint,
                                railVisible: showRail)
                 .swipeActions(edge: .trailing) {
@@ -1657,13 +1651,14 @@ struct LiveStrengthSheet: View {
                 }
         }
         // Rest after the exercise's LAST set (no pending set to anchor to) — before the card closes.
-        if session.phase == .resting, ei == (restAnchorEi ?? session.currentIndex), session.summary == nil,
+        if session.phase == .resting, ei == accordionIndex, session.summary == nil,
            restSlotIndex(run, ei: ei) == nil {
             restCardRow(run)
         }
         // «Add set» closes the card as its own row — the handoff's ember pill, inside (FER-935 kin).
         addSetButton(ei)
-            .padding(.horizontal, 12).padding(.vertical, 8)
+            .padding(.horizontal, 14).padding(.vertical, 8)
+            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
             .activeCardRow(top: false, bottom: true, theme: theme, railTint: railTint,
                            railVisible: showRail)
     }
@@ -1672,6 +1667,12 @@ struct LiveStrengthSheet: View {
     /// LAST set advances `currentIndex` to the next exercise, but the rest card must stay GLUED under
     /// the exercise you just finished — so every register path stamps the anchor before advancing.
     @State private var restAnchorEi: Int?
+
+    /// The exercise whose accordion is OPEN: while resting, the anchor (the exercise you just worked)
+    /// holds the accordion open — the jump to `currentIndex` happens when the rest ends (owner r6).
+    private var accordionIndex: Int {
+        (session.phase == .resting ? restAnchorEi : nil) ?? session.currentIndex
+    }
 
     /// Every «✓ registrar» in the view funnels here: stamp the rest's home exercise, THEN let the model
     /// advance. The anchor clears when the rest ends (`onChange` of `session.phase`).
@@ -1683,8 +1684,7 @@ struct LiveStrengthSheet: View {
     /// The set index the inline rest card slots BEFORE (the next pending set of the resting exercise) —
     /// nil when the rest follows the exercise's last set (the card then lands after the table).
     private func restSlotIndex(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> Int? {
-        guard session.phase == .resting, ei == (restAnchorEi ?? session.currentIndex),
-              session.summary == nil else { return nil }
+        guard session.phase == .resting, ei == accordionIndex, session.summary == nil else { return nil }
         let si = run.currentSet
         guard run.sets.indices.contains(si), !run.sets[si].done else { return nil }
         return si
@@ -2139,6 +2139,7 @@ struct LiveStrengthSheet: View {
                 stepper(system: "minus", size: 34) { session.bumpWeight(byKg: -weightStepKg) }
                     .accessibilityLabel(Text("Decrease added weight"))
                 Text("+\(plateNumber(displayWeight(kg))) \(UnitFormatter.massUnit(units))")
+                    .lineLimit(1).fixedSize(horizontal: true, vertical: false)
                     .font(StrandFont.title2).monospacedDigit()
                     .foregroundStyle(kg > 0 ? theme.ink : theme.inkTertiary)
                 stepper(system: "plus", size: 34) { session.bumpWeight(byKg: weightStepKg) }
@@ -2320,6 +2321,7 @@ struct LiveStrengthSheet: View {
     }
 
     private func focusJump(to ei: Int) {
+        restAnchorEi = nil
         withAnimation(StrandMotion.gentle) {
             session.select(exerciseIndex: ei,
                            setIndex: session.runs[ei].sets.firstIndex { !$0.done } ?? 0)
@@ -2479,8 +2481,10 @@ struct LiveStrengthSheet: View {
                 focusRestAdjust("+15") { session.extendRest(byseconds: 15) }
             }
 
+            Spacer(minLength: 0)   // r6: «SIGUE» baja hasta el fondo, con su margen del contenedor
             focusRestNextCard
         }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     /// «<ejercicio> · serie N ✓» — the just-completed set, for orientation while the screen is all green.
@@ -2507,7 +2511,9 @@ struct LiveStrengthSheet: View {
                 }
             }
             .padding(3)
-            .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: Capsule())
+            // r6: rectangular como el handoff — misma gramática que el selector global.
+            .background(theme.paper.opacity(StrandOpacity.tintFillStrong),
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
 
@@ -2517,7 +2523,8 @@ struct LiveStrengthSheet: View {
                 .font(StrandFont.caption).fontWeight(.semibold)
                 .foregroundStyle(active ? theme.dataRecovery : theme.paper)
                 .padding(.horizontal, 12).padding(.vertical, 6)
-                .background(active ? theme.paper : Color.clear, in: Capsule())
+                .background(active ? theme.paper : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -2767,14 +2774,14 @@ struct LiveStrengthSheet: View {
                     // drift), pushed left into the rail lane (thumb leading sits 31pt right of it).
                     .overlay(alignment: .leading) {
                         if showRail {
-                            Circle().fill(categoryTint(run))
-                                .frame(width: 9, height: 9)
-                                .overlay {
-                                    Circle().strokeBorder(categoryTint(run).opacity(0.3), lineWidth: 3)  // token-exempt: decorative active-node halo ring alpha
-                                        .frame(width: 19, height: 19)
-                                }
-                                .offset(x: -35.5)
-                                .accessibilityHidden(true)
+                            // Punto SÓLIDO (owner r6): sin aura — un respaldo de papel oculta la línea
+                            // detrás, así el hilo muere centrado en el punto.
+                            ZStack {
+                                Circle().fill(theme.paper).frame(width: 17, height: 17)
+                                Circle().fill(categoryTint(run)).frame(width: 11, height: 11)
+                            }
+                            .offset(x: -39.5)
+                            .accessibilityHidden(true)
                         }
                     }
                 VStack(alignment: .leading, spacing: 2) {
@@ -3305,22 +3312,13 @@ struct LiveStrengthSheet: View {
             else { gridRow(ei: ei, si: si, run: run, set: set) }
         }
         .padding(.vertical, reflow ? 8 : 2)
-        .padding(.horizontal, active ? 6 : 0)
-        .background(active ? theme.surface : .clear,
-                    in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        // r6: sin resaltado de fila (desbordaba el borde de la tarjeta) — la serie en curso se marca
+        // solo con su numeral subrayado. El divisor vive a nivel rebanada (recibo, borde a borde).
         .overlay {
             // FER-938: a dashed ember outline marks a just-copied, not-yet-logged set.
             if set.id == copiedSetId, !set.done {
                 RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                     .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-            }
-        }
-        .overlay(alignment: .bottom) {
-            // Canvas pass 2026-07-15: subtler set dividers (owner call) — softer ink, inset from the
-            // card edges so they read as breath, not as grid.
-            if !last {
-                Rectangle().fill(theme.hairline.opacity(0.55)).frame(height: 1)  // token-exempt: divisor tenue (owner: «más sutiles»)
-                    .padding(.horizontal, 6)
             }
         }
         .transition(.opacity)
@@ -3865,7 +3863,6 @@ struct LiveStrengthSheet: View {
                 Spacer(minLength: 0)
             }
             .padding(.top, 8)
-            .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -5082,7 +5079,7 @@ struct NoteSheet: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 4)   // canvas pass 2026-07-15: the sheet grabber already gives air; 12 doubled it
+        .padding(.top, 18)   // r6: el grabber se comía el título — aire real arriba (owner)
         .padding(.bottom, CenitMetrics.screenPadding)
         .background(theme.paper.ignoresSafeArea())
         .onChange(of: scope) { _, newScope in
@@ -5332,10 +5329,10 @@ private extension View {
                     // Seamless slices (owner: sin sombra entre calentamiento y series): the hover
                     // shadow only paints on the card's OUTER edges — per-slice shadows banded at every
                     // internal boundary.
+                    // «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra; las
+                    // filas se separan con filetes, no con profundidad.
                     shape.fill(theme.surface)
                         .overlay(shape.strokeBorder(theme.hairline, lineWidth: 1))
-                        .shadow(color: (top || bottom) ? theme.ink.opacity(0.08) : .clear,  // token-exempt: decorative float-shadow alpha (rest-card kin)
-                                radius: 8, y: top ? 1 : 3)
                         .padding(.leading, CenitMetrics.screenPadding + 26)
                         .padding(.trailing, CenitMetrics.screenPadding)
                 }
