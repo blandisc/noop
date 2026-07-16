@@ -1,6 +1,125 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "ESTIMATED 1RM · TODAY": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ESTIMATED 1RM · TODAY"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1RM ESTIMADO · HOY"
+          }
+        }
+      }
+    },
+    "↗ +%@ / %lld wk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ +%@ / %lld wk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ +%@ / %lld sem"
+          }
+        }
+      }
+    },
+    "max weight · %lld wk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "max weight · %lld wk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "peso máx · %lld sem"
+          }
+        }
+      }
+    },
+    "Volume / wk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume / wk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumen / sem"
+          }
+        }
+      }
+    },
+    "↗ up %lld wk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ up %lld wk"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↗ sube %lld sem"
+          }
+        }
+      }
+    },
+    "RECORD": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RECORD"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RÉCORD"
+          }
+        }
+      }
+    },
+    "Primary in color · assisting in gray": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primary in color · assisting in gray"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Principal en color · asistentes en gris"
+          }
+        }
+      }
+    },
     "Map": {
       "extractionState": "manual",
       "localizations": {

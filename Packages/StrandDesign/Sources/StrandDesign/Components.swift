@@ -30,6 +30,7 @@ public enum CenitMetrics {
     public static let tileRadius: CGFloat = 17         // «Hoy» metric tile corner (handoff «Hoy · Estados»)
     public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
     public static let insetRadius: CGFloat = 10        // sub-tarjeta anidada dentro de otra tarjeta (auditoría jul-2026, H3 — absorbe 9/10/11)
+    public static let rowVPad: CGFloat = 10            // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
 
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
@@ -96,13 +97,17 @@ public struct SegmentedPillControl<T: Hashable>: View {
     /// (iOS HIG minimum) instead of the compact 28pt — used for the Tendencias landing selector. Only
     /// meaningful with a `theme`; default keeps the compact height.
     var tall: Bool = false
+    /// «Squared» variant (handoff «Detalle de Ejercicio», FER-951): rounded-RECT track (12) and a
+    /// thumb (9) that FILLS its whole segment — the boxier tab look, instead of the capsule pill.
+    var squared: Bool = false
     public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme,
-                inkThumb: Bool = false, tall: Bool = false, label: @escaping (T) -> String) {
+                inkThumb: Bool = false, tall: Bool = false, squared: Bool = false,
+                label: @escaping (T) -> String) {
         self.items = items; self._selection = selection; self.theme = theme
-        self.inkThumb = inkThumb; self.tall = tall; self.label = label
+        self.inkThumb = inkThumb; self.tall = tall; self.squared = squared; self.label = label
     }
     public var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: squared ? 3 : 4) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 let sel = item == selection
                 Button { withAnimation(StrandMotion.interactive) { selection = item } } label: {
@@ -114,8 +119,13 @@ public struct SegmentedPillControl<T: Hashable>: View {
             }
         }
         .padding(3)
-        .background(trackFill, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).strokeBorder(trackStroke, lineWidth: 1))
+        .background {
+            if squared {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(trackFill)
+            } else {
+                Capsule(style: .continuous).fill(trackFill)
+            }
+        }
     }
 
     /// One segment. Instrumento: the active «thumb» HUGS the label to the WIDTH (content-width, centered in
@@ -129,14 +139,20 @@ public struct SegmentedPillControl<T: Hashable>: View {
         // «tall» variant grows to a 44pt touch height for the landing. (FER-835 unified the themed
         // active pill to the ink look; the `inkThumb` flag is now moot for themed selectors.)
         Text(label(item))
-            .font(InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
-            .tracking(1.6)
+            .font(squared ? InstrumentoType.grotesk(13, weight: .semibold)
+                          : InstrumentoType.grotesk(11, weight: sel ? .bold : .medium))
+            .tracking(squared ? 0 : 1.6)
             .lineLimit(1).minimumScaleFactor(0.85)
             .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
             .padding(.horizontal, 12)
             .frame(height: tall ? 44 : 34)
+            // Squared (handoff): the ink thumb fills the WHOLE segment, not just the label.
+            .frame(maxWidth: squared ? .infinity : nil)
             .background {
-                if sel { Capsule(style: .continuous).fill(theme.ink) }
+                if sel {
+                    if squared { RoundedRectangle(cornerRadius: 9, style: .continuous).fill(theme.ink) }
+                    else { Capsule(style: .continuous).fill(theme.ink) }
+                }
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())

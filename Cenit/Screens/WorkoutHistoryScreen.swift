@@ -346,11 +346,8 @@ struct WorkoutHistoryScreen: View {
                         sessionRow(session)
                     }
                     .buttonStyle(.plain)
-                    .contextMenu {
-                        Button(role: .destructive) { delete(session) } label: {
-                            Label("Delete workout", systemImage: "trash")
-                        }
-                    }
+                    // The long-press delete `contextMenu` was retired (FER-951): iOS draws it as a
+                    // system balloon that ignores the theme; «Delete» lives in the detail's «···» menu.
                     if session.id != sessions.last?.id { Divider().overlay(theme.hairline) }
                 }
             }
@@ -579,17 +576,6 @@ struct WorkoutHistoryScreen: View {
     }
 
     // MARK: - Delete / undo (FER-527)
-
-    /// Read the session's sets (so an undo can restore them), delete it (the store recomputes the affected
-    /// PRs), reload, then show «Undo» via the coordinator.
-    private func delete(_ session: StrengthSession) {
-        Task {
-            let sets = await repo.sessionSets(sessionId: session.id)
-            try? await repo.deleteSession(id: session.id)
-            await load()
-            withAnimation { coordinator.pendingUndo = .init(session: session, sets: sets) }
-        }
-    }
 
     private func undoDelete(_ d: WorkoutHistoryCoordinator.DeletedSession) {
         Task {

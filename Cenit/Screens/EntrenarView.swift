@@ -1004,7 +1004,9 @@ private struct EntrenarLanding: View {
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
-        .background(theme.surface)
+        // `presentationBackground` paints the popover container AND its anchor arrow in one paper
+        // piece — a plain `.background` leaves the arrow in the system tint (same seam PaperMenu had).
+        .presentationBackground(theme.surface)
         .presentationCompactAdaptation(.popover)
     }
 

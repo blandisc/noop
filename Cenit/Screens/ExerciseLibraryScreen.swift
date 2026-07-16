@@ -25,10 +25,9 @@ struct ExerciseLibraryScreen: View {
     @State private var equipmentOptions: [String] = []
     /// Exercise ids the user has logged work sets for (v3 · 1f) — surfaces «Con historial tuyo» first.
     @State private var historyIds: Set<String> = []
-    /// Per-exercise best-weight PR + a max-weight-by-day sparkline, for the «Con historial tuyo» rows. Only
-    /// built for the (small) set of exercises with history, so it stays cheap.
+    /// Per-exercise best-weight PR for the «Con historial tuyo» rows — only built for the (small)
+    /// set of exercises with history, so it stays cheap.
     @State private var bestKg: [String: Double] = [:]
-    @State private var sparklines: [String: [Double]] = [:]
     @State private var loaded = false
     @State private var search = ""
     @State private var muscle: String? = nil
@@ -45,7 +44,7 @@ struct ExerciseLibraryScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 header
                 searchField
                 filterChips
@@ -53,9 +52,10 @@ struct ExerciseLibraryScreen: View {
                 exerciseList
                 createRow
             }
-            .padding(.top, 20)
+            .padding(.top, CenitMetrics.screenTop)
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, addMode ? 88 : CenitMetrics.screenPadding)
+            // The safeAreaInset already carves out the addBar's height — no magic 88.
+            .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -97,14 +97,14 @@ struct ExerciseLibraryScreen: View {
                     Text("Library")
                 }
             }
-            .font(InstrumentoType.grotesk(28, weight: .bold)).tracking(-0.8)
+            .font(InstrumentoType.groteskHeroNumeral(28)).tracking(InstrumentoType.groteskHeroTrackingScaled(28))
             .foregroundStyle(theme.ink)
             .padding(.top, 2)
         }
     }
 
     private var searchField: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: CenitMetrics.space2) {
             StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
             TextField("Search exercise", text: $search)
                 .font(StrandFont.body).foregroundStyle(theme.ink)
@@ -115,14 +115,18 @@ struct ExerciseLibraryScreen: View {
                 }.buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 13).padding(.vertical, 9)
-        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
+        // Handoff: the search field sits on the raised paper surface (#FBF9F2) with a 1px control
+        // hairline (#D8D0BD) at radius 12 — a defined field, not a tinted fill.
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
     }
 
     // MARK: - Filters
 
     private var filterChips: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: CenitMetrics.space1) {
             filterMenu(title: String(localized: "Muscle"), isPresented: $showMuscleFilter,
                        selection: $muscle, options: muscleOptions, label: StrengthDisplay.muscle)
             filterMenu(title: String(localized: "Equipment"), isPresented: $showEquipmentFilter,
@@ -149,14 +153,14 @@ struct ExerciseLibraryScreen: View {
             }
         }
         return Button { isPresented.wrappedValue = true } label: {
-            HStack(spacing: 5) {
+            HStack(spacing: CenitMetrics.space1) {
                 Text(active.map(label) ?? title)
                     .font(StrandFont.subhead)
                     .foregroundStyle(active == nil ? theme.ink : theme.paper)
                 StrandIcon.down.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(active == nil ? theme.inkTertiary : theme.paper)
             }
-            .padding(.horizontal, 12).padding(.vertical, 6)
+            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, 6)  // token-exempt: chip 6pt del handoff
             .background(active == nil ? Color.clear : theme.ink,
                         in: Capsule(style: .continuous))
             .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: active == nil ? 1 : 0))
@@ -188,12 +192,12 @@ struct ExerciseLibraryScreen: View {
             if loaded && rows.isEmpty {
                 Text("No exercises match your filters.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 18)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, CenitMetrics.sectionGapCompact)
             }
             // «Con historial tuyo» — the exercises you've logged, first, each with its best mark + sparkline.
             if !mine.isEmpty {
                 InstrumentoSectionBand("With your history")
-                    .padding(.top, 4).padding(.bottom, 6)
+                    .padding(.top, CenitMetrics.space1).padding(.bottom, CenitMetrics.space2)
                 ForEach(mine) { ex in
                     exerciseRow(ex, showsHistory: true)
                     if ex.id != mine.last?.id { Divider().overlay(theme.hairline.opacity(StrandOpacity.muted)) }
@@ -203,7 +207,8 @@ struct ExerciseLibraryScreen: View {
             if !rest.isEmpty {
                 ForEach(Array(libraryGroups.enumerated()), id: \.element.key) { index, group in
                     InstrumentoSectionBand("\(group.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(group.key)) · \(String(localized: "FROM THE LIBRARY"))")
-                        .padding(.top, index == 0 && mine.isEmpty ? 4 : 18).padding(.bottom, 6)
+                        .padding(.top, index == 0 && mine.isEmpty ? CenitMetrics.space1 : CenitMetrics.sectionGapCompact)
+                        .padding(.bottom, CenitMetrics.space2)
                     ForEach(group.items) { ex in
                         exerciseRow(ex, showsHistory: false)
                         if ex.id != group.items.last?.id {
@@ -219,9 +224,9 @@ struct ExerciseLibraryScreen: View {
         Button {
             detail = ex
         } label: {
-            HStack(spacing: 13) {
+            HStack(spacing: CenitMetrics.gap) {
                 // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
-                ExerciseThumbView(exercise: ex, side: 48)   // cached GIF still, or paper placeholder (FER-790)
+                ExerciseThumbView(exercise: ex, side: 52)   // handoff: 52px thumb · cached GIF still or paper placeholder (FER-790)
                     .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                         .strokeBorder(familyTint(ex), lineWidth: 2))
                 VStack(alignment: .leading, spacing: 2) {
@@ -230,28 +235,22 @@ struct ExerciseLibraryScreen: View {
                     Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)
-                // The quiet weight-over-time sparkline stays (a Cénit extra the handoff didn't draw).
-                if showsHistory, let s = sparklines[ex.id], s.count >= 2 {
-                    Sparkline(values: s,
-                              gradient: Gradient(colors: [theme.inkTertiary, theme.inkSecondary]),
-                              bandColor: theme.hairlineStrong,
-                              showsHead: false, showsScrub: false)
-                        .frame(width: 46, height: 18)
-                        .accessibilityHidden(true)
-                }
+                // No sparkline here (FER-951): with long catalog names it starved the title into a
+                // 4-line wrap. The record datum carries the story; the full trend lives in the detail.
                 // Handoff: the best mark as the right-hand datum, in the family hue («82,5 kg / tu récord»).
                 if showsHistory, let kg = bestKg[ex.id] {
                     VStack(alignment: .trailing, spacing: 1) {
                         Text(StrengthDisplay.weight(kg, system: system))
                             .font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(familyTint(ex))
                         Text("your record")
-                            .font(InstrumentoType.grotesk(10)).foregroundStyle(theme.inkTertiary)
+                            .font(InstrumentoType.groteskOverline).tracking(InstrumentoType.groteskOverlineTracking)
+                            .foregroundStyle(theme.inkTertiary)
                     }
                     .accessibilityElement(children: .combine)
                 }
                 trailingAccessory(ex)
             }
-            .padding(.vertical, 11).contentShape(Rectangle())
+            .padding(.vertical, CenitMetrics.rowVPad).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -278,7 +277,7 @@ struct ExerciseLibraryScreen: View {
                     Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)  // token-exempt: glifo 21pt fuera de banda lead
                 } else {
                     Text("Add").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        .padding(.horizontal, 12).padding(.vertical, 5)
+                        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space1)
                         .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
             }
@@ -292,12 +291,12 @@ struct ExerciseLibraryScreen: View {
 
     private var createRow: some View {
         Button { showCreate = true } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: CenitMetrics.space2) {
                 StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.dataStrain)   // handoff: the ＋ carries the ember accent
                 Text("Create your own exercise").font(StrandFont.body).foregroundStyle(theme.ink)
             }
-            .padding(.vertical, 13).contentShape(Rectangle())
+            .padding(.vertical, CenitMetrics.gap).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -313,12 +312,12 @@ struct ExerciseLibraryScreen: View {
                  ? String(localized: "Select exercises")
                  : String(localized: "Add \(selected.count) exercise(s)"))
                 .font(StrandFont.headline).foregroundStyle(selected.isEmpty ? theme.inkTertiary : theme.ink)
-                .frame(maxWidth: .infinity).padding(.vertical, 14)
+                .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.gap)
                 .background(theme.surface, in: Capsule(style: .continuous))
                 .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain).disabled(selected.isEmpty)
-        .padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, 8)
+        .padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.space2)
         .background(theme.paper.opacity(0.96).ignoresSafeArea(edges: .bottom))  // token-exempt: casi-opaco fuera de banda
     }
 
@@ -333,29 +332,20 @@ struct ExerciseLibraryScreen: View {
         loaded = true
     }
 
-    /// «Con historial tuyo» (1f): the exercises the user has ever logged, plus each one's best weight and a
-    /// weight-by-day sparkline. `recentWorkSets(sinceTs: 0)` gives the id set cheaply; the per-exercise
-    /// history is fetched only for that (small) set, so a huge catalog stays fast.
+    /// «Con historial tuyo» (1f): the exercises the user has ever logged, plus each one's best weight.
+    /// `recentWorkSets(sinceTs: 0)` gives the id set cheaply; the per-exercise history is fetched only
+    /// for that (small) set, so a huge catalog stays fast.
     private func loadHistory() async {
         let events = await repo.recentWorkSets(sinceTs: 0)
         let ids = Set(events.map(\.exerciseId))
         historyIds = ids
         var best: [String: Double] = [:]
-        var sparks: [String: [Double]] = [:]
         for id in ids {
             let hist = await repo.exerciseHistory(exerciseId: id)   // oldest→newest (startTs, weightKg, reps)
             guard !hist.isEmpty else { continue }
             best[id] = hist.map(\.weightKg).max()
-            // Max weight per day, oldest→newest — a quiet progress trace.
-            var byDay: [String: Double] = [:]
-            for h in hist {
-                let key = Repository.localDayKey(Date(timeIntervalSince1970: TimeInterval(h.startTs)))
-                byDay[key] = Swift.max(byDay[key] ?? 0, h.weightKg)
-            }
-            sparks[id] = byDay.sorted { $0.key < $1.key }.map(\.value)
         }
         bestKg = best
-        sparklines = sparks
     }
 
     private func toggle(_ ex: Exercise) {
@@ -396,16 +386,22 @@ private struct CreateExerciseSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Library").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    Text("New exercise").font(StrandFont.title1).foregroundStyle(theme.ink)
+                    // The sheet speaks the same Grotesk voice as the Library header that opens it.
+                    Text("Library").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                    Text("New exercise")
+                        .font(InstrumentoType.groteskHeroNumeral(28)).tracking(InstrumentoType.groteskHeroTrackingScaled(28))
+                        .foregroundStyle(theme.ink)
                 }
 
-                VStack(alignment: .leading, spacing: 9) {
+                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                     Text("Name").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     TextField("e.g. Svend press", text: $name)
                         .font(StrandFont.body).foregroundStyle(theme.ink)
-                        .padding(.horizontal, 13).padding(.vertical, 11)
-                        .background(theme.hairline.opacity(StrandOpacity.muted), in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
+                        // Same skin as the Library's search field — one text-field look per flow.
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -414,7 +410,7 @@ private struct CreateExerciseSheet: View {
                     pickerRow("Equipment", isPresented: $showEquipPicker, selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"), label: StrengthDisplay.equipment)
                 }
 
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                     Text("Record type").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     ForEach(ExerciseType.allCases, id: \.self) { t in typeOption(t) }
                 }
@@ -422,13 +418,13 @@ private struct CreateExerciseSheet: View {
                 Button { create() } label: {
                     Text("Create exercise").font(StrandFont.headline)
                         .foregroundStyle(canCreate ? theme.ink : theme.inkTertiary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 13)
+                        .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.gap)
                         .background(theme.surface, in: Capsule(style: .continuous))
                         .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain).disabled(!canCreate)
             }
-            .padding(.top, 20).padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.top, CenitMetrics.screenTop).padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
@@ -440,7 +436,7 @@ private struct CreateExerciseSheet: View {
         HStack(spacing: 12) {
             Text(title).font(StrandFont.body).foregroundStyle(theme.ink).frame(maxWidth: .infinity, alignment: .leading)
             Button { isPresented.wrappedValue = true } label: {
-                HStack(spacing: 5) {
+                HStack(spacing: CenitMetrics.space1) {
                     Text(selection.wrappedValue.isEmpty ? placeholder : label(selection.wrappedValue))
                         .font(StrandFont.body).foregroundStyle(selection.wrappedValue.isEmpty ? theme.inkTertiary : theme.inkSecondary)
                     StrandIcon.down.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
@@ -453,12 +449,12 @@ private struct CreateExerciseSheet: View {
                 }
             })
         }
-        .frame(minHeight: 40)
+        .frame(minHeight: 44)   // HIG minimum touch target
     }
 
     private func typeOption(_ t: ExerciseType) -> some View {
         Button { type = t } label: {
-            HStack(spacing: 11) {
+            HStack(spacing: CenitMetrics.gap) {
                 Image(systemName: StrengthDisplay.typeIcon(t)).font(StrandFont.glyph(.lead))
                     .foregroundStyle(type == t ? theme.ink : theme.inkTertiary).frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
@@ -468,7 +464,7 @@ private struct CreateExerciseSheet: View {
                 Spacer(minLength: 8)
                 if type == t { StrandIcon.confirm.image.font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink) }
             }
-            .padding(.horizontal, 13).padding(.vertical, 11).contentShape(Rectangle())
+            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad).contentShape(Rectangle())
             .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))  // token-exempt: fondo condicional
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                 .strokeBorder(type == t ? theme.ink : theme.hairline, lineWidth: type == t ? 1.5 : 1))
