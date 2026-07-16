@@ -48,8 +48,10 @@ private struct TodayPageHeightKey: PreferenceKey {
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)` from Today
 /// (the model itself isn't Identifiable). Mirrors the one Cuerpo uses. (FER-251)
 private struct SleepDetailItem: Identifiable {
-    var id = UUID()
+    let id: UUID
     let model: SleepDetailModel
+    /// FER-953: an explicit `id` lets the built model swap in under the SAME presentation identity.
+    init(id: UUID = UUID(), model: SleepDetailModel) { self.id = id; self.model = model }
 }
 
 struct TodayView: View {
@@ -451,11 +453,13 @@ struct TodayView: View {
             }
             // FER-953: precompute the sleep summary model off-main when the sleep info sheet opens.
             .task(id: metricDetail?.id) {
-                guard metricDetail?.id == "sleep" else { sleepSummaryModel = nil; return }
-                sleepSummaryModel = await SleepDetailModel.buildDetached(
-                    days: repo.days, sleeps: repo.sleeps, appleSleeps: repo.appleSleeps,
-                    importedSleep: repo.importedSleep, appleHealthDays: repo.appleHealthDays,
-                    loaded: repo.loaded, todayKey: Repository.localDayKey(Date()), fusion: repo.fusion)
+                guard metricDetail?.id == "sleep" else {
+                    if sleepSummaryModel != nil { sleepSummaryModel = nil }   // avoid gratuitous invalidation
+                    return
+                }
+                let model = await SleepDetailModel.buildDetached(repo: repo)
+                guard !Task.isCancelled else { return }   // sheet switched away while building
+                sleepSummaryModel = model
             }
             .sheet(isPresented: $showWhyVerdict) {
                 WhyVerdictSheet(readiness: readiness, theme: theme,
@@ -604,17 +608,12 @@ struct TodayView: View {
             }
         case "sleep":
             present = {
-                // FER-953: snapshot the inputs by value, present the loading state IMMEDIATELY, and build off-main.
-                let days = repo.days, sleeps = repo.sleeps, appleSleeps = repo.appleSleeps
-                let importedSleep = repo.importedSleep, appleHealthDays = repo.appleHealthDays
-                let loaded = repo.loaded, fusion = repo.fusion
-                let todayKey = Repository.localDayKey(Date())
+                // FER-953: present the loading state IMMEDIATELY; the model builds off-main and swaps
+                // in under the same id (stable sheet identity — no re-presentation).
                 let item = SleepDetailItem(model: .loading)
                 sleepDetail = item
                 Task {
-                    let m = await SleepDetailModel.buildDetached(
-                        days: days, sleeps: sleeps, appleSleeps: appleSleeps, importedSleep: importedSleep,
-                        appleHealthDays: appleHealthDays, loaded: loaded, todayKey: todayKey, fusion: fusion)
+                    let m = await SleepDetailModel.buildDetached(repo: repo)
                     if sleepDetail?.id == item.id {   // still the same presentation — user didn't close it
                         sleepDetail = SleepDetailItem(id: item.id, model: m)
                     }

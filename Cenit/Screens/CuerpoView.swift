@@ -136,8 +136,10 @@ private struct DetailChrome<Content: View>: View {
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)`
 /// (the model itself isn't Identifiable). One per presentation. (FER-212)
 private struct SleepDetailItem: Identifiable {
-    var id = UUID()
+    let id: UUID
     let model: SleepDetailModel
+    /// FER-953: an explicit `id` lets the built model swap in under the SAME presentation identity.
+    init(id: UUID = UUID(), model: SleepDetailModel) { self.id = id; self.model = model }
 }
 
 /// The dark-sheet driver — the remaining legacy dark screen without a light sheet yet (Data Sources).
@@ -817,17 +819,12 @@ private struct CuerpoLanding: View {
         let fromApple = r?.fromApple == true
         return statColumn("Sleep", value: r.map { sleepText($0.value) }, color: theme.dataSleep,
                           fromApple: fromApple, spark: windowedSpark { $0.totalSleepMin }) {
-            // FER-953: snapshot the inputs by value, present the loading state IMMEDIATELY, and build off-main.
-            let days = repo.days, sleeps = repo.sleeps, appleSleeps = repo.appleSleeps
-            let importedSleep = repo.importedSleep, appleHealthDays = repo.appleHealthDays
-            let loaded = repo.loaded, fusion = repo.fusion
-            let todayKey = Repository.localDayKey(Date())
+            // FER-953: present the loading state IMMEDIATELY; the model builds off-main and swaps
+            // in under the same id (so the layer updates in place — no re-presentation).
             let item = SleepDetailItem(model: .loading)
             sleepDetail = item
             Task {
-                let m = await SleepDetailModel.buildDetached(
-                    days: days, sleeps: sleeps, appleSleeps: appleSleeps, importedSleep: importedSleep,
-                    appleHealthDays: appleHealthDays, loaded: loaded, todayKey: todayKey, fusion: fusion)
+                let m = await SleepDetailModel.buildDetached(repo: repo)
                 if sleepDetail?.id == item.id {   // still the same presentation — user didn't close it
                     sleepDetail = SleepDetailItem(id: item.id, model: m)
                 }

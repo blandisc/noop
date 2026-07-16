@@ -109,6 +109,7 @@ struct SleepDetailScreen: View {
         .sheetPaper(theme)
         // FER-953: re-run when the placeholder model is replaced by the real one; parse + heat off-main.
         .task(id: model.loaded) {
+            guard model.loaded else { return }   // placeholder pass — nothing to parse yet (FER-953)
             range = .month
             let series = model.durationSeries
             let todayKey = Repository.localDayKey(Date())   // main-isolated: resolve before the hop
@@ -1592,26 +1593,26 @@ struct SleepDetailModel {
             respNightly: respNightly)
     }
 
-    /// Runs `build` off the MainActor (FER-953): the inputs are value-type snapshots, the engines are
-    /// pure StrandAnalytics — so the whole derivation hops to a background executor and only the
-    /// finished model returns to main.
-    static func buildDetached(days: [DailyMetric], sleeps: [CachedSleepSession],
-                              appleSleeps: [CachedSleepSession],
-                              importedSleep: [String: ImportedSleepFigures],
-                              appleHealthDays: Set<String>, loaded: Bool,
-                              todayKey: String,
-                              fusion: [String: [String: FusedMetricPoint]]) async -> SleepDetailModel {
-        await Task.detached(priority: .userInitiated) {
+    /// Runs `build` off the MainActor (FER-953): snapshots the inputs from `repo` on the MainActor
+    /// (value-type copies), then hops the whole derivation — pure StrandAnalytics engines — to a
+    /// background executor; only the finished model returns to main. Single seam for every call-site.
+    @MainActor
+    static func buildDetached(repo: Repository) async -> SleepDetailModel {
+        let days = repo.days, sleeps = repo.sleeps, appleSleeps = repo.appleSleeps
+        let importedSleep = repo.importedSleep, appleHealthDays = repo.appleHealthDays
+        let loaded = repo.loaded, fusion = repo.fusion
+        let todayKey = Repository.localDayKey(Date())
+        return await Task.detached(priority: .userInitiated) {
             build(days: days, sleeps: sleeps, appleSleeps: appleSleeps, importedSleep: importedSleep,
                   appleHealthDays: appleHealthDays, loaded: loaded, todayKey: todayKey, fusion: fusion)
         }.value
     }
 
     /// Placeholder while `buildDetached` runs: renders the screen's existing `!loaded` loading state.
-    static var loading: SleepDetailModel {
-        build(days: [], sleeps: [], appleSleeps: [], importedSleep: [:], appleHealthDays: [],
-              loaded: false, todayKey: "", fusion: [:])
-    }
+    /// Pure + deterministic, so it's computed once per process.
+    static let loading: SleepDetailModel = build(
+        days: [], sleeps: [], appleSleeps: [], importedSleep: [:], appleHealthDays: [],
+        loaded: false, todayKey: "", fusion: [:])
 
     /// Trailing 14 nights of a metric, in whatever unit `pick` returns, as `TrendPoint`s. Skips nights
     /// where the value is missing; empty when there's nothing to chart. (FER-227)
