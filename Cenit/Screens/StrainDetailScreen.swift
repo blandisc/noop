@@ -88,9 +88,11 @@ struct StrainDetailScreen: View {
         .background(theme.paper)
         .presentationDragIndicator(.visible)
         .sheetPaper(theme)
-        // FER-954: hop the day-key parse off-main (same seam as Sueño/Recuperación, FER-953);
-        // `curveLoader` stays exactly as it was.
-        .task {
+        // FER-954: re-run when the placeholder model is replaced by the real one (same seam as
+        // Sueño/Recuperación, FER-953) and hop the day-key parse off-main. The placeholder pass
+        // bails early so `curveLoader` runs exactly once, on the real model.
+        .task(id: model.loaded) {
+            guard model.loaded else { return }   // placeholder pass — nothing to parse yet (FER-954)
             range = .month
             let series = model.series
             parsed = await Task.detached(priority: .userInitiated) {
