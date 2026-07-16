@@ -23,6 +23,10 @@ approximate; Cénit is built from source — see the [README](README.md).
   **ES** — `LiveStrengthSheet.swift` (el archivo más grande del app, 4,720 líneas) se partió en tres: el modelo de la sesión, la vista, y los sheets auxiliares. Nada cambia en pantalla; cada edición recompila menos.
   **EN** — `LiveStrengthSheet.swift` (the app's largest file, 4,720 lines) split into three: the session model, the view, and the helper sheets. Nothing changes on screen; every edit recompiles less.
   ([LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift), [StrengthSessionModel.swift](Cenit/Screens/StrengthSessionModel.swift), [LiveStrengthSheets.swift](Cenit/Screens/LiveStrengthSheets.swift))
+- **Compila más rápido al editar Hoy y los detalles de métricas / Faster builds when editing Today and metric details.**
+  **ES** — Tres pantallas gigantes se partieron en archivos más chicos (el catálogo de explicaciones de métricas, la curva intradía de esfuerzo, y los soportes de Hoy y del detalle). Nada cambia en pantalla; cada edición recompila menos.
+  **EN** — Three giant screens split into smaller files (the metric info catalog, the strain intraday curve, and the Today/detail supports). Nothing changes on screen; every edit recompiles less.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift), [MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift), [MetricDetailScreen.swift](Cenit/Screens/MetricDetailScreen.swift))
 
 - **La pestaña de Tendencias entra más fluida / The Trends tab loads smoother.**
   **ES** — Al entrar a Tendencias (y en cada sincronización), todos los cálculos de las tarjetas — estrés, carga de entrenamiento, vitalidad/edad corporal, edad física, calibración de recuperación — corren ahora en segundo plano en vez de bloquear la pantalla. Mismos números, sin tirones.
