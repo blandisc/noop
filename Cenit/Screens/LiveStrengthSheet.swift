@@ -2525,9 +2525,9 @@ struct LiveStrengthSheet: View {
             .foregroundStyle(theme.dataStrain)
             .frame(maxWidth: .infinity)
             .frame(height: 46)
-            .background(theme.dataStrain.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))  // token-exempt: decorative drop-zone tint alpha
+            .background(theme.dataStrain.opacity(0.06), in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))  // token-exempt: decorative drop-zone tint alpha
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
             }
             .padding(.bottom, 6)
@@ -2556,9 +2556,9 @@ struct LiveStrengthSheet: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
             .frame(minHeight: 44)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                     .strokeBorder(dragging ? theme.dataStrain : theme.hairlineStrong, lineWidth: dragging ? 2 : 1)
             }
             .shadow(color: dragging ? theme.dataStrain.opacity(0.25) : .clear,  // token-exempt: decorative lift-shadow alpha
