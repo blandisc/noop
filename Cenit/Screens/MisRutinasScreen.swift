@@ -143,13 +143,22 @@ struct MisRutinasScreen: View {
                 divider
                 actionRow("plus", "New routine") { showBuilder = true }
                 divider
-                // The mock folds templates / import / folders into one row; the menu keeps all three
-                // functions (choque 9: conserve plantillas, import, carpetas).
-                actionMenuRow("rectangle.stack", "Templates · Import · Folders", isPresented: $showToolsMenu, items: [
-                    .init(String(localized: "Start from a template"), systemImage: "square.stack.3d.up") { showTemplates = true },
-                    .init(String(localized: "Import plan"), systemImage: "square.and.arrow.down") { showImport = true },
-                    .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
-                ])
+                // FER-952 (owner): three STYLED chips, one per door — the folded row's popover
+                // clipped near the screen bottom and only «Import plan» showed.
+                HStack(spacing: CenitMetrics.space2) {
+                    toolChip("square.stack.3d.up", "Templates") { showTemplates = true }
+                    toolChip("square.and.arrow.down", "Import") { showImport = true }
+                    toolChip("folder", "Folders") { showToolsMenu = true }
+                        .paperMenu(isPresented: $showToolsMenu, items: [
+                            .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
+                        ] + folders.map { f in
+                            PaperMenuItem(f.name, systemImage: "folder", children: [
+                                .init(String(localized: "Rename folder…"), systemImage: "pencil") { startRename(f) },
+                                .init(String(localized: "Delete folder"), systemImage: "trash", isDestructive: true) { deleteFolder(f) }
+                            ])
+                        })
+                }
+                .padding(.vertical, CenitMetrics.space2)
                 divider
                 actionRow("book", "Exercise library", action: openLibrary)
             }
@@ -460,6 +469,20 @@ struct MisRutinasScreen: View {
     }
 
     // MARK: - Folders (FER-494)
+
+    private func toolChip(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(StrandFont.glyph(.chevron, weight: .medium))
+                Text(title).font(StrandFont.subhead.weight(.medium))
+            }
+            .foregroundStyle(theme.ink)
+            .frame(maxWidth: .infinity, minHeight: 40)
+            .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
 
     private func startNewFolder(moving r: Routine?) {
         pendingMove = r; newFolderName = ""; showNewFolder = true

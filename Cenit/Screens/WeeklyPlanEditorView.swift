@@ -373,9 +373,10 @@ struct WeeklyPlanEditorView: View {
                     }
                     divider
                 }
-                // The mock folds templates / import / folders into one row; the menu keeps all three
-                // functions (decision A: conserve plantillas, import, carpetas behind this row).
-                actionMenuRow("rectangle.stack", "Templates · Import · Folders", isPresented: $showToolsMenu, items: toolsMenuItems)
+                // FER-952 (owner): the folded row hid two of its three doors (the popover clipped
+                // near the screen bottom) — three STYLED chips instead, one per destination; the
+                // Folders chip anchors the folder-management paper menu.
+                toolsChipsRow
                 divider
                 actionRow("book", "Exercise library", action: openLibrary)
             }
@@ -401,10 +402,34 @@ struct WeeklyPlanEditorView: View {
     /// Items for the «Templates · Import · Folders» menu. Folders are degraded (decision A): they're not
     /// shown as headers in the body, but each existing folder keeps Rename/Delete here so full folder
     /// management stays reachable (FER-890 QA D1 — they used to hang off the removed folder headers).
-    private var toolsMenuItems: [PaperMenuItem] {
+    /// The three doors as equal-weight chips (FER-952): Templates and Import open their sheets;
+    /// Folders anchors the folder-management paper menu (new / rename / delete).
+    private var toolsChipsRow: some View {
+        HStack(spacing: CenitMetrics.space2) {
+            toolChip("square.stack.3d.up", "Templates") { showTemplates = true }
+            toolChip("square.and.arrow.down", "Import") { showImport = true }
+            toolChip("folder", "Folders") { showToolsMenu = true }
+                .paperMenu(isPresented: $showToolsMenu, items: folderMenuItems)
+        }
+        .padding(.vertical, CenitMetrics.space2)
+    }
+
+    private func toolChip(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(StrandFont.glyph(.chevron, weight: .medium))
+                Text(title).font(StrandFont.subhead.weight(.medium))
+            }
+            .foregroundStyle(theme.ink)
+            .frame(maxWidth: .infinity, minHeight: 40)
+            .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var folderMenuItems: [PaperMenuItem] {
         var items: [PaperMenuItem] = [
-            .init(String(localized: "Start from a template"), systemImage: "square.stack.3d.up") { showTemplates = true },
-            .init(String(localized: "Import plan"), systemImage: "square.and.arrow.down") { showImport = true },
             .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
         ]
         for f in folders {

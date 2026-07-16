@@ -494,6 +494,48 @@ private struct EntrenarFlowsMapCell: View {
     EntrenarFlowsMapCell()
 }
 
+/// El detalle de la SESIÓN ESTRELLA de hoy (FER-952): banca + inclinado + crunch con esfuerzo 11.2,
+/// FC 132/168, 316 kcal, nota y las zonas de FC (8/22/40/25/5) vía el join con el journal — la
+/// pantalla completa para verificar hero, zonas, FC, volumen y récords de una sesión real.
+private struct WorkoutSessionDetailMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @StateObject private var historyCoordinator = WorkoutHistoryCoordinator()
+    @State private var route: WorkoutSessionRoute? = nil
+
+    var body: some View {
+        Group {
+            if let route {
+                NavigationStack {
+                    WorkoutSessionDetailScreen(route: route, openRoutine: { _ in })
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .environmentObject(historyCoordinator)
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard route == nil else { return }
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            if let star = await model.repo.recentSessions(limit: 1).first {
+                route = WorkoutSessionRoute(id: star.id, startTs: star.startTs, endTs: star.endTs,
+                                            strain: star.strain, avgHr: star.avgHr,
+                                            routineName: "Día A — Empuje")
+            }
+        }
+    }
+}
+
+#Preview("Sesión · detalle completo (con zonas)") {
+    WorkoutSessionDetailMapCell()
+}
+
 /// El `SessionPill` flotante del app real (FER-716), replicado para las celdas del canvas: reloj vivo
 /// por `TimelineView`, BPM en vivo si hay banda, y tocar re-abre la sesión minimizada.
 private struct MapSessionPillHost: View {

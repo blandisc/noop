@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Folders": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folders"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carpetas"
+          }
+        }
+      }
+    },
     "How this is measured": {
       "extractionState": "manual",
       "localizations": {
