@@ -2854,13 +2854,22 @@ struct LiveStrengthSheet: View {
     }
 
     private func focusRestAdjust(_ label: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label).font(StrandFont.headline).monospacedDigit().foregroundStyle(theme.paper)
-                .frame(width: 56)
-                .padding(.vertical, CenitMetrics.sectionGap)
-                .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.paper.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
+        // r29 (owner): centrado ÓPTICO — el signo (glifo proporcional con su propio side-bearing)
+        // descentraba el conjunto dentro del frame; ahora vive en un riel fijo de 12pt y el «15»
+        // queda con geometría IDÉNTICA en ambos botones.
+        let sign = String(label.prefix(1))
+        let digits = String(label.dropFirst())
+        return Button(action: action) {
+            HStack(spacing: 0) {
+                Text(sign).font(StrandFont.headline).frame(width: 12)
+                Text(digits).font(StrandFont.headline).monospacedDigit()
+            }
+            .foregroundStyle(theme.paper)
+            .frame(width: 56)
+            .padding(.vertical, CenitMetrics.sectionGap)
+            .background(theme.paper.opacity(StrandOpacity.tintFillStrong), in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.paper.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label == "−15" ? "Subtract 15 seconds" : "Add 15 seconds"))
