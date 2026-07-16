@@ -1543,7 +1543,8 @@ struct LiveStrengthSheet: View {
                         Text(run.name).font(StrandFont.body).foregroundStyle(theme.inkTertiary).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(doneDetailText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    // r26: dato medido → Grotesk (la voz de valores, aún comprimido).
+                    Text(doneDetailText(run)).font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
                         .lineLimit(1)
                     Image(systemName: "checkmark.circle.fill")
                         .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataRecovery)
@@ -1580,7 +1581,7 @@ struct LiveStrengthSheet: View {
                         Text(run.name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(prescriptionText(run)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    Text(prescriptionText(run)).font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
                         .lineLimit(1)
                 }
                 .opacity(StrandOpacity.dim)
@@ -2042,7 +2043,8 @@ struct LiveStrengthSheet: View {
                     if let bpm = p.smoothedBpm {
                         HStack(spacing: 6) {
                             BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
-                            Text("\(bpm)").font(StrandFont.caption.monospacedDigit()).foregroundStyle(theme.dataHeart)
+                            // r26 (owner): valor VIVO → Grotesk tabular, como todo dato medido.
+                            Text("\(bpm)").font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.dataHeart)
                         }
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel(Text("Heart rate \(bpm)"))
@@ -3432,7 +3434,7 @@ struct LiveStrengthSheet: View {
         Button { openRestEditor(ei: ei) } label: {
             HStack(spacing: 6) {
                 StrandIcon.clock.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataStrain)
-                Text(restChipLabel(run)).font(StrandFont.caption.weight(.medium)).foregroundStyle(theme.ink)
+                Text(restChipLabel(run)).font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.ink)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .troquelChip(theme)
@@ -3716,7 +3718,7 @@ struct LiveStrengthSheet: View {
             }
             HStack(spacing: 5) {
                 StrandIcon.heart.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.hrZoneRamp[zone - 1])
-                Text("\(hr)").font(StrandFont.subhead.monospacedDigit()).foregroundStyle(theme.ink)
+                Text("\(hr)").font(InstrumentoType.groteskNumber(15, weight: .medium)).foregroundStyle(theme.ink)
                 Text("·").foregroundStyle(theme.inkTertiary)
                 Text("\(pct)% of your max").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
@@ -3933,7 +3935,8 @@ struct LiveStrengthSheet: View {
         if let text = previousText(run) {
             Button { prefillTapped(ei: ei, si: si, run: run) } label: {
                 Text(reflow ? "Previous: \(text)" : "\(text) · \(rest)")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    // r26: la celda ANTERIOR es dato medido → Grotesk tabular.
+                    .font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .contentShape(Rectangle())
             }
@@ -3941,7 +3944,7 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text("Previous, \(text)"))
             .accessibilityHint(Text("Copies it to this set"))
         } else {
-            Text(verbatim: "— · \(rest)").font(StrandFont.caption).foregroundStyle(theme.inkDim) // token-exempt: glifo «sin registro previo» (—), no es copy conector
+            Text(verbatim: "— · \(rest)").font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkDim) // token-exempt: glifo «sin registro previo» (—), no es copy conector
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .accessibilityLabel(Text("No previous record"))
         }
@@ -5226,7 +5229,8 @@ struct RPESheet: View {
                     withAnimation(StrandMotion.interactive) { selected = value }
                 } label: {
                     Text(LiveStrengthSheet.formatDecimalComma(value))
-                        .font(StrandFont.number(17, weight: sel ? .bold : .regular)).monospacedDigit()
+                        // r26: el numeral RPE también habla Grotesk (era el último en StrandFont.number).
+                        .font(InstrumentoType.groteskNumber(17, weight: sel ? .bold : .regular))
                         .foregroundStyle(sel ? theme.paper : theme.inkSecondary)
                         .frame(maxWidth: .infinity).frame(height: 56)
                         .background {
