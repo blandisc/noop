@@ -1641,9 +1641,7 @@ struct LiveStrengthSheet: View {
         exerciseHeader(run, ei: ei, first: true)
             .padding(.top, 12).padding(.horizontal, 14).padding(.bottom, 8)
             .activeCardRow(top: true, bottom: false, theme: theme, railTint: railTint,
-                           railVisible: showRail,
-                           railTopInset: ei == firstRailIndex ? 12 + 22 : 0,
-                           dotTint: categoryTint(run))
+                           railVisible: showRail)
             .id("session-exercise-\(ei)")
         ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
             // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows from the
@@ -2803,9 +2801,33 @@ struct LiveStrengthSheet: View {
             // centro del thumb SIEMPRE queda a 12+22=34, donde vive el punto.
             HStack(alignment: .top, spacing: 12) {
                 SessionRunThumb(exerciseId: run.exerciseId)   // baked still fills the FER-751 slot
-                    // Canvas pass 2026-07-15: the category dot is ANCHORED to the thumbnail itself —
-                    // drawn as its overlay, vertically centered by construction (no offset math to
-                    // drift), pushed left into the rail lane (thumb leading sits 31pt right of it).
+                    // r11 (bolita descentrada): el punto vive como OVERLAY del thumbnail — centrado
+                    // vertical por construcción en el espacio del CONTENIDO. Pintarlo en el
+                    // listRowBackground a «12+22 del tope» salía ~16pt arriba: el marco vertical del
+                    // fondo del cell no es el del contenido. En horizontal sí coinciden, así que el
+                    // riel se alcanza con pura resta: 26 de canaleta + 14 de padding de tarjeta − 7
+                    // del centro del hilo = 33pt a la izquierda del borde del thumb.
+                    // El nacimiento del hilo (primer ejercicio) también es del contenido: un borrador
+                    // de papel tapa el hilo desde el tope de la rebanada (−12) hasta el centro del
+                    // thumb; el anillo de papel remata la orilla — nada asoma arriba de la bolita.
+                    .overlay(alignment: .topLeading) {
+                        if showRail, ei == firstRailIndex {
+                            Rectangle().fill(theme.paper)
+                                .frame(width: 6, height: 12 + 22)
+                                .offset(x: -33 - 3, y: -12)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                    .overlay(alignment: .leading) {
+                        if showRail {
+                            ZStack {
+                                Circle().fill(theme.paper).frame(width: 17, height: 17)
+                                Circle().fill(categoryTint(run)).frame(width: 11, height: 11)
+                            }
+                            .offset(x: -33 - 8.5)
+                            .allowsHitTesting(false)
+                        }
+                    }
 
                 VStack(alignment: .leading, spacing: 2) {
                 supersetTag(ei)
@@ -5273,12 +5295,13 @@ private extension View {
 
     /// Canvas pass 2026-07-15 (vuelve la carta blanca, ahora FLOTANTE): the active exercise's rows are
     /// slices of one floating `surface` card — the same hover language as the rest card — while the
-    /// row background also paints the rail thread BEHIND it and, on the header slice, the category dot
-    /// centered to the 44pt thumbnail (`dotTint`/`dotTopOffset`). `railVisible: false` hides the
-    /// thread/dot in single-exercise sessions where a rail would hang orphaned.
+    /// row background also paints the rail thread BEHIND it. The category dot (and the first
+    /// exercise's thread-birth eraser) moved to CONTENT space as overlays of the header's thumbnail
+    /// (r11, see `exerciseHeader`): the cell background's vertical frame drifted ~16pt from the
+    /// content's, so nothing vertically-anchored may live here. `railVisible: false` hides the
+    /// thread in single-exercise sessions where a rail would hang orphaned.
     func activeCardRow(top: Bool, bottom: Bool, theme: InstrumentoTheme, railTint: Color,
-                       railVisible: Bool = true, railTopInset: CGFloat = 0,
-                       dotTint: Color? = nil) -> some View {
+                       railVisible: Bool = true) -> some View {
         let shape = UnevenRoundedRectangle(
             topLeadingRadius: top ? CenitMetrics.cardRadius : 0,
             bottomLeadingRadius: bottom ? CenitMetrics.cardRadius : 0,
@@ -5290,24 +5313,11 @@ private extension View {
             .listRowBackground(
                 ZStack(alignment: .topLeading) {
                     if railVisible {
-                        // `railTopInset` clips the thread's start on the FIRST exercise's header —
-                        // the dot is the thread's birthplace, nothing hangs above it.
+                        // Full-height thread on every slice — the first exercise's birth is clipped
+                        // by the content-space paper eraser in `exerciseHeader` (r11), not here.
                         Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
-                            .padding(.top, railTopInset)
                             .padding(.leading, CenitMetrics.screenPadding + 6)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    }
-                    if railVisible, let dotTint {
-                        // r7: el punto se dibuja AQUÍ, en el mismo espacio que la línea — misma X por
-                        // construcción (centrado exacto) y a la altura del centro del thumbnail (12 de
-                        // padding + 22 = mitad de los 44pt). El respaldo de papel tapa la línea: el
-                        // hilo muere/pasa DETRÁS del punto, nunca encima.
-                        ZStack {
-                            Circle().fill(theme.paper).frame(width: 17, height: 17)
-                            Circle().fill(dotTint).frame(width: 11, height: 11)
-                        }
-                        .padding(.leading, CenitMetrics.screenPadding + 7 - 8.5)
-                        .padding(.top, 12 + 22 - 8.5)
                     }
                     // Seamless slices (owner: sin sombra entre calentamiento y series): the hover
                     // shadow only paints on the card's OUTER edges — per-slice shadows banded at every
