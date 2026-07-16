@@ -247,4 +247,49 @@ private struct RoutineEditorMapCell: View {
 #Preview("Crear Rutina · Día A (con plan)") {
     RoutineEditorMapCell()
 }
+
+/// «Tu Plan» (WeeklyPlanEditorView) — la pantalla madre del editor de rutina: la semana con su split,
+/// las rutinas y las carpetas. NAVEGABLE: tocar una rutina o un día del plan empuja el editor REAL
+/// (`RoutineEditorScreen`) en el mismo stack, así que desde este preview puedes recorrer el flujo
+/// completo Tu Plan → Rutina, igual que en el app.
+private struct WeeklyPlanMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @State private var seeded = false
+    @State private var path = NavigationPath()
+
+    var body: some View {
+        Group {
+            if seeded {
+                NavigationStack(path: $path) {
+                    WeeklyPlanEditorView(
+                        openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },
+                        openLibrary: {},
+                        openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) }
+                    )
+                    .navigationDestination(for: RoutineEditorRoute.self) { route in
+                        RoutineEditorScreen(origin: route)
+                    }
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            seeded = true
+        }
+    }
+}
+
+#Preview("Tu Plan → Rutina (navegable)") {
+    WeeklyPlanMapCell()
+}
 #endif
