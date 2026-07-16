@@ -37,6 +37,13 @@ struct MuscleVolumeScreen: View {
     @State private var span: Span = .d30
     /// The method note («sets per week · the 10–20 band»), shown on demand from the ⓘ (FER-952).
     @State private var showMethodInfo = false
+    /// Measured height of the ⓘ sheet's content — drives a fitted detent (no dead paper below).
+    @State private var infoSheetHeight: CGFloat = 220
+
+    private struct InfoSheetHeightKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+    }
     /// Work sets over the trailing year, expanded to per-muscle events (one fetch; the span slices).
     @State private var events: [MuscleFatigueMap.MuscleSetEvent] = []
     @State private var loaded = false
@@ -75,7 +82,7 @@ struct MuscleVolumeScreen: View {
                     } else {
                         rows.padding(.top, 6)
                         railAxisMarks.padding(.top, 4)
-                        insight.padding(.top, 14)
+                        // FER-952: the verdict line moved into the ⓘ sheet — the screen stays quiet.
                         methodNote.padding(.top, 12)
                     }
                 }
@@ -87,7 +94,8 @@ struct MuscleVolumeScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .task { await load() }
-        // The method, on demand (FER-952): what the bars count and where the band comes from.
+        // The method + the verdict, on demand (FER-952). The sheet HUGS its content: a measured-height
+        // detent, so there's no dead paper below the last line.
         .sheet(isPresented: $showMethodInfo) {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("Volume per muscle").groteskSheetTitle().textCase(.uppercase)
@@ -98,11 +106,23 @@ struct MuscleVolumeScreen: View {
                 Text("Each bar counts the WORK sets that loaded that muscle as a primary mover, averaged per week over the selected span. Warm-ups don't count.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Circle().fill(belowBand.isEmpty ? theme.verdict : theme.warning)
+                        .frame(width: 8, height: 8)
+                        .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
+                    insightText
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 2)
             }
             .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .presentationDetents([.fraction(0.32)])
+            .background(GeometryReader { geo in
+                Color.clear.preference(key: InfoSheetHeightKey.self, value: geo.size.height)
+            })
+            .onPreferenceChange(InfoSheetHeightKey.self) { infoSheetHeight = $0 }
+            .presentationDetents([.height(max(infoSheetHeight, 120))])
             .presentationBackground(theme.surface)
         }
     }
@@ -205,20 +225,6 @@ struct MuscleVolumeScreen: View {
 
     // MARK: - Insight foot — names the below-band muscles, actionably
 
-    private var insight: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
-            Circle().fill(belowBand.isEmpty ? theme.verdict : theme.warning)
-                .frame(width: 8, height: 8)
-                .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
-            insightText
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.top, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
-        .accessibilityElement(children: .combine)
-    }
 
     @ViewBuilder private var insightText: some View {
         if belowBand.isEmpty {
