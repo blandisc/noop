@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "No rest between them: you rest when the round ends.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No rest between them: you rest when the round ends."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin descanso entre ambos: descansas al terminar la ronda."
+          }
+        }
+      }
+    },
     "ESTIMATED 1RM · TODAY": {
       "extractionState": "manual",
       "localizations": {

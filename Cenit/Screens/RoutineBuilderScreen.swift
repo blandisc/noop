@@ -201,15 +201,22 @@ struct RoutineBuilderScreen: View {
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("New routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // Same Grotesk voice + 96pt ink seal as the unified editor (FER-952) — one conceptual
+            // screen, one look.
+            Text("New routine").groteskOverline().foregroundStyle(theme.inkTertiary)
             TextField("Routine name", text: $name)
-                .font(StrandFont.title1).foregroundStyle(theme.ink)
+                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                .foregroundStyle(theme.ink)
+                .overlay(alignment: .bottomLeading) {
+                    Rectangle().fill(theme.ink).frame(width: 96, height: 2).offset(y: 5)
+                }
             if !items.isEmpty {
                 if let region = builderRegion {
                     HStack(spacing: 6) {
                         Circle().fill(builderRegionTint(region)).frame(width: 8, height: 8)
+                        // Color only in the datum: the dot carries the hue, the label stays ink.
                         Text(builderRegionLabel(region))
-                            .font(StrandFont.caption).foregroundStyle(builderRegionTint(region))
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
                     .padding(.top, 2)
                 }
@@ -290,12 +297,13 @@ struct RoutineBuilderScreen: View {
     @ViewBuilder
     private func columnHeader(_ type: ExerciseType) -> some View {
         HStack(spacing: 8) {
-            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).lineLimit(1).frame(width: 44, alignment: .leading)
+            // Same table metrics as the unified editor (FER-952): 40 / twin 74s.
+            Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).lineLimit(1).minimumScaleFactor(0.7).frame(width: 40, alignment: .center)
             if showsWeight(type) {
-                Text(StrengthDisplay.weightUnit(system)).instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 62)
+                Text(StrengthDisplay.weightUnit(system)).groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             if showsReps(type) {
-                Text("Reps").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 62)
+                Text("Reps").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             Spacer(minLength: 0)
             Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -311,9 +319,9 @@ struct RoutineBuilderScreen: View {
         let type = items[idx].exercise.type
         return HStack(spacing: 8) {
             Text(RoutineSetEditing.setLabel(items[idx].re, si))
-                .font(set.kind == .warmup ? StrandFont.caption.weight(.semibold) : StrandFont.body)
-                .foregroundStyle(set.kind == .warmup ? theme.inkTertiary : theme.inkSecondary)
-                .monospacedDigit().frame(width: 44, alignment: .leading)
+                .font(InstrumentoType.grotesk(13, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(set.kind == .warmup ? theme.inkTertiary : theme.ink)
+                .frame(width: 40, alignment: .center)
             if showsWeight(type) {
                 cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad)
             }
@@ -336,9 +344,9 @@ struct RoutineBuilderScreen: View {
             .font(StrandFont.bodyNumber)
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
-            .frame(width: 76, height: 34)
+            .frame(width: 74, height: 32)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 
     private func addSetRow(_ idx: Int) -> some View {
