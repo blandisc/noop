@@ -9,10 +9,12 @@ import Foundation
 //
 // Migrada del sistema oscuro legacy (tabla densa de 7 columnas + grid de StatTiles + zonas agregadas) al
 // lenguaje claro: UN número protagonista (sesiones del periodo), jerarquía por espacio, color SOLO en el
-// dato. Se presenta como `.sheet` clara desde Cuerpo, con el `InstrumentoTheme` inyectado al raíz de la
-// sheet (no propaga solo, FER-162) y un único `NavigationStack` que la envuelve — cada fila de sesión
-// PUSHEA `WorkoutDetailScreen` (sin stack anidado, FER-171). El CRUD completo vive en el menú ••• del
-// detalle (reemplaza el `contextMenu` de escritorio, invisible en iPhone). Reusa `Repository` tal cual.
+// dato. Se presenta como CAPA de detalle desde Tendencias (igual que sus hermanas; antes era la única que
+// subía como card), con el `InstrumentoTheme` inyectado al raíz y un único `NavigationStack` que la
+// envuelve — cada fila de sesión PUSHEA `WorkoutDetailScreen` (sin stack anidado, FER-171: la pestaña de
+// Tendencias no trae stack propio). Como la capa no es una presentación, no hay `dismiss()`: la barra usa
+// `onClose` para «‹ Tendencias». El CRUD completo vive en el menú ••• del detalle (reemplaza el
+// `contextMenu` de escritorio, invisible en iPhone). Reusa `Repository` tal cual.
 //
 // Esqueleto Final (misma forma que `MetricDetailScreen.narrativeBodyFinal` / `SkinTempDetailScreen`):
 // HeroInvertido → range control on paper → SeccionBloque tiles / By sport / Sessions → PieMetodo.
@@ -23,10 +25,13 @@ import Foundation
 // detalle de cada sesión (donde sí informa). Estados: cargando · vacío (onboarding) · con datos.
 
 struct WorkoutsView: View {
+    /// Pops the Tendencias detail layer this screen rides in. The layer isn't a presentation, so there's
+    /// no `dismiss()` to call — the nav bar's «‹ Tendencias» calls this instead. `nil` in previews.
+    var onClose: (() -> Void)? = nil
+
     @EnvironmentObject var repo: Repository
     @EnvironmentObject var health: HealthKitBridge
     @Environment(\.instrumentoTheme) private var theme
-    @Environment(\.dismiss) private var dismiss
 
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
@@ -46,9 +51,11 @@ struct WorkoutsView: View {
     /// `.some(nil)` = add a new workout, `.some(row)` = edit `row`, `nil` = closed.
     private struct WorkoutSheetTarget: Identifiable { let editing: WorkoutRow?; let id = UUID() }
 
-    init(previewRows: [WorkoutRow]? = nil,
+    init(onClose: (() -> Void)? = nil,
+         previewRows: [WorkoutRow]? = nil,
          previewStrengthSessions: [StrengthSession] = [],
          previewSessionVolumes: [String: (volumeKg: Double, setCount: Int)] = [:]) {
+        self.onClose = onClose
         _allRows = State(initialValue: previewRows ?? [])
         _loaded = State(initialValue: previewRows != nil)
         _strengthSessions = State(initialValue: previewStrengthSessions)
@@ -68,8 +75,18 @@ struct WorkoutsView: View {
         .background(theme.paper.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Done") { dismiss() }.foregroundStyle(theme.ink)
+            // Only when this rides the Tendencias layer. Pushed onto a stack that has its own back
+            // (DEBUG screenshot-nav), `onClose` is nil and a second chevron would just sit there dead.
+            if let onClose {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { onClose() } label: {
+                        HStack(spacing: 4) {
+                            StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                            Text("Tendencias").font(StrandFont.body)
+                        }
+                    }
+                    .foregroundStyle(theme.ink)
+                }
             }
             ToolbarItem(placement: .primaryAction) {
                 Button { addWorkout() } label: { StrandIcon.add.image }
