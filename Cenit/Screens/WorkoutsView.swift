@@ -278,12 +278,11 @@ struct WorkoutsView: View {
     }
 
     /// Σ strength volume for sessions whose `startTs` falls in the SAME window as the Hours/Kcal tiles
-    /// (cutoff = latest workout-row ts − range days; no cutoff for `.all`), so the tile tracks the range.
+    /// (NOW-anchored trailing cutoff via `cutoff(for:)`; no cutoff for `.all`), so the tile tracks the range.
     private func strengthVolumeKg(in r: ExploreRange) -> Double {
         let inWindow: [StrengthSession]
-        if let days = r.days, let last = latestTs {
-            let cutoff = last - days * 86_400
-            inWindow = strengthSessions.filter { $0.startTs >= cutoff }
+        if let cut = cutoff(for: r) {
+            inWindow = strengthSessions.filter { $0.startTs >= cut }
         } else {
             inWindow = strengthSessions
         }
@@ -468,13 +467,19 @@ struct WorkoutsView: View {
 
     // MARK: - Windowing (unchanged math)
 
-    private var latestTs: Int? { allRows.map(\.startTs).max() }
+    /// Trailing-window cutoff anchored on NOW — start of today minus `days − 1` — so «last 7 days» here
+    /// is the SAME window and anchor as the «Entrenamientos» tile in Tendencias, instead of measuring
+    /// back from the most recent workout (which drifted the count off the tile). `nil` for `.all`.
+    private func cutoff(for r: ExploreRange) -> Int? {
+        guard let days = r.days else { return nil }
+        let start = Calendar.current.startOfDay(
+            for: Calendar.current.date(byAdding: .day, value: -(days - 1), to: Date()) ?? Date())
+        return Int(start.timeIntervalSince1970)
+    }
 
     private func sessions(for r: ExploreRange) -> [WorkoutRow] {
-        guard let days = r.days else { return allRows }
-        guard let last = latestTs else { return [] }
-        let cutoff = last - days * 86_400
-        return allRows.filter { $0.startTs >= cutoff }
+        guard let cut = cutoff(for: r) else { return allRows }
+        return allRows.filter { $0.startTs >= cut }
     }
 
     /// The selected range when it holds ≥1 session, else the smallest larger range that does.
@@ -484,12 +489,12 @@ struct WorkoutsView: View {
         return .all
     }
 
-    /// Tightest range that still holds ≥2 sessions; else All.
+    /// Tightest range that still holds ≥2 sessions; else All. Same NOW anchor as `cutoff(for:)`.
     private func defaultRange(for source: [WorkoutRow]) -> ExploreRange {
-        guard let last = source.map(\.startTs).max() else { return .all }
+        guard !source.isEmpty else { return .all }
         for r in ExploreRange.allCases where r.days != nil {
-            let cutoff = last - (r.days ?? 0) * 86_400
-            if source.filter({ $0.startTs >= cutoff }).count >= 2 { return r }
+            guard let cut = cutoff(for: r) else { continue }
+            if source.filter({ $0.startTs >= cut }).count >= 2 { return r }
         }
         return .all
     }
