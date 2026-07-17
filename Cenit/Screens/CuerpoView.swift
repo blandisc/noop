@@ -262,11 +262,9 @@ private struct CuerpoLanding: View {
     @State private var appleDays: [AppleDaily] = []
     @State private var appleMetricDays: [DailyMetric] = []
     @State private var workoutCount: Int = 0
-    /// Sessions in the trailing 14 days — the «Entrenamientos» row's protagonist (recent training, not
+    /// Sessions in the trailing 7 days — the «Entrenamientos» row's protagonist (recent training, not
     /// the unbounded all-time total). `workoutCount` stays the lifetime count for the Apple-connect hint.
     @State private var recentWorkoutCount: Int = 0
-    /// Sessions whose start falls in the current calendar week (for the Workouts column legend).
-    @State private var weekWorkoutCount: Int = 0
     /// Today's stress model (0–3 autonomic proxy + markers + trend) — the same transparent model Hoy builds.
     /// Held whole (not just the score) so the «Stress» row can open the dedicated detail (FER-241).
     @State private var stressModel: StressModel? = nil
@@ -1023,9 +1021,11 @@ private struct CuerpoLanding: View {
     /// sessions → honest "—"; VoiceOver says it plainly, not "dash". (FER-259)
     @ViewBuilder private var workoutsStat: some View {
         let n = recentWorkoutCount
-        let col = statColumn("Workouts · 14d", value: n > 0 ? "\(n)" : nil,
-                             color: theme.dataStrain,
-                             legend: n > 0 ? "\(weekWorkoutCount) this week" : nil) {
+        // Trailing 7 days from today — the SAME window and anchor the Entrenamientos screen opens on, so
+        // the tile you tap and the screen you land on always show the same count (the «this week» legend
+        // was a third, different window that read as a contradiction). (FER — unify to 7d trailing)
+        let col = statColumn("Workouts · 7d", value: n > 0 ? "\(n)" : nil,
+                             color: theme.dataStrain) {
             showWorkouts = true
         }
         if n > 0 { col } else { col.accessibilityLabel(Text("no workouts yet")) }
@@ -1294,19 +1294,13 @@ private struct CuerpoLanding: View {
         appleMetricDays = (await amRows).sorted { $0.day < $1.day }
         let workouts = await wkRows
         workoutCount = workouts.count
-        // Sessions in the trailing 14 calendar days for the «Entrenamientos» row (FER-259) — start-of-day
-        // 13 days ago through now, matching the app's standard trailing-14 window.
+        // Sessions in the trailing 7 calendar days for the «Entrenamientos» row — start-of-day 6 days ago
+        // through now. SAME window + anchor as `WorkoutsView.cutoff(for: .week)`, so the tile and the
+        // screen it opens never disagree (they used to: 14d tile vs 7d screen). (FER — unify to 7d trailing)
         let recentCutoff = Calendar.current.startOfDay(
-            for: Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
+            for: Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date())
         let recentCutoffTs = Int(recentCutoff.timeIntervalSince1970)
         recentWorkoutCount = workouts.filter { $0.startTs >= recentCutoffTs }.count
-        // Calendar-week count for the Workouts column legend (same `workouts` array, no second fetch).
-        if let weekStart = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start {
-            let weekStartTs = Int(weekStart.timeIntervalSince1970)
-            weekWorkoutCount = workouts.filter { $0.startTs >= weekStartTs }.count
-        } else {
-            weekWorkoutCount = 0
-        }
         activityCosts = repo.activityCosts(from: workouts)   // reuses the rows above — no second query
         hrPoints = await hrRows.map {
             TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm)

@@ -61077,6 +61077,23 @@
         }
       }
     },
+    "Workouts · 7d" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workouts · 7d"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrenamientos · 7 d"
+          }
+        }
+      }
+    },
     "Wrist delivery isn't live yet — it needs a small on-device watcher (coming in an update) to read macOS notifications. Everything stays on this Mac. Your choices are saved now and will apply automatically once delivery ships." : {
       "extractionState" : "stale",
       "localizations" : {

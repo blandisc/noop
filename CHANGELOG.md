@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El conteo de entrenamientos ya cuadra entre la tarjeta y la pantalla / The workout count now matches between the tile and the screen.**
+  **ES** — La tarjeta de Actividad contaba 14 días («10») y la pantalla que abría arrancaba en 7 días («9»), midiendo además desde tu último entrenamiento en vez de desde hoy: tocabas «10» y aterrizabas en «9». Ahora todo usa la misma ventana —últimos 7 días desde hoy— con el mismo anclaje, así que el número que tocas es el que ves. La leyenda «esta semana» (una tercera ventana distinta) se retiró.
+  **EN** — The Activity tile counted 14 days ("10") while the screen it opened started at 7 days ("9"), and measured back from your last workout instead of from today: you tapped "10" and landed on "9". Everything now uses one window — last 7 days from today — with the same anchor, so the number you tap is the number you see. The "this week" legend (a third, different window) was removed.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift), [WorkoutsView.swift](Cenit/Screens/WorkoutsView.swift))
+
 - **El número grande también anima al abrir un detalle desde «Hoy» / The big number animates when a detail opens from Today too.**
   **ES** — Los detalles que abres desde Hoy (Recuperación, Sueño, Esfuerzo, Estrés, Temp. de piel, Carga y los vitales) suben como hoja del sistema; el número subía justo mientras la hoja entraba, así que en las de dato inmediato se veía aparecer de golpe. Ahora la entrada espera a que la hoja aterrice, igual que ya hacían esas pantallas abiertas desde Tendencias.
   **EN** — Details opened from Today (Recovery, Sleep, Strain, Stress, Skin temp, Load and the vitals) rise as a system sheet; the number rose while the sheet was still sliding in, so on the immediate-datum ones it looked like it just popped. The entrance now waits for the sheet to land, matching what those same screens already did when opened from Trends.
