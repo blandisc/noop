@@ -82,7 +82,9 @@ final class MediaDownloadCoordinator: ObservableObject {
                     if let missedId = await group.next() {
                         if let missedId { newMisses.insert(missedId) }
                         completed += 1
-                        downloadState = .downloading(completed: completed, total: toDownload.count)
+                        if completed % 10 == 0 || completed == toDownload.count {
+                            downloadState = .downloading(completed: completed, total: toDownload.count)
+                        }
                     }
                     inFlight -= 1
                 }
@@ -94,7 +96,9 @@ final class MediaDownloadCoordinator: ObservableObject {
             for await missedId in group {
                 if let missedId { newMisses.insert(missedId) }
                 completed += 1
-                downloadState = .downloading(completed: completed, total: toDownload.count)
+                if completed % 10 == 0 || completed == toDownload.count {
+                    downloadState = .downloading(completed: completed, total: toDownload.count)
+                }
             }
             return newMisses
         }
