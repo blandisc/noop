@@ -352,7 +352,7 @@ private struct AjustesLanding: View {
                 }
                 .toggleStyle(.instrumento)
                 .frame(minHeight: 44)
-                Text("Estima si tu cuerpo tiende a madrugar o a desvelarse, a partir de tu patrón de actividad. Es una función experimental y aproximada; necesita varios días de uso para leerse bien.")
+                Text("Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 if relojCorporalEnabled {
@@ -361,11 +361,11 @@ private struct AjustesLanding: View {
                 }
                 divider
                 Toggle(isOn: $whitespaceMetrics) {
-                    Text("Métricas experimentales").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text("Experimental metrics").font(StrandFont.body).foregroundStyle(theme.ink)
                 }
                 .toggleStyle(.instrumento)
                 .frame(minHeight: 44)
-                Text("Lecturas nuevas y aproximadas: reserva vagal nocturna, estabilidad térmica, respiración de la noche y recuperación post-sesión. Necesitan varios días de uso para leerse bien.")
+                Text("New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 divider
@@ -378,7 +378,7 @@ private struct AjustesLanding: View {
                     if enabled { Task { await mediaCoordinator.bulkDownloadThumbsIfNeeded() } }
                     else { mediaCoordinator.resetDownloadState() }
                 }
-                Text("Descarga la animación de cada ejercicio desde el CDN de imágenes de ExerciseDB, un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin señal después. Esta es la única excepción a la regla de NOOP de cero red: al bajar cada imagen tu IP es visible para ese servicio, como al cargar cualquier imagen en internet; ningún otro dato tuyo (ni el nombre del ejercicio) sale jamás. Apagar esto detiene descargas futuras, no borra lo ya guardado.")
+                Text("Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to Cénit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 mediaDownloadStatus
@@ -416,7 +416,7 @@ private struct AjustesLanding: View {
         if profile.canUndoRecalibration {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Recalibrar recuperación").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text("Recalibrate recovery").font(StrandFont.body).foregroundStyle(theme.ink)
                     Text("Recalibrada el \(recalibratedDateText)")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
@@ -430,8 +430,8 @@ private struct AjustesLanding: View {
             Button { confirmRecalibrate = true } label: {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Recalibrar recuperación").font(StrandFont.body).foregroundStyle(theme.ink)
-                        Text("Reinicia tu calibración desde hoy si tu base quedó mal (cambio de banda, periodo anómalo).")
+                        Text("Recalibrate recovery").font(StrandFont.body).foregroundStyle(theme.ink)
+                        Text("Restarts your calibration from today if your baseline went wrong (band change, an anomalous stretch).")
                             .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
