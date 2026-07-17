@@ -98,6 +98,10 @@ final class HealthKitBridge: ObservableObject {
     /// session (the launch full-refresh already surfaced it). Only full foreground syncs read/write it,
     /// so the window is always the same 30 days and the comparison is apples-to-apples.
     private static let lastFullSyncSigKey = "appleHealthLastFullSyncSig"
+    /// FER-970 (R-05): fingerprint of the last successfully mirrored write-back payload — when the
+    /// 14 d of «-noop» rows + sleep sessions are unchanged, the delete+rewrite into HealthKit is
+    /// skipped entirely (every foreground re-sync used to re-save identical samples).
+    private static let lastWriteBackSigKey = "appleHealthLastWriteBackSig"
 
     init(repo: Repository, appleDeviceId: String, noopDeviceId: String) {
         self.repo = repo
@@ -551,6 +555,16 @@ final class HealthKitBridge: ObservableObject {
         guard let fromDate = cal.date(byAdding: .day, value: -days, to: Date()) else { return }
         let from = HealthKitBridge.dayString(fromDate)
         guard let rows = try? await whoopStore.dailyMetrics(deviceId: noopDeviceId, from: from, to: to) else { return }
+        // FER-970 (R-05): fetch the sleep payload up front too, fingerprint the WHOLE mirror, and
+        // skip the delete+rewrite when it's identical to the last successful write-back (the same
+        // gate idea FER-872/881 applied to the dashboard rebuild). The signature is persisted only
+        // AFTER both writes succeed, so a failed save is retried on the next sync.
+        let sleepFromTs = Int(fromDate.timeIntervalSince1970)
+        let sleepSessions = (try? await whoopStore.sleepSessions(
+            deviceId: noopDeviceId, from: sleepFromTs, to: Int(Date().timeIntervalSince1970),
+            limit: 90)) ?? []
+        let signature = Self.stableWriteBackSignature(rows: rows, sessions: sleepSessions)
+        if signature == UserDefaults.standard.string(forKey: Self.lastWriteBackSigKey) { return }
 
         struct Candidate { let type: HKQuantityType; let key: String; let sample: HKQuantitySample }
         var candidates: [Candidate] = []
@@ -599,7 +613,25 @@ final class HealthKitBridge: ObservableObject {
 
         // Sleep stages: one HKCategorySample per WHOOP stage segment plus one .inBed per session.
         // Uses the same external-UUID dedup strategy as the quantity metrics above.
-        try await writeSleepBack(whoopStore: whoopStore, fromDate: fromDate)
+        try await writeSleepBack(sessions: sleepSessions)
+        UserDefaults.standard.set(signature, forKey: Self.lastWriteBackSigKey)
+    }
+
+    /// FER-970 (R-05): deterministic fingerprint of everything `writeBack` mirrors — the four
+    /// per-day quantities plus each sleep session's span and staged hypnogram. Same SHA-256
+    /// technique as `stableAppleSignature` (stable across launches).
+    private static func stableWriteBackSignature(rows: [DailyMetric],
+                                                 sessions: [CachedSleepSession]) -> String {
+        func f(_ d: Double?) -> String { d.map { String(format: "%.4f", $0) } ?? "-" }
+        var s = ""
+        for r in rows.sorted(by: { $0.day < $1.day }) {
+            s += "\(r.day):\(r.restingHr.map(String.init) ?? "-"),\(f(r.avgHrv)),\(f(r.spo2Pct)),\(f(r.respRateBpm));"
+        }
+        s += "|S:"
+        for sl in sessions.sorted(by: { ($0.startTs, $0.endTs) < ($1.startTs, $1.endTs) }) {
+            s += "\(sl.startTs)-\(sl.endTs)-\(sl.stagesJSON ?? "-");"
+        }
+        return SHA256.hash(data: Data(s.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
     /// Write WHOOP sleep sessions (staged hypnogram) into Apple Health.
@@ -608,15 +640,12 @@ final class HealthKitBridge: ObservableObject {
     /// `HKCategoryValueSleepAnalysis` value. A single `.inBed` sample covers the full session span.
     /// The dedup key `"noop:<deviceId>:sleep:<sessionStart>:<segStart>"` prevents duplicates on
     /// repeated calls — we delete our own prior samples before saving the fresh batch.
-    private func writeSleepBack(whoopStore: WhoopStore, fromDate: Date) async throws {
+    private func writeSleepBack(sessions: [CachedSleepSession]) async throws {
         guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis),
               store.authorizationStatus(for: sleepType) == .sharingAuthorized else { return }
 
-        let fromTs = Int(fromDate.timeIntervalSince1970)
-        let toTs   = Int(Date().timeIntervalSince1970)
-        guard let sessions = try? await whoopStore.sleepSessions(
-            deviceId: noopDeviceId, from: fromTs, to: toTs, limit: 90) else { return }
-
+        // FER-970 (R-05): the sessions arrive from `writeBack`, which already fetched them for the
+        // write-back fingerprint — one read serves both the gate and the payload.
         let encoded = SleepHKEncoder.samples(from: sessions, deviceId: noopDeviceId)
         guard !encoded.isEmpty else { return }
 
