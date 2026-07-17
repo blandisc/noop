@@ -542,7 +542,7 @@ struct StressDetailScreen: View {
         if let d = selectedStressDay {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.chipDateFormatter.string(from: d.date))
-                    .instrumentoOverline()
+                    .groteskOverline()
                     .foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 if let v = d.score {

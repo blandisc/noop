@@ -423,7 +423,7 @@ struct WorkoutsView: View {
         VStack(spacing: 14) {
             Image(systemName: "figure.run").font(.system(size: 38, weight: .regular))  // token-exempt: glifo 38pt fuera de banda empty
                 .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
-            Text("No workouts yet").font(StrandFont.title2).foregroundStyle(theme.ink)
+            Text("No workouts yet").font(InstrumentoType.groteskHeadline(22)).foregroundStyle(theme.ink)
                 .multilineTextAlignment(.center)
             Text("They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

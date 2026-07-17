@@ -397,6 +397,11 @@ no migradas conservan la voz de §8.3 hasta que les toque.
   56/700/ls −2 · `groteskVerdict` 20/700 · `groteskSheetTitle` 12/700/ls 2.4 MAYÚS ·
   `groteskOverline` 9–10/600/ls 2 MAYÚS · `groteskTileValue` 21/700 · `groteskTab` 11/700/ls 2
   · `groteskLane` 12/700/ls 1.8).
+- **Overlines de pantalla evolucionada, en exclusiva Grotesk:** toda pantalla ya migrada a esta voz usa
+  `Text(...).groteskOverline()` (10/600, tracking 2, ALL-CAPS) para sus overlines. `InstrumentoType.overline` /
+  `.instrumentoOverline()` (§8.3) queda reservado a pantallas del sistema base «Instrumento diurno» aún sin
+  migrar a esta voz evolucionada. `StrandFont.overline` / `.strandOverline()` es legacy §9.2: ninguna pantalla
+  nueva lo usa.
 - **La serif se retira** (supersede FER-564): `StrandFont.serifVerdict` queda deprecada; los
   veredictos migran a `groteskVerdict`. La fuente Instrument Serif sale del bundle al cerrar
   FER-710.
