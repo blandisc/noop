@@ -1046,7 +1046,11 @@ struct MetricDetailScreen: View {
     /// The full display series folded to a single source (for cross-source vitals) — what every statistic
     /// (baseline ±σ, consistency CV, moving average) and the trend line read, so none of them crosses band
     /// and Apple. `series` itself stays full for TODAY's datum + the hero (today may be an Apple night). (FER-635)
-    private var statSeries: [(day: String, value: Double)] { series.filter { keepsForStats($0.day) } }
+    private var statSeries: [(day: String, value: Double)] {
+        guard isCrossSource, !appleDays.isEmpty else { return series }   // identity (same as keepsForStats)
+        let keepApple = statKeepsApple                                    // O(n) once
+        return series.filter { appleDays.contains($0.day) == keepApple }  // O(n)
+    }
 
     private var allValues: [Double] { statSeries.map(\.value) }
 
