@@ -189,30 +189,4 @@ extension MetricDetailScreen {
     static let dayParser = DayKey.utcFormatter
 }
 
-// MARK: - Mini sparkline (steady vs variable visual for the consistency disclosure)
-
-/// A tiny line that draws a polyline of `values` across its frame — two of these (a flat one in the
-/// verdict hue, a jagged one in the strain hue) illustrate «steady vs variable» in the consistency
-/// disclosure (Detalle de Vital). Pure `Path`, no axes, no data binding. (handoff: «dibujar con Path»)
-struct MiniSpark: View {
-    let values: [Double]
-    let color: Color
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width, h = geo.size.height
-            let lo = values.min() ?? 0, hi = values.max() ?? 1
-            let span = max(hi - lo, 0.0001)
-            Path { p in
-                for (i, v) in values.enumerated() {
-                    let x = w * CGFloat(i) / CGFloat(max(values.count - 1, 1))
-                    let y = h * (1 - CGFloat((v - lo) / span))
-                    if i == 0 { p.move(to: CGPoint(x: x, y: y)) } else { p.addLine(to: CGPoint(x: x, y: y)) }
-                }
-            }
-            .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-        }
-        .frame(height: 22)
-        .padding(.vertical, 3)
-    }
-}
 #endif

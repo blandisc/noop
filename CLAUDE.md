@@ -15,6 +15,7 @@ Cross-platform **Swift packages do the real work**; thin platform apps wrap them
 - `Packages/WhoopProtocol` — BLE frame parsing, CRC, packet/event decode. **Pure, no CoreBluetooth** (runs in tests / CLI / Linux).
 - `Packages/WhoopStore` — GRDB/SQLite persistence (versioned migrations).
 - `Packages/StrandAnalytics` — recovery / strain / HRV / sleep math. **Pure, database-free.**
+- `Packages/StrandTraining` — strength domain: exercise catalog, types/rules (sets/reps, progression, routines). **Pure, Foundation-only** (no GRDB/UI).
 - `Packages/StrandImport` — WHOOP CSV + Apple Health importers.
 - `Packages/StrandDesign` — the SwiftUI design system (single source of visual truth).
 - `Cenit/` — the **SwiftUI app layer** (BLE / Collect / Data / Screens / System); CoreBluetooth lives only here (`Cenit/BLE`, `Cenit/Collect`).
@@ -51,7 +52,7 @@ CI runs `swift build`/`swift test` only on `Packages/**` changes. (If `swift`/`x
 
 ## Rules that will get a change rejected
 
-- **Offline only.** No server, telemetry, account, or network call — ever.
+- **Offline only.** No server, telemetry, account, or network call — ever. (Two opt-in exceptions already exist and stay **off by default** behind an explicit toggle: the BYO-key coach in `Cenit/AI/AICoach.swift`, and exercise-media download in `Cenit/Media/`. The app default is zero network. Do **not** weaken this rule for new code.)
 - **No destructive BLE commands.** The `WhoopCommand` set in `Cenit/BLE/Commands.swift` is a curated, reversible subset. Never add reboot / firmware-DFU / ship-mode / wipe / fuel-gauge-reset. CRC-gate every frame and reject `crcOK == false`. Anything that changes outbound bytes must be **verified on real hardware** and noted in the PR.
 - **The design system is law.** Screens use only `StrandDesign` tokens (`StrandPalette`, `StrandFont`, `CenitMetrics`) and components (`NoopCard`, `StatTile`, …). No raw hex, font sizes, spacing, or one-off cards. If a token is missing, add it to `StrandDesign` (with a `#Preview`) — don't inline it. The **DNA** that gives those tokens a point of view lives in [docs/design-system/DESIGN.md](docs/design-system/DESIGN.md): «Instrumento diurno» (warm paper, one dominant number, **color only in the datum**, hierarchy by space) is **canonical** for new/redesigned screens; the dark system is **legacy** (maintain, don't extend). For iOS-native decisions (HIG, SF Symbols, motion) cite Apple via the **Cupertino** MCP, not guesswork.
 - **Transparent math.** Analytics are documented approximations — add a test and cite the method (Task Force 1996, Karvonen, Edwards/Banister, Tanaka). No black boxes, no clinical claims.
