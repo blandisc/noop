@@ -841,6 +841,9 @@ private struct OverlayChart: View {
     /// new `series`, never when the internal `hoverX` @State changes (FER-319).
     private let plots: [Plot]
     private let allDays: [String]
+    /// Day strings paired with their already-parsed dates — built once in init so
+    /// hover/scrub nearest-day lookup never re-parses strings per frame.
+    private let allDates: [(day: String, date: Date)]
 
     init(series: [CompareSeries], theme: InstrumentoTheme, height: CGFloat = 260) {
         self.series = series
@@ -855,6 +858,10 @@ private struct OverlayChart: View {
         var set = Set<String>()
         for s in series { for r in s.rows { set.insert(r.day) } }
         self.allDays = set.sorted()
+        self.allDates = set.compactMap { day -> (day: String, date: Date)? in
+            guard let date = parseCompareDay(day) else { return nil }
+            return (day: day, date: date)
+        }.sorted { $0.date < $1.date }
     }
 
     private static let a11yDateFmt: DateFormatter = {
@@ -980,14 +987,12 @@ private struct OverlayChart: View {
 
     /// Map a cursor x back to the nearest day-string present in the data.
     private func nearestDay(toX x: CGFloat, proxy: ChartProxy, plot: CGRect) -> String? {
-        guard !allDays.isEmpty else { return nil }
+        guard !allDates.isEmpty else { return nil }
         let relX = x - plot.minX
-        guard let date: Date = proxy.value(atX: relX) else { return nil }
-        return allDays.min(by: { a, b in
-            let da = parseCompareDay(a) ?? .distantPast
-            let db = parseCompareDay(b) ?? .distantPast
-            return abs(da.timeIntervalSince(date)) < abs(db.timeIntervalSince(date))
-        })
+        guard let target: Date = proxy.value(atX: relX) else { return nil }
+        return allDates.min(by: { a, b in
+            abs(a.date.timeIntervalSince(target)) < abs(b.date.timeIntervalSince(target))
+        })?.day
     }
 }
 

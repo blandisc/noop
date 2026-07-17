@@ -38,6 +38,11 @@ struct CenitApp: App {
         // silent no-op (e.g. Shortcuts' PendingIntents) can mask it. No-op in Release.
         AppGroup.assertGroupProvisioned()
         configureInstrumentoControlAppearance()   // FER-408: warm the native segmented control once at launch
+        // Warm the bundled Space Grotesk registration OFF the main thread (perf): otherwise the first
+        // Grotesk token during TodayView's first render pays the one-time CoreText registration on the
+        // launch path. `ensureFontsRegistered()` is idempotent + thread-safe (a `static let`), so this
+        // detached warm just moves the cost off the critical first-frame path.
+        Task.detached { StrandFont.ensureFontsRegistered() }
         let model = AppModel()
         _model = StateObject(wrappedValue: model)
         let healthBridge = HealthKitBridge(

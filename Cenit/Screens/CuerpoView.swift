@@ -563,8 +563,11 @@ private struct CuerpoLanding: View {
         guard !trend.isEmpty else { return stressSeries.map(\.value) }
         guard let n = selectedPeriod.days else { return trend.map(\.value) }
         let cutoff = Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date()
-        let cutoffKey = Repository.localDayKey(cutoff)
-        return trend.filter { Repository.localDayKey($0.date) >= cutoffKey }.map(\.value)
+        // Compare `Date` against the start of the cutoff day — the SAME day-granularity window as the old
+        // `localDayKey` string compare, but without a `DateFormatter` round-trip per trend point (this runs
+        // over the full ~300-400pt trend on every render of the body).
+        let cutoffDay = Calendar.current.startOfDay(for: cutoff)
+        return trend.filter { $0.date >= cutoffDay }.map(\.value)
     }
 
     // MARK: - Domain card scaffolding (Instrumento rule 3: one surface, no card-in-card)
