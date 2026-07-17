@@ -726,7 +726,7 @@ private struct CuerpoLanding: View {
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                 }
                 Text("What to train today")
-                    .font(StrandFont.headline).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.ink)
                 Text("Per-muscle load crossed with your recovery.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)

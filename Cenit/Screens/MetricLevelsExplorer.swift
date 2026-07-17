@@ -112,13 +112,13 @@ struct MetricLevelsExplorer: View {
     @ViewBuilder private func phrase(_ d: LevelData) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             if let i = displayLevelIndex(d) {
-                Text(label(d.levels[i].key)).font(StrandFont.title1).foregroundStyle(hue)
+                Text(label(d.levels[i].key)).font(InstrumentoType.groteskHeadline(28)).foregroundStyle(hue)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(nightly ? "\(d.counts[i]) of your last \(d.total) nights"
                              : "\(d.counts[i]) of your last \(d.total) days")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             } else {
-                Text("No reading today").font(StrandFont.title1).foregroundStyle(theme.inkTertiary)
+                Text("No reading today").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.inkTertiary)
                 Text(nightly ? "\(d.total) nights with data in this range"
                              : "\(d.total) days with data in this range")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

@@ -74,6 +74,7 @@ struct RoutineEditorScreen: View {
     /// never per render (the ring in every set row reads the tint; see `dominantGroup`).
     @State private var routineTint: Color = .clear
     @State private var groupTitle: String = ""
+    @State private var saveError = false
     @FocusState private var focusedCell: String?
 
     /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
@@ -98,6 +99,23 @@ struct RoutineEditorScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .onDisappear { if dirty, !isOrphan { persist() } }
+        // FER-969: save failure is an inline banner (same pattern as WorkoutEditSheet), not silent success.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
         .toolbar(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -1061,9 +1079,16 @@ struct RoutineEditorScreen: View {
     private func markRest() {
         guard let wd = planWeekday else { return }
         Task {
-            if dirty { await persistNow() }   // C2: salir por «descanso» también autosalva (contrato Notas)
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.clearRoutineSchedule(weekday: wd)
+            // C2: salir por «descanso» también autosalva (contrato Notas). FER-969: stay on failure.
+            if dirty, !(await persistNow()) { return }
+            guard let store = await repo.storeHandle() else { saveError = true; return }
+            do {
+                try await store.clearRoutineSchedule(weekday: wd)
+            } catch {
+                // QA D1: a failed clear must not dismiss as if the day were marked rest.
+                saveError = true
+                return
+            }
             dismiss()
         }
     }
@@ -1078,9 +1103,9 @@ struct RoutineEditorScreen: View {
         guard dirty else { dismiss(); return }
         // Guardar ANTES de salir: el hub recarga en el onAppear del pop y leería el plan viejo si el
         // save siguiera en vuelo (bug «agregué ejercicios y no se ven», canvas 2026-07-16).
+        // FER-969: on failure stay put, keep dirty, surface the banner — never pretend success.
         Task {
-            await persistNow()
-            dismiss()
+            if await persistNow() { dismiss() }
         }
     }
 
@@ -1177,15 +1202,23 @@ struct RoutineEditorScreen: View {
         Task { await persistNow() }
     }
 
-    private func persistNow() async {
-        guard let r = routine else { return }
+    /// Returns `true` when the routine was written. On failure keeps `dirty` and shows the banner.
+    @discardableResult
+    private func persistNow() async -> Bool {
+        guard let r = routine else { return true }
         let now = Int(Date().timeIntervalSince1970)
         let updated = Routine(id: r.id, name: r.name, tag: r.tag, folderId: r.folderId,
                               createdTs: r.createdTs, updatedTs: now, sortOrder: r.sortOrder)
         let exercises = items.enumerated().map { idx, item -> RoutineExercise in
             var re = item.re; re.position = idx; re.routineId = r.id; return re
         }
-        try? await repo.saveRoutine(updated, exercises: exercises)
+        do {
+            try await repo.saveRoutine(updated, exercises: exercises)
+            return true
+        } catch {
+            saveError = true
+            return false
+        }
     }
 }
 
