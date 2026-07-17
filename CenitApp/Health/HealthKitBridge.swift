@@ -563,7 +563,13 @@ final class HealthKitBridge: ObservableObject {
         let sleepSessions = (try? await whoopStore.sleepSessions(
             deviceId: noopDeviceId, from: sleepFromTs, to: Int(Date().timeIntervalSince1970),
             limit: 90)) ?? []
+        // QA D2: the per-type sharing state rides IN the signature — granting sleep sharing later
+        // (with an otherwise unchanged 14-day payload) must reopen the gate, or the sleep mirror
+        // would be skipped forever behind a stale fingerprint.
+        let sleepSharing = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)
+            .map { store.authorizationStatus(for: $0) == .sharingAuthorized } ?? false
         let signature = Self.stableWriteBackSignature(rows: rows, sessions: sleepSessions)
+            + "|sleepAuth:\(sleepSharing)"
         if signature == UserDefaults.standard.string(forKey: Self.lastWriteBackSigKey) { return }
 
         struct Candidate { let type: HKQuantityType; let key: String; let sample: HKQuantitySample }

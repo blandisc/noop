@@ -306,11 +306,13 @@ final class Repository: ObservableObject {
         // one dashboard). `dashboardSnapshot` runs the SAME queries — shared row fetchers, identical
         // SQL — inside ONE transaction: one hop, one snapshot, cross-table consistent. The source-mode
         // query gating (FER-484/486) rides in the request; the in-memory gating below is unchanged.
-        let snap = (try? await store.dashboardSnapshot(WhoopStore.DashboardReadRequest(
+        // (Unqualified type names: the ACTOR `WhoopStore` shadows the module of the same name in
+        // qualified lookup from the app layer — `WhoopStore.DashboardReadRequest` doesn't resolve.)
+        let snap = (try? await store.dashboardSnapshot(DashboardReadRequest(
             strapDeviceId: deviceId, computedDeviceId: computedDeviceId, appleDeviceId: "apple-health",
             fromDay: fromDay, toDay: toDay, fromTs: lo, toTs: hi, sleepLimit: 4000,
             includeApple: dataSourceMode.usesAppleHealth,
-            includeWhoopSeries: dataSourceMode.usesWhoop))) ?? WhoopStore.DashboardSnapshot()
+            includeWhoopSeries: dataSourceMode.usesWhoop))) ?? DashboardSnapshot()
         let importedRaw = snap.importedDays
         let computedRaw = snap.computedDays
         // FER-62: Apple Health daily rows — the lowest-precedence fallback layer for the dashboard,
