@@ -680,38 +680,40 @@ final class Repository: ObservableObject {
         return (try? await store.skinTempSamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
     }
 
+    /// FER-972 (P-05): day-keys (per scalar key) already attempted this app session whose night read
+    /// unreadable/too-thin — don't re-read their raw samples on every sheet open. In-memory only:
+    /// a relaunch (or the nightly pass re-scoring the night) retries naturally.
+    private var nocturnalScalarAttempted: Set<String> = []
+
     /// Per-night distal warming magnitudes (°C, sleep-onset → nocturnal plateau) over the last `nights`
     /// strap nights, oldest → newest, for the thermal-stability read (FER-850). `nil` for a night with too
-    /// little temp. A magnitude is a difference, so the raw→°C offset cancels: (plateauRaw − onsetRaw)/128.
-    /// Heavy (one skin-temp read per night) → the caller runs it off the hot path.
+    /// little temp. FER-972 (P-05): reads the `night_warming_c` scalar the nightly pass persists next to
+    /// `hrv_lf`; only nights the engine window didn't cover are computed here once (write-through), so a
+    /// sheet open stops re-reading ~28 nights × raw samples. The math lives in
+    /// `ThermalStabilityEngine.warmingMagnitudeC` (same body, moved to the package with its test).
     func nocturnalWarmingMagnitudes(nights: Int = 28) async -> [Double?] {
         guard dataSourceMode.usesWhoop else { return [] }
         let now = Int(Date().timeIntervalSince1970)
         let from = now - (nights + 2) * 86_400
         let sessions = (await sleepSessions(from: from, to: now)).suffix(nights)
+        let stored = Dictionary((await computedSeries(key: "night_warming_c", days: nights + 3))
+                                    .map { ($0.day, $0.value) }, uniquingKeysWith: { _, b in b })
         var out: [Double?] = []
         for s in sessions where s.startTs < s.endTs {
+            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.endTs)))
+            if let v = stored[day] { out.append(v); continue }
+            let memo = "w|\(day)"
+            if nocturnalScalarAttempted.contains(memo) { out.append(nil); continue }
+            nocturnalScalarAttempted.insert(memo)
             let samples = (await skinTempSamples(from: s.startTs, to: s.endTs)).sorted { $0.ts < $1.ts }
-            out.append(Self.warmingMagnitudeC(samples))
+            let v = ThermalStabilityEngine.warmingMagnitudeC(inBedRaw: samples)
+            if let v, let store = await ensureStore() {
+                _ = try? await store.upsertMetricSeries(
+                    [MetricPoint(day: day, key: "night_warming_c", value: v)], deviceId: computedDeviceId)
+            }
+            out.append(v)
         }
         return out
-    }
-
-    /// Onset → plateau warming (°C) for one night's in-bed skin-temp samples, or nil if too few. Onset =
-    /// mean of the first ~15% of the window (falling asleep), plateau = mean of the 40–90% window (the
-    /// settled night). Difference cancels the raw→°C offset (/128 only).
-    private static func warmingMagnitudeC(_ samples: [SkinTempSample]) -> Double? {
-        let n = samples.count
-        guard n >= 60 else { return nil }
-        let onsetHi = max(1, n * 15 / 100)
-        let plateauLo = n * 40 / 100
-        let plateauHi = max(plateauLo + 1, n * 90 / 100)
-        func meanRaw(_ r: ArraySlice<SkinTempSample>) -> Double {
-            Double(r.reduce(0) { $0 + $1.raw }) / Double(r.count)
-        }
-        let onset = meanRaw(samples[0..<onsetHi])
-        let plateau = meanRaw(samples[plateauLo..<plateauHi])
-        return (plateau - onset) / 128.0
     }
 
     /// Gravity (accelerometer) samples for the strap in `[from, to]`. Feeds the night-rhythm
@@ -817,11 +819,26 @@ final class Repository: ObservableObject {
         let now = Int(Date().timeIntervalSince1970)
         let from = now - (nights + 2) * 86_400
         let sessions = await sleepSessions(from: from, to: now)
+        // FER-972 (P-05): the nightly pass persists `night_dc_ms` per night (next to `hrv_lf`);
+        // only nights it didn't cover are computed here once (write-through) — a sheet open stops
+        // re-reading ~14 nights × R-R. Fallback math identical to before (NocturnalDC over the span).
+        let stored = Dictionary((await computedSeries(key: "night_dc_ms", days: nights + 3))
+                                    .map { ($0.day, $0.value) }, uniquingKeysWith: { _, b in b })
         var dcs: [Double] = []
         for s in sessions.suffix(nights) where s.startTs < s.endTs {
+            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.endTs)))
+            if let v = stored[day] { dcs.append(v); continue }
+            let memo = "dc|\(day)"
+            if nocturnalScalarAttempted.contains(memo) { continue }
+            nocturnalScalarAttempted.insert(memo)
             let rr = (await rrIntervals(from: s.startTs, to: s.endTs)).map { Double($0.rrMs) }
             let r = NocturnalDC.compute(rawRR: rr)
-            if r.confidence != .unreadable { dcs.append(r.dcMs) }
+            guard r.confidence != .unreadable else { continue }
+            if let store = await ensureStore() {
+                _ = try? await store.upsertMetricSeries(
+                    [MetricPoint(day: day, key: "night_dc_ms", value: r.dcMs)], deviceId: computedDeviceId)
+            }
+            dcs.append(r.dcMs)
         }
         guard dcs.count >= 3 else { return nil }
         let sorted = dcs.sorted()

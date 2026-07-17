@@ -90,6 +90,10 @@ final class IntelligenceEngine: ObservableObject {
         /// for the in-progress day (offset 0). A past day must use the full ~42h window, so a night
         /// cached as in-progress can't be replayed once it becomes yesterday (FER-868 D1).
         let strainCivilDayOnly: Bool
+        /// FER-972 (P-05): per-night display scalars (nocturnal DC ms · distal warming °C) harvested
+        /// from the pass and persisted next to `hrv_lf` — nil when unreadable / no session.
+        var dcMs: Double? = nil
+        var warmingC: Double? = nil
     }
 
     /// The engine's per-session memory between passes. Value type: `analyzeRecent` hands a copy into
@@ -417,7 +421,8 @@ final class IntelligenceEngine: ObservableObject {
             analyzedDays += 1
             let night = NightResult(daily: res.daily, strain: res.strain, cachedSleep: res.cachedSleep,
                                     workouts: res.workouts, nightlySkin: res.nightlySkinTempC,
-                                    spectral: res.spectralBands, strainCivilDayOnly: offset == 0)
+                                    spectral: res.spectralBands, strainCivilDayOnly: offset == 0,
+                                    dcMs: res.nocturnalDCms, warmingC: res.warmingMagnitudeC)
             scoredNights.append(night)
             cache.nights[day] = night
             cache.skippedDays.remove(day)
@@ -607,10 +612,15 @@ final class IntelligenceEngine: ObservableObject {
         // short for the LF band (nil); the three are omitted entirely on a night with no spectrum.
         var spectralPts: [MetricPoint] = []
         for night in scoredNights {
-            guard let b = night.spectral else { continue }
-            if let lf = b.lf { spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_lf", value: lf)) }
-            spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_hf", value: b.hf))
-            spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_totalpower", value: b.totalPower))
+            if let b = night.spectral {
+                if let lf = b.lf { spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_lf", value: lf)) }
+                spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_hf", value: b.hf))
+                spectralPts.append(MetricPoint(day: night.daily.day, key: "hrv_totalpower", value: b.totalPower))
+            }
+            // FER-972 (P-05): per-night display scalars ride the same upsert — the Sleep / Skin-temp
+            // sheets read these ~28 scalars instead of re-reading ~0.5–1M raw rows per open.
+            if let dc = night.dcMs { spectralPts.append(MetricPoint(day: night.daily.day, key: "night_dc_ms", value: dc)) }
+            if let w = night.warmingC { spectralPts.append(MetricPoint(day: night.daily.day, key: "night_warming_c", value: w)) }
         }
         if !spectralPts.isEmpty { _ = try? await store.upsertMetricSeries(spectralPts, deviceId: computedId) }
 
