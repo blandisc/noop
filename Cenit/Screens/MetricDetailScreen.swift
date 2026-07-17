@@ -943,10 +943,9 @@ struct MetricDetailScreen: View {
                     referenceLine: restingHR,
                     referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
                     markedPoint: peakPoint,
-                    tightTrailing: true
+                    tightTrailing: true,
+                    accessibilityLabel: "Today's heart rate, 5-minute averages"
                 )
-                .accessibilityElement()
-                .accessibilityLabel(Text("Today's heart rate, 5-minute averages"))
                 peakRestingCaption
                 HStack(spacing: 9) {
                     hrStatCell("Min", "\(Int((v.min() ?? 0).rounded()))")

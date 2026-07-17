@@ -121,12 +121,26 @@ public struct GraficaRangos: View {
         self.theme = theme
     }
 
+    /// VoiceOver value: scrubbed point if active, else the last point. (FER-977)
+    private var accessibilityValueText: String {
+        if let i = scrubIndex, points.indices.contains(i) {
+            let v = fmt(points[i])
+            if labels.indices.contains(i) { return "\(v), \(labels[i])" }
+            return v
+        }
+        guard let last = points.last else { return "No data" }
+        let v = fmt(last)
+        if let label = labels.last { return "\(v), \(label)" }
+        return v
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             header
             chart
                 .frame(height: 178)
                 .accessibilityLabel(Text(verbatim: "\(mediaValue) \(mediaNote)"))
+                .accessibilityValue(Text(accessibilityValueText))
             if mode == .media, let anchorMedia {
                 BarraAncla(anchorMedia, color: hue, theme: theme)
             }

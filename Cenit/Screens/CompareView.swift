@@ -819,6 +819,8 @@ private struct OverlayChart: View {
     var height: CGFloat = 260
 
     @State private var hoverX: CGFloat? = nil
+    /// Day currently under the finger (nil when not scrubbing) — drives VoiceOver value. (FER-977)
+    @State private var a11yDay: String? = nil
 
     // A flat, plottable point: the series title (drives the categorical color
     // scale), the date, and the min–max normalized y.
@@ -855,6 +857,33 @@ private struct OverlayChart: View {
         self.allDays = set.sorted()
     }
 
+    private static let a11yDateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "EEE d MMM"
+        return f
+    }()
+
+    /// VoiceOver value: scrub day if active, else the last day present across series. (FER-977)
+    private var accessibilityValueText: String {
+        let day = a11yDay ?? allDays.last
+        guard let day else { return "No data" }
+        let dateStr: String = {
+            if let d = parseCompareDay(day) { return Self.a11yDateFmt.string(from: d) }
+            return day
+        }()
+        let values = series.map { s -> String in
+            let formatted = s.value(on: day).map { s.metric.format($0) } ?? "—"
+            return "\(s.metric.title) \(formatted)"
+        }
+        return values.joined(separator: ", ") + ", on \(dateStr)"
+    }
+
+    private var accessibilityLabelText: String {
+        let names = series.map(\.metric.title).joined(separator: ", ")
+        return "Comparing \(names)"
+    }
+
     var body: some View {
         Chart(plots) { p in
             LineMark(
@@ -872,6 +901,9 @@ private struct OverlayChart: View {
             .symbolSize(10)
             .foregroundStyle(by: .value("Metric", p.title))
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(accessibilityLabelText))
+        .accessibilityValue(Text(accessibilityValueText))
         .chartForegroundStyleScale(range: series.map(\.color))
         .chartYScale(domain: 0...1)
         .chartYAxis {
@@ -898,9 +930,15 @@ private struct OverlayChart: View {
         .chartOverlay { proxy in
             GeometryReader { geo in
                 let plot = geo[proxy.plotFrame!]
+                // Day under the finger — drives crosshair/tooltip and VoiceOver value. (FER-977)
+                let selectedDay: String? = hoverX.flatMap { nearestDay(toX: $0, proxy: proxy, plot: plot) }
                 ZStack(alignment: .topLeading) {
-                    if let hx = hoverX,
-                       let day = nearestDay(toX: hx, proxy: proxy, plot: plot),
+                    // Full-bleed hit target so scrub works before any crosshair exists (same pattern as
+                    // TrendChart — without it the ZStack is 0×0 until the first touch lands). (FER-977)
+                    Color.clear
+                        .onChange(of: selectedDay) { _, day in a11yDay = day }
+
+                    if let day = selectedDay,
                        let d = parseCompareDay(day),
                        let px = proxy.position(forX: d) {
                         let cx = px + plot.minX
@@ -933,12 +971,8 @@ private struct OverlayChart: View {
                 }
                 .animation(StrandMotion.fade, value: hoverX)
                 .contentShape(Rectangle())
-                .onContinuousHover(coordinateSpace: .local) { phase in
-                    switch phase {
-                    case .active(let location): hoverX = location.x
-                    case .ended: hoverX = nil
-                    }
-                }
+                // Shared toolkit: finger drag on iOS + pointer hover on macOS → same `hoverX`. (FER-977)
+                .scrubGesture(enabled: true, hoverX: $hoverX)
             }
         }
         .frame(height: height)

@@ -216,6 +216,7 @@ struct MetricLevelsExplorer: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 11)
             .frame(maxWidth: .infinity)
+            .frame(minHeight: 44)
             .background(isHighlight ? hue.opacity(StrandOpacity.tintFill) : Color.clear,
                         in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             .contentShape(Rectangle())

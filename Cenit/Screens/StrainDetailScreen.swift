@@ -229,10 +229,9 @@ struct StrainDetailScreen: View {
                         dateFormat: { Self.hourString($0) },
                         axisLabelColor: theme.inkTertiary,
                         gridLineColor: theme.hairline,
-                        yAxisValues: [10, 21]
+                        yAxisValues: [10, 21],
+                        accessibilityLabel: "Accumulated day strain, rising through the day."
                     )
-                    .accessibilityElement()
-                    .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
                     BarraAncla(
                         String(localized: "Ends on your score today: it's the same number as the hero."),
                         color: theme.dataStrain, theme: theme)

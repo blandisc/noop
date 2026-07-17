@@ -16,6 +16,8 @@ struct StrainIntradayCurve: View {
 
     /// The x of the scrubbing finger (nil when not scrubbing) — drives the crosshair + tooltip. (FER-748)
     @State private var hoverX: CGFloat? = nil
+    /// Index under the finger while scrubbing (nil when not scrubbing) — drives VoiceOver value. (FER-977)
+    @State private var scrubbedIndex: Int? = nil
 
     /// Locale-aware hour:minute for the scrub tooltip (12/24h per region).
     private static let hourFmt: DateFormatter = {
@@ -23,6 +25,14 @@ struct StrainIntradayCurve: View {
         f.setLocalizedDateFormatFromTemplate("j:mm")
         return f
     }()
+
+    /// VoiceOver value: scrubbed point if active, else the last accumulated point. (FER-977)
+    private var accessibilityValueText: String {
+        let idx = scrubbedIndex ?? (points.isEmpty ? nil : points.count - 1)
+        guard let idx, points.indices.contains(idx) else { return "No data" }
+        let value = String(format: "%.1f", points[idx].value)
+        return "\(value), \(Self.hourFmt.string(from: points[idx].date))"
+    }
 
     var body: some View {
         VStack(spacing: 4) {
@@ -95,7 +105,10 @@ struct StrainIntradayCurve: View {
                     Color.clear
                         .contentShape(Rectangle())
                         .scrubGesture(enabled: pts.count > 1, hoverX: $hoverX)
-                        .onChange(of: snapped) { _, now in if now != nil { ChartHaptics.datumChanged() } }
+                        .onChange(of: snapped) { _, now in
+                            scrubbedIndex = now
+                            if now != nil { ChartHaptics.datumChanged() }
+                        }
                     if let i = snapped, pts.indices.contains(i) {
                         CrosshairRule(x: pts[i].x, height: h)
                         HighlightDot(color: hue).position(x: pts[i].x, y: pts[i].y)
@@ -114,6 +127,9 @@ struct StrainIntradayCurve: View {
                 .environment(\.instrumentoFlat, true)
                 .animation(StrandMotion.fade, value: hoverX)
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
+            .accessibilityValue(Text(accessibilityValueText))
             HStack(spacing: 0) {
                 ForEach(["00", "6", "12", "18", "24"], id: \.self) { label in
                     Text(verbatim: label).font(StrandFont.micro).foregroundStyle(theme.inkTertiary)
@@ -121,6 +137,7 @@ struct StrainIntradayCurve: View {
                 }
             }
             .frame(height: 12)
+            .accessibilityHidden(true)
         }
     }
 }
