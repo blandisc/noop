@@ -10,20 +10,32 @@ public enum WhoopStoreInfo {
 }
 
 /// WhoopStore is an `actor`: its public API is `async`, and all GRDB work runs on the
-/// actor's serial executor rather than the caller's (the main actor). DatabaseQueue calls
-/// are synchronous-blocking; the actor moves them off the main thread (it does not make them
-/// non-blocking). That is the intended off-main win — DatabaseQueue kept, not DatabasePool.
+/// actor's serial executor rather than the caller's (the main actor). GRDB calls are
+/// synchronous-blocking; the actor moves them off the main thread and keeps WRITES
+/// serialized (a single writer per handle) — that part of the old "DatabaseQueue kept, not
+/// DatabasePool" rationale still holds. What the single connection also did — and was never
+/// the goal — was queue READS behind long writes. FER-970 (R-04): the BLE handle stays a
+/// `DatabaseQueue` (default backend); the Repository handle opens a `DatabasePool`, so the
+/// nonisolated bulk read (`dashboardSnapshot`) runs on WAL reader connections and never
+/// waits behind a long engine/import write on the same handle.
 public actor WhoopStore {
-    let dbQueue: DatabaseQueue
+    /// Connection backend. `.queue` = the historical single-connection behavior, byte-identical
+    /// (BLE handle, in-memory tests). `.pool(maxReaders:)` = WAL reader pool (Repository handle).
+    public enum Backend: Sendable {
+        case queue
+        case pool(maxReaders: Int)
+    }
+
+    let dbWriter: any DatabaseWriter
 
     /// Cache of the source-partition `deviceId` (TEXT) → integer surrogate (`deviceIdMap`) translation
     /// (v21). Actor-isolated so it needs no lock; populated lazily by `resolvedDeviceId`. Tiny (one entry
     /// per source partition; today just "my-whoop").
     private var deviceIdCache: [String: Int64] = [:]
 
-    private init(dbQueue: DatabaseQueue) throws {
-        self.dbQueue = dbQueue
-        try WhoopStore.makeMigrator().migrate(dbQueue)
+    private init(dbWriter: any DatabaseWriter) throws {
+        self.dbWriter = dbWriter
+        try WhoopStore.makeMigrator().migrate(dbWriter)
     }
 
     /// Translate a source-partition `deviceId` String → its integer surrogate (`deviceIdMap`, v21), cached.
@@ -55,30 +67,42 @@ public actor WhoopStore {
     /// Open (creating if needed) a database at `path` and run migrations.
     /// Enables WAL journal mode and a 5-second busy timeout so two handles to the same
     /// file (BLEManager + MetricsRepository) don't deadlock on write contention.
-    public init(path: String) async throws {
+    public init(path: String, backend: Backend = .queue) async throws {
         var config = Configuration()
         config.prepareDatabase { db in
-            // INCREMENTAL auto-vacuum so freed pages can be reclaimed without a full file rewrite
-            // (FER-511 and the later size work). On a FRESH DB this takes effect immediately (set
-            // before any table is created, below); on an EXISTING DB it's a no-op until the one-time
-            // VACUUM (AppModel.compactDatabaseAfterSpo2PurgeIfNeeded) converts the file.
-            try db.execute(sql: "PRAGMA auto_vacuum = INCREMENTAL")
-            try db.execute(sql: "PRAGMA journal_mode = WAL")
-            // Bulk-write/read tuning. NORMAL is the durable, recommended pairing with WAL (only an
-            // OS crash/power loss can lose the last transaction — acceptable here). Bigger page cache
-            // + mmap + in-memory temp tables speed the multi-thousand-row import/backfill writes.
-            try db.execute(sql: "PRAGMA synchronous = NORMAL")
+            // FER-970 (R-04): a pool runs `prepareDatabase` on its READ-ONLY reader connections
+            // too — the write-mode PRAGMAs must be guarded or opening a reader throws and takes
+            // every read down with it. The tuning PRAGMAs below apply to all connections.
+            if !db.configuration.readonly {
+                // INCREMENTAL auto-vacuum so freed pages can be reclaimed without a full file rewrite
+                // (FER-511 and the later size work). On a FRESH DB this takes effect immediately (set
+                // before any table is created, below); on an EXISTING DB it's a no-op until the one-time
+                // VACUUM (AppModel.compactDatabaseAfterSpo2PurgeIfNeeded) converts the file.
+                try db.execute(sql: "PRAGMA auto_vacuum = INCREMENTAL")
+                try db.execute(sql: "PRAGMA journal_mode = WAL")
+                // Bulk-write/read tuning. NORMAL is the durable, recommended pairing with WAL (only an
+                // OS crash/power loss can lose the last transaction — acceptable here). Bigger page cache
+                // + mmap + in-memory temp tables speed the multi-thousand-row import/backfill writes.
+                try db.execute(sql: "PRAGMA synchronous = NORMAL")
+            }
             try db.execute(sql: "PRAGMA cache_size = -16000")     // ~16 MB page cache
             try db.execute(sql: "PRAGMA mmap_size = 268435456")   // 256 MB memory-mapped I/O
             try db.execute(sql: "PRAGMA temp_store = MEMORY")
         }
         config.busyMode = .timeout(5)
-        try self.init(dbQueue: try DatabaseQueue(path: path, configuration: config))
+        switch backend {
+        case .queue:
+            try self.init(dbWriter: try DatabaseQueue(path: path, configuration: config))
+        case .pool(let maxReaders):
+            config.maximumReaderCount = max(1, maxReaders)
+            try self.init(dbWriter: try DatabasePool(path: path, configuration: config))
+        }
     }
 
-    /// An in-memory store (migrations applied). For tests.
+    /// An in-memory store (migrations applied). For tests. Always a `DatabaseQueue`
+    /// (`DatabasePool` has no in-memory mode).
     public static func inMemory() async throws -> WhoopStore {
-        try WhoopStore(dbQueue: try DatabaseQueue())
+        try WhoopStore(dbWriter: try DatabaseQueue())
     }
 
     // MARK: - Synchronous GRDB helpers
@@ -89,12 +113,12 @@ public actor WhoopStore {
 
     @inline(__always)
     func syncRead<T>(_ block: (Database) throws -> T) throws -> T {
-        try dbQueue.read(block)
+        try dbWriter.read(block)
     }
 
     @inline(__always)
     func syncWrite<T>(_ block: (Database) throws -> T) throws -> T {
-        try dbQueue.write(block)
+        try dbWriter.write(block)
     }
 
     // MARK: - Maintenance
@@ -110,7 +134,9 @@ public actor WhoopStore {
     /// Non-async so GRDB's synchronous `writeWithoutTransaction` overload is chosen (mirrors the
     /// syncRead/syncWrite pattern). Runs on the actor's executor, off the main thread.
     private func checkpointWALImpl() throws {
-        try dbQueue.writeWithoutTransaction { db in
+        // FER-970 (R-04): barrier — on a pool, `wal_checkpoint(TRUNCATE)` needs no readers alive;
+        // on a queue (single connection) it's exactly the old behavior.
+        try dbWriter.barrierWriteWithoutTransaction { db in
             try db.execute(sql: "PRAGMA wal_checkpoint(TRUNCATE)")
         }
     }
@@ -128,7 +154,8 @@ public actor WhoopStore {
     /// Non-async so GRDB's synchronous `writeWithoutTransaction` overload is chosen (mirrors
     /// `checkpointWALImpl`). Runs on the actor's executor, off the main thread.
     private func vacuumImpl() throws {
-        try dbQueue.writeWithoutTransaction { db in
+        // FER-970 (R-04): barrier for the same reason as the checkpoint — VACUUM rewrites the file.
+        try dbWriter.barrierWriteWithoutTransaction { db in
             try db.execute(sql: "VACUUM")
         }
     }

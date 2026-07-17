@@ -182,7 +182,7 @@ Concurrency is deliberately split between two isolation domains plus a serial dr
 
 | Component | Isolation | Why |
 |---|---|---|
-| `WhoopStore` | **`actor`** | GRDB's `DatabaseQueue` calls block; the actor moves that blocking off the main thread onto its own serial executor. `DatabaseQueue` (not `DatabasePool`) is kept on purpose — the actor provides serialization. |
+| `WhoopStore` | **`actor`** | GRDB calls block; the actor moves that blocking off the main thread and keeps **writes** serialized (a single writer per handle). The **BLE handle stays a `DatabaseQueue`**; the **Repository handle opens a `DatabasePool`** (FER-970 · R-04) so the nonisolated bulk read (`dashboardSnapshot`) runs on WAL reader connections and never queues behind a long engine/import write. |
 | `AppModel`, `LiveState`, `Repository`, `BLEManager`, `FrameRouter`, `Collector`, `Backfiller` | **`@MainActor`** | These observe/mutate published UI state. CoreBluetooth's central is created on `queue: .main`, so delegate callbacks already arrive on the main actor — no hopping needed to update `LiveState`. |
 | Historical frame drain | **serial Task queue** | `BLEManager.routeBackfillFrame` appends frames synchronously (delegate order) and a single drain `Task` awaits `Backfiller.ingest` one frame at a time, so `HISTORY_START → data → HISTORY_END` chunk assembly can never be reordered. |
 
@@ -212,6 +212,12 @@ Two SQLite handles are open simultaneously — one inside `BLEManager`'s `Collec
 inside `Repository`. This is safe because `WhoopStore` enables **WAL journal mode** and a **5-second
 busy timeout** (`PRAGMA journal_mode = WAL`, `config.busyMode = .timeout(5)`), so the writer and the
 reader never deadlock on contention.
+
+The Repository handle additionally opens as a **`DatabasePool` (max 2 readers)** since FER-970 (R-04):
+its dashboard snapshot read is `nonisolated` and served by a WAL reader connection, so it does not
+wait behind a long write on the same handle (IntelligenceEngine upserts, imports). All writes on both
+handles remain actor-serialized; write-mode PRAGMAs are guarded to writer connections
+(`!db.configuration.readonly`), and `wal_checkpoint(TRUNCATE)` / `VACUUM` use barrier writes.
 
 ---
 
@@ -734,7 +740,10 @@ Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on da
 ~1 Hz stream). The launch refresh runs in **two passes**: a ~90-day *first-paint* pass that publishes
 immediately (`loaded == true`, `fullyLoaded == false`) so Today renders without waiting for the full
 history, then a full pass whose merge work runs **off the main actor** (`Repository.assembleDashboard`,
-nonisolated) and publishes the identical final dashboard (`fullyLoaded == true`). A monotonic
+nonisolated) and publishes the identical final dashboard (`fullyLoaded == true`). Each pass reads the
+store through ONE `WhoopStore.dashboardSnapshot` call — a single read transaction / WAL snapshot
+(FER-970 · R-03) instead of ~13 sequential actor reads — so the published dashboard is cross-table
+consistent by construction; the only separate read left is the skippable Apple workout-HR phase (R-01). A monotonic
 generation counter makes the most recently started refresh the only one that may publish, and a
 first-paint pass can never overwrite a fully loaded dashboard (`Repository.shouldPublish`). **Rule:**
 anything that *persists* a value derived from `repo.days` — `IntelligenceEngine.analyzeRecent`
