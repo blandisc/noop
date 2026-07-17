@@ -1629,7 +1629,7 @@ struct MetricDetailScreen: View {
     private var sparseEmptyState: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("No VO₂max yet")
-                .font(StrandFont.headline)
+                .font(InstrumentoType.groteskHeadline(17))
                 .foregroundStyle(theme.ink)
             Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap.")
                 .font(StrandFont.subhead)
@@ -1659,10 +1659,10 @@ struct MetricDetailScreen: View {
         let isSteps = spec.descriptor.key == "steps"
         return VStack(alignment: .leading, spacing: 12) {
             Text("Not enough history yet")
-                .font(StrandFont.headline)
+                .font(InstrumentoType.groteskHeadline(17))
                 .foregroundStyle(theme.ink)
             HStack(alignment: .firstTextBaseline) {
-                Text(isSteps ? "Gathering" : "Calibrating").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(isSteps ? "Gathering" : "Calibrating").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Text(isSteps ? "\(nights) / 7 days" : "\(nights) / 7 nights")
                     .font(StrandFont.captionNumber)
