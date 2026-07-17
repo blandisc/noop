@@ -72,7 +72,13 @@ final class Collector {
     /// activity sample" action can persist raw even when `enableRawCapture` is off. The window's
     /// monotonic deadline auto-expires so a missed stop callback can't leak raw forever.
     private var rawCapture = RawCaptureWindow()
-    private var buffer: [[UInt8]] = []
+    /// FER-971 (C-04): the frame travels WITH its one ingest-time parse (mirror of FER-752 on the
+    /// offload path), so `flush` never re-parses the batch. Raw bytes stay alongside for the
+    /// research raw-capture outbox.
+    private var buffer: [(raw: [UInt8], parsed: ParsedFrame)] = []
+    /// Running byte total of `buffer` — maintained on append/drop/flush so the pre-clock cap check
+    /// is O(1) per frame instead of a full `reduce` per ingest (FER-971).
+    private var bufferBytes = 0
     /// Standard 0x2A37 HR/RR buffer — the reliable, always-on stream, recorded continuously
     /// (independent of the custom realtime stream or which screen is open).
     private var stdHR: [HRSample] = []
@@ -127,24 +133,23 @@ final class Collector {
                                 maxUnsyncedBytes: PrunePolicy.maxUnsyncedBytes)) ?? 0
     }
 
-    /// Buffer one complete frame (synchronous: preserves delegate arrival order).
+    /// Buffer one complete frame (synchronous: preserves delegate arrival order), together with
+    /// the single parse the delegate already produced for it (FER-971 · C-04 — no second parse).
     /// Auto-flushes via a detached Task when the cadence threshold is hit (flush is async).
-    func ingest(_ frame: [UInt8]) {
-        buffer.append(frame)
+    func ingest(_ frame: [UInt8], parsed: ParsedFrame) {
+        buffer.append((frame, parsed))
+        bufferBytes += frame.count
         // Pre-clock only: bound memory if GET_CLOCK never lands while data keeps flowing.
         // Cap by approximate total BYTES (type-43 frames are ~1920 B, not ~60 B). Drop OLDEST
         // until under the byte cap (keep most recent). Post-clock this branch is skipped —
         // the cadence flush below bounds the buffer instead (FER-877).
-        if clockRef == nil {
-            var bytes = buffer.reduce(0) { $0 + $1.count }
-            if bytes > policy.maxPreClockBytes {
-                var drop = 0
-                while drop < buffer.count && bytes > policy.maxPreClockBytes {
-                    bytes -= buffer[drop].count
-                    drop += 1
-                }
-                if drop > 0 { buffer.removeFirst(drop) }
+        if clockRef == nil, bufferBytes > policy.maxPreClockBytes {
+            var drop = 0
+            while drop < buffer.count && bufferBytes > policy.maxPreClockBytes {
+                bufferBytes -= buffer[drop].raw.count
+                drop += 1
             }
+            if drop > 0 { buffer.removeFirst(drop) }
         }
         guard clockRef != nil else { return }   // can't correlate ts yet → keep buffering
         if buffer.count >= policy.maxFrames || (monotonic() - batchStartedAt) >= policy.maxInterval {
@@ -161,21 +166,23 @@ final class Collector {
         // buffer-snapshot-before-await invariant are both satisfied here.
         let frames = buffer
         buffer.removeAll(keepingCapacity: true)
+        bufferBytes = 0
 
-        // Decode is CPU-pure (`parseFrame`/`extractStreams` never touch the DB or UIKit). Run it OFF
-        // the main actor so the ~64-frame batch parse can't jank the UI (FER-183). Capturing only the
-        // two clock Ints + the Sendable `[[UInt8]]` keeps the detached closure Sendable; the schema is
-        // now loaded once into immutable shared state, so this is race-free against the live BLE parse,
-        // and `Streams` is Sendable so the result crosses back cleanly.
+        // Extraction is CPU-pure (`extractStreams` never touches the DB or UIKit). Run it OFF the
+        // main actor so the ~64-frame batch extraction can't jank the UI (FER-183). The frames
+        // travel with their ingest-time `ParsedFrame` (FER-971 · C-04), so the old second
+        // `parseFrame` pass per batch is gone; everything captured is Sendable and `Streams`
+        // crosses back cleanly.
         let devRef = ref.device, wallRef = ref.wall
         let streams = await Task.detached {
-            extractStreams(frames.map { parseFrame($0, annotate: false) }, deviceClockRef: devRef, wallClockRef: wallRef)
+            extractStreams(frames.map(\.parsed), deviceClockRef: devRef, wallClockRef: wallRef)
         }.value
         do {
             try await store.insert(streams, deviceId: deviceId)   // DECODED FIRST (durable)
         } catch {
             // Re-buffer at the front so these frames are retried on the next cadence.
             buffer.insert(contentsOf: frames, at: 0)
+            bufferBytes += frames.reduce(0) { $0 + $1.raw.count }
             return
         }
         // Reset only after a successful insert so the interval trigger keeps firing if
@@ -190,8 +197,8 @@ final class Collector {
         let meta = RawBatchMeta(
             batchId: UUID().uuidString, deviceId: deviceId, clockRef: ref, capturedAt: wall,
             startTs: tsValues.min() ?? wall, endTs: tsValues.max() ?? wall,
-            frameCount: frames.count, byteSize: frames.reduce(0) { $0 + $1.count })
-        try? await store.enqueueRawBatch(meta, frames: frames)
+            frameCount: frames.count, byteSize: frames.reduce(0) { $0 + $1.raw.count })
+        try? await store.enqueueRawBatch(meta, frames: frames.map(\.raw))
     }
 
     // MARK: - Standard 0x2A37 HR/RR (continuous recording)

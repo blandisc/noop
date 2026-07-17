@@ -93,4 +93,46 @@ final class RejectedHistoryTests: XCTestCase {
         let console = frameFromPayload([0x00], type: 50, seq: 0, cmd: 0)
         XCTAssertEqual(rejectedHistoricalRecords([good, bad, console], family: .whoop4), [bad])
     }
+
+    // MARK: - FER-971 (C-01): the pair overload is decision-identical to the byte form
+
+    /// The full corpus of this file, through BOTH families and BOTH parse modes: handing the
+    /// function pre-parsed (raw, ParsedFrame) pairs must reject exactly the same frames as the
+    /// bytes-only form — with pairs built `annotate: false` (the hot path's parse) AND
+    /// `annotate: true` (proving the decision never depended on annotation fields).
+    func testPairOverloadMatchesByteForm() {
+        var corruptV24 = bytes(v24Hex); corruptV24[10] ^= 0xFF
+        var corruptV18 = bytes(whoop5V18Hex); corruptV18[20] ^= 0xFF
+        let corpus: [[UInt8]] = [
+            bytes(v24Hex), corruptV24, bytes(whoop5V18Hex), corruptV18, bytes(whoop5V26Hex),
+            frameFromPayload([0x01, 0x02], type: 50, seq: 0, cmd: 0),
+            frameFromPayload([0x01, 0x02], type: 40, seq: 0, cmd: 0),
+            [0xAA, 0x01], [],
+        ]
+        for family in [DeviceFamily.whoop4, .whoop5] {
+            let byByte = rejectedHistoricalRecords(corpus, family: family)
+            for annotate in [false, true] {
+                let pairs = corpus.map { ($0, parseFrame($0, family: family, annotate: annotate)) }
+                XCTAssertEqual(rejectedHistoricalRecords(pairs, family: family), byByte,
+                               "family=\(family) annotate=\(annotate)")
+            }
+        }
+    }
+
+    /// The raw-byte gates stay load-bearing on the pair path: a pair whose parse LOOKS undecodable
+    /// but whose bytes are not type-47 is never rejected, and a 5/MG v26 stays skipped even when
+    /// its parse fails — the byte gates win over the parse.
+    func testPairOverloadKeepsByteGates() {
+        // A realtime (type-40) frame paired with a deliberately-broken parse: not type-47 → kept out.
+        let realtime = frameFromPayload([0x01, 0x02, 0x03], type: 40, seq: 0, cmd: 0)
+        var broken = realtime; broken[broken.count - 1] ^= 0xFF
+        let mismatchedParse = parseFrame(broken, family: .whoop4, annotate: false)
+        XCTAssertTrue(rejectedHistoricalRecords([(realtime, mismatchedParse)], family: .whoop4).isEmpty,
+                      "a non-47 frame must never be rejected, whatever its parse says")
+        // A v26 PPG block with a corrupted trailer (parse fails): still skipped by design.
+        var v26bad = bytes(whoop5V26Hex); v26bad[v26bad.count - 1] ^= 0xFF
+        let p = parseFrame(v26bad, family: .whoop5, annotate: false)
+        XCTAssertTrue(rejectedHistoricalRecords([(v26bad, p)], family: .whoop5).isEmpty,
+                      "the v26 byte-gate wins over a failed parse")
+    }
 }
