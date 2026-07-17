@@ -606,7 +606,9 @@ struct StressDetailScreen: View {
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
 
     /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
-    static let dayParser = DayKey.utcFormatter
+    /// FER-978: `nonisolated` so it's reachable from nonisolated contexts (DateFormatter is Sendable
+    /// under strict concurrency; the property is immutable).
+    nonisolated static let dayParser = DayKey.utcFormatter
 
     /// Short localized date for the fallback-hero chip ("sáb 20 jun"). UTC zone matches the day key. (FER-397)
     static let chipDateFormatter: DateFormatter = {

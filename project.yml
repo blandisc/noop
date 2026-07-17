@@ -26,12 +26,11 @@ settings:
     # `es` values). Discard that churn; never commit it. Root cause + measurements:
     # docs/design-system/I18N.md §2.1. Re-enable once the Xcode bug is resolved (FER-568).
     SWIFT_EMIT_LOC_STRINGS: NO
-    # FER-973 (A-03): MEASURED, NOT FLIPPED. Trying `targeted` surfaced 112 concurrency warnings in
-    # the app layer (build still succeeds — they're warnings). That's too many to land unaddressed:
-    # 112 warnings would drown out any NEW warning. Kept on `minimal` here; the flip is spun off as a
-    # follow-up that triages those 112 (real races to fix vs. false positives to annotate). The
-    # measured count is the deliverable — the escape hatch the issue's A-03 criterion allowed.
-    SWIFT_STRICT_CONCURRENCY: minimal
+    # FER-978 (was FER-973 · A-03): the app target checks the code that OPTED INTO concurrency
+    # (actors, @MainActor, Sendable) — where the app's real risk lives (BLE delegate contract
+    # FER-173, the Task.detached snapshots) — without the full `complete` avalanche. The 112 warnings
+    # the first flip surfaced were triaged: real cross-actor captures fixed, expected escapes annotated.
+    SWIFT_STRICT_CONCURRENCY: targeted
     DEVELOPMENT_TEAM: "B7KRCF776Z"
     CODE_SIGN_STYLE: Automatic
     # Standard archs (arm64 on iOS device / simulator).
