@@ -317,9 +317,17 @@ final class Repository: ObservableObject {
         let appleSleepRaw = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: lo, to: hi, limit: 4000)) ?? []) : []
         // FER-883: Apple workout-HR samples under apple-health (persisted by HealthKitBridge during
         // HKWorkouts only). Gated on usesAppleHealth so whoopOnly never reads them into the dashboard.
-        let appleHrRaw: [HRSample] = dataSourceMode.usesAppleHealth
-            ? ((try? await store.hrSamples(deviceId: "apple-health", from: lo, to: hi, limit: 500_000)) ?? [])
-            : []
+        // FER-970 (R-01): their ONLY consumer is the estimated-strain path for days whose MERGED
+        // strain is nil — a band-covered history has none, so skip the ≤500k-row read (paid on
+        // EVERY refresh) entirely instead of loading and grouping it for nothing. The pre-pass
+        // reuses the same mergeDaily the assembler runs, so eligibility can't drift.
+        let appleHrRaw: [HRSample]
+        if dataSourceMode.usesAppleHealth,
+           !Self.strainEstimateEligibleDays(imported: imported, computed: computed, apple: apple).isEmpty {
+            appleHrRaw = (try? await store.hrSamples(deviceId: "apple-health", from: lo, to: hi, limit: 500_000)) ?? []
+        } else {
+            appleHrRaw = []
+        }
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
@@ -413,10 +421,26 @@ final class Repository: ObservableObject {
         // FER-883: ESTIMATED strain for days whose MEASURED strain is nil (band-less Apple day).
         // Mirrors recovery: never folded into days/displayDays; surfaced only via estimatedStrain.
         let daysNeedingStrainEstimate = Set(merged.days.filter { $0.strain == nil }.map(\.day))
+        // FER-970 (R-01): group by LOCAL day with a day-window cache — one calendar/formatter
+        // resolution per day actually crossed instead of a DateFormatter call PER SAMPLE (samples
+        // arrive in workout-clustered runs), and only the days an estimate can serve are kept.
         var hrByDayApple: [String: [HRSample]] = [:]
-        for s in inputs.appleHrRaw {
-            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.ts)))
-            hrByDayApple[day, default: []].append(s)
+        if !inputs.appleHrRaw.isEmpty, !daysNeedingStrainEstimate.isEmpty {
+            let cal = Calendar.current
+            var windowStart = Int.max, windowEnd = Int.min, windowDay = ""
+            for s in inputs.appleHrRaw {
+                if s.ts < windowStart || s.ts >= windowEnd {
+                    let d = Date(timeIntervalSince1970: Double(s.ts))
+                    let start = cal.startOfDay(for: d)
+                    windowStart = Int(start.timeIntervalSince1970)
+                    windowEnd = cal.date(byAdding: .day, value: 1, to: start)
+                        .map { Int($0.timeIntervalSince1970) } ?? windowStart + 86_400
+                    windowDay = DayKey.local(d)
+                }
+                if daysNeedingStrainEstimate.contains(windowDay) {
+                    hrByDayApple[windowDay, default: []].append(s)
+                }
+            }
         }
         var restingHRByDayApple: [String: Double] = [:]
         for row in inputs.apple {
@@ -480,6 +504,16 @@ final class Repository: ObservableObject {
     /// strap-covered day whose measured fields are nil (a partial-connection day) back-fills those nils
     /// from the Apple Health row this merge overwrote, so the HRV sparkline/trend shows Apple's value
     /// instead of a gap. The strap value always wins when present — only genuine gaps fill.
+    /// FER-970 (R-01): the days whose MERGED strain is nil — the only days Apple workout-HR can
+    /// serve (the estimated-strain path). A pure pre-pass over rows performRefresh has already
+    /// read, so the ≤500k-row HR read can be skipped outright when this comes back empty. Reuses
+    /// the very same `mergeDaily` the assembler runs — eligibility cannot drift from it.
+    nonisolated static func strainEstimateEligibleDays(imported: [DailyMetric], computed: [DailyMetric],
+                                                       apple: [DailyMetric]) -> Set<String> {
+        Set(mergeDaily(imported: imported, computed: computed, apple: apple)
+            .days.filter { $0.strain == nil }.map(\.day))
+    }
+
     nonisolated static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric],
                            apple: [DailyMetric]) -> (days: [DailyMetric], appleDays: Set<String>,
                                                      displayDays: [DailyMetric]) {
