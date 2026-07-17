@@ -294,7 +294,7 @@ struct TodayView: View {
 
     /// Los tres conteos de noches que el héroe/veredicto leen, agrupados para sembrarlos de una sola
     /// pasada sobre `repo.days` (antes cada propiedad remapeaba la historia por su cuenta).
-    private struct DerivedHrvCounts: Equatable {
+    private struct DerivedHrvCounts: Equatable, Sendable {
         let recoveryCalibration: Int?
         let ownNights: Int
         let seededNights: Int
@@ -309,59 +309,114 @@ struct TodayView: View {
     /// reutiliza para `recoveryCalibration` y `seededNights`; `strapHrv` (sin los días de Apple Health)
     /// para `ownNights`. Misma matemática que las propiedades previas, sin el remapeo triple.
     private func computeHrvCounts() -> DerivedHrvCounts {
-        let nightlyHrv = repo.days.map(\.avgHrv)
-        let appleDays = repo.appleHealthDays
-        let strapHrv = repo.days.filter { !appleDays.contains($0.day) }.map(\.avgHrv)
+        Self.computeHrvCounts(days: repo.days, appleDays: repo.appleHealthDays,
+                              todayHasRecovery: repo.today?.recovery != nil)
+    }
+
+    /// Forma pura — misma matemática desde un snapshot, para que el hop off-main de `recomputeDerived` y
+    /// el fallback en frío de instancia (`hrvCounts`) compartan UNA fuente de verdad.
+    private nonisolated static func computeHrvCounts(days: [DailyMetric], appleDays: Set<String>,
+                                             todayHasRecovery: Bool) -> DerivedHrvCounts {
+        let nightlyHrv = days.map(\.avgHrv)
+        let strapHrv = days.filter { !appleDays.contains($0.day) }.map(\.avgHrv)
         return DerivedHrvCounts(
-            recoveryCalibration: RecoveryScorer.calibrationNights(nightlyHrv: nightlyHrv,
-                                                                  hasRecovery: repo.today?.recovery != nil),
+            recoveryCalibration: RecoveryScorer.calibrationNights(nightlyHrv: nightlyHrv, hasRecovery: todayHasRecovery),
             ownNights: RecoveryScorer.calibrationNights(nightlyHrv: strapHrv, hasRecovery: false, seed: .max) ?? 0,
             seededNights: RecoveryScorer.calibrationNights(nightlyHrv: nightlyHrv, hasRecovery: false, seed: .max) ?? 0)
     }
 
+    /// Los 7 derivados que `recomputeDerived` computa fuera del MainActor y luego asigna a los `@State memo*`.
+    private struct DerivedState: Sendable {
+        let readiness: ReadinessEngine.Readiness
+        let counts: DerivedHrvCounts
+        let yesterdayLevel: ReadinessEngine.Level
+        let appleHrvEstimated: DailyBrief.HrvEstimatedBullet?
+        let baselineDays: [DailyMetric]
+        let trainingLoad: TrainingLoadModel
+        let rules: [RecoveryRules.Rule]
+    }
+
     /// Siembra el veredicto + los conteos UNA vez por refresh. La llama el `.task(id: repo.refreshSeq)`
-    /// (vía `loadAll()`), antes de cualquier `await`, así que el body deja de recalcular en cada frame.
-    private func recomputeDerived() {
-        // FER-623: el veredicto mide la HRV solo contra la base de BANDA (RMSSD), vía `bandDays`. Solo-banda → no-op.
-        // FER-547: en un día ESTIMADO (solo-Apple) esa ruta deja hoy sin señales (.insufficient); el
-        // veredicto se evalúa entonces sobre la historia Apple-masked — la misma base del estimado del dial.
-        let band = bandDays
-        memoReadiness = ReadinessEngine.evaluate(days: verdictDays(band: band), today: Repository.localDayKey(Date()))
-        memoCounts = computeHrvCounts()
-        // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera». Una vez
-        // por refresh (no por frame), junto al de hoy.
+    /// (vía `loadAll()`). FER-982: la derivación pesada (3–4× `ReadinessEngine.evaluate`, cada uno ordena
+    /// TODO `repo.days`, + `RecoveryImpact` + máscaras) ya NO corre en el MainActor — se snapshotean los
+    /// inputs value-type en main y el cómputo puro hopea a un executor de fondo (mismo patrón que
+    /// `RecoveryDetailModel.buildDetached`, FER-953/954). Solo los 7 resultados vuelven a main; el body
+    /// sigue sin recalcular en cada frame gracias a los `@State memo*` (FER-172), con el fallback en frío
+    /// (memo aún nil) cubriendo el breve hueco del hop, igual que en el primer paint.
+    private func recomputeDerived() async {
+        let todayKey = Repository.localDayKey(Date())
         let yKey = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
-        memoYesterdayLevel = ReadinessEngine.evaluate(days: band, today: yKey).level
-        // FER-623: la viñeta de HRV estimada (día sin banda) también se siembra aquí, no por frame.
-        memoAppleHrvEstimated = computeAppleHrvEstimated()
-        // FER-709: la base de 7 días (filter+sort sobre displayDays) una vez por refresh, no 2–3 por render.
-        memoBaselineDays = computeBaselineDays()
-        // Carga de entrenamiento (FER-705 · handoff «Carga»): el ACWR + serie desde el dashboard BAND-masked
-        // — el mismo corte que la tarjeta de Tendencias (`CuerpoView.loadAll`) y el detalle de recuperación
-        // (FER-632), para que la franja, la tarjeta y el veredicto nunca discrepen de la banda. Una vez por
-        // refresh (no por frame). `acwr == nil` → la franja muestra «calibrando» sin punto.
-        let acwrMasked = SourceLens.maskForBaseline(repo.days, keep: .band, appleDays: repo.appleHealthDays)
-        let acwrReadiness = ReadinessEngine.evaluate(days: acwrMasked, today: Repository.localDayKey(Date()))
-        trainingLoad = TrainingLoadModel(
+        let days = repo.days, displayDays = repo.displayDays, appleDays = repo.appleHealthDays
+        let todayRecovery = repo.today?.recovery
+        let isEstimated = repo.isRecoveryEstimated(todayKey)
+        let seq = repo.refreshSeq
+        let state = await Task.detached(priority: .userInitiated) {
+            Self.computeDerived(days: days, displayDays: displayDays, appleDays: appleDays,
+                                todayRecovery: todayRecovery, isEstimated: isEstimated,
+                                todayKey: todayKey, yKey: yKey)
+        }.value
+        // FER-982: si un refresh más nuevo ya superó a este mientras el cómputo estaba en vuelo, no pises
+        // sus memos con un snapshot viejo — el `.task(id: refreshSeq)` más nuevo los sembrará. (El `.task`
+        // cancela a su predecesor, pero el `Task.detached` es independiente y podría aterrizar después.)
+        guard seq == repo.refreshSeq else { return }
+        memoReadiness = state.readiness
+        memoCounts = state.counts
+        memoYesterdayLevel = state.yesterdayLevel
+        memoAppleHrvEstimated = state.appleHrvEstimated
+        memoBaselineDays = state.baselineDays
+        trainingLoad = state.trainingLoad
+        memoRules = state.rules
+        #if DEBUG
+        // FER-172: prueba de que el veredicto se recalcula UNA vez por refresh (ahora off-main). En
+        // scroll/animación/ticks de HR esta línea NO debe reaparecer; solo sale una vez por `seq`.
+        print("[FER-172] readiness recomputed off-main · seq=\(seq) · days=\(days.count)")
+        #endif
+    }
+
+    /// Derivación pura de los 7 memos desde un snapshot value-type — corre FUERA del MainActor (FER-982).
+    /// Byte-idéntica al body síncrono anterior; solo cambió el hilo. Reusa los helpers `static` puros para
+    /// que el memo y el fallback en frío de instancia compartan UNA fuente de verdad (deben coincidir —
+    /// ver `readiness`). `todayKey`/`yKey` se snapshotean una vez (idéntico: las llamadas originales a
+    /// `localDayKey(Date())` ocurrían microsegundos aparte en la misma pasada síncrona).
+    private nonisolated static func computeDerived(days: [DailyMetric], displayDays: [DailyMetric],
+                                           appleDays: Set<String>, todayRecovery: Double?,
+                                           isEstimated: Bool, todayKey: String, yKey: String) -> DerivedState {
+        // FER-623: el veredicto mide la HRV solo contra la base de BANDA (RMSSD), vía `band`.
+        let band = SourceLens.maskHrv(days, keep: .band, appleDays: appleDays)
+        // FER-547: un día ESTIMADO (solo-Apple) evalúa sobre la historia Apple-masked (en `band` hoy quedaría sin señales).
+        let verdictDays = isEstimated
+            ? SourceLens.maskForBaseline(days, keep: .apple, appleDays: appleDays)
+            : band
+        let readiness = ReadinessEngine.evaluate(days: verdictDays, today: todayKey)
+        let counts = computeHrvCounts(days: days, appleDays: appleDays, todayHasRecovery: todayRecovery != nil)
+        // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera».
+        let yesterdayLevel = ReadinessEngine.evaluate(days: band, today: yKey).level
+        // FER-623: la viñeta de HRV estimada (día sin banda).
+        let appleHrvEstimated = computeAppleHrvEstimated(days: days, appleDays: appleDays,
+                                                         isEstimated: isEstimated, todayKey: todayKey)
+        // FER-709: la base de 7 días (filter+sort sobre displayDays).
+        let baselineDays = computeBaselineDays(displayDays: displayDays, todayKey: todayKey)
+        // Carga de entrenamiento (FER-705): el ACWR + serie desde el dashboard BAND-masked — el mismo corte
+        // que la tarjeta de Tendencias y el detalle de recuperación (FER-632), para que la franja, la
+        // tarjeta y el veredicto nunca discrepen. `acwr == nil` → la franja muestra «calibrando» sin punto.
+        let acwrMasked = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleDays)
+        let acwrReadiness = ReadinessEngine.evaluate(days: acwrMasked, today: todayKey)
+        let trainingLoad = TrainingLoadModel(
             acwr: acwrReadiness.acwr,
             series: ReadinessEngine.acwrSeries(days: acwrMasked).map { (day: $0.day, value: $0.ratio) },
             days: acwrMasked)
-        // FER-709: las cinco reglas del día — el impacto por señal (banda-only, FER-519) mapeado a
-        // marcas cuya suma encendida == el numeral. `RecoveryImpact` devuelve nil en cold-start o en un
-        // día Apple-only (estimado): ahí el bloque se oculta en vez de inventar una descomposición.
-        let todayKey = Repository.localDayKey(Date())
-        if let score = repo.today?.recovery.map({ Int($0.rounded()) }),
-           let impact = RecoveryImpact.compute(days: repo.days, todayKey: todayKey,
-                                               appleDays: repo.appleHealthDays) {
-            memoRules = RecoveryRules.rules(impact: impact, score: score)
+        // FER-709: las cinco reglas del día. `RecoveryImpact` devuelve nil en cold-start o en un día
+        // Apple-only (estimado): ahí el bloque se oculta en vez de inventar una descomposición.
+        let rules: [RecoveryRules.Rule]
+        if let score = todayRecovery.map({ Int($0.rounded()) }),
+           let impact = RecoveryImpact.compute(days: days, todayKey: todayKey, appleDays: appleDays) {
+            rules = RecoveryRules.rules(impact: impact, score: score)
         } else {
-            memoRules = []
+            rules = []
         }
-        #if DEBUG
-        // FER-172: prueba de que el veredicto se recalcula UNA vez por refresh. En scroll/animación/
-        // ticks de HR esta línea NO debe reaparecer; solo sale una vez por `seq`. Compila fuera en release.
-        print("[FER-172] readiness recomputed · seq=\(repo.refreshSeq) · days=\(repo.days.count)")
-        #endif
+        return DerivedState(readiness: readiness, counts: counts, yesterdayLevel: yesterdayLevel,
+                            appleHrvEstimated: appleHrvEstimated, baselineDays: baselineDays,
+                            trainingLoad: trainingLoad, rules: rules)
     }
 
     /// FER-623: `repo.days` con la HRV de Apple (SDNN) enmascarada, para medir el veredicto solo contra la
@@ -1568,10 +1623,11 @@ struct TodayView: View {
     /// mismo z-score/banding/cold-start del motor, sin matemática nueva. `nil` si hoy NO es estimado (día de
     /// banda → el veredicto ya trae su HRV) o si la base SDNN aún no madura (el motor calla < minBaseline).
     /// Se siembra en `recomputeDerived` (memo `memoAppleHrvEstimated`), no por frame — corre un `evaluate`.
-    private func computeAppleHrvEstimated() -> DailyBrief.HrvEstimatedBullet? {
-        guard repo.isRecoveryEstimated(Repository.localDayKey(Date())) else { return nil }
-        let appleDays = SourceLens.maskHrv(repo.days, keep: .apple, appleDays: repo.appleHealthDays)
-        let r = ReadinessEngine.evaluate(days: appleDays, today: Repository.localDayKey(Date()))
+    private nonisolated static func computeAppleHrvEstimated(days: [DailyMetric], appleDays: Set<String>,
+                                                     isEstimated: Bool, todayKey: String) -> DailyBrief.HrvEstimatedBullet? {
+        guard isEstimated else { return nil }
+        let appleMasked = SourceLens.maskHrv(days, keep: .apple, appleDays: appleDays)
+        let r = ReadinessEngine.evaluate(days: appleMasked, today: todayKey)
         guard let hrv = r.signals.first(where: { $0.key == "hrv" }), let z = hrv.z else { return nil }
         return DailyBrief.HrvEstimatedBullet(z: z, flag: hrv.flag)
     }
@@ -2645,8 +2701,11 @@ struct TodayView: View {
     }
 
     private func computeBaselineDays() -> [DailyMetric] {
-        let todayKey = Repository.localDayKey(Date())
-        return Array(repo.displayDays.filter { $0.day < todayKey }.sorted { $0.day < $1.day }.suffix(30))
+        Self.computeBaselineDays(displayDays: repo.displayDays, todayKey: Repository.localDayKey(Date()))
+    }
+
+    private nonisolated static func computeBaselineDays(displayDays: [DailyMetric], todayKey: String) -> [DailyMetric] {
+        Array(displayDays.filter { $0.day < todayKey }.sorted { $0.day < $1.day }.suffix(30))
     }
 
 
@@ -2877,9 +2936,9 @@ struct TodayView: View {
     private func loadAll() async {
         // Siembra el veredicto + los conteos derivados de HRV una sola vez por refresh, ANTES de los
         // awaits de abajo, para que el body deje de recalcular `ReadinessEngine.evaluate` en cada frame
-        // (FER-172). `recomputeDerived()` es síncrono y lee `repo.days`/`today`/`appleHealthDays`, ya
-        // disponibles sin esperar las consultas de sparklines.
-        recomputeDerived()
+        // (FER-172). FER-982: `recomputeDerived()` snapshotea `repo` en main y hopea el cómputo pesado a
+        // un `Task.detached`; el fallback en frío (memo aún nil) cubre el breve hueco del hop.
+        await recomputeDerived()
         // Issue every query concurrently, then collect. The store is a serial DatabaseQueue so I/O still
         // serializes, but the memoized ensureStore() makes the parallel first-callers share ONE open, and
         // the queries run back-to-back with no main-actor ping-pong.

@@ -24,6 +24,11 @@ approximate; Cénit is built from source — see the [README](README.md).
   **EN** — The hero number's ⓘ button went from 12 to 18 pt (easier to see and tap). And the "What we measure" card it opens now leaves 14 pt to the next section on every screen: Training load had it flush (0 pt) and now matches the rest.
   ([HeroInvertido.swift](Packages/StrandDesign/Sources/StrandDesign/HeroInvertido.swift), [TrainingLoadSheet.swift](Cenit/Screens/TrainingLoadSheet.swift))
 
+- **Rendimiento: «Hoy» sella el veredicto sin trabar el hilo principal / Performance: Today seals its verdict without blocking the main thread.**
+  **ES** — El cálculo del veredicto de recuperación de «Hoy» (que reordena todo tu historial varias veces tras cada sincronización) se movió fuera del hilo principal. El número y el dial dejan de tartamudear justo después de sincronizar. Es el **mismo cálculo exacto** —mismo veredicto, mismos conteos— solo que ya no compite con la animación de entrada. Interno: no cambia ningún número ni cómo se ve nada.
+  **EN** — Today's recovery-verdict computation (which re-sorts your whole history several times after each sync) moved off the main thread. The number and dial stop stuttering right after a sync. It's the **exact same computation** — same verdict, same counts — it just no longer competes with the entrance animation. Internal: no number and nothing visual changes.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **El número grande se resuelve más rápido al abrir un detalle / The big number resolves faster when a detail opens.**
   **ES** — La subida del número protagonista pasó de 0.5s a 0.3s: aparece igual (sube unos pixeles y se hace sólido), pero termina antes. Aplica a las diez pantallas por igual.
   **EN** — The hero number's rise went from 0.5s to 0.3s: same motion (rises a few pixels and turns solid), just quicker to settle. Applies to all ten screens alike.
