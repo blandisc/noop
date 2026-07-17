@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El jalón de la mañana termina antes y estorba menos / The morning catch-up finishes sooner and gets in the way less.**
+  **ES** — Durante «Descargando la noche…», Cénit ya no re-decodifica cada paquete una segunda vez (con hex por campo incluido) solo para decidir qué archivar, el vigilante de la descarga deja de re-armarse miles de veces por segundo, y el archivo de paquetes ilegibles se construye fuera del hilo de la interfaz — conservando la garantía de que todo queda guardado ANTES de confirmarle a la banda. El monitoreo en vivo también decodifica cada latido una sola vez. Cero cambios en lo que se le envía a la banda.
+  **EN** — During "Downloading the night…", Cénit no longer re-decodes every packet a second time (per-field hex included) just to decide what to archive, the download watchdog stops re-arming thousands of times a second, and the unreadable-packet archive is built off the UI thread — keeping the guarantee that everything is stored BEFORE confirming to the strap. Live monitoring also decodes each beat exactly once. Zero changes to what is sent to the strap.
+  ([Backfiller.swift](Cenit/Collect/Backfiller.swift), [HistoricalStreams.swift](Packages/WhoopProtocol/Sources/WhoopProtocol/HistoricalStreams.swift), [BLEManager.swift](Cenit/BLE/BLEManager.swift), [Collector.swift](Cenit/Collect/Collector.swift))
+
 - **Los papeles vuelven a decir la verdad / The paperwork tells the truth again.**
   **ES** — La documentación técnica se pone al día con el código real (versiones de esquema, grafo de paquetes, plataformas, pantallas retiradas, el árbol del repo), queda escrito qué identificadores del legado NOOP están congelados a propósito y por qué nunca se renombran, y ocho textos de Ajustes y hojas que estaban en español «de fábrica» ahora siguen la convención del catálogo (con su traducción intacta). El instalable de release ahora se llama Cénit.
   **EN** — The technical docs catch up with the real code (schema versions, package graph, platforms, retired screens, the repo tree), the deliberately frozen NOOP-legacy identifiers are now documented with their why, and eight Settings/sheet strings that were Spanish-keyed now follow the catalog convention (translations intact). The release artifact is now named Cénit.

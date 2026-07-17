@@ -14,6 +14,9 @@ import WhoopProtocol
 ///   {"capturedAtMs":Double,"trim":Int,"family":"whoop4"|"whoop5","frameHex":String}
 /// Frames carry sensor payloads, not identifiers — no serials/MACs land here.
 struct RawHistoryArchive {
+    /// FER-971 (C-03): 256-entry lowercase hex table — replaces per-byte `String(format:)`.
+    static let hexTable: [String] = (0...255).map { String(format: "%02x", $0) }
+
     /// File name under `<AppSupport>/OpenWhoop/`.
     static let fileName = "rejected_history.jsonl"
     /// Soft cap (~5 MB). When appending would push the file past this, the archive EVICTS oldest surplus
@@ -96,7 +99,11 @@ struct RawHistoryArchive {
         // Build the new JSONL lines (each newline-terminated). The version that drives floor-aware
         // retention (#344) is re-derived per line from the stored frame inside `evictLines`.
         let newLines: [String] = frames.map { f in
-            let hex = f.map { String(format: "%02x", $0) }.joined()
+            // FER-971 (C-03): lookup-table hex — `String(format:)` re-parses its format string PER
+            // BYTE (~100k calls per unmapped-layout chunk). Output is byte-identical.
+            var hex = String()
+            hex.reserveCapacity(f.count * 2)
+            for b in f { hex += Self.hexTable[Int(b)] }
             // Hand-built JSON: the only dynamic field is hex (always [0-9a-f]) so no escaping is needed,
             // and this avoids a JSONEncoder allocation per frame on the offload hot path.
             return "{\"capturedAtMs\":\(capturedAtMs),\"trim\":\(Int(trim)),"

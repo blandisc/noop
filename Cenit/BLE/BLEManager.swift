@@ -388,9 +388,10 @@ public final class BLEManager: NSObject, ObservableObject {
                                     log: { [weak self] s in self?.log(s) },
                                     onReceipt: { [weak self] r in self?.accumulateSyncReceipt(r) },
                                     rejectedSink: { [weak self] frames, trim, family in
+                                        // FER-971 (C-03): async — the archive work happens detached.
                                         // Archive undecodable history BEFORE ack. If self is gone treat as
                                         // durable (true) so a teardown mid-chunk doesn't wedge the offload.
-                                        self?.archiveRejectedFrames(frames, trim: trim, family: family) ?? true
+                                        await self?.archiveRejectedFrames(frames, trim: trim, family: family) ?? true
                                     })
             // Strand: no server uploader/sync — all data stays on-device.
 
@@ -709,8 +710,15 @@ public final class BLEManager: NSObject, ObservableObject {
     /// Backfiller calls this from its `rejectedSink`; a `false` return holds the ack so the strap re-sends
     /// the chunk (no data loss). `.capReached` counts as durable-enough (true) — the archive is full but
     /// there's already ample sample material, so we still let the offload advance rather than wedge it.
-    private func archiveRejectedFrames(_ frames: [[UInt8]], trim: UInt32, family: DeviceFamily) -> Bool {
-        switch rejectedHistoryArchive.archive(frames, trim: trim, family: family) {
+    private func archiveRejectedFrames(_ frames: [[UInt8]], trim: UInt32, family: DeviceFamily) async -> Bool {
+        // FER-971 (C-03): the hex encoding + fsync run OFF the main actor — the `await` preserves
+        // the invariant (archive durable BEFORE the ack; the caller holds the ack until we return),
+        // but the main queue no longer freezes for it during «Descargando la noche…».
+        let archive = rejectedHistoryArchive
+        let result = await Task.detached(priority: .utility) {
+            archive.archive(frames, trim: trim, family: family)
+        }.value
+        switch result {
         case .written:
             return true
         case .capReached(let count):
@@ -767,7 +775,7 @@ public final class BLEManager: NSObject, ObservableObject {
         // offload (re/sync_openwhoop.py, re/diagnose_biometrics.py) uses [0x00] too. Plain offload — the
         // strap streams HISTORY_START → type-47 records → HISTORY_END (acked) … → HISTORY_COMPLETE.
         send(.sendHistoricalData, payload: [0x00], writeType: .withResponse)
-        armBackfillTimeout()
+        armBackfillTimeout(force: true)
         armBackfillAbsoluteTimeout()   // frame-independent backstop — see armBackfillAbsoluteTimeout (FER-174)
         log("Backfill: session started — historical offload requested")
         return true
@@ -882,7 +890,14 @@ public final class BLEManager: NSObject, ObservableObject {
     /// airtime, so genuine offload frames can arrive in bursts with multi-second lulls between chunks
     /// — a short watchdog cut sessions short mid-drain. Longer = more records drained per session.
     static let backfillIdleTimeoutSeconds = 60
-    private func armBackfillTimeout() {
+    /// FER-971 (C-02): the watchdog has 60 s granularity — re-arming it per FRAME during the
+    /// offload flood was thousands of DispatchWorkItem alloc/cancel/asyncAfter on the main queue
+    /// for no extra precision. Re-arm at most once per second; `force` is the session-start arm
+    /// (must always land, and resets the throttle for the new session).
+    private var lastWatchdogArmAt: Date = .distantPast
+    private func armBackfillTimeout(force: Bool = false) {
+        if !force, Date().timeIntervalSince(lastWatchdogArmAt) < 1 { return }
+        lastWatchdogArmAt = force ? .distantPast : Date()
         backfillTimeout?.cancel()
         let item = DispatchWorkItem { [weak self] in
             guard let self else { return }
@@ -1974,8 +1989,9 @@ extension BLEManager: @preconcurrency CBPeripheralDelegate {
                     }
                 }
                 if !backfilling {
-                    // Live path (unchanged): synchronous ingest preserves delegate arrival order.
-                    collector?.ingest(frame)
+                    // Live path: synchronous ingest preserves delegate arrival order; the frame
+                    // travels with its single ingest-time parse (FER-971 · C-04, mirror of FER-752).
+                    collector?.ingest(frame, parsed: parsed)
                 }
             }
         default:
