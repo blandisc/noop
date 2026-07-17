@@ -470,14 +470,14 @@ struct StrainDetailScreen: View {
                 Spacer(minLength: 8)
                 if let v = d.score {
                     Text(String(format: "%.1f", v))
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(strainHeatTint(v))
                     Text(strainWord(v))
                         .font(StrandFont.subhead)
                         .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(theme.inkTertiary)
                     Text("no reading")
                         .font(StrandFont.subhead)
