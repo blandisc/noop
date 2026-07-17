@@ -111,7 +111,7 @@ struct MetricDetailScreen: View {
     @State private var nightVitals: NightVitals = NightVitals(respiration: nil, restingHR: nil)
     @State private var whatMovesItFindings: [WhatMovesItFinding] = []
     @State private var intradayCurve: [TrendPoint] = []
-    /// Minutes per HR zone for today, computed once when the curve loads (see `computeZoneMinutes`). (FER-253)
+    /// Minutes per HR zone for today, computed once when the curve loads (see `computeZoneMinutesDetached`). (FER-253 / FER-976)
     @State private var cachedZoneMinutes: [Double]? = nil
     /// Last night's frequency-domain HRV breakdown (nil = no band-night spectrum → section hidden). (FER-702)
     @State private var spectral: SpectralHRV? = nil
@@ -150,13 +150,25 @@ struct MetricDetailScreen: View {
             range = defaultRange
             if let loader = intradayCurveLoader {
                 intradayCurve = await loader()
-                cachedZoneMinutes = computeZoneMinutes()
+                // FER-976: snapshot Sendable (Double + [TrendPoint], ambos Sendable) tomado en MainActor,
+                // el bucketing/zone-math pesado corre off-main (mismo seam que SleepDetailScreen.buildSleepHeat).
+                let maxHRSnapshot = hrMax
+                let curveSnapshot = intradayCurve
+                cachedZoneMinutes = await Task.detached(priority: .userInitiated) {
+                    Self.computeZoneMinutesDetached(hrMax: maxHRSnapshot, intradayCurve: curveSnapshot)
+                }.value
             }
             series = await seriesLoader()
             // Parse every day string to a Date ONCE per series (not per slice / per render). (FER-216)
             // The chart/window/trend read the SINGLE-source fold so the plotted line, its ±σ band and the
             // Δ% never mix band and Apple; `series` stays full for today's datum + the hero. (FER-635)
-            parsedSeries = statSeries.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            // FER-976: `statSeries` (filter over `series`) is a cheap O(n) bool filter — stays on MainActor;
+            // the DateFormatter parse per row (`Repository.parseDayKey`, the actually expensive part) hops
+            // off-main via the Sendable snapshot below.
+            let statSeriesSnapshot = statSeries
+            parsedSeries = await Task.detached(priority: .userInitiated) {
+                statSeriesSnapshot.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
+            }.value
             if let loader = nightVitalsLoader { nightVitals = await loader() }
             if visibleBlocks.contains(.whatMovesIt), let loader = whatMovesItLoader {
                 whatMovesItFindings = await loader()
@@ -1503,32 +1515,25 @@ struct MetricDetailScreen: View {
 
     // MARK: - Time in zones · today (FER-253)
 
-    /// The five %HRmax zones (Tanaka), or nil when no max HR is configured.
-    private var zoneSet: HRZoneSet? {
-        guard hrMax > 0 else { return nil }
-        return HRZones.zones(maxHR: hrMax, source: "tanaka")
-    }
-
-    /// The dominant bucket spacing in minutes — derived from the curve so the "minutes in zone" math
-    /// doesn't hard-code the 5-minute bucket size. Gaps (no wear) aren't counted: each reading is
-    /// credited one bucket, never the gap to the next. (FER-253)
-    private var bucketMinutes: Double {
+    /// Minutes in [rest, Z1, Z2, Z3, Z4, Z5] from a curve snapshot (index 0 = below Zone 1). nil when
+    /// there's no max HR or too little curve to bucket. Pure — off-main-safe (FER-976, same seam as
+    /// `SleepDetailScreen.buildSleepHeat`). `nonisolated` opts OUT of this View's inferred MainActor
+    /// isolation (FER-978) so it's callable from inside `Task.detached`. Inlines the old `zoneSet` +
+    /// `bucketMinutes` (both were single-use, only this function read them).
+    private nonisolated static func computeZoneMinutesDetached(hrMax: Double,
+                                                                intradayCurve: [TrendPoint]) -> [Double]? {
+        guard hrMax > 0, intradayCurve.count > 1 else { return nil }
+        let zs = HRZones.zones(maxHR: hrMax, source: "tanaka")
         let ts = intradayCurve.map { $0.date.timeIntervalSince1970 }.sorted()
-        guard ts.count >= 2 else { return 5 }
-        var gaps: [Double] = []
-        for i in 1..<ts.count { let g = ts[i] - ts[i - 1]; if g > 0 { gaps.append(g) } }
-        guard !gaps.isEmpty else { return 5 }
-        gaps.sort()
-        return Swift.max(gaps[gaps.count / 2] / 60.0, 0.5)
-    }
-
-    /// Minutes in [rest, Z1, Z2, Z3, Z4, Z5] from today's curve (index 0 = below Zone 1). nil when
-    /// there's no max HR or too little curve to bucket. Computed ONCE when the curve loads (it sorts +
-    /// buckets the whole curve), then cached — the same discipline the daily path uses for
-    /// `parsedSeries`. (FER-253 / FER-216 pattern)
-    private func computeZoneMinutes() -> [Double]? {
-        guard let zs = zoneSet, intradayCurve.count > 1 else { return nil }
-        let per = bucketMinutes
+        var per = 5.0
+        if ts.count >= 2 {
+            var gaps: [Double] = []
+            for i in 1..<ts.count { let g = ts[i] - ts[i - 1]; if g > 0 { gaps.append(g) } }
+            if !gaps.isEmpty {
+                gaps.sort()
+                per = Swift.max(gaps[gaps.count / 2] / 60.0, 0.5)
+            }
+        }
         var mins = [Double](repeating: 0, count: 6)
         for p in intradayCurve { mins[zs.zoneNumber(forBPM: p.value)] += per }
         return mins
@@ -1850,7 +1855,7 @@ struct MetricDetailScreen: View {
     /// One datum of the stat strip (display-only, per `tileStripFinal` below). `value` is the formatted
     /// figure. The consistency cell carries `slot == "consistencia"`.
     private struct StatCell: Identifiable {
-        let id = UUID()
+        var id: String { slot }
         let slot: String
         let label: LocalizedStringKey
         let value: String

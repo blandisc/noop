@@ -461,32 +461,61 @@ struct MetricDetailView: View {
         let n: Int
     }
 
-    /// Top |r| catalog metrics over a given window (|r| ≥ 0.30, n ≥ 10). Pure — takes the window so the
-    /// heavy scan runs from `recomputeCorrelations()` into the `@State` cache, not inside `body`.
-    private func computeCorrelationRows(windowed: [(day: String, value: Double)]) -> [CorrRow] {
+    /// A Sendable-only scan result — no `MetricDescriptor` — so it can cross the `Task.detached` hop
+    /// (FER-976). `attachCorrelationRows` reattaches the catalog `MetricDescriptor` on MainActor.
+    private struct CorrScan: Sendable {
+        let id: String
+        let r: Double
+        let n: Int
+    }
+
+    /// Top |r| catalog metrics over a given window (|r| ≥ 0.30, n ≥ 10). Pure — Sendable in, Sendable
+    /// out — runs inside `Task.detached` (FER-976). `nonisolated` opts OUT of this View's inferred
+    /// MainActor isolation.
+    private nonisolated static func computeCorrelationScans(
+        windowed: [(day: String, value: Double)],
+        others: [(id: String, series: [(day: String, value: Double)])]
+    ) -> [CorrScan] {
         let myDays = Set(windowed.map(\.day))
         guard !myDays.isEmpty else { return [] }
-        var rows: [CorrRow] = []
+        var rows: [CorrScan] = []
         for entry in others {
             let otherWindowed = entry.series.filter { myDays.contains($0.day) }
             let pairs = CorrelationEngine.alignByDay(windowed, otherWindowed)
             guard pairs.count >= 10, let c = CorrelationEngine.pearson(pairs) else { continue }
             if abs(c.r) >= 0.3 {
-                rows.append(CorrRow(id: entry.metric.id, metric: entry.metric, r: c.r, n: c.n))
+                rows.append(CorrScan(id: entry.id, r: c.r, n: c.n))
             }
         }
         rows.sort { abs($0.r) > abs($1.r) }
         return Array(rows.prefix(6))
     }
 
+    /// Reattaches a Sendable `CorrScan` to the catalog `MetricDescriptor`, by id.
+    private func attachCorrelationRows(_ scans: [CorrScan]) -> [CorrRow] {
+        let byId = Dictionary(uniqueKeysWithValues: others.map { ($0.metric.id, $0.metric) })
+        return scans.compactMap { s in byId[s.id].map { CorrRow(id: s.id, metric: $0, r: s.r, n: s.n) } }
+    }
+
     /// Rebuild the cached correlation scan for the CURRENT effective window, only when its key (metric
-    /// id + selected range) changed — re-evals that don't alter the inputs are no-ops.
+    /// id + selected range) changed — re-evals that don't alter the inputs are no-ops. The (expensive)
+    /// cross-catalog Pearson sweep runs off the MainActor via `Task.detached` (FER-976): a Sendable
+    /// (day,value) snapshot in, a Sendable scan out; `correlationCache` is assigned back on MainActor by
+    /// reattaching the catalog `MetricDescriptor` (it isn't Sendable-verified, so it never crosses the hop).
     private func recomputeCorrelations() {
         let key = "\(metric.id)|\(range.rawValue)"
         guard correlationKey != key else { return }
         correlationKey = key
         let window = MetricWindowMath.make(parsed, selected: range)
-        correlationCache = computeCorrelationRows(windowed: MetricWindowMath.slice(parsed, for: window.range))
+        let windowed = MetricWindowMath.slice(parsed, for: window.range)
+        let othersSnapshot = others.map { (id: $0.metric.id, series: $0.series) }
+        Task {
+            let scans = await Task.detached(priority: .userInitiated) {
+                Self.computeCorrelationScans(windowed: windowed, others: othersSnapshot)
+            }.value
+            guard correlationKey == key else { return }   // a newer metric/range landed first
+            correlationCache = attachCorrelationRows(scans)
+        }
     }
 
     private var correlationBlock: some View {
