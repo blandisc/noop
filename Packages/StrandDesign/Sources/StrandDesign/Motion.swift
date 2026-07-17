@@ -163,10 +163,10 @@ public extension View {
         modifier(RecEntrance(kind: .grow(origin), delay: 0.15 + 0.06 * Double(index), duration: 0.35))
     }
 
-    /// `recRise` — a hero numeral appears rising 4px, 0.5s ease-out. The second numeral of a
-    /// double-datum hero passes `second: true` (+80ms).
+    /// `recRise` — a hero numeral appears rising 4px, 0.3s ease-out (snappier than the original 0.5s so
+    /// the number resolves quickly). The second numeral of a double-datum hero passes `second: true` (+50ms).
     func recRise(second: Bool = false) -> some View {
-        modifier(RecEntrance(kind: .rise, delay: second ? 0.08 : 0, duration: 0.5))
+        modifier(RecEntrance(kind: .rise, delay: second ? 0.05 : 0, duration: 0.3))
     }
 
     /// `recFade` — a chart area fades in, 0.4s ease-out after 250ms.

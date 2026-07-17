@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El número grande se resuelve más rápido al abrir un detalle / The big number resolves faster when a detail opens.**
+  **ES** — La subida del número protagonista pasó de 0.5s a 0.3s: aparece igual (sube unos pixeles y se hace sólido), pero termina antes. Aplica a las diez pantallas por igual.
+  **EN** — The hero number's rise went from 0.5s to 0.3s: same motion (rises a few pixels and turns solid), just quicker to settle. Applies to all ten screens alike.
+  ([Motion.swift](Packages/StrandDesign/Sources/StrandDesign/Motion.swift))
+
 - **El conteo de entrenamientos ya cuadra entre la tarjeta y la pantalla / The workout count now matches between the tile and the screen.**
   **ES** — La tarjeta de Actividad contaba 14 días («10») y la pantalla que abría arrancaba en 7 días («9»), midiendo además desde tu último entrenamiento en vez de desde hoy: tocabas «10» y aterrizabas en «9». Ahora todo usa la misma ventana —últimos 7 días desde hoy— con el mismo anclaje, así que el número que tocas es el que ves. La leyenda «esta semana» (una tercera ventana distinta) se retiró.
   **EN** — The Activity tile counted 14 days ("10") while the screen it opened started at 7 days ("9"), and measured back from your last workout instead of from today: you tapped "10" and landed on "9". Everything now uses one window — last 7 days from today — with the same anchor, so the number you tap is the number you see. The "this week" legend (a third, different window) was removed.
