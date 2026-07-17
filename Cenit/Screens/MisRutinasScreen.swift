@@ -40,6 +40,9 @@ struct MisRutinasScreen: View {
     @State private var swipedRoutineId: String? = nil
     @State private var pendingUndo: DeletedRoutine? = nil
     @State private var pendingFolderUndo: DeletedFolder? = nil
+    /// Secciones colapsadas (decisión Fer 2026-07-16: carpetas = subdivisiones de la lista).
+    @State private var collapsedFolders: Set<String> = []
+    private static let unfiledSectionID = "unfiled-section"
     @State private var folders: [RoutineFolder] = []
     @State private var showNewFolder = false
     @State private var newFolderName = ""
@@ -50,7 +53,6 @@ struct MisRutinasScreen: View {
     // FER-837: which «···» paper menu is open (folder id / routine id / the tools row).
     @State private var menuFolderId: String? = nil
     @State private var menuRoutineId: String? = nil
-    @State private var showToolsMenu = false
     private static let unfiledDropID = "__unfiled__"
 
     var body: some View {
@@ -132,17 +134,19 @@ struct MisRutinasScreen: View {
                 ForEach(folders) { folder in
                     let rs = byFolder[folder.id] ?? []
                     folderHeader(folder, count: rs.count)
-                    routineList(rs)
+                    if !collapsedFolders.contains(folder.id) { routineList(rs) }
                 }
                 if !folders.isEmpty && !unfiled.isEmpty {
-                    Text("Unfiled").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 14).padding(.bottom, 2)
+                    sectionBand(String(localized: "Loose"), count: unfiled.count,
+                                collapsed: collapsedFolders.contains(Self.unfiledSectionID),
+                                toggle: { toggleCollapse(Self.unfiledSectionID) })
                         .dropHighlight(dropTarget == Self.unfiledDropID, fill: theme.surface, stroke: theme.ink)
                         .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: nil, items) }
                             isTargeted: { setDropTarget(Self.unfiledDropID, $0) }
                 }
-                routineList(unfiled)
+                if folders.isEmpty || unfiled.isEmpty || !collapsedFolders.contains(Self.unfiledSectionID) {
+                    routineList(unfiled)
+                }
 
                 divider
                 actionRow("plus", "New routine") { showBuilder = true }
@@ -152,15 +156,9 @@ struct MisRutinasScreen: View {
                 HStack(spacing: CenitMetrics.space2) {
                     InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
                     InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showImport = true }
-                    InstrumentoToolChip(systemImage: "folder", label: Text("Folders")) { showToolsMenu = true }
-                        .paperMenu(isPresented: $showToolsMenu, items: [
-                            .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
-                        ] + folders.map { f in
-                            PaperMenuItem(f.name, systemImage: "folder", children: [
-                                .init(String(localized: "Rename folder…"), systemImage: "pencil") { startRename(f) },
-                                .init(String(localized: "Delete folder"), systemImage: "trash", isDestructive: true) { deleteFolder(f) }
-                            ])
-                        })
+                    // «Folders» ya no es menú: las carpetas viven como secciones de la propia lista
+                    // (decisión Fer 2026-07-16); la puerta que queda es crear una nueva.
+                    InstrumentoToolChip(systemImage: "folder.badge.plus", label: Text("New section")) { startNewFolder(moving: nil) }
                 }
                 .padding(.vertical, CenitMetrics.space2)
                 divider
@@ -177,16 +175,17 @@ struct MisRutinasScreen: View {
         }
     }
 
+    /// Banda de sección (decisión Fer 2026-07-16): la carpeta es una SUBDIVISIÓN de la lista —
+    /// patternBlock de borde a borde, nombre en overline + conteo, chevron de colapso; el «···»
+    /// conserva renombrar/borrar y la banda sigue siendo destino de drag & drop.
     private func folderHeader(_ f: RoutineFolder, count: Int) -> some View {
         let targeted = dropTarget == f.id
-        return HStack(spacing: 9) {
-            Image(systemName: "folder").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
-            Text(f.name).font(StrandFont.body).foregroundStyle(theme.ink)
-            Text("· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 0)
+        return sectionBand(f.name, count: count,
+                           collapsed: collapsedFolders.contains(f.id),
+                           toggle: { toggleCollapse(f.id) }) {
             Button { menuFolderId = f.id } label: {
                 Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 40).contentShape(Rectangle())
+                    .foregroundStyle(theme.inkTertiary).frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .paperMenu(
@@ -198,11 +197,41 @@ struct MisRutinasScreen: View {
                 ]
             )
         }
-        .padding(.top, 12).padding(.bottom, 2)
         .dropHighlight(targeted, fill: theme.surface, stroke: theme.ink)
         .draggable("f:\(f.id)")
         .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: f.id, items) }
             isTargeted: { setDropTarget(f.id, $0) }
+    }
+
+    private func toggleCollapse(_ id: String) {
+        withAnimation(StrandMotion.interactive) {
+            if collapsedFolders.contains(id) { collapsedFolders.remove(id) } else { collapsedFolders.insert(id) }
+        }
+    }
+
+    /// La banda: tocarla colapsa/expande su sección; `trailing` cuelga el «···» de carpeta.
+    private func sectionBand<T: View>(_ name: String, count: Int, collapsed: Bool,
+                                      toggle: @escaping () -> Void,
+                                      @ViewBuilder trailing: () -> T = { EmptyView() }) -> some View {
+        HStack(spacing: 8) {
+            Button(action: toggle) {
+                HStack(spacing: 8) {
+                    Text(verbatim: name).groteskOverline().foregroundStyle(theme.inkSecondary)
+                    Text(verbatim: "· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(verbatim: name))
+            .accessibilityValue(Text(collapsed ? "collapsed" : "expanded"))
+            trailing()
+            Image(systemName: collapsed ? "chevron.right" : "chevron.down")
+                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+        }
+        .padding(.horizontal, 12).frame(minHeight: 40)
+        .background(theme.patternBlock)
+        .padding(.top, 10)
     }
 
     private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {

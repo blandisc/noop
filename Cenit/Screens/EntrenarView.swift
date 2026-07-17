@@ -112,6 +112,9 @@ private struct EntrenarLanding: View {
     @State private var showTemplates = false
     /// FER-952: the hub's Import door-chip.
     @State private var showHubImport = false
+    /// «Lo que Cénit sabe hacer» (decisión Fer 2026-07-16): puerta permanente + tarjeta única.
+    @State private var showTricks = false
+    @AppStorage("hubTricksCardDismissed") private var tricksCardDismissed = false
     /// FER-952: the hub's «New routine» — pushes the unified create flow (library → editor).
     @State private var showCreateRoutine = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
@@ -147,6 +150,7 @@ private struct EntrenarLanding: View {
                         heroSection       // ① open hero «Hoy · {día}» + «Empezar» + the five discs
                         suggestionRow     // ② contextual FER-532 nudge (shown only when the engine fires)
                         sesionDeHoy       // ③ «LA SESIÓN DE HOY» — big numerals + raise + recovery hint
+                        if !tricksCardDismissed { tricksCard }   // una-sola-vez (decisión Fer)
                         tuPlanSection     // ④ «TU PLAN» — week squares + every routine + new-routine row
                         constanciaSection // ⑤ 90-day dot grid — no streak guilt (mock 1a)
                         footRows          // ⑥ history + diet
@@ -182,6 +186,9 @@ private struct EntrenarLanding: View {
         // FER-952: «＋ Nueva rutina» del hub — el flujo unificado directo (Biblioteca → editor).
         .navigationDestination(isPresented: $showCreateRoutine) {
             ExerciseLibraryScreen(createFlow: true) { picks in createRoutineFromHub(picks) }
+        }
+        .navigationDestination(isPresented: $showTricks) {
+            WorkshopTricksScreen()
         }
         // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
         // doesn't cross the `.sheet` boundary, FER-162), no nested NavigationStack (FER-171). (FER-557)
@@ -605,13 +612,19 @@ private struct EntrenarLanding: View {
     private var tuPlanSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             InstrumentoSectionBand("Your plan") {
-                // Decisión Fer (2026-07-16): la puerta dice que AHÍ también se editan las rutinas,
-                // no solo la semana.
+                // Decisión Fer (2026-07-16 v2): la puerta habla en la MISMA voz sutil que el
+                // «N sesiones · 90 días» de Consistencia, con chevron para decir «tócame».
                 Button { openWeeklyPlan() } label: {
-                    Text("Routines and week").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        .frame(minHeight: 44).contentShape(Rectangle())
+                    HStack(spacing: 4) {
+                        Text("Edit routines and week")
+                            .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                        StrandIcon.disclosure.image
+                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text("Edit routines and week"))
             }
             weekStrip
             // Handoff v4b: EVERY routine lists here (today's included — its «↗ N suben» badge is the
@@ -625,6 +638,38 @@ private struct EntrenarLanding: View {
                 planRoutineRow((routineId: r.id, name: r.name, days: String(localized: "no day yet")))
             }
             nuevaRutinaRow
+        }
+    }
+
+    /// Tarjeta de una-sola-vez hacia los trucos del taller (decisión Fer 2026-07-16): se descarta
+    /// con ✕ y no vuelve; la puerta permanente es el chip «? Trucos».
+    private var tricksCard: some View {
+        Button { showTricks = true } label: {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Did you know your routine can raise itself?")
+                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                Text("Progression, rest by pulse, plate calculator… the workshop's tricks.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("See the tricks").font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataStrain)
+                    .padding(.top, 4)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(CenitMetrics.receiptPadding)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            Button { withAnimation(StrandMotion.interactive) { tricksCardDismissed = true } } label: {
+                StrandIcon.close.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Dismiss"))
         }
     }
 
@@ -647,6 +692,7 @@ private struct EntrenarLanding: View {
             HStack(spacing: CenitMetrics.space2) {
                 InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
                 InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showHubImport = true }
+                InstrumentoToolChip(systemImage: "questionmark.circle", label: Text("Tricks")) { showTricks = true }
             }
         }
         .padding(.top, CenitMetrics.space2)

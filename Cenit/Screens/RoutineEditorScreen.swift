@@ -78,7 +78,12 @@ struct RoutineEditorScreen: View {
 
     /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
     /// a running session must not shift (handoff guard).
-    private var locked: Bool { model.strengthSession != nil }
+    private var locked: Bool {
+        guard let session = model.strengthSession else { return false }
+        // Solo bloquea la rutina QUE la sesión está corriendo (sus slots son un snapshot de esta
+        // prescripción); cualquier otra rutina se edita libre aunque haya sesión viva (2026-07-16).
+        return session.routineId != nil && session.routineId == routine?.id
+    }
 
     var body: some View {
         VStack(spacing: 0) {

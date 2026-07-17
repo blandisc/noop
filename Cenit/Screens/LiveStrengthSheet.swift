@@ -85,7 +85,8 @@ struct LiveStrengthSheet: View {
     @State private var showLibraryPicker = false
     /// FER-938: the id of a set just appended via «+ Serie», so its row shows the «COPIADA DE LA N» hint +
     /// dashed border until it's logged (the guard `!set.done` retires the hint the moment it's marked).
-    @State private var copiedSetId: String?
+    /// Id de la fila recién añadida — solo dispara la háptica ligera del renglón nuevo (r22).
+    @State private var addedSetId: String?
     /// r15: la fila «armada» para borrar (long-press) — brinca en su lugar y ofrece «Quitar serie».
     @State private var armedDeleteSetId: String?
     /// FER-936: which exercise's «≡» reorder handle is momentarily emphasised (ember) after picking
@@ -2576,24 +2577,24 @@ struct LiveStrengthSheet: View {
     /// surface, borde hairlineStrong, esquina continua), el ÚNICO color vive en el icono y el valor
     /// va en tinta media. Misma familia que los discos troquel del hub.
     private func restChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        Button { openRestEditor(ei: ei) } label: {
+        // MISMO chip que el editor (decisión Fer 2026-07-16): ♥ recovery cuando el descanso es por
+        // FC (con su valor), reloj ámbar cuando es por tiempo — una sola gramática en todo el flujo.
+        let cfg = run.effectiveRest(forSet: run.currentSet)
+        let isHR = cfg.mode == .heartRate
+        return Button { openRestEditor(ei: ei) } label: {
             HStack(spacing: 6) {
-                StrandIcon.clock.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataStrain)
-                Text(restChipLabel(run)).font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.ink)
+                (isHR ? StrandIcon.heart.image : StrandIcon.clock.image)
+                    .font(StrandFont.glyph(.chevron))
+                    .foregroundStyle(isHR ? theme.dataRecovery : theme.dataStrain)
+                Text(RoutineSetEditing.restChipLabel(cfg))
+                    .font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.ink)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
             .troquelChip(theme)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Edit rest"))
-        .accessibilityValue(Text(restChipLabel(run)))
-    }
-
-    /// Mode-aware chip text: the fixed duration, or «by HR» when the rest is heart-rate driven.
-    private func restChipLabel(_ run: StrengthSessionModel.ExerciseRun) -> String {
-        // r20 (sugerencia propia aprobada): el reloj del chip ya dice «descanso» — la palabra
-        // sobraba; queda el puro valor («90 s» / «2 min» / «por FC»), el efectivo del set actual.
-        shortRest(run.effectiveRest(forSet: run.currentSet))
+        .accessibilityValue(Text(RoutineSetEditing.restChipLabel(cfg)))
     }
 
     /// The «✎ Nota» chip (FER-932), next to the rest chip on the active exercise's header. Opens
@@ -2682,18 +2683,13 @@ struct LiveStrengthSheet: View {
     /// The quiet column header (overline). Hidden at accessibility sizes — each reflowed cell self-labels.
     private func columnHeader(_ type: ExerciseType) -> some View {
         let titles = columnTitles(type)
-        return HStack(spacing: 6) {   // = spacing de gridRow: header y datos comparten geometría
+        return HStack(spacing: 8) {   // = spacing de gridRow: header y datos comparten geometría
             // El badge vive en un frame de 44 (26 visual + aire): el header usa el MISMO ancho,
             // si no, todas las columnas arrancan corridas (bug de alineación, canvas 2026-07-16).
             Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
-            // Canvas pass 2026-07-15: «PREVIOUS · REST» truncated to an unreadable «PR…» at narrow
-            // widths — the rest already lives on each row's own cell, so the column header only needs
-            // to name the previous value.
-            // FER-952: at narrow widths the flexible column starved «PREVIOUS» down to a clipped «P» —
-            // the short label survives every width (the column itself stays: tap = prefill last time).
-            Text("PREV").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .lineLimit(1).minimumScaleFactor(0.6)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // FER-952 (modelo fantasma): la columna PREV murió — la última vez vive dentro de las
+            // celdas como semilla tenue. El hueco flexible mantiene las columnas pegadas a la derecha.
+            Spacer(minLength: 0)
             ForEach(titles.indices, id: \.self) { i in
                 let isRPE = hasRPEColumn(type) && i == titles.indices.last
                 Text(titles[i]).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -2715,19 +2711,18 @@ struct LiveStrengthSheet: View {
     }
     private var massUnitTitle: LocalizedStringKey { imperial ? "LB" : "KG" }
     /// La columna RPE: más angosta que las de captura (su contenido es «RPE» o «9,5»).
-    private let rpeColumnWidth: CGFloat = 40
+    private let rpeColumnWidth: CGFloat = 44
     /// ¿La última columna de este tipo es RPE? (weightReps/bodyweight sí; time/distance no.)
     private func hasRPEColumn(_ type: ExerciseType) -> Bool {
         type == .weightReps || type == .bodyweight
     }
     private func cellWidth(_ type: ExerciseType) -> CGFloat {
         switch type {
-        // FER-952 (owner): 56 starved the flexible PREV column to ~5pt inside the card's gutter —
-        // 50 across the board (time keeps 70 for the mm:ss) buys «anterior» its ~40pt back.
-        case .weightReps: return 50
-        case .bodyweight: return 54
+        // FER-952 fantasma: sin columna PREV las celdas recuperan aire.
+        case .weightReps: return 64
+        case .bodyweight: return 64
         case .time:       return 70
-        case .distance:   return 50
+        case .distance:   return 60
         }
     }
 
@@ -2747,13 +2742,7 @@ struct LiveStrengthSheet: View {
         .padding(.vertical, reflow ? 8 : 2)
         // r6: sin resaltado de fila (desbordaba el borde de la tarjeta) — la serie en curso se marca
         // solo con su numeral subrayado. El divisor vive a nivel rebanada (recibo, borde a borde).
-        // r12: overlay FER-938 reactivado — el bisect r9 lo exoneró (la fila siguió gorda con él apagado).
-        .overlay {
-            if set.id == copiedSetId, !set.done {
-                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                    .strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-            }
-        }
+        // FER-938 retirado: la fila copiada llega como semilla tenue (modelo fantasma) y se explica sola.
         .transition(.opacity)
         .accessibilityElement(children: .contain)
         // r13: «Delete set» reaches VoiceOver through the row's context menu (actions rotor) — the
@@ -2762,21 +2751,12 @@ struct LiveStrengthSheet: View {
 
     private func gridRow(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
                          set: StrengthSessionModel.WorkingSet) -> some View {
-        HStack(spacing: 6) {   // token-exempt: 6 — compresión FER-952 para que PREV se vea
+        // Modelo fantasma (decisión Fer, FER-952): la columna PREV murió — «la última vez» vive
+        // DENTRO de las celdas como semilla en tinta tenue hasta que la tocas; palomear una fila
+        // sin tocar registra exactamente lo de la vez pasada.
+        HStack(spacing: 8) {
             badge(run: run, si: si)
-            if set.id == copiedSetId, !set.done, si > 0 {
-                // FER-938: the freshly-added set advertises where its values came from, in place of «anterior».
-                let fromNumber = run.sets.prefix(si).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
-                // r14: candado duro — esta celda es la ÚNICA pieza exclusiva de la fila recién
-                // copiada (la que sale gorda); una línea y 44pt como sus celdas hermanas, pase lo
-                // que pase con la clave localizada.
-                Text("COPIED FROM \(fromNumber)").instrumentoOverline().foregroundStyle(theme.dataStrain)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, maxHeight: 44, alignment: .leading)
-            } else {
-                previousCell(ei: ei, si: si, run: run)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            Spacer(minLength: 0)
             dataCells(ei: ei, si: si, run: run, set: set)
             checkButton(ei: ei, si: si, set: set)
         }
@@ -2790,7 +2770,6 @@ struct LiveStrengthSheet: View {
                 Spacer()
                 checkButton(ei: ei, si: si, set: set)
             }
-            previousCell(ei: ei, si: si, run: run)
             HStack(spacing: 16) { dataCells(ei: ei, si: si, run: run, set: set) }
         }
     }
@@ -3087,48 +3066,22 @@ struct LiveStrengthSheet: View {
             .accessibilityLabel(Text(isWarmup ? "Warm-up set" : "Set \(workNumber)"))
     }
 
-    /// «ANTERIOR» — last time's value; tap to copy it into this row. «—» (inert) without a record.
-    /// El descanso salió de la celda (FER-952): es por ejercicio y ya habla en el chip troquel.
-    @ViewBuilder private func previousCell(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun) -> some View {
-        if let text = previousText(run) {
-            Button { prefillTapped(ei: ei, si: si, run: run) } label: {
-                Text(reflow ? "Previous: \(text)" : text)
-                    // r26: la celda ANTERIOR es dato medido → Grotesk tabular.
-                    .font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1).minimumScaleFactor(0.8)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Previous, \(text)"))
-            .accessibilityHint(Text("Copies it to this set"))
-        } else {
-            Text(verbatim: "—").font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkDim) // token-exempt: glifo «sin registro previo» (—), no es copy conector
-                .accessibilityLabel(Text("No previous record"))
-        }
-    }
-
-    /// A set's rest, compressed for the ANTERIOR cell: «2 min» / «90 s» / «por FC».
-    private func shortRest(_ config: RestConfig) -> String {
-        guard config.mode != .heartRate else { return String(localized: "by HR") }
-        if config.seconds >= 60, config.seconds % 60 == 0 { return "\(config.seconds / 60) min" }
-        return "\(config.seconds) s"
-    }
-
     /// The editable / captured data columns, by exercise type.
     @ViewBuilder private func dataCells(ei: Int, si: Int, run: StrengthSessionModel.ExerciseRun,
                                         set: StrengthSessionModel.WorkingSet) -> some View {
+        let ghost = !set.done && !set.touched
         switch run.type {
         case .weightReps:
-            numberCell(.weight(ei, si), value: displayWeight(set.weightKg), isInt: false, done: set.done, type: run.type)
-            numberCell(.reps(ei, si), value: Double(set.reps), isInt: true, done: set.done, type: run.type)
+            numberCell(.weight(ei, si), value: displayWeight(set.weightKg), isInt: false, done: set.done, type: run.type, ghost: ghost)
+            numberCell(.reps(ei, si), value: Double(set.reps), isInt: true, done: set.done, type: run.type, ghost: ghost)
             rpeCell(ei: ei, si: si, run: run, set: set)
         case .bodyweight:
             HStack(spacing: 1) {
                 Text("+").font(StrandFont.body).foregroundStyle(set.done ? theme.inkSecondary : theme.inkTertiary)
-                numberCell(.weight(ei, si), value: displayWeight(set.weightKg), isInt: false, done: set.done, type: run.type, width: run.type == .bodyweight ? 48 : 56)
+                numberCell(.weight(ei, si), value: displayWeight(set.weightKg), isInt: false, done: set.done, type: run.type, width: run.type == .bodyweight ? 48 : 56, ghost: ghost)
             }
             .frame(width: reflow ? nil : cellWidth(run.type), alignment: reflow ? .leading : .center)
-            numberCell(.reps(ei, si), value: Double(set.reps), isInt: true, done: set.done, type: run.type)
+            numberCell(.reps(ei, si), value: Double(set.reps), isInt: true, done: set.done, type: run.type, ghost: ghost)
             rpeCell(ei: ei, si: si, run: run, set: set)
         case .time:
             capturedCell(ei: ei, si: si, run: run,
@@ -3147,7 +3100,7 @@ struct LiveStrengthSheet: View {
     /// custom keypad (FER-716, no native keyboard, no «Foco»); while active it shows the working buffer
     /// with a caret and a 2px ink underline, otherwise the formatted value with a hairline underline.
     private func numberCell(_ ref: CellRef, value: Double, isInt: Bool, done: Bool,
-                            type: ExerciseType, width: CGFloat? = nil) -> some View {
+                            type: ExerciseType, width: CGFloat? = nil, ghost: Bool = false) -> some View {
         let active = activeCell == ref
         let shown = active ? buffer : formatCell(value, isInt: isInt)
         // Canvas pass 2026-07-15 (UX·anim #1): opening the keypad animates like closing it — the
@@ -3157,7 +3110,9 @@ struct LiveStrengthSheet: View {
                 Text(shown.isEmpty ? " " : shown)
                     // r20 (auditoría UX #6f): el numeral escala con Dynamic Type intermedio.
                     .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
-                    .foregroundStyle(done ? theme.inkSecondary : theme.ink)
+                    // Fantasma FER-952: la semilla («la última vez») habla tenue hasta que la tocas;
+                    // el ✓ la registra tal cual — «si no lleno nada, es lo mismo que la anterior».
+                    .foregroundStyle(done ? theme.inkSecondary : (ghost && !active ? theme.inkDim : theme.ink))
                 if active {
                     Rectangle().fill(theme.ink).frame(width: 2, height: 18)   // caret
                         .opacity(0.9) // token-exempt: opacidad de caret >0.70
@@ -3344,7 +3299,7 @@ struct LiveStrengthSheet: View {
                     // el bloque se asoma completo (su fondo incluye al propio botón).
                     scrollProxy?.scrollTo("session-exercise-\(ei)", anchor: .bottom)
                 }
-                copiedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil  // FER-938
+                addedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil
             } label: {
                 Label("Add set", systemImage: "plus")
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)
@@ -3355,7 +3310,7 @@ struct LiveStrengthSheet: View {
             }
             .buttonStyle(.plain)
             // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
-            .sensoryFeedback(.impact(weight: .light), trigger: copiedSetId)
+            .sensoryFeedback(.impact(weight: .light), trigger: addedSetId)
             if session.runs.indices.contains(ei), !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
                 Button { addWarmupRamp(ei) } label: {
                     Label("Add warm-up", systemImage: "flame")

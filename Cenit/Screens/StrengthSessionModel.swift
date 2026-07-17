@@ -106,6 +106,9 @@ final class StrengthSessionModel: ObservableObject {
         /// `insertWarmup` sets `.warmup`. Persisted through to `SetEntry.kind`, so warm-ups are excluded
         /// from volume/PRs (which already filter `kind == .work`) without any other change.
         var kind: SetKind = .work
+        /// El usuario ya escribió en esta fila (modelo fantasma FER-952): false = las celdas muestran
+        /// la semilla «la última vez» en tinta tenue, y el ✓ la registra tal cual.
+        var touched: Bool = false
         /// Perceived effort (RPE), 6-10 with half-steps (FER-930). Optional: marking a set done never
         /// requires it. Set from the RPE sheet, independent of `done`.
         var rpe: Double? = nil
@@ -562,11 +565,13 @@ final class StrengthSessionModel: ObservableObject {
     func setWeight(exercise ei: Int, set si: Int, kg: Double) {
         guard runs.indices.contains(ei), runs[ei].sets.indices.contains(si) else { return }
         runs[ei].sets[si].weightKg = max(0, kg)
+        runs[ei].sets[si].touched = true
     }
     /// Set a row's reps directly from its cell.
     func setReps(exercise ei: Int, set si: Int, reps: Int) {
         guard runs.indices.contains(ei), runs[ei].sets.indices.contains(si) else { return }
         runs[ei].sets[si].reps = max(0, reps)
+        runs[ei].sets[si].touched = true
     }
     /// Toggle a row's done flag from the inline ✓ — no rest is started (the rest belongs to the Foco /
     /// FER-348). Stamps `doneTs` when marking done, clears it when un-marking.
@@ -611,6 +616,7 @@ final class StrengthSessionModel: ObservableObject {
         let run = runs[ei]
         if let w = run.lastWeightKg { runs[ei].sets[si].weightKg = w }
         if let r = run.lastReps { runs[ei].sets[si].reps = r }
+        runs[ei].sets[si].touched = true
         if let d = run.lastDistanceM { runs[ei].sets[si].distanceM = d }
     }
 
@@ -826,7 +832,8 @@ final class StrengthSessionModel: ObservableObject {
                         StrengthSessionSnapshot.SetSnapshot(
                             id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                             distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
-                            rest: s.rest, kind: s.kind, rpe: s.rpe, note: s.note)
+                            rest: s.rest, kind: s.kind, rpe: s.rpe, note: s.note,
+                            touched: s.touched ? true : nil)
                     },
                     currentSet: run.currentSet, skipped: run.skipped,
                     raiseOptedOut: run.raiseOptedOut ? true : nil,
@@ -851,7 +858,8 @@ final class StrengthSessionModel: ObservableObject {
                         sets: r.sets.map { s in
                             WorkingSet(id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                                        distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
-                                       rest: s.rest, kind: s.kind, rpe: s.rpe, note: s.note)
+                                       rest: s.rest, kind: s.kind, touched: s.touched ?? false,
+                                       rpe: s.rpe, note: s.note)
                         },
                         currentSet: r.currentSet, skipped: r.skipped,
                         raiseOptedOut: r.raiseOptedOut ?? false,
@@ -900,8 +908,10 @@ final class StrengthSessionModel: ObservableObject {
             let sets: [WorkingSet] = slot.re.plannedSets.filter { $0.kind == .work }.map { p in
                 // FER-E: an earned raise changes the SEED, not the table — every work cell arrives at
                 // the proposed weight (double progression trains all work sets at one load).
-                let weight = (type == .weightReps ? slot.raise?.toKg : nil) ?? p.weightKg ?? lastWeight ?? 0
-                let reps = usesReps ? (p.reps ?? lastReps ?? 8) : 0
+                // Regla fantasma (decisión Fer, FER-952): «si no lleno nada, que sea lo mismo que la
+                // anterior» — la última vez gana al plan; la subida ganada (FER-E) sigue primero.
+                let weight = (type == .weightReps ? slot.raise?.toKg : nil) ?? lastWeight ?? p.weightKg ?? 0
+                let reps = usesReps ? (lastReps ?? p.reps ?? 8) : 0
                 // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
                 // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).
                 return WorkingSet(id: p.id, weightKg: weight, reps: reps, done: false, rest: p.rest)

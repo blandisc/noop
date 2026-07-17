@@ -1,0 +1,104 @@
+#if os(iOS)
+import SwiftUI
+import StrandDesign
+
+// MARK: - «Lo que Cénit sabe hacer» (decisión Fer 2026-07-16)
+//
+// La página del taller: los trucos distintivos que viven medio escondidos en el flujo Entrenar —
+// progresión, descanso por FC, importar el plan de una IA, calentamientos en rampa, calculadora de
+// discos, tickets térmicos. NO es un tutorial: una fila por truco, dicho en una línea, con el color
+// solo en el glifo (§8.4). Dos puertas: el chip «? Trucos» del hub (permanente) y una tarjeta de
+// una-sola-vez en el hub (se descarta con ✕ y no vuelve — `hubTricksCardDismissed`).
+
+struct WorkshopTricksScreen: View {
+    @Environment(\.instrumentoTheme) private var theme
+
+    private struct Trick: Identifiable {
+        let id: String
+        let systemImage: String
+        let tint: KeyPath<InstrumentoTheme, Color>
+        let title: LocalizedStringKey
+        let body: LocalizedStringKey
+    }
+
+    private let tricks: [Trick] = [
+        .init(id: "progression", systemImage: "arrow.up.right",
+              tint: \.dataRecovery,
+              title: "Progression that earns itself",
+              body: "Hit the target two sessions in a row and the routine raises the weight. Turn it on per exercise, from its card."),
+        .init(id: "hr-rest", systemImage: "heart.fill",
+              tint: \.dataHeart,
+              title: "Rest by heart, not by clock",
+              body: "The band tells you when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it."),
+        .init(id: "import", systemImage: "square.and.arrow.down",
+              tint: \.dataHrv,
+              title: "Import your AI's plan",
+              body: "Ask ChatGPT or Claude for a routine and bring the file in. Cénit never connects; you run the AI yourself."),
+        .init(id: "warmup", systemImage: "flame",
+              tint: \.dataStrain,
+              title: "Warm-ups on a ramp",
+              body: "One tap adds the 40/60/80% ladder before your first heavy set."),
+        .init(id: "plates", systemImage: "scalemass",
+              tint: \.dataSleep,
+              title: "Plate calculator",
+              body: "Tap the weight during a session and it tells you which plates to load per side."),
+        .init(id: "tickets", systemImage: "ticket",
+              tint: \.ink,
+              title: "Thermal tickets",
+              body: "Every session prints its receipt. Save them and compare them in History."),
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("The workshop").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("What Cénit can do")
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink)
+                Text("Things you may not have found yet")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(tricks) { t in
+                        trickRow(t)
+                        if t.id != tricks.last?.id { Divider().overlay(theme.hairline) }
+                    }
+                }
+                .padding(.top, CenitMetrics.gap)
+            }
+            .padding(.top, CenitMetrics.screenTop)
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.paper.ignoresSafeArea())
+    }
+
+    private func trickRow(_ t: Trick) -> some View {
+        HStack(alignment: .top, spacing: CenitMetrics.gap) {
+            Image(systemName: t.systemImage)
+                .font(StrandFont.glyph(.inline))
+                .foregroundStyle(theme[keyPath: t.tint])
+                .frame(width: 34, height: 34)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                    .strokeBorder(theme[keyPath: t.tint].opacity(StrandOpacity.strokeSoft), lineWidth: 1.5))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(t.title).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                Text(t.body).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, CenitMetrics.gap)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+#if DEBUG
+#Preview("Trucos del taller") {
+    NavigationStack { WorkshopTricksScreen() }
+        .instrumentoTheme(.base)
+        .preferredColorScheme(.light)
+}
+#endif
+#endif
