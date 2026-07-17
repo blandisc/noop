@@ -17,8 +17,14 @@ settings:
     # Auto-extraction of LocalizedStringKey into the String Catalog on build is DISABLED:
     # Xcode 26.3's extractor (IDEXCStringsSupportCore / StringTraceGraph) crashes with a
     # stack-overflow recursion on our string-construction graph, taking the whole IDE down
-    # on every build. The String Catalog is maintained from the .stringsdata in DerivedData
-    # instead. Re-enable once the offending pattern / Xcode bug is resolved (FER-568).
+    # on every build. The catalog is maintained BY HAND instead — `Tools/translate-es.py` is
+    # the source of truth for `es`. Do NOT trust the .stringsdata Xcode leaves in DerivedData:
+    # the IDE-side parser that writes it only extracts from files containing a SwiftUI
+    # `Text("…")` literal, so it reports live `String(localized:)` strings as missing.
+    # NOTE this setting is compiler-side ONLY and does not stop that IDE parser — building
+    # still rewrites Localizable.xcstrings destructively (marks live strings stale, drops their
+    # `es` values). Discard that churn; never commit it. Root cause + measurements:
+    # docs/design-system/I18N.md §2.1. Re-enable once the Xcode bug is resolved (FER-568).
     SWIFT_EMIT_LOC_STRINGS: NO
     SWIFT_STRICT_CONCURRENCY: minimal
     DEVELOPMENT_TEAM: "B7KRCF776Z"
