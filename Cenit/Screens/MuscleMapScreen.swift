@@ -581,7 +581,7 @@ private struct BodyFiguresView: View {
                 AnatomyBaseShape()
                     .stroke(theme.hairline, lineWidth: 1.2)
                 ForEach(MuscleAnatomy.paths(for: side)) { item in
-                    let shape = SVGPath(item.d)
+                    let shape = SVGPath(segs: item.segs)
                     let isTop = highlight == item.muscle
                     shape
                         .fill(color(for: item.muscle))
