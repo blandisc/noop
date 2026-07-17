@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La ⓘ del héroe es más grande y la explicación deja el mismo aire en todas las pantallas / The hero's ⓘ is bigger and the explanation leaves the same gap on every screen.**
+  **ES** — El botón ⓘ del número protagonista pasó de 12 a 18 pt (más fácil de ver y de tocar). Y la tarjeta «Qué medimos» que se abre al tocarlo ahora deja 14 pt hasta la siguiente sección en todas: Carga de entrenamiento la tenía pegada (0 pt) y ya iguala al resto.
+  **EN** — The hero number's ⓘ button went from 12 to 18 pt (easier to see and tap). And the "What we measure" card it opens now leaves 14 pt to the next section on every screen: Training load had it flush (0 pt) and now matches the rest.
+  ([HeroInvertido.swift](Packages/StrandDesign/Sources/StrandDesign/HeroInvertido.swift), [TrainingLoadSheet.swift](Cenit/Screens/TrainingLoadSheet.swift))
+
 - **El número grande se resuelve más rápido al abrir un detalle / The big number resolves faster when a detail opens.**
   **ES** — La subida del número protagonista pasó de 0.5s a 0.3s: aparece igual (sube unos pixeles y se hace sólido), pero termina antes. Aplica a las diez pantallas por igual.
   **EN** — The hero number's rise went from 0.5s to 0.3s: same motion (rises a few pixels and turns solid), just quicker to settle. Applies to all ten screens alike.

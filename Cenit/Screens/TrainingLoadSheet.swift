@@ -265,8 +265,8 @@ struct TrainingLoadSheet: View {
 
     /// The ⓘ card under the hero: what the ratio measures, in plain language (no ACWR jargon).
     private var whatWeMeasureCard: some View {
-        QueMedimosCard(title: "What we measure", explanation: heroExplanation,
-                       theme: theme, bottomInset: 0)
+        // Default bottomInset (14) so the gap to the next section matches every other detail screen.
+        QueMedimosCard(title: "What we measure", explanation: heroExplanation, theme: theme)
     }
 
     /// Flat hero for the calibrating state: no inverted field for a ratio we don't have.

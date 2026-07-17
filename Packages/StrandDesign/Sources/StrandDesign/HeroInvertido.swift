@@ -40,7 +40,8 @@ public struct HeroInvertido<Numeral: View, Verdict: View, Trailing: View>: View 
                 if let onInfo {
                     Button { onInfo() } label: {
                         Image(systemName: "info.circle")
-                            .font(StrandFont.glyph(.chevron, weight: .regular))
+                            // `.lead` (18pt) — was `.chevron` (12pt); a clearer, easier-to-hit affordance.
+                            .font(StrandFont.glyph(.lead, weight: .regular))
                             .foregroundStyle(theme.paper.opacity(OnFieldOpacity.dimChrome))
                     }
                     .buttonStyle(.plain)
