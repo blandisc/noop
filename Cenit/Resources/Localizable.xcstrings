@@ -16681,6 +16681,142 @@
         }
       }
     },
+    "Restarts your calibration from today if your baseline went wrong (band change, an anomalous stretch)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restarts your calibration from today if your baseline went wrong (band change, an anomalous stretch)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reinicia tu calibraci\u00f3n desde hoy si tu base qued\u00f3 mal (cambio de banda, periodo an\u00f3malo)."
+          }
+        }
+      }
+    },
+    "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to C\u00e9nit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to C\u00e9nit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descarga la animaci\u00f3n de cada ejercicio desde el CDN de im\u00e1genes de ExerciseDB, un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin se\u00f1al despu\u00e9s. Esta es la \u00fanica excepci\u00f3n a la regla de C\u00e9nit de cero red: al bajar cada imagen tu IP es visible para ese servicio, como al cargar cualquier imagen en internet; ning\u00fan otro dato tuyo (ni el nombre del ejercicio) sale jam\u00e1s. Apagar esto detiene descargas futuras, no borra lo ya guardado."
+          }
+        }
+      }
+    },
+    "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecturas nuevas y aproximadas: reserva vagal nocturna, estabilidad t\u00e9rmica, respiraci\u00f3n de la noche y recuperaci\u00f3n post-sesi\u00f3n. Necesitan varios d\u00edas de uso para leerse bien."
+          }
+        }
+      }
+    },
+    "Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estima si tu cuerpo tiende a madrugar o a desvelarse, a partir de tu patr\u00f3n de actividad. Es una funci\u00f3n experimental y aproximada; necesita varios d\u00edas de uso para leerse bien."
+          }
+        }
+      }
+    },
+    "Recalibrate recovery" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recalibrate recovery"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recalibrar recuperaci\u00f3n"
+          }
+        }
+      }
+    },
+    "Experimental metrics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimental metrics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "M\u00e9tricas experimentales"
+          }
+        }
+      }
+    },
+    "DAY BY DAY" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DAY BY DAY"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D\u00cdA CON D\u00cdA"
+          }
+        }
+      }
+    },
+    "No reading yet today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reading yet today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A\u00fan no hay lectura de hoy"
+          }
+        }
+      }
+    },
     "Couldn't check. Try again." : {
       "extractionState" : "stale",
       "localizations" : {
