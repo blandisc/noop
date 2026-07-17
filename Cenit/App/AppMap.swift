@@ -319,9 +319,10 @@ private struct WeeklyPlanMapCell: View {
     WeeklyPlanMapCell()
 }
 
-/// FLUJO COMPLETO de una rutina nueva (FER-952): nace en «Mis Rutinas» (＋ Nueva rutina → builder),
+/// FLUJO COMPLETO de una rutina nueva (FER-952): nace en Tu Plan (＋ Nueva → biblioteca),
 /// al guardar aterriza en el editor unificado («Rutina»), y su «Empezar» presenta la Serie activa
-/// REAL — todo navegable dentro del canvas, con el plan demo sembrado de fondo.
+/// REAL — todo navegable dentro del canvas, con el plan demo sembrado. (MisRutinasScreen se retiró
+/// en FER-962: Tu Plan es la única casa de la biblioteca.)
 private struct NewRoutineFlowMapCell: View {
     @StateObject private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
@@ -332,9 +333,10 @@ private struct NewRoutineFlowMapCell: View {
         Group {
             if seeded {
                 NavigationStack(path: $path) {
-                    MisRutinasScreen(
+                    WeeklyPlanEditorView(
                         openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },
-                        openLibrary: {}
+                        openLibrary: {},
+                        openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) }
                     )
                     .navigationDestination(for: RoutineEditorRoute.self) { route in
                         RoutineEditorScreen(origin: route)
