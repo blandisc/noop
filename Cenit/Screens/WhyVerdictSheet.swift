@@ -69,10 +69,10 @@ struct WhyVerdictSheet: View {
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { g in
-                Color.clear.preference(key: WhySheetHeightKey.self, value: g.size.height)
+                Color.clear.preference(key: SheetContentHeightKey.self, value: g.size.height)
             })
         }
-        .onPreferenceChange(WhySheetHeightKey.self) { contentHeight = $0 }
+        .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
         .background(theme.paper)
         .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.large])
         .presentationDragIndicator(.visible)
@@ -253,8 +253,3 @@ struct WhyVerdictSheet: View {
     }
 }
 
-/// Carries the sheet content's measured natural height up so the detent fits it exactly.
-private struct WhySheetHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}

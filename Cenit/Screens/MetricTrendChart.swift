@@ -93,6 +93,19 @@ enum MetricWindowMath {
         }
         return out
     }
+
+    /// «jun 6» for a day key, anchored to noon UTC so the local-zone label never slips to the previous
+    /// day west of UTC (same fix as `decimatedPoints` above). Was duplicated between Recovery and Sleep
+    /// (identical bodies) before promotion (FER-975).
+    static func axisLabel(_ dayKey: String) -> String? {
+        Repository.parseDayKey(dayKey).map { axisDateFmt.string(from: $0.addingTimeInterval(12 * 3600)) }
+    }
+
+    private static let axisDateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("dMMM")
+        return f
+    }()
 }
 
 // MARK: - The reusable view

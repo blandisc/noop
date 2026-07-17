@@ -420,6 +420,41 @@ public struct HeatLegend: View {
     }
 }
 
+// MARK: - PaperSideBarBlock
+
+/// A paper block with a metric-hue left bar (2.5pt) + (overline + prose): the shared shape behind
+/// `MetricInfoSheet`'s «For tonight» sleep block. Promoted from `sleepParaEstaNoche` (FER-975) — its
+/// sibling `vitalPatternBlock` renders UP TO TWO findings via a `ForEach` (not a single `text`), so it
+/// stays app-side rather than forcing a shape mismatch here.
+public struct PaperSideBarBlock: View {
+    private let overline: LocalizedStringKey
+    private let text: LocalizedStringKey
+    private let hue: Color
+    private let theme: InstrumentoTheme
+
+    public init(overline: LocalizedStringKey, text: LocalizedStringKey, hue: Color, theme: InstrumentoTheme) {
+        self.overline = overline
+        self.text = text
+        self.hue = hue
+        self.theme = theme
+    }
+
+    public var body: some View {
+        HStack(spacing: 0) {
+            Rectangle().fill(hue).frame(width: 2.5)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(overline).groteskOverline().foregroundStyle(theme.inkTertiary)
+                Text(text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14)
+            Spacer(minLength: 0)
+        }
+        .background(theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+    }
+}
+
 // MARK: - Previews
 
 #if DEBUG
@@ -467,6 +502,14 @@ public struct HeatLegend: View {
     }
     .padding(20)
     .background(t.paper)
+}
+
+#Preview("PaperSideBarBlock") {
+    let t = InstrumentoTheme.base
+    PaperSideBarBlock(overline: "For tonight", text: "A steadier bedtime tonight helps your rhythm.",
+                       hue: t.dataSleep, theme: t)
+        .padding(20)
+        .background(t.paper)
 }
 
 #Preview("QueMedimos + SeccionBloque + Chip + PieMetodo") {

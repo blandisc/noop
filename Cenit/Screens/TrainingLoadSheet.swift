@@ -334,8 +334,8 @@ struct TrainingLoadSheet: View {
                     ],
                     hue: theme.dataStrain,
                     ymin: 0.45, ymax: 1.9,
-                    startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
-                    endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
+                    endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
                     mediaValue: fmt(stat.mean),
                     mediaNote: String(localized: "average of the \(range.name)"),
                     mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
@@ -344,7 +344,7 @@ struct TrainingLoadSheet: View {
                     anchorMedia: historyAnchorMedia,
                     anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
                     scrub: true,
-                    labels: window.rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" },
+                    labels: window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" },
                     fmt: { String(format: "%.2f", $0) },
                     theme: theme)
                     .padding(.top, 6)

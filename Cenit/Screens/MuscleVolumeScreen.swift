@@ -40,10 +40,6 @@ struct MuscleVolumeScreen: View {
     /// Measured height of the ⓘ sheet's content — drives a fitted detent (no dead paper below).
     @State private var infoSheetHeight: CGFloat = 220
 
-    private struct InfoSheetHeightKey: PreferenceKey {
-        static var defaultValue: CGFloat = 0
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-    }
     /// Work sets over the trailing year, expanded to per-muscle events (one fetch; the span slices).
     @State private var events: [MuscleFatigueMap.MuscleSetEvent] = []
     @State private var loaded = false
@@ -115,9 +111,9 @@ struct MuscleVolumeScreen: View {
             .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { geo in
-                Color.clear.preference(key: InfoSheetHeightKey.self, value: geo.size.height)
+                Color.clear.preference(key: SheetContentHeightKey.self, value: geo.size.height)
             })
-            .onPreferenceChange(InfoSheetHeightKey.self) { infoSheetHeight = $0 }
+            .onPreferenceChange(SheetContentHeightKey.self) { infoSheetHeight = $0 }
             .presentationDetents([.height(max(infoSheetHeight, 120))])
             .presentationBackground(theme.paper)
         }

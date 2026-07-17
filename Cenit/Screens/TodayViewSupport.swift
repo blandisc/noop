@@ -54,20 +54,16 @@ struct WhatWeMeasureSheet: View {
             .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { g in
-                Color.clear.preference(key: WhatWeMeasureHeightKey.self, value: g.size.height)
+                Color.clear.preference(key: SheetContentHeightKey.self, value: g.size.height)
             })
         }
-        .onPreferenceChange(WhatWeMeasureHeightKey.self) { contentHeight = $0 }
+        .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
         .background(theme.paper)
         .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.medium])
         .presentationDragIndicator(.visible)
     }
 }
 
-private struct WhatWeMeasureHeightKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
 
 extension TodayView {
 
