@@ -9,8 +9,4 @@ final class ScaffoldTests: XCTestCase {
         let answer = try queue.read { db in try Int.fetchOne(db, sql: "SELECT 42") }
         XCTAssertEqual(answer, 42)
     }
-
-    func testLibraryVersionMarkerPresent() {
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 31)
-    }
 }

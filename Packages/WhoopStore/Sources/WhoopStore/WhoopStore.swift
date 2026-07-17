@@ -5,8 +5,12 @@ import WhoopProtocol
 /// OpenWhoop persistence library — decoded streams are durable; raw frames are a
 /// transient, compressed, prunable outbox. Built on GRDB/SQLite.
 public enum WhoopStoreInfo {
-    /// Bumped whenever the migrator gains a new migration.
-    public static let schemaVersion = 31
+    /// DERIVADO del migrador (los ids son contiguos v1…vN — fijado por
+    /// MigrationTests.testMigratorRegistersContiguousVersions). Nunca se bumpea a mano:
+    /// la constante manual llegó a decir 31 con el migrador real en v35.
+    public static var schemaVersion: Int { WhoopStore.makeMigrator().migrations.count }
+    /// Último identificador de migración registrado, p. ej. "v35". Para diagnóstico.
+    public static var latestMigration: String { WhoopStore.makeMigrator().migrations.last ?? "v0" }
 }
 
 /// WhoopStore is an `actor`: its public API is `async`, and all GRDB work runs on the
