@@ -1124,36 +1124,89 @@ final class AppModel: ObservableObject {
             profile: userProfile, hrMax: Double(hrMax))
         record.energySource = hrSamples.count >= Calories.strengthEnergyMinSamples
             ? .bandCalculated : .estimated
-        Task { [weak self] in
-            guard let self, let store = await self.repo.storeHandle() else { return }
-            // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
-            let prior = await self.priorStrengthPRs(store: store, ids: Set(sets.map(\.exerciseId)))
-            try? await store.saveSession(record, sets: sets, progressionOptOuts: built.progressionOptOuts,
-                                         notes: built.notes)
-            self.persistSessionTask?.cancel()            // FER-798: the session is saved — stop persisting
-            try? await store.clearInProgressSession()    // and drop the snapshot so it never re-restores
-            // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
-            session.summary = await self.buildStrengthSummary(session: session, record: record,
-                                                              sets: sets, prior: prior, store: store)
-            // FER-799: a watch-initiated end has no open sheet (the phone may be locked/backgrounded), so the
-            // receipt would be stranded until the user re-opens the session. Present it — the flag re-evaluates
-            // on the next foreground if the app is backgrounded. An iPhone-initiated finish already has it open.
-            if !notifyWatch { self.strengthSheetPresented = true }
-            // FER-740 — one-HKWorkout invariant. If a watch was mirroring, wait briefly for its save
-            // decision: it saved the real FC/kcal workout → the iPhone omits its estimate; it declined
-            // or never answered → the iPhone saves as before. Without a watch, save immediately (no wait).
-            let watchSaved = wasMirroring ? await self.awaitWatchSaveDecision(sessionId: record.id) : false
-            // FER-742: the receipt's origin line says the watch saved the real FC/kcal to Health.
-            if watchSaved { session.summary?.watchRecorded = true }
-            guard WorkoutSaveGate.iPhoneShouldSaveWorkout(watchDidSaveWorkout: watchSaved) else { return }
-            // Opt-in mirror to Apple Health (FER-390): a no-op unless the user enabled it. Runs AFTER
-            // the local save (the source of truth) and never throws — Health is strictly best-effort.
-            await self.healthBridge?.saveStrengthWorkoutIfEnabled(
-                sessionId: record.id,
-                start: Date(timeIntervalSince1970: TimeInterval(record.startTs)),
-                end: Date(timeIntervalSince1970: TimeInterval(endTs)),
-                profile: userProfile, hrSamples: hrSamples, hrMax: hrMax)
+        // FER-969 (X-01): stash the fully built payload so a failed save can be retried verbatim —
+        // duration/energy stay what the user saw, and the watch isn't ordered to end twice.
+        pendingStrengthSave = PendingStrengthSave(
+            record: record, sets: sets, progressionOptOuts: built.progressionOptOuts, notes: built.notes,
+            endTs: endTs, wasMirroring: wasMirroring, notifyWatch: notifyWatch,
+            userProfile: userProfile, hrSamples: hrSamples, hrMax: hrMax)
+        Task { [weak self] in await self?.attemptStrengthSave() }
+    }
+
+    /// Everything `endStrengthSession` built for the durable save, kept so a failed save can retry
+    /// without recomputing duration/energy or re-ordering the watch. (FER-969, X-01)
+    private struct PendingStrengthSave {
+        var record: StrengthSession
+        var sets: [SetEntry]
+        var progressionOptOuts: Set<String>
+        var notes: [ExerciseNote]
+        var endTs: Int
+        var wasMirroring: Bool
+        var notifyWatch: Bool
+        var userProfile: UserProfile
+        var hrSamples: [HRSample]
+        var hrMax: Int
+    }
+    private var pendingStrengthSave: PendingStrengthSave?
+
+    /// «Reintentar» from the sheet's save-failure banner (FER-969, X-01).
+    func retryStrengthSave() {
+        Task { [weak self] in await self?.attemptStrengthSave() }
+    }
+
+    /// FER-969 (X-01): the ordering contract of the final save — the anti-crash snapshot (FER-798) is
+    /// dropped only AFTER the session row is durably in the store. On failure the snapshot stays put
+    /// (it's the only remaining copy of the workout) and the caller surfaces a retry.
+    nonisolated static func saveThenClearSnapshot(save: () async throws -> Void,
+                                                  clearSnapshot: () async throws -> Void) async -> Bool {
+        do { try await save() } catch { return false }
+        // Best-effort: a failed clear only risks a stale restore offer, never data loss.
+        try? await clearSnapshot()
+        return true
+    }
+
+    private func attemptStrengthSave() async {
+        guard let session = strengthSession, session.summary == nil,
+              let pending = pendingStrengthSave else { return }
+        guard let store = await repo.storeHandle() else {
+            session.saveError = true
+            return
         }
+        // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
+        let prior = await priorStrengthPRs(store: store, ids: Set(pending.sets.map(\.exerciseId)))
+        let saved = await Self.saveThenClearSnapshot(
+            save: { try await store.saveSession(pending.record, sets: pending.sets,
+                                                progressionOptOuts: pending.progressionOptOuts,
+                                                notes: pending.notes) },
+            clearSnapshot: { try await store.clearInProgressSession() })
+        guard saved else {
+            session.saveError = true
+            return
+        }
+        session.saveError = false
+        pendingStrengthSave = nil
+        persistSessionTask?.cancel()            // FER-798: the session is saved — stop persisting
+        // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
+        session.summary = await buildStrengthSummary(session: session, record: pending.record,
+                                                     sets: pending.sets, prior: prior, store: store)
+        // FER-799: a watch-initiated end has no open sheet (the phone may be locked/backgrounded), so the
+        // receipt would be stranded until the user re-opens the session. Present it — the flag re-evaluates
+        // on the next foreground if the app is backgrounded. An iPhone-initiated finish already has it open.
+        if !pending.notifyWatch { strengthSheetPresented = true }
+        // FER-740 — one-HKWorkout invariant. If a watch was mirroring, wait briefly for its save
+        // decision: it saved the real FC/kcal workout → the iPhone omits its estimate; it declined
+        // or never answered → the iPhone saves as before. Without a watch, save immediately (no wait).
+        let watchSaved = pending.wasMirroring ? await awaitWatchSaveDecision(sessionId: pending.record.id) : false
+        // FER-742: the receipt's origin line says the watch saved the real FC/kcal to Health.
+        if watchSaved { session.summary?.watchRecorded = true }
+        guard WorkoutSaveGate.iPhoneShouldSaveWorkout(watchDidSaveWorkout: watchSaved) else { return }
+        // Opt-in mirror to Apple Health (FER-390): a no-op unless the user enabled it. Runs AFTER
+        // the local save (the source of truth) and never throws — Health is strictly best-effort.
+        await healthBridge?.saveStrengthWorkoutIfEnabled(
+            sessionId: pending.record.id,
+            start: Date(timeIntervalSince1970: TimeInterval(pending.record.startTs)),
+            end: Date(timeIntervalSince1970: TimeInterval(pending.endTs)),
+            profile: pending.userProfile, hrSamples: pending.hrSamples, hrMax: pending.hrMax)
     }
 
     /// Await the watch's save decision for a session, up to a short timeout. Returns true only if the
@@ -1173,6 +1226,9 @@ final class AppModel: ObservableObject {
 
     /// End the session once the user has seen the receipt (FER-409): «Listo» or a swipe of the summary.
     func closeStrengthSummary() {
+        // FER-969 (X-01): while a failed save is pending retry the snapshot is the only copy —
+        // never tear the session down from here in that state (the receipt can't be up yet anyway).
+        if let s = strengthSession, s.summary == nil, s.saveError { return }
         strengthSession = nil
         strengthSheetPresented = false
         releaseRealtimeHR("strength")   // last consumer leaves → stream stops (unless Live still holds it)

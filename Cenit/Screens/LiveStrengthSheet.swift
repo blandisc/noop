@@ -249,6 +249,7 @@ struct LiveStrengthSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
         // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
         // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
         .sheet(isPresented: $showLibraryPicker) {
@@ -2139,6 +2140,32 @@ struct LiveStrengthSheet: View {
                 .buttonStyle(.plain).padding(.leading, 2)
             }
         }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// FER-969 (X-01): the final save failed — the workout is still on this phone (FER-798 snapshot);
+    /// say so and offer retry instead of pretending the receipt is coming.
+    private var saveErrorBanner: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.critical)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Couldn't save the workout. Try again.")
+                    .font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
+                Text("Your sets are safe on this phone.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            }
+            Spacer(minLength: 8)
+            Button { model.retryStrengthSave() } label: {
+                Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.vertical, 10)
+        .background(theme.paper)
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
         .accessibilityElement(children: .combine)
     }
 

@@ -62820,6 +62820,23 @@
         }
       }
     },
+    "Your sets are safe on this phone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sets are safe on this phone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus series están a salvo en este teléfono."
+          }
+        }
+      }
+    },
     "YOUR INVENTORY · PER SIDE" : {
 
     },
