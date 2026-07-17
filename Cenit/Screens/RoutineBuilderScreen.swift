@@ -40,6 +40,7 @@ struct RoutineBuilderScreen: View {
     @StateObject private var plates = PlatesStore()
     /// Which exercise's info sheet is open (tap the row's name/thumb to open its detail, like the library).
     @State private var detail: Exercise? = nil
+    @State private var saveError = false
     @FocusState private var focusedCell: String?
 
     private let routineId: String
@@ -150,6 +151,23 @@ struct RoutineBuilderScreen: View {
             }
             .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
+        // FER-969: save failure is an inline banner (same pattern as WorkoutEditSheet); stay open, no dismiss.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save the workout. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
     }
 
     // MARK: - Empty
@@ -510,9 +528,13 @@ struct RoutineBuilderScreen: View {
             var re = item.re; re.position = idx; re.routineId = routineId; return re
         }
         Task {
-            try? await repo.saveRoutine(r, exercises: exercises)
-            await onSaved?(routineId)
-            dismiss()
+            do {
+                try await repo.saveRoutine(r, exercises: exercises)
+                await onSaved?(routineId)
+                dismiss()
+            } catch {
+                saveError = true
+            }
         }
     }
 }

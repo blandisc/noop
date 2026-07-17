@@ -73,6 +73,7 @@ struct WeeklyPlanEditorView: View {
     @State private var collapsedFolders: Set<String> = []
     /// El «···» de banda abierto (renombrar / borrar carpeta).
     @State private var menuFolderId: String? = nil
+    @State private var saveError = false
     private static let unfiledSectionID = "unfiled-section"
 
     /// Monday-first display order in the Calendar weekday convention (2 = Mon … 1 = Sun).
@@ -109,6 +110,23 @@ struct WeeklyPlanEditorView: View {
             if let d = pendingUndo { undoBanner(d) }
             else if let fd = pendingFolderUndo { folderUndoBanner(fd) }
         }
+        // FER-969: write failure is an inline banner (same pattern as WorkoutEditSheet), not silent success.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save the workout. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
         .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
         // FER-952 unified flow: «＋ Nueva rutina» PUSHES the library as a screen (no sheet); adding
         // the picks creates the routine on the spot and lands on the unified «Rutina» editor.
@@ -674,17 +692,25 @@ struct WeeklyPlanEditorView: View {
         swipedRoutineId = nil
         Task {
             let exercises = await repo.routineExercises(routineId: r.id)
-            try? await repo.deleteRoutine(id: r.id)
-            await load()
-            withAnimation { pendingUndo = DeletedRoutine(routine: r, exercises: exercises) }
+            do {
+                try await repo.deleteRoutine(id: r.id)
+                await load()
+                withAnimation { pendingUndo = DeletedRoutine(routine: r, exercises: exercises) }
+            } catch {
+                saveError = true
+            }
         }
     }
 
     private func undoDelete(_ d: DeletedRoutine) {
         Task {
-            try? await repo.saveRoutine(d.routine, exercises: d.exercises)
-            await load()
-            withAnimation { pendingUndo = nil }
+            do {
+                try await repo.saveRoutine(d.routine, exercises: d.exercises)
+                await load()
+                withAnimation { pendingUndo = nil }
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -725,8 +751,12 @@ struct WeeklyPlanEditorView: View {
                 c.sets = ex.sets.map { var s = $0; s.id = UUID().uuidString; return s }
                 return c
             }
-            try? await repo.saveRoutine(copy, exercises: copiedExercises)
-            await load()
+            do {
+                try await repo.saveRoutine(copy, exercises: copiedExercises)
+                await load()
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -849,13 +879,17 @@ struct WeeklyPlanEditorView: View {
                                    targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
         }
         Task {
-            try? await repo.saveRoutine(r, exercises: exercises)
-            await load()
-            // FER-952 glitch: the library pops itself (dismiss) the moment onAdd returns — pushing the
-            // editor DURING that pop stacked transitions and the new screen flashed in and out
-            // (FER-171 lesson). Let the pop settle, then push.
-            try? await Task.sleep(nanoseconds: 550_000_000)
-            openRoutine(r.id)
+            do {
+                try await repo.saveRoutine(r, exercises: exercises)
+                await load()
+                // FER-952 glitch: the library pops itself (dismiss) the moment onAdd returns — pushing the
+                // editor DURING that pop stacked transitions and the new screen flashed in and out
+                // (FER-171 lesson). Let the pop settle, then push.
+                try? await Task.sleep(nanoseconds: 550_000_000)
+                openRoutine(r.id)
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -937,8 +971,12 @@ struct WeeklyPlanEditorView: View {
     private func assign(_ wd: Int, _ routineId: String) {
         Task {
             guard let store = await repo.storeHandle() else { return }
-            try? await store.setRoutineSchedule(weekday: wd, routineId: routineId)
-            await reloadSchedule()
+            do {
+                try await store.setRoutineSchedule(weekday: wd, routineId: routineId)
+                await reloadSchedule()
+            } catch {
+                saveError = true
+            }
         }
     }
 

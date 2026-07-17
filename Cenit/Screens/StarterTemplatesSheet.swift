@@ -32,6 +32,7 @@ struct StarterTemplatesSheet: View {
     /// nil = the grouped list; non-nil = that template's preview.
     @State private var selected: StarterTemplate?
     @State private var saving = false
+    @State private var saveError = false
 
     /// `initialSelection` opens the sheet straight on a template's preview (the planner's «softer»
     /// suggestion lands here on the mobility routine — FER-554); nil opens the grouped list.
@@ -54,6 +55,23 @@ struct StarterTemplatesSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        // FER-969: write failure is an inline banner (same pattern as WorkoutEditSheet), not silent dismiss.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save the workout. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
     }
 
     // MARK: - List (grouped by program)
@@ -209,9 +227,14 @@ struct StarterTemplatesSheet: View {
         let now = Int(Date().timeIntervalSince1970)
         let (routine, exercises) = t.makeRoutine(name: name, now: now)
         Task {
-            try? await repo.saveRoutine(routine, exercises: exercises)
-            await onAdded()
-            dismiss()
+            do {
+                try await repo.saveRoutine(routine, exercises: exercises)
+                await onAdded()
+                dismiss()
+            } catch {
+                saving = false
+                saveError = true
+            }
         }
     }
 

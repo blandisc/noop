@@ -64,6 +64,8 @@ struct WorkoutHistoryScreen: View {
     /// Movement family per routine (for the session rows' glyph/tint) — classified once at load.
     @State private var routineRegions: [String: RoutineRegion] = [:]
     @State private var loaded = false
+    /// FER-969 / X-05a: undo-restore write failure on the list.
+    @State private var saveError = false
 
     var body: some View {
         ScrollView {
@@ -92,6 +94,23 @@ struct WorkoutHistoryScreen: View {
         // RootTabView (alongside the other train routes), so it isn't re-declared here.
         // «Undo» toast after a delete (FER-527), now seeded by the list OR the detail via the coordinator.
         .overlay(alignment: .bottom) { if let d = coordinator.pendingUndo { undoBanner(d) } }
+        // FER-969: undo-restore failure banner (delete itself lives on the detail screen).
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save the workout. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
         .sensoryFeedback(trigger: coordinator.pendingUndo?.id) { _, new in new != nil ? .warning : nil }
         // Reloads on first appear (token 0) and whenever a delete/edit deeper in the stack bumps it.
         .task(id: coordinator.reloadToken) { await load() }
@@ -579,9 +598,14 @@ struct WorkoutHistoryScreen: View {
 
     private func undoDelete(_ d: WorkoutHistoryCoordinator.DeletedSession) {
         Task {
-            try? await repo.saveSession(d.session, sets: d.sets)   // re-saving re-derives its PRs
-            await load()
-            withAnimation { coordinator.pendingUndo = nil }
+            do {
+                try await repo.saveSession(d.session, sets: d.sets)   // re-saving re-derives its PRs
+                await load()
+                withAnimation { coordinator.pendingUndo = nil }
+            } catch {
+                // Keep the Undo banner so the user can retry; surface the write failure.
+                saveError = true
+            }
         }
     }
 
@@ -721,6 +745,7 @@ struct WorkoutSessionDetailScreen: View {
     @State private var showEdit = false
     @State private var showDeleteConfirm = false
     @State private var showMoreMenu = false
+    @State private var saveError = false
 
     // Display prefers the reloaded `fullSession` (so an edit's new date/routine shows at once), falling
     // back to the immutable route while it loads (FER-556).
@@ -775,6 +800,23 @@ struct WorkoutSessionDetailScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        // FER-969 / X-05a: delete (or undo-restore) failure — banner; do NOT pop or seed pendingUndo.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't delete the workout. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
         // «Editar» / «Borrar entrenamiento» — visible from the detail, so deleting no longer needs the
         // list's long-press, and editing a saved session is finally possible (FER-556).
         .toolbar {
@@ -879,15 +921,20 @@ struct WorkoutSessionDetailScreen: View {
 
     /// Delete from the detail: read the sets (so an undo can restore them), delete (the store recomputes
     /// the affected PRs), seed the coordinator's «Undo» + reload, then pop back to the list (FER-556).
+    /// FER-969: on failure stay on the detail — no optimistic pop, no pendingUndo.
     private func performDelete() {
         Task {
             let sets = allSets.isEmpty ? await repo.sessionSets(sessionId: route.id) : allSets
-            try? await repo.deleteSession(id: route.id)
-            let session = fullSession ?? StrengthSession(id: route.id, startTs: route.startTs,
-                                                         endTs: route.endTs, strain: route.strain, avgHr: route.avgHr)
-            coordinator.pendingUndo = .init(session: session, sets: sets)
-            coordinator.bumpReload()
-            dismiss()
+            do {
+                try await repo.deleteSession(id: route.id)
+                let session = fullSession ?? StrengthSession(id: route.id, startTs: route.startTs,
+                                                             endTs: route.endTs, strain: route.strain, avgHr: route.avgHr)
+                coordinator.pendingUndo = .init(session: session, sets: sets)
+                coordinator.bumpReload()
+                dismiss()
+            } catch {
+                saveError = true
+            }
         }
     }
 

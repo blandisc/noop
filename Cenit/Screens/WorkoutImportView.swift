@@ -53,6 +53,8 @@ struct WorkoutImportView: View {
     /// M4 (decisión Fer): cerrar con el mapeo/confirmación a medias pide confirmación — antes el
     /// swipe-down tiraba todo el trabajo sin avisar.
     @State private var confirmDiscard = false
+    /// FER-969: write failure after confirm — banner, stay on confirm (don't fake .done).
+    @State private var saveError = false
     private var midWork: Bool { phase == .mapping || phase == .confirm }
 
     /// The user's weight unit (kg / lb), for the confirm-step preview only — stored weights are kg.
@@ -75,6 +77,24 @@ struct WorkoutImportView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        // FER-969: save failure is an inline banner (same pattern as WorkoutEditSheet). Parse errors keep
+        // their existing `errorNote` path in capture; this is only the final write.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save the workout. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
         .overlay(alignment: .topTrailing) {
             Button {
                 if midWork { confirmDiscard = true } else { dismiss() }
@@ -620,8 +640,14 @@ struct WorkoutImportView: View {
                 let r = Routine(id: routineId,
                                 name: routine.name.isEmpty ? String(localized: "Routine") : routine.name,
                                 tag: routine.tag, createdTs: now, updatedTs: now, sortOrder: rIndex)
-                try? await repo.saveRoutine(r, exercises: slots)
-                created += 1
+                do {
+                    try await repo.saveRoutine(r, exercises: slots)
+                    created += 1
+                } catch {
+                    // Stay on confirm; don't advance to .done or learn aliases for a half-write.
+                    saveError = true
+                    return
+                }
             }
             // Remember the confirmed mappings only now (FER-536) — so Undo before saving leaves no learned
             // alias behind. Omitted names are never remembered.
