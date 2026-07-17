@@ -53,7 +53,7 @@ struct SkinTempDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: 0) {
                 heroFinal
                 // Streak chip sits on paper below the inverted hero (warning tint reads on paper, not on
                 // the saturated dataStrain field). Does not map into HeroInvertido's three slots cleanly.

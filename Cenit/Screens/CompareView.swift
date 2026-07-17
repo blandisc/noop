@@ -142,6 +142,11 @@ struct CompareView: View {
     @State private var pairCache: [PairResult] = []
     @State private var pairCacheKey: String = ""
 
+    /// `activeSeries` recomputed ONLY on selection/range/fetch change (FER-976) — the plain computed
+    /// property below was re-derived on every access (≥4×/render: overlay, correlation, rangeCaption,
+    /// task/onChange), each pass re-slicing `fullSeries` per selected metric.
+    @State private var activeSeriesCache: [CompareSeries] = []
+
     private let maxSelection = 4
     private let minSelection = 2
 
@@ -181,7 +186,13 @@ struct CompareView: View {
         .task { await loadIfNeeded() }
         .task(id: selectionKey) {
             await loadSelected()
+            recomputeActiveSeries()
             refreshPairCache(activeSeries)
+        }
+        // FER-976: range is the other input `activeSeries` depends on (selection is covered by
+        // `.task(id: selectionKey)` above via `selectionKey`).
+        .onChange(of: range) {
+            recomputeActiveSeries()
         }
         // Recompute the pairwise scan only when the windowed series content changes,
         // never on hover/animation/HR-tick re-renders that don't touch these inputs.
@@ -229,9 +240,13 @@ struct CompareView: View {
         return .all
     }
 
-    /// Selected metrics resolved to windowed rows + stable colors, in pick order.
-    private var activeSeries: [CompareSeries] {
-        selected.enumerated().map { idx, metric in
+    /// Selected metrics resolved to windowed rows + stable colors, in pick order. Reads the memoized
+    /// cache (FER-976) — see `recomputeActiveSeries()`, called from `.task(id: selectionKey)` and
+    /// `.onChange(of: range)`, the only two inputs this depends on.
+    private var activeSeries: [CompareSeries] { activeSeriesCache }
+
+    private func recomputeActiveSeries() {
+        activeSeriesCache = selected.enumerated().map { idx, metric in
             let full = fullSeries[metric.id] ?? []
             let rows = slice(full, effectiveRange(full))
             return CompareSeries(
@@ -457,6 +472,15 @@ struct CompareView: View {
         let n: Int
     }
 
+    /// A Sendable-only scan result — no `Color`/`CompareSeries` — so it can cross the `Task.detached`
+    /// hop (FER-976). `attachPairResults` reattaches the display-only `CompareSeries` on MainActor.
+    private struct PairScan: Sendable {
+        let aId: String
+        let bId: String
+        let r: Double
+        let n: Int
+    }
+
     /// A stable fingerprint of the inputs the correlation scan depends on: the
     /// non-empty series (in order) and their windowed content. Row content only
     /// changes when `selected`, `range`, or fetched `fullSeries` change, so this
@@ -477,19 +501,19 @@ struct CompareView: View {
         correlationKey(series) == pairCacheKey ? pairCache : computePairResults(series)
     }
 
-    /// The actual (expensive) pairwise scan. Pure — no view state read/written.
-    private func computePairResults(_ series: [CompareSeries]) -> [PairResult] {
-        var out: [PairResult] = []
-        let s = series.filter { !$0.rows.isEmpty }
-        guard s.count >= 2 else { return out }
-        for i in 0..<(s.count - 1) {
-            for j in (i + 1)..<s.count {
-                let pairs = CorrelationEngine.alignByDay(s[i].rows, s[j].rows)
+    /// The actual (expensive) pairwise scan, pure — Sendable in, Sendable out — so it's usable both
+    /// synchronously (below) AND inside `Task.detached` (FER-976). `nonisolated` opts OUT of this
+    /// View's inferred MainActor isolation.
+    private nonisolated static func computePairScans(
+        _ series: [(id: String, rows: [(day: String, value: Double)])]
+    ) -> [PairScan] {
+        var out: [PairScan] = []
+        guard series.count >= 2 else { return out }
+        for i in 0..<(series.count - 1) {
+            for j in (i + 1)..<series.count {
+                let pairs = CorrelationEngine.alignByDay(series[i].rows, series[j].rows)
                 guard pairs.count >= 3, let c = CorrelationEngine.pearson(pairs) else { continue }
-                out.append(PairResult(
-                    id: "\(s[i].id)~\(s[j].id)",
-                    a: s[i], b: s[j], r: c.r, n: c.n
-                ))
+                out.append(PairScan(aId: series[i].id, bId: series[j].id, r: c.r, n: c.n))
             }
         }
         // Strongest relationships first.
@@ -497,12 +521,40 @@ struct CompareView: View {
         return out
     }
 
-    /// Recompute the pair cache if (and only if) the correlation inputs changed.
+    /// Reattaches a Sendable `PairScan` to the display-only `CompareSeries` (color/metric), by id.
+    private func attachPairResults(_ scans: [PairScan], series: [CompareSeries]) -> [PairResult] {
+        let byId = Dictionary(uniqueKeysWithValues: series.map { ($0.id, $0) })
+        return scans.compactMap { scan in
+            guard let a = byId[scan.aId], let b = byId[scan.bId] else { return nil }
+            return PairResult(id: "\(scan.aId)~\(scan.bId)", a: a, b: b, r: scan.r, n: scan.n)
+        }
+    }
+
+    /// The actual (expensive) pairwise scan. Pure — no view state read/written. Synchronous — used ONLY
+    /// as `pairResults(_:)`'s same-frame fallback (see its doc above); the scheduled/background refresh
+    /// below (`refreshPairCache`) runs the SAME math off-main via `Task.detached`.
+    private func computePairResults(_ series: [CompareSeries]) -> [PairResult] {
+        let s = series.filter { !$0.rows.isEmpty }
+        return attachPairResults(Self.computePairScans(s.map { (id: $0.id, rows: $0.rows) }), series: s)
+    }
+
+    /// Recompute the pair cache if (and only if) the correlation inputs changed. Dispatches the
+    /// (expensive) scan to `Task.detached` off a Sendable (id, rows) snapshot — never a raw
+    /// `CompareSeries` (it carries a `Color`) — then reattaches + assigns `pairCache` back on MainActor
+    /// (FER-976), same seam as `RecoveryDetailModel.buildDetached`.
     private func refreshPairCache(_ series: [CompareSeries]) {
         let key = correlationKey(series)
         guard key != pairCacheKey else { return }
         pairCacheKey = key
-        pairCache = computePairResults(series)
+        let s = series.filter { !$0.rows.isEmpty }
+        let snapshot = s.map { (id: $0.id, rows: $0.rows) }
+        Task {
+            let scans = await Task.detached(priority: .userInitiated) {
+                Self.computePairScans(snapshot)
+            }.value
+            guard pairCacheKey == key else { return }   // a newer selection/range landed first
+            pairCache = attachPairResults(scans, series: s)
+        }
     }
 
     @ViewBuilder

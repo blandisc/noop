@@ -83,6 +83,8 @@ struct MetricInfoSheet: View {
     /// use, since the explorer re-windows on every range/level tap.
     @State private var levelsRange: ExploreRange = .week
     @State private var levelsParsed: MetricWindowMath.Parsed = []
+    @State private var resolvedLevelsCache: [MetricLevels.Level]? = nil
+    @State private var resolvedLevelsCacheKey: String = ""
 
     // MARK: Colour resolution (against the live theme)
 
@@ -247,6 +249,7 @@ struct MetricInfoSheet: View {
             levelsParsed = await loader().map {
                 (day: $0.day, date: Repository.parseDayKey($0.day), value: $0.value)
             }
+            refreshResolvedLevelsCache()
         }
     }
 
@@ -721,14 +724,27 @@ struct MetricInfoSheet: View {
         }
     }
 
+    /// A fingerprint of `resolvedLevels`' inputs — the metric id + the loaded full history — so the
+    /// ≥1-valid-night HRV fold only reruns when either changes, not on every render (FER-976).
+    /// `levelsRange` does NOT feed `resolvedLevels` (it always folds the FULL `levelsParsed`, never the
+    /// windowed slice), so it's deliberately not part of this key.
+    private var resolvedLevelsKey: String {
+        "\(info.id)|\(levelsParsed.count)|\(levelsParsed.first?.day ?? "")|\(levelsParsed.last?.day ?? "")"
+    }
+
     /// The levels for the explorer: `MetricLevels`' fixed thresholds (FER-570) for a `levelsMetric`, or —
     /// for HRV — the user's PERSONAL band from their own baseline. HRV is log-normal, so the cut points
     /// come from `Baselines.normalRange` (which back-transforms `exp(lnBaseline ± σ)` to ms: a
     /// multiplicative band, not a raw linear ±SD), over the SAME production baseline engine the recovery
     /// score uses (`foldHistory` + `hrvCfg`, logDomain). The band *structure* (below/inBase/above,
     /// guard `nValid >= 1`) mirrors FER-571. nil for HRV until there's at least one valid night.
-    /// (FER-619 · Plews 2013)
+    /// (FER-619 · Plews 2013). Memoized (FER-976, same fallback discipline as CompareView.pairResults):
+    /// reads the cache when the key matches, else computes once for THIS render (no mid-body mutation).
     private var resolvedLevels: [MetricLevels.Level]? {
+        resolvedLevelsKey == resolvedLevelsCacheKey ? resolvedLevelsCache : computeResolvedLevels()
+    }
+
+    private func computeResolvedLevels() -> [MetricLevels.Level]? {
         if let metric = info.levelsMetric { return MetricLevels.levels(for: metric) }
         guard info.levelsRelative else { return nil }
         let state = Baselines.foldHistory(levelsParsed.map { Optional($0.value) }, cfg: Baselines.hrvCfg)
@@ -739,6 +755,15 @@ struct MetricInfoSheet: View {
             MetricLevels.Level(key: "inBase", lower: band.lowerBound, upper: band.upperBound),
             MetricLevels.Level(key: "above",  lower: band.upperBound, upper: nil),
         ]
+    }
+
+    /// Persists `resolvedLevels` into the `@State` cache — called after `levelsParsed` loads (see the
+    /// `.task` below), so subsequent renders (scrub/hover) hit the cache instead of re-folding.
+    private func refreshResolvedLevelsCache() {
+        let key = resolvedLevelsKey
+        guard key != resolvedLevelsCacheKey else { return }
+        resolvedLevelsCacheKey = key
+        resolvedLevelsCache = computeResolvedLevels()
     }
 
     private var bandsTable: some View {

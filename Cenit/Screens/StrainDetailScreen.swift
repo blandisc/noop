@@ -54,7 +54,7 @@ struct StrainDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: 0) {
                 if !model.loaded {
                     Group {
                         heroFlat
@@ -404,7 +404,7 @@ struct StrainDetailScreen: View {
 
     private var calendarContent: some View {
         HeatCalendarSection(
-            days: strainHeat,
+            days: model.strainHeat,
             selected: $selectedStrainDay,
             tint: strainHeatTint,
             readoutValue: { String(format: "%.1f", $0) },
@@ -416,25 +416,6 @@ struct StrainDetailScreen: View {
                      (theme.hairline, String(localized: "no data"))],
             theme: theme
         )
-    }
-
-    /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
-    private static let calDayFmt = DayKey.utcFormatter
-
-    /// The trailing 90 days as `RecoveryDay` (score = strain 0–21, nil where there's no reading).
-    private var strainHeat: [RecoveryDay] {
-        var vals: [String: Double] = [:]
-        for r in parsed { vals[r.day] = r.value }
-        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
-        // Ancla la ventana de 90 dias al dia LOCAL, igual que Recovery.buildHeat. Anclar al dia UTC
-        // hace que en husos negativos, por la tarde, la ventana empiece en otro dia de la semana que
-        // Recovery y el grid dibuje 13 vs 14 columnas, con celdas de otro tamano. Asi los cuatro
-        // calendarios (Recuperacion, Sueno, Esfuerzo, Estres) miden igual. (FER calendarios mismo tamano)
-        guard let today = Repository.parseDayKey(Repository.localDayKey(Date())) else { return [] }
-        return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
-            guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
-            return RecoveryDay(date: date.addingTimeInterval(12 * 3600), score: vals[Self.calDayFmt.string(from: date)])
-        }
     }
 
     /// Strain is descriptive (not evaluative), so the heat is one hue at three intensities — tokens for
@@ -537,15 +518,22 @@ struct StrainDetailModel {
     /// Today's effort-confidence tier (FER-676), from the persisted `effortConfidence` — how much of the
     /// active day HR actually covered. nil when today has no score (nothing to grade → no sello).
     var confidence: ScoreConfidence? = nil
+    /// The trailing 90 calendar days as `RecoveryDay` (score = strain 0–21, nil where there's no
+    /// reading), precomputed here (FER-976) instead of a per-render view computed property — same
+    /// seam as `RecoveryDetailModel.heat`/`.buildHeat`. Defaulted so existing call sites/previews that
+    /// don't pass it keep compiling.
+    var strainHeat: [RecoveryDay] = []
 
     /// True when there's a score today or any stored strain history to draw (the rich path); false → empty.
     var hasData: Bool { today != nil || !series.isEmpty }
 
     /// Build the whole model from the repo's in-memory dashboard. Pure (no DB). `days` is the strap +
-    /// on-device dashboard (`repo.days`, the baseline source — FER-149); `today` is `repo.today`. The
-    /// drivers are computed here off the same `days` (which carry recovery) via `StrandAnalytics`, keeping
-    /// the screen DB-free presentation over a ready-made model.
-    static func build(days: [DailyMetric], today: DailyMetric?, loaded: Bool) -> StrainDetailModel {
+    /// on-device dashboard (`repo.days`, the baseline source — FER-149); `today` is `repo.today`; `todayKey`
+    /// is the device's local day key (passed by the caller — `Repository.localDayKey` is main-isolated,
+    /// FER-976). The drivers are computed here off the same `days` (which carry recovery) via
+    /// `StrandAnalytics`, keeping the screen DB-free presentation over a ready-made model.
+    static func build(days: [DailyMetric], today: DailyMetric?, loaded: Bool,
+                      todayKey: String) -> StrainDetailModel {
         let series = days
             .compactMap { d in d.strain.map { (day: d.day, value: $0) } }
             .sorted { $0.day < $1.day }
@@ -554,24 +542,44 @@ struct StrainDetailModel {
             .sorted { $0.day < $1.day }
         let drivers = WhatMovesStrainEngine.drivers(strain: series, recovery: recovery)
         return StrainDetailModel(today: today?.strain, series: series, loaded: loaded, drivers: drivers,
-                                 confidence: today?.effortConfidence.flatMap(ScoreConfidence.init(rawValue:)))
+                                 confidence: today?.effortConfidence.flatMap(ScoreConfidence.init(rawValue:)),
+                                 strainHeat: buildHeat(series: series, todayKey: todayKey))
     }
 
     /// Runs `build` off the MainActor (FER-954, same seam as `SleepDetailModel.buildDetached` /
     /// FER-953): snapshots `repo.days`/`repo.today`/`repo.loaded` on the MainActor (value-type
-    /// copies), then hops the pure derivation to a background executor; only the finished model
-    /// returns to main.
+    /// copies) plus `Repository.localDayKey(Date())` (main-isolated, resolved BEFORE the hop), then
+    /// hops the pure derivation to a background executor; only the finished model returns to main.
     @MainActor
     static func buildDetached(repo: Repository) async -> StrainDetailModel {
         let days = repo.days, today = repo.today, loaded = repo.loaded
+        let todayKey = Repository.localDayKey(Date())
         return await Task.detached(priority: .userInitiated) {
-            build(days: days, today: today, loaded: loaded)
+            build(days: days, today: today, loaded: loaded, todayKey: todayKey)
         }.value
     }
 
     /// Placeholder while `buildDetached` runs: renders the screen's existing `!model.loaded` loading
     /// state (FER-954).
-    static let loading: StrainDetailModel = build(days: [], today: nil, loaded: false)
+    static let loading: StrainDetailModel = build(days: [], today: nil, loaded: false, todayKey: "")
+
+    /// The trailing 90 calendar days as `RecoveryDay` (score = strain 0–21, nil where there's no
+    /// reading). Moved from the view's per-render `strainHeat` computed property (FER-976) — same
+    /// UTC-anchored-to-local-day math as `RecoveryDetailModel.buildHeat`, unchanged, just relocated +
+    /// reading `series` (day,value — the model already has it) instead of the view's `parsed`.
+    private static let calDayFmt = DayKey.utcFormatter
+
+    static func buildHeat(series: [(day: String, value: Double)], todayKey: String) -> [RecoveryDay] {
+        var vals: [String: Double] = [:]
+        for r in series { vals[r.day] = r.value }
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
+        guard let today = Repository.parseDayKey(todayKey) else { return [] }
+        return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
+            guard let date = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
+            return RecoveryDay(date: date.addingTimeInterval(12 * 3600),
+                               score: vals[Self.calDayFmt.string(from: date)])
+        }
+    }
 }
 
 // MARK: - Preview

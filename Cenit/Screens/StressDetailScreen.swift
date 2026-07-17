@@ -56,7 +56,7 @@ struct StressDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: 0) {
                 if let model {
                     // Level 1 · hero. Falls back to yesterday's reading (dated chip) when today is still
                     // incomplete; never blanks the screen. (FER-397)
