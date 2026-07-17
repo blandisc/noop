@@ -19,6 +19,16 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El número grande vuelve a entrar animado en todo Tendencias / The big number animates in again across Trends.**
+  **ES** — En Estrés, Temp. de piel y Carga de entrenamiento el número aparecía de golpe, mientras que en Recuperación, Sueño y Esfuerzo subía suavecito. La animación sí estaba en todas: arrancaba mientras la pantalla todavía venía entrando, así que se perdía dentro de ese movimiento. Ahora la entrada espera a que la pantalla aterrice, y el número sube igual en las diez.
+  **EN** — On Stress, Skin temp and Training load the figure just popped in, while on Recovery, Sleep and Strain it rose gently. Every screen had the animation: it started while the screen was still arriving, so it got lost inside that motion. The entrance now waits for the screen to land, and the figure rises the same way on all ten.
+  ([Motion.swift](Packages/StrandDesign/Sources/StrandDesign/Motion.swift), [CuerpoView.swift](Cenit/Screens/CuerpoView.swift))
+
+- **Entrenamientos abre como pantalla, no como tarjeta / Workouts opens as a screen, not a card.**
+  **ES** — Era la única de Tendencias que subía desde abajo como tarjeta; las demás entran deslizándose desde la derecha. Ahora entra igual que sus hermanas, con «‹ Tendencias» y arrastre desde el borde izquierdo para regresar. Tocar una sesión sigue empujando su detalle con su propio «‹».
+  **EN** — It was the only Trends screen that slid up from the bottom as a card; the rest come in from the right. It now arrives like its sisters, with «‹ Tendencias» and an edge-swipe back. Tapping a session still pushes its detail with its own «‹».
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift), [WorkoutsView.swift](Cenit/Screens/WorkoutsView.swift))
+
 - **Sueño y Recuperación se pueblan sin tirón / Sleep and Recovery fill in without a stutter.**
   **ES** — Al abrir esos detalles, la pantalla ya solo construye lo que ves; las secciones de abajo (calendario de 90 días, método) se arman al scrollear. Con eso desaparece el hipo de ~1 s que quedaba justo cuando llegaba la información.
   **EN** — Opening those details now only builds what's on screen; the sections below the fold (90-day calendar, method) assemble as you scroll. That removes the ~1 s hiccup right when the data arrived.

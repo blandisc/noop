@@ -90,6 +90,40 @@ public enum StrandMotion {
 // apareciendo) y `recFade` (un área de gráfica aparece). Siempre «backwards» (el estado inicial se
 // aplica antes del delay — aquí, el `@State` arranca apagado), ease-out, sin bounce; el cromo no
 // anima. Nada más anima en esas pantallas.
+//
+// La entrada arranca cuando la PANTALLA aterriza, no cuando se inserta el numeral: un detalle que ya
+// trae su dato desde el primer frame (Estrés, Temp. de piel, Carga) montaba el héroe a la vez que el
+// panel entraba deslizándose, y el rise se perdía dentro del movimiento del panel. Los detalles que
+// sí se veían (Recuperación / Sueño / Esfuerzo) sólo lo lograban de rebote: su modelo entra tarde
+// (el swap de FER-953/954), así que su `onAppear` ya caía con la pantalla quieta. `recEntranceGate`
+// hace explícito ese compás para todos; sin gate (Entrenar, Hoy) el entorno vale `true` y la entrada
+// corre al aparecer, como siempre.
+
+/// Whether the presented screen has finished arriving. `false` holds every entrance keyframe.
+/// Defaults to `true` so anything outside a gated presentation animates on appear, unchanged.
+private struct RecEntranceSettledKey: EnvironmentKey { static let defaultValue = true }
+
+public extension EnvironmentValues {
+    var recEntranceSettled: Bool {
+        get { self[RecEntranceSettledKey.self] }
+        set { self[RecEntranceSettledKey.self] = newValue }
+    }
+}
+
+/// Holds the entrance for `settle` seconds after the presented screen is inserted.
+private struct RecEntranceGate: ViewModifier {
+    let settle: Double
+    @State private var settled = false
+
+    func body(content: Content) -> some View {
+        content
+            .environment(\.recEntranceSettled, settled)
+            .task {
+                try? await Task.sleep(for: .seconds(settle))
+                settled = true
+            }
+    }
+}
 
 private struct RecEntrance: ViewModifier {
     /// scaleX 0→1 (grow), or opacity+translateY (rise), or opacity (fade).
@@ -98,6 +132,7 @@ private struct RecEntrance: ViewModifier {
     let delay: Double
     let duration: Double
     @State private var shown = false
+    @Environment(\.recEntranceSettled) private var settled
 
     func body(content: Content) -> some View {
         Group {
@@ -110,9 +145,14 @@ private struct RecEntrance: ViewModifier {
                 content.opacity(shown ? 1 : 0)
             }
         }
-        .onAppear {
-            withAnimation(.easeOut(duration: duration).delay(delay)) { shown = true }
-        }
+        // Whichever comes last — the view appearing, or the screen landing — starts the keyframe.
+        .onAppear { play() }
+        .onChange(of: settled) { _, _ in play() }
+    }
+
+    private func play() {
+        guard settled, !shown else { return }
+        withAnimation(.easeOut(duration: duration).delay(delay)) { shown = true }
     }
 }
 
@@ -132,6 +172,13 @@ public extension View {
     /// `recFade` — a chart area fades in, 0.4s ease-out after 250ms.
     func recFade() -> some View {
         modifier(RecEntrance(kind: .fade, delay: 0.25, duration: 0.4))
+    }
+
+    /// Holds the three entrance keyframes inside until the presented screen has landed. Apply on the
+    /// PRESENTER's side (the layer / the sheet's root), where the arrival duration is known — a detail
+    /// that already has its datum would otherwise animate under the panel's own slide and read as still.
+    func recEntranceGate(_ settle: Double = StrandMotion.durationStandard) -> some View {
+        modifier(RecEntranceGate(settle: settle))
     }
 }
 

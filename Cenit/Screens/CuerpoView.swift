@@ -62,14 +62,15 @@ private enum DetailChromeDate {
     static var label: String { fmt.string(from: Date()) }
 }
 
-private struct DetailChrome<Content: View>: View {
-    let theme: InstrumentoTheme
-    /// Pops the detail — clears the presenting state so the parent removes this layer (with a trailing
-    /// slide-out transition). Replaces `@Environment(\.dismiss)`: the detail is now an in-hierarchy layer
-    /// over the Tendencias landing, NOT a `fullScreenCover` (which hid the landing behind a blank platter).
+/// Edge-swipe-back (FER-837): a drag that STARTS in the left `edgeZone` and runs horizontally pulls the
+/// panel right, revealing Tendencias behind it, and past `dismissThreshold` (or a flick) pops — so you
+/// don't have to hit the «‹» chevron exactly. Gated to the left edge + horizontal dominance so it never
+/// competes with vertical scrolling. `.simultaneousGesture` keeps the ScrollView and the back button
+/// working. `enabled: false` stands the gesture down where the system owns the edge (Entrenamientos with
+/// a session pushed: its `NavigationStack` runs its own interactive pop from the same edge).
+private struct EdgeSwipeBack: ViewModifier {
+    let enabled: Bool
     let onClose: () -> Void
-    @ViewBuilder var content: Content
-    /// Live horizontal offset while the user drags in from the left edge (interactive back-swipe, FER-837).
     @State private var dragX: CGFloat = 0
 
     /// The left-edge zone that arms the back-swipe (pt). Narrow so it never steals a normal touch.
@@ -77,6 +78,43 @@ private struct DetailChrome<Content: View>: View {
     /// Past this drag distance (or a flick predicted past `flickThreshold`) the screen dismisses.
     private static var dismissThreshold: CGFloat { 90 }
     private static var flickThreshold: CGFloat { 200 }
+
+    func body(content: Content) -> some View {
+        content
+            .offset(x: dragX)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 12)
+                    .onChanged { v in
+                        guard enabled,
+                              v.startLocation.x < Self.edgeZone,
+                              v.translation.width > 0,
+                              v.translation.width > abs(v.translation.height) else { return }
+                        dragX = v.translation.width
+                    }
+                    .onEnded { v in
+                        guard enabled, v.startLocation.x < Self.edgeZone, dragX > 0 else { return }
+                        if v.translation.width > Self.dismissThreshold
+                            || v.predictedEndTranslation.width > Self.flickThreshold {
+                            // Pop from the current dragged position: the parent removes the layer with a
+                            // trailing slide-out, continuing the motion under the finger (never a snap back).
+                            onClose()
+                        } else {
+                            withAnimation(StrandMotion.interactive) { dragX = 0 }
+                        }
+                    }
+            )
+            // A pushed session owns the edge again: leave no stale drag behind when the gesture stands down.
+            .onChange(of: enabled) { _, on in if !on { dragX = 0 } }
+    }
+}
+
+private struct DetailChrome<Content: View>: View {
+    let theme: InstrumentoTheme
+    /// Pops the detail — clears the presenting state so the parent removes this layer (with a trailing
+    /// slide-out transition). Replaces `@Environment(\.dismiss)`: the detail is now an in-hierarchy layer
+    /// over the Tendencias landing, NOT a `fullScreenCover` (which hid the landing behind a blank platter).
+    let onClose: () -> Void
+    @ViewBuilder var content: Content
 
     var body: some View {
         VStack(spacing: 0) {
@@ -103,33 +141,9 @@ private struct DetailChrome<Content: View>: View {
         // no shadow, no separate layers. At rest it covers the landing completely.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(theme.paper.ignoresSafeArea())
-        .offset(x: dragX)
         .instrumentoTheme(theme)
-        // Edge-swipe-back (FER-837): a drag that STARTS in the left `edgeZone` and runs horizontally
-        // pulls the panel right, revealing Tendencias behind it, and past `dismissThreshold` (or a flick)
-        // pops — so you don't have to hit the «‹» chevron exactly. Gated to the left edge + horizontal
-        // dominance so it never competes with vertical scrolling. `.simultaneousGesture` keeps the
-        // ScrollView and the back button working. No `NavigationStack` → no FER-171 risk.
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 12)
-                .onChanged { v in
-                    guard v.startLocation.x < Self.edgeZone,
-                          v.translation.width > 0,
-                          v.translation.width > abs(v.translation.height) else { return }
-                    dragX = v.translation.width
-                }
-                .onEnded { v in
-                    guard v.startLocation.x < Self.edgeZone, dragX > 0 else { return }
-                    if v.translation.width > Self.dismissThreshold
-                        || v.predictedEndTranslation.width > Self.flickThreshold {
-                        // Pop from the current dragged position: the parent removes the layer with a
-                        // trailing slide-out, continuing the motion under the finger (never a snap back).
-                        onClose()
-                    } else {
-                        withAnimation(StrandMotion.interactive) { dragX = 0 }
-                    }
-                }
-        )
+        // No `NavigationStack` → no FER-171 risk. The edge owns the back-swipe outright.
+        .modifier(EdgeSwipeBack(enabled: true, onClose: onClose))
     }
 }
 
@@ -193,10 +207,14 @@ private struct CuerpoLanding: View {
     /// injected at the sheet root (it doesn't cross the `.sheet` boundary, FER-162). Replaces the old dark
     /// `.screen(.explore)` bridge.
     @State private var showExplore = false
-    /// Light «Instrumento» Entrenamientos (FER-260) — the «Workouts» row now opens the reskinned list as a
-    /// light sheet with its own NavigationStack (so a session row can push the detail), theme injected at
-    /// the sheet root. Replaces the old dark `.screen(.workouts)` bridge.
+    /// Light «Instrumento» Entrenamientos (FER-260) — the «Workouts» row opens the reskinned list as a
+    /// detail LAYER, like every other Tendencias detail (it used to be the odd one out, a card sliding up
+    /// from the bottom). It keeps its own NavigationStack so a session row still pushes the detail.
     @State private var showWorkouts = false
+    /// The Entrenamientos stack's path, held here (not implicit inside `NavigationStack`) so the layer can
+    /// tell root from pushed: the edge-swipe-back only arms at the root, where the system's own pop isn't
+    /// already listening to that edge.
+    @State private var workoutsPath: [WorkoutRow] = []
     /// Light «Instrumento» Detalle de Sueño (FER-212) — the «Sueño» row now opens this superset of the
     /// old dark sleep screen (built fresh on tap from the in-memory dashboard), theme passed explicitly.
     @State private var sleepDetail: SleepDetailItem? = nil
@@ -296,9 +314,24 @@ private struct CuerpoLanding: View {
             // sola pantalla de papel opaco encima de Tendencias EN LA MISMA jerarquía, no un `fullScreenCover`
             // (que ocultaba el landing detrás de una plancha en blanco). Así el back-swipe descubre la
             // pantalla real de Tendencias que está debajo. Cero `NavigationStack` → cero riesgo FER-171.
-            if detailPresented {
+            if showWorkouts {
+                // Entrenamientos is the one detail that NAVIGATES (list → session), so it brings its own
+                // `NavigationStack` and wears its nav bar as the chrome instead of `DetailChrome`'s —
+                // otherwise the two bars stack and the two chevrons mean different things. The stack is
+                // safe here: the Tendencias tab has none of its own (`RootTabView.lazyTab(.body)`), so
+                // nothing nests (FER-171). The back-swipe stands down once a session is pushed — from
+                // there the stack runs the system's own interactive pop off the same edge.
+                workoutsLayer
+                    .transition(.move(edge: .trailing))
+                    .recEntranceGate()
+                    .zIndex(1)
+            } else if detailPresented {
                 DetailChrome(theme: theme, onClose: dismissDetail) { detailOverlayContent }
                     .transition(.move(edge: .trailing))
+                    // The entrance keyframes wait for the slide to land: a detail that already has its
+                    // datum (Estrés / Temp. de piel / Carga) built its hero on the first frame, so its
+                    // rise played under the panel's own motion and never read as an animation.
+                    .recEntranceGate()
                     .zIndex(1)
             }
         }
@@ -326,18 +359,6 @@ private struct CuerpoLanding: View {
             // `.sheet` boundary, FER-162) and the env objects are re-supplied (a sheet starts a fresh
             // environment branch). No nested NavigationStack (FER-171); you drag to dismiss. (FER-268)
             CompareView()
-                .instrumentoTheme(theme)
-                .environmentObject(repo)
-                .environment(live)
-                .environmentObject(model)
-                .environmentObject(health)
-        }
-        .sheet(isPresented: $showWorkouts) {
-            // Light «Instrumento» Entrenamientos — its OWN NavigationStack lives inside the sheet so each
-            // session row pushes the detail (NOT a stack nested across the tab path, FER-171). The theme is
-            // injected at the root (it doesn't cross the `.sheet` boundary, FER-162), and the screen's env
-            // objects are re-supplied (a sheet starts a fresh environment branch). (FER-260)
-            NavigationStack { WorkoutsView() }
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
                 .environment(live)
@@ -373,7 +394,7 @@ private struct CuerpoLanding: View {
     private var detailPresented: Bool {
         metricSpec != nil || recoveryDetail != nil || strainDetail != nil || sleepDetail != nil
             || stressDetail != nil || trainingLoadItem != nil || skinTempDetail != nil
-            || showActivityCost || showFitnessAge || showBodyAge
+            || showActivityCost || showFitnessAge || showBodyAge || showWorkouts
     }
 
     /// Pops the detail layer — clears every detail-presenting state (only one is set). The `.animation`
@@ -382,6 +403,27 @@ private struct CuerpoLanding: View {
         metricSpec = nil; recoveryDetail = nil; strainDetail = nil; sleepDetail = nil
         stressDetail = nil; trainingLoadItem = nil; skinTempDetail = nil
         showActivityCost = false; showFitnessAge = false; showBodyAge = false
+        // The path outlives the layer (it's state here, not inside the stack), so closing from a pushed
+        // session and reopening would land back on that session instead of the list.
+        showWorkouts = false; workoutsPath = []
+    }
+
+    /// Entrenamientos as a screen (not a card): its own `NavigationStack`, so a session row still PUSHES
+    /// `WorkoutDetailScreen` with a plain «‹» back. `WorkoutsView` wears the «‹ Tendencias» back in place
+    /// of the old sheet's «Done» — the layer has no `dismiss()` to call. The env objects are re-supplied
+    /// for symmetry with the other layers; the theme is injected at the root (FER-162).
+    private var workoutsLayer: some View {
+        NavigationStack(path: $workoutsPath) {
+            WorkoutsView(onClose: dismissDetail)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(theme.paper.ignoresSafeArea())
+        .instrumentoTheme(theme)
+        .environmentObject(repo)
+        .environment(live)
+        .environmentObject(model)
+        .environmentObject(health)
+        .modifier(EdgeSwipeBack(enabled: workoutsPath.isEmpty, onClose: dismissDetail))
     }
 
     /// The detail body for whichever state is set — built exactly as the old `fullScreenCover`s did (the
