@@ -1169,6 +1169,8 @@ struct MetricInfoSheet: View {
                     .frame(height: 130)
                     .accessibilityElement()
                     .accessibilityLabel(strainCurveAxLabel)
+                    // FER-977: the datum VoiceOver was missing — today's accumulated day strain so far.
+                    .accessibilityValue(Text(strainCurve.last.map { String(format: "%.1f", $0.value) } ?? ""))
                 HStack(spacing: 16) {
                     curveLegend(dashed: false, label: "lived")
                     curveLegend(dashed: true, label: "projected")
@@ -1442,6 +1444,7 @@ struct MetricInfoSheet: View {
                 }
                 .buttonStyle(.plain)
                 .frame(minHeight: 44)
+                .contentShape(Rectangle())
                 .accessibilityLabel(Text("See more"))
                 .accessibilityHint(Text("Opens the full detail"))
             }
