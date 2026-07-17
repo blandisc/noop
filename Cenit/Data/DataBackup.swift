@@ -93,40 +93,46 @@ enum DataBackup {
             return .failure("That file isn't a Cénit backup — it doesn't look like a SQLite database.")
         }
 
-        let fm = FileManager.default
-        let dbURL = URL(fileURLWithPath: dbPath)
-
         do {
-            // Snapshot the current DB (+ sidecars) to a timestamped side file so the user can roll back.
-            var sidecar = dbURL.deletingLastPathComponent()
-                .appendingPathComponent("whoop-replaced-\(timestamp()).sqlite")
-            if fm.fileExists(atPath: dbURL.path) {
-                if fm.fileExists(atPath: sidecar.path) { try fm.removeItem(at: sidecar) }
-                try fm.copyItem(at: dbURL, to: sidecar)
-            } else {
-                // Nothing to preserve (fresh install); report a placeholder so the message reads sensibly.
-                sidecar = dbURL
-            }
-
-            // FER-969 (X-04): never remove the live DB before its replacement is in place — stage the
-            // backup next to it, swap atomically, and only then drop the stale WAL/SHM. A failure
-            // mid-import leaves the original DB (including its WAL) fully intact; the tiny window
-            // where the new file coexists with the old WAL closes as soon as the removals land.
-            let incoming = dbURL.deletingLastPathComponent()
-                .appendingPathComponent("whoop-incoming-\(timestamp()).sqlite")
-            removeIfPresent(incoming)
-            try fm.copyItem(at: source, to: incoming)
-            if fm.fileExists(atPath: dbURL.path) {
-                _ = try fm.replaceItemAt(dbURL, withItemAt: incoming)
-            } else {
-                try fm.moveItem(at: incoming, to: dbURL)
-            }
-            removeIfPresent(URL(fileURLWithPath: dbPath + "-wal"))
-            removeIfPresent(URL(fileURLWithPath: dbPath + "-shm"))
-            return .imported(sidecar: sidecar)
+            return .imported(sidecar: try swapIn(source: source, dbPath: dbPath))
         } catch {
             return .failure("Import failed: \(error.localizedDescription)")
         }
+    }
+
+    /// The file-level core of the import: snapshot the live DB to a rollback sidecar, stage the
+    /// backup next to it, swap atomically, and only then drop the stale WAL/SHM (FER-969 · X-04 —
+    /// a failure mid-import leaves the original DB, including its WAL, fully intact). Extracted
+    /// from `runImport` so the ordering is unit-testable with plain tmp files (FER-973 · T-04).
+    /// Returns the rollback sidecar URL (the live path itself on a fresh install).
+    static func swapIn(source: URL, dbPath: String) throws -> URL {
+        let fm = FileManager.default
+        let dbURL = URL(fileURLWithPath: dbPath)
+
+        // Snapshot the current DB (+ sidecars) to a timestamped side file so the user can roll back.
+        var sidecar = dbURL.deletingLastPathComponent()
+            .appendingPathComponent("whoop-replaced-\(timestamp()).sqlite")
+        if fm.fileExists(atPath: dbURL.path) {
+            if fm.fileExists(atPath: sidecar.path) { try fm.removeItem(at: sidecar) }
+            try fm.copyItem(at: dbURL, to: sidecar)
+        } else {
+            // Nothing to preserve (fresh install); report a placeholder so the message reads sensibly.
+            sidecar = dbURL
+        }
+
+        // Stage next to the live DB, then swap; the live file is never absent mid-import.
+        let incoming = dbURL.deletingLastPathComponent()
+            .appendingPathComponent("whoop-incoming-\(timestamp()).sqlite")
+        removeIfPresent(incoming)
+        try fm.copyItem(at: source, to: incoming)
+        if fm.fileExists(atPath: dbURL.path) {
+            _ = try fm.replaceItemAt(dbURL, withItemAt: incoming)
+        } else {
+            try fm.moveItem(at: incoming, to: dbURL)
+        }
+        removeIfPresent(URL(fileURLWithPath: dbPath + "-wal"))
+        removeIfPresent(URL(fileURLWithPath: dbPath + "-shm"))
+        return sidecar
     }
 
     // MARK: - Helpers

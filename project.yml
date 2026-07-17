@@ -26,7 +26,11 @@ settings:
     # `es` values). Discard that churn; never commit it. Root cause + measurements:
     # docs/design-system/I18N.md §2.1. Re-enable once the Xcode bug is resolved (FER-568).
     SWIFT_EMIT_LOC_STRINGS: NO
-    SWIFT_STRICT_CONCURRENCY: minimal
+    # FER-973 (A-03): `targeted` checks the code that OPTED INTO concurrency (actors, @MainActor,
+    # Sendable conformances) — exactly where the app's risk lives (BLE delegate contract FER-173,
+    # 21 Task.detached snapshots) — without the full `complete` avalanche. The packages already
+    # build with StrictConcurrency; the app target was the only layer still on `minimal`.
+    SWIFT_STRICT_CONCURRENCY: targeted
     DEVELOPMENT_TEAM: "B7KRCF776Z"
     CODE_SIGN_STYLE: Automatic
     # Standard archs (arm64 on iOS device / simulator).

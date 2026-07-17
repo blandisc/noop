@@ -193,6 +193,16 @@ display name `Cénit`, bundle id `com.noopapp.noop`). A **free** Apple ID is eno
 iPhone — no paid Apple Developer account needed. See [`BUILD.md`](BUILD.md) for the on-device install
 recipe and pairing notes.
 
+### CI for the app layer (opt-in)
+
+The packages CI watches `Packages/**` only — a PR touching just the app layer gets **no automatic
+compile check**. The `iOS App Compile Check` workflow (`.github/workflows/ios-app.yml`) closes that
+gap on demand: add the **`ci-app` label** to the PR (or trigger it via *Run workflow*) and it
+compiles the full `Cenit` scheme unsigned on a macOS runner, mirroring `release.yaml`'s recipe.
+It is opt-in on purpose — macOS runners bill at 10× and this account has hit Actions spending
+limits — so reach for the label on any PR whose app-layer changes deserve a machine check
+(refactors, wide sweeps, anything merged without a local build). (FER-973)
+
 ### Before you push
 
 - `swift test` passes in every package you touched (and the app's test target if you touched the
