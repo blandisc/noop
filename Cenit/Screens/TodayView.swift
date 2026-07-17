@@ -36,6 +36,78 @@ private struct SleepDetailItem: Identifiable {
     init(id: UUID = UUID(), model: SleepDetailModel) { self.id = id; self.model = model }
 }
 
+#if os(iOS)
+/// FER-972 P-09: progreso del overscroll del pull-to-sync, aislado del árbol de `TodayView`.
+/// `@Observable` invalida por-lectura: solo las subvistas que leen `progress` se re-evalúan por frame
+/// durante el gesto; el padre (héroe + dial + tiles) no se reconstruye.
+@MainActor
+@Observable
+private final class PullProgressModel {
+    var progress: Double = 0
+}
+
+/// Sello del dial (34 pt): se «da cuerda» con el tirón y gira al sincronizar.
+/// Lee `pullProgress.progress` en SU body — no en el de `TodayView`.
+private struct PullIndicator: View {
+    let pullProgress: PullProgressModel
+    let isSyncing: Bool
+    let reduceMotion: Bool
+    let hour: Double
+    let solar: SolarWindow?
+    let sleep: SleepWindow?
+
+    var body: some View {
+        let seal = DialSeal(hour: hour, solar: solar, sleep: sleep)
+        if isSyncing && !reduceMotion {
+            TimelineView(.animation) { context in
+                let angle = (context.date.timeIntervalSinceReferenceDate * 257)
+                    .truncatingRemainder(dividingBy: 360)
+                seal.rotationEffect(.degrees(angle))
+            }
+        } else {
+            seal.rotationEffect(.degrees(pullProgress.progress * 270))
+        }
+    }
+}
+
+/// Pista del pull-to-refresh (chevron + microcopy). Se oculta al armar el tirón sin invalidar Hoy.
+private struct PullSyncHint: View {
+    let pullProgress: PullProgressModel
+    let isSyncing: Bool
+    let didFirstPullSync: Bool
+    let reduceMotion: Bool
+    @Environment(\.instrumentoTheme) private var theme
+    @State private var hintBob = false
+
+    private var shows: Bool { pullProgress.progress == 0 && !isSyncing }
+
+    var body: some View {
+        Group {
+            if shows {
+                let learning = !didFirstPullSync
+                let bobbing = learning && !reduceMotion && hintBob
+                VStack(spacing: CenitMetrics.space1) {
+                    StrandIcon.down.image
+                        .font(StrandFont.glyph(.chevron, weight: .semibold))
+                        .foregroundStyle(theme.inkTertiary)
+                        .offset(y: bobbing ? 4 : 0)
+                        .animation(bobbing ? StrandMotion.bob : nil, value: bobbing)
+                    if learning {
+                        Text("Pull to refresh")
+                            .font(StrandFont.caption)
+                            .foregroundStyle(theme.inkTertiary)
+                    }
+                }
+                .transition(.opacity)
+                .accessibilityHidden(true)
+                .onAppear { hintBob = true }
+            }
+        }
+        .strandAnimation(StrandMotion.fade, value: shows)
+    }
+}
+#endif
+
 struct TodayView: View {
     @EnvironmentObject var repo: Repository
     @Environment(LiveState.self) var live
@@ -69,17 +141,21 @@ struct TodayView: View {
     // MARK: - Pull-to-refresh propio (FER-222)
     //
     // Reemplaza el `.refreshable` nativo (su ruedita gris de ~1 s) por un gesto que DIBUJA el
-    // dial: al jalar Hoy hacia abajo, `pullProgress` (0→1) arma el arco verde del `DiurnalDial`
-    // proporcional al desplazamiento; al cruzar `pullThreshold` se dispara UNA vez la misma
-    // sincronización de antes (`pullToSync`) y el dial pasa a girar (modo `syncing` de FER-221).
-    // El offset del tope del scroll se lee con un `GeometryReader` en un coordinate space propio
-    // (no toca el scroll normal). Bajo Reduce Motion no se dibuja el arco (el llamador deja
-    // `pullProgress` en 0), pero el gesto sigue armando + disparando con su háptica.
+    // sello: al jalar Hoy hacia abajo, `pullProgressModel.progress` (0→1) le «da cuerda» al
+    // `DialSeal` proporcional al desplazamiento; al cruzar `pullThreshold` se dispara UNA vez la
+    // misma sincronización de antes (`pullToSync`) y el sello pasa a girar (modo `syncing` de
+    // FER-221). El offset del tope del scroll se lee con `onScrollGeometryChange` / preference
+    // (no toca el scroll normal). Bajo Reduce Motion no se dibuja el armado (el progreso se
+    // queda en 0), pero el gesto sigue armando + disparando con su háptica.
+    //
+    // FER-972 P-09: el progreso NO es `@State` de la raíz — vive en `PullProgressModel`
+    // (`@Observable`). Solo `PullIndicator` / `PullSyncHint` lo leen, así el árbol grande
+    // (héroe + tiles) no se reconstruye a 60–120 Hz durante el overscroll.
 
-    /// Progreso del tirón (0→1): arma el arco del dial. Se queda en 0 bajo Reduce Motion.
-    @State private var pullProgress: Double = 0
+    /// Progreso del tirón (0→1) en un modelo observable aislado. Se queda en 0 bajo Reduce Motion.
+    @State private var pullProgressModel = PullProgressModel()
     /// El tirón ya cruzó el umbral en ESTE gesto (ya disparó el sync) — evita re-disparar hasta
-    /// que el scroll vuelve al tope.
+    /// que el scroll vuelve al tope. Se queda en la raíz: dispara el sync una vez por gesto.
     @State private var pullCommitted = false
     /// Sync en curso DISPARADO por el tirón: hace girar el dial de inmediato (sin esperar a que
     /// `live.backfilling` arranque, p. ej. offline). Se apaga al terminar `pullToSync()`; para
@@ -88,9 +164,6 @@ struct TodayView: View {
     /// Distancia de tirón (pt) para armar y disparar. Calibrado para sentirse deliberado sin
     /// agotar el pulgar (el dial mide 180); el «feel» fino se confirma en el iPhone (FER-222).
     private let pullThreshold: CGFloat = 96
-    /// Enciende el rebote de la pista del pull-to-refresh (FER-293). Se pone en `true` al aparecer;
-    /// con la animación `bob` (repeatForever autoreverses) eso basta para que el chevron oscile.
-    @State private var hintBob = false
     #endif
 
     @State private var appleDays: [AppleDaily] = []
@@ -779,10 +852,15 @@ struct TodayView: View {
             // overlay — NO ocupa alto de layout, así que no empuja el héroe ni desborda la pantalla (a
             // diferencia del renglón de texto de FER-270). Centrada arriba, donde se inicia el tirón.
             // Entra/sale con un desvanecido; estática bajo Reduce Motion.
+            // FER-972 P-09: `PullSyncHint` lee el progreso en su propio body (no en la raíz).
             .overlay(alignment: .top) {
-                if showsSyncHint { syncHint }
+                PullSyncHint(
+                    pullProgress: pullProgressModel,
+                    isSyncing: isSyncing,
+                    didFirstPullSync: didFirstPullSync,
+                    reduceMotion: reduceMotion
+                )
             }
-            .strandAnimation(StrandMotion.fade, value: showsSyncHint)
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
             .padding(.horizontal, CenitMetrics.screenPadding)
             // Margen inferior compacto (FER-475): los page dots (último elemento) quedan pegados al dock,
@@ -857,22 +935,24 @@ struct TodayView: View {
     }
 
     /// Procesa el overscroll del tope del scroll (FER-222) para el pull-to-refresh propio. `overscroll` > 0
-    /// = el contenido se jaló hacia abajo (overscroll en el tope): mapea el tirón a `pullProgress` (0→1),
-    /// que arma el arco del dial, y al cruzar `pullThreshold` dispara la sincronización UNA vez por gesto.
-    /// Bajo Reduce Motion NO dibuja el arco (`pullProgress` se queda en 0), pero el gesto sigue armando y
-    /// disparando con su háptica. El scroll normal (`overscroll ≤ 0`) no escribe estado → sin recomputar el
-    /// body. Lo alimenta `todayScroll` desde `onScrollGeometryChange` (iOS 18+) o el lector de offset (iOS 17).
+    /// = el contenido se jaló hacia abajo (overscroll en el tope): mapea el tirón a
+    /// `pullProgressModel.progress` (0→1), que arma el sello, y al cruzar `pullThreshold` dispara la
+    /// sincronización UNA vez por gesto. Bajo Reduce Motion NO dibuja el armado (`progress` se queda
+    /// en 0), pero el gesto sigue armando y disparando con su háptica. El scroll normal
+    /// (`overscroll ≤ 0`) no escribe estado de progreso → sin recomputar. El progreso va al modelo
+    /// `@Observable` (FER-972 P-09); solo las subvistas que lo leen se invalidan. `pullCommitted`
+    /// sigue en la raíz (write raro: umbral / reset al tope).
     @MainActor
     private func handlePullOffset(_ overscroll: CGFloat) {
         let pull = max(0, overscroll)
         guard pull > 0 else {
-            if pullProgress != 0 { pullProgress = 0 }
+            if pullProgressModel.progress != 0 { pullProgressModel.progress = 0 }
             if pullCommitted { pullCommitted = false }   // de vuelta en el tope: listo para re-armar
             return
         }
         if !reduceMotion {
             let progress = Double(min(pull / pullThreshold, 1))
-            if progress != pullProgress { pullProgress = progress }
+            if progress != pullProgressModel.progress { pullProgressModel.progress = progress }
         }
         if pull >= pullThreshold, !pullCommitted, !pullSyncing {
             pullCommitted = true
@@ -888,7 +968,7 @@ struct TodayView: View {
     @MainActor
     private func triggerPullSync() {
         guard !pullSyncing else { return }
-        pullProgress = 0
+        pullProgressModel.progress = 0
         pullSyncing = true
         Task {
             await pullToSync()
@@ -1019,7 +1099,15 @@ struct TodayView: View {
                 if repo.dataSourceMode.usesWhoop {
                     if liveBpm != nil { bpmButton }
                     else if bandDisconnectedDaytime { noSignalHeader }
-                    headerSeal
+                    // FER-972 P-09: sello dueño de su lectura de progreso (no invalida el árbol).
+                    PullIndicator(
+                        pullProgress: pullProgressModel,
+                        isSyncing: isSyncing,
+                        reduceMotion: reduceMotion,
+                        hour: clockHourNow,
+                        solar: solarWindow,
+                        sleep: sleepWindow
+                    )
                 }
             }
             syncStatusLine
@@ -1070,23 +1158,6 @@ struct TodayView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("Band with no signal"))
     }
-
-    /// El sello del dial (34 pt) — la firma del instrumento Y el spinner: al jalar se le «da cuerda»
-    /// (gira con `pullProgress`), sincronizando gira en loop, en reposo queda quieto con el punto
-    /// «ahora» en la hora real.
-    @ViewBuilder private var headerSeal: some View {
-        let seal = DialSeal(hour: clockHourNow, solar: solarWindow, sleep: sleepWindow)
-        if isSyncing && !reduceMotion {
-            TimelineView(.animation) { context in
-                let angle = (context.date.timeIntervalSinceReferenceDate * 257)
-                    .truncatingRemainder(dividingBy: 360)
-                seal.rotationEffect(.degrees(angle))
-            }
-        } else {
-            seal.rotationEffect(.degrees(pullProgress * 270))
-        }
-    }
-
 
     /// La línea de estado bajo el header: «Sincronizando con tu banda…» durante el sync (con el conteo
     /// de paquetes si ya fluyen), o la frescura «última lectura hace N min» en reposo. Nada sin banda vista.
@@ -2033,46 +2104,11 @@ struct TodayView: View {
         .strandAnimation(StrandMotion.interactive, value: pagerPage)
     }
 
-    /// Muestra la pista del pull-to-refresh (FER-293): en reposo (sin tirón en curso) y mientras NO se
-    /// está sincronizando ya (el dial girando — FER-221 — comunica ese estado). Se muestra SIEMPRE en
-    /// reposo —con o sin strap— porque jalar igual recarga los datos locales (`repo.refresh()`), no solo
-    /// sincroniza la banda. Se desvanece al iniciar el gesto (`pullProgress > 0`), revelando el arco del
-    /// dial. (Antes —FER-270/FER-274— solo aparecía con strap y se apagaba para siempre al primer pull;
-    /// eso la volvía indescubrible para quien ya había jalado una vez.)
     /// El instrumento está sincronizando: offload en curso, su puente async (FER-480 `draining`) o el
     /// pull-to-sync manual. Fuente única para las señales del héroe (estado, dial, numeral, pista).
+    /// La pista del pull (FER-293) y el sello armado viven en `PullSyncHint` / `PullIndicator`
+    /// (FER-972 P-09): leen el progreso en su propio body para no invalidar Hoy por frame.
     private var isSyncing: Bool { live.backfilling || live.draining || pullSyncing }
-
-    private var showsSyncHint: Bool {
-        pullProgress == 0 && !isSyncing
-    }
-
-    /// La pista del pull-to-refresh (FER-293): un `chevron.down` que rebota suave y, mientras el usuario
-    /// aún no aprende el gesto (`!didFirstPullSync`), el microcopy «Desliza para actualizar». Tras el
-    /// primer pull-to-sync el texto y el rebote se retiran, pero el chevron PERMANECE como cue sutil —
-    /// así el gesto sigue siendo descubrible en vez de desaparecer para siempre (FER-270). Se monta como
-    /// `.overlay` en el tope del scroll, así que NO ocupa alto de layout (no empuja el héroe ni desborda
-    /// la pantalla). Bajo Reduce Motion no rebota (estático). Oculta a VoiceOver — su equivalente
-    /// accesible es la acción «Sincronizar» del encabezado (FER-222).
-    private var syncHint: some View {
-        let learning = !didFirstPullSync
-        let bobbing = learning && !reduceMotion && hintBob
-        return VStack(spacing: CenitMetrics.space1) {
-            StrandIcon.down.image
-                .font(StrandFont.glyph(.chevron, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary)
-                .offset(y: bobbing ? 4 : 0)
-                .animation(bobbing ? StrandMotion.bob : nil, value: bobbing)
-            if learning {
-                Text("Pull to refresh")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .transition(.opacity)
-        .accessibilityHidden(true)
-        .onAppear { hintBob = true }
-    }
 
     /// La overline del héroe (dos líneas, MAYÚSCULAS trackeadas): qué es el numeral, honesto por estado.
     private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
