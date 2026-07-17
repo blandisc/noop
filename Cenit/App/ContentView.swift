@@ -1,5 +1,6 @@
 import SwiftUI
 import StrandDesign
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// Root — the sidebar shell, with the first-run onboarding/pairing wizard overlaid until complete,
 /// and a "What's New" changelog sheet shown automatically after an update.
@@ -11,6 +12,10 @@ struct ContentView: View {
     /// Whether Today is the active tab (RootTabView keeps this in sync). Drives the app's color scheme
     /// so the status bar is dark on Today's light paper and light on the dark instrument tabs.
     @State private var isTodayTab = true
+    /// Inject: al observar la recarga en caliente, la vista se redibuja cuando InjectionIII intercambia el
+    /// código. No-op en Release. Puesta en la raíz → toda la app reacciona; para una pantalla puntual,
+    /// copia estas dos líneas (la propiedad + `.enableInjection()` al final del `body`) en ese struct.
+    @ObserveInjection private var inject
 
     #if os(iOS)
     // One-time restore nudge: if NOOP launches with no data (a fresh install or a reinstall after a
@@ -111,6 +116,7 @@ struct ContentView: View {
         }
         .animation(StrandMotion.fade, value: showRestoreResult)
         #endif
+        .enableInjection()   // Inject: activa la recarga en caliente para esta vista (no-op en Release)
     }
 
     /// The Terms gate is light «Instrumento» paper (FER-416) and sits over everything until accepted →

@@ -56,6 +56,12 @@ packages:
     path: Packages/StrandDesign
   StrandTraining:
     path: Packages/StrandTraining
+  # Inject — recarga en caliente (hot reload) para iterar la UI sin recompilar. Solo actúa en Debug,
+  # con el flag `-interposable` de abajo + InjectionIII.app abierta; en Release es inerte (no-op).
+  # github.com/krzysztofzablocki/Inject
+  Inject:
+    url: https://github.com/krzysztofzablocki/Inject.git
+    from: "1.6.0"
 targets:
   # ---------------------------------------------------------------------------
   # iOS app target (module/product Cenit). Reuses the five shared packages and the
@@ -142,6 +148,11 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         # See note on the base setting: disabled to avoid the Xcode 26.3 extractor crash.
         SWIFT_EMIT_LOC_STRINGS: NO
+      configs:
+        Debug:
+          # Inject/InjectionIII: permite intercambiar el código en caliente (solo Debug). `$(inherited)`
+          # conserva cualquier otro flag. Este bloque NO aplica en Release → el build de tienda queda intacto.
+          OTHER_LDFLAGS: -Xlinker -interposable $(inherited)
     dependencies:
       - package: WhoopProtocol
       - package: WhoopStore
@@ -149,6 +160,8 @@ targets:
       - package: StrandImport
       - package: StrandDesign
       - package: StrandTraining
+      # Inject: recarga en caliente en Debug (dev-only, inerte en Release).
+      - package: Inject
       # FER-721: embed the Live Activity / widget extension into the app bundle.
       - target: CenitWidgets
       # FER-740: embed the watchOS companion app so it installs with the iPhone app.
