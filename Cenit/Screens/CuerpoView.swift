@@ -608,7 +608,7 @@ private struct CuerpoLanding: View {
                     .minimumScaleFactor(0.9)
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(value ?? "—")
-                        .font(StrandFont.number(21))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(value == nil ? theme.inkTertiary : color)
                     if let unit, value != nil {
                         Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
@@ -674,7 +674,7 @@ private struct CuerpoLanding: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Training load").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)
                     Text(band?.shortLabel ?? "—")
-                        .font(StrandFont.number(24, weight: .semibold))
+                        .font(InstrumentoType.groteskVerdict)
                         .foregroundStyle(band.map { $0.flag.color(theme) } ?? theme.inkTertiary)
                     if let acwr = load?.acwr {
                         Text("\(String(format: "%.2f", acwr)) · recent vs. your usual")

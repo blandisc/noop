@@ -917,14 +917,14 @@ struct RecoveryDetailScreen: View {
                 Spacer(minLength: 8)
                 if let score = day.score {
                     Text("\(Int(score.rounded()))")
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(heatTint(score))
                     Text(bandWord(score))
                         .font(StrandFont.subhead)
                         .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(theme.inkTertiary)
                     Text("no reading")
                         .font(StrandFont.subhead)

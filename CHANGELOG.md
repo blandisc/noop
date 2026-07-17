@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Tendencias cierra sus últimas islas SF, en Grotesk / Trends closes its last SF islands, in Grotesk.**
+  **ES** — Dos rincones que aún hablaban la tipografía numérica SF migran a **Space Grotesk**: los valores de las columnas del landing y la palabra de banda de Carga de entrenamiento en Cuerpo, y el readout del calendario de 90 días que se repite en Recuperación, Esfuerzo, Sueño y Estrés (FER-966). Sin cambio de tamaños, layout ni color.
+  **EN** — Two corners still on the SF numeric typeface move to **Space Grotesk**: the landing's column values and the Training load band word in Body, and the 90-day calendar readout repeated across Recovery, Strain, Sleep and Stress (FER-966). No size, layout or color change.
+  ([CuerpoView.swift](Cenit/Screens/CuerpoView.swift), [RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift), [StrainDetailScreen.swift](Cenit/Screens/StrainDetailScreen.swift), [SleepDetailScreen.swift](Cenit/Screens/SleepDetailScreen.swift), [StressDetailScreen.swift](Cenit/Screens/StressDetailScreen.swift))
+
 - **El número grande vuelve a entrar animado en todo Tendencias / The big number animates in again across Trends.**
   **ES** — En Estrés, Temp. de piel y Carga de entrenamiento el número aparecía de golpe, mientras que en Recuperación, Sueño y Esfuerzo subía suavecito. La animación sí estaba en todas: arrancaba mientras la pantalla todavía venía entrando, así que se perdía dentro de ese movimiento. Ahora la entrada espera a que la pantalla aterrice, y el número sube igual en las diez.
   **EN** — On Stress, Skin temp and Training load the figure just popped in, while on Recovery, Sleep and Strain it rose gently. Every screen had the animation: it started while the screen was still arriving, so it got lost inside that motion. The entrance now waits for the screen to land, and the figure rises the same way on all ten.
