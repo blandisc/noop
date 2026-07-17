@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El número grande también anima al abrir un detalle desde «Hoy» / The big number animates when a detail opens from Today too.**
+  **ES** — Los detalles que abres desde Hoy (Recuperación, Sueño, Esfuerzo, Estrés, Temp. de piel, Carga y los vitales) suben como hoja del sistema; el número subía justo mientras la hoja entraba, así que en las de dato inmediato se veía aparecer de golpe. Ahora la entrada espera a que la hoja aterrice, igual que ya hacían esas pantallas abiertas desde Tendencias.
+  **EN** — Details opened from Today (Recovery, Sleep, Strain, Stress, Skin temp, Load and the vitals) rise as a system sheet; the number rose while the sheet was still sliding in, so on the immediate-datum ones it looked like it just popped. The entrance now waits for the sheet to land, matching what those same screens already did when opened from Trends.
+  ([TodayView.swift](Cenit/Screens/TodayView.swift))
+
 - **Entrenar: el título del detalle de sesión respira cuando el nombre es largo / Train: the session-detail title breathes when the name is long.**
   **ES** — Cuando el nombre del entrenamiento cae a dos líneas (p. ej. «Empuje pesado de pecho y hombros»), las dos líneas del título ya no se apretaban: 4 pt de interlineado las separan. Los títulos de un solo renglón no se mueven.
   **EN** — When a workout name wraps to two lines (e.g. "Heavy chest and shoulders push"), the title's two lines no longer sit cramped: 4 pt of line spacing separates them. Single-line titles are unaffected.

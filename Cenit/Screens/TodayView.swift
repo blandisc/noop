@@ -529,22 +529,32 @@ struct TodayView: View {
             // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
             // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
             // NavigationStack (FER-171). (FER-251)
+            //
+            // `.recEntranceGate()` on each: the hero's rise (recRise) otherwise plays WHILE the system sheet
+            // slides up from the bottom, so a synchronous-datum screen (Estrés, Temp. de piel, Carga) shows
+            // the number already in place — the same lost-under-the-motion bug the Tendencias layer fixed
+            // (FER-1008). The gate holds the keyframes until the sheet lands; the late-swap screens
+            // (Recuperación/Sueño/Esfuerzo) are unaffected (their number appears after the gate flips anyway).
             .sheet(item: $recoveryDetail) { item in
                 RecoveryDetailScreen(theme: theme, model: item.model)
+                    .recEntranceGate()
             }
             .sheet(item: $sleepDetail) { item in
                 SleepDetailScreen(theme: theme, model: item.model,
                                   loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
                                   loadNightRR: { from, to in await repo.rrIntervals(from: from, to: to) },
                                   loadDCBaseline: { await repo.nocturnalDCBaseline() })
+                    .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in
                 StrainDetailScreen(theme: theme, model: item.model,
                                    curveLoader: { await loadStrainCurve() }, estimated: item.estimated)
+                    .recEntranceGate()
             }
             .sheet(item: $skinTempDetail) { item in
                 SkinTempDetailScreen(theme: theme, model: item.model,
                                      loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
+                    .recEntranceGate()
             }
             .sheet(item: $stressDetail) { item in
                 // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns,
@@ -555,6 +565,7 @@ struct TodayView: View {
                                        repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                    eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
                                        repo: repo, map: stressDayMap) })
+                    .recEntranceGate()
             }
             .sheet(item: $metricSpec) { spec in
                 MetricDetailScreen(
@@ -576,6 +587,7 @@ struct TodayView: View {
                     restingHR: resolveMeasured { $0.restingHr.map(Double.init) }?.value,
                     todayKey: Repository.localDayKey(Date())
                 )
+                .recEntranceGate()
             }
             .sheet(item: $trainingLoadItem) { item in
                 // Hoja «Carga de entrenamiento» (FER-705 · handoff «Carga») — tema explícito (no cruza `.sheet`),
@@ -585,6 +597,7 @@ struct TodayView: View {
                                   patternText: item.patternText,
                                   onSeePattern: item.onSeePattern,
                                   onSeeTrends: item.onSeeTrends)
+                    .recEntranceGate()
             }
     }
 
