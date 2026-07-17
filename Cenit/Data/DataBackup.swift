@@ -109,9 +109,9 @@ enum DataBackup {
             }
 
             // FER-969 (X-04): never remove the live DB before its replacement is in place — stage the
-            // backup next to it, swap atomically, and only then drop the stale WAL/SHM (whose salt no
-            // longer matches the new file, so SQLite ignores them even if this removal fails). A failure
-            // mid-import leaves the original DB — including its WAL — fully intact.
+            // backup next to it, swap atomically, and only then drop the stale WAL/SHM. A failure
+            // mid-import leaves the original DB (including its WAL) fully intact; the tiny window
+            // where the new file coexists with the old WAL closes as soon as the removals land.
             let incoming = dbURL.deletingLastPathComponent()
                 .appendingPathComponent("whoop-incoming-\(timestamp()).sqlite")
             removeIfPresent(incoming)

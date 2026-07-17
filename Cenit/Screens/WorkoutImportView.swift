@@ -558,9 +558,15 @@ struct WorkoutImportView: View {
         let exercise = Exercise(id: UUID().uuidString, name: name, type: declaredType(name),
                                 equipment: nil, primaryMuscles: [], secondaryMuscles: [], instructions: [])
         Task {
-            try? await repo.saveCustomExercise(exercise)
-            catalog.append(exercise)   // keep the local catalog current without a full re-fetch
-            resolution[norm(name)] = exercise
+            do {
+                try await repo.saveCustomExercise(exercise)
+                catalog.append(exercise)   // keep the local catalog current without a full re-fetch
+                resolution[norm(name)] = exercise
+            } catch {
+                // FER-969 (QA D3): a failed save must not enter the local catalog/resolution — the
+                // final routine write would reference an exercise that doesn't exist in the store.
+                saveError = true
+            }
         }
     }
 

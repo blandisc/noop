@@ -16895,13 +16895,13 @@
         }
       }
     },
-    "Your data is still on this phone — retry, or restore from an iCloud Drive backup." : {
+    "Your data is still on this phone: retry, or restore from an iCloud Drive backup." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your data is still on this phone — retry, or restore from an iCloud Drive backup."
+            "value" : "Your data is still on this phone: retry, or restore from an iCloud Drive backup."
           }
         },
         "es" : {

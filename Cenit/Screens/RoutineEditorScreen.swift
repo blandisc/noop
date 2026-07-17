@@ -1081,8 +1081,14 @@ struct RoutineEditorScreen: View {
         Task {
             // C2: salir por «descanso» también autosalva (contrato Notas). FER-969: stay on failure.
             if dirty, !(await persistNow()) { return }
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.clearRoutineSchedule(weekday: wd)
+            guard let store = await repo.storeHandle() else { saveError = true; return }
+            do {
+                try await store.clearRoutineSchedule(weekday: wd)
+            } catch {
+                // QA D1: a failed clear must not dismiss as if the day were marked rest.
+                saveError = true
+                return
+            }
             dismiss()
         }
     }

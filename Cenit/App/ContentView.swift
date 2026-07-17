@@ -165,7 +165,7 @@ private struct StoreFailureView: View {
             Text("Cénit couldn't open your database.")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
-            Text("Your data is still on this phone — retry, or restore from an iCloud Drive backup.")
+            Text("Your data is still on this phone: retry, or restore from an iCloud Drive backup.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)

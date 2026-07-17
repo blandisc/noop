@@ -1166,12 +1166,17 @@ final class AppModel: ObservableObject {
     }
 
     private func attemptStrengthSave() async {
-        guard let session = strengthSession, session.summary == nil,
-              let pending = pendingStrengthSave else { return }
+        guard let session = strengthSession, session.summary == nil else { return }
         guard let store = await repo.storeHandle() else {
+            // `pendingStrengthSave` stays stashed — the banner's Retry re-enters here.
             session.saveError = true
+            if pendingStrengthSave?.notifyWatch == false { strengthSheetPresented = true }
             return
         }
+        // QA D4: TAKE the payload before the first await after this point — a second Retry tap
+        // finds nil and no-ops instead of racing a duplicate post-save flow. Re-stashed on failure.
+        guard let pending = pendingStrengthSave else { return }
+        pendingStrengthSave = nil
         // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
         let prior = await priorStrengthPRs(store: store, ids: Set(pending.sets.map(\.exerciseId)))
         let saved = await Self.saveThenClearSnapshot(
@@ -1180,7 +1185,11 @@ final class AppModel: ObservableObject {
                                                 notes: pending.notes) },
             clearSnapshot: { try await store.clearInProgressSession() })
         guard saved else {
+            pendingStrengthSave = pending   // retry needs it back
             session.saveError = true
+            // QA D5: a watch-initiated end has no open sheet — surface the failure banner too,
+            // not just the receipt (FER-799's rationale applies double when something went wrong).
+            if !pending.notifyWatch { strengthSheetPresented = true }
             return
         }
         session.saveError = false
