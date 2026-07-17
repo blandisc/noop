@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Guardar ya nunca falla en silencio / Saving never fails silently anymore.**
+  **ES** — Si guardar tu entrenamiento falla (disco lleno, base ocupada), Cénit ya no finge que todo salió bien: tus series se quedan a salvo en el teléfono, el recibo muestra el problema y un «Reintentar». Lo mismo al guardar rutinas, el plan semanal, borrar entrenamientos o exportar archivos: cada fallo se ve, nada se pierde callado. Además, si la base de datos no puede abrir al iniciar, la app lo dice de frente — con «Reintentar» y «Restaurar respaldo» — en vez de mostrarse vacía; y restaurar un respaldo ya no puede dejarte sin datos si algo se interrumpe a la mitad.
+  **EN** — If saving your workout fails (full disk, busy database), Cénit no longer pretends it worked: your sets stay safe on the phone, the receipt shows the problem and a Retry. Same for saving routines, the weekly plan, deleting workouts or exporting files: every failure is visible, nothing is lost silently. And if the database can't open at launch, the app says so — with Retry and Restore from backup — instead of showing up empty; restoring a backup can no longer leave you without data if it's interrupted midway.
+  ([AppModel.swift](Cenit/App/AppModel.swift), [Repository.swift](Cenit/Data/Repository.swift), [DataBackup.swift](Cenit/Data/DataBackup.swift), [ContentView.swift](Cenit/App/ContentView.swift))
+
 - **El número grande vuelve a entrar animado en todo Tendencias / The big number animates in again across Trends.**
   **ES** — En Estrés, Temp. de piel y Carga de entrenamiento el número aparecía de golpe, mientras que en Recuperación, Sueño y Esfuerzo subía suavecito. La animación sí estaba en todas: arrancaba mientras la pantalla todavía venía entrando, así que se perdía dentro de ese movimiento. Ahora la entrada espera a que la pantalla aterrice, y el número sube igual en las diez.
   **EN** — On Stress, Skin temp and Training load the figure just popped in, while on Recovery, Sleep and Strain it rose gently. Every screen had the animation: it started while the screen was still arriving, so it got lost inside that motion. The entrance now waits for the screen to land, and the figure rises the same way on all ten.
