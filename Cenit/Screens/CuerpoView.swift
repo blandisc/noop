@@ -718,7 +718,7 @@ private struct CuerpoLanding: View {
         Button { showMuscleMap = true } label: {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
-                    Text("Muscle map").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // serif group (FER-581)
+                    Text("Muscle map").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // grotesk group header (FER-901)
                     // Provisional placement here, pending a product decision on its permanent home (likely
                     // Entrenar / Patrones). (FER-566 / handoff «DE MOMENTO»)
                     Spacer(minLength: 8)
@@ -800,7 +800,7 @@ private struct CuerpoLanding: View {
         } label: {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Recovery").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // serif group (FER-581)
+                    Text("Recovery").font(InstrumentoType.grotesk(12, weight: .bold)).tracking(2.4).textCase(.uppercase).foregroundStyle(theme.ink)   // grotesk group header (FER-901)
                     recoveryHeroNumeral(score: score, calibrating: cal, color: color)
                     Text(recoverySubtitle(score: score, calibrating: cal))
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -859,7 +859,7 @@ private struct CuerpoLanding: View {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(delta >= 0 ? "+\(delta)" : "\(delta)")
                         .font(StrandFont.number(13, weight: .semibold)).foregroundStyle(color)
-                    Text("vs tu media").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text("vs your average").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 }
             }
             .accessibilityHidden(true)
@@ -1028,7 +1028,7 @@ private struct CuerpoLanding: View {
                              legend: n > 0 ? "\(weekWorkoutCount) this week" : nil) {
             showWorkouts = true
         }
-        if n > 0 { col } else { col.accessibilityLabel(Text("sin entrenamientos aún")) }
+        if n > 0 { col } else { col.accessibilityLabel(Text("no workouts yet")) }
     }
 
     // MARK: - Longevity stats (Fitness Age FER-141 · Body Age FER-145 · VO₂max FER-257)

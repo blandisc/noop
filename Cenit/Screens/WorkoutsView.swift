@@ -38,7 +38,7 @@ struct WorkoutsView: View {
 
     @State private var allRows: [WorkoutRow]
     @State private var loaded: Bool
-    @State private var range: Range = .all
+    @State private var range: ExploreRange = .all
     /// Strength-tracker sessions + their Σ weight×reps volume (FER-821) — the ONLY source of workout
     /// volume. `WorkoutRow` (Apple/journal cache) has no load field, so the «Volume» tile and the
     /// weekly-volume chart aggregate these instead. Loaded alongside `allRows` in `.task`.
@@ -118,7 +118,6 @@ struct WorkoutsView: View {
             loaded = true
             range = defaultRange(for: r)
         }
-        .onAppear { if loaded { range = defaultRange(for: allRows) } }
     }
 
     // MARK: - Populated (Final skeleton)
@@ -134,7 +133,7 @@ struct WorkoutsView: View {
                 heroFinal(rows: windowRows, effectiveRange: resolved)
                 // Segmented range control lives on paper BELOW the inverted hero: HeroInvertido has no
                 // slot for an interactive @State binding control (same pattern as streak chip on SkinTemp).
-                SegmentedPillControl(Range.allCases, selection: $range, theme: theme) { $0.label }
+                SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
                     .padding(.horizontal, 20)
                     .padding(.top, 14)
                     .padding(.bottom, 4)
@@ -159,7 +158,7 @@ struct WorkoutsView: View {
 
     // MARK: - Hero Final (HeroInvertido · dataStrain · session count)
 
-    private func heroFinal(rows: [WorkoutRow], effectiveRange: Range) -> some View {
+    private func heroFinal(rows: [WorkoutRow], effectiveRange: ExploreRange) -> some View {
         let fellBack = effectiveRange != range
         let n = rows.count
         return HeroInvertido(
@@ -182,7 +181,7 @@ struct WorkoutsView: View {
         )
     }
 
-    private func rangeCaption(count: Int, effectiveRange: Range, fellBack: Bool) -> String {
+    private func rangeCaption(count: Int, effectiveRange: ExploreRange, fellBack: Bool) -> String {
         let unit = count == 1 ? String(localized: "session") : String(localized: "sessions")
         let countUnit = "\(count) \(unit)"
         if fellBack {
@@ -195,7 +194,7 @@ struct WorkoutsView: View {
 
     /// Window totals for the selected (effective) range. Volume kg is not on `WorkoutRow`, so the volume
     /// tile aggregates strength-tracker sessions (FER-821) over the SAME time window as Hours/Kcal.
-    private func totalsSection(rows: [WorkoutRow], effectiveRange: Range) -> some View {
+    private func totalsSection(rows: [WorkoutRow], effectiveRange: ExploreRange) -> some View {
         let totalTimeH = rows.compactMap(\.durationS).reduce(0, +) / 3600.0
         let kcalValues = rows.compactMap(\.energyKcal)
         let totalKcal: String = {
@@ -280,7 +279,7 @@ struct WorkoutsView: View {
 
     /// Σ strength volume for sessions whose `startTs` falls in the SAME window as the Hours/Kcal tiles
     /// (cutoff = latest workout-row ts − range days; no cutoff for `.all`), so the tile tracks the range.
-    private func strengthVolumeKg(in r: Range) -> Double {
+    private func strengthVolumeKg(in r: ExploreRange) -> Double {
         let inWindow: [StrengthSession]
         if let days = r.days, let last = latestTs {
             let cutoff = last - days * 86_400
@@ -319,7 +318,7 @@ struct WorkoutsView: View {
 
     private func sessionsSection(rows: [WorkoutRow]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+            ForEach(rows, id: \.self) { row in
                 NavigationLink(value: row) {
                     sessionCard(row)
                 }
@@ -471,7 +470,7 @@ struct WorkoutsView: View {
 
     private var latestTs: Int? { allRows.map(\.startTs).max() }
 
-    private func sessions(for r: Range) -> [WorkoutRow] {
+    private func sessions(for r: ExploreRange) -> [WorkoutRow] {
         guard let days = r.days else { return allRows }
         guard let last = latestTs else { return [] }
         let cutoff = last - days * 86_400
@@ -479,16 +478,16 @@ struct WorkoutsView: View {
     }
 
     /// The selected range when it holds ≥1 session, else the smallest larger range that does.
-    private var effectiveRange: Range {
+    private var effectiveRange: ExploreRange {
         guard !allRows.isEmpty else { return range }
         for r in range.widening where !sessions(for: r).isEmpty { return r }
         return .all
     }
 
     /// Tightest range that still holds ≥2 sessions; else All.
-    private func defaultRange(for source: [WorkoutRow]) -> Range {
+    private func defaultRange(for source: [WorkoutRow]) -> ExploreRange {
         guard let last = source.map(\.startTs).max() else { return .all }
-        for r in Range.allCases where r.days != nil {
+        for r in ExploreRange.allCases where r.days != nil {
             let cutoff = last - (r.days ?? 0) * 86_400
             if source.filter({ $0.startTs >= cutoff }).count >= 2 { return r }
         }
@@ -518,47 +517,22 @@ struct WorkoutsView: View {
             .sorted { ($0.count, $0.totalTimeS) > ($1.count, $1.totalTimeS) }
     }
 
-    // MARK: - Range model
-
-    enum Range: CaseIterable, Hashable {
-        case week, month, quarter, year, all
-        var label: String {
-            switch self {
-            case .week:    return String(localized: "7D")
-            case .month:   return String(localized: "30D")
-            case .quarter: return String(localized: "90D")
-            case .year:    return String(localized: "1Y")
-            case .all:     return String(localized: "All")
-            }
-        }
-        var caption: String {
-            switch self {
-            case .week:    return String(localized: "last 7 days")
-            case .month:   return String(localized: "last 30 days")
-            case .quarter: return String(localized: "last 90 days")
-            case .year:    return String(localized: "last year")
-            case .all:     return String(localized: "all time")
-            }
-        }
-        var days: Int? {
-            switch self {
-            case .week: return 7
-            case .month: return 30
-            case .quarter: return 90
-            case .year: return 365
-            case .all: return nil
-            }
-        }
-        var widening: [Range] {
-            let order: [Range] = [.week, .month, .quarter, .year, .all]
-            guard let i = order.firstIndex(of: self) else { return [.all] }
-            return Array(order[i...])
-        }
-    }
-
     // MARK: - Formatting
 
     private func oneDecimal(_ v: Double) -> String { String(format: "%.1f", v) }
+}
+
+private extension ExploreRange {
+    var caption: String {
+        switch self {
+        case .week:    return String(localized: "last 7 days")
+        case .month:   return String(localized: "last 30 days")
+        case .quarter: return String(localized: "last 90 days")
+        case .half:    return String(localized: "last 6 months")
+        case .year:    return String(localized: "last year")
+        case .all:     return String(localized: "all time")
+        }
+    }
 }
 
 #if DEBUG
