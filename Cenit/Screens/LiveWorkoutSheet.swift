@@ -17,7 +17,7 @@ import WhoopStore
 /// The Train-hub «En vivo» row: a "Start live" action (disabled without a worn strap streaming HR), a
 /// "Recording m:ss" state while a session runs, and a brief saved/discarded notice afterwards.
 struct LiveWorkoutHubRow: View {
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
@@ -37,7 +37,7 @@ struct LiveWorkoutHubRow: View {
                 .accessibilityHint(isDisabled ? Text("Connect and wear your strap to record live.") : Text(""))
                 .sheet(isPresented: $showSheet) {
                     LiveWorkoutSheet(theme: theme)
-                        .environmentObject(model)
+                        .environment(model)
                         .presentationDetents([.medium, .large])
                         .presentationDragIndicator(.visible)
                         .presentationBackground(theme.paper)
@@ -135,7 +135,7 @@ struct LiveWorkoutHubRow: View {
 /// in explicitly — it does NOT propagate through `.sheet`'s fresh environment (same as Live, FER-190).
 /// A pure recorder: overline + clock + Rate/Avg/Peak + Finish. No strain on screen (FER-181 direction).
 struct LiveWorkoutSheet: View {
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     var theme: InstrumentoTheme = .base
 

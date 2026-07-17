@@ -22,7 +22,7 @@ import StrandDesign
 /// widget.
 @main
 struct CenitApp: App {
-    @StateObject private var model: AppModel
+    @State private var model: AppModel
     @StateObject private var health: HealthKitBridge
     @StateObject private var mirroring: WorkoutMirroringBridge   // FER-740: Apple Watch session mirroring
     @StateObject private var autoBackup = AutoBackup()
@@ -50,7 +50,7 @@ struct CenitApp: App {
         // detached warm just moves the cost off the critical first-frame path.
         Task.detached { StrandFont.ensureFontsRegistered() }
         let model = AppModel()
-        _model = StateObject(wrappedValue: model)
+        _model = State(wrappedValue: model)
         let healthBridge = HealthKitBridge(
             repo: model.repo,
             appleDeviceId: model.appleDeviceId,
@@ -92,7 +92,7 @@ struct CenitApp: App {
                 // text-size setting, but we don't promise the 5 giant Accessibility sizes (they'd
                 // break the dense glanceable layouts). Sheets inherit this clamp.
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                .environmentObject(model)
+                .environment(model)
                 .environment(model.live)
                 .environmentObject(model.repo)
                 .environmentObject(model.profile)

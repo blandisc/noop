@@ -17,7 +17,7 @@ import StrandDesign
 /// original; only the view layer was repainted.
 struct BreathingView: View {
 
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 

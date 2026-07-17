@@ -31,14 +31,14 @@ private struct AppMapCell: View {
     let title: String
     var scale: CGFloat = 0.42
 
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @State private var seeded = false
 
     var body: some View {
         VStack(spacing: 10) {
             TodayView()
                 .environmentObject(model.repo)
-                .environmentObject(model)
+                .environment(model)
                 .environmentObject(TabRouter())
                 .environmentObject(HealthKitBridge(repo: model.repo,
                                                    appleDeviceId: "map-apple",
@@ -99,7 +99,7 @@ private struct AppMapGrid: View {
 /// navegación son no-ops: el preview es para mirar la portada, no para navegar.
 private struct EntrenarMapCell: View {
     var locale: String = "es"
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @State private var seeded = false
 
     var body: some View {
@@ -107,7 +107,7 @@ private struct EntrenarMapCell: View {
                      openHistory: {}, openWeeklyPlan: {}, openRoutines: {}, openRestDay: {},
                      openOtherWays: {}, openWorkoutSession: { _ in })
             .environmentObject(model.repo)
-            .environmentObject(model)
+            .environment(model)
             .environmentObject(TabRouter())
             .environmentObject(HealthKitBridge(repo: model.repo,
                                                appleDeviceId: "map-apple",
@@ -141,7 +141,7 @@ private struct EntrenarMapCell: View {
 /// del proceso, así que forzar «es» mezclaba idiomas en el canvas. En el iPhone en español todo sale
 /// en español; el canvas se ve consistente en el idioma del Mac.
 private struct ExerciseLibraryMapCell: View {
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
     /// Seed first, mount after — the screen loads its history on appear (see ExerciseDetailMapCell).
     @State private var seeded = false
@@ -179,7 +179,7 @@ private struct ExerciseLibraryMapCell: View {
 /// de volumen semanal y el Historial con chips por día + badge RÉCORD hoy. Las tres gráficas
 /// responden al arrastre (scrub) dentro del canvas.
 private struct ExerciseDetailMapCell: View {
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
     /// The screen mounts only AFTER seeding finishes — its `.task` loads the history the moment it
     /// appears, so mounting first raced the seed and rendered the honest-empty state (FER-951).
@@ -219,7 +219,7 @@ private struct ExerciseDetailMapCell: View {
 /// fidelidad al hand-off «Rediseño - Crear Rutina» en el canvas: header, tabla SERIE/KG/REPS,
 /// superserie, chips de descanso/nota y el menú «···».
 private struct RoutineEditorMapCell: View {
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
     @State private var seeded = false
 
@@ -232,7 +232,7 @@ private struct RoutineEditorMapCell: View {
             }
         }
         .environmentObject(model.repo)
-        .environmentObject(model)
+        .environment(model)
         .environmentObject(media)
         .environmentObject(TabRouter())
         // FLUJO COMPLETO (FER-952): «Empezar» arranca la sesión de verdad
@@ -253,7 +253,7 @@ private struct RoutineEditorMapCell: View {
             if let session = model.strengthSession {
                 LiveStrengthSheet(session: session)
                     .environmentObject(model.repo)
-                    .environmentObject(model)
+                    .environment(model)
                     .environmentObject(TabRouter())
                     .environmentObject(media)
                     .environment(model.live)
@@ -279,7 +279,7 @@ private struct RoutineEditorMapCell: View {
 /// (`RoutineEditorScreen`) en el mismo stack, así que desde este preview puedes recorrer el flujo
 /// completo Tu Plan → Rutina, igual que en el app.
 private struct WeeklyPlanMapCell: View {
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
     @State private var seeded = false
     @State private var path = NavigationPath()
@@ -302,7 +302,7 @@ private struct WeeklyPlanMapCell: View {
             }
         }
         .environmentObject(model.repo)
-        .environmentObject(model)
+        .environment(model)
         .environmentObject(media)
         .environmentObject(TabRouter())
         .preferredColorScheme(.light)
@@ -324,7 +324,7 @@ private struct WeeklyPlanMapCell: View {
 /// REAL — todo navegable dentro del canvas, con el plan demo sembrado. (MisRutinasScreen se retiró
 /// en FER-962: Tu Plan es la única casa de la biblioteca.)
 private struct NewRoutineFlowMapCell: View {
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
     @State private var seeded = false
     @State private var path = NavigationPath()
@@ -347,7 +347,7 @@ private struct NewRoutineFlowMapCell: View {
             }
         }
         .environmentObject(model.repo)
-        .environmentObject(model)
+        .environment(model)
         .environmentObject(media)
         .environmentObject(TabRouter())
         .overlay(alignment: .bottom) {
@@ -365,7 +365,7 @@ private struct NewRoutineFlowMapCell: View {
             if let session = model.strengthSession {
                 LiveStrengthSheet(session: session)
                     .environmentObject(model.repo)
-                    .environmentObject(model)
+                    .environment(model)
                     .environmentObject(TabRouter())
                     .environmentObject(media)
                     .environment(model.live)
@@ -393,7 +393,7 @@ private struct NewRoutineFlowMapCell: View {
 private struct EntrenarFlowsMapCell: View {
     private enum Route: String, Hashable { case breathe, intervals, dieta, history, weeklyPlan, restDay, otherWays, library }
 
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
     @StateObject private var historyCoordinator = WorkoutHistoryCoordinator()
     @State private var seeded = false
@@ -432,7 +432,7 @@ private struct EntrenarFlowsMapCell: View {
             }
         }
         .environmentObject(model.repo)
-        .environmentObject(model)
+        .environment(model)
         .environmentObject(media)
         .environmentObject(TabRouter())
         .environmentObject(historyCoordinator)
@@ -453,7 +453,7 @@ private struct EntrenarFlowsMapCell: View {
             if let session = model.strengthSession {
                 LiveStrengthSheet(session: session)
                     .environmentObject(model.repo)
-                    .environmentObject(model)
+                    .environment(model)
                     .environmentObject(TabRouter())
                     .environmentObject(media)
                     .environment(model.live)
@@ -501,7 +501,7 @@ private struct EntrenarFlowsMapCell: View {
 /// FC 132/168, 316 kcal, nota y las zonas de FC (8/22/40/25/5) vía el join con el journal — la
 /// pantalla completa para verificar hero, zonas, FC, volumen y récords de una sesión real.
 private struct WorkoutSessionDetailMapCell: View {
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @StateObject private var media = MediaDownloadCoordinator()
     @StateObject private var historyCoordinator = WorkoutHistoryCoordinator()
     @State private var route: WorkoutSessionRoute? = nil
@@ -517,7 +517,7 @@ private struct WorkoutSessionDetailMapCell: View {
             }
         }
         .environmentObject(model.repo)
-        .environmentObject(model)
+        .environment(model)
         .environmentObject(media)
         .environmentObject(TabRouter())
         .environmentObject(historyCoordinator)
@@ -542,7 +542,7 @@ private struct WorkoutSessionDetailMapCell: View {
 /// El `SessionPill` flotante del app real (FER-716), replicado para las celdas del canvas: reloj vivo
 /// por `TimelineView`, BPM en vivo si hay banda, y tocar re-abre la sesión minimizada.
 private struct MapSessionPillHost: View {
-    @ObservedObject var model: AppModel
+    @Bindable var model: AppModel
     @State private var confirmDiscard = false
     var body: some View {
         hostBody

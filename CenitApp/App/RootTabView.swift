@@ -45,7 +45,7 @@ struct RootTabView: View {
     /// The strength session lives here (FER-716): it presents as a full-screen cover (over the dock, no
     /// grabber) from ANY tab, and its floating pill hovers over the bar on all five tabs. Owned by
     /// AppModel so navigation never kills it — dismissing the cover only minimizes it (the pill re-opens).
-    @EnvironmentObject private var appModel: AppModel
+    @Environment(AppModel.self) private var appModel
 
     /// The visible tab. Starts on Today, the launch screen.
     @State private var selection: Tab = .today
@@ -73,6 +73,9 @@ struct RootTabView: View {
     @State private var confirmDiscardSession = false
 
     var body: some View {
+        // FER-984: `appModel` es `@Environment` (sin `$` publishers); este `@Bindable` local habilita el
+        // binding `$appModel.strengthSheetPresented` del fullScreenCover de la sesión de fuerza (abajo).
+        @Bindable var appModel = appModel
         TabView(selection: $selection) {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
             lazyTab(.body,  "Tendencias", "chart.xyaxis.line") { CuerpoView() }
@@ -221,7 +224,7 @@ struct RootTabView: View {
         }) {
             if let session = appModel.strengthSession {
                 LiveStrengthSheet(session: session, theme: .base)
-                    .environmentObject(appModel)
+                    .environment(appModel)
                     .environmentObject(tabRouter)
                     .preferredColorScheme(.light)
             }
@@ -248,7 +251,12 @@ struct RootTabView: View {
         }
         // FER-810: «Ver recibo en iPhone» from the Apple Watch → switch to Entrenar and push the saved
         // workout's history detail. One-shot: apply + clear.
-        .onReceive(appModel.$pendingReceiptRoute.compactMap { $0 }) { route in
+        // FER-984: `@Observable` no expone `$` publishers; se reacciona al cambio de la propiedad con
+        // `onChange` en vez del `onReceive` del publisher. `initial: true` reemplaza la emisión inmediata
+        // del publisher de Combine al suscribirse — así una ruta YA presente al montar (cold-launch desde
+        // el watch, FER-810) también se atiende. One-shot: aplica al primer valor no-nil y limpia.
+        .onChange(of: appModel.pendingReceiptRoute, initial: true) { _, route in
+            guard let route else { return }
             selection = .train
             trainStack.append(route)
             appModel.pendingReceiptRoute = nil
@@ -420,7 +428,7 @@ private extension View {
 /// of freezing a stale sample). Tapping re-opens the session. The routine hue is the effort ember
 /// (`dataStrain`) — the same hue the session screen and the approved previews use.
 private struct ActiveSessionPillHost: View {
-    @ObservedObject var model: AppModel
+    @Bindable var model: AppModel
     /// Decisión Fer (2026-07-16): el ✕ del pill DESCARTA — destructivo, así que siempre confirma.
     /// El ConfirmCard vive en el RootTabView (pantalla completa); aquí solo se dispara.
     @Binding var confirmDiscard: Bool

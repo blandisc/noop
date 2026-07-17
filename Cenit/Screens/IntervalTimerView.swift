@@ -15,7 +15,7 @@ import StrandDesign
 /// carry the one hue, and the glow/gradient of the dark original is dropped for a
 /// flat ring. All timer logic and haptics are unchanged.
 struct IntervalTimerView: View {
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
@@ -536,7 +536,7 @@ struct IntervalTimerView: View {
 #if DEBUG
 #Preview("Interval Timer · Instrumento") {
     IntervalTimerView()
-        .environmentObject(AppModel())
+        .environment(AppModel())
         .environment(LiveState())
         .frame(width: 720, height: 900)
 }

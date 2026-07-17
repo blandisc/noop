@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Observation
 import UserNotifications
 import WhoopProtocol
 import WhoopStore
@@ -18,7 +19,11 @@ enum DataSourceImportKind {
 /// More subsystems (Repository, AnalyticsEngine, ImportCoordinator) get wired in here
 /// in later milestones.
 @MainActor
-final class AppModel: ObservableObject {
+// FER-984: `@Observable` (no `ObservableObject`) → SwiftUI rastrea lecturas por-propiedad, así que un
+// cambio a UNA propiedad (p.ej. `liveDayStrain` por `hrFlushSeq`) solo re-evalúa las vistas que LEEN esa
+// propiedad, no las 16 pantallas que observan el modelo. Mismo patrón que `LiveState` (FER-874). Sin `$`
+// publishers: los pocos bindings (`$…strengthSheetPresented`) van por `@Bindable` en el consumidor.
+@Observable final class AppModel {
     /// The live instance, so an AppIntent (Shortcuts) can reach the bonded strap rather than spinning
     /// up a dead second AppModel (which would start a duplicate BLE engine and never buzz). Set in
     /// init(); `weak` so an intent fired while NOOP is closed sees nil and asks the user to open it. (#42)
@@ -70,9 +75,9 @@ final class AppModel: ObservableObject {
     /// FER-742: live watch state, mirrored off `WorkoutMirroringBridge` via `CenitApp`, so the views that
     /// already observe AppModel (the Settings row, and the strength sheet behind a fullScreenCover that
     /// strips EnvironmentObjects) can paint it. `.inactive` paints no line.
-    @Published var watchSessionStatus: WatchSessionStatus = .inactive
-    @Published var watchPaired = false
-    @Published var watchAppInstalled = false
+    var watchSessionStatus: WatchSessionStatus = .inactive
+    var watchPaired = false
+    var watchAppInstalled = false
 
     /// Session ids for which the watch already saved the real `HKWorkout`. The one-workout invariant
     /// gate (`WorkoutSaveGate`) reads this so the iPhone omits its own save. Ephemeral — the workout is
@@ -82,18 +87,18 @@ final class AppModel: ObservableObject {
     private var watchDeclinedSessionIds: Set<String> = []
 
     /// Timestamps of moments marked via a double-tap (persisted).
-    @Published var moments: [Date] = []
+    var moments: [Date] = []
 
     /// An in-progress manually-tracked workout (requested by users who want to start a session
     /// themselves rather than rely on auto-detection). Holds the start time + the live HR collected
     /// since; on End the window is scored via `StrainScorer` and saved as a `WorkoutRow` (source
     /// "manual"), which then shows in the Workouts view. The day's strain already counts this HR (it's
     /// the same live stream the store persists), so this is a per-session annotation, not a double-count.
-    @Published var activeWorkout: ActiveWorkout?
+    var activeWorkout: ActiveWorkout?
     /// The guided strength session in progress (FER-347), or nil. Lives here (global) so closing its sheet
     /// or switching tabs never loses it — the Train hub re-presents it. Saved as a `StrengthSession` + its
     /// `SetEntry` rows on Finish. Independent of the live HR workout above.
-    @Published var strengthSession: StrengthSessionModel? { didSet { bindRestActivity() } }
+    var strengthSession: StrengthSessionModel? { didSet { bindRestActivity() } }
     /// Subscription to the active session's changes — drives the rest Live Activity's reconcile loop.
     private var restActivityCancellable: AnyCancellable?
     /// Debounces the in-progress-session snapshot writes (FER-798): a burst of keypad edits collapses to
@@ -109,13 +114,13 @@ final class AppModel: ObservableObject {
     private var lastPlanSignature: String?
     /// Whether the guided-session sheet is currently shown. False while a session runs but the sheet is
     /// dismissed (the hub then offers «Resume»). Set true on start/resume, false on swipe-dismiss/finish.
-    @Published var strengthSheetPresented = false
+    var strengthSheetPresented = false
     /// The just-ended workout, for a brief inline confirmation in the Train hub (cleared on the next start).
-    @Published var lastWorkout: WorkoutRow?
+    var lastWorkout: WorkoutRow?
     /// True when the just-ended session was discarded because no HR ever arrived (<2 samples), so the
     /// Train hub can show an honest "not saved" notice instead of silently dropping it (FER-197).
     /// Cleared on the next start and on acknowledge.
-    @Published var lastWorkoutDiscarded = false
+    var lastWorkoutDiscarded = false
 
     /// A manual workout in progress. `samples` accumulate from the smoothed live `bpm`; `liveStrain`
     /// is recomputed as the window grows so the active card can show strain building in real time.
@@ -132,7 +137,7 @@ final class AppModel: ObservableObject {
         var strainState: StrainScorer.CumulativeStrainState?
     }
     /// Illness/strain early-warning (recent RHR up + HRV down + skin-temp up vs baseline). nil = clear.
-    @Published var healthAlert: String?
+    var healthAlert: String?
     private var lastDoubleTapAt: Date = .distantPast
     private var lastCoachZone: Int = -1
     // Stress-nudge state: rolling R-R buffer + a slow HRV baseline + a rate limiter.
@@ -141,19 +146,19 @@ final class AppModel: ObservableObject {
     private var lastStressBuzzAt: Date = .distantPast
 
     /// Import source currently writing to the local store, if any.
-    @Published private var activeImportSource: DataSourceImportKind?
+    private var activeImportSource: DataSourceImportKind?
     /// Last WHOOP export import result surfaced in the WHOOP card.
-    @Published var whoopImportSummary: String?
+    var whoopImportSummary: String?
     /// Last Apple Health import result surfaced in the Apple Health card.
-    @Published var appleHealthImportSummary: String?
+    var appleHealthImportSummary: String?
     /// Typed failure flags per source — the summary's warning styling reads these instead of
     /// substring-matching the human-readable message (which misses errors like "Couldn't open
     /// the local store."). Surfaced on both the Data Sources cards and the onboarding import step.
-    @Published var whoopImportFailed = false
-    @Published var appleHealthImportFailed = false
+    var whoopImportFailed = false
+    var appleHealthImportFailed = false
     /// Live element count during an Apple Health import, so the card shows real
     /// progress instead of a frozen-looking spinner on a multi-minute parse.
-    @Published var appleHealthImportProgress: Int?
+    var appleHealthImportProgress: Int?
 
     /// The in-flight import, retained so it can be cancelled. A fire-and-forget `Task` leaked:
     /// it kept parsing + writing after the user left the screen or started another import, and
@@ -219,7 +224,7 @@ final class AppModel: ObservableObject {
     /// Detalle hero — one derivation, three surfaces. The settled `repo.today.strain` is left untouched
     /// (it still feeds recovery/readiness baselines). nil until first computed, or when there's too little
     /// activity today to score. Refreshed by `refreshLiveDayStrain()` on each dashboard/HR-flush tick.
-    @Published private(set) var liveDayStrain: Double?
+    private(set) var liveDayStrain: Double?
     // FER-870: incremental cache for the in-progress day's strain curve. Each HR flush folds ONLY the
     // samples newer than `liveStrainState.lastTs` (TRIMP is additive) off the main actor, instead of
     // re-reading ~86k rows and re-sorting every gap from scratch. Reset when the civil day rolls over,
@@ -924,7 +929,7 @@ final class AppModel: ObservableObject {
     /// FER-810: «Ver recibo en iPhone» on the wrist summary → resolve the persisted session and publish its
     /// history-detail route; `RootTabView` switches to Entrenar and pushes `WorkoutSessionDetailScreen`. The
     /// route's `routineName` is a fallback (the detail's own `load()` resolves the real name from the store).
-    @Published var pendingReceiptRoute: WorkoutSessionRoute?
+    var pendingReceiptRoute: WorkoutSessionRoute?
 
     func openWorkoutReceipt(sessionId: String) async {
         guard let s = await repo.session(id: sessionId) else { return }

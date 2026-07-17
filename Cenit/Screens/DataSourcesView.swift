@@ -23,7 +23,7 @@ import UIKit       // UIApplication.openSettingsURLString
 // Health viewer is reached via a `NavigationLink` (the screen is presented inside a NavigationStack).
 
 struct DataSourcesView: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @EnvironmentObject var repo: Repository
     @Environment(LiveState.self) var live
     @Environment(\.instrumentoTheme) private var theme

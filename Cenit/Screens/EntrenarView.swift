@@ -50,7 +50,7 @@ struct EntrenarView: View {
 
 private struct EntrenarLanding: View {
     @EnvironmentObject var repo: Repository
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
@@ -220,7 +220,7 @@ private struct EntrenarLanding: View {
         // rest-day / other-ways screens present (theme passed explicitly; it doesn't cross `.sheet`).
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
-                .environmentObject(model)
+                .environment(model)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
@@ -1461,7 +1461,7 @@ struct RestDayScreen: View {
 
     @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var repo: Repository
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
 
     @State private var split: [Int: String] = [:]
     @State private var routineNames: [String: String] = [:]
@@ -1511,7 +1511,7 @@ struct RestDayScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
-                .environmentObject(model)
+                .environment(model)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
@@ -1598,7 +1598,7 @@ struct OtherWaysScreen: View {
     var openBreathe: () -> Void
 
     @Environment(\.instrumentoTheme) private var theme
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @State private var showLive = false
 
     var body: some View {
@@ -1627,7 +1627,7 @@ struct OtherWaysScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
-                .environmentObject(model)
+                .environment(model)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)

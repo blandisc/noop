@@ -19,7 +19,7 @@ private struct SerieActivaPreviewCell: View {
     enum Scenario { case plan, superserie, serieNueva }
     var scenario: Scenario = .plan
 
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     @State private var seeded = false
 
     var body: some View {
@@ -27,7 +27,7 @@ private struct SerieActivaPreviewCell: View {
             if let session = model.strengthSession {
                 LiveStrengthSheet(session: session)
                     .environmentObject(model.repo)
-                    .environmentObject(model)
+                    .environment(model)
                     .environmentObject(TabRouter())
                     // Sin este coordinador, abrir «Agregar ejercicio» (ExerciseLibraryScreen lo exige
                     // como @EnvironmentObject) CRASHEA el preview — el app real lo inyecta en Root.

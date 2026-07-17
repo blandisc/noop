@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Rendimiento: menos re-dibujos de pantalla cuando llegan datos en vivo / Performance: fewer full-screen redraws when live data arrives.**
+  **ES** — Migramos el modelo central de la app a **observación por-propiedad**: antes, cualquier dato que cambiara (p.ej. tu frecuencia cardiaca en vivo) marcaba las ~16 pantallas para re-evaluarse aunque no mostraran ese dato; ahora solo se re-evalúa la pantalla que de verdad lee lo que cambió. Interno, sin cambio visible.
+  **EN** — Migrated the app's central model to **per-property observation**: before, any changing datum (e.g. your live heart rate) marked all ~16 screens to re-evaluate even if they didn't show it; now only the screen that actually reads what changed re-evaluates. Internal, no visible change.
+  ([AppModel.swift](Cenit/App/AppModel.swift))
+
 - **La ⓘ del héroe es más grande y la explicación deja el mismo aire en todas las pantallas / The hero's ⓘ is bigger and the explanation leaves the same gap on every screen.**
   **ES** — El botón ⓘ del número protagonista pasó de 12 a 18 pt (más fácil de ver y de tocar). Y la tarjeta «Qué medimos» que se abre al tocarlo ahora deja 14 pt hasta la siguiente sección en todas: Carga de entrenamiento la tenía pegada (0 pt) y ya iguala al resto.
   **EN** — The hero number's ⓘ button went from 12 to 18 pt (easier to see and tap). And the "What we measure" card it opens now leaves 14 pt to the next section on every screen: Training load had it flush (0 pt) and now matches the rest.
