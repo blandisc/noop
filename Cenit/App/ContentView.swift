@@ -38,6 +38,17 @@ struct ContentView: View {
                 .transition(.opacity)
                 .zIndex(1)
             }
+            #if os(iOS)
+            // FER-969 (X-03): the store didn't open (wedged migration / corrupt file) — an honest
+            // paper state with ways out, never an eternally empty dashboard. Only for onboarded users
+            // (a fresh install has its own restore-offer path); the Terms gate stays on top.
+            if onboarded && repo.storeOpenFailed {
+                StoreFailureView(onRetry: { Task { await repo.retryStoreOpen() } },
+                                 onRestore: { Task { await runRestore() } })
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+            #endif
             // Terms acknowledgment gate — over EVERYTHING (before onboarding/pairing/Bluetooth) until
             // the current terms version is accepted; re-appears if the terms materially change.
             if acceptedTerms != Terms.currentVersion {
@@ -139,3 +150,47 @@ struct ContentView: View {
     }
     #endif
 }
+
+#if os(iOS)
+/// FER-969 (X-03): full-screen honest state when the SQLite store can't open (wedged migration or a
+/// corrupt file). Paper, one message, two ways out — retry in place, or restore an iCloud backup.
+private struct StoreFailureView: View {
+    let onRetry: () -> Void
+    let onRestore: () -> Void
+
+    var body: some View {
+        let theme = InstrumentoTheme.base
+        VStack(alignment: .leading, spacing: 12) {
+            Spacer()
+            Text("Cénit couldn't open your database.")
+                .font(StrandFont.headline)
+                .foregroundStyle(theme.ink)
+            Text("Your data is still on this phone — retry, or restore from an iCloud Drive backup.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(action: onRetry) {
+                Text("Retry")
+                    .font(StrandFont.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(theme.ink)
+            .padding(.top, 10)
+            Button(action: onRestore) {
+                Text("Restore from backup…")
+                    .font(StrandFont.subhead)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(theme.ink)
+            .padding(.vertical, 6)
+            Spacer()
+        }
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background(theme.paper.ignoresSafeArea())
+    }
+}
+#endif

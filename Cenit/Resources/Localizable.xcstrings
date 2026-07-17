@@ -16878,6 +16878,40 @@
         }
       }
     },
+    "Cénit couldn't open your database." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit couldn't open your database."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no pudo abrir tu base de datos."
+          }
+        }
+      }
+    },
+    "Your data is still on this phone — retry, or restore from an iCloud Drive backup." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data is still on this phone — retry, or restore from an iCloud Drive backup."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus datos siguen en este teléfono: reintenta o restaura desde un respaldo de iCloud Drive."
+          }
+        }
+      }
+    },
     "Couldn't snapshot the database just now — will retry." : {
       "extractionState" : "manual",
       "localizations" : {
