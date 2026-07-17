@@ -56,18 +56,28 @@ public func isPlausibleHistoricalUnix(_ ts: Int, wallNow: Int,
 /// record frames whose payload would otherwise be silently dropped are returned.
 ///
 /// Used by the Backfiller/BLEManager to archive undecodable history BEFORE acking the trim (FER-693).
-public func rejectedHistoricalRecords(_ rawFrames: [[UInt8]], family: DeviceFamily) -> [[UInt8]] {
+///
+/// FER-971 (C-01) — pair overload, the hot path: reuses the `ParsedFrame` the caller already
+/// produced once per frame at ingest (FER-183/752) instead of RE-parsing every type-47 with
+/// `annotate: true` (the expensive mode: per-field hex) on the main actor inside the END→ack
+/// window. PRECONDITION: `parsed` must be the parse of THOSE bytes with THIS family. The decision
+/// reads only fields an `annotate: false` parse populates (`ok` / `crcOK` / `parsed[…]`); the
+/// type-47 and v26 gates stay on the RAW bytes — a CRC-broken frame may carry no typeName at all,
+/// and catching exactly those is the point.
+public func rejectedHistoricalRecords(_ frames: [(raw: [UInt8], parsed: ParsedFrame)],
+                                      family: DeviceFamily) -> [[UInt8]] {
     // The type byte sits at the inner-record start: frame[4] on WHOOP 4.0, frame[8] on WHOOP 5/MG
     // (the puffin envelope is 4 bytes longer). hist_version sits one byte past the type+seq+cmd
     // header — frame[5] (4.0) / frame[9] (5/MG) — same shift.
     let typeIndex = family == .whoop5 ? 8 : 4
     let versionIndex = family == .whoop5 ? 9 : 5
-    return rawFrames.filter { f in
+    return frames.filter { pair in
+        let f = pair.raw
         // Only genuine HISTORICAL_DATA records (47). Console (50) and METADATA frames have a
         // different type byte, so they never pass this gate — they are excluded by construction.
         guard f.count > typeIndex, Int(f[typeIndex]) == 47 else { return false }
         if family == .whoop5, f.count > versionIndex, Int(f[versionIndex]) == 26 { return false }  // v26 PPG: skipped by design
-        let p = parseFrame(f, family: family)
+        let p = pair.parsed
         // Envelope/CRC reject: parse failed outright or the CRC32 trailer mismatched.
         if !p.ok || p.crcOK == false { return true }
         // Unmapped layout: the envelope parsed but no usable biometrics decoded. A record is genuinely
@@ -76,7 +86,15 @@ public func rejectedHistoricalRecords(_ rawFrames: [[UInt8]], family: DeviceFami
         // the sleep stager uses — keep it. Only HR-less AND gravity-less type-47 records are rejected.
         return p.parsed["unix"]?.intValue == nil
             || (p.parsed["heart_rate"]?.intValue == nil && p.parsed["gravity_x"]?.doubleValue == nil)
-    }
+    }.map(\.raw)
+}
+
+/// Bytes-only form — the natural entry for corpus/replay/tests where only raw frames exist.
+/// Parses each frame ONCE (`annotate: false`) and delegates to the pair overload, so there is a
+/// single decision body and the two paths cannot drift.
+public func rejectedHistoricalRecords(_ rawFrames: [[UInt8]], family: DeviceFamily) -> [[UInt8]] {
+    rejectedHistoricalRecords(rawFrames.map { ($0, parseFrame($0, family: family, annotate: false)) },
+                              family: family)
 }
 
 /// Turn historical (offload) parsed frames into datastore rows. Port of

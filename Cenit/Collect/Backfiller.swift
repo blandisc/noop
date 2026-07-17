@@ -125,7 +125,7 @@ final class Backfiller {
     /// Returns true once the frames are durable (or safely skipped at the cap); returns FALSE on a genuine
     /// write failure, which holds the ack so the strap re-sends the chunk next session (no data loss). nil
     /// when no archive is wired (tests, or a build that doesn't preserve rejects).
-    private let rejectedSink: ((_ frames: [[UInt8]], _ trim: UInt32, _ family: DeviceFamily) -> Bool)?
+    private let rejectedSink: ((_ frames: [[UInt8]], _ trim: UInt32, _ family: DeviceFamily) async -> Bool)?
     /// Versions already reported this session, so the diagnostic logs each once (no spam).
     private var loggedUnmappedVersions: Set<Int> = []
     /// FER-692 (#150): logged once per session when the strap reports the `trim=0xFFFFFFFF` sentinel —
@@ -139,7 +139,7 @@ final class Backfiller {
          enableRawCapture: Bool = false,
          log: ((String) -> Void)? = nil,
          onReceipt: ((ChunkReceipt) -> Void)? = nil,
-         rejectedSink: ((_ frames: [[UInt8]], _ trim: UInt32, _ family: DeviceFamily) -> Bool)? = nil,
+         rejectedSink: ((_ frames: [[UInt8]], _ trim: UInt32, _ family: DeviceFamily) async -> Bool)? = nil,
          extract: @escaping Extractor = { extractHistoricalStreams($0, deviceClockRef: $1, wallClockRef: $2,
                                                                     sessionOldestUnix: $3, sessionNewestUnix: $4) }) {
         self.store = store
@@ -288,7 +288,9 @@ final class Backfiller {
             // unmapped layout — separately from type-50 console frames, which decode to 0 rows BY DESIGN
             // and are NOT lost data (the "rejected frames" red herring users kept reporting). This drives
             // both the log wording and the archive-before-ack guard below.
-            let rejected = rejectedHistoricalRecords(frames.map(\.raw), family: family)
+            // FER-971 (C-01): hand over the (raw, parsed) pairs — zero re-parse (the old byte form
+            // re-parsed every type-47 with annotate:true, per-field hex included, on the main actor).
+            let rejected = rejectedHistoricalRecords(frames, family: family)
             // Diagnostic (#77): the AGGREGATE silent-loss case — frames arrived but produced no rows at
             // all. Console-only ENDs read calmly (not data loss); genuine rejects say what will be archived.
             if decoded.isEmpty && rejected.isEmpty {
@@ -336,7 +338,7 @@ final class Backfiller {
             // setCursor, no ack) so the strap re-sends it next session — no data loss either way. (A full
             // archive still returns true and we ack; the frames are counted as unarchived by the sink.)
             if !rejected.isEmpty, let rejectedSink {
-                guard rejectedSink(rejected, trim, family) else {
+                guard await rejectedSink(rejected, trim, family) else {
                     log?("Backfill: rejected-frame archive failed (trim=\(trim)) — holding ack so the strap re-sends.")
                     return
                 }
