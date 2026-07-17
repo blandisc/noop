@@ -458,11 +458,8 @@ private struct AjustesLanding: View {
 
     /// The `baselineEpoch` day-key ("YYYY-MM-DD") shown as a localized medium date, e.g. «10 jul 2026».
     private var recalibratedDateText: String {
-        let parser = DateFormatter()
-        parser.calendar = Calendar(identifier: .gregorian)
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: profile.baselineEpoch) else { return profile.baselineEpoch }
+        // Local parser (write side of the day-key contract) — same zone as the stored key (FER-754).
+        guard let date = DayKey.localFormatter.date(from: profile.baselineEpoch) else { return profile.baselineEpoch }
         return date.formatted(.dateTime.day().month(.abbreviated).year())
     }
 
