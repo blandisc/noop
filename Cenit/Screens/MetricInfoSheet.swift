@@ -654,6 +654,8 @@ struct MetricInfoSheet: View {
                 .foregroundStyle(headlineExpanded ? metricHue : theme.inkTertiary)
         }
         .buttonStyle(.plain)
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
         .accessibilityLabel(Text(headlineExpanded ? "Hide explanation" : "Show explanation"))
     }
 
@@ -976,10 +978,9 @@ struct MetricInfoSheet: View {
                         gridLineColor: theme.hairline,
                         bands: bt.bands,
                         bandColor: bt.color,
-                        yAxisValues: bt.yTicks
+                        yAxisValues: bt.yTicks,
+                        accessibilityLabel: "14-day trend with classification bands"
                     )
-                    .accessibilityElement()
-                    .accessibilityLabel(Text("14-day trend with classification bands"))
                 } else {
                     TrendChart(
                         points: trendData,
@@ -994,10 +995,9 @@ struct MetricInfoSheet: View {
                         gridLineColor: theme.hairline,
                         // HRV has no right-side range labels, so let its curve reach the edge instead of
                         // reserving the band-label gutter. (FER-460)
-                        tightTrailing: info.id == "hrv"
+                        tightTrailing: info.id == "hrv",
+                        accessibilityLabel: "14-day trend"
                     )
-                    .accessibilityElement()
-                    .accessibilityLabel(Text("14-day trend"))
                 }
             } else if trendLoading {
                 ChartWell(theme).loading(height: 140)
@@ -1127,10 +1127,9 @@ struct MetricInfoSheet: View {
                     valueFormat: { String(format: "%.1f", $0) },
                     dateFormat: { Self.hourString($0) },
                     axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline
+                    gridLineColor: theme.hairline,
+                    accessibilityLabel: "Accumulated day strain, rising through the day."
                 )
-                .accessibilityElement()
-                .accessibilityLabel(Text("Accumulated day strain, rising through the day."))
             } else if strainLoading {
                 ChartWell(theme).loading(height: 132)
             } else {
@@ -1170,6 +1169,8 @@ struct MetricInfoSheet: View {
                     .frame(height: 130)
                     .accessibilityElement()
                     .accessibilityLabel(strainCurveAxLabel)
+                    // FER-977: the datum VoiceOver was missing — today's accumulated day strain so far.
+                    .accessibilityValue(Text(strainCurve.last.map { String(format: "%.1f", $0.value) } ?? ""))
                 HStack(spacing: 16) {
                     curveLegend(dashed: false, label: "lived")
                     curveLegend(dashed: true, label: "projected")
@@ -1442,6 +1443,8 @@ struct MetricInfoSheet: View {
                     .background(metricHue.opacity(StrandOpacity.tintFill), in: Capsule())
                 }
                 .buttonStyle(.plain)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
                 .accessibilityLabel(Text("See more"))
                 .accessibilityHint(Text("Opens the full detail"))
             }

@@ -237,6 +237,8 @@ struct StressDayMapBlock: View {
         }
         .buttonStyle(.plain)
         .padding(.top, 2)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 }
 

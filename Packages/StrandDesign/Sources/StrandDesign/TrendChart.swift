@@ -213,6 +213,10 @@ public struct TrendChart: View {
     /// smoothed line can say its point is a moving average — NOT that day's raw reading. `nil` = the
     /// tooltip shows only the value. Affects the tooltip only; the Y-axis labels keep `valueFormat`. (FER-696)
     public var valueSuffix: String?
+    /// VoiceOver label describing what the chart is (e.g. "14-day trend"). `nil` → generic "Trend chart". (FER-977)
+    public var accessibilityLabel: LocalizedStringKey?
+    /// Optional VoiceOver value override. When `nil`, derived from the scrubbed point or the last point. (FER-977)
+    public var accessibilityValueText: String?
 
     public init(
         points: [TrendPoint],
@@ -238,7 +242,9 @@ public struct TrendChart: View {
         bandLabelsHidden: Bool = false,
         tightTrailing: Bool = false,
         yTickCount: Int = 4,
-        valueSuffix: String? = nil
+        valueSuffix: String? = nil,
+        accessibilityLabel: LocalizedStringKey? = nil,
+        accessibilityValueText: String? = nil
     ) {
         self.points = points.sorted { $0.date < $1.date }
         self.gradient = gradient
@@ -264,6 +270,8 @@ public struct TrendChart: View {
         self.tightTrailing = tightTrailing
         self.yTickCount = yTickCount
         self.valueSuffix = valueSuffix
+        self.accessibilityLabel = accessibilityLabel
+        self.accessibilityValueText = accessibilityValueText
     }
 
     /// Right inset on the X-scale. Labelled bands need a wide gutter so the band text clears the line;
@@ -276,10 +284,20 @@ public struct TrendChart: View {
 
     /// The x-position the cursor is hovering, in chart-local coordinates.
     @State private var hoverX: CGFloat? = nil
+    /// Point under the finger while scrubbing (nil when not scrubbing) — drives VoiceOver value. (FER-977)
+    @State private var scrubbedPoint: TrendPoint? = nil
 
     private static let sharedDateFormatter: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "EEE d MMM"; return f
     }()
+
+    /// VoiceOver value: caller override, scrubbed point, or last point. (FER-977)
+    private var resolvedAccessibilityValue: String {
+        if let custom = accessibilityValueText { return custom }
+        guard let p = scrubbedPoint ?? points.last else { return "No data" }
+        let value = valueSuffix.map { "\(valueFormat(p.value)) · \($0)" } ?? valueFormat(p.value)
+        return "\(value), \(dateFormat(p.date))"
+    }
 
     /// Default tooltip date format ("EEE d MMM"), exposed so it can seed the
     /// `dateFormat` default argument.
@@ -398,6 +416,9 @@ public struct TrendChart: View {
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(accessibilityLabel ?? "Trend chart"))
+        .accessibilityValue(Text(resolvedAccessibilityValue))
         // No draw-on / interpolation animation when the data changes (switching period rebuilds the
         // whole series): the new range should snap in, not morph point-by-point — that interpolation is
         // what made the chart "stick" while it rebuilt long ranges. (FER-219)
@@ -470,7 +491,14 @@ public struct TrendChart: View {
                     // the drag never started (the "scrub does nothing on iOS" bug). Color.clear is
                     // greedy and fills the GeometryReader, giving the gesture a full-size target. (#118)
                     Color.clear
-                        .onChange(of: snappedIndex) { _, idx in if idx != nil { ChartHaptics.datumChanged() } }
+                        .onChange(of: snappedIndex) { _, idx in
+                            if let idx {
+                                ChartHaptics.datumChanged()
+                                scrubbedPoint = points[idx]
+                            } else {
+                                scrubbedPoint = nil
+                            }
+                        }
 
                     if showsScrub,
                        let hx = hoverX,

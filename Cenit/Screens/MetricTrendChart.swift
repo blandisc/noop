@@ -224,10 +224,9 @@ struct MetricTrendChart<Empty: View>: View {
             markedPointRingFill: style.markedPointRingFill,
             bandLabelsHidden: style.bandLabelsHidden,
             yTickCount: style.yTickCount,
-            valueSuffix: scrubSuffix
+            valueSuffix: scrubSuffix,
+            accessibilityLabel: style.accessibilityLabel
         )
-        .accessibilityElement()
-        .accessibilityLabel(Text(style.accessibilityLabel))
     }
 }
 #endif
