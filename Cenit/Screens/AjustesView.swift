@@ -79,7 +79,7 @@ private extension View {
 // MARK: - Landing
 
 private struct AjustesLanding: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(LiveState.self) var live
     @EnvironmentObject var profile: ProfileStore
     // Read only to re-inject into the dark sibling sheets (a sheet starts a fresh environment branch).
@@ -151,7 +151,7 @@ private struct AjustesLanding: View {
             StrapLogSheet().instrumentoTheme(theme).environment(live)
         }
         .sheet(isPresented: $showAdvanced) {
-            AdvancedSheet().instrumentoTheme(theme).environment(live).environmentObject(model)
+            AdvancedSheet().instrumentoTheme(theme).environment(live).environment(model)
         }
         .sheet(isPresented: $showCyclePhase) {
             CyclePhaseSheet().instrumentoTheme(theme).environmentObject(repo)
@@ -608,7 +608,7 @@ private struct AjustesLanding: View {
                     }
             }
             .instrumentoTheme(theme)
-            .environmentObject(model)
+            .environment(model)
             .environmentObject(repo)
             .environment(live)
             .environmentObject(health)
@@ -629,7 +629,7 @@ private struct AjustesLanding: View {
                     }
             }
             .instrumentoTheme(theme)
-            .environmentObject(model)
+            .environment(model)
             .environmentObject(repo)
             .environment(live)
             .environmentObject(health)
@@ -651,7 +651,7 @@ private struct AjustesLanding: View {
                     }
             }
             .instrumentoTheme(theme)
-            .environmentObject(model)
+            .environment(model)
             .environmentObject(repo)
             .environment(live)
             .environmentObject(health)
@@ -965,7 +965,7 @@ private struct StepTicksSheet: View {
 private struct AdvancedSheet: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(LiveState.self) private var live
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @AppStorage(PuffinExperiment.defaultsKey) private var puffinExperiments = false
     @AppStorage(PuffinFrameRecorder.enabledKey) private var puffinCapture = false
 

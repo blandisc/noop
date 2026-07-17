@@ -37,7 +37,7 @@ private func massString(_ kg: Double, units: UnitSystem) -> String {
 /// effort hue; the table is a detented `.sheet` drawer; rest is a fixed countdown that hosts the plan
 /// navigator. The session itself lives in `AppModel`, so dismissing this sheet never ends it.
 struct LiveStrengthSheet: View {
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @EnvironmentObject private var tabRouter: TabRouter
     @ObservedObject var session: StrengthSessionModel
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -363,7 +363,7 @@ struct LiveStrengthSheet: View {
                     sessionId: ref.sessionId,
                     onClose: { shareReceipt = nil }
                 )
-                .environmentObject(model)
+                .environment(model)
             }
         }
         .fullScreenCover(isPresented: $focusMode) {

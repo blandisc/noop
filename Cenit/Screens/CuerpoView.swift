@@ -182,7 +182,7 @@ private struct CuerpoLandingEngines: Sendable {
 private struct CuerpoLanding: View {
     @EnvironmentObject var repo: Repository
     @Environment(LiveState.self) var live
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @EnvironmentObject var health: HealthKitBridge
     @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
@@ -360,7 +360,7 @@ private struct CuerpoLanding: View {
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
                 .environment(live)
-                .environmentObject(model)
+                .environment(model)
                 .environmentObject(health)
         }
         .sheet(isPresented: $showExplore) {
@@ -380,7 +380,7 @@ private struct CuerpoLanding: View {
             .instrumentoTheme(theme)
             .environmentObject(repo)
             .environment(live)
-            .environmentObject(model)
+            .environment(model)
             .environmentObject(health)
         }
     }
@@ -419,7 +419,7 @@ private struct CuerpoLanding: View {
         .instrumentoTheme(theme)
         .environmentObject(repo)
         .environment(live)
-        .environmentObject(model)
+        .environment(model)
         .environmentObject(health)
         .modifier(EdgeSwipeBack(enabled: workoutsPath.isEmpty, onClose: dismissDetail))
     }
@@ -1265,7 +1265,7 @@ private struct CuerpoLanding: View {
         .instrumentoTheme(theme)
         .environmentObject(repo)
         .environment(live)
-        .environmentObject(model)
+        .environment(model)
         .environmentObject(health)
         .preferredColorScheme(.light)
     }
@@ -1652,7 +1652,7 @@ private struct CuerpoLanding: View {
     return CuerpoView()
         .environmentObject(repo)
         .environment(LiveState())
-        .environmentObject(AppModel())
+        .environment(AppModel())
         .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
         .frame(width: 390, height: 900)
 }

@@ -713,7 +713,7 @@ struct WorkoutSessionDetailScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @EnvironmentObject private var coordinator: WorkoutHistoryCoordinator
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }

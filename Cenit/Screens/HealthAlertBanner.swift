@@ -4,7 +4,7 @@ import StrandDesign
 /// Strain/illness early-warning banner. Observes AppModel in isolation so the ~1 Hz HR stream
 /// re-renders only this small view, not the whole screen. Renders nothing when there's no alert.
 struct HealthAlertBanner: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     var body: some View {
         if let alert = model.healthAlert {
             HStack(alignment: .top, spacing: 10) {

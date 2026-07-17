@@ -18,7 +18,7 @@ struct ReceiptPrinterScreen: View {
     let sessionId: String
     let onClose: () -> Void
 
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 

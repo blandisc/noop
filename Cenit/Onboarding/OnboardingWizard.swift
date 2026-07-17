@@ -436,7 +436,7 @@ private struct PrepareStep: View {
 
 private struct ScanStep: View {
     let onContinue: () -> Void
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
@@ -678,7 +678,7 @@ private struct ProfileStep: View {
 
 private struct ImportStep: View {
     let onContinue: () -> Void
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @Environment(\.instrumentoTheme) private var theme
     @State private var showingImporter = false
     @State private var importTarget: ImportTarget = .whoop
@@ -865,10 +865,10 @@ private struct ImportRow: View {
 
 #if DEBUG
 private struct OnboardingPreview: View {
-    @StateObject private var model = AppModel()
+    @State private var model = AppModel()
     var body: some View {
         OnboardingWizard(onFinished: {})
-            .environmentObject(model)
+            .environment(model)
             .environment(model.live)
             .environmentObject(model.profile)
             .frame(width: 390, height: 780)

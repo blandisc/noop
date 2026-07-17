@@ -16,7 +16,7 @@ import WhoopStore
 /// The theme is passed in explicitly: it does NOT propagate through `.sheet`'s fresh environment, so
 /// the caller (TodayView's beat-by-beat sheet) hands its by-the-hour theme in.
 struct LiveView: View {
-    @EnvironmentObject private var model: AppModel
+    @Environment(AppModel.self) private var model
     @Environment(LiveState.self) private var live
     @EnvironmentObject private var repo: Repository
     /// Drives the release/re-arm of the heavy R10/R11 realtime stream around backgrounding (FER-636):

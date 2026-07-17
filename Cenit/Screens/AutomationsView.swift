@@ -18,7 +18,7 @@ struct AutomationsView: View {
 }
 
 private struct AutomationsContent: View {
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @EnvironmentObject var behavior: BehaviorStore
     @EnvironmentObject var inactivity: InactivityPrefs
     @Environment(LiveState.self) var live

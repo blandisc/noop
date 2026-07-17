@@ -115,7 +115,7 @@ struct TodayView: View {
     #if os(iOS)
     // iOS-only: the root app state, so the first-launch empty state's "Scan for strap" CTA can kick
     // off a real BLE scan (`AppModel.scan()`). macOS never renders the iOS body, so it never reads this.
-    @EnvironmentObject var model: AppModel
+    @Environment(AppModel.self) var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// El tema activo de «Instrumento diurno» (FER-135). El `iosBody` lo ancla al papel de día con
     /// `.instrumentoTheme(.base)`; cada sub-vista lo lee de aquí para colorear en TINTA del tema.
@@ -845,7 +845,7 @@ struct TodayView: View {
         // fresco del sheet) y la hoja se presenta en claro con el papel del tema; cierra con swipe.
         .sheet(isPresented: $showLiveMonitor) {
             LiveView(theme: theme, monitorOnly: true)
-                .environmentObject(model)
+                .environment(model)
                 .environment(live)
                 .environmentObject(repo)
                 .presentationDragIndicator(.visible)
@@ -871,7 +871,7 @@ struct TodayView: View {
                     }
             }
             .instrumentoTheme(theme)
-            .environmentObject(model)
+            .environment(model)
             .environmentObject(repo)
             .environment(live)
             .environmentObject(health)
@@ -3291,7 +3291,7 @@ struct TodayView: View {
         // iOS TodayView reads AppModel (first-launch "Scan for strap" CTA) and HealthKitBridge (the
         // Apple Health connect nudge); inject both so the iOS canvas renders instead of trapping on a
         // missing environment object.
-        .environmentObject(AppModel())
+        .environment(AppModel())
         .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
         #endif
         .frame(width: 920, height: 940)
