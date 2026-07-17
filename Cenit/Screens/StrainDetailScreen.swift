@@ -465,7 +465,7 @@ struct StrainDetailScreen: View {
         if let d = selectedStrainDay {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.calReadoutFmt.string(from: d.date))
-                    .instrumentoOverline()
+                    .groteskOverline()
                     .foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 if let v = d.score {

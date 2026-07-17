@@ -9,8 +9,12 @@ import UniformTypeIdentifiers
 enum FileExport {
 
     /// Write `text` to a file and let the user choose where it goes.
+    /// - Returns: `true` when the file was written and the share sheet was presented; `false` on write
+    ///   failure so the caller can surface an error (FER-969 · X-05b). Previously a bare `return`
+    ///   left the user with no share sheet and no message.
     @MainActor
-    static func exportText(_ text: String, suggestedName: String) {
+    @discardableResult
+    static func exportText(_ text: String, suggestedName: String) -> Bool {
         // Write to a temp file FIRST and only present the share sheet if the file actually exists.
         // The previous `try?` swallowed write failures, then handed an empty/missing path to the
         // share sheet — the user saw a broken export with no error. Clean up the temp file after the
@@ -19,9 +23,10 @@ enum FileExport {
         do {
             try text.write(to: url, atomically: true, encoding: .utf8)
         } catch {
-            return
+            return false
         }
         present(activityItems: [url], cleanup: [url])
+        return true
     }
 
     /// Let the user save / share an existing file at `src` through the share sheet. `src` is owned by

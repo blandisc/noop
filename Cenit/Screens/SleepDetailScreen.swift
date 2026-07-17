@@ -1033,7 +1033,7 @@ struct SleepDetailScreen: View {
         if let n = selectedSleepNight {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.calReadoutFmt.string(from: n.date))
-                    .instrumentoOverline()
+                    .groteskOverline()
                     .foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 if let m = n.score {
@@ -1250,7 +1250,7 @@ struct SleepStagesInfoSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Text("Sleep stages")
-                    .font(StrandFont.title2)
+                    .font(InstrumentoType.groteskHeadline(22))
                     .foregroundStyle(theme.ink)
                 Text("Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right.")
                     .font(StrandFont.subhead)

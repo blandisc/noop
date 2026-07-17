@@ -204,6 +204,18 @@ final class Repository: ObservableObject {
         return dayKeyParser.string(from: d.addingTimeInterval(-86_400))
     }
 
+    /// FER-969 (X-03): the store failed to open (wedged migration, corrupt file) — the UI shows an
+    /// honest state with retry/restore instead of an eternally empty dashboard. Reset on success.
+    @Published private(set) var storeOpenFailed = false
+
+    /// «Reintentar» from the store-failure state: re-attempt the open and the launch refresh that
+    /// never ran. `ensureStore` re-tries naturally once `store`/`storeInit` are nil. (FER-969, X-03)
+    func retryStoreOpen() async {
+        guard store == nil else { return }
+        storeOpenFailed = false
+        await refresh()
+    }
+
     private func ensureStore() async -> WhoopStore? {
         if let store { return store }
         if let storeInit { return await storeInit.value }   // a creation is already in flight — join it
@@ -215,7 +227,10 @@ final class Repository: ObservableObject {
             // with no error). Log the real error; callers still get nil and degrade.
             let s: WhoopStore?
             do {
-                s = try await WhoopStore(path: path)
+                // FER-970 (R-04): the Repository handle opens a WAL reader pool so the dashboard
+                // snapshot read never waits behind a long engine/import write on this same handle.
+                // The BLE handle keeps the default `.queue` backend.
+                s = try await WhoopStore(path: path, backend: .pool(maxReaders: 2))
             } catch {
                 print("[FER-793] WhoopStore failed to open at \(path): \(error)")
                 s = nil
@@ -227,6 +242,7 @@ final class Repository: ObservableObject {
         let s = await task.value
         store = s
         storeInit = nil
+        storeOpenFailed = (s == nil)  // FER-969 (X-03): surface the failure; clears itself on success
         return s
     }
 
@@ -298,41 +314,64 @@ final class Repository: ObservableObject {
         let nowTs = Int(now.timeIntervalSince1970)
         let lo = nowTs - nDays * 86_400, hi = nowTs + 86_400
 
-        let importedRaw = (try? await store.dailyMetrics(deviceId: deviceId, from: fromDay, to: toDay)) ?? []
-        let computedRaw = (try? await store.dailyMetrics(deviceId: computedDeviceId, from: fromDay, to: toDay)) ?? []
+        // FER-970 (R-03): everything below used to be ~13 sequential actor reads, each with its own
+        // hop + read transaction + WAL snapshot (a write could land mid-list and mix two states into
+        // one dashboard). `dashboardSnapshot` runs the SAME queries — shared row fetchers, identical
+        // SQL — inside ONE transaction: one hop, one snapshot, cross-table consistent. The source-mode
+        // query gating (FER-484/486) rides in the request; the in-memory gating below is unchanged.
+        // (Unqualified type names: the ACTOR `WhoopStore` shadows the module of the same name in
+        // qualified lookup from the app layer — `WhoopStore.DashboardReadRequest` doesn't resolve.)
+        let snap = (try? await store.dashboardSnapshot(DashboardReadRequest(
+            strapDeviceId: deviceId, computedDeviceId: computedDeviceId, appleDeviceId: "apple-health",
+            fromDay: fromDay, toDay: toDay, fromTs: lo, toTs: hi, sleepLimit: 4000,
+            includeApple: dataSourceMode.usesAppleHealth,
+            includeWhoopSeries: dataSourceMode.usesWhoop))) ?? DashboardSnapshot()
+        let importedRaw = snap.importedDays
+        let computedRaw = snap.computedDays
         // FER-62: Apple Health daily rows — the lowest-precedence fallback layer for the dashboard,
-        // so a strap-uncovered user still sees HRV / resting HR / sleep-stage trends.
-        let appleRaw = (try? await store.dailyMetrics(deviceId: "apple-health", from: fromDay, to: toDay)) ?? []
+        // so a strap-uncovered user still sees HRV / resting HR / sleep-stage trends. Read UNGATED
+        // (they feed the FER-485 coverage diagnostic even when the mode hides the source).
+        let appleRaw = snap.appleDays
         // FER-484: the mode filters which sources enter the merge/baseline. `combined` is the identity
         // (regression zero); `whoopOnly` drops Apple; `appleHealthOnly` drops the strap. The strap sleep
         // + verbatim figures below are strap-sourced, so they're gated on `usesWhoop` the same way.
         let (imported, computed, apple) = DataSourcePolicy.filter(dataSourceMode, imported: importedRaw, computed: computedRaw, apple: appleRaw)
-        // FER-485: read strap sleeps UNFILTERED for the diagnostic stored-count, then gate for the dashboard.
-        let impSleepRaw = (try? await store.sleepSessions(deviceId: deviceId, from: lo, to: hi, limit: 4000)) ?? []
-        let compSleepRaw = (try? await store.sleepSessions(deviceId: computedDeviceId, from: lo, to: hi, limit: 4000)) ?? []
+        // FER-485: strap sleeps arrive UNFILTERED for the diagnostic stored-count, then gate for the dashboard.
+        let impSleepRaw = snap.importedSleeps
+        let compSleepRaw = snap.computedSleeps
         let impSleep = dataSourceMode.usesWhoop ? impSleepRaw : []
         let compSleep = dataSourceMode.usesWhoop ? compSleepRaw : []
         // FER-486: Apple Health sleep sessions (real per-epoch stage timeline), gated on the mode. The band
         // wins per night, so the appleSleeps surfaced to the Detalle drop any overlapping a strap session.
-        let appleSleepRaw = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: lo, to: hi, limit: 4000)) ?? []) : []
+        let appleSleepRaw = snap.appleSleeps
         // FER-883: Apple workout-HR samples under apple-health (persisted by HealthKitBridge during
         // HKWorkouts only). Gated on usesAppleHealth so whoopOnly never reads them into the dashboard.
-        let appleHrRaw: [HRSample] = dataSourceMode.usesAppleHealth
-            ? ((try? await store.hrSamples(deviceId: "apple-health", from: lo, to: hi, limit: 500_000)) ?? [])
-            : []
+        // FER-970 (R-01): their ONLY consumer is the estimated-strain path for days whose MERGED
+        // strain is nil — a band-covered history has none, so skip the ≤500k-row read (paid on
+        // EVERY refresh) entirely instead of loading and grouping it for nothing. The pre-pass
+        // reuses the same mergeDaily the assembler runs, so eligibility can't drift. Deliberately
+        // OUTSIDE the snapshot: it's a skippable phase-B read, not dashboard state.
+        let appleHrRaw: [HRSample]
+        if dataSourceMode.usesAppleHealth,
+           !Self.strainEstimateEligibleDays(imported: imported, computed: computed, apple: apple).isEmpty {
+            appleHrRaw = (try? await store.hrSamples(deviceId: "apple-health", from: lo, to: hi, limit: 500_000)) ?? []
+        } else {
+            appleHrRaw = []
+        }
 
         // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
         // FER-670: single-construct fusion inputs the daily rows above don't carry — Apple's step/energy
         // aggregates (appleDaily) and the WHOOP 4.0 on-device step estimate (steps_est). Gated on the
-        // mode like every other read, so an excluded source can never appear in a compare row.
-        let appleAggRaw = dataSourceMode.usesAppleHealth ? ((try? await store.appleDaily(deviceId: "apple-health", from: fromDay, to: toDay)) ?? []) : []
-        let stepsEstRaw = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: computedDeviceId, key: "steps_est", from: fromDay, to: toDay)) ?? []) : []
+        // mode like every other read (in the snapshot request), so an excluded source can never appear
+        // in a compare row.
+        let appleAggRaw = snap.appleAgg
+        let stepsEstRaw = snap.stepsEst
 
-        let perf = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_performance", from: fromDay, to: toDay)) ?? []) : []
-        let cons = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_consistency", from: fromDay, to: toDay)) ?? []) : []
-        let need = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_need_min", from: fromDay, to: toDay)) ?? []) : []
-        let debt = dataSourceMode.usesWhoop ? ((try? await store.metricSeries(deviceId: deviceId, key: "sleep_debt_min", from: fromDay, to: toDay)) ?? []) : []
+        let perf = snap.sleepPerformance
+        let cons = snap.sleepConsistency
+        let need = snap.sleepNeed
+        let debt = snap.sleepDebt
 
         // The O(n) merge/fusion work over every row read runs OFF the main actor (`assembleDashboard`
         // is nonisolated) — on a years-deep DB the full pass builds the dashboard without stealing
@@ -413,10 +452,26 @@ final class Repository: ObservableObject {
         // FER-883: ESTIMATED strain for days whose MEASURED strain is nil (band-less Apple day).
         // Mirrors recovery: never folded into days/displayDays; surfaced only via estimatedStrain.
         let daysNeedingStrainEstimate = Set(merged.days.filter { $0.strain == nil }.map(\.day))
+        // FER-970 (R-01): group by LOCAL day with a day-window cache — one calendar/formatter
+        // resolution per day actually crossed instead of a DateFormatter call PER SAMPLE (samples
+        // arrive in workout-clustered runs), and only the days an estimate can serve are kept.
         var hrByDayApple: [String: [HRSample]] = [:]
-        for s in inputs.appleHrRaw {
-            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.ts)))
-            hrByDayApple[day, default: []].append(s)
+        if !inputs.appleHrRaw.isEmpty, !daysNeedingStrainEstimate.isEmpty {
+            let cal = Calendar.current
+            var windowStart = Int.max, windowEnd = Int.min, windowDay = ""
+            for s in inputs.appleHrRaw {
+                if s.ts < windowStart || s.ts >= windowEnd {
+                    let d = Date(timeIntervalSince1970: Double(s.ts))
+                    let start = cal.startOfDay(for: d)
+                    windowStart = Int(start.timeIntervalSince1970)
+                    windowEnd = cal.date(byAdding: .day, value: 1, to: start)
+                        .map { Int($0.timeIntervalSince1970) } ?? windowStart + 86_400
+                    windowDay = DayKey.local(d)
+                }
+                if daysNeedingStrainEstimate.contains(windowDay) {
+                    hrByDayApple[windowDay, default: []].append(s)
+                }
+            }
         }
         var restingHRByDayApple: [String: Double] = [:]
         for row in inputs.apple {
@@ -480,6 +535,16 @@ final class Repository: ObservableObject {
     /// strap-covered day whose measured fields are nil (a partial-connection day) back-fills those nils
     /// from the Apple Health row this merge overwrote, so the HRV sparkline/trend shows Apple's value
     /// instead of a gap. The strap value always wins when present — only genuine gaps fill.
+    /// FER-970 (R-01): the days whose MERGED strain is nil — the only days Apple workout-HR can
+    /// serve (the estimated-strain path). A pure pre-pass over rows performRefresh has already
+    /// read, so the ≤500k-row HR read can be skipped outright when this comes back empty. Reuses
+    /// the very same `mergeDaily` the assembler runs — eligibility cannot drift from it.
+    nonisolated static func strainEstimateEligibleDays(imported: [DailyMetric], computed: [DailyMetric],
+                                                       apple: [DailyMetric]) -> Set<String> {
+        Set(mergeDaily(imported: imported, computed: computed, apple: apple)
+            .days.filter { $0.strain == nil }.map(\.day))
+    }
+
     nonisolated static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric],
                            apple: [DailyMetric]) -> (days: [DailyMetric], appleDays: Set<String>,
                                                      displayDays: [DailyMetric]) {
