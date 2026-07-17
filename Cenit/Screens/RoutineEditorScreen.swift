@@ -295,7 +295,7 @@ struct RoutineEditorScreen: View {
                 if grouped { supersetBadge(idx) }
                 Button { detailExercise = item.exercise } label: {
                     ExerciseThumbView(exercise: item.exercise, side: 40)
-                        .overlay(RoundedRectangle(cornerRadius: 40 * 0.22, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 40), style: .continuous)
                             .strokeBorder(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles), lineWidth: 2))
                 }
                 .buttonStyle(.plain)

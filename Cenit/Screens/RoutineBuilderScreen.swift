@@ -260,7 +260,7 @@ struct RoutineBuilderScreen: View {
                 Button { detail = item.exercise } label: {
                     // r25: the thumb wears its movement family (same frame as editor + Serie activa).
                     ExerciseThumbView(exercise: item.exercise, side: 40)   // cached GIF still, or paper placeholder (FER-790)
-                        .overlay(RoundedRectangle(cornerRadius: 40 * 0.22, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 40), style: .continuous)
                             .strokeBorder(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles), lineWidth: 2))
                 }
                 .buttonStyle(.plain)

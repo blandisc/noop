@@ -229,7 +229,7 @@ struct ExerciseLibraryScreen: View {
             HStack(spacing: CenitMetrics.gap) {
                 // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
                 ExerciseThumbView(exercise: ex, side: 52)   // handoff: 52px thumb · cached GIF still or paper placeholder (FER-790)
-                    .overlay(RoundedRectangle(cornerRadius: 52 * 0.22, style: .continuous)  // = clip del thumb (.tile)
+                    .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 52), style: .continuous)
                         .strokeBorder(familyTint(ex), lineWidth: 2))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)

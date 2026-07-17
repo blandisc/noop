@@ -32,6 +32,11 @@ public struct ExerciseThumbnail: View {
     /// video loop, FER-778) can clip it to the exact same shape as the reserved slot.
     public static let heroCornerRadius: CGFloat = 16
 
+    /// The tile form's corner radius for a given side — the «troquel» proportion (22% of the side:
+    /// 40→9 · 44→10 · 48→11 · 54→12, matching the handoff). Exposed so a caller overlaying the thumb
+    /// (e.g. the movement-family stroke ring) can match the exact clip shape of the tile.
+    public static func tileCornerRadius(side: CGFloat) -> CGFloat { side * 0.22 }
+
     /// The hero banner's fixed height (handoff «Detalle de Ejercicio»: 176px) — full-width but no
     /// longer a square, so the segmented control and the datum stay above the fold on a 390pt phone.
     public static let heroHeight: CGFloat = 176
@@ -50,7 +55,7 @@ public struct ExerciseThumbnail: View {
 
     private var corner: CGFloat {
         switch form {
-        case .tile(let side): return side * 0.22   // 40→9 · 44→10 · 48→11 · 54→12, matching the handoff
+        case .tile(let side): return Self.tileCornerRadius(side: side)
         case .hero:           return Self.heroCornerRadius
         }
     }
