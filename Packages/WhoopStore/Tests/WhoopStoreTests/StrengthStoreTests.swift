@@ -854,7 +854,7 @@ final class StrengthStoreTests: XCTestCase {
                      weightKg: 62.5, reps: 8, done: true, ts: 2001),
         ], progressionOptOuts: ["bench"])
         try await store.deleteSession(id: "s2")
-        let orphans = try await store.dbQueue.read { db in
+        let orphans = try await store.dbWriter.read { db in
             try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM progressionOptOut") ?? 0
         }
         XCTAssertEqual(orphans, 0, "deleteSession removes the session's opt-out rows")
