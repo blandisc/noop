@@ -269,10 +269,17 @@ targets:
       - CenitUnitTests
     dependencies:
       - target: Cenit
+      # Los paquetes van .static (fix del canvas): el bundle de tests compila
+      # contra los modulos pero NO linkea su copia — los simbolos los da el
+      # host (Cenit.app), si no Xcode truena por duplicacion de codigo.
       - package: WhoopProtocol
+        link: false
       - package: WhoopStore
+        link: false
       - package: StrandAnalytics
+        link: false
       - package: StrandTraining
+        link: false
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

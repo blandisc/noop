@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "StrandImport",
     platforms: [.macOS(.v13), .iOS(.v16)],
-    products: [.library(name: "StrandImport", targets: ["StrandImport"])],
+    products: [.library(name: "StrandImport", type: .static, targets: ["StrandImport"])],
     dependencies: [
         .package(path: "../WhoopStore"),
         .package(path: "../StrandTraining"),

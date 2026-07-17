@@ -11,7 +11,7 @@ let package = Package(
     // FER-740: .watchOS added so the Apple Watch companion (CenitWatch) can name/summarize the
     // mirrored strength session. Trivially safe — the package is Foundation-only.
     platforms: [.iOS(.v16), .macOS(.v13), .watchOS(.v10)],
-    products: [.library(name: "StrandTraining", targets: ["StrandTraining"])],
+    products: [.library(name: "StrandTraining", type: .static, targets: ["StrandTraining"])],
     targets: [
         .target(
             name: "StrandTraining",

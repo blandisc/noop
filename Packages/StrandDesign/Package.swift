@@ -7,7 +7,7 @@ let package = Package(
     // strength session with the same StrandDesign tokens. The package stays pure — UIKit/AppKit are
     // behind `#if canImport(...)` and the two haptic/scrub spots behind `#if os(iOS)`.
     platforms: [.macOS(.v14), .iOS(.v17), .watchOS(.v10)],
-    products: [.library(name: "StrandDesign", targets: ["StrandDesign"])],
+    products: [.library(name: "StrandDesign", type: .static, targets: ["StrandDesign"])],
     dependencies: [],
     targets: [
         .target(
