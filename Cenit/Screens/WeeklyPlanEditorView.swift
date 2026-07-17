@@ -191,8 +191,23 @@ struct WeeklyPlanEditorView: View {
     @ViewBuilder
     private func dayRow(_ wd: Int) -> some View {
         if schedule[wd] != nil {
-            Button { openDay(wd) } label: { rowLabel(wd, chevron: "chevron.right") }
+            HStack(spacing: 0) {
+                Button { openDay(wd) } label: { rowLabel(wd, chevron: "chevron.right") }
+                    .buttonStyle(.plain)
+                Button { assignMenuDay = wd } label: {
+                    Image(systemName: "chevron.down")
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text("Change this day's routine"))
+                .paperMenu(
+                    isPresented: Binding(get: { assignMenuDay == wd },
+                                         set: { if !$0 { assignMenuDay = nil } }),
+                    items: assignMenuItems(wd)
+                )
+            }
         } else {
             Button { assignMenuDay = wd } label: { rowLabel(wd, chevron: "chevron.down") }
                 .buttonStyle(.plain)

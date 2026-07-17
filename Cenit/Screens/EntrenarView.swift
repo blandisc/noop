@@ -605,8 +605,11 @@ private struct EntrenarLanding: View {
     private var tuPlanSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             InstrumentoSectionBand("Your plan") {
+                // Decisión Fer (2026-07-16): la puerta dice que AHÍ también se editan las rutinas,
+                // no solo la semana.
                 Button { openWeeklyPlan() } label: {
-                    Text("Edit week").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text("Routines and week").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .frame(minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -615,6 +618,11 @@ private struct EntrenarLanding: View {
             // reason it earns a row beyond the hero). Reversal of the earlier hero-only decision (FER-939).
             ForEach(planRows, id: \.routineId) { row in
                 planRoutineRow(row)
+            }
+            // Sin día asignado: visibles igual (antes una rutina nueva no salía en ningún lado del
+            // hub). El «—» honesto va en inkDim; asignarle día se hace en Tu Plan.
+            ForEach(unscheduledRoutines, id: \.id) { r in
+                planRoutineRow((routineId: r.id, name: r.name, days: String(localized: "no day yet")))
             }
             nuevaRutinaRow
         }
@@ -1202,6 +1210,13 @@ private struct EntrenarLanding: View {
     /// «También en tu plan» lists every scheduled routine EXCEPT today's (which is the hero).
     private var otherPlanRoutines: [(routineId: String, name: String, days: String)] {
         planRows.filter { $0.routineId != todayRoutineId }
+    }
+
+    /// Rutinas SIN día asignado (2026-07-16, bug Fer): una rutina recién creada no aparecía en
+    /// NINGÚN lado del hub (la lista era solo el split). Van al final con «—» de días.
+    private var unscheduledRoutines: [Routine] {
+        let scheduled = Set(split.values)
+        return routines.filter { !scheduled.contains($0.id) }
     }
 
     /// The hero's muscle line: today's routine's top primary muscles, «·»-joined (nil when unknown).

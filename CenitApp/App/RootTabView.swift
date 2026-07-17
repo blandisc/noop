@@ -399,6 +399,8 @@ private extension View {
 /// (`dataStrain`) — the same hue the session screen and the approved previews use.
 private struct ActiveSessionPillHost: View {
     @ObservedObject var model: AppModel
+    /// Decisión Fer (2026-07-16): el ✕ del pill DESCARTA — destructivo, así que siempre confirma.
+    @State private var confirmDiscard = false
     var body: some View {
         if let session = model.strengthSession {
             let theme = InstrumentoTheme.base
@@ -417,13 +419,22 @@ private struct ActiveSessionPillHost: View {
                     accessibilityLabel: pillLabel(session.routineName, elapsed, model.bpm),
                     accessibilityHint: Text("Returns to the session"),
                     action: { model.resumeStrengthSession() },
-                    onPlayPause: {
-                        if session.paused { model.resumeStrengthSessionFromPause() }
-                        else { model.pauseStrengthSession() }
-                    },
-                    playPauseAccessibilityLabel: Text(session.paused ? "Resume session" : "Pause session")
+                    onDiscard: { confirmDiscard = true },
+                    discardAccessibilityLabel: Text("Discard session")
                 )
             }
+            .instrumentoConfirm(
+                isPresented: $confirmDiscard,
+                title: String(localized: "Discard this session?"),
+                context: String(localized: "SESSION · IN PROGRESS"),
+                message: String(localized: "Its logged sets won't be saved."),
+                actions: [
+                    .init(String(localized: "Keep training"), role: .primary),
+                    .init(String(localized: "Discard session"), role: .destructive) {
+                        model.endStrengthSession(save: false)
+                    }
+                ]
+            )
         }
     }
 

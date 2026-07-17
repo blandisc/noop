@@ -123,22 +123,23 @@ public struct SessionPill: View {
     let accessibilityLabel: Text
     let accessibilityHint: Text
     let action: () -> Void
-    /// Optional trailing ⏸/▶ (FER-952) — pauses/resumes WITHOUT opening the session. nil hides it.
-    let onPlayPause: (() -> Void)?
-    /// VoiceOver label for the ⏸/▶ («Pausar sesión» / «Reanudar sesión») — caller-localized (FER-716).
-    let playPauseAccessibilityLabel: Text?
+    /// Optional trailing ✕ (decisión Fer, 2026-07-16) — DESCARTA la sesión sin abrirla. El host
+    /// SIEMPRE confirma (ConfirmCard) antes de ejecutar; el pill solo dispara la intención. nil lo oculta.
+    let onDiscard: (() -> Void)?
+    /// VoiceOver label del ✕ («Descartar sesión») — caller-localized (FER-716).
+    let discardAccessibilityLabel: Text?
 
     public init(routineName: String, elapsed: String, bpm: Int?,
                 detail: String? = nil, paused: Bool = false, hue: Color,
                 theme: InstrumentoTheme, accessibilityLabel: Text, accessibilityHint: Text,
-                action: @escaping () -> Void, onPlayPause: (() -> Void)? = nil,
-                playPauseAccessibilityLabel: Text? = nil) {
+                action: @escaping () -> Void, onDiscard: (() -> Void)? = nil,
+                discardAccessibilityLabel: Text? = nil) {
         self.routineName = routineName; self.elapsed = elapsed; self.bpm = bpm
         self.detail = detail; self.paused = paused
         self.hue = hue; self.theme = theme
         self.accessibilityLabel = accessibilityLabel; self.accessibilityHint = accessibilityHint
-        self.action = action; self.onPlayPause = onPlayPause
-        self.playPauseAccessibilityLabel = playPauseAccessibilityLabel
+        self.action = action; self.onDiscard = onDiscard
+        self.discardAccessibilityLabel = discardAccessibilityLabel
     }
 
     public var body: some View {
@@ -175,7 +176,7 @@ public struct SessionPill: View {
                     }
                 }
                 .padding(.leading, 16)
-                .padding(.trailing, onPlayPause == nil ? 16 : 6)
+                .padding(.trailing, onDiscard == nil ? 16 : 6)
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
@@ -184,9 +185,9 @@ public struct SessionPill: View {
             .accessibilityLabel(accessibilityLabel)
             .accessibilityHint(accessibilityHint)
             .accessibilityAddTraits(.isButton)
-            if let onPlayPause {
-                Button(action: onPlayPause) {
-                    Image(systemName: paused ? "play.fill" : "pause.fill")
+            if let onDiscard {
+                Button(action: onDiscard) {
+                    Image(systemName: "xmark")
                         .font(StrandFont.glyph(.inline, weight: .bold))
                         .foregroundStyle(theme.ink)
                         .frame(width: 34, height: 34)
@@ -196,7 +197,7 @@ public struct SessionPill: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(InstrumentoPressStyle())
-                .accessibilityLabel(playPauseAccessibilityLabel ?? Text(verbatim: ""))
+                .accessibilityLabel(discardAccessibilityLabel ?? Text(verbatim: ""))
                 .padding(.trailing, 2)
             }
         }
