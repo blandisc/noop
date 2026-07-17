@@ -129,7 +129,9 @@ private struct DottedTick: Shape {
 #if DEBUG
 #Preview("BodyAgeBand · por signo") {
     let t = InstrumentoTheme.base
-    func band(_ body: Double, _ color: Color) -> some View {
+    // FER-978: the nested helper builds a `@MainActor` View, so it must be main-actor itself —
+    // otherwise the `BodyAgeBand` init is called from a nonisolated context (targeted warning).
+    @MainActor func band(_ body: Double, _ color: Color) -> some View {
         BodyAgeBand(bodyAge: body, chronoAge: 34, color: color, youLabel: "you",
                     accessibilityLabelText: "Body age",
                     accessibilityValueText: "\(Int(body)) years", animated: false)

@@ -981,7 +981,9 @@ struct SleepDetailScreen: View {
     }
 
     /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
-    private static let calDayFmt = DayKey.utcFormatter
+    /// FER-978: `nonisolated` so it's reachable from nonisolated contexts (DateFormatter is Sendable
+    /// under strict concurrency; the property is immutable).
+    nonisolated private static let calDayFmt = DayKey.utcFormatter
     private static let calReadoutFmt: DateFormatter = {
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
     }()

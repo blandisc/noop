@@ -709,11 +709,16 @@ final class HealthKitBridge: ObservableObject {
         let cal = Calendar.current
         let anchor = cal.startOfDay(for: start)
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+        // FER-978: the HealthKit result handler runs on HK's OWN background queue, so calling the
+        // caller's `sink` (which mutates main-actor state) from inside it was a real cross-actor
+        // race `targeted` correctly flags. Collect into a Sendable `[(day, value)]` inside the
+        // handler, resume WITH it, and apply `sink` back on this @MainActor after the await.
+        let pairs: [(String, Double)] = await withCheckedContinuation { cont in
             let q = HKStatisticsCollectionQuery(quantityType: type, quantitySamplePredicate: predicate,
                                                 options: op, anchorDate: anchor,
                                                 intervalComponents: DateComponents(day: 1))
             q.initialResultsHandler = { _, results, _ in
+                var out: [(String, Double)] = []
                 results?.enumerateStatistics(from: start, to: end) { stats, _ in
                     let q: HKQuantity?
                     switch op {
@@ -722,19 +727,23 @@ final class HealthKitBridge: ObservableObject {
                     case .discreteMax:      q = stats.maximumQuantity()
                     default:                q = stats.averageQuantity()
                     }
-                    if let q { sink(HealthKitBridge.dayString(stats.startDate), q.doubleValue(for: unit)) }
+                    if let q { out.append((HealthKitBridge.dayString(stats.startDate), q.doubleValue(for: unit))) }
                 }
-                cont.resume()
+                cont.resume(returning: out)
             }
             store.execute(q)
         }
+        for (day, v) in pairs { sink(day, v) }
     }
 
     private func collectSleep(start: Date, end: Date,
                               sink: @escaping (String, Double?, Double?, Double?, Double?) -> Void) async {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+        // FER-978: same fix as `collect` — accumulate inside the HK handler, resume with a Sendable
+        // per-day array, apply `sink` back on this @MainActor (no sink call from HK's queue).
+        typealias SleepDay = (day: String, asleep: Double?, deep: Double?, rem: Double?, core: Double?)
+        let days: [SleepDay] = await withCheckedContinuation { cont in
             let q = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
                 var asleep: [String: Double] = [:], deep: [String: Double] = [:]
                 var rem: [String: Double] = [:], core: [String: Double] = [:]
@@ -752,13 +761,12 @@ final class HealthKitBridge: ObservableObject {
                         break
                     }
                 }
-                for day in Set(asleep.keys) {
-                    sink(day, asleep[day], deep[day], rem[day], core[day])
-                }
-                cont.resume()
+                let out: [SleepDay] = Set(asleep.keys).map { (day: $0, asleep: asleep[$0], deep: deep[$0], rem: rem[$0], core: core[$0]) }
+                cont.resume(returning: out)
             }
             store.execute(q)
         }
+        for d in days { sink(d.day, d.asleep, d.deep, d.rem, d.core) }
     }
 
     /// FER-486: the raw `sleepAnalysis` samples as platform-agnostic descriptors, so the pure
