@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Sueño y Recuperación se pueblan sin tirón / Sleep and Recovery fill in without a stutter.**
+  **ES** — Al abrir esos detalles, la pantalla ya solo construye lo que ves; las secciones de abajo (calendario de 90 días, método) se arman al scrollear. Con eso desaparece el hipo de ~1 s que quedaba justo cuando llegaba la información.
+  **EN** — Opening those details now only builds what's on screen; the sections below the fold (90-day calendar, method) assemble as you scroll. That removes the ~1 s hiccup right when the data arrived.
+  ([SleepDetailScreen.swift](Cenit/Screens/SleepDetailScreen.swift), [RecoveryDetailScreen.swift](Cenit/Screens/RecoveryDetailScreen.swift))
+
 - **La unidad ya no se cae al renglón de abajo en los vitales / The unit no longer drops to its own line on the vitals.**
   **ES** — En el detalle de VFC, FC en reposo, frecuencia respiratoria y SpO₂, la tira de arriba dibujaba la unidad como una línea suelta bajo el número: se leía «PROMEDIO / 62 / ms», con el «ms» huérfano. Ahora la unidad va pegada al número, alineada a su base. De paso, el tile de Rango —que se veía pelón, «48–71»— ya trae su unidad también.
   **EN** — On the HRV, resting HR, respiratory rate and SpO₂ details, the top strip drew the unit as a loose line under the figure: it read "AVERAGE / 62 / ms", with an orphaned "ms". The unit now sits next to the figure, on its baseline. The Range tile — bare until now, "48–71" — carries its unit too.
