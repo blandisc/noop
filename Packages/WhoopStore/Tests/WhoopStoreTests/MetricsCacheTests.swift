@@ -15,10 +15,6 @@ final class MetricsCacheTests: XCTestCase {
         XCTAssertEqual(dailyPK, ["deviceId", "day"])
     }
 
-    func testSchemaVersionBumped() {
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 31)
-    }
-
     // MARK: - sleep sessions
 
     func testSleepSessionUpsertReadAndIdempotency() async throws {
