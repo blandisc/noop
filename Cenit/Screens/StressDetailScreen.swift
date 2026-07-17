@@ -542,19 +542,19 @@ struct StressDetailScreen: View {
         if let d = selectedStressDay {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.chipDateFormatter.string(from: d.date))
-                    .instrumentoOverline()
+                    .groteskOverline()
                     .foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 if let v = d.score {
                     Text(String(format: "%.1f", v))
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(stressHeatTint(v))
                     Text(bandWord(StressBand(score: v)))
                         .font(StrandFont.subhead)
                         .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(theme.inkTertiary)
                     Text("no reading")
                         .font(StrandFont.subhead)

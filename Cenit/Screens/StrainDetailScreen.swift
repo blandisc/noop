@@ -413,10 +413,8 @@ struct StrainDetailScreen: View {
         }
     }
 
-    private static let calDayFmt: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")!; f.dateFormat = "yyyy-MM-dd"; return f
-    }()
+    /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
+    private static let calDayFmt = DayKey.utcFormatter
     private static let calReadoutFmt: DateFormatter = {
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
     }()
@@ -465,19 +463,19 @@ struct StrainDetailScreen: View {
         if let d = selectedStrainDay {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.calReadoutFmt.string(from: d.date))
-                    .instrumentoOverline()
+                    .groteskOverline()
                     .foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 if let v = d.score {
                     Text(String(format: "%.1f", v))
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(strainHeatTint(v))
                     Text(strainWord(v))
                         .font(StrandFont.subhead)
                         .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(theme.inkTertiary)
                     Text("no reading")
                         .font(StrandFont.subhead)

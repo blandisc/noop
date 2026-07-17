@@ -161,7 +161,7 @@ struct StressDayMapBlock: View {
         let rows: [StressMoments.Moment] = m.activated + (m.calmest.map { [$0] } ?? [])
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { i, mo in
+                ForEach(Array(rows.enumerated()), id: \.element.date) { i, mo in
                     if i > 0 {
                         Rectangle().fill(theme.hairline).frame(height: 1)
                     }
@@ -216,7 +216,7 @@ struct StressDayMapBlock: View {
 
     private func allDayRow(_ events: [StressDayMap.DayEvent]) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("All day").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("All day").groteskOverline().foregroundStyle(theme.inkTertiary)
             Text(verbatim: events.map { EventTitleCleaner.clean($0.title) }.joined(separator: " · "))
                 .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
         }
@@ -454,7 +454,7 @@ private struct CalendarPickerSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Choose calendars").font(StrandFont.title2).foregroundStyle(theme.ink)
+                    Text("Choose calendars").font(InstrumentoType.groteskHeadline(22)).foregroundStyle(theme.ink)
                     Text("We'll only cross the ones you pick.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }

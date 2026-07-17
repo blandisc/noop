@@ -113,7 +113,7 @@ struct MetricExplorerView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Explore").font(StrandFont.title1).foregroundStyle(theme.ink)
+                    Text("Explore").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
                     Text("Every signal, one tap deep.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
@@ -140,9 +140,9 @@ struct MetricExplorerView: View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Category").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Category").groteskOverline().foregroundStyle(theme.inkTertiary)
                     Text(MetricCatalog.localizedCategory(category))
-                        .font(StrandFont.title2).foregroundStyle(theme.ink)
+                        .font(InstrumentoType.groteskHeadline(22)).foregroundStyle(theme.ink)
                 }
                 Spacer()
                 Text("\(metrics.count)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -150,7 +150,7 @@ struct MetricExplorerView: View {
             VStack(spacing: 0) {
                 ForEach(Array(metrics.enumerated()), id: \.element.id) { idx, metric in
                     NavigationLink(value: metric) {
-                        MetricRow(metric: metric,
+                        CatalogRow(metric: metric,
                                   isEmpty: emptyByID[metric.id] ?? false,
                                   theme: theme)
                     }
@@ -184,7 +184,7 @@ struct MetricExplorerView: View {
 
 // MARK: - One catalog row
 
-private struct MetricRow: View {
+private struct CatalogRow: View {
     let metric: MetricDescriptor
     let isEmpty: Bool
     let theme: InstrumentoTheme
@@ -387,7 +387,7 @@ struct MetricDetailView: View {
         let heroValue = latest.map { fmt($0.value) } ?? "—"
         let accent = metricAccent(metric, theme: theme)
         return VStack(alignment: .leading, spacing: 6) {
-            Text(metric.localizedCategory).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(metric.localizedCategory).groteskOverline().foregroundStyle(theme.inkTertiary)
             Text(heroValue)
                 .instrumentoHero(44)
                 .foregroundStyle(latest == nil ? theme.inkTertiary : accent)
@@ -493,7 +493,7 @@ struct MetricDetailView: View {
         let rows = correlationCache
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("What correlates").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("What correlates").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Text("Pearson r over the visible window · |r| ≥ 0.30, n ≥ 10")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)

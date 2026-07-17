@@ -204,6 +204,18 @@ final class Repository: ObservableObject {
         return dayKeyParser.string(from: d.addingTimeInterval(-86_400))
     }
 
+    /// FER-969 (X-03): the store failed to open (wedged migration, corrupt file) — the UI shows an
+    /// honest state with retry/restore instead of an eternally empty dashboard. Reset on success.
+    @Published private(set) var storeOpenFailed = false
+
+    /// «Reintentar» from the store-failure state: re-attempt the open and the launch refresh that
+    /// never ran. `ensureStore` re-tries naturally once `store`/`storeInit` are nil. (FER-969, X-03)
+    func retryStoreOpen() async {
+        guard store == nil else { return }
+        storeOpenFailed = false
+        await refresh()
+    }
+
     private func ensureStore() async -> WhoopStore? {
         if let store { return store }
         if let storeInit { return await storeInit.value }   // a creation is already in flight — join it
@@ -227,6 +239,7 @@ final class Repository: ObservableObject {
         let s = await task.value
         store = s
         storeInit = nil
+        storeOpenFailed = (s == nil)  // FER-969 (X-03): surface the failure; clears itself on success
         return s
     }
 

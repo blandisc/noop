@@ -16692,6 +16692,23 @@
         }
       }
     },
+    "Couldn't delete the workout. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't delete the workout. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo borrar el entrenamiento. Intenta de nuevo."
+          }
+        }
+      }
+    },
     "Couldn't download. Check your connection and try again." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16705,6 +16722,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se pudo descargar. Revisa tu conexión e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "Couldn't export the file. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't export the file. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo exportar el archivo. Intenta de nuevo."
           }
         }
       }
@@ -16823,6 +16857,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se pudo guardar el entrenamiento. Inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "Couldn't save. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo guardar. Intenta de nuevo."
+          }
+        }
+      }
+    },
+    "Cénit couldn't open your database." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit couldn't open your database."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no pudo abrir tu base de datos."
+          }
+        }
+      }
+    },
+    "Your data is still on this phone: retry, or restore from an iCloud Drive backup." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data is still on this phone: retry, or restore from an iCloud Drive backup."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus datos siguen en este teléfono: reintenta o restaura desde un respaldo de iCloud Drive."
           }
         }
       }
@@ -47929,6 +48014,22 @@
     "sin entrenamientos aún" : {
 
     },
+    "no workouts yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no workouts yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin entrenamientos aún"
+          }
+        }
+      }
+    },
     "Since midnight" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -57324,6 +57425,86 @@
     "vs tu media" : {
 
     },
+    "vs your average" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vs your average"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vs tu media"
+          }
+        }
+      }
+    },
+    "Volume by week" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume by week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volumen por semana"
+          }
+        }
+      }
+    },
+    "8 wk" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8 wk"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8 sem"
+          }
+        }
+      }
+    },
+    "This week in amber · strength volume, last 8 weeks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This week in amber · strength volume, last 8 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta semana en ámbar · volumen de fuerza, últimas 8 semanas"
+          }
+        }
+      }
+    },
+    "last 6 months" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last 6 months"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "últimos 6 meses"
+          }
+        }
+      }
+    },
     "vs yesterday" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -62816,6 +62997,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu HRV por frecuencia"
+          }
+        }
+      }
+    },
+    "Your sets are safe on this phone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sets are safe on this phone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus series están a salvo en este teléfono."
           }
         }
       }

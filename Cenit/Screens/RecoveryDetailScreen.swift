@@ -564,7 +564,7 @@ struct RecoveryDetailScreen: View {
         // it. HRV / resting HR are measured against your own Apple baseline, so they carry a direction. (CSO)
         let color: Color = dir.position == .inRange ? theme.inkSecondary : (dir.helps ? theme.verdict : theme.warning)
         return HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(Self.driverLabel(dir.key)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(Self.driverLabel(dir.key)).groteskOverline().foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 8)
             if dir.hasPersonalNorm {
                 Text(Self.estimatedPositionWord(dir.position))
@@ -587,7 +587,7 @@ struct RecoveryDetailScreen: View {
     /// is «N de 3 señales» told row-by-row, so the user sees WHY the number is conservative.
     private func estimatedAbsentRow(_ key: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(Self.driverLabel(key)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(Self.driverLabel(key)).groteskOverline().foregroundStyle(theme.inkTertiary)
             Spacer(minLength: 8)
             Text(Self.estimatedAbsentReason(key))
                 .font(StrandFont.captionNumber)
@@ -912,19 +912,19 @@ struct RecoveryDetailScreen: View {
         if let day = selectedHeatDay {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.heatDateFmt.string(from: day.date))
-                    .instrumentoOverline()
+                    .groteskOverline()
                     .foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 if let score = day.score {
                     Text("\(Int(score.rounded()))")
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(heatTint(score))
                     Text(bandWord(score))
                         .font(StrandFont.subhead)
                         .foregroundStyle(theme.inkSecondary)
                 } else {
                     Text("—")
-                        .font(StrandFont.number(20))
+                        .font(InstrumentoType.groteskTileValue)
                         .foregroundStyle(theme.inkTertiary)
                     Text("no reading")
                         .font(StrandFont.subhead)
@@ -999,7 +999,7 @@ struct RecoveryDetailScreen: View {
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
             HStack(alignment: .firstTextBaseline) {
-                Text("Calibrating").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Calibrating").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Text("\(n) / \(needed) nights")
                     .font(StrandFont.captionNumber)

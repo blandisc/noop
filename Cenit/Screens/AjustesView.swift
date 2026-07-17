@@ -458,11 +458,8 @@ private struct AjustesLanding: View {
 
     /// The `baselineEpoch` day-key ("YYYY-MM-DD") shown as a localized medium date, e.g. «10 jul 2026».
     private var recalibratedDateText: String {
-        let parser = DateFormatter()
-        parser.calendar = Calendar(identifier: .gregorian)
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.dateFormat = "yyyy-MM-dd"
-        guard let date = parser.date(from: profile.baselineEpoch) else { return profile.baselineEpoch }
+        // Local parser (write side of the day-key contract) — same zone as the stored key (FER-754).
+        guard let date = DayKey.localFormatter.date(from: profile.baselineEpoch) else { return profile.baselineEpoch }
         return date.formatted(.dateTime.day().month(.abbreviated).year())
     }
 
@@ -1078,6 +1075,7 @@ private struct UnidadesSheet: View {
 private struct StrapLogSheet: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(LiveState.self) var live
+    @State private var saveError = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
@@ -1123,6 +1121,23 @@ private struct StrapLogSheet: View {
         .padding(CenitMetrics.screenPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
+        // FER-969 / X-05b: export write failure — banner (same pattern as WorkoutEditSheet).
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't export the file. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
@@ -1136,6 +1151,10 @@ private struct StrapLogSheet: View {
         return header + live.log.map(\.text).joined(separator: "\n")
     }
     private func copyStrapLog() { PlatformPasteboard.copy(strapLogText()) }
-    private func saveStrapLog() { FileExport.exportText(strapLogText(), suggestedName: "noop-strap-log.txt") }
+    private func saveStrapLog() {
+        if !FileExport.exportText(strapLogText(), suggestedName: "noop-strap-log.txt") {
+            saveError = true
+        }
+    }
 }
 #endif

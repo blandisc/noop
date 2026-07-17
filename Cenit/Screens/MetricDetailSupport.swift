@@ -149,13 +149,6 @@ extension MetricDetailScreen {
         f.relationship == .sleepDuration ? theme.verdict : theme.dataStrain
     }
 
-    // MARK: Disclosure copy (verbatim from the old ⓘ accordions, single-sourced here)
-
-    var EX_TREND: LocalizedStringKey { "The slope is how much it rises or falls on average per day, by linear regression over the period. The percentage compares this period's average against the previous period of the same length. Average, Lowest and Highest are from the range you selected." }
-    var EX_RANGO: LocalizedStringKey { "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)" }
-    var EX_CONSIST_TECH: LocalizedStringKey { "Coefficient of variation = standard deviation ÷ the mean of your last few weeks. It measures how spread out your values are around your average. Low = steady. In HRV, a rising CV can precede fatigue even while the value still looks high. (Plews 2013)" }
-    var EX_SPO2_FLOOR: LocalizedStringKey { "95% is the typical floor for a healthy adult: the same reference for everyone, not your personal baseline. Below 90% is considered low (hypoxemia). The wrist sensor is less precise than a medical oximeter, so read it as a trend." }
-
     // MARK: - Colour + format
 
     var metricHue: Color {
