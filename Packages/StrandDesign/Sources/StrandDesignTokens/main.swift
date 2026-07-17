@@ -258,6 +258,7 @@ func replaceMarked(in text: String, tag: String, with body: String) -> String? {
 
 // MARK: Run
 
+#if canImport(AppKit)
 let cwd = FileManager.default.currentDirectoryPath
 let rootArg = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : cwd + "/../.."
 let root = URL(fileURLWithPath: rootArg).standardizedFileURL
@@ -299,3 +300,7 @@ do {
 } catch {
     fail("✗ \(error)")
 }
+#else
+print("StrandDesignTokens generator runs on macOS only")
+fatalError("StrandDesignTokens generator runs on macOS only")
+#endif

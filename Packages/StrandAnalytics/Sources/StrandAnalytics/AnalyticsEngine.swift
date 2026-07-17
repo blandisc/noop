@@ -56,16 +56,26 @@ public enum AnalyticsEngine {
         /// there are no matched sessions. PURELY ADDITIVE: feeds no recovery/strain/sleep output;
         /// surfaced only in the HRV detail (FER-702). See `HRVFreqDomain`.
         public let spectralBands: HRVFreqDomain.Bands?
+        /// Nocturnal Deceleration Capacity (ms, Bauer 2006 PRSA via `NocturnalDC`) over the night's
+        /// MAIN in-bed session — the same construct the Sleep detail shows. Nil without a session
+        /// or when the night reads `.unreadable`. ADDITIVE: display-only (FER-972 · P-05).
+        public let nocturnalDCms: Double?
+        /// Distal warming magnitude (°C, onset → plateau, `ThermalStabilityEngine.warmingMagnitudeC`)
+        /// over the same main session. Nil with too little in-bed skin temp. ADDITIVE (FER-972 · P-05).
+        public let warmingMagnitudeC: Double?
 
         public init(daily: DailyMetric, sleepSessions: [SleepSession],
                     cachedSleep: [CachedSleepSession], workouts: [ExerciseSession],
                     recovery: Double?, strain: Double?, nightlySkinTempC: Double? = nil,
-                    spectralBands: HRVFreqDomain.Bands? = nil) {
+                    spectralBands: HRVFreqDomain.Bands? = nil,
+                    nocturnalDCms: Double? = nil, warmingMagnitudeC: Double? = nil) {
             self.daily = daily; self.sleepSessions = sleepSessions
             self.cachedSleep = cachedSleep; self.workouts = workouts
             self.recovery = recovery; self.strain = strain
             self.nightlySkinTempC = nightlySkinTempC
             self.spectralBands = spectralBands
+            self.nocturnalDCms = nocturnalDCms
+            self.warmingMagnitudeC = warmingMagnitudeC
         }
     }
 
@@ -251,6 +261,21 @@ public enum AnalyticsEngine {
             return HRVFreqDomain.freqDomain(rr: sessionRR)
         }()
 
+        // Per-night display scalars over the MAIN (longest) in-bed session, persisted by the caller
+        // next to `hrv_lf` so the Sleep / Skin-temp sheets stop re-reading raw samples on open.
+        // ADDITIVE: neither feeds recovery/strain/sleep (FER-972 · P-05). Marginal cost: one pass
+        // over arrays already in hand — zero new reads.
+        let mainSession = matched.max { ($0.end - $0.start) < ($1.end - $1.start) }
+        let nocturnalDCms: Double? = mainSession.flatMap { s in
+            let sessionRR = rr.filter { $0.ts >= s.start && $0.ts <= s.end }.map { Double($0.rrMs) }
+            let r = NocturnalDC.compute(rawRR: sessionRR)
+            return r.confidence == .unreadable ? nil : r.dcMs
+        }
+        let warmingMagnitudeC: Double? = mainSession.flatMap { s in
+            ThermalStabilityEngine.warmingMagnitudeC(
+                inBedRaw: skinTemp.filter { $0.ts >= s.start && $0.ts <= s.end })
+        }
+
         let sleepStart = matched.map { $0.start }.min()
         let sleepEnd = matched.map { $0.end }.max()
 
@@ -405,7 +430,8 @@ public enum AnalyticsEngine {
 
         return DayResult(daily: daily, sleepSessions: matched, cachedSleep: cachedSleep,
                          workouts: workouts, recovery: recovery, strain: strain,
-                         nightlySkinTempC: nightlySkinTempC, spectralBands: spectralBands)
+                         nightlySkinTempC: nightlySkinTempC, spectralBands: spectralBands,
+                         nocturnalDCms: nocturnalDCms, warmingMagnitudeC: warmingMagnitudeC)
     }
 
     /// Round to 2 decimal places (matches the imported/demo skin-temp deviation precision).

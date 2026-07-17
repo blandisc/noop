@@ -58,13 +58,13 @@ jobs:
           mkdir -p build/Payload
           cp -R build/ios_output/*.app build/Payload/
           cd build
-          zip -r ../NOOP-iOS-unsigned.ipa Payload/
+          zip -r ../Cenit-iOS-unsigned.ipa Payload/
 
       - name: Upload iOS Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-unsigned-ipa
-          path: NOOP-iOS-unsigned.ipa
+          path: Cenit-iOS-unsigned.ipa
 
   # --- JOB 3: GitHub Release erstellen ---
   create-release:

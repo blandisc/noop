@@ -57,20 +57,25 @@ public enum NightRhythmAssembler {
                                from: from, to: to)
         }
 
+        // One pass per stream, bucketed by window index — O(n) instead of re-scanning the whole
+        // night per window (FER-972 · P-02). Same windows as the old per-window filter: [w0, w1)
+        // slices with the last one clipped at `to`; within-bucket order preserves input order.
+        let count = (to - from + windowSeconds - 1) / windowSeconds
+        var rrBuckets = [[RRInterval]](repeating: [], count: count)
+        for s in rr where s.ts >= from && s.ts < to {
+            rrBuckets[(s.ts - from) / windowSeconds].append(s)
+        }
+        var gravBuckets = [[GravitySample]](repeating: [], count: count)
+        for g in gravity where g.ts >= from && g.ts < to {
+            gravBuckets[(g.ts - from) / windowSeconds].append(g)
+        }
         var windows: [RhythmScreener.WindowResult] = []
-        var w0 = from
-        while w0 < to {
-            let w1 = min(w0 + windowSeconds, to)
-            let rrWindow = rr.filter { $0.ts >= w0 && $0.ts < w1 }
+        for i in 0..<count where !rrBuckets[i].isEmpty {
             // An empty window is absence, not an unreadable read — skip it so it doesn't dilute
             // the night's readable/unreadable counts. Only windows with beats are screened.
-            if !rrWindow.isEmpty {
-                let gravWindow = gravity.filter { $0.ts >= w0 && $0.ts < w1 }
-                let input = RhythmScreener.WindowInput(rr: rrWindow,
-                                                       motionStill: isStill(gravWindow))
-                windows.append(RhythmScreener.screenWindow(input))
-            }
-            w0 = w1
+            let input = RhythmScreener.WindowInput(rr: rrBuckets[i],
+                                                   motionStill: isStill(gravBuckets[i]))
+            windows.append(RhythmScreener.screenWindow(input))
         }
 
         return NightRhythm(windows: windows,

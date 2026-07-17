@@ -87,9 +87,14 @@ Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compi
 │   ├── Profile.swift           user profile (age/sex/body/HRmax)
 │   └── BehaviorStore.swift     toggles for automations/coaching
 ├── Screens/                    SwiftUI feature screens (Today, Live, Sleep, Trends…)
+├── AI/                         opt-in BYO-key coach (`AICoach.swift`; off by default)
+├── Media/                      opt-in exercise-media cache/download (off by default)
+├── LiveActivity/               Live Activity / rest-timer presentation glue
+├── Onboarding/                 first-run / restore / terms flows
 └── System/                     app-layer helpers (ProjectInfo, Platform, StrapActions)
 
-Packages/                       Cross-platform Swift packages (iOS 16+ / macOS 13+)
+Packages/                       Cross-platform Swift packages (base `.iOS(.v16)` / `.macOS(.v13)`;
+│                               StrandDesign is `.iOS(.v17)` / `.macOS(.v14)` + `.watchOS(.v10)`)
 ├── WhoopProtocol/              BLE frame parsing, CRC, command/event/packet decode
 ├── WhoopStore/                 GRDB/SQLite persistence (actor)
 ├── StrandTraining/             strength domain types + bundled exercise catalog (free-exercise-db, FER-923; pure, no DB)
@@ -103,7 +108,7 @@ CenitShared/                    code shared between the iOS app, its widgets, an
 CenitWidgets/                   iOS home / lock-screen widgets
 CenitWatch/                     watchOS 10 companion app (single target, FER-740). Runs the real
                                 HKWorkoutSession and mirrors it to the iPhone; no GRDB on the wrist.
-                                Depends only on StrandTraining + StrandDesign.
+                                Depends only on StrandDesign (project.yml + `import StrandDesign` only).
 
 Tools/Backfill/                 CLI offload/replay tool
 ```
@@ -115,11 +120,18 @@ visible rebrand to "Cénit" is tracked separately. The macOS app and its `Strand
 retired (FER-143) and the dead `#if os(macOS)`/`AppKit` branches removed (FER-144); the app-layer unit tests
 run as **`CenitUnitTests`** in the simulator. The packages keep their `Strand*`/`Whoop*` names. The
 core/data/analytics packages declare `.iOS(.v16)`/`.macOS(.v13)`, guarding UI-framework calls behind
-`#if canImport(UIKit)` / `#if canImport(AppKit)`. **`StrandTraining` and `StrandDesign` also declare
-`.watchOS(.v10)`** (FER-740) so the watch app can name/summarize strength sessions and paint with the
-design tokens — both are pure (Foundation-only / SwiftUI behind `#if canImport(UIKit|AppKit)`, with
-`#if os(iOS)` guards on the two haptic/hover-scrub spots). `WhoopStore`/`WhoopProtocol`/`StrandAnalytics`/
+`#if canImport(UIKit)` / `#if canImport(AppKit)`. **`StrandTraining`** keeps that base (`.iOS(.v16)`/
+`.macOS(.v13)`) and also declares **`.watchOS(.v10)`** (FER-740). **`StrandDesign` is higher:**
+`.iOS(.v17)` / `.macOS(.v14)` / `.watchOS(.v10)` so the watch app can paint with the design tokens —
+both are pure (Foundation-only / SwiftUI behind `#if canImport(UIKit|AppKit)`, with `#if os(iOS)`
+guards on the two haptic/hover-scrub spots). `WhoopStore`/`WhoopProtocol`/`StrandAnalytics`/
 `StrandImport` are **not** watchOS-bound: no DB, BLE, or analytics runs on the wrist.
+
+**Frozen identifiers from the NOOP legacy.** Bundle id `com.feriracheta.noop`, App Group
+`group.com.feriracheta.noop` (entitlements / `project.yml`), on-disk folder `OpenWhoop/`
+(`Cenit/Collect/StorePaths.swift`), and `noop.*` UserDefaults keys are load-bearing (data, pairing,
+install). **Never rename them** — the visual rebrand to Cénit is complete, but these ids stay frozen
+on purpose.
 
 ---
 
@@ -143,7 +155,7 @@ StrandAnalytics ────▶ WhoopProtocol + WhoopStore   (NO StrandTraining 
                                                     WeeklySplit FER-531 — take plain primitives the app
                                                     projects from StrandTraining types, keeping
                                                     StrandAnalytics decoupled)
-StrandImport ───────▶ WhoopProtocol + WhoopStore + ZIPFoundation
+StrandImport ───────▶ WhoopStore + StrandTraining + ZIPFoundation
 ```
 
 | Package | Responsibility | Key types / functions | Notable boundary |
@@ -451,7 +463,8 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (WhoopStore / SQLite)
 
-GRDB drives a migrator (`WhoopStoreInfo.schemaVersion`, currently `28`). The schema groups into four
+GRDB drives a migrator (the migrator currently reaches `v35`; see `Database.swift` — the source of
+truth is the migration list, not a constant). The schema groups into four
 concerns:
 
 **Durable decoded streams** — natural key `(deviceId, ts)`, one row per sample:
@@ -513,6 +526,12 @@ a row exists iff the hour had samples, even at 0.0 — absent hour = no row, pre
 semantics). Persisting them means the engine reads each day's raw `gravitySample` rows ONCE when the
 day's data changes, instead of re-reading 60+14 days of gravity every 15-minute pass — and the derived
 motion history survives both an app relaunch and a raw-stream safe-trim.
+
+FER-972 (P-05) adds two more per-night scalars under the same `-noop` source: `night_dc_ms`
+(nocturnal Deceleration Capacity, ms, over the night's main in-bed session) and `night_warming_c`
+(distal warming onset→plateau, °C). The nightly pass persists them next to `hrv_lf`; the Sleep /
+Skin-temp detail loaders read the points and lazily write-through any night the engine window didn't
+cover, so opening those sheets no longer re-reads ~0.5–1 M raw sample rows.
 
 **Circadian phase** — `circadianPhase(deviceId, day, tempMinHour, acrophaseHours, offsetMinutes,
 confidence, daysObserved, bedtimeHour, wakeHour, computedAt)`, PK `(deviceId, day)`: one structured
@@ -726,8 +745,8 @@ backfilled streams, or imported data interchangeably. **All derived values are a
 The `Cenit` app shell (under `CenitApp/App/`) builds a single `AppModel`, injects it plus
 `LiveState`, `Repository`, `ProfileStore`, `BehaviorStore`, and `GoalStore` (the Bucle's goal — a single
 metric+date preference in `UserDefaults`, not a DB table, FER-311) into the environment, and presents the
-shared screens under `Cenit/Screens/` (Today, Live, Breathe, Intervals, Explore, Compare, Insights,
-Sleep, Trends, Workouts, Health, Stress, Apple Health, Data Sources, Automations, Settings, Support).
+shared screens under `Cenit/Screens/` (Today, Live, Breathe, Intervals, Compare, Sleep, Trends,
+Workouts, Health, Apple Health, Data Sources, Automations, Settings, Support).
 The home / lock-screen widgets live in `CenitWidgets/`.
 
 Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on data change, not on the

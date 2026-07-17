@@ -29,6 +29,11 @@ struct ExerciseDetailScreen: View {
 
     /// Work sets across sessions (oldest→newest), the raw material for the progress chart + PRs.
     @State private var history: [(startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)] = []
+    @State private var historySessions: [(ts: Int, sets: [(kg: Double, reps: Int)], isRecord: Bool)] = []
+    @State private var historyDays: [(ts: Int, weightKg: Double, reps: Int)] = []
+    @State private var historyDaysAscending: [(ts: Int, weightKg: Double, reps: Int)] = []
+    @State private var weeklyVolumes: [Double] = []
+    @State private var seriesCache: [ProgressMetric: [Double]] = [:]
     /// Stored best-per-metric records for this exercise (FER-504/505). Read-only; derived on save.
     /// Where this exercise's progression cycle stands (FER-F); nil = no slot opted in.
     @State private var cycleState: ProgressionState? = nil
@@ -62,7 +67,7 @@ struct ExerciseDetailScreen: View {
     private var effectiveType: ExerciseType { shownType ?? exercise.type }
 
     /// A per-day metric the progress views derive from the raw history.
-    private enum ProgressMetric {
+    private enum ProgressMetric: Hashable {
         case weight, oneRM, volume
     }
 
@@ -96,6 +101,7 @@ struct ExerciseDetailScreen: View {
             async let h = repo.exerciseHistory(exerciseId: exercise.id)
             async let ov = repo.exerciseTypeOverride(exercise.id)
             history = await h
+            rebuildHistoryDerived()
             hasTypeOverride = await ov != nil
             // FER-F: where the progression cycle stands — only if some routine slot opted in for this
             // exercise (first enabled slot wins; multi-routine overlap is rare and reads the same history).
@@ -283,27 +289,6 @@ struct ExerciseDetailScreen: View {
         }
     }
 
-    /// All sets grouped by day, newest first; `isRecord` marks the newest day that reached the
-    /// all-time top weight.
-    private var historySessions: [(ts: Int, sets: [(kg: Double, reps: Int)], isRecord: Bool)] {
-        var byDay: [String: (ts: Int, sets: [(kg: Double, reps: Int)])] = [:]
-        for h in history.sorted(by: { $0.startTs < $1.startTs }) {
-            let key = dayKey(h.startTs)
-            var entry = byDay[key] ?? (h.startTs, [])
-            entry.sets.append((h.weightKg, h.reps))
-            byDay[key] = entry
-        }
-        let days = byDay.values.sorted { $0.ts > $1.ts }
-        let maxKg = history.map(\.weightKg).max() ?? 0
-        var recordMarked = false
-        return days.map { day in
-            let hits = maxKg > 0 && day.sets.contains { $0.kg >= maxKg - 0.0001 }
-            let isRecord = hits && !recordMarked
-            if isRecord { recordMarked = true }
-            return (day.ts, day.sets, isRecord)
-        }
-    }
-
     /// «Hoy» for today, else a short day-month («8 jul») — a `Text` so it follows the view's locale.
     private func historyDayText(_ ts: Int) -> Text {
         let date = Date(timeIntervalSince1970: TimeInterval(ts))
@@ -311,15 +296,53 @@ struct ExerciseDetailScreen: View {
         return Text(date, format: .dateTime.day().month(.abbreviated))
     }
 
-    /// The best (heaviest) work set per day, newest first, for the history list.
-    private var historyDays: [(ts: Int, weightKg: Double, reps: Int)] {
-        var byDay: [String: (ts: Int, weightKg: Double, reps: Int)] = [:]
+    private func rebuildHistoryDerived() {
+        var byDaySessions: [String: (ts: Int, sets: [(kg: Double, reps: Int)])] = [:]
+        for h in history.sorted(by: { $0.startTs < $1.startTs }) {
+            let key = dayKey(h.startTs)
+            var entry = byDaySessions[key] ?? (h.startTs, [])
+            entry.sets.append((h.weightKg, h.reps))
+            byDaySessions[key] = entry
+        }
+        let sessionDays = byDaySessions.values.sorted { $0.ts > $1.ts }
+        let maxKg = history.map(\.weightKg).max() ?? 0
+        var recordMarked = false
+        historySessions = sessionDays.map { day in
+            let hits = maxKg > 0 && day.sets.contains { $0.kg >= maxKg - 0.0001 }
+            let isRecord = hits && !recordMarked
+            if isRecord { recordMarked = true }
+            return (day.ts, day.sets, isRecord)
+        }
+
+        var byDayBest: [String: (ts: Int, weightKg: Double, reps: Int)] = [:]
         for h in history {
             let key = dayKey(h.startTs)
-            if let cur = byDay[key], cur.weightKg >= h.weightKg { continue }
-            byDay[key] = (h.startTs, h.weightKg, h.reps)
+            if let cur = byDayBest[key], cur.weightKg >= h.weightKg { continue }
+            byDayBest[key] = (h.startTs, h.weightKg, h.reps)
         }
-        return byDay.values.sorted { $0.ts > $1.ts }
+        historyDays = byDayBest.values.sorted { $0.ts > $1.ts }
+        historyDaysAscending = historyDays.sorted { $0.ts < $1.ts }
+
+        let cal = Calendar.current
+        if let thisWeek = cal.dateInterval(of: .weekOfYear, for: Date())?.start {
+            weeklyVolumes = (0..<7).reversed().map { back in
+                guard let start = cal.date(byAdding: .weekOfYear, value: -back, to: thisWeek),
+                      let end = cal.date(byAdding: .weekOfYear, value: 1, to: start) else { return 0 }
+                let s = Int(start.timeIntervalSince1970), e = Int(end.timeIntervalSince1970)
+                return history.filter { $0.startTs >= s && $0.startTs < e }
+                    .reduce(0.0) { $0 + $1.weightKg * Double($1.reps) }
+            }
+        } else {
+            weeklyVolumes = []
+        }
+
+        seriesCache = [
+            .oneRM: OneRepMax.dailySparkline(history.map {
+                (day: dayKey($0.startTs), weightKg: $0.weightKg, reps: $0.reps)
+            }).map(\.estimatedKg),
+            .weight: byDay { Swift.max($0, $1.weightKg) },
+            .volume: byDay { $0 + $1.weightKg * Double($1.reps) },
+        ]
     }
 
     // MARK: - Header
@@ -576,7 +599,7 @@ struct ExerciseDetailScreen: View {
             // The axis chart, in a raised card (handoff: gridlines + y labels + MAY/JUN/HOY).
             if oneRM.count >= 2, !historyDays.isEmpty {
                 TrendAxisChart(values: oneRM,
-                               dates: historyDays.sorted { $0.ts < $1.ts }
+                               dates: historyDaysAscending
                                    .map { Date(timeIntervalSince1970: TimeInterval($0.ts)) },
                                xFirst: monthLabel(historyDays.last?.ts),
                                xMid: monthLabel(historyDays[historyDays.count / 2].ts),
@@ -672,19 +695,6 @@ struct ExerciseDetailScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// Volume (weight × reps) per calendar week, oldest→newest, over the last 7 weeks.
-    private var weeklyVolumes: [Double] {
-        let cal = Calendar.current
-        guard let thisWeek = cal.dateInterval(of: .weekOfYear, for: Date())?.start else { return [] }
-        return (0..<7).reversed().map { back in
-            guard let start = cal.date(byAdding: .weekOfYear, value: -back, to: thisWeek),
-                  let end = cal.date(byAdding: .weekOfYear, value: 1, to: start) else { return 0 }
-            let s = Int(start.timeIntervalSince1970), e = Int(end.timeIntervalSince1970)
-            return history.filter { $0.startTs >= s && $0.startTs < e }
-                .reduce(0.0) { $0 + $1.weightKg * Double($1.reps) }
-        }
-    }
-
     /// Seven rounded weekly bars — tints of the family hue, the latest week in full hue.
     private func weeklyBars(_ vols: [Double]) -> some View {
         WeeklyBarsChart(vols: vols, accent: familyTint, theme: theme,
@@ -726,21 +736,15 @@ struct ExerciseDetailScreen: View {
     /// A metric as a per-day series, oldest→newest. Max-weight takes the day's heaviest set;
     /// volume sums weight×reps over the day; 1RM reuses the cited `OneRepMax.dailySparkline`.
     private func series(_ metric: ProgressMetric) -> [Double] {
-        switch metric {
-        case .oneRM:
-            return OneRepMax.dailySparkline(history.map {
-                (day: dayKey($0.startTs), weightKg: $0.weightKg, reps: $0.reps)
-            }).map(\.estimatedKg)
-        case .weight:
-            return byDay { Swift.max($0, $1.weightKg) }
-        case .volume:
-            return byDay { $0 + $1.weightKg * Double($1.reps) }
-        }
+        seriesCache[metric] ?? []
     }
 
     private func byDay(_ combine: (Double, (startTs: Int, weightKg: Double, reps: Int, optedOut: Bool)) -> Double) -> [Double] {
         var acc: [String: Double] = [:]
-        for s in history { acc[dayKey(s.startTs)] = combine(acc[dayKey(s.startTs)] ?? 0, s) }
+        for s in history {
+            let key = dayKey(s.startTs)
+            acc[key] = combine(acc[key] ?? 0, s)
+        }
         return acc.sorted { $0.key < $1.key }.map(\.value)
     }
 
