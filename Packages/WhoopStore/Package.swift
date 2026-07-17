@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "WhoopStore",
     platforms: [.iOS(.v16), .macOS(.v13)],
-    products: [.library(name: "WhoopStore", targets: ["WhoopStore"])],
+    products: [.library(name: "WhoopStore", type: .static, targets: ["WhoopStore"])],
     dependencies: [
         .package(path: "../WhoopProtocol"),
         .package(path: "../StrandTraining"),
