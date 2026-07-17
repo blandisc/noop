@@ -240,14 +240,8 @@ final class Repository: ObservableObject {
         if let cached = receiptCache, Date.now.timeIntervalSince(cached.at) < 120 {
             return cached.value
         }
-        guard let store = await ensureStore() else {
-            receiptCache = (nil, Date.now)
-            return nil
-        }
-        guard let counts = try? await store.sampleCounts() else {
-            receiptCache = (nil, Date.now)
-            return nil
-        }
+        guard let store = await ensureStore() else { return nil }
+        guard let counts = try? await store.sampleCounts() else { return nil }
         let latest = (try? await store.latestHRSampleTs(deviceId: deviceId)) ?? nil
         let value: (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)? = (counts, latest)
         receiptCache = (value, Date.now)
