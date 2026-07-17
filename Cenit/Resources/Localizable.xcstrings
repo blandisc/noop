@@ -1,57 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Pull" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pull"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jalón"
-          }
-        }
-      }
-    },
-    "Legs" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legs"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pierna"
-          }
-        }
-      }
-    },
-    "set %lld/%lld" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "set %lld/%lld"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "serie %lld/%lld"
-          }
-        }
-      }
-    },
     "" : {
 
     },
@@ -1513,6 +1462,23 @@
         }
       }
     },
+    "%@ %lld sets" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$lld sets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$lld series"
+          }
+        }
+      }
+    },
     "%@ ↔ %@" : {
       "localizations" : {
         "en" : {
@@ -2712,23 +2678,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%d esta semana"
-          }
-        }
-      }
-    },
-    "%@ %lld sets" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ %2$lld sets"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ %2$lld series"
           }
         }
       }
@@ -5500,6 +5449,40 @@
         }
       }
     },
+    "+5 hard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+5 hard"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+5 exigente"
+          }
+        }
+      }
+    },
+    "+30 easy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+30 easy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+30 suave"
+          }
+        }
+      }
+    },
     "+LOAD" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6619,6 +6602,23 @@
         }
       }
     },
+    "30% hard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30% hard"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30% exigente"
+          }
+        }
+      }
+    },
     "30+" : {
       "localizations" : {
         "en" : {
@@ -6648,6 +6648,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "30D"
+          }
+        }
+      }
+    },
+    "55% easy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "55% easy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "55% suave"
           }
         }
       }
@@ -10241,6 +10258,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pregunta sobre tu recuperación, esfuerzo, sueño y entrenamientos, con base en tus propios números."
+          }
+        }
+      }
+    },
+    "Ask ChatGPT or Claude for a routine and bring the file in. Cénit never connects; you run the AI yourself." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask ChatGPT or Claude for a routine and bring the file in. Cénit never connects; you run the AI yourself."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pídele la rutina a ChatGPT o Claude y trae el archivo. Cénit nunca se conecta; tú corres la IA."
           }
         }
       }
@@ -14430,6 +14464,23 @@
         }
       }
     },
+    "Change this day's routine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change this day's routine"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar la rutina de este día"
+          }
+        }
+      }
+    },
     "Changes are saved to the routine when you leave or start." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16410,9 +16461,6 @@
         }
       }
     },
-    "COPIED FROM %@" : {
-
-    },
     "COPIED FROM %lld" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -16442,6 +16490,7 @@
       }
     },
     "Copies it to this set" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -18240,6 +18289,23 @@
         }
       }
     },
+    "Did you know your routine can raise itself?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Did you know your routine can raise itself?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Sabías que la rutina puede subir sola?"
+          }
+        }
+      }
+    },
     "Did you mark this meal?" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18550,6 +18616,74 @@
         }
       }
     },
+    "Discard import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard import"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descartar importación"
+          }
+        }
+      }
+    },
+    "Discard session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descartar sesión"
+          }
+        }
+      }
+    },
+    "Discard this import?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard this import?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Descartar esta importación?"
+          }
+        }
+      }
+    },
+    "Discard this session?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard this session?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Descartar esta sesión?"
+          }
+        }
+      }
+    },
     "Discard workout" : {
       "localizations" : {
         "es" : {
@@ -18617,6 +18751,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Desconectada"
+          }
+        }
+      }
+    },
+    "Dismiss" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descartar"
           }
         }
       }
@@ -19866,17 +20017,6 @@
         }
       }
     },
-    "Edit details…" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar detalles…"
-          }
-        }
-      }
-    },
     "Edit %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19890,6 +20030,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Editar %@"
+          }
+        }
+      }
+    },
+    "Edit details…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar detalles…"
           }
         }
       }
@@ -19938,7 +20089,11 @@
         }
       }
     },
+    "Edit routines and week" : {
+
+    },
     "Edit week" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -20229,6 +20384,7 @@
       }
     },
     "Empezar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -20991,6 +21147,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cada sesión"
+          }
+        }
+      }
+    },
+    "Every session prints its receipt. Save them and compare them in History." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every session prints its receipt. Save them and compare them in History."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada sesión imprime su recibo. Guárdalos y compáralos en Historial."
           }
         }
       }
@@ -22276,6 +22449,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "MODO FOCO · SERIE %1$lld DE %2$lld"
+          }
+        }
+      }
+    },
+    "Folder deleted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folder deleted"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carpeta borrada"
           }
         }
       }
@@ -24334,6 +24524,23 @@
         }
       }
     },
+    "Hit the target two sessions in a row and the routine raises the weight. Turn it on per exercise, from its card." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hit the target two sessions in a row and the routine raises the weight. Turn it on per exercise, from its card."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cumple la meta dos sesiones seguidas y la rutina te sube el peso. Actívala en cada ejercicio, desde su tarjeta."
+          }
+        }
+      }
+    },
     "Hold" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26050,6 +26257,23 @@
         }
       }
     },
+    "IMPORT · IN PROGRESS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IMPORT · IN PROGRESS"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IMPORTACIÓN · EN CURSO"
+          }
+        }
+      }
+    },
     "Import Apple Health export" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -26097,6 +26321,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importar exportación de WHOOP"
+          }
+        }
+      }
+    },
+    "Import your AI's plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import your AI's plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importa el plan de tu IA"
           }
         }
       }
@@ -27871,6 +28112,23 @@
         }
       }
     },
+    "Its logged sets won't be saved." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its logged sets won't be saved."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las series registradas no se guardarán."
+          }
+        }
+      }
+    },
     "Jot something for next time: how it felt, technique, a load tweak…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -28040,6 +28298,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seguir"
+          }
+        }
+      }
+    },
+    "Keep importing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep importing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seguir importando"
           }
         }
       }
@@ -29143,6 +29418,23 @@
         }
       }
     },
+    "Legs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legs"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pierna"
+          }
+        }
+      }
+    },
     "LEGS" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -30205,6 +30497,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Buscando tu banda…"
+          }
+        }
+      }
+    },
+    "Loose" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loose"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sueltas"
           }
         }
       }
@@ -33413,6 +33722,23 @@
         }
       }
     },
+    "New routine · pick exercises" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New routine · pick exercises"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nueva rutina · elige ejercicios"
+          }
+        }
+      }
+    },
     "New routine · templates · import" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -33420,6 +33746,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nueva rutina · plantillas · importar"
+          }
+        }
+      }
+    },
+    "New section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New section"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nueva sección"
           }
         }
       }
@@ -34129,6 +34472,23 @@
         }
       }
     },
+    "no day yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no day yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin día aún"
+          }
+        }
+      }
+    },
     "no different" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -34416,6 +34776,7 @@
       }
     },
     "No previous record" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -36517,6 +36878,23 @@
         }
       }
     },
+    "of your heart-rate reserve" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of your heart-rate reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de tu reserva cardíaca"
+          }
+        }
+      }
+    },
     "of your max" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -36952,6 +37330,7 @@
       }
     },
     "On the rise" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -37382,6 +37761,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "una señal pide cuidado"
+          }
+        }
+      }
+    },
+    "One tap adds the 40/60/80% ladder before your first heavy set." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One tap adds the 40/60/80% ladder before your first heavy set."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un toque agrega la escalera 40/60/80% antes de tu primera serie pesada."
           }
         }
       }
@@ -39538,6 +39934,23 @@
         }
       }
     },
+    "Plate calculator" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plate calculator"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calculadora de discos"
+          }
+        }
+      }
+    },
     "plates" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39699,6 +40112,7 @@
       }
     },
     "PREVIOUS" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -39760,6 +40174,7 @@
       }
     },
     "Previous, %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -39999,6 +40414,40 @@
         }
       }
     },
+    "Progression that earns itself" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progression that earns itself"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progresión que gana sola"
+          }
+        }
+      }
+    },
+    "Progression, rest by pulse, plate calculator… the workshop's tricks." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progression, rest by pulse, plate calculator… the workshop's tricks."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progresión, descanso por pulso, calculadora de discos… los trucos del taller."
+          }
+        }
+      }
+    },
     "projected" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -40173,6 +40622,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "jalón"
+          }
+        }
+      }
+    },
+    "Pull" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pull"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jalón"
           }
         }
       }
@@ -43330,6 +43796,35 @@
         }
       }
     },
+    "rest %@ + margin %@ bpm" : {
+      "comment" : "A subheading that displays the resting HR and the margin.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "rest %1$@ + margin %2$@ bpm"
+          }
+        }
+      }
+    },
+    "rest %lld + margin %lld bpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rest %1$lld + margin %2$lld bpm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reposo %1$lld + margen %2$lld bpm"
+          }
+        }
+      }
+    },
     "Rest %lld min" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -43411,6 +43906,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descanso entre series"
+          }
+        }
+      }
+    },
+    "Rest by heart, not by clock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest by heart, not by clock"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descanso por corazón, no por reloj"
           }
         }
       }
@@ -43547,6 +44059,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descanso terminado. %@"
+          }
+        }
+      }
+    },
+    "Rest down to" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest down to"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descansa hasta"
           }
         }
       }
@@ -44721,754 +45250,6 @@
         }
       }
     },
-    "Session in progress · finish it to edit" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Session in progress · finish it to edit"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sesión en curso · termínala para editar"
-          }
-        }
-      }
-    },
-    "Discard this import?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Discard this import?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Descartar esta importación?"
-          }
-        }
-      }
-    },
-    "IMPORT · IN PROGRESS" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "IMPORT · IN PROGRESS"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "IMPORTACIÓN · EN CURSO"
-          }
-        }
-      }
-    },
-    "The mapping you've done so far won't be saved." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The mapping you've done so far won't be saved."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El mapeo que llevas hasta ahora no se guardará."
-          }
-        }
-      }
-    },
-    "Keep importing" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keep importing"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seguir importando"
-          }
-        }
-      }
-    },
-    "Discard import" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Discard import"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descartar importación"
-          }
-        }
-      }
-    },
-    "Folder deleted" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Folder deleted"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carpeta borrada"
-          }
-        }
-      }
-    },
-    "New routine · pick exercises" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New routine · pick exercises"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nueva rutina · elige ejercicios"
-          }
-        }
-      }
-    },
-    "Change this day's routine" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change this day's routine"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cambiar la rutina de este día"
-          }
-        }
-      }
-    },
-    "no day yet" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "no day yet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sin día aún"
-          }
-        }
-      }
-    },
-    "Routines and week" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Routines and week"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rutinas y semana"
-          }
-        }
-      }
-    },
-    "Discard this session?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Discard this session?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Descartar esta sesión?"
-          }
-        }
-      }
-    },
-    "Its logged sets won't be saved." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Its logged sets won't be saved."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las series registradas no se guardarán."
-          }
-        }
-      }
-    },
-    "Discard session" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Discard session"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descartar sesión"
-          }
-        }
-      }
-    },
-    "Loose" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loose"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sueltas"
-          }
-        }
-      }
-    },
-    "New section" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New section"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nueva sección"
-          }
-        }
-      }
-    },
-    "Rest down to" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rest down to"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descansa hasta"
-          }
-        }
-      }
-    },
-    "rest %lld + margin %lld bpm" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "rest %1$lld + margin %2$lld bpm"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "reposo %1$lld + margen %2$lld bpm"
-          }
-        }
-      }
-    },
-    "your rest + %lld bpm margin" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your rest + %lld bpm margin"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu reposo + %lld bpm de margen"
-          }
-        }
-      }
-    },
-    "+5 hard" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+5 hard"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+5 exigente"
-          }
-        }
-      }
-    },
-    "+30 easy" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+30 easy"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+30 suave"
-          }
-        }
-      }
-    },
-    "30% hard" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "30% hard"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "30% exigente"
-          }
-        }
-      }
-    },
-    "55% easy" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "55% easy"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "55% suave"
-          }
-        }
-      }
-    },
-    "of your heart-rate reserve" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "of your heart-rate reserve"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "de tu reserva cardíaca"
-          }
-        }
-      }
-    },
-    "The workshop" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The workshop"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El taller"
-          }
-        }
-      }
-    },
-    "What Cénit can do" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What Cénit can do"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lo que Cénit sabe hacer"
-          }
-        }
-      }
-    },
-    "Things you may not have found yet" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Things you may not have found yet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cosas que quizá no has encontrado"
-          }
-        }
-      }
-    },
-    "Progression that earns itself" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progression that earns itself"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progresión que gana sola"
-          }
-        }
-      }
-    },
-    "Hit the target two sessions in a row and the routine raises the weight. Turn it on per exercise, from its card." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hit the target two sessions in a row and the routine raises the weight. Turn it on per exercise, from its card."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cumple la meta dos sesiones seguidas y la rutina te sube el peso. Actívala en cada ejercicio, desde su tarjeta."
-          }
-        }
-      }
-    },
-    "Rest by heart, not by clock" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rest by heart, not by clock"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descanso por corazón, no por reloj"
-          }
-        }
-      }
-    },
-    "The band tells you when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The band tells you when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La banda te avisa cuando tu pulso recuperó lo suficiente para volver a cargar. El tiempo fijo sigue ahí si lo prefieres."
-          }
-        }
-      }
-    },
-    "Import your AI's plan" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import your AI's plan"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importa el plan de tu IA"
-          }
-        }
-      }
-    },
-    "Ask ChatGPT or Claude for a routine and bring the file in. Cénit never connects; you run the AI yourself." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask ChatGPT or Claude for a routine and bring the file in. Cénit never connects; you run the AI yourself."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pídele la rutina a ChatGPT o Claude y trae el archivo. Cénit nunca se conecta; tú corres la IA."
-          }
-        }
-      }
-    },
-    "Warm-ups on a ramp" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Warm-ups on a ramp"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calentamientos en rampa"
-          }
-        }
-      }
-    },
-    "One tap adds the 40/60/80% ladder before your first heavy set." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One tap adds the 40/60/80% ladder before your first heavy set."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un toque agrega la escalera 40/60/80% antes de tu primera serie pesada."
-          }
-        }
-      }
-    },
-    "Plate calculator" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plate calculator"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calculadora de discos"
-          }
-        }
-      }
-    },
-    "Tap the weight during a session and it tells you which plates to load per side." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap the weight during a session and it tells you which plates to load per side."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toca el peso durante la sesión y te dice qué discos montar por lado."
-          }
-        }
-      }
-    },
-    "Thermal tickets" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Thermal tickets"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tickets térmicos"
-          }
-        }
-      }
-    },
-    "Every session prints its receipt. Save them and compare them in History." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Every session prints its receipt. Save them and compare them in History."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cada sesión imprime su recibo. Guárdalos y compáralos en Historial."
-          }
-        }
-      }
-    },
-    "Tricks" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tricks"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trucos"
-          }
-        }
-      }
-    },
-    "Did you know your routine can raise itself?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Did you know your routine can raise itself?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Sabías que la rutina puede subir sola?"
-          }
-        }
-      }
-    },
-    "Progression, rest by pulse, plate calculator… the workshop's tricks." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progression, rest by pulse, plate calculator… the workshop's tricks."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progresión, descanso por pulso, calculadora de discos… los trucos del taller."
-          }
-        }
-      }
-    },
-    "See the tricks" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See the tricks"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver los trucos"
-          }
-        }
-      }
-    },
-    "Dismiss" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dismiss"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descartar"
-          }
-        }
-      }
-    },
     "Routine deleted" : {
       "localizations" : {
         "en" : {
@@ -45515,6 +45296,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rutinas"
+          }
+        }
+      }
+    },
+    "Routines and week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Routines and week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rutinas y semana"
           }
         }
       }
@@ -46035,23 +45833,6 @@
         }
       }
     },
-    "Saved" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardado"
-          }
-        }
-      }
-    },
     "Save to:" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -46127,6 +45908,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "guardado"
+          }
+        }
+      }
+    },
+    "Saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado"
           }
         }
       }
@@ -46768,6 +46566,23 @@
         }
       }
     },
+    "See the tricks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See the tricks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver los trucos"
+          }
+        }
+      }
+    },
     "See why" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -46995,6 +46810,23 @@
         }
       }
     },
+    "Session in progress · finish it to edit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session in progress · finish it to edit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión en curso · termínala para editar"
+          }
+        }
+      }
+    },
     "Session live" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -47212,12 +47044,12 @@
     "Set %@" : {
 
     },
-    "Set %@ · %@ kg × %@ reps" : {
+    "Set %@ · %@ × %@ reps" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Set %1$@ · %2$@ kg × %3$@ reps"
+            "value" : "Set %1$@ · %2$@ × %3$@ reps"
           }
         }
       }
@@ -47314,6 +47146,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Serie %lld, %@, %@"
+          }
+        }
+      }
+    },
+    "set %lld/%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "set %lld/%lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "serie %lld/%lld"
           }
         }
       }
@@ -51674,6 +51523,23 @@
         }
       }
     },
+    "Tap the weight during a session and it tells you which plates to load per side." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the weight during a session and it tells you which plates to load per side."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca el peso durante la sesión y te dice qué discos montar por lado."
+          }
+        }
+      }
+    },
     "Tap to edit" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -52321,6 +52187,23 @@
         }
       }
     },
+    "The band tells you when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The band tells you when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La banda te avisa cuando tu pulso recuperó lo suficiente para volver a cargar. El tiempo fijo sigue ahí si lo prefieres."
+          }
+        }
+      }
+    },
     "The band, not the exact point, is the reading." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -52749,6 +52632,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El mapa vuelve a fresco. No se borra tu historial de entrenamientos: al registrar un nuevo entrenamiento, ese músculo se vuelve a cargar."
+          }
+        }
+      }
+    },
+    "The mapping you've done so far won't be saved." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The mapping you've done so far won't be saved."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El mapeo que llevas hasta ahora no se guardará."
           }
         }
       }
@@ -53530,6 +53430,23 @@
         }
       }
     },
+    "The workshop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The workshop"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El taller"
+          }
+        }
+      }
+    },
     "Then re-nudge every" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -53604,6 +53521,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hubo mucho movimiento o poca señal en reposo. Es normal, vuelve a intentar mañana."
+          }
+        }
+      }
+    },
+    "Thermal tickets" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thermal tickets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tickets térmicos"
           }
         }
       }
@@ -53740,6 +53674,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Están en «Mis rutinas», listas para entrenar."
+          }
+        }
+      }
+    },
+    "Things you may not have found yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Things you may not have found yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosas que quizá no has encontrado"
           }
         }
       }
@@ -55781,6 +55732,23 @@
         }
       }
     },
+    "Tricks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tricks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trucos"
+          }
+        }
+      }
+    },
     "Try 1 more week" : {
       "localizations" : {
         "es" : {
@@ -56103,6 +56071,7 @@
       }
     },
     "Unfiled" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -57196,23 +57165,6 @@
         }
       }
     },
-    "Volume vs the 10-20 band" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume vs the 10-20 band"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volumen vs la banda 10-20"
-          }
-        }
-      }
-    },
     "Volume per muscle" : {
       "localizations" : {
         "en" : {
@@ -57253,6 +57205,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Volumen por semana"
+          }
+        }
+      }
+    },
+    "Volume vs the 10-20 band" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume vs the 10-20 band"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volumen vs la banda 10-20"
           }
         }
       }
@@ -57653,6 +57622,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Serie de calentamiento"
+          }
+        }
+      }
+    },
+    "Warm-ups on a ramp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warm-ups on a ramp"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calentamientos en rampa"
           }
         }
       }
@@ -58853,6 +58839,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿Qué entrenas?"
+          }
+        }
+      }
+    },
+    "What Cénit can do" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Cénit can do"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que Cénit sabe hacer"
           }
         }
       }
@@ -61504,6 +61507,74 @@
         }
       }
     },
+    "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba, señales clásicas de que tu cuerpo está activado."
+          }
+        }
+      }
+    },
+    "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
+          }
+        }
+      }
+    },
+    "Your data from last night is arriving. The first sync of the day can take a few minutes." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data from last night is arriving. The first sync of the day can take a few minutes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos."
+          }
+        }
+      }
+    },
+    "your " : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your "
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu "
+          }
+        }
+      }
+    },
     "Your " : {
       "extractionState" : "manual",
       "localizations" : {
@@ -61719,23 +61790,6 @@
         }
       }
     },
-    "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up — classic signs your body is activated."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu carga autonómica de hoy, del 0 al 3. La estimamos comparando tu frecuencia cardíaca en reposo y tu HRV con tu propia línea base de 30 días: una FC en reposo más alta de lo normal y una HRV más baja empujan el número hacia arriba, señales clásicas de que tu cuerpo está activado."
-          }
-        }
-      }
-    },
     "Your autonomic load today, from 0 to 3. We estimate it by comparing today's resting heart rate and HRV with your own 30-day baseline: a higher-than-usual resting HR and a lower-than-usual HRV both push the number up: classic signs your body is activated." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -61766,40 +61820,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tus marcadores autonómicos se inclinan hacia el estrés hoy. Tómalo como un día enfocado en recuperarte."
-          }
-        }
-      }
-    },
-    "Your mid-sleep point still shifts night to night: it predicts your health better than total hours." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your mid-sleep point still shifts night to night: it predicts your health better than total hours."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu punto medio de sueño aún cambia de una noche a otra, predice tu salud mejor que el total de horas."
-          }
-        }
-      }
-    },
-    "your " : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your "
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu "
           }
         }
       }
@@ -61969,23 +61989,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu base ya está lista"
-          }
-        }
-      }
-    },
-    "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
           }
         }
       }
@@ -62176,23 +62179,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu apego de cada día aparecerá aquí conforme marques tus comidas."
-          }
-        }
-      }
-    },
-    "Your data from last night is arriving. The first sync of the day can take a few minutes." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your data from last night is arriving. The first sync of the day can take a few minutes."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos."
           }
         }
       }
@@ -62997,6 +62983,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your mid-sleep point still shifts night to night — it predicts your health better than total hours."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu punto medio de sueño aún cambia de una noche a otra, predice tu salud mejor que el total de horas."
+          }
+        }
+      }
+    },
+    "Your mid-sleep point still shifts night to night: it predicts your health better than total hours." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your mid-sleep point still shifts night to night: it predicts your health better than total hours."
           }
         },
         "es" : {
@@ -63892,6 +63895,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu reposo"
+          }
+        }
+      }
+    },
+    "your rest + %@ bpm margin" : {
+      "comment" : "A label that says \"your resting HR + margin\" in the HRV",
+      "isCommentAutoGenerated" : true
+    },
+    "your rest + %lld bpm margin" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your rest + %lld bpm margin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu reposo + %lld bpm de margen"
           }
         }
       }

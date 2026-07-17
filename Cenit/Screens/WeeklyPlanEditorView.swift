@@ -231,8 +231,13 @@ struct WeeklyPlanEditorView: View {
         return rows
     }
 
-    @ViewBuilder
     private func assignedDayRow(_ wd: Int) -> some View {
+        // Frontera de tipo preventiva (mismo fix del crash de previews, 2026-07-16).
+        AnyView(assignedDayRowBody(wd))
+    }
+
+    @ViewBuilder
+    private func assignedDayRowBody(_ wd: Int) -> some View {
         if let rid = schedule[wd], let r = routines.first(where: { $0.id == rid }) {
             let tint = routineTint(r)
             HStack(spacing: 10) {
@@ -436,32 +441,11 @@ struct WeeklyPlanEditorView: View {
                     }
                     divider
                 } else {
-                    // Decisión Fer (2026-07-16 v2): las carpetas son SUBDIVISIONES de esta lista —
-                    // banda troquel colapsable con conteo y «···» (renombrar / borrar con undo 4 s),
-                    // «Sueltas» al final. (Vivían en MisRutinasScreen, que no está ruteada en el app.)
-                    let byFolder = Dictionary(grouping: routines, by: \.folderId)
-                    ForEach(folders) { folder in
-                        let rs = byFolder[folder.id] ?? []
-                        folderBand(folder, count: rs.count)
-                        if !collapsedFolders.contains(folder.id) {
-                            ForEach(rs) { r in
-                                routineRow(r)
-                                if r.id != rs.last?.id { divider }
-                            }
-                        }
-                    }
-                    let unfiled = byFolder[nil] ?? []
-                    if !unfiled.isEmpty {
-                        sectionBand(String(localized: "Loose"), count: unfiled.count,
-                                    collapsed: collapsedFolders.contains(Self.unfiledSectionID),
-                                    toggle: { toggleCollapse(Self.unfiledSectionID) })
-                        if !collapsedFolders.contains(Self.unfiledSectionID) {
-                            ForEach(unfiled) { r in
-                                routineRow(r)
-                                if r.id != unfiled.last?.id { divider }
-                            }
-                        }
-                    }
+                    // Decisión Fer (2026-07-16 v2): carpetas = subdivisiones. FRONTERA DE TIPO
+                    // (AnyView): este bloque inline hacía explotar el layout de tipos de
+                    // AttributeGraph en el JIT de previews (crash SIGSEGV + VM 2.9 GB) — ver
+                    // Cenit-2026-07-16-220029.ips. No quitar sin re-verificar el canvas.
+                    foldersListErased
                     divider
                 }
                 // FER-952 (owner): the folded row hid two of its three doors (the popover clipped
@@ -504,6 +488,38 @@ struct WeeklyPlanEditorView: View {
             InstrumentoToolChip(systemImage: "folder.badge.plus", label: Text("New section")) { startNewFolder(moving: nil) }
         }
         .padding(.vertical, CenitMetrics.space2)
+    }
+
+    /// El cuerpo de secciones, borrado a AnyView — la frontera que mantiene chico el tipo de la
+    /// pantalla (fix del crash de previews, 2026-07-16). Ver nota en `routinesSection`.
+    private var foldersListErased: AnyView {
+        let byFolder = Dictionary(grouping: routines, by: \.folderId)
+        let unfiled = byFolder[nil] ?? []
+        return AnyView(
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(folders) { folder in
+                    let rs = byFolder[folder.id] ?? []
+                    folderBand(folder, count: rs.count)
+                    if !collapsedFolders.contains(folder.id) {
+                        ForEach(rs) { r in
+                            routineRow(r)
+                            if r.id != rs.last?.id { divider }
+                        }
+                    }
+                }
+                if !unfiled.isEmpty {
+                    sectionBand(String(localized: "Loose"), count: unfiled.count,
+                                collapsed: collapsedFolders.contains(Self.unfiledSectionID),
+                                toggle: { toggleCollapse(Self.unfiledSectionID) })
+                    if !collapsedFolders.contains(Self.unfiledSectionID) {
+                        ForEach(unfiled) { r in
+                            routineRow(r)
+                            if r.id != unfiled.last?.id { divider }
+                        }
+                    }
+                }
+            }
+        )
     }
 
     private func folderBand(_ f: RoutineFolder, count: Int) -> some View {

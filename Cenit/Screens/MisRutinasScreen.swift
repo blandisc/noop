@@ -131,22 +131,28 @@ struct MisRutinasScreen: View {
         let unfiled = byFolder[nil] ?? []
         return VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(folders) { folder in
-                    let rs = byFolder[folder.id] ?? []
-                    folderHeader(folder, count: rs.count)
-                    if !collapsedFolders.contains(folder.id) { routineList(rs) }
-                }
-                if !folders.isEmpty && !unfiled.isEmpty {
-                    sectionBand(String(localized: "Loose"), count: unfiled.count,
-                                collapsed: collapsedFolders.contains(Self.unfiledSectionID),
-                                toggle: { toggleCollapse(Self.unfiledSectionID) })
-                        .dropHighlight(dropTarget == Self.unfiledDropID, fill: theme.surface, stroke: theme.ink)
-                        .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: nil, items) }
-                            isTargeted: { setDropTarget(Self.unfiledDropID, $0) }
-                }
-                if folders.isEmpty || unfiled.isEmpty || !collapsedFolders.contains(Self.unfiledSectionID) {
-                    routineList(unfiled)
-                }
+                // FRONTERA DE TIPO (AnyView) — mismo fix del crash de AttributeGraph en previews
+                // que WeeklyPlanEditorView (2026-07-16); ver Cenit-2026-07-16-220029.ips.
+                AnyView(
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(folders) { folder in
+                            let rs = byFolder[folder.id] ?? []
+                            folderHeader(folder, count: rs.count)
+                            if !collapsedFolders.contains(folder.id) { routineList(rs) }
+                        }
+                        if !folders.isEmpty && !unfiled.isEmpty {
+                            sectionBand(String(localized: "Loose"), count: unfiled.count,
+                                        collapsed: collapsedFolders.contains(Self.unfiledSectionID),
+                                        toggle: { toggleCollapse(Self.unfiledSectionID) })
+                                .dropHighlight(dropTarget == Self.unfiledDropID, fill: theme.surface, stroke: theme.ink)
+                                .dropDestination(for: String.self) { items, _ in handleDrop(onFolder: nil, items) }
+                                    isTargeted: { setDropTarget(Self.unfiledDropID, $0) }
+                        }
+                        if folders.isEmpty || unfiled.isEmpty || !collapsedFolders.contains(Self.unfiledSectionID) {
+                            routineList(unfiled)
+                        }
+                    }
+                )
 
                 divider
                 actionRow("plus", "New routine") { showBuilder = true }
