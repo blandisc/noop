@@ -42,6 +42,11 @@ struct ExerciseLibraryScreen: View {
     @State private var selected: Set<String> = []
     @State private var detail: Exercise? = nil
     @State private var showCreate = false
+    @State private var filtered: [Exercise] = []
+    @State private var mine: [Exercise] = []
+    @State private var rest: [Exercise] = []
+    @State private var libraryGroups: [(key: String, items: [Exercise])] = []
+    @State private var searchDebounceTask: Task<Void, Never>? = nil
 
     private var addMode: Bool { onAdd != nil }
 
@@ -64,6 +69,17 @@ struct ExerciseLibraryScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { if addMode { addBar } }
         .task { await reload() }
+        .onChange(of: search) {
+            searchDebounceTask?.cancel()
+            searchDebounceTask = Task {
+                try? await Task.sleep(for: .milliseconds(150))
+                guard !Task.isCancelled else { return }
+                rebuildFiltered()
+            }
+        }
+        .onChange(of: muscle) { rebuildFiltered() }
+        .onChange(of: equipment) { rebuildFiltered() }
+        .onChange(of: typeFilter) { rebuildFiltered() }
         .sheet(item: $detail) { ex in
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
@@ -174,24 +190,8 @@ struct ExerciseLibraryScreen: View {
     // MARK: - List
 
     private var exerciseList: some View {
-        let rows = filtered   // filter the 800+ catalog once per body pass, not per ForEach read
-        let mine = rows.filter { historyIds.contains($0.id) }
-        let rest = rows.filter { !historyIds.contains($0.id) }
-        // «De la biblioteca» grouped by primary muscle (empty key → "Other"), sorted by display label.
-        let libraryGroups: [(key: String, items: [Exercise])] = {
-            var dict: [String: [Exercise]] = [:]
-            for ex in rest {
-                dict[ex.primaryMuscles.first ?? "", default: []].append(ex)
-            }
-            return dict.map { (key: $0.key, items: $0.value) }
-                .sorted { a, b in
-                    let la = a.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(a.key)
-                    let lb = b.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(b.key)
-                    return la.localizedCaseInsensitiveCompare(lb) == .orderedAscending
-                }
-        }()
-        return LazyVStack(alignment: .leading, spacing: 0) {
-            if loaded && rows.isEmpty {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            if loaded && filtered.isEmpty {
                 Text("No exercises match your filters.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, CenitMetrics.sectionGapCompact)
@@ -329,6 +329,7 @@ struct ExerciseLibraryScreen: View {
         equipmentOptions = Set(exercises.compactMap { $0.equipment }).sorted()
         await loadHistory()
         loaded = true
+        rebuildFiltered()
     }
 
     /// «Con historial tuyo» (1f): the exercises the user has ever logged, plus each one's best weight.
@@ -345,20 +346,34 @@ struct ExerciseLibraryScreen: View {
             best[id] = hist.map(\.weightKg).max()
         }
         bestKg = best
+        rebuildFiltered()
     }
 
     private func toggle(_ ex: Exercise) {
         if selected.contains(ex.id) { selected.remove(ex.id) } else { selected.insert(ex.id) }
     }
 
-    private var filtered: [Exercise] {
-        exercises.filter { ex in
+    private func rebuildFiltered() {
+        let rows = exercises.filter { ex in
             (search.isEmpty || ex.name.localizedCaseInsensitiveContains(search)
                 || (ex.nameES?.localizedCaseInsensitiveContains(search) ?? false))   // search both languages (FER-501)
             && (muscle == nil || ex.primaryMuscles.contains(muscle!) || ex.secondaryMuscles.contains(muscle!))
             && (equipment == nil || ex.equipment == equipment)
             && (typeFilter == nil || ex.type.rawValue == typeFilter!)
         }
+        filtered = rows
+        mine = rows.filter { historyIds.contains($0.id) }
+        rest = rows.filter { !historyIds.contains($0.id) }
+        var dict: [String: [Exercise]] = [:]
+        for ex in rest {
+            dict[ex.primaryMuscles.first ?? "", default: []].append(ex)
+        }
+        libraryGroups = dict.map { (key: $0.key, items: $0.value) }
+            .sorted { a, b in
+                let la = a.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(a.key)
+                let lb = b.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(b.key)
+                return la.localizedCaseInsensitiveCompare(lb) == .orderedAscending
+            }
     }
 }
 
