@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El jalón de la mañana termina antes y estorba menos / The morning catch-up finishes sooner and gets in the way less.**
+  **ES** — Durante «Descargando la noche…», Cénit ya no re-decodifica cada paquete una segunda vez (con hex por campo incluido) solo para decidir qué archivar, el vigilante de la descarga deja de re-armarse miles de veces por segundo, y el archivo de paquetes ilegibles se construye fuera del hilo de la interfaz — conservando la garantía de que todo queda guardado ANTES de confirmarle a la banda. El monitoreo en vivo también decodifica cada latido una sola vez. Cero cambios en lo que se le envía a la banda.
+  **EN** — During "Downloading the night…", Cénit no longer re-decodes every packet a second time (per-field hex included) just to decide what to archive, the download watchdog stops re-arming thousands of times a second, and the unreadable-packet archive is built off the UI thread — keeping the guarantee that everything is stored BEFORE confirming to the strap. Live monitoring also decodes each beat exactly once. Zero changes to what is sent to the strap.
+  ([Backfiller.swift](Cenit/Collect/Backfiller.swift), [HistoricalStreams.swift](Packages/WhoopProtocol/Sources/WhoopProtocol/HistoricalStreams.swift), [BLEManager.swift](Cenit/BLE/BLEManager.swift), [Collector.swift](Cenit/Collect/Collector.swift))
+
 - **Tendencias cierra sus últimas islas SF, en Grotesk / Trends closes its last SF islands, in Grotesk.**
   **ES** — Dos rincones que aún hablaban la tipografía numérica SF migran a **Space Grotesk**: los valores de las columnas del landing y la palabra de banda de Carga de entrenamiento en Cuerpo, y el readout del calendario de 90 días que se repite en Recuperación, Esfuerzo, Sueño y Estrés (FER-966). Sin cambio de tamaños, layout ni color.
   **EN** — Two corners still on the SF numeric typeface move to **Space Grotesk**: the landing's column values and the Training load band word in Body, and the 90-day calendar readout repeated across Recovery, Strain, Sleep and Stress (FER-966). No size, layout or color change.
