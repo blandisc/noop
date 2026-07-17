@@ -316,18 +316,9 @@ extension WhoopStore {
 
     /// Apple-Health daily aggregates for days in [from, to] (lexicographic compare), oldest first.
     public func appleDaily(deviceId: String, from: String, to: String) async throws -> [AppleDaily] {
+        // FER-970 (R-03): row SQL/mapping shared with `dashboardSnapshot` via the fetch helper.
         try syncRead { db in
-            try Row.fetchAll(db, sql: """
-                SELECT day, steps, activeKcal, basalKcal, vo2max, avgHr, maxHr, walkingHr, weightKg
-                FROM appleDaily
-                WHERE deviceId = ? AND day >= ? AND day <= ?
-                ORDER BY day ASC
-                """, arguments: [deviceId, from, to])
-                .map {
-                    AppleDaily(day: $0["day"], steps: $0["steps"], activeKcal: $0["activeKcal"],
-                               basalKcal: $0["basalKcal"], vo2max: $0["vo2max"], avgHr: $0["avgHr"],
-                               maxHr: $0["maxHr"], walkingHr: $0["walkingHr"], weightKg: $0["weightKg"])
-                }
+            try Self.fetchAppleDaily(db, deviceId: deviceId, from: from, to: to)
         }
     }
 

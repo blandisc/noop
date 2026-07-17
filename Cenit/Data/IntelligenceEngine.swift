@@ -317,8 +317,15 @@ final class IntelligenceEngine: ObservableObject {
         let motionFrom = AnalyticsEngine.localMidnight(now - (motionWindowDays - 1) * 86_400, tzOffsetSeconds: tzOffset)
         var dayCounts: [String: [Int: Int]] = [:]
         do {
-            dayCounts = try await store.streamDayCounts(deviceId: deviceId, from: min(nightsFrom, motionFrom),
-                                                        tzOffsetSeconds: tzOffset)
+            // FER-970 (R-02): per-table windows — only gravity (the motion block's signature)
+            // counts over the wide motion window; the 1 Hz night tables stop scanning 60 d.
+            // The COUNT window is quantized to the local midnight FLOOR of `nightsFrom` (QA D1):
+            // an unquantized start leaves the oldest night's boundary epoch-day with a PARTIAL
+            // count that slides with `now`, re-marking that night dirty every 15-min tick — the
+            // exact steady-state re-read FER-868's signature exists to prevent.
+            let countsFrom = AnalyticsEngine.localMidnight(nightsFrom, tzOffsetSeconds: tzOffset)
+            dayCounts = try await store.streamDayCounts(deviceId: deviceId, nightsFrom: countsFrom,
+                                                        motionFrom: motionFrom, tzOffsetSeconds: tzOffset)
         } catch {
             // No signature ⇒ can't prove anything clean: fall back to a full pass (correctness first).
             cache.nights = [:]; cache.signatures = [:]; cache.skippedDays = []; cache.motionSignature = [:]

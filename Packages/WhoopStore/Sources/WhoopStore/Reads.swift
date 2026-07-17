@@ -166,13 +166,19 @@ extension WhoopStore {
     /// can only move when rows were genuinely inserted (backfill, live) or deleted (safe-trim).
     /// `ts + tzOffset` is assumed non-negative (any real timestamp), so SQL's truncating division
     /// equals floor.
-    public func streamDayCounts(deviceId: String, from: Int,
+    /// FER-970 (R-02): two windows, one per consumer. The per-night signature only folds days
+    /// inside the nights window (~22 d), so hr/rr/resp/skinTemp/steps count from `nightsFrom`;
+    /// only the motion block — whose dirtiness reads the *gravity* counts — needs the wide
+    /// `motionFrom` (60 d with step estimation, 14 d without). Counting the 1 Hz night tables
+    /// over 60 d scanned ~3× the rows every 15-minute pass for signature days nobody folded.
+    public func streamDayCounts(deviceId: String, nightsFrom: Int, motionFrom: Int,
                                 tzOffsetSeconds: Int) async throws -> [String: [Int: Int]] {
         // hrSample/rrInterval/respSample/gravitySample/skinTempSample store the v21 integer
         // surrogate; stepSample still stores the TEXT deviceId (not migrated in v21).
         let intId = try await resolvedDeviceId(deviceId, createIfMissing: false)
+        let gravityFrom = min(nightsFrom, motionFrom)   // gravity feeds BOTH signatures
         return try syncRead { db in
-            func counts(table: String, id: DatabaseValueConvertible) throws -> [Int: Int] {
+            func counts(table: String, id: DatabaseValueConvertible, from: Int) throws -> [Int: Int] {
                 var out: [Int: Int] = [:]
                 let rows = try Row.fetchAll(db, sql: """
                     SELECT (ts + ?) / 86400 AS ld, COUNT(*) AS n FROM \(table)
@@ -184,13 +190,13 @@ extension WhoopStore {
             }
             var result: [String: [Int: Int]] = [:]
             if let intId {
-                result["hr"] = try counts(table: "hrSample", id: intId)
-                result["rr"] = try counts(table: "rrInterval", id: intId)
-                result["resp"] = try counts(table: "respSample", id: intId)
-                result["gravity"] = try counts(table: "gravitySample", id: intId)
-                result["skinTemp"] = try counts(table: "skinTempSample", id: intId)
+                result["hr"] = try counts(table: "hrSample", id: intId, from: nightsFrom)
+                result["rr"] = try counts(table: "rrInterval", id: intId, from: nightsFrom)
+                result["resp"] = try counts(table: "respSample", id: intId, from: nightsFrom)
+                result["gravity"] = try counts(table: "gravitySample", id: intId, from: gravityFrom)
+                result["skinTemp"] = try counts(table: "skinTempSample", id: intId, from: nightsFrom)
             }
-            result["steps"] = try counts(table: "stepSample", id: deviceId)
+            result["steps"] = try counts(table: "stepSample", id: deviceId, from: nightsFrom)
             return result
         }
     }
