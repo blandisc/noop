@@ -31,7 +31,7 @@ final class StreamDayCountsTests: XCTestCase {
     func testCountsPerLocalDayWithNonZeroTz() async throws {
         let store = try await WhoopStore.inMemory()
         try await seed(store)
-        let counts = try await store.streamDayCounts(deviceId: "dev1", from: 0, tzOffsetSeconds: tz)
+        let counts = try await store.streamDayCounts(deviceId: "dev1", nightsFrom: 0, motionFrom: 0, tzOffsetSeconds: tz)
         let day0 = localDay(d0), day1 = day0 + 1, day2 = day0 + 2
         XCTAssertEqual(counts["hr"], [day0: 2, day1: 1, day2: 1],
                        "the 23:30-local sample must land on its LOCAL day, not the UTC one")
@@ -45,9 +45,9 @@ final class StreamDayCountsTests: XCTestCase {
     func testExactDuplicateDoesNotChangeCounts() async throws {
         let store = try await WhoopStore.inMemory()
         try await seed(store)
-        let before = try await store.streamDayCounts(deviceId: "dev1", from: 0, tzOffsetSeconds: tz)
+        let before = try await store.streamDayCounts(deviceId: "dev1", nightsFrom: 0, motionFrom: 0, tzOffsetSeconds: tz)
         try await seed(store)   // ON CONFLICT DO NOTHING → identical rows insert nothing
-        let after = try await store.streamDayCounts(deviceId: "dev1", from: 0, tzOffsetSeconds: tz)
+        let after = try await store.streamDayCounts(deviceId: "dev1", nightsFrom: 0, motionFrom: 0, tzOffsetSeconds: tz)
         XCTAssertEqual(before, after)
     }
 
@@ -57,23 +57,38 @@ final class StreamDayCountsTests: XCTestCase {
         // A backfill fills a GAP in day 0: new ts, same old day. MAX(ts) over the store is unmoved;
         // the count is not — this is exactly why the signature is COUNT-based.
         _ = try await store.insert(Streams(hr: [HRSample(ts: d0 + 12 * 3_600, bpm: 70)]), deviceId: "dev1")
-        let counts = try await store.streamDayCounts(deviceId: "dev1", from: 0, tzOffsetSeconds: tz)
+        let counts = try await store.streamDayCounts(deviceId: "dev1", nightsFrom: 0, motionFrom: 0, tzOffsetSeconds: tz)
         XCTAssertEqual(counts["hr"]?[localDay(d0)], 3)
     }
 
     func testFromBoundExcludesOlderRows() async throws {
         let store = try await WhoopStore.inMemory()
         try await seed(store)
-        let counts = try await store.streamDayCounts(deviceId: "dev1", from: d0 + 86_400,
-                                                     tzOffsetSeconds: tz)
+        let counts = try await store.streamDayCounts(deviceId: "dev1", nightsFrom: d0 + 86_400,
+                                                     motionFrom: d0 + 86_400, tzOffsetSeconds: tz)
         XCTAssertNil(counts["hr"]?[localDay(d0)], "rows before `from` must not be counted")
         XCTAssertEqual(counts["hr"]?[localDay(d0) + 1], 1)
     }
 
     func testUnknownDeviceHasNoIntStreamCounts() async throws {
         let store = try await WhoopStore.inMemory()
-        let counts = try await store.streamDayCounts(deviceId: "ghost", from: 0, tzOffsetSeconds: 0)
+        let counts = try await store.streamDayCounts(deviceId: "ghost", nightsFrom: 0, motionFrom: 0,
+                                                     tzOffsetSeconds: 0)
         XCTAssertNil(counts["hr"])
         XCTAssertEqual(counts["steps"], [:])
+    }
+
+    /// FER-970 (R-02): per-table windows — the 1 Hz night tables count from `nightsFrom` only,
+    /// while gravity (the motion block's signature) keeps the wide `motionFrom` window.
+    func testPerTableWindowsNarrowNightTablesButKeepGravityWide() async throws {
+        let store = try await WhoopStore.inMemory()
+        try await seed(store)
+        let counts = try await store.streamDayCounts(deviceId: "dev1", nightsFrom: d0 + 86_400,
+                                                     motionFrom: 0, tzOffsetSeconds: tz)
+        XCTAssertNil(counts["hr"]?[localDay(d0)], "night tables must not count before nightsFrom")
+        XCTAssertEqual(counts["hr"]?[localDay(d0) + 1], 1)
+        XCTAssertEqual(counts["gravity"], [localDay(d0): 1],
+                       "gravity must keep counting over the wide motion window")
+        XCTAssertNil(counts["steps"]?[localDay(d0)], "steps follows the nights window")
     }
 }

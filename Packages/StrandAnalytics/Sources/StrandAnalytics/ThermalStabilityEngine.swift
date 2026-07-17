@@ -1,4 +1,5 @@
 import Foundation
+import WhoopProtocol
 
 // ThermalStabilityEngine.swift — nocturnal distal (wrist) warming magnitude + its night-to-night
 // stability. Pure, deterministic, DB-free. The NIGHT-TIME arm of the circadian thermal oscillation —
@@ -29,6 +30,27 @@ import Foundation
 // purely DESCRIPTIVE 3-band stability label. The bands are descriptive cutoffs (pinned by test), not
 // clinical thresholds.
 public enum ThermalStabilityEngine {
+
+    /// Onset → plateau warming (°C) for ONE night's in-bed skin-temp samples (ordered by ts), or
+    /// nil with too few (< 60). Onset = mean of the first ~15% of the window (falling asleep),
+    /// plateau = mean of the 40–90% window (the settled night) — the distal-warming shape of
+    /// Kräuchi & Wirz-Justice (see FER-850 / ANALYTICS). The value is a DIFFERENCE of raw ADC
+    /// means (/128 to °C), so any additive raw→°C band calibration cancels exactly.
+    /// Moved verbatim from the app layer (FER-972 · P-05) so the nightly pass can persist it
+    /// per night and the skin-temp sheet stops re-reading raw samples on open.
+    public static func warmingMagnitudeC(inBedRaw samples: [SkinTempSample]) -> Double? {
+        let n = samples.count
+        guard n >= 60 else { return nil }
+        let onsetHi = max(1, n * 15 / 100)
+        let plateauLo = n * 40 / 100
+        let plateauHi = max(plateauLo + 1, n * 90 / 100)
+        func meanRaw(_ r: ArraySlice<SkinTempSample>) -> Double {
+            Double(r.reduce(0) { $0 + $1.raw }) / Double(r.count)
+        }
+        let onset = meanRaw(samples[0..<onsetHi])
+        let plateau = meanRaw(samples[plateauLo..<plateauHi])
+        return (plateau - onset) / 128.0
+    }
 
     // MARK: - Tuning constants (pinned by test)
 
