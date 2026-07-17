@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Entrenar (the Train tab root) — «Pulir · arranque directo» (handoff, sobre «La Semana» FER-530)
 //
@@ -52,6 +53,8 @@ private struct EntrenarLanding: View {
     @EnvironmentObject var model: AppModel
     @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
@@ -253,6 +256,7 @@ private struct EntrenarLanding: View {
         .onChange(of: tabRouter.startTodaySession) { _, requested in
             if requested { consumeBriefStart() }
         }
+        .enableInjection()   // Inject: activa la recarga en caliente del hub (no-op en Release)
     }
 
     /// Consume the one-shot start request from the Daily Brief. Reuses `startToday()` (the same path as the
