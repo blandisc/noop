@@ -1465,14 +1465,6 @@ struct MetricDetailScreen: View {
 
     // MARK: - Fixed clinical bands (population range table) — SpO₂ (FER-252)
 
-    // MARK: - Nights below the clinical floor — SpO₂ (FER-252)
-
-    private func lowNightsReading(low: Int) -> LocalizedStringKey {
-        low == 0
-            ? "Every recent night sat in the healthy range."
-            : "Isolated low nights are usually noise (altitude, a cold, sensor fit). A sustained run is worth a look with a finger pulse oximeter."
-    }
-
     // MARK: - Intraday HR curve (FER-253)
 
     /// The peak of the day (max bpm), marked on the curve.
@@ -1637,7 +1629,7 @@ struct MetricDetailScreen: View {
     private var sparseEmptyState: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("No VO₂max yet")
-                .font(StrandFont.headline)
+                .font(InstrumentoType.groteskHeadline(17))
                 .foregroundStyle(theme.ink)
             Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap.")
                 .font(StrandFont.subhead)
@@ -1667,10 +1659,10 @@ struct MetricDetailScreen: View {
         let isSteps = spec.descriptor.key == "steps"
         return VStack(alignment: .leading, spacing: 12) {
             Text("Not enough history yet")
-                .font(StrandFont.headline)
+                .font(InstrumentoType.groteskHeadline(17))
                 .foregroundStyle(theme.ink)
             HStack(alignment: .firstTextBaseline) {
-                Text(isSteps ? "Gathering" : "Calibrating").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(isSteps ? "Gathering" : "Calibrating").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Text(isSteps ? "\(nights) / 7 days" : "\(nights) / 7 nights")
                     .font(StrandFont.captionNumber)
@@ -1768,7 +1760,6 @@ struct MetricDetailScreen: View {
         var centerLabel: LocalizedStringKey
         var fillColor: Color
         var disclosureTitle: LocalizedStringKey
-        var disclosureText: LocalizedStringKey
     }
 
 
@@ -1789,7 +1780,7 @@ struct MetricDetailScreen: View {
                 loLabelFrac: 0, hiLabelFrac: 1,   // SpO₂ labels are the domain ends (the bar's edges)
                 centerLabel: "healthy zone ≥ 95%",
                 fillColor: theme.verdict.opacity(0.26), // token-exempt: relleno de banda (área de dato, fuera de escala)
-                disclosureTitle: "Healthy zone", disclosureText: EX_SPO2_FLOOR)
+                disclosureTitle: "Healthy zone")
         }
         guard let s = baselineState, s.nValid >= 1 else { return nil }
         let band = Baselines.normalRange(s)
@@ -1805,7 +1796,7 @@ struct MetricDetailScreen: View {
             loLabelFrac: bandLoFrac, hiLabelFrac: bandHiFrac,   // labels sit under the band's actual edges
             centerLabel: "your normal range · \(s.nValid) nights",
             fillColor: metricHue.opacity(0.26), // token-exempt: relleno de banda (área de dato, fuera de escala)
-            disclosureTitle: "Your normal range", disclosureText: EX_RANGO)
+            disclosureTitle: "Your normal range")
     }
 
     /// The handoff's position slider: a 64%-wide normal-range track centered on the rail, with a circular
@@ -1856,9 +1847,8 @@ struct MetricDetailScreen: View {
 
     // MARK: - Ranges-mode fixed table (FER-469)
 
-    /// One datum of the stat strip. `value` is the formatted figure; `disclosure == nil` makes the cell
-    /// non-tappable (e.g. SpO₂'s average). The consistency cell carries `slot == "consistencia"` so the
-    /// strip routes it to the richer `consistencyDisclosure` (plain language + a steady/variable mini-visual).
+    /// One datum of the stat strip (display-only, per `tileStripFinal` below). `value` is the formatted
+    /// figure. The consistency cell carries `slot == "consistencia"`.
     private struct StatCell: Identifiable {
         let id = UUID()
         let slot: String
@@ -1867,7 +1857,6 @@ struct MetricDetailScreen: View {
         var unitSuffix: String? = nil
         var note: LocalizedStringKey? = nil
         let color: Color
-        var disclosure: (title: LocalizedStringKey, text: LocalizedStringKey)? = nil
     }
 
     private func statCells(_ window: MetricWindow) -> [StatCell] {
@@ -1894,15 +1883,13 @@ struct MetricDetailScreen: View {
     private func averageCell(_ window: MetricWindow) -> StatCell {
         let s = ComparisonEngine.stat(trendStatRows(window).map(\.value))
         return StatCell(slot: "promedio", label: "Average", value: fmt(s.mean),
-                        unitSuffix: unit.isEmpty ? nil : unit, color: theme.ink,
-                        disclosure: (title: "Average", text: EX_TREND))
+                        unitSuffix: unit.isEmpty ? nil : unit, color: theme.ink)
     }
 
     private func rangeCell(_ window: MetricWindow) -> StatCell {
         let s = ComparisonEngine.stat(trendStatRows(window).map(\.value))
         return StatCell(slot: "rango", label: "Range", value: "\(fmt(s.min))–\(fmt(s.max))",
-                        unitSuffix: unit.isEmpty ? nil : unit, color: theme.ink,
-                        disclosure: (title: "Range", text: EX_TREND))
+                        unitSuffix: unit.isEmpty ? nil : unit, color: theme.ink)
     }
 
     private func trendCell(_ window: MetricWindow) -> StatCell? {
@@ -1910,7 +1897,7 @@ struct MetricDetailScreen: View {
         let rounded = Int(abs(pct).rounded())
         let arrow = rounded == 0 ? "" : (pct >= 0 ? "▲ " : "▼ ")
         return StatCell(slot: "tendencia", label: "Trend", value: "\(arrow)\(rounded)%",
-                        color: trendDeltaColor(pct), disclosure: (title: "Trend", text: EX_TREND))
+                        color: trendDeltaColor(pct))
     }
 
     /// Colour for a period-over-period % change, by this metric's polarity: the good direction → verdict,
@@ -1930,7 +1917,7 @@ struct MetricDetailScreen: View {
         let steady = Int((cv * 100).rounded()) <= 10
         return StatCell(slot: "consistencia", label: "Consistency",
                         value: String(localized: steady ? "Steady" : "Variable"),
-                        color: theme.ink, disclosure: (title: "Consistency", text: EX_CONSIST_TECH))
+                        color: theme.ink)
     }
 
     private func spo2StatCells(_ window: MetricWindow) -> [StatCell] {
@@ -1942,8 +1929,7 @@ struct MetricDetailScreen: View {
         let low = recent.reduce(0) { $0 + ($1.value < threshold ? 1 : 0) }
         let nights = StatCell(slot: "lownights", label: "Nights < 95%", value: "\(low)",
                               note: "of \(recent.count)",
-                              color: low > 0 ? theme.warning : theme.verdict,
-                              disclosure: (title: "Nights below 95%", text: lowNightsReading(low: low)))
+                              color: low > 0 ? theme.warning : theme.verdict)
         return [avg, nights]
     }
 

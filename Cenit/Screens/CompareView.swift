@@ -194,7 +194,7 @@ struct CompareView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Compare").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Compare").font(InstrumentoType.groteskHeadline(28)).foregroundStyle(theme.ink)
             Text("Overlay signals, draw conclusions.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
@@ -346,7 +346,7 @@ struct CompareView: View {
     // — the earlier card padding squeezed "ALL"/«TODO» onto a second line. (FER-275)
     private var metricSection: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            Text("Metrics").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Metrics").groteskOverline().foregroundStyle(theme.inkTertiary)
 
             SegmentedPillControl(CompareRange.allCases, selection: $range, theme: theme) { $0.label }
                 .accessibilityLabel("Time range")
@@ -547,7 +547,7 @@ struct CompareView: View {
                     .foregroundStyle(theme.ink)
                 Spacer()
                 Text("r = \(signedR(p.r))")
-                    .font(StrandFont.number(18))
+                    .font(InstrumentoType.groteskNumber(18))
                     .foregroundStyle(tint)
             }
 
@@ -578,7 +578,7 @@ struct CompareView: View {
                                       @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(title).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(title).groteskOverline().foregroundStyle(theme.inkTertiary)
                 if let trailing {
                     Spacer(minLength: 8)
                     Text(trailing).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -692,7 +692,7 @@ private struct MetricPickerSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("Metrics").font(StrandFont.title2).foregroundStyle(theme.ink)
+                Text("Metrics").font(InstrumentoType.groteskHeadline(22)).foregroundStyle(theme.ink)
                 Text("Pick 2–4 to overlay.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .padding(.bottom, 4)
@@ -701,7 +701,7 @@ private struct MetricPickerSheet: View {
                     let metrics = MetricCatalog.inCategory(category)
                     if !metrics.isEmpty {
                         Text(MetricCatalog.localizedCategory(category))
-                            .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            .groteskOverline().foregroundStyle(theme.inkTertiary)
                             .padding(.top, 10)
                         VStack(spacing: 0) {
                             ForEach(Array(metrics.enumerated()), id: \.element.id) { i, metric in
