@@ -870,11 +870,29 @@ final class Repository: ObservableObject {
     /// Idempotent — only days without a stored day-mean are computed. Builds ONE recent waking reference
     /// (sleep excluded) and applies it to all days (documented approximation; the pattern signal is
     /// relative). No-op without RR / a usable reference. Additive: does NOT touch IntelligenceEngine.
+    /// FER-972 (P-03): day-keys already attempted this session that yielded no summary (no band
+    /// worn that day) — permanent gaps must not re-trigger the reference build on every open.
+    /// In-memory only; today (back == 0) is never memoized (its data keeps growing).
+    private var stressBackfillAttempted: Set<String> = []
+
     func backfillStressSummaries(days: Int = 60, restingHR: Double, maxHR: Double) async {
         guard let store = await ensureStore() else { return }
         let existing = await stressDaySummaries(days: days)
         let cal = Calendar.current
         let startOfToday = cal.startOfDay(for: Date())
+
+        // FER-972 (P-03): the 7-day waking reference (~700k RR rows + 7 sleep-span reads) was
+        // built BEFORE checking whether any day needed it — every sheet open paid it even with
+        // the whole window already summarized. Compute the pending set first and return early.
+        var pending: [Int] = []
+        for back in 0..<days {
+            let dayStart = cal.date(byAdding: .day, value: -back, to: startOfToday)!
+            let key = Repository.localDayKey(dayStart)
+            if existing[key]?.dayMean != nil { continue }
+            if back != 0, stressBackfillAttempted.contains(key) { continue }
+            pending.append(back)
+        }
+        guard !pending.isEmpty else { return }
 
         var refDays: [[RRInterval]] = [], refExcluded: [[ClosedRange<Int>]] = []
         for back in 1...7 {
@@ -888,10 +906,10 @@ final class Repository: ObservableObject {
                                                            restingHR: restingHR, maxHR: maxHR) else { return }
 
         var rows: [MetricPoint] = []
-        for back in 0..<days {
+        for back in pending {
             let dayStart = cal.date(byAdding: .day, value: -back, to: startOfToday)!
             let key = Repository.localDayKey(dayStart)
-            if existing[key]?.dayMean != nil { continue }                 // already summarized
+            if back != 0 { stressBackfillAttempted.insert(key) }   // P-03: gaps don't retry this session
             let dayEnd = cal.date(byAdding: .day, value: 1, to: dayStart)!
             let from = Int(dayStart.timeIntervalSince1970), to = Int(dayEnd.timeIntervalSince1970)
             let rr = await rrIntervals(from: from, to: to)
