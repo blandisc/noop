@@ -1276,49 +1276,54 @@ private struct CuerpoLanding: View {
         stressSeries = stored   // for the Stress stat's sparkline (FER-566)
 
         // Value-type snapshots for the off-main engines hop (FER-955).
-        let days = repo.days
-        let displayDays = repo.displayDays
-        let appleHealthDays = repo.appleHealthDays
-        let hasRecovery = repo.today?.recovery != nil
+        let days: [DailyMetric] = repo.days
+        let displayDays: [DailyMetric] = repo.displayDays
+        let appleHealthDays: Set<String> = repo.appleHealthDays
+        let hasRecovery: Bool = repo.today?.recovery != nil
         let sleeps = repo.sleeps
-        let age = model.profile.age
+        let age: Int = model.profile.age
         let sex = model.profile.sex
-        let todayKey = Repository.localDayKey(Date())
-        let regularityCutoff = Int(Date().timeIntervalSince1970) - 35 * 86_400
+        let todayKey: String = Repository.localDayKey(Date())
+        let regularityCutoff: Int = Int(Date().timeIntervalSince1970) - 35 * 86_400
 
         // Pure StrandAnalytics engines off MainActor (FER-955). Same expressions as before; only the
         // executor moves. Assignments return to main below, gated by `seq`.
-        let engines = await Task.detached(priority: .userInitiated) { () -> CuerpoLandingEngines in
+        let engines: CuerpoLandingEngines = await Task.detached(priority: .userInitiated) { () -> CuerpoLandingEngines in
+            let nightlyHrv: [Double?] = days.map(\.avgHrv)
             let recoveryCalibration = RecoveryScorer.calibrationNights(
-                nightlyHrv: days.map(\.avgHrv),
+                nightlyHrv: nightlyHrv,
                 hasRecovery: hasRecovery)
 
-            let stressModel = StressModel(days: displayDays, stored: stored,
-                                          todayKey: todayKey, appleDays: appleHealthDays)
+            let stressModel: StressModel? = StressModel(days: displayDays, stored: stored,
+                                                        todayKey: todayKey, appleDays: appleHealthDays)
 
             // Carga de entrenamiento (FER-705): today's ACWR + the replayed series, from the BAND-masked
             // dashboard — the same slice the recovery detail feeds `ReadinessEngine` (FER-632), so the card,
             // the «Your patterns» line and the verdict signal can never disagree on the band.
-            let bandMasked = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleHealthDays)
+            let bandMasked: [DailyMetric] = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleHealthDays)
             let readiness = ReadinessEngine.evaluate(days: bandMasked, today: todayKey)
-            let trainingLoad = TrainingLoadModel(
+            let acwrSeries: [(day: String, value: Double)] = ReadinessEngine.acwrSeries(days: bandMasked)
+                .map { (p: (day: String, ratio: Double)) -> (day: String, value: Double) in
+                    (day: p.day, value: p.ratio)
+                }
+            let trainingLoad: TrainingLoadModel = TrainingLoadModel(
                 acwr: readiness.acwr,
-                series: ReadinessEngine.acwrSeries(days: bandMasked).map { (day: $0.day, value: $0.ratio) },
+                series: acwrSeries,
                 days: bandMasked)
 
             // Trailing-N of `displayDays` — same cutoff+filter as `trailingDisplay`, inlined so we never
             // call MainActor-isolated helpers from this detached task. `DayKey.localFormatter` is the
             // same object `Repository.localDayKey` uses (nonisolated; FER-955).
             func trailing(_ n: Int) -> [DailyMetric] {
-                let cutoff = DayKey.localFormatter.string(
-                    from: Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date())
-                return displayDays.filter { $0.day >= cutoff }
+                let cutoffDate: Date = Calendar.current.date(byAdding: .day, value: -(n - 1), to: Date()) ?? Date()
+                let cutoff: String = DayKey.localFormatter.string(from: cutoffDate)
+                return displayDays.filter { (d: DailyMetric) -> Bool in d.day >= cutoff }
             }
 
-            let last7 = trailing(7)
+            let last7: [DailyMetric] = trailing(7)
             let fitnessAge = FitnessAgeEngine.snapshot(
-                rhrLast7: last7.map { $0.restingHr },
-                strainLast7: last7.map { $0.strain },
+                rhrLast7: last7.map { (d: DailyMetric) in d.restingHr },
+                strainLast7: last7.map { (d: DailyMetric) in d.strain },
                 age: age, sex: sex,
                 hasHeightWeight: true)
 
@@ -1335,18 +1340,24 @@ private struct CuerpoLanding: View {
             // comparable ones (sleep duration) are untouched. If the user is Apple-only, band RMSSD is empty →
             // `VitalityInputsBuilder`'s coverage gate drops the HRV factor rather than comparing SDNN to the
             // band norm. A strap-only user is the identity — `recentBand == recent`.
-            let recent = trailing(28)
-            let recentBand = SourceLens.maskForBaseline(recent, keep: .band, appleDays: appleHealthDays)
+            let recent: [DailyMetric] = trailing(28)
+            let recentBand: [DailyMetric] = SourceLens.maskForBaseline(recent, keep: .band, appleDays: appleHealthDays)
             // Sleep Regularity Index (FER-214) over a trailing ~35d of sessions, as 0–1 for the engine (SRI/100).
             // nil → the builder's duration proxy. Was `computeSleepRegularity()`; inlined for the hop (FER-955).
-            let sleepRegularity = SleepRegularityIndex.fromSessions(
-                sleeps.filter { $0.startTs >= regularityCutoff }).map { $0 / 100 }
+            let recentSleeps = sleeps.filter { (s: CachedSleepSession) -> Bool in s.startTs >= regularityCutoff }
+            let sleepRegularity: Double? = SleepRegularityIndex.fromSessions(recentSleeps).map { (sri: Double) -> Double in sri / 100.0 }
+            let nightlyRestingHR: [Double] = recentBand.compactMap { (d: DailyMetric) -> Double? in d.restingHr.map(Double.init) }
+            let nightlyRMSSD: [Double] = recentBand.compactMap { (d: DailyMetric) -> Double? in d.avgHrv }
+            let nightlySleepHours: [Double] = recent.compactMap { (d: DailyMetric) -> Double? in
+                d.totalSleepMin.map { (m: Double) -> Double in m / 60.0 }
+            }
+            let dailySteps: [Double] = recent.compactMap { (d: DailyMetric) -> Double? in d.steps.map(Double.init) }
             let vInputs = VitalityInputsBuilder.build(.init(
                 chronoAge: Double(age),
-                nightlyRestingHR: recentBand.compactMap { $0.restingHr.map(Double.init) },
-                nightlyRMSSD: recentBand.compactMap { $0.avgHrv },
-                nightlySleepHours: recent.compactMap { $0.totalSleepMin.map { $0 / 60 } },
-                dailySteps: recent.compactMap { $0.steps.map(Double.init) },
+                nightlyRestingHR: nightlyRestingHR,
+                nightlyRMSSD: nightlyRMSSD,
+                nightlySleepHours: nightlySleepHours,
+                dailySteps: dailySteps,
                 sleepRegularity: sleepRegularity))
             let vResult = VitalityEngine.compute(vInputs)
 

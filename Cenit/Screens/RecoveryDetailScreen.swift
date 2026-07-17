@@ -223,7 +223,10 @@ struct RecoveryDetailScreen: View {
     /// Your base: the 30-day mean of the recovery series (the same stat the normal range uses) —
     /// feeds the hero capsule and the trend's reference line. No new math. (FER-857)
     private var baseValue: Int? {
-        normalRange.map { Int(((Double($0.lo) + Double($0.hi)) / 2).rounded()) }
+        normalRange.map { (r: (lo: Int, hi: Int, n: Int)) -> Int in
+            let mid: Double = (Double(r.lo) + Double(r.hi)) / 2.0
+            return Int(mid.rounded())
+        }
     }
 
     /// The «estimado» marker restyled for the inverted field (paper inks). Same facts as
@@ -1270,13 +1273,16 @@ struct RecoveryDetailModel {
 
 #if DEBUG
 private func sampleRecoverySeries(days: Int = 120) -> [(day: String, value: Double)] {
-    let cal = Calendar(identifier: .gregorian)
-    let today = cal.startOfDay(for: Date())
-    let f = RecoveryDetailScreen.dayParser
-    return (0..<days).map { i in
-        let date = cal.date(byAdding: .day, value: -(days - 1 - i), to: today)!
-        let v = 62 + 24 * sin(Double(i) / 9.0) + Double((i * 17) % 13) - 6
-        return (f.string(from: date), Swift.max(8, Swift.min(98, v)))
+    let cal: Calendar = Calendar(identifier: .gregorian)
+    let today: Date = cal.startOfDay(for: Date())
+    let f: DateFormatter = RecoveryDetailScreen.dayParser
+    return (0..<days).map { (i: Int) -> (day: String, value: Double) in
+        let date: Date = cal.date(byAdding: .day, value: -(days - 1 - i), to: today)!
+        let wave: Double = 24.0 * sin(Double(i) / 9.0)
+        let jitter: Double = Double((i * 17) % 13) - 6.0
+        let v: Double = 62.0 + wave + jitter
+        let clamped: Double = Swift.max(8.0, Swift.min(98.0, v))
+        return (day: f.string(from: date), value: clamped)
     }
 }
 
@@ -1284,13 +1290,16 @@ private func sampleModel(score: Int?, calibration: Int?,
                          isEstimated: Bool = false, confidence: ScoreConfidence? = nil,
                          presentPrimaryDrivers: Int? = nil,
                          estimatedDirections: [AppleRecoveryEstimator.SignalDirection] = []) -> RecoveryDetailModel {
-    let series = score == nil && calibration != nil ? [] : sampleRecoverySeries()
-    let cal = Calendar(identifier: .gregorian)
-    let today = cal.startOfDay(for: Date())
-    let heat: [RecoveryDay] = (0..<90).reversed().map { off in
-        let date = cal.date(byAdding: .day, value: -off, to: today)!
-        let v = 60 + 26 * sin(Double(off) / 8.0) + Double((off * 13) % 17) - 8
-        return RecoveryDay(date: date, score: (off % 16 == 0) ? nil : Swift.max(8, Swift.min(98, v)))
+    let series: [(day: String, value: Double)] = score == nil && calibration != nil ? [] : sampleRecoverySeries()
+    let cal: Calendar = Calendar(identifier: .gregorian)
+    let today: Date = cal.startOfDay(for: Date())
+    let heat: [RecoveryDay] = (0..<90).reversed().map { (off: Int) -> RecoveryDay in
+        let date: Date = cal.date(byAdding: .day, value: -off, to: today)!
+        let wave: Double = 26.0 * sin(Double(off) / 8.0)
+        let jitter: Double = Double((off * 13) % 17) - 8.0
+        let v: Double = 60.0 + wave + jitter
+        let scoreVal: Double? = (off % 16 == 0) ? nil : Swift.max(8.0, Swift.min(98.0, v))
+        return RecoveryDay(date: date, score: scoreVal)
     }
     // An Apple estimate has no band-baseline decomposition (mirrors reality: `RecoveryImpact` returns nil),
     // so the estimated coverage block stands in for the points block.
@@ -1307,6 +1316,7 @@ private func sampleModel(score: Int?, calibration: Int?,
             .init(key: "hrv",   unit: .millis,  yesterday: 48, today: 61, deltaContribution: 0.42),
             .init(key: "sleep", unit: .percent, yesterday: 84, today: 91, deltaContribution: 0.10),
         ])
+    let recoveryVals: [Double] = series.map { (p: (day: String, value: Double)) -> Double in p.value }
     return RecoveryDetailModel(
         score: score,
         calibration: calibration,
@@ -1318,7 +1328,7 @@ private func sampleModel(score: Int?, calibration: Int?,
         load: calibration != nil ? nil : .init(acwr: 1.05, monotony: 1.4, bandLabel: "In balance", bandFlag: .good),
         loaded: true,
         isAppleHealth: isEstimated,
-        forecast: RecoveryForecast.compute(recovery: series.map { $0.value }),
+        forecast: RecoveryForecast.compute(recovery: recoveryVals),
         isEstimated: isEstimated,
         confidence: confidence,
         presentPrimaryDrivers: presentPrimaryDrivers,

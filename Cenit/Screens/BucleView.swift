@@ -901,8 +901,18 @@ private struct PatronesLanding: View {
     // MARK: §1 · Calibrating hero (cold start)
 
     private var calibratingHero: some View {
-        let pct = Int((Double(min(usableNights, Self.calibrationTarget)) / Double(Self.calibrationTarget) * 100).rounded())
+        let capped: Int = min(usableNights, Self.calibrationTarget)
+        let pct: Int = Int((Double(capped) / Double(Self.calibrationTarget) * 100.0).rounded())
         return VStack(alignment: .leading, spacing: 0) {
+            calibratingHeroTitle
+            calibratingHeroProgress(capped: capped, pct: pct)
+        }
+        .padding(.top, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var calibratingHeroTitle: some View {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
                 StrandIcon.clock.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Still watching").instrumentoOverline()
@@ -917,19 +927,20 @@ private struct PatronesLanding: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 10)
-            VStack(spacing: 6) {
-                HStack {
-                    Text("\(min(usableNights, Self.calibrationTarget)) of \(Self.calibrationTarget) days")
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    Spacer()
-                    Text(verbatim: "\(pct)%").font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
-                }
-                calibrationBar
-            }
-            .padding(.top, 14)
         }
-        .padding(.top, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func calibratingHeroProgress(capped: Int, pct: Int) -> some View {
+        VStack(spacing: 6) {
+            HStack {
+                Text("\(capped) of \(Self.calibrationTarget) days")
+                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                Spacer()
+                Text(verbatim: "\(pct)%").font(StrandFont.number(11, weight: .regular)).foregroundStyle(theme.inkTertiary)
+            }
+            calibrationBar
+        }
+        .padding(.top, 14)
     }
 
     /// A thin paper progress bar for the calibration count (matches the handoff's full-width rule).
