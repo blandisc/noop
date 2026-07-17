@@ -91,7 +91,11 @@ targets:
         # single source (settings.base.CURRENT_PROJECT_VERSION below) instead of a literal here.
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSApplicationCategoryType: public.app-category.healthcare-fitness
-        UILaunchScreen: {}
+        # Warm-paper launch background so the pre-first-frame window matches «Hoy»'s `.base` paper
+        # (#F4F1E8) instead of a system white flash before SwiftUI paints (perf/polish). The color
+        # asset lives in CenitApp/Resources/Assets.xcassets/LaunchBackground.colorset.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UISupportedInterfaceOrientations~ipad:

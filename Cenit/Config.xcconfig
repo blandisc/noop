@@ -1,3 +1,11 @@
 // Base build configuration for the Cenit target (referenced by project.yml).
-// Currently empty: the exercise-media downloader no longer needs an API key — since FER-786 it
-// fetches each exercise's baked `gifUrl` directly from ExerciseDB's public CDN, by native id.
+//
+// The exercise-media downloader no longer needs an API key — since FER-786 it fetches each
+// exercise's baked `gifUrl` directly from ExerciseDB's public CDN, by native id.
+//
+// Type-check instrumentation (perf): the Swift compiler emits a warning for any function body or
+// single expression that takes longer than the threshold (ms) to type-check, tagged with file:line.
+// That warning list is the measured, non-guesswork target for splitting the monolithic SwiftUI
+// `body`s (LiveStrengthSheet / TodayView / MetricDetailScreen) whose type-checking dominates the
+// app target's incremental build. Compiler-side only; no effect on shipped code.
+OTHER_SWIFT_FLAGS = $(inherited) -Xfrontend -warn-long-function-bodies=100 -Xfrontend -warn-long-expression-type-checking=100

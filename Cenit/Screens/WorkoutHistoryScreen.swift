@@ -1280,13 +1280,20 @@ enum StrengthHistoryFormat {
         return String(localized: "\(minutes / 60) h \(minutes % 60) min")
     }
 
-    /// Total volume in the user's unit, with thousands grouping: "3,325 kg" / "7,330 lb".
-    static func volume(_ kg: Double, system: UnitSystem) -> String {
-        let value = system == .imperial ? UnitFormatter.kgToPounds(kg) : kg
+    /// Reused across every session row's volume label — building a `NumberFormatter` is hundreds of µs,
+    /// and `volume(_:system:)` is called once per visible row in the history `LazyVStack` (was allocating
+    /// a fresh formatter each time → scroll jank). Same `static let` pattern as `dateTimeFormatter` above.
+    private static let volumeFormatter: NumberFormatter = {
         let f = NumberFormatter()
         f.numberStyle = .decimal
         f.maximumFractionDigits = 0
-        let num = f.string(from: NSNumber(value: value.rounded())) ?? "\(Int(value.rounded()))"
+        return f
+    }()
+
+    /// Total volume in the user's unit, with thousands grouping: "3,325 kg" / "7,330 lb".
+    static func volume(_ kg: Double, system: UnitSystem) -> String {
+        let value = system == .imperial ? UnitFormatter.kgToPounds(kg) : kg
+        let num = volumeFormatter.string(from: NSNumber(value: value.rounded())) ?? "\(Int(value.rounded()))"
         return "\(num) \(StrengthDisplay.weightUnit(system))"
     }
 
