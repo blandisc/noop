@@ -69,7 +69,9 @@ struct RecoveryDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            // FER-964: Lazy so the model reveal (FER-954 swap) only builds the visible sections —
+            // an eager VStack laid out the whole fold (charts + Calendario 90 + método) in one frame.
+            LazyVStack(alignment: .leading, spacing: 0) {
                 if !model.loaded {
                     Group {
                         heroFlat
