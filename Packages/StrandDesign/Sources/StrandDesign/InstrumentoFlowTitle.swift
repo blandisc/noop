@@ -29,6 +29,10 @@ public struct InstrumentoFlowTitle: View {
                 .font(InstrumentoType.groteskScreenTitle)
                 .tracking(InstrumentoType.groteskScreenTitleTracking)
                 .foregroundStyle(theme.ink)
+                // Un nombre largo envuelve a dos líneas; el interlineado por defecto del Grotesk 25 bold
+                // las apretaba. 4pt de aire las separa sin abrir de más los títulos de un solo renglón
+                // (lineSpacing solo actúa ENTRE líneas, así que los de una línea no se mueven).
+                .lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -39,6 +43,9 @@ public struct InstrumentoFlowTitle: View {
     VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
         InstrumentoFlowTitle(overline: Text(verbatim: "TODAY'S ROUTINE"), Text(verbatim: "Pierna"))
         InstrumentoFlowTitle(Text(verbatim: "My workouts"))
+        // Nombre largo → dos líneas: el interlineado de 4pt las deja respirar.
+        InstrumentoFlowTitle(overline: Text(verbatim: "VIE 10 JUL · 18:04"),
+                             Text(verbatim: "Empuje pesado de pecho y hombros"))
     }
     .frame(width: 390, alignment: .leading)
     .padding(CenitMetrics.screenPadding)

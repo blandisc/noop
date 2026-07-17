@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Entrenar: el título del detalle de sesión respira cuando el nombre es largo / Train: the session-detail title breathes when the name is long.**
+  **ES** — Cuando el nombre del entrenamiento cae a dos líneas (p. ej. «Empuje pesado de pecho y hombros»), las dos líneas del título ya no se apretaban: 4 pt de interlineado las separan. Los títulos de un solo renglón no se mueven.
+  **EN** — When a workout name wraps to two lines (e.g. "Heavy chest and shoulders push"), the title's two lines no longer sit cramped: 4 pt of line spacing separates them. Single-line titles are unaffected.
+  ([InstrumentoFlowTitle.swift](Packages/StrandDesign/Sources/StrandDesign/InstrumentoFlowTitle.swift))
+
 - **Tendencias: las gráficas se pueden scrubear con el dedo y se leen en VoiceOver / Trends: charts scrub by finger and read aloud in VoiceOver (FER-977).**
   **ES** — En Comparar el crosshair ya se mueve con el dedo (antes solo trackpad/mouse); `TrendChart`, `GraficaRangos` y la curva de esfuerzo del día anuncian label + valor (punto bajo el dedo o el último); y cuatro controles de las hojas de Tendencias llegan a 44 pt de toque sin cambiar el dibujo.
   **EN** — On Compare the crosshair now follows a finger (it only responded to trackpad/mouse before); `TrendChart`, `GraficaRangos` and the day-strain curve announce a label + value (point under the finger or the last one); and four Trends-sheet controls meet the 44 pt touch target without changing how anything looks.
