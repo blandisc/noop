@@ -35,6 +35,15 @@ struct MuscleVolumeScreen: View {
     }
 
     @State private var span: Span = .d30
+    /// The method note («sets per week · the 10–20 band»), shown on demand from the ⓘ (FER-952).
+    @State private var showMethodInfo = false
+    /// Measured height of the ⓘ sheet's content — drives a fitted detent (no dead paper below).
+    @State private var infoSheetHeight: CGFloat = 220
+
+    private struct InfoSheetHeightKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+    }
     /// Work sets over the trailing year, expanded to per-muscle events (one fetch; the span slices).
     @State private var events: [MuscleFatigueMap.MuscleSetEvent] = []
     @State private var loaded = false
@@ -52,14 +61,21 @@ struct MuscleVolumeScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Volume per muscle")
-                    .font(InstrumentoType.grotesk(25, weight: .bold, relativeTo: .title2))
-                    .foregroundStyle(theme.ink)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Volume per muscle")
+                        .font(InstrumentoType.groteskScreenTitle)
+                        .tracking(InstrumentoType.groteskScreenTitleTracking)
+                        .foregroundStyle(theme.ink)
+                    // FER-952: the method note moved behind the ⓘ — it only speaks when asked.
+                    Button { showMethodInfo = true } label: {
+                        Image(systemName: "info.circle").font(StrandFont.glyph(.inline))
+                            .foregroundStyle(theme.inkTertiary)
+                            .frame(width: 44, height: 44).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("How this is measured"))
+                }
                 spanPicker
-                    .padding(.top, 12)
-                Text("Sets per week · the gray band is the 10–20 range (Schoenfeld 2017)")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 12)
                 if loaded {
                     if volumes.isEmpty {
@@ -67,8 +83,9 @@ struct MuscleVolumeScreen: View {
                     } else {
                         rows.padding(.top, 6)
                         railAxisMarks.padding(.top, 4)
-                        insight.padding(.top, 14)
-                        methodNote.padding(.top, 12)
+                        // FER-952 v2 (owner): the VERDICT stays on screen (it's today's datum); the
+                        // METHOD paragraph moved behind the ⓘ.
+                        insightLine.padding(.top, 12)
                     }
                 }
             }
@@ -79,6 +96,31 @@ struct MuscleVolumeScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .task { await load() }
+        // The method + the verdict, on demand (FER-952). The sheet HUGS its content: a measured-height
+        // detent, so there's no dead paper below the last line.
+        .sheet(isPresented: $showMethodInfo) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                Text("Volume per muscle").groteskSheetTitle().textCase(.uppercase)
+                    .foregroundStyle(theme.inkTertiary)
+                Text("Sets per week · the gray band is the 10–20 range (Schoenfeld 2017)")
+                    .font(StrandFont.body).foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Each bar counts the WORK sets that loaded that muscle as a primary mover, averaged per week over the selected span. Warm-ups don't count.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("The 10–20 band is a hypertrophy guide per muscle group (Schoenfeld 2017); the number shown is sets weighted by involvement, so secondary muscles count less.")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(CenitMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { geo in
+                Color.clear.preference(key: InfoSheetHeightKey.self, value: geo.size.height)
+            })
+            .onPreferenceChange(InfoSheetHeightKey.self) { infoSheetHeight = $0 }
+            .presentationDetents([.height(max(infoSheetHeight, 120))])
+            .presentationBackground(theme.paper)
+        }
     }
 
     // MARK: - Span picker (30 d / 90 d / 6 m / 1 y) — the shared Instrumento segmented control
@@ -113,9 +155,10 @@ struct MuscleVolumeScreen: View {
                     RoundedRectangle(cornerRadius: 3).fill(theme.hairline)  // token-exempt: geometría de dato
                         .frame(width: w * (hi - lo), height: 14)
                         .offset(x: w * lo)
-                    // the datum
+                    // the datum — each muscle wears its movement-family hue (handoff «Mis
+                    // entrenamientos»: bars tell apart at a glance); below-band keeps the warning.
                     RoundedRectangle(cornerRadius: 3)  // token-exempt: geometría de dato
-                        .fill(below ? theme.warning : theme.ink)
+                        .fill(below ? theme.warning : theme.movementFamilyTint(primaryMuscles: [v.muscle]))
                         .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
                 }
                 .frame(height: 14, alignment: .leading)
@@ -125,7 +168,7 @@ struct MuscleVolumeScreen: View {
                 .font(StrandFont.captionNumber)
                 .fontWeight(below ? .semibold : .regular)
                 .foregroundStyle(below ? theme.warning : theme.ink)
-                .frame(width: 34, alignment: .trailing)
+                .frame(minWidth: 34, alignment: .trailing)
         }
         .frame(minHeight: 46)
         .accessibilityElement(children: .ignore)
@@ -178,20 +221,6 @@ struct MuscleVolumeScreen: View {
 
     // MARK: - Insight foot — names the below-band muscles, actionably
 
-    private var insight: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
-            Circle().fill(belowBand.isEmpty ? theme.verdict : theme.warning)
-                .frame(width: 8, height: 8)
-                .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
-            insightText
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.top, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
-        .accessibilityElement(children: .combine)
-    }
 
     @ViewBuilder private var insightText: some View {
         if belowBand.isEmpty {
@@ -205,13 +234,18 @@ struct MuscleVolumeScreen: View {
         }
     }
 
-    // MARK: - Method note — how to read the band and the number honestly
-
-    private var methodNote: some View {
-        Text("The 10–20 band is a hypertrophy guide per muscle group (Schoenfeld 2017); the number shown is sets weighted by involvement, so secondary muscles count less.")
-            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+    /// The verdict line, ON the screen (FER-952 v2): which muscles sit below the band today.
+    private var insightLine: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Circle().fill(belowBand.isEmpty ? theme.verdict : theme.warning)
+                .frame(width: 8, height: 8)
+                .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
+            insightText
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Empty

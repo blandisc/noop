@@ -33,8 +33,14 @@ import StrandTraining
 // boundary, FER-162); the per-muscle detail rides a nested `.sheet(item:)`, NO nested NavigationStack
 // (FER-171).
 
+/// Ruta de las barras «volumen vs banda 10–20» (hija del mapa en el stack de Entrenar, 2026-07-16).
+struct MuscleVolumeBarsRoute: Hashable {}
+
 struct MuscleMapScreen: View {
     let theme: InstrumentoTheme
+    /// true cuando vive EMPUJADO en el stack de Entrenar: muestra el enlace a las barras vs banda.
+    /// false como hoja desde Cuerpo (ahí no hay stack — el enlace sería inerte, FER-171).
+    var showsVolumeLink: Bool = false
     @EnvironmentObject var repo: Repository
 
     /// All completed work sets in the trailing 84 days, expanded to per-muscle events (one fetch). The
@@ -97,6 +103,7 @@ struct MuscleMapScreen: View {
                     } else {
                         figures
                         if !rankingLoads.isEmpty { ranking }
+                        if showsVolumeLink { volumeBarsLink }
                         method
                     }
                 }
@@ -417,6 +424,22 @@ struct MuscleMapScreen: View {
                 .accessibilityElement(children: .combine)
             }
         }
+    }
+
+    /// Enlace quieto a «Volumen por músculo» (barras vs banda 10–20) — solo en el stack de Entrenar.
+    private var volumeBarsLink: some View {
+        NavigationLink(value: MuscleVolumeBarsRoute()) {
+            HStack(spacing: 8) {
+                Image(systemName: "chart.bar").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkSecondary)
+                Text("Volume vs the 10-20 band").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                Spacer(minLength: 0)
+                StrandIcon.disclosure.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Method foot — the one-line method with its cite, expanding into the full paragraph

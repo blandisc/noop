@@ -57,13 +57,11 @@ struct WeeklyPlanEditorView: View {
     /// Days since each routine was last trained (`routineId → whole days`), for the «hace N d» column.
     @State private var lastTrainedDays: [String: Int] = [:]
     @State private var showBuilder = false
-    /// The routine the builder just created; pushed onto «Rutina» when its sheet finishes dismissing
-    /// (pushing mid-dismiss stacks transitions, FER-171 lesson).
-    @State private var savedRoutineId: String? = nil
     @State private var showTemplates = false
     @State private var showImport = false
     @State private var swipedRoutineId: String? = nil
     @State private var pendingUndo: DeletedRoutine? = nil
+    @State private var pendingFolderUndo: DeletedFolder? = nil
     @State private var showNewFolder = false
     @State private var newFolderName = ""
     @State private var pendingMove: Routine? = nil
@@ -71,7 +69,11 @@ struct WeeklyPlanEditorView: View {
     @State private var renameText = ""
     // FER-837: which «···» paper menu is open (routine id / the tools row).
     @State private var menuRoutineId: String? = nil
-    @State private var showToolsMenu = false
+    /// Secciones colapsadas (carpetas como subdivisiones, decisión Fer 2026-07-16).
+    @State private var collapsedFolders: Set<String> = []
+    /// El «···» de banda abierto (renombrar / borrar carpeta).
+    @State private var menuFolderId: String? = nil
+    private static let unfiledSectionID = "unfiled-section"
 
     /// Monday-first display order in the Calendar weekday convention (2 = Mon … 1 = Sun).
     private let weekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -103,18 +105,15 @@ struct WeeklyPlanEditorView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .overlay(alignment: .bottom) { if let d = pendingUndo { undoBanner(d) } }
+        .overlay(alignment: .bottom) {
+            if let d = pendingUndo { undoBanner(d) }
+            else if let fd = pendingFolderUndo { folderUndoBanner(fd) }
+        }
         .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
-        // Create-only builder (FER-840): saving hands back the new routine's id, and the dismissed sheet
-        // opens it straight on the unified «Rutina» editor (opening mid-dismiss stacks transitions — FER-171).
-        .sheet(isPresented: $showBuilder, onDismiss: {
-            if let id = savedRoutineId { savedRoutineId = nil; openRoutine(id) }
-        }) {
-            RoutineBuilderScreen { id in
-                savedRoutineId = id
-                await load()
-            }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        // FER-952 unified flow: «＋ Nueva rutina» PUSHES the library as a screen (no sheet); adding
+        // the picks creates the routine on the spot and lands on the unified «Rutina» editor.
+        .navigationDestination(isPresented: $showBuilder) {
+            ExerciseLibraryScreen(createFlow: true) { picks in createRoutine(picks) }
         }
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
@@ -152,14 +151,11 @@ struct WeeklyPlanEditorView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Handoff: the same Grotesk hero voice as the hub (FER-939) — overline 12/2.4, title 28/−0.8.
-            Text("Your plan")
-                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-            Text("This week")
-                .font(InstrumentoType.grotesk(28, weight: .bold)).tracking(-0.8)
+            // FER-952 (owner, propuesta C aprobada): ONE integrated hero title — «Your weekly plan» —
+            // no overline; the count rides as the subtitle. Nothing else on the screen changes.
+            Text("Your weekly plan")
+                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                 .foregroundStyle(theme.ink)
-                .padding(.top, 2)
             if loaded && !routines.isEmpty {
                 // Handoff v4b: a terse count («4 días · 3 rutinas»), not an opinion.
                 Text("\(assignedCount) days · \(routines.count) routines")
@@ -199,8 +195,11 @@ struct WeeklyPlanEditorView: View {
     @ViewBuilder
     private func dayRow(_ wd: Int) -> some View {
         if schedule[wd] != nil {
-            Button { openDay(wd) } label: { rowLabel(wd, chevron: "chevron.right") }
-                .buttonStyle(.plain)
+            // Propuesta B (elegida por Fer, 2026-07-16): la RUTINA es un chip troquel (tocarlo =
+            // editar esa rutina — el mismo objeto que en el resto del app) y el ⇄ al borde de la
+            // fila cambia la asignación del día. Dos objetos distintos, dos acciones obvias — los
+            // dos chevrons (›/▾) confundían.
+            assignedDayRow(wd)
         } else {
             Button { assignMenuDay = wd } label: { rowLabel(wd, chevron: "chevron.down") }
                 .buttonStyle(.plain)
@@ -232,6 +231,72 @@ struct WeeklyPlanEditorView: View {
         return rows
     }
 
+    private func assignedDayRow(_ wd: Int) -> some View {
+        // Frontera de tipo preventiva (mismo fix del crash de previews, 2026-07-16).
+        AnyView(assignedDayRowBody(wd))
+    }
+
+    @ViewBuilder
+    private func assignedDayRowBody(_ wd: Int) -> some View {
+        if let rid = schedule[wd], let r = routines.first(where: { $0.id == rid }) {
+            let tint = routineTint(r)
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(weekdayLabel(wd))
+                        .font(InstrumentoType.grotesk(14, weight: .medium))
+                        .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
+                    if wd == today {
+                        Text("today").textCase(.uppercase)
+                            .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.ink)
+                    }
+                }
+                .frame(width: 52, alignment: .leading)
+                VStack(alignment: .leading, spacing: 5) {
+                    Button { openDay(wd) } label: {
+                        HStack(spacing: 6) {
+                            RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría de dato
+                                .fill(tint).frame(width: 8, height: 8)
+                            // Nombre largo: una línea, elipsis al final — el chip nunca empuja al ⇄.
+                            Text(r.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                                .lineLimit(1).truncationMode(.tail)
+                            StrandIcon.disclosure.image
+                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(tint)
+                        }
+                        .troquelChip(theme)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Edit \(r.name)"))
+                    miniBars(rid)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Text(seriesText(rid)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    .layoutPriority(1)
+                Button { assignMenuDay = wd } label: {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Change this day's routine"))
+                .paperMenu(
+                    isPresented: Binding(get: { assignMenuDay == wd },
+                                         set: { if !$0 { assignMenuDay = nil } }),
+                    items: assignMenuItems(wd)
+                )
+            }
+            .frame(minHeight: 52)
+            .padding(.horizontal, wd == today ? 10 : 0)
+            .background {
+                if wd == today {
+                    RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                        .fill(theme.surface)
+                }
+            }
+        }
+    }
+
     private func routinePickItem(_ wd: Int, _ r: Routine) -> PaperMenuItem {
         PaperMenuItem(r.name, systemImage: schedule[wd] == r.id ? "checkmark" : nil) { assign(wd, r.id) }
     }
@@ -244,7 +309,7 @@ struct WeeklyPlanEditorView: View {
                     .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
                 if wd == today {
                     Text("today").textCase(.uppercase)
-                        .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.dataRecovery)
+                        .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.ink)
                 }
             }
             .frame(width: 52, alignment: .leading)
@@ -316,6 +381,11 @@ struct WeeklyPlanEditorView: View {
                 }
             }
             .onAppear { volumeBarsGrown = true }
+            // VoiceOver leía 4 rótulos sin valores; un solo elemento compuesto los une (auditoría a11y).
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: MuscleGroup.allCases
+                .map { String(localized: "\($0.label) \(vol[$0] ?? 0) sets") }
+                .joined(separator: ", ")))
             // Handoff: the honest footnote on a thin filete — «Series planeadas. Core quedó corto…»
             HStack(spacing: 7) {
                 Rectangle().fill(theme.inkTertiary).frame(width: 2, height: 10)  // token-exempt: filete de dato
@@ -364,16 +434,24 @@ struct WeeklyPlanEditorView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.vertical, 10)
                     divider
-                } else {
+                } else if folders.isEmpty {
                     ForEach(routines) { r in
                         routineRow(r)
                         if r.id != routines.last?.id { divider }
                     }
                     divider
+                } else {
+                    // Decisión Fer (2026-07-16 v2): carpetas = subdivisiones. FRONTERA DE TIPO
+                    // (AnyView): este bloque inline hacía explotar el layout de tipos de
+                    // AttributeGraph en el JIT de previews (crash SIGSEGV + VM 2.9 GB) — ver
+                    // Cenit-2026-07-16-220029.ips. No quitar sin re-verificar el canvas.
+                    foldersListErased
+                    divider
                 }
-                // The mock folds templates / import / folders into one row; the menu keeps all three
-                // functions (decision A: conserve plantillas, import, carpetas behind this row).
-                actionMenuRow("rectangle.stack", "Templates · Import · Folders", isPresented: $showToolsMenu, items: toolsMenuItems)
+                // FER-952 (owner): the folded row hid two of its three doors (the popover clipped
+                // near the screen bottom) — three STYLED chips instead, one per destination; the
+                // Folders chip anchors the folder-management paper menu.
+                toolsChipsRow
                 divider
                 actionRow("book", "Exercise library", action: openLibrary)
             }
@@ -399,19 +477,99 @@ struct WeeklyPlanEditorView: View {
     /// Items for the «Templates · Import · Folders» menu. Folders are degraded (decision A): they're not
     /// shown as headers in the body, but each existing folder keeps Rename/Delete here so full folder
     /// management stays reachable (FER-890 QA D1 — they used to hang off the removed folder headers).
-    private var toolsMenuItems: [PaperMenuItem] {
-        var items: [PaperMenuItem] = [
-            .init(String(localized: "Start from a template"), systemImage: "square.stack.3d.up") { showTemplates = true },
-            .init(String(localized: "Import plan"), systemImage: "square.and.arrow.down") { showImport = true },
-            .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
-        ]
-        for f in folders {
-            items.append(.init(f.name, systemImage: "folder", children: [
-                .init(String(localized: "Rename folder…"), systemImage: "pencil") { startRename(f) },
-                .init(String(localized: "Delete folder"), systemImage: "trash", isDestructive: true) { deleteFolder(f) }
-            ]))
+    /// The three doors as equal-weight chips (FER-952): Templates and Import open their sheets;
+    /// Folders anchors the folder-management paper menu (new / rename / delete).
+    private var toolsChipsRow: some View {
+        HStack(spacing: CenitMetrics.space2) {
+            InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
+            InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showImport = true }
+            // Decisión Fer (2026-07-16 v2): UNA sola acción — crear la división. Renombrar/borrar
+            // viven en la banda de cada sección en Mis Rutinas (··· → undo de 4 s al borrar).
+            InstrumentoToolChip(systemImage: "folder.badge.plus", label: Text("New section")) { startNewFolder(moving: nil) }
         }
-        return items
+        .padding(.vertical, CenitMetrics.space2)
+    }
+
+    /// El cuerpo de secciones, borrado a AnyView — la frontera que mantiene chico el tipo de la
+    /// pantalla (fix del crash de previews, 2026-07-16). Ver nota en `routinesSection`.
+    private var foldersListErased: AnyView {
+        let byFolder = Dictionary(grouping: routines, by: \.folderId)
+        let unfiled = byFolder[nil] ?? []
+        return AnyView(
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(folders) { folder in
+                    let rs = byFolder[folder.id] ?? []
+                    folderBand(folder, count: rs.count)
+                    if !collapsedFolders.contains(folder.id) {
+                        ForEach(rs) { r in
+                            routineRow(r)
+                            if r.id != rs.last?.id { divider }
+                        }
+                    }
+                }
+                if !unfiled.isEmpty {
+                    sectionBand(String(localized: "Loose"), count: unfiled.count,
+                                collapsed: collapsedFolders.contains(Self.unfiledSectionID),
+                                toggle: { toggleCollapse(Self.unfiledSectionID) })
+                    if !collapsedFolders.contains(Self.unfiledSectionID) {
+                        ForEach(unfiled) { r in
+                            routineRow(r)
+                            if r.id != unfiled.last?.id { divider }
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    private func folderBand(_ f: RoutineFolder, count: Int) -> some View {
+        sectionBand(f.name, count: count,
+                    collapsed: collapsedFolders.contains(f.id),
+                    toggle: { toggleCollapse(f.id) }) {
+            Button { menuFolderId = f.id } label: {
+                Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary).frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .paperMenu(
+                isPresented: Binding(get: { menuFolderId == f.id },
+                                     set: { if !$0 { menuFolderId = nil } }),
+                items: [
+                    .init(String(localized: "Rename folder"), systemImage: "pencil") { startRename(f) },
+                    .init(String(localized: "Delete folder"), systemImage: "trash", isDestructive: true) { deleteFolder(f) }
+                ]
+            )
+        }
+    }
+
+    private func toggleCollapse(_ id: String) {
+        withAnimation(StrandMotion.interactive) {
+            if collapsedFolders.contains(id) { collapsedFolders.remove(id) } else { collapsedFolders.insert(id) }
+        }
+    }
+
+    private func sectionBand<T: View>(_ name: String, count: Int, collapsed: Bool,
+                                      toggle: @escaping () -> Void,
+                                      @ViewBuilder trailing: () -> T = { EmptyView() }) -> some View {
+        HStack(spacing: 8) {
+            Button(action: toggle) {
+                HStack(spacing: 8) {
+                    Text(verbatim: name).groteskOverline().foregroundStyle(theme.inkSecondary)
+                    Text(verbatim: "· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(verbatim: name))
+            .accessibilityValue(Text(collapsed ? "collapsed" : "expanded"))
+            trailing()
+            Image(systemName: collapsed ? "chevron.right" : "chevron.down")
+                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+        }
+        .padding(.horizontal, 12).frame(minHeight: 40)
+        .background(theme.patternBlock)
+        .padding(.top, 10)
     }
 
     private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
@@ -428,23 +586,6 @@ struct WeeklyPlanEditorView: View {
             .frame(minHeight: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    /// Like `actionRow` but reveals a paper menu (mock 1c's «Plantillas · Importar · Carpetas»), with a chevron.
-    private func actionMenuRow(_ symbol: String, _ title: LocalizedStringKey,
-                               isPresented: Binding<Bool>, items: [PaperMenuItem]) -> some View {
-        Button { isPresented.wrappedValue = true } label: {
-            HStack(spacing: 12) {
-                Image(systemName: symbol).frame(width: 30)
-                    .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
-                Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 0)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 44).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .paperMenu(isPresented: isPresented, items: items)
     }
 
     /// The one-line metadata under a routine name (mock 1c): exercise count, then its top primary muscles.
@@ -500,7 +641,7 @@ struct WeeklyPlanEditorView: View {
                         // Unassigned reads as the honest «—» (handoff: «Movilidad 20 min · —»).
                         Text(assignedDaysText(r) ?? "—")
                             .font(InstrumentoType.grotesk(12, weight: .medium))
-                            .foregroundStyle(theme.inkSecondary)
+                            .foregroundStyle(assignedDaysText(r) == nil ? theme.inkDim : theme.inkSecondary)
                     }
                     .frame(minHeight: 56).contentShape(Rectangle())
                 }
@@ -623,12 +764,52 @@ struct WeeklyPlanEditorView: View {
     }
 
     private func deleteFolder(_ f: RoutineFolder) {
+        let members = routines.filter { $0.folderId == f.id }.map(\.id)
         Task {
             guard let store = await repo.storeHandle() else { return }
             try? await store.deleteFolder(id: f.id)
             await load()
+            withAnimation { pendingFolderUndo = DeletedFolder(folder: f, memberIds: members) }
         }
     }
+    /// M5 (decisión Fer): borrar carpeta era destructivo inmediato — mismo contrato de undo 4 s
+    /// que borrar rutina. Las rutinas miembro se restauran a la carpeta si el usuario se arrepiente.
+    private struct DeletedFolder: Identifiable {
+        let id = UUID()
+        let folder: RoutineFolder
+        let memberIds: [String]
+    }
+
+    private func undoDeleteFolder(_ d: DeletedFolder) {
+        Task {
+            guard let store = await repo.storeHandle() else { return }
+            try? await store.saveFolder(d.folder)
+            for rid in d.memberIds { try? await store.setRoutineFolder(routineId: rid, folderId: d.folder.id) }
+            await load()
+            withAnimation { pendingFolderUndo = nil }
+        }
+    }
+
+    private func folderUndoBanner(_ d: DeletedFolder) -> some View {
+        HStack(spacing: 12) {
+            Text("Folder deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
+            Spacer(minLength: 8)
+            Button { undoDeleteFolder(d) } label: {
+                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18).padding(.vertical, 14)
+        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.bottom, 8)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .task(id: d.id) {
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            withAnimation { if pendingFolderUndo?.id == d.id { pendingFolderUndo = nil } }
+        }
+    }
+
 
     private func move(_ r: Routine, to folderId: String?) {
         Task {
@@ -652,6 +833,30 @@ struct WeeklyPlanEditorView: View {
     private func exerciseCountText(_ n: Int) -> String { String(localized: "\(n) exercises") }
 
     // MARK: - Data (writes the split via the F1 store CRUD, FER-531)
+
+    /// FER-952 unified flow: the library's picks become a routine RIGHT HERE («New routine», 3×8 per
+    /// exercise — the builder's defaults) and the unified editor opens to name and tune it.
+    private func createRoutine(_ picks: [Exercise]) {
+        guard !picks.isEmpty else { return }
+        let now = Int(Date().timeIntervalSince1970)
+        let r = Routine(name: String(localized: "New routine"), createdTs: now, updatedTs: now, sortOrder: 0)
+        let exercises = picks.enumerated().map { idx, ex -> RoutineExercise in
+            let usesReps = ex.type == .weightReps || ex.type == .bodyweight
+            let reps: Int? = usesReps ? 8 : nil
+            let sets = (0..<3).map { RoutineSet(position: $0, kind: .work, reps: reps, weightKg: nil) }
+            return RoutineExercise(routineId: r.id, exerciseId: ex.id, position: idx,
+                                   targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
+        }
+        Task {
+            try? await repo.saveRoutine(r, exercises: exercises)
+            await load()
+            // FER-952 glitch: the library pops itself (dismiss) the moment onAdd returns — pushing the
+            // editor DURING that pop stacked transitions and the new screen flashed in and out
+            // (FER-171 lesson). Let the pop settle, then push.
+            try? await Task.sleep(nanoseconds: 550_000_000)
+            openRoutine(r.id)
+        }
+    }
 
     private func load() async {
         guard let store = await repo.storeHandle() else { loaded = true; return }

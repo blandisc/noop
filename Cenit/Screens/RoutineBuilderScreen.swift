@@ -21,6 +21,7 @@ struct RoutineBuilderScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
@@ -85,18 +86,20 @@ struct RoutineBuilderScreen: View {
             // 1e as a push (choque 3): the shared `RestEditorScreen` edits one set's rest, with a
             // «this set / all sets» scope. In the builder every change lands on the routine at «Save», so
             // the «save to routine» toggle is off (persistsToRoutine: false).
+            // Rest is per EXERCISE (FER-952) — same semantics as the unified editor.
             .navigationDestination(item: $restTarget) { t in
                 RestEditorScreen(
                     theme: theme,
                     exerciseName: StrengthDisplay.name(items[t.ei].exercise),
-                    setNumber: RoutineSetEditing.workSetNumber(items[t.ei].re, t.si),
-                    current: RoutineSetEditing.effectiveRest(items[t.ei].re, t.si),
+                    setNumber: nil,
+                    current: exerciseRest(t.ei),
                     persistsToRoutine: false,
-                    restingHR: nil, maxHR: nil,
-                    defaultApplyToAll: false,
+                    restingHR: repo.days.compactMap(\.restingHr).last.map(Double.init),
+                    maxHR: Double(model.profile.hrMax),
+                    defaultApplyToAll: true,
                     onCancel: { restTarget = nil },
-                    onApply: { config, applyToAll, _ in
-                        RoutineSetEditing.applyRest(to: &items[t.ei].re, si: t.si, config: config, applyToAll: applyToAll)
+                    onApply: { config, _, _ in
+                        RoutineSetEditing.applyRest(to: &items[t.ei].re, si: 0, config: config, applyToAll: true)
                         restTarget = nil
                     }
                 )
@@ -179,10 +182,13 @@ struct RoutineBuilderScreen: View {
             nameField.plainRow(top: 8, bottom: 8)
             ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 if firstOfGroup(idx) {
-                    Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    // Same voice + hue as the unified editor: the superset overline IS the datum.
+                    Text("Superset").groteskOverline().foregroundStyle(theme.dataHrv)
                         .plainRow(top: CenitMetrics.sectionGap, bottom: 2)
                 }
-                exerciseHeader(idx).plainRow(top: firstOfGroup(idx) || idx == 0 ? CenitMetrics.gap : CenitMetrics.sectionGap)
+                // Proximity = grouping: members of a superset breathe `gap`, strangers `sectionGap`.
+                exerciseHeader(idx).plainRow(top: firstOfGroup(idx) || idx == 0 ? CenitMetrics.gap
+                    : (RoutineSetEditing.sameGroup(items.map(\.re), idx - 1, idx) ? CenitMetrics.gap : CenitMetrics.sectionGap))
                 ForEach(Array(items[idx].re.sets.enumerated()), id: \.element.id) { si, _ in
                     setRow(idx: idx, si: si).plainRow(top: 0, bottom: 0)
                         .swipeActions(edge: .trailing) {
@@ -201,15 +207,18 @@ struct RoutineBuilderScreen: View {
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("New routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            // Same Grotesk voice as the unified editor (FER-952) — one conceptual screen, one look.
+            Text("New routine").groteskOverline().foregroundStyle(theme.inkTertiary)
             TextField("Routine name", text: $name)
-                .font(StrandFont.title1).foregroundStyle(theme.ink)
+                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                .foregroundStyle(theme.ink)
             if !items.isEmpty {
                 if let region = builderRegion {
                     HStack(spacing: 6) {
                         Circle().fill(builderRegionTint(region)).frame(width: 8, height: 8)
+                        // Color only in the datum: the dot carries the hue, the label stays ink.
                         Text(builderRegionLabel(region))
-                            .font(StrandFont.caption).foregroundStyle(builderRegionTint(region))
+                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
                     .padding(.top, 2)
                 }
@@ -249,7 +258,10 @@ struct RoutineBuilderScreen: View {
             HStack(spacing: 11) {
                 // Tapping the thumb/name opens the exercise info sheet (parity with the library, FER-776).
                 Button { detail = item.exercise } label: {
+                    // r25: the thumb wears its movement family (same frame as editor + Serie activa).
                     ExerciseThumbView(exercise: item.exercise, side: 40)   // cached GIF still, or paper placeholder (FER-790)
+                        .overlay(RoundedRectangle(cornerRadius: 40 * 0.22, style: .continuous)
+                            .strokeBorder(theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles), lineWidth: 2))
                 }
                 .buttonStyle(.plain)
                 VStack(alignment: .leading, spacing: 1) {
@@ -273,7 +285,7 @@ struct RoutineBuilderScreen: View {
                 Spacer(minLength: 8)
                 Button { menuExerciseIndex = idx } label: {
                     Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 36).contentShape(Rectangle())
+                        .foregroundStyle(theme.inkTertiary).frame(width: 30, height: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .paperMenu(
@@ -282,23 +294,27 @@ struct RoutineBuilderScreen: View {
                     items: exerciseMenuItems(idx, item: item)
                 )
             }
+            // Handoff (rest-per-exercise): one rest decision per exercise, as a chip under the name.
+            RestChip(cfg: exerciseRest(idx)) {
+                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
+            }
             columnHeader(item.exercise.type)
         }
     }
 
-    /// Quiet column header (SET · KG · REPS · REST, gated by exercise type) with a hairline underline.
+    /// Quiet column header (SET · KG · REPS, gated by exercise type) with a hairline underline.
     @ViewBuilder
     private func columnHeader(_ type: ExerciseType) -> some View {
         HStack(spacing: 8) {
-            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).lineLimit(1).frame(width: 44, alignment: .leading)
+            // Same table metrics as the unified editor (FER-952): 40 / twin 74s.
+            Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).lineLimit(1).minimumScaleFactor(0.7).frame(width: 40, alignment: .center)
             if showsWeight(type) {
-                Text(StrengthDisplay.weightUnit(system)).instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 62)
+                Text(StrengthDisplay.weightUnit(system)).groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             if showsReps(type) {
-                Text("Reps").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 62)
+                Text("Reps").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 74)
             }
             Spacer(minLength: 0)
-            Text("Rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
         }
         .padding(.bottom, 4)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -311,9 +327,9 @@ struct RoutineBuilderScreen: View {
         let type = items[idx].exercise.type
         return HStack(spacing: 8) {
             Text(RoutineSetEditing.setLabel(items[idx].re, si))
-                .font(set.kind == .warmup ? StrandFont.caption.weight(.semibold) : StrandFont.body)
-                .foregroundStyle(set.kind == .warmup ? theme.inkTertiary : theme.inkSecondary)
-                .monospacedDigit().frame(width: 44, alignment: .leading)
+                .font(InstrumentoType.grotesk(13, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(set.kind == .warmup ? theme.inkTertiary : theme.ink)
+                .frame(width: 40, alignment: .center)
             if showsWeight(type) {
                 cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad)
             }
@@ -321,24 +337,23 @@ struct RoutineBuilderScreen: View {
                 cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad)
             }
             Spacer(minLength: 6)
-            RestChip(cfg: RoutineSetEditing.effectiveRest(items[idx].re, si), timeColor: theme.ink) {
-                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: si)
-            }
         }
-        .frame(minHeight: 46)
-        .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
+        .frame(minHeight: 44)
+        // Hairline BELOW the row, like the editor and the handoff's border-bottom.
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType) -> some View {
         TextField("—", text: text)
             .keyboardType(keyboard)
             .multilineTextAlignment(.center)
-            .font(StrandFont.bodyNumber)
+            // Handoff: the prescription's figures speak Grotesk (400 15), like every datum on paper.
+            .font(InstrumentoType.grotesk(15)).monospacedDigit()
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
-            .frame(width: 76, height: 34)
+            .frame(width: 74, height: 32)
             .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 
     private func addSetRow(_ idx: Int) -> some View {
@@ -354,9 +369,14 @@ struct RoutineBuilderScreen: View {
     }
 
     private var addExerciseRow: some View {
+        // The same centered outline door as the unified editor (handoff spec).
         Button { showLibrary = true } label: {
-            Label("Add exercise", systemImage: "plus").font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+            Label("Add exercise", systemImage: "plus")
+                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity).padding(.vertical, 13)  // token-exempt: 13 del handoff
+                .contentShape(Rectangle())
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
+                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -457,6 +477,13 @@ struct RoutineBuilderScreen: View {
 
     private func inSuperset(_ i: Int) -> Bool { RoutineSetEditing.inSuperset(items.map(\.re), i) }
     private func sameGroup(_ a: Int, _ b: Int) -> Bool { RoutineSetEditing.sameGroup(items.map(\.re), a, b) }
+
+    /// The exercise-level rest rule (FER-952: rest is per exercise now).
+    private func exerciseRest(_ idx: Int) -> RestConfig {
+        let re = items[idx].re
+        return RestConfig(mode: re.restMode, seconds: re.restSeconds,
+                          hrReference: re.hrRestReference, hrValue: re.hrRestValue)
+    }
     /// First member of a superset group (shows the «Superset» header above it).
     private func firstOfGroup(_ i: Int) -> Bool { RoutineSetEditing.firstOfGroup(items.map(\.re), i) }
 

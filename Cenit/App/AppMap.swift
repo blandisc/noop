@@ -2,6 +2,7 @@
 import SwiftUI
 import WhoopStore
 import StrandTraining
+import StrandDesign
 
 /// **Canvas del mapa de estados** — todas las variantes de una pantalla, lado a lado, dentro del
 /// `#Preview` de Xcode. Cada celda construye un `AppModel`, lo siembra con el MISMO `ScreenshotFixtures`
@@ -211,5 +212,377 @@ private struct ExerciseDetailMapCell: View {
 
 #Preview("Detalle · Press banca (con datos)") {
     ExerciseDetailMapCell()
+}
+
+/// El editor de rutina REAL (Crear/Editar Rutina, FER-952), sembrado con el plan del fixture y
+/// abierto en la rutina de HOY («Día A — Empuje»: banca + inclinado + laterales) — para iterar la
+/// fidelidad al hand-off «Rediseño - Crear Rutina» en el canvas: header, tabla SERIE/KG/REPS,
+/// superserie, chips de descanso/nota y el menú «···».
+private struct RoutineEditorMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @State private var seeded = false
+
+    var body: some View {
+        Group {
+            if seeded {
+                NavigationStack { RoutineEditorScreen(origin: .today(routineId: nil)) }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        // FLUJO COMPLETO (FER-952): «Empezar» arranca la sesión de verdad
+        // (`model.startStrengthSession`) y aquí se presenta la Serie activa REAL — el mismo cover que
+        // RootView. Cerrar la sesión (Terminar/Descartar) regresa al editor.
+        .overlay(alignment: .bottom) {
+            // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
+            if model.strengthSession != nil && !model.strengthSheetPresented {
+                MapSessionPillHost(model: model)
+                    .padding(.bottom, CenitMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
+            if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
+        }) {
+            if let session = model.strengthSession {
+                LiveStrengthSheet(session: session)
+                    .environmentObject(model.repo)
+                    .environmentObject(model)
+                    .environmentObject(TabRouter())
+                    .environmentObject(media)
+                    .environment(model.live)
+                    .preferredColorScheme(.light)
+            }
+        }
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            seeded = true
+        }
+    }
+}
+
+#Preview("Crear Rutina · Día A (con plan)") {
+    RoutineEditorMapCell()
+}
+
+/// «Tu Plan» (WeeklyPlanEditorView) — la pantalla madre del editor de rutina: la semana con su split,
+/// las rutinas y las carpetas. NAVEGABLE: tocar una rutina o un día del plan empuja el editor REAL
+/// (`RoutineEditorScreen`) en el mismo stack, así que desde este preview puedes recorrer el flujo
+/// completo Tu Plan → Rutina, igual que en el app.
+private struct WeeklyPlanMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @State private var seeded = false
+    @State private var path = NavigationPath()
+
+    var body: some View {
+        Group {
+            if seeded {
+                NavigationStack(path: $path) {
+                    WeeklyPlanEditorView(
+                        openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },
+                        openLibrary: {},
+                        openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) }
+                    )
+                    .navigationDestination(for: RoutineEditorRoute.self) { route in
+                        RoutineEditorScreen(origin: route)
+                    }
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            seeded = true
+        }
+    }
+}
+
+#Preview("Tu Plan → Rutina (navegable)") {
+    WeeklyPlanMapCell()
+}
+
+/// FLUJO COMPLETO de una rutina nueva (FER-952): nace en Tu Plan (＋ Nueva → biblioteca),
+/// al guardar aterriza en el editor unificado («Rutina»), y su «Empezar» presenta la Serie activa
+/// REAL — todo navegable dentro del canvas, con el plan demo sembrado. (MisRutinasScreen se retiró
+/// en FER-962: Tu Plan es la única casa de la biblioteca.)
+private struct NewRoutineFlowMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @State private var seeded = false
+    @State private var path = NavigationPath()
+
+    var body: some View {
+        Group {
+            if seeded {
+                NavigationStack(path: $path) {
+                    WeeklyPlanEditorView(
+                        openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },
+                        openLibrary: {},
+                        openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) }
+                    )
+                    .navigationDestination(for: RoutineEditorRoute.self) { route in
+                        RoutineEditorScreen(origin: route)
+                    }
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .overlay(alignment: .bottom) {
+            // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
+            if model.strengthSession != nil && !model.strengthSheetPresented {
+                MapSessionPillHost(model: model)
+                    .padding(.bottom, CenitMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
+            if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
+        }) {
+            if let session = model.strengthSession {
+                LiveStrengthSheet(session: session)
+                    .environmentObject(model.repo)
+                    .environmentObject(model)
+                    .environmentObject(TabRouter())
+                    .environmentObject(media)
+                    .environment(model.live)
+                    .preferredColorScheme(.light)
+            }
+        }
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            seeded = true
+        }
+    }
+}
+
+#Preview("Flujo · Nueva rutina → Editar → Activa") {
+    NewRoutineFlowMapCell()
+}
+
+/// EL HUB CON TODOS SUS CAMINOS (FER-952): EntrenarView con el MISMO cableado que RootTabView — cada
+/// disco, fila y CTA navega de verdad: Rutina de hoy / Tu Plan / Nueva rutina→Biblioteca→editor /
+/// Mis entrenamientos→detalle / Respira / Intervalos / Dieta / Descanso / Otras formas / mapa de
+/// músculo / tickets, y «Empezar» presenta la Serie activa. Para verificar los flujos de punta a punta.
+private struct EntrenarFlowsMapCell: View {
+    private enum Route: String, Hashable { case breathe, intervals, dieta, history, weeklyPlan, restDay, otherWays, library }
+
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @StateObject private var historyCoordinator = WorkoutHistoryCoordinator()
+    @State private var seeded = false
+    @State private var path = NavigationPath()
+
+    var body: some View {
+        Group {
+            if seeded {
+                NavigationStack(path: $path) {
+                    EntrenarView(
+                        openRoutine: { path.append(RoutineEditorRoute.today(routineId: $0)) },
+                        openBreathe: { path.append(Route.breathe) },
+                        openIntervals: { path.append(Route.intervals) },
+                        openDiet: { path.append(Route.dieta) },
+                        openHistory: { path.append(Route.history) },
+                        openWeeklyPlan: { path.append(Route.weeklyPlan) },
+                        openRoutines: { path.append(Route.weeklyPlan) },
+                        openRestDay: { path.append(Route.restDay) },
+                        openOtherWays: { path.append(Route.otherWays) },
+                        openWorkoutSession: { path.append($0) }
+                    )
+                    .navigationDestination(for: Route.self) { destination($0) }
+                    .navigationDestination(for: RoutineEditorRoute.self) { route in
+                        RoutineEditorScreen(origin: route).toolbar(.hidden, for: .navigationBar)
+                    }
+                    .navigationDestination(for: WorkoutSessionRoute.self) { route in
+                        WorkoutSessionDetailScreen(route: route,
+                            openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) })
+                    }
+                    .navigationDestination(for: MuscleVolumeRoute.self) { _ in MuscleMapScreen(theme: .base, showsVolumeLink: true) }
+                    .navigationDestination(for: MuscleVolumeBarsRoute.self) { _ in MuscleVolumeScreen() }
+                    .navigationDestination(for: SavedTicketsRoute.self) { _ in SavedTicketsScreen() }
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .environmentObject(historyCoordinator)
+        .environmentObject(HealthKitBridge(repo: model.repo, appleDeviceId: "map-apple", noopDeviceId: "map"))
+        .environment(model.live)
+        .overlay(alignment: .bottom) {
+            // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
+            if model.strengthSession != nil && !model.strengthSheetPresented {
+                MapSessionPillHost(model: model)
+                    .padding(.bottom, CenitMetrics.space2)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
+            if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
+        }) {
+            if let session = model.strengthSession {
+                LiveStrengthSheet(session: session)
+                    .environmentObject(model.repo)
+                    .environmentObject(model)
+                    .environmentObject(TabRouter())
+                    .environmentObject(media)
+                    .environment(model.live)
+                    .preferredColorScheme(.light)
+            }
+        }
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard !seeded else { return }
+            await ScreenshotFixtures.seed(model, state: "train")
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            seeded = true
+        }
+    }
+
+    @ViewBuilder private func destination(_ r: Route) -> some View {
+        switch r {
+        case .breathe:   BreathingView()
+        case .intervals: IntervalTimerView()
+        case .dieta:     DietCaptureView()
+        case .history:   WorkoutHistoryScreen()
+        case .weeklyPlan:
+            WeeklyPlanEditorView(
+                openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) },
+                openLibrary: { path.append(Route.library) },
+                openDay: { path.append(RoutineEditorRoute.planDay(weekday: $0)) })
+        case .restDay:
+            RestDayScreen(openIntervals: { path.append(Route.intervals) },
+                          openBreathe: { path.append(Route.breathe) },
+                          openRoutines: { path.append(Route.weeklyPlan) })
+        case .otherWays:
+            OtherWaysScreen(openIntervals: { path.append(Route.intervals) },
+                            openBreathe: { path.append(Route.breathe) })
+        case .library:   ExerciseLibraryScreen()
+        }
+    }
+}
+
+#Preview("Entrenar · TODOS los flujos") {
+    EntrenarFlowsMapCell()
+}
+
+/// El detalle de la SESIÓN ESTRELLA de hoy (FER-952): banca + inclinado + crunch con esfuerzo 11.2,
+/// FC 132/168, 316 kcal, nota y las zonas de FC (8/22/40/25/5) vía el join con el journal — la
+/// pantalla completa para verificar hero, zonas, FC, volumen y récords de una sesión real.
+private struct WorkoutSessionDetailMapCell: View {
+    @StateObject private var model = AppModel()
+    @StateObject private var media = MediaDownloadCoordinator()
+    @StateObject private var historyCoordinator = WorkoutHistoryCoordinator()
+    @State private var route: WorkoutSessionRoute? = nil
+
+    var body: some View {
+        Group {
+            if let route {
+                NavigationStack {
+                    WorkoutSessionDetailScreen(route: route, openRoutine: { _ in })
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .environmentObject(model.repo)
+        .environmentObject(model)
+        .environmentObject(media)
+        .environmentObject(TabRouter())
+        .environmentObject(historyCoordinator)
+        .preferredColorScheme(.light)
+        .frame(width: 393, height: 852)
+        .task {
+            guard route == nil else { return }
+            await ScreenshotFixtures.seedTrainingPlan(model)
+            if let star = await model.repo.recentSessions(limit: 1).first {
+                route = WorkoutSessionRoute(id: star.id, startTs: star.startTs, endTs: star.endTs,
+                                            strain: star.strain, avgHr: star.avgHr,
+                                            routineName: "Día A — Empuje")
+            }
+        }
+    }
+}
+
+#Preview("Sesión · detalle completo (con zonas)") {
+    WorkoutSessionDetailMapCell()
+}
+
+/// El `SessionPill` flotante del app real (FER-716), replicado para las celdas del canvas: reloj vivo
+/// por `TimelineView`, BPM en vivo si hay banda, y tocar re-abre la sesión minimizada.
+private struct MapSessionPillHost: View {
+    @ObservedObject var model: AppModel
+    @State private var confirmDiscard = false
+    var body: some View {
+        hostBody
+            // En el canvas el host es la única superficie disponible: el velo se estira él mismo a
+            // pantalla con el frame del cell (393×852), suficiente para validar las esquinas.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .instrumentoConfirm(
+                isPresented: $confirmDiscard,
+                title: String(localized: "Discard this session?"),
+                context: String(localized: "SESSION · IN PROGRESS"),
+                message: String(localized: "Its logged sets won't be saved."),
+                actions: [
+                    .init(String(localized: "Keep training"), role: .primary),
+                    .init(String(localized: "Discard session"), role: .destructive) {
+                        model.endStrengthSession(save: false)
+                    }
+                ]
+            )
+    }
+    @ViewBuilder private var hostBody: some View {
+        if let session = model.strengthSession {
+            let theme = InstrumentoTheme.base
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let total = session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
+                SessionPill(
+                    routineName: session.routineName,
+                    elapsed: SessionClock.format(session.elapsedSeconds(now: context.date)),
+                    bpm: model.bpm,
+                    detail: total > 0 ? String(localized: "set \(min(session.doneCount + 1, total))/\(total)") : nil,
+                    paused: session.paused,
+                    hue: theme.dataStrain,
+                    theme: theme,
+                    accessibilityLabel: Text(verbatim: session.routineName),
+                    accessibilityHint: Text("Returns to the session"),
+                    action: { model.resumeStrengthSession() },
+                    onDiscard: { confirmDiscard = true },
+                    discardAccessibilityLabel: Text("Discard session")
+                )
+            }
+        }
+    }
 }
 #endif

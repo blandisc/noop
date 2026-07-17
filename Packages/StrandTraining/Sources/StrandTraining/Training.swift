@@ -316,14 +316,18 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         public var rpe: Double?
         /// Set-scoped note text (FER-932). Legacy JSON without the key decodes to nil, same pattern as `rpe`.
         public var note: String?
+        /// El usuario YA editó esta celda (modelo fantasma FER-952): una fila sin tocar muestra su
+        /// semilla («la última vez») en tinta tenue y palomearla la registra tal cual. Legacy → nil.
+        public var touched: Bool?
 
         public init(id: String, weightKg: Double, reps: Int, timeS: Int? = nil,
                     distanceM: Double? = nil, done: Bool = false, doneTs: Int? = nil,
                     rest: RestConfig? = nil, kind: SetKind = .work, rpe: Double? = nil,
-                    note: String? = nil) {
+                    note: String? = nil, touched: Bool? = nil) {
             self.id = id; self.weightKg = weightKg; self.reps = reps; self.timeS = timeS
             self.distanceM = distanceM; self.done = done; self.doneTs = doneTs
             self.rest = rest; self.kind = kind; self.rpe = rpe; self.note = note
+            self.touched = touched
         }
     }
     /// One exercise's run within the session.

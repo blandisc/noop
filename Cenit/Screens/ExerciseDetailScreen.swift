@@ -557,7 +557,7 @@ struct ExerciseDetailScreen: View {
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
                         Text(verbatim: StrengthDisplay.weightNumber(latest, system: system))
                             .font(InstrumentoType.groteskHeroNumeral(44)).tracking(InstrumentoType.groteskHeroTrackingScaled(44))
-                            .foregroundStyle(theme.ink).monospacedDigit()
+                            .foregroundStyle(theme.ink)
                         Text(verbatim: StrengthDisplay.weightUnit(system))
                             .font(InstrumentoType.grotesk(22, weight: .bold)).foregroundStyle(theme.inkTertiary)
                     }
@@ -799,7 +799,9 @@ private struct WeeklyBarsChart: View {
                 DragGesture(minimumDistance: 0)
                     .onChanged { g in
                         let frac = max(0, min(0.999, g.location.x / max(geo.size.width, 1)))
-                        scrubIndex = Int(frac * CGFloat(vols.count))
+                        let i = Int(frac * CGFloat(vols.count))
+                        if i != scrubIndex { ChartHaptics.datumChanged() }
+                        scrubIndex = i
                     }
                     .onEnded { _ in scrubIndex = nil }
             )
@@ -910,7 +912,9 @@ private struct TrendAxisChart: View {
                         DragGesture(minimumDistance: 0)
                             .onChanged { g in
                                 let frac = max(0, min(1, g.location.x / max(w, 1)))
-                                scrubIndex = Int((frac * CGFloat(max(values.count - 1, 1))).rounded())
+                                let i = Int((frac * CGFloat(max(values.count - 1, 1))).rounded())
+                                if i != scrubIndex { ChartHaptics.datumChanged() }
+                                scrubIndex = i
                             }
                             .onEnded { _ in scrubIndex = nil }
                     )

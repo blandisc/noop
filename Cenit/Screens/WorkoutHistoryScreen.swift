@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
+import WhoopStore   // WorkoutRow — the journal join that carries zones / max HR (FER-952)
 
 // WorkoutHistoryScreen.swift — «Mis entrenamientos» (FER-504): the completed strength sessions, newest
 // first, each opening a per-exercise breakdown. Read-only — it never edits or deletes a session. Pure
@@ -98,12 +99,9 @@ struct WorkoutHistoryScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Handoff v2 hero: overline + Grotesk title + terse subtitle. The muscle-map access moved
-            // to «Ver mapa» on the muscle band (FER-941), so the hero pill is gone.
-            Text("My workouts")
-                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-            InstrumentoFlowTitle(Text("On the rise"))
+            // Decisión Fer (2026-07-16): «On the rise» se retiró — el título principal es el nombre
+            // de la pantalla, sin editorializar.
+            InstrumentoFlowTitle(Text("My workouts"))
             // Handoff v2: sessions this month, plus the count of load raises when any (from progression).
             Group {
                 if raisedThisMonth > 0 {
@@ -139,9 +137,10 @@ struct WorkoutHistoryScreen: View {
                             if up { Text("↗ +\(n)% vs. last month") } else { Text("↘ −\(n)% vs. last month") }
                         }
                         .font(InstrumentoType.grotesk(11, weight: .bold))
-                        .foregroundStyle(up ? theme.dataRecovery : theme.warning)
+                        // §8.7: valence en texto <24pt usa positiveText (5.0:1), no el hue del dato.
+                        .foregroundStyle(up ? theme.positiveText : theme.warning)
                         .padding(.horizontal, 9).padding(.vertical, 3)
-                        .background((up ? theme.dataRecovery : theme.warning).opacity(StrandOpacity.tintFill),
+                        .background((up ? theme.positiveText : theme.warning).opacity(StrandOpacity.tintFill),
                                     in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                     }
                 }
@@ -169,10 +168,13 @@ struct WorkoutHistoryScreen: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 1) {
                         Group {
-                            if sel.isCurrent { Text("This week · in progress") } else { Text("Week of \(weekLabel(sel.start))") }
+                            if sel.isCurrent {
+                                Text("This week · in progress").instrumentoOverline()
+                            } else {
+                                Text("Week of \(weekLabel(sel.start))").instrumentoOverline()
+                            }
                         }
-                        .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(1)
-                        .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                        .foregroundStyle(theme.inkTertiary)
                         Text("\(sel.count) sessions · tap another bar to switch")
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     }
@@ -199,8 +201,7 @@ struct WorkoutHistoryScreen: View {
     private func monthTile(_ label: LocalizedStringKey, _ value: String,
                            unit: LocalizedStringKey? = nil, caption: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(1)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value).font(InstrumentoType.groteskNumber(22)).foregroundStyle(theme.ink)
                 if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
@@ -238,6 +239,8 @@ struct WorkoutHistoryScreen: View {
                 InstrumentoSectionBand("Volume per muscle · 30 days") {
                     NavigationLink(value: MuscleVolumeRoute()) {
                         Text("See map").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            .frame(minHeight: 44)   // toque 44 (HIG §8.7-4)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -259,7 +262,7 @@ struct WorkoutHistoryScreen: View {
                             .clipShape(Capsule())
                         Text(MuscleFatigueMap.formattedSets(v.setsPerWeek))
                             .font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)
-                            .frame(width: 34, alignment: .trailing)
+                            .frame(minWidth: 34, alignment: .trailing).lineLimit(1)
                     }
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(MuscleAtlas.name(v.muscle)))
@@ -309,7 +312,7 @@ struct WorkoutHistoryScreen: View {
                                 Text(StrengthDisplay.weight(kg, system: system))
                             }
                             .font(StrandFont.caption)
-                            .foregroundStyle(theme.dataRecovery)
+                            .foregroundStyle(theme.positiveText)   // §8.7 valence <24pt
                             .monospacedDigit()
                         case .deferred(let kg):
                             HStack(spacing: 4) {
@@ -738,12 +741,29 @@ struct WorkoutSessionDetailScreen: View {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 heading
                 hero
+                // Handoff «Progreso C» (FER-952): zones ramp → FC media/máx → supports → note → source,
+                // each block on a thin hairline.
+                if let zones = WorkoutZones.percents(journalRow?.zonesJSON) {
+                    Divider().overlay(theme.hairline)
+                    zonesBlock(zones)
+                }
+                if dispAvgHr != nil || journalRow?.maxHr != nil {
+                    Divider().overlay(theme.hairline)
+                    heartBlock
+                }
                 Divider().overlay(theme.hairline)
                 secondaries
+                if let note = fullSession?.notes, !note.isEmpty {
+                    noteBlock(note)
+                }
+                sourceBadge
                 if loaded {
-                    ForEach(Array(groups.enumerated()), id: \.element.exerciseId) { idx, g in
-                        Divider().overlay(theme.hairline)
-                        exerciseBlock(g, index: idx)
+                    // Handoff: exercise blocks breathe compact (16), not the section's 28.
+                    VStack(alignment: .leading, spacing: CenitMetrics.sectionGapCompact) {
+                        ForEach(Array(groups.enumerated()), id: \.element.exerciseId) { idx, g in
+                            Divider().overlay(theme.hairline)
+                            exerciseBlock(g, index: idx)
+                        }
                     }
                     Divider().overlay(theme.hairline)
                     actions
@@ -914,35 +934,152 @@ struct WorkoutSessionDetailScreen: View {
     }
 
     @ViewBuilder
+    /// The support figures as a REGULAR two-column grid (FER-952: the old auto-fit row read as
+    /// off-center) — every cell speaks the heartBlock's grammar: overline on top, Grotesk 19 under.
     private var secondaries: some View {
-        let cells = Group {
-            if volumeKg > 0 { detailStat("Volume", StrengthHistoryFormat.volume(volumeKg, system: system)) }
-            detailStat("Sets", "\(setCount)")
+        LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading),
+                            GridItem(.flexible(), alignment: .leading)],
+                  alignment: .leading, spacing: CenitMetrics.sectionGapCompact) {
+            if volumeKg > 0 {
+                supportCell("Volume", StrengthHistoryFormat.volume(volumeKg, system: system))
+            }
+            supportCell("Sets", "\(setCount)")
             // Duration is the hero when there's no strain → don't repeat it as a secondary.
             if dispStrain != nil,
                let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
-                detailStat("Duration", StrengthHistoryFormat.durationText(mins))
+                supportCell("Duration", StrengthHistoryFormat.durationText(mins))
             }
-            if let hr = dispAvgHr { detailStat("Avg HR", "\(hr)") }
-            // Energy only when the session actually carries it (FER-715/718): a pre-v26 session leaves
-            // `energyKcal` nil → the cell is omitted (never a fabricated 0).
-            if let k = dispEnergyKcal { detailStat("Energy", StrandFormat.groupedInt(k)) }
-        }
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 18) { cells; Spacer(minLength: 0) }
-            VStack(alignment: .leading, spacing: 12) { cells }
+            // Avg HR lives in its own FC block (handoff «Progreso C») — not repeated here. Energy only
+            // when the session carries it (FER-715/718): pre-v26 → omitted, never a fabricated 0.
+            if let k = dispEnergyKcal { supportCell("Energy", StrandFormat.groupedInt(k)) }
         }
     }
 
-    private func detailStat(_ label: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(value).font(StrandFont.number(19, weight: .semibold)).foregroundStyle(theme.ink)
-                .monospacedDigit()
+    private func supportCell(_ label: LocalizedStringKey, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
             Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(verbatim: value)
+                .font(InstrumentoType.groteskNumber(19)).foregroundStyle(theme.ink)
         }
-        .frame(minWidth: 60, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
+
+    // MARK: - HR zones + heart + note + source (handoff «Progreso C», FER-952)
+
+    /// Time-overlapping journal `WorkoutRow` — zones/max HR live only on the journal (no FK).
+    @State private var journalRow: WorkoutRow? = nil
+
+    /// The handoff's continuous warm ramp: one 34pt bar sliced by zone share, Z-labels + % below.
+    /// Shares `theme.hrZoneRamp` (1 of 3 distinct HR-zone surfaces — palettes shared, geometry not, FER-908).
+    private func zonesBlock(_ percents: [Double]) -> some View {
+        let total = max(percents.reduce(0, +), 0.001)
+        return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            Text("Heart-rate zones").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    ForEach(percents.indices, id: \.self) { i in
+                        Rectangle().fill(theme.hrZoneRamp[i])
+                            .frame(width: max(0, (geo.size.width - 8) * percents[i] / total))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            }
+            .frame(height: 34)  // token-exempt: barra de zonas 34 del handoff
+            HStack(spacing: 0) {
+                ForEach(percents.indices, id: \.self) { i in
+                    VStack(spacing: 2) {
+                        Text(verbatim: "Z\(i + 1)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        Text(verbatim: "\(Int(percents[i].rounded()))%")
+                            .font(InstrumentoType.groteskNumber(12, weight: .semibold)).foregroundStyle(theme.ink)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Heart-rate zones"))
+        .accessibilityValue(Text(verbatim: percents.enumerated()
+            .map { "Z\($0.offset + 1) \(Int($0.element.rounded()))%" }.joined(separator: ", ")))
+    }
+
+    /// «FC MEDIA / FC MÁX» — the wine-hued pair (handoff): Grotesk 19 numerals, unit quiet.
+    private var heartBlock: some View {
+        HStack(spacing: 44) {  // token-exempt: 44 del handoff
+            if let hr = dispAvgHr {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Avg HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(verbatim: "\(hr)")
+                            .font(InstrumentoType.groteskNumber(19)).foregroundStyle(theme.dataHeart)
+                        Text(verbatim: "bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+            }
+            if let maxHr = journalRow?.maxHr {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Max HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(verbatim: "\(maxHr)")
+                            .font(InstrumentoType.groteskNumber(19)).foregroundStyle(theme.dataHeart)
+                        Text(verbatim: "bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// «NOTA» — the session's own words, on the sunken block (handoff).
+    private func noteBlock(_ note: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Note").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(note).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(CenitMetrics.gap)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+        }
+    }
+
+    /// «FUENTE» — measured with the band (journal join) vs estimated; honest, quiet, never a guess.
+    private var sourceBadge: some View {
+        HStack(spacing: 8) {
+            Text("Source").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if journalRow != nil {
+                // Idioma de origen del sistema (OriginStamp): punto `originBand` + copy en ink —
+                // el hue del dato (dataHeart) no marca procedencia (§8.7, auditoría FER-952).
+                HStack(spacing: 5) {
+                    Circle().fill(theme.originBand).frame(width: 5, height: 5)
+                    Text("Measured with your band")
+                        .font(StrandFont.caption).foregroundStyle(theme.ink)
+                }
+                .padding(.horizontal, 9).padding(.vertical, 3)
+                .background(theme.patternBlock, in: Capsule(style: .continuous))
+            } else {
+                Text("Estimated")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .background(theme.patternBlock, in: Capsule(style: .continuous))
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Match this strength session to a journal workout by interval overlap
+    /// (`a.start < b.end && b.start < a.end`); closest `startTs` wins.
+    private func loadJournalRow() async {
+        journalRow = nil
+        let sStart = dispStart
+        let sEnd = dispEnd ?? dispStart + 1
+        let now = Int(Date().timeIntervalSince1970)
+        let daysBack = max(3, (now - sStart) / 86_400 + 3)
+        let rows = await repo.workoutRows(days: min(daysBack, 90))
+        let matches = rows.filter { r in sStart < r.endTs && r.startTs < sEnd }
+        journalRow = matches.min(by: { abs($0.startTs - sStart) < abs($1.startTs - sStart) })
+    }
+
 
     private func exerciseBlock(_ g: (exerciseId: String, name: String, sets: [SetEntry]), index: Int) -> some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1062,6 +1199,9 @@ struct WorkoutSessionDetailScreen: View {
         var prMap: [String: [PersonalRecord]] = [:]
         for id in order { prMap[id] = await repo.personalRecords(exerciseId: id) }
         prsByExercise = prMap
+
+        // Journal join (zones / max HR live only on the journal — handoff «Progreso C», FER-952).
+        await loadJournalRow()
 
         loaded = true
     }

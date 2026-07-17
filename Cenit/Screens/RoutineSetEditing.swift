@@ -56,9 +56,21 @@ enum RoutineSetEditing {
     /// localized on its own so the literal «%» never lands in a format-string key.
     static func restChipLabel(_ cfg: RestConfig) -> String {
         if cfg.mode == .heartRate {
-            let pct = Int((cfg.hrValue * 100).rounded())
-            guard pct > 0 else { return String(localized: "by HR") }
-            return String(localized: "HR", comment: "compact chip prefix for a heart-rate rest threshold") + " · \(pct)%"
+            // FER-952 bug: `hrValue` is a FRACTION only for peakDrop/karvonen — formatting it as a
+            // percent regardless turned a fixed 160 bpm into «1600%» and restingMargin into noise.
+            let hr = String(localized: "HR", comment: "compact chip prefix for a heart-rate rest threshold")
+            switch cfg.hrReference {
+            case .peakDrop, .karvonenReserve:
+                let pct = Int((cfg.hrValue * 100).rounded())
+                guard pct > 0 else { return String(localized: "by HR") }
+                return hr + " · \(pct)%"
+            case .fixedBpm:
+                let bpm = Int(cfg.hrValue.rounded())
+                guard bpm > 0 else { return String(localized: "by HR") }
+                return hr + " · \(bpm) bpm"
+            case .restingMargin:
+                return String(localized: "by HR")   // target = resting + margin; no number to promise
+            }
         }
         let s = cfg.seconds
         return s % 60 == 0 ? String(localized: "\(s / 60) min") : String(localized: "\(s) s")
@@ -105,28 +117,29 @@ enum RoutineSetEditing {
 // MARK: - Per-set rest chip (→ 1e push)
 //
 // Each set carries its own rest (choque 3): the chip shows this set's EFFECTIVE rest (its own override, or the
-// exercise's rest as fallback). Time reads in ink; an HR threshold reads in the recovery green, because the
-// threshold is a datum. Tapping pushes the shared `RestEditorScreen` (1e). `timeColor` is the only visual knob
-// the two screens differ on (builder = ink, plan-day editor = inkSecondary).
+// exercise's rest as fallback). Troquel grammar (r15): the hue lives ONLY in the leading icon (♥ recovery
+// for HR, clock ember for time); the value reads in ink. Tapping pushes the shared `RestEditorScreen` (1e).
 
 struct RestChip: View {
     @Environment(\.instrumentoTheme) private var theme
     let cfg: RestConfig
-    let timeColor: Color
     let action: () -> Void
 
     var body: some View {
         let isHR = cfg.mode == .heartRate
+        // FER-952 (owner): SAME chip grammar as the live session's troquel rest chip (r15) — the hue
+        // lives ONLY in the leading icon (♥ recovery for HR, clock ember for time), value in ink.
         return Button(action: action) {
-            HStack(spacing: 5) {
-                Text(RoutineSetEditing.restChipLabel(cfg)).font(StrandFont.caption).monospacedDigit()
-                    .foregroundStyle(isHR ? theme.dataRecovery : timeColor).lineLimit(1)
+            HStack(spacing: 6) {
+                (isHR ? StrandIcon.heart.image : StrandIcon.clock.image)
+                    .font(StrandFont.glyph(.chevron))
+                    .foregroundStyle(isHR ? theme.dataRecovery : theme.dataStrain)
+                Text(RoutineSetEditing.restChipLabel(cfg))
+                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
+                    .foregroundStyle(theme.ink).lineLimit(1)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                .strokeBorder(isHR ? theme.dataRecovery : theme.hairline, lineWidth: 1))
+            .troquelChip(theme)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

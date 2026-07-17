@@ -50,6 +50,10 @@ struct WorkoutImportView: View {
     @State private var mappingTarget: MappingName?  // name being mapped → drives the library picker sheet
     @State private var createdCount = 0
     @State private var celebrate = false   // done-screen pop-in (respects Reduce Motion)
+    /// M4 (decisión Fer): cerrar con el mapeo/confirmación a medias pide confirmación — antes el
+    /// swipe-down tiraba todo el trabajo sin avisar.
+    @State private var confirmDiscard = false
+    private var midWork: Bool { phase == .mapping || phase == .confirm }
 
     /// The user's weight unit (kg / lb), for the confirm-step preview only — stored weights are kg.
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -71,6 +75,30 @@ struct WorkoutImportView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        .overlay(alignment: .topTrailing) {
+            Button {
+                if midWork { confirmDiscard = true } else { dismiss() }
+            } label: {
+                StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                    .foregroundStyle(theme.inkSecondary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Close"))
+            .padding(.trailing, CenitMetrics.space2).padding(.top, CenitMetrics.space2)
+        }
+        .interactiveDismissDisabled(midWork)
+        .instrumentoConfirm(
+            isPresented: $confirmDiscard,
+            title: String(localized: "Discard this import?"),
+            context: String(localized: "IMPORT · IN PROGRESS"),
+            message: String(localized: "The mapping you've done so far won't be saved."),
+            actions: [
+                .init(String(localized: "Keep importing"), role: .primary),
+                .init(String(localized: "Discard import"), role: .destructive) { dismiss() }
+            ]
+        )
         .task {
             if catalog.isEmpty {
                 catalog = await repo.allExercises()
@@ -133,9 +161,11 @@ struct WorkoutImportView: View {
 
     /// Handoff: acción de acento dentro de un paso (ember lleno) — distinta del CTA canónico de tinta.
     private func emberButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        // Compacto (abraza su contenido), pero en la MISMA voz del CTA del módulo (Grotesk 15/bold/0.3)
+        // — antes hablaba SF headline (auditoría D).
         Button(action: action) {
             Text(title)
-                .font(StrandFont.headline).foregroundStyle(theme.paperHi)
+                .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3).foregroundStyle(theme.paperHi)
                 .padding(.horizontal, 18).padding(.vertical, 10)
                 .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
                 .contentShape(Rectangle())
@@ -301,8 +331,8 @@ struct WorkoutImportView: View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             stepper(current: .confirm)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Import plan").instrumentoOverline().foregroundStyle(theme.dataStrain)
-                nameText(program.name, fallback: "Your program").font(StrandFont.title1).foregroundStyle(theme.ink)
+                Text("Import plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                nameText(program.name, fallback: "Your program").font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
                 Text(programSummary(program)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
 
@@ -388,7 +418,7 @@ struct WorkoutImportView: View {
 
                 VStack(spacing: CenitMetrics.space2) {
                     Text(createdRoutinesTitle(createdCount))
-                        .font(StrandFont.title1).foregroundStyle(theme.ink)
+                        .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
                         .multilineTextAlignment(.center)
                     Text("They're in «My routines», ready to train.")
                         .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
@@ -417,6 +447,7 @@ struct WorkoutImportView: View {
     private func stepper(current: Phase) -> some View {
         let labels: [LocalizedStringKey] = ["Capture", "Map", "Confirm", "Done"]
         let currentIndex = phaseIndex(current)
+        // El ✕ flota arriba-derecha (44pt): la tira le cede su carril para no chocar (bug Fer 2026-07-16).
         return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
@@ -426,6 +457,7 @@ struct WorkoutImportView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
+            .padding(.trailing, 44)
             HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
@@ -452,8 +484,8 @@ struct WorkoutImportView: View {
 
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(overline).instrumentoOverline().foregroundStyle(theme.dataStrain)
-            Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(title).font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
         }
     }
 

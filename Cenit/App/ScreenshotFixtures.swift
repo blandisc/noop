@@ -266,27 +266,37 @@ enum ScreenshotFixtures {
     @MainActor
     static func seedTrainingPlan(_ model: AppModel) async {
         guard let store = await model.repo.storeHandle() else { return }
-        // Idempotent: the fixture relaunches between captures and the store persists — seeding again
-        // would duplicate the routines (first capture showed «18 rutinas»: 6× each). But routines
-        // WITHOUT sessions (e.g. a store `seed(state: "train")` populated earlier) still fall through
-        // to the session block below, hanging the demo history off the existing plan (FER-951).
-        if let existing = try? await store.routines(), !existing.isEmpty {
-            let sessions = (try? await store.recentSessions(limit: 1)) ?? []
-            guard sessions.isEmpty else { return }
-            let rid = existing[0].id
-            await seedSessions(store: store, pushId: rid,
-                               pullId: existing.count > 1 ? existing[1].id : rid,
-                               legsId: existing.count > 2 ? existing[2].id : rid)
-            return
+        // WIPE + RESEED, always: the preview store PERSISTS across canvas runs, so any stale demo
+        // (yesterday's weekday split → «No routine» today; an old seed without sessions/zones) would
+        // shadow the fresh one forever. Deleting the demo first also keeps the old idempotence promise
+        // — no duplicated routines — while re-anchoring the split to TODAY on every run (FER-952).
+        if let stale = try? await store.routines() {
+            for r in stale { try? await store.deleteRoutine(id: r.id) }
         }
+        for s in (try? await store.recentSessions(limit: 500)) ?? [] {
+            try? await store.deleteSession(id: s.id)
+        }
+        // A live-session snapshot left by an earlier canvas run (Serie activa previews) would be
+        // restored by every fresh AppModel and LOCK the routine editor — the demo starts at rest.
+        try? await store.clearInProgressSession()
+        model.strengthSession = nil
         let now = Int(Date().timeIntervalSince1970)
         let cal = Calendar(identifier: .gregorian)
 
-        func rex(_ rid: String, _ eid: String, _ pos: Int, sets: Int, reps: Int, kg: Double) -> RoutineExercise {
+        func rex(_ rid: String, _ eid: String, _ pos: Int, sets: Int, reps: Int, kg: Double,
+                 progression: Bool = false) -> RoutineExercise {
             let planned = (0..<sets).map { RoutineSet(position: $0, reps: reps, weightKg: kg) }
-            return RoutineExercise(routineId: rid, exerciseId: eid, position: pos,
-                                   targetSets: sets, targetReps: reps, targetWeightKg: kg,
-                                   restMode: .fixed, restSeconds: 90, sets: planned)
+            var re = RoutineExercise(routineId: rid, exerciseId: eid, position: pos,
+                                     targetSets: sets, targetReps: reps, targetWeightKg: kg,
+                                     restMode: .fixed, restSeconds: 90, sets: planned)
+            // FER-952: progression ON for the big three so «Tu progresión» (accents ↑ / … / ＝)
+            // always has rows to draw in the canvas.
+            if progression {
+                re.progressionEnabled = true
+                re.progressionSessions = 2
+                re.progressionIncrementKg = 2.5
+            }
+            return re
         }
 
         // Push (chest/shoulders → ember) / pull (lats/biceps → teal) / legs (quads → indigo).
@@ -294,18 +304,20 @@ enum ScreenshotFixtures {
         let b = Routine(name: "Día B — Tirón", createdTs: now, updatedTs: now, sortOrder: 1)
         let c = Routine(name: "Día C — Pierna", createdTs: now, updatedTs: now, sortOrder: 2)
         try? await store.saveRoutine(a, exercises: [
-            rex(a.id, "Barbell_Bench_Press_-_Medium_Grip", 0, sets: 4, reps: 8, kg: 80),
+            rex(a.id, "Barbell_Bench_Press_-_Medium_Grip", 0, sets: 4, reps: 8, kg: 80, progression: true),
             rex(a.id, "Incline_Dumbbell_Press", 1, sets: 3, reps: 10, kg: 26),
             rex(a.id, "Dumbbell_Lying_One-Arm_Rear_Lateral_Raise", 2, sets: 3, reps: 12, kg: 8),
         ])
         try? await store.saveRoutine(b, exercises: [
-            rex(b.id, "Barbell_Deadlift", 0, sets: 4, reps: 6, kg: 120),
+            rex(b.id, "Barbell_Deadlift", 0, sets: 4, reps: 6, kg: 120, progression: true),
             rex(b.id, "Close-Grip_Front_Lat_Pulldown", 1, sets: 3, reps: 10, kg: 55),
             rex(b.id, "Barbell_Curl", 2, sets: 3, reps: 10, kg: 30),
         ])
         try? await store.saveRoutine(c, exercises: [
-            rex(c.id, "Barbell_Full_Squat", 0, sets: 4, reps: 8, kg: 100),
+            rex(c.id, "Barbell_Full_Squat", 0, sets: 4, reps: 8, kg: 100, progression: true),
             rex(c.id, "Dumbbell_Lunges", 1, sets: 3, reps: 10, kg: 20),
+            // Core en el plan para que «Volumen por grupo» de Tu Plan pinte SIEMPRE las 4 barras.
+            rex(c.id, "Cable_Crunch", 2, sets: 3, reps: 15, kg: 25),
         ])
 
         // Split anchored to TODAY: today = A (hero); +2/−3 days = B; −2 days = C. Weekday numbers
@@ -327,23 +339,78 @@ enum ScreenshotFixtures {
     /// day blocks with set chips + the RÉCORD badge on today (FER-951).
     private static func seedSessions(store: WhoopStore, pushId: String, pullId: String, legsId: String) async {
         let cal = Calendar(identifier: .gregorian)
-        func session(_ rid: String, exerciseId: String, daysAgo: Int, kg: Double) async {
+        /// Matches `AppModel.deviceId`, so `Repository.workoutRows` joins the journal row (zones/max HR).
+        let journalDeviceId = "my-whoop"
+
+        /// One completed session — optionally MULTI-exercise (`extras`), with strain/HR/kcal/notes and,
+        /// when `zones` is set, a time-overlapping journal `WorkoutRow` so the detail's HR-zones bar
+        /// renders (StrengthSession doesn't persist zones; the journal join does).
+        func session(_ rid: String, exerciseId: String, daysAgo: Int, kg: Double, sets: Int = 3,
+                     extras: [(id: String, kg: Double, sets: Int)] = [],
+                     strain: Double? = nil, avgHr: Int? = nil, energyKcal: Double? = nil,
+                     notes: String? = nil, zones: Bool = false) async {
             guard let day = cal.date(byAdding: .day, value: -daysAgo, to: Date()) else { return }
             let start = Int(cal.startOfDay(for: day).timeIntervalSince1970) + 18 * 3600
-            let s = StrengthSession(routineId: rid, startTs: start, endTs: start + 50 * 60)
-            let sets = (0..<3).map {
-                SetEntry(sessionId: s.id, exerciseId: exerciseId, position: $0,
-                         kind: .work, weightKg: kg, reps: 8, done: true, ts: start + $0 * 300)
+            let end = start + 50 * 60
+            let s = StrengthSession(routineId: rid, startTs: start, endTs: end,
+                                    strain: strain, avgHr: avgHr, notes: notes,
+                                    energyKcal: energyKcal, energySource: energyKcal != nil ? .estimated : nil)
+            var rows: [SetEntry] = []
+            for (pos, spec) in ([(exerciseId, kg, sets)] + extras.map { ($0.id, $0.kg, $0.sets) }).enumerated() {
+                for i in 0..<spec.2 {
+                    rows.append(SetEntry(sessionId: s.id, exerciseId: spec.0, position: pos * 10 + i,
+                                         kind: .work, weightKg: spec.1, reps: 8, done: true,
+                                         ts: start + rows.count * 240))
+                }
             }
-            try? await store.saveSession(s, sets: sets)
+            try? await store.saveSession(s, sets: rows)
+            if zones {
+                let row = WorkoutRow(
+                    startTs: start, endTs: end,
+                    sport: "Strength Training", source: "whoop",
+                    durationS: Double(end - start), energyKcal: energyKcal,
+                    avgHr: avgHr, maxHr: avgHr.map { $0 + 36 }, strain: strain, distanceM: nil,
+                    zonesJSON: #"{"z1":8,"z2":22,"z3":40,"z4":25,"z5":5}"#,
+                    notes: nil)
+                _ = try? await store.upsertWorkouts([row], deviceId: journalDeviceId)
+            }
         }
-        await session(legsId, exerciseId: "Barbell_Full_Squat", daysAgo: 2, kg: 100)
-        await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 3, kg: 120)
-        await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 10, kg: 115)
+
+        // ── LA SESIÓN ESTRELLA (hoy): banca + accesorios, con TODO — esfuerzo, FC, kcal, nota y
+        // zonas de FC vía journal — para verificar el detalle de sesión completo (FER-952).
+        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 0, kg: 82.5, sets: 4,
+                      extras: [("Incline_Dumbbell_Press", 26, 3), ("Cable_Crunch", 25, 3)],
+                      strain: 11.2, avgHr: 132, energyKcal: 316,
+                      notes: "Felt strong; moved bench up to 82.5.", zones: true)
+
+        // ── SEMANA DENSA: sesiones recientes multi-ejercicio para que «Volumen por músculo» pinte
+        // bandas VARIADAS (pecho en banda, pierna abajo, etc.), no todo en ámbar por falta de datos.
+        await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 1, kg: 120, sets: 4,
+                      extras: [("Close-Grip_Front_Lat_Pulldown", 55, 4), ("Barbell_Curl", 30, 3)],
+                      strain: 12.8, avgHr: 128, energyKcal: 342, zones: true)
+        await session(legsId, exerciseId: "Barbell_Full_Squat", daysAgo: 2, kg: 100, sets: 4,
+                      extras: [("Dumbbell_Lunges", 20, 3), ("Cable_Crunch", 25, 3)],
+                      strain: 13.1, avgHr: 126, energyKcal: 358, zones: true)
+        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 3, kg: 80, sets: 5,
+                      extras: [("Incline_Dumbbell_Press", 24, 4)])
+        // Un empuje extra dentro de la ventana de 30 d para que PECHO cruce la banda (≥10 series/sem
+        // ponderadas) y el color de familia conviva con el ámbar de los que quedan abajo.
+        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 8, kg: 80, sets: 5,
+                      extras: [("Incline_Dumbbell_Press", 24, 4)])
+        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 9, kg: 77.5, sets: 4,
+                      extras: [("Incline_Dumbbell_Press", 24, 3)])
+        await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 5, kg: 117.5, sets: 4,
+                      extras: [("Close-Grip_Front_Lat_Pulldown", 52.5, 4)])
+        await session(pushId, exerciseId: "Barbell_Bench_Press_-_Medium_Grip", daysAgo: 6, kg: 80, sets: 4,
+                      extras: [("Incline_Dumbbell_Press", 24, 3)])
+
+        // ── Historia previa: la progresión de banca de 8 semanas (tendencia 1RM del Detalle) y
+        // pierna/jalón salpicados para la Constancia.
         await session(legsId, exerciseId: "Barbell_Full_Squat", daysAgo: 16, kg: 95)
+        await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 10, kg: 115)
         await session(pullId, exerciseId: "Barbell_Deadlift", daysAgo: 31, kg: 110)
         let benchRamp: [(daysAgo: Int, kg: Double)] = [
-            (0, 82.5), (4, 80), (7, 80), (11, 80), (14, 77.5), (18, 77.5), (21, 77.5), (25, 75),
+            (11, 80), (14, 77.5), (18, 77.5), (21, 77.5), (25, 75),
             (28, 75), (32, 75), (35, 72.5), (39, 72.5), (42, 72.5), (46, 70), (49, 70), (53, 70),
         ]
         for step in benchRamp {

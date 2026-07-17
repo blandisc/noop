@@ -110,6 +110,13 @@ private struct EntrenarLanding: View {
     @State private var constancyPopup: ConstancyPopup? = nil
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
     @State private var showTemplates = false
+    /// FER-952: the hub's Import door-chip.
+    @State private var showHubImport = false
+    /// «Lo que Cénit sabe hacer» (decisión Fer 2026-07-16): puerta permanente + tarjeta única.
+    @State private var showTricks = false
+    @AppStorage("hubTricksCardDismissed") private var tricksCardDismissed = false
+    /// FER-952: the hub's «New routine» — pushes the unified create flow (library → editor).
+    @State private var showCreateRoutine = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
     @State private var confirmResumeStrength = false
@@ -126,7 +133,8 @@ private struct EntrenarLanding: View {
         // `sectionGap` (28) still gives more air between blocks than the old 18; no measured-height feedback.
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                header
+                // FER-952 (owner): the «Train» wordmark + tab glyph row retired — the dock already
+                // names the tab; the recovery chip now rides the hero's «Hoy» line (see heroSection).
                 if loaded {
                     if loadFailed {
                         loadErrorState       // store couldn't be read — «No pudimos leer tus rutinas · Reintentar»
@@ -142,6 +150,7 @@ private struct EntrenarLanding: View {
                         heroSection       // ① open hero «Hoy · {día}» + «Empezar» + the five discs
                         suggestionRow     // ② contextual FER-532 nudge (shown only when the engine fires)
                         sesionDeHoy       // ③ «LA SESIÓN DE HOY» — big numerals + raise + recovery hint
+                        if !tricksCardDismissed { tricksCard }   // una-sola-vez (decisión Fer)
                         tuPlanSection     // ④ «TU PLAN» — week squares + every routine + new-routine row
                         constanciaSection // ⑤ 90-day dot grid — no streak guilt (mock 1a)
                         footRows          // ⑥ history + diet
@@ -168,6 +177,18 @@ private struct EntrenarLanding: View {
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // FER-952: the hub's Import chip opens the importer right here (same sheet as Tu Plan).
+        .sheet(isPresented: $showHubImport) {
+            WorkoutImportView { await load() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // FER-952: «＋ Nueva rutina» del hub — el flujo unificado directo (Biblioteca → editor).
+        .navigationDestination(isPresented: $showCreateRoutine) {
+            ExerciseLibraryScreen(createFlow: true) { picks in createRoutineFromHub(picks) }
+        }
+        .navigationDestination(isPresented: $showTricks) {
+            WorkshopTricksScreen()
         }
         // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
         // doesn't cross the `.sheet` boundary, FER-162), no nested NavigationStack (FER-171). (FER-557)
@@ -226,24 +247,6 @@ private struct EntrenarLanding: View {
 
     // MARK: - Header + recovery chip
 
-    private var header: some View {
-        // Shared wordmark row — same lockup, size and baseline as «Tendencias»/«Patrones» so the three
-        // tab titles align as you swipe. Glyph = the dock's tab icon; the recovery chip rides the trailing
-        // slot, which is anchored to the title's height so it never pushes the title down.
-        // `String(localized:)` so the wordmark follows the app language — the header takes a plain String,
-        // which `Text` would render verbatim, leaving «Train» in English even in Spanish. (es → «Entrenar».)
-        InstrumentoTabHeader(String(localized: "Train")) {
-            Image(systemName: "figure.strengthtraining.functional")
-                .font(.system(size: 20)).foregroundStyle(theme.ink)  // token-exempt: glifo 20pt fuera de banda lead
-        } trailing: {
-            // Same trailing slot always occupied so the header doesn't jump when the score appears. (FER-949)
-            if let rec = recovery {
-                recoveryChip(rec)
-            } else {
-                recoveryChipPlaceholder
-            }
-        }
-    }
 
     /// The recovery chip: a small arc (`dataRecovery`) + the numeral. Tapping opens the Recovery Detail
     /// sheet (same as Today/Cuerpo) — it does NOT switch tabs. The one glanceable point of color here.
@@ -263,21 +266,21 @@ private struct EntrenarLanding: View {
             HStack(spacing: 7) {
                 RecoveryChipRing(score: rec).frame(width: 22, height: 22)
                 Text("\(Int(rec.rounded()))")
-                    .font(StrandFont.number(17, weight: .semibold)).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskNumber(17, weight: .semibold)).foregroundStyle(theme.ink)
             }
             .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
             .background(theme.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Recuperación \(Int(rec.rounded())). Ver detalle."))
+        .accessibilityLabel(Text("Recovery \(Int(rec.rounded())). See detail."))
     }
 
     /// Quiet chrome while recovery is still calibrating (no score). Same capsule + height as the live
     /// chip so the header stays still; `inkDim` only (no datum color); not tappable. (FER-949)
     private var recoveryChipPlaceholder: some View {
         Text(verbatim: "—")
-            .font(StrandFont.number(17, weight: .semibold))
+            .font(InstrumentoType.groteskNumber(17, weight: .semibold))
             .foregroundStyle(theme.inkDim)
             .frame(minWidth: 22, minHeight: 22)   // match the live chip's ring box so height doesn't jump
             .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
@@ -296,9 +299,13 @@ private struct EntrenarLanding: View {
 
     private var heroSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(hoyOverline)
-                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            // FER-952 (owner): the recovery chip rides the «Hoy» line — trailing, at the overline's height.
+            HStack(alignment: .center, spacing: 8) {
+                Text(hoyOverline)
+                    .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                if let rec = recovery { recoveryChip(rec) } else { recoveryChipPlaceholder }
+            }
             if let r = todayRoutine {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt: geometría de dato
@@ -378,7 +385,7 @@ private struct EntrenarLanding: View {
     /// The CTA verb: a live session in progress makes this «Continuar» (tapping re-opens it — `startToday`
     /// ends in `startStrengthSession`, whose guard re-presents the existing session, AppModel), otherwise
     /// «Empezar». Spanish literals, matching the rest of this screen.
-    private var empezarLabel: LocalizedStringKey { model.strengthSession != nil ? "Continuar" : "Empezar" }
+    private var empezarLabel: LocalizedStringKey { model.strengthSession != nil ? "Continue" : "Empezar" }
 
     /// Re-open the live session if one is running (any day, incl. rest days), otherwise start today's.
     private func startOrResume() {
@@ -393,24 +400,12 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// Routine-day CTA: same chrome as `StrandCTAButton` solid, but fill uses the routine's region tint
-    /// instead of `theme.ink` (shared component stays ink-only for other screens).
+    /// Routine-day CTA: `StrandCTAButton` con el tinte de región de la rutina (auditoría FER-952:
+    /// el chrome se copiaba a mano; ahora el componente acepta `tint`).
     private var tintedEmpezarButton: some View {
-        let tint = routineTint(region(name: todayRoutine?.name ?? ""))
-        return Button(action: startOrResume) {
-            Text(empezarLabel)
-                .font(InstrumentoType.grotesk(15, weight: .bold))
-                .tracking(0.3)
-                .foregroundStyle(theme.paperHi)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 15)
-                .background(
-                    RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
-                        .fill(tint)
-                )
-                .contentShape(Rectangle())
+        StrandCTAButton(empezarLabel, tint: routineTint(region(name: todayRoutine?.name ?? ""))) {
+            startOrResume()
         }
-        .buttonStyle(.plain)
     }
 
     /// F1: a day with a routine starts the guided session in one tap (slots prefetched on load); an empty
@@ -426,6 +421,27 @@ private struct EntrenarLanding: View {
     /// empty and `LiveStrengthSheet` shows its own empty-state (search + freshness suggestions) until the
     /// first exercise is added. With a live session, confirm resume instead of looking like a new start
     /// (FER-950 — AppModel's guard only re-presents the existing sheet).
+    /// FER-952 unified flow, hub edition: the library's picks become a routine right here and the
+    /// unified editor opens to name and tune it (post-pop push — FER-171 lesson).
+    private func createRoutineFromHub(_ picks: [Exercise]) {
+        guard !picks.isEmpty else { return }
+        let now = Int(Date().timeIntervalSince1970)
+        let r = Routine(name: String(localized: "New routine"), createdTs: now, updatedTs: now, sortOrder: 0)
+        let exercises = picks.enumerated().map { idx, ex -> RoutineExercise in
+            let usesReps = ex.type == .weightReps || ex.type == .bodyweight
+            let reps: Int? = usesReps ? 8 : nil
+            let sets = (0..<3).map { RoutineSet(position: $0, kind: .work, reps: reps, weightKg: nil) }
+            return RoutineExercise(routineId: r.id, exerciseId: ex.id, position: idx,
+                                   targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
+        }
+        Task {
+            try? await repo.saveRoutine(r, exercises: exercises)
+            await load()
+            try? await Task.sleep(nanoseconds: 550_000_000)
+            openRoutine(r.id)
+        }
+    }
+
     private func startQuickStrength() {
         if model.strengthSession != nil {
             confirmResumeStrength = true
@@ -596,10 +612,19 @@ private struct EntrenarLanding: View {
     private var tuPlanSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             InstrumentoSectionBand("Your plan") {
+                // Decisión Fer (2026-07-16 v2): la puerta habla en la MISMA voz sutil que el
+                // «N sesiones · 90 días» de Consistencia, con chevron para decir «tócame».
                 Button { openWeeklyPlan() } label: {
-                    Text("Edit week").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    HStack(spacing: 4) {
+                        Text("Edit routines and week")
+                            .font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                        StrandIcon.disclosure.image
+                            .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text("Edit routines and week"))
             }
             weekStrip
             // Handoff v4b: EVERY routine lists here (today's included — its «↗ N suben» badge is the
@@ -607,25 +632,70 @@ private struct EntrenarLanding: View {
             ForEach(planRows, id: \.routineId) { row in
                 planRoutineRow(row)
             }
+            // Sin día asignado: visibles igual (antes una rutina nueva no salía en ningún lado del
+            // hub). El «—» honesto va en inkDim; asignarle día se hace en Tu Plan.
+            ForEach(unscheduledRoutines, id: \.id) { r in
+                planRoutineRow((routineId: r.id, name: r.name, days: String(localized: "no day yet")))
+            }
             nuevaRutinaRow
         }
     }
 
-    /// «＋ Nueva rutina · plantillas · importar» — one quiet row into the weekly plan editor, where
-    /// creating, templates and import all live.
-    private var nuevaRutinaRow: some View {
-        Button { openWeeklyPlan() } label: {
-            HStack(spacing: 10) {
-                Text(verbatim: "＋").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Text("New routine · templates · import")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 8)
+    /// Tarjeta de una-sola-vez hacia los trucos del taller (decisión Fer 2026-07-16): se descarta
+    /// con ✕ y no vuelve; la puerta permanente es el chip «? Trucos».
+    private var tricksCard: some View {
+        Button { showTricks = true } label: {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Did you know your routine can raise itself?")
+                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                Text("Progression, rest by pulse, plate calculator… the workshop's tricks.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("See the tricks").font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.dataStrain)
+                    .padding(.top, 4)
             }
-            .padding(.vertical, 11)
-            .frame(minHeight: 44)   // HIG tap target (FER-944)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(CenitMetrics.receiptPadding)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            Button { withAnimation(StrandMotion.interactive) { tricksCardDismissed = true } } label: {
+                StrandIcon.close.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Dismiss"))
+        }
+    }
+
+    /// «＋ Nueva rutina» + the styled door-chips (FER-952). New routine goes STRAIGHT into the
+    /// unified create flow (library push → editor) — no detour through Tu Plan. Folders left the
+    /// hub: managing folders belongs where the routine list lives (Tu Plan).
+    private var nuevaRutinaRow: some View {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            Button { showCreateRoutine = true } label: {
+                HStack(spacing: 8) {
+                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    Text("New routine").font(StrandFont.subhead.weight(.semibold))
+                }
+                .foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            HStack(spacing: CenitMetrics.space2) {
+                InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
+                InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showHubImport = true }
+                InstrumentoToolChip(systemImage: "questionmark.circle", label: Text("Tricks")) { showTricks = true }
+            }
+        }
+        .padding(.top, CenitMetrics.space2)
     }
 
     /// Mon→Sun strip of the weekly split under «Also in your plan»: one equal cell per weekday, tinted
@@ -637,7 +707,7 @@ private struct EntrenarLanding: View {
                 weekStripCell(wd)
             }
         }
-        .padding(.vertical, CenitMetrics.space2)
+        .padding(.top, CenitMetrics.gap).padding(.bottom, CenitMetrics.space2)
     }
 
     @ViewBuilder
@@ -665,6 +735,14 @@ private struct EntrenarLanding: View {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.surface)
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                         .strokeBorder(todayRingTint, lineWidth: 1.5)
+                } else if hasRoutine {
+                    // 2026-07-16 (bug Fer «no se actualizan los cuadritos»): un día asignado futuro
+                    // solo cambiaba el tinte de la LETRA — invisible. Ahora el cuadrito toma el wash
+                    // de su rutina con su anillo suave; descanso queda como puro patternBlock.
+                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                        .fill(routineTint(region).opacity(StrandOpacity.tintFill))
+                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                        .strokeBorder(routineTint(region).opacity(StrandOpacity.strokeSoft), lineWidth: 1)
                 } else {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.patternBlock)
                 }
@@ -895,7 +973,7 @@ private struct EntrenarLanding: View {
     private func monthColumn(_ m: ConstancyMonth) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             (Text(m.label) + Text(verbatim: " · ") + Text("\(m.count)"))
-                .font(StrandFont.overline).tracking(0.6)
+                .groteskOverline()
                 .foregroundStyle(m.isCurrent ? theme.ink : theme.inkTertiary)
             monthGrid(m)
         }
@@ -1186,6 +1264,13 @@ private struct EntrenarLanding: View {
     /// «También en tu plan» lists every scheduled routine EXCEPT today's (which is the hero).
     private var otherPlanRoutines: [(routineId: String, name: String, days: String)] {
         planRows.filter { $0.routineId != todayRoutineId }
+    }
+
+    /// Rutinas SIN día asignado (2026-07-16, bug Fer): una rutina recién creada no aparecía en
+    /// NINGÚN lado del hub (la lista era solo el split). Van al final con «—» de días.
+    private var unscheduledRoutines: [Routine] {
+        let scheduled = Set(split.values)
+        return routines.filter { !scheduled.contains($0.id) }
     }
 
     /// The hero's muscle line: today's routine's top primary muscles, «·»-joined (nil when unknown).

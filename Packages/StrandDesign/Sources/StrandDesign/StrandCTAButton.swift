@@ -25,13 +25,17 @@ public struct StrandCTAButton: View {
     private let title: LocalizedStringKey
     private let systemImage: String?
     private let kind: Kind
+    /// Relleno alternativo del `.solid` (identidad de rutina, puerta ámbar del módulo Entrenar).
+    /// nil = tinta, el default del sistema. Ignorado en `.outline`.
+    private let tint: Color?
     private let action: () -> Void
 
     public init(_ title: LocalizedStringKey, systemImage: String? = nil,
-                kind: Kind = .solid, action: @escaping () -> Void) {
+                kind: Kind = .solid, tint: Color? = nil, action: @escaping () -> Void) {
         self.title = title
         self.systemImage = systemImage
         self.kind = kind
+        self.tint = tint
         self.action = action
     }
 
@@ -47,7 +51,7 @@ public struct StrandCTAButton: View {
                     let shape = RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
                     switch kind {
                     case .solid:
-                        shape.fill(theme.ink)
+                        shape.fill(tint ?? theme.ink)
                     case .outline:
                         shape.fill(theme.surface)
                             .overlay(shape.strokeBorder(theme.hairlineStrong, lineWidth: 1))

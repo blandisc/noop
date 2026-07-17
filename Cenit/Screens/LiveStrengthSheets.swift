@@ -20,6 +20,8 @@ import WhoopStore
 struct RPESheet: View {
     let theme: InstrumentoTheme
     let target: LiveStrengthSheet.RPETarget
+    /// Peso YA formateado en la unidad del usuario («82,5 kg» / «180 lb») — la hoja no conoce unidades (FER-952).
+    let weightLabel: String
     let onPick: (Double?) -> Void
     let onClose: () -> Void
 
@@ -29,9 +31,10 @@ struct RPESheet: View {
 
     @State private var selected: Double
 
-    init(theme: InstrumentoTheme, target: LiveStrengthSheet.RPETarget,
+    init(theme: InstrumentoTheme, target: LiveStrengthSheet.RPETarget, weightLabel: String,
          onPick: @escaping (Double?) -> Void, onClose: @escaping () -> Void) {
-        self.theme = theme; self.target = target; self.onPick = onPick; self.onClose = onClose
+        self.theme = theme; self.target = target; self.weightLabel = weightLabel
+        self.onPick = onPick; self.onClose = onClose
         // r21 (auditoría UX #8b): un RPE legado fuera de la escala visible (7,5/8,5 del modelo
         // viejo) se ancla al escalón más cercano — antes la hoja abría sin píldora seleccionada.
         let raw = target.currentRPE ?? 8
@@ -65,10 +68,12 @@ struct RPESheet: View {
                 Button(action: onClose) {
                     StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(theme.inkSecondary)
+                        .frame(width: 44, height: 44)   // toque 44 (HIG §8.7-4)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel(Text("Close"))
             }
-            Text("Set \(target.setNumber) · \(LiveStrengthSheet.formatDecimalComma(target.weightKg)) kg × \(target.reps) reps")
+            Text("Set \(target.setNumber) · \(weightLabel) × \(target.reps) reps")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
         }
         .padding(.top, CenitMetrics.sectionGap)
@@ -233,39 +238,11 @@ struct NoteSheet: View {
             Spacer()
             Button { onSave(scope, text) } label: {
                 Text("Save").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.verdictDeep)
+                    .frame(minWidth: 44, minHeight: 44, alignment: .trailing)   // toque 44 (HIG §8.7-4)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
-    }
-
-    private var scopeToggle: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Save to:").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            HStack(spacing: 3) {
-                scopeOption(.exercise, label: String(localized: "This exercise"))
-                scopeOption(.set, label: String(format: String(localized: "Only set %d"), target.setNumber))
-            }
-            .padding(3)
-            .background(theme.trackWarm, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-        }
-    }
-
-    private func scopeOption(_ value: Scope, label: String) -> some View {
-        let selected = scope == value
-        return Button {
-            withAnimation(StrandMotion.interactive) { scope = value }
-        } label: {
-            Text(label)
-                .font(StrandFont.caption.weight(.bold))
-                .foregroundStyle(selected ? theme.paper : theme.inkSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background {
-                    if selected { RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.ink) }
-                }
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
     private var editor: some View {
@@ -415,6 +392,8 @@ struct ChangeExerciseSheet: View {
                 Text("Use").font(StrandFont.caption).foregroundStyle(theme.ink)
                     .padding(.horizontal, 12).padding(.vertical, 5)
                     .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    .frame(minHeight: 44)   // toque 44: la cápsula queda visualmente igual
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Use \(StrengthDisplay.name(ex))"))

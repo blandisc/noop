@@ -151,54 +151,59 @@ struct RestEditorScreen: View {
     /// «Over your rest» (FER-759): a bpm margin above the user's resting HR — the way to pull the target
     /// down toward rest. The bpm target is the dominant datum; the slider spans a practical +5…+30.
     private var marginBody: some View {
+        // Handoff (verificado 2026-07-16): overline «DESCANSA HASTA», el bpm resultante como numeral
+        // dominante, la ARITMÉTICA dicha completa («reposo 58 + margen 20 bpm») y el slider con sus
+        // puntas «+5 exigente / +30 suave» — los presets salieron (el handoff no los trae).
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(marginTargetBpm.map { "\($0)" } ?? "+\(margin)")
-                    .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                Text(marginTargetBpm != nil ? "bpm · +\(margin) over your rest" : "bpm over your rest")
-                    .font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+            VStack(alignment: .center, spacing: 4) {
+                Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(marginTargetBpm.map { "\($0)" } ?? "+\(margin)")
+                        .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
+                    Text(verbatim: "bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                }
+                if let resting = restingHR {
+                    Text("rest \(Int(resting.rounded())) + margin \(margin) bpm")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                } else {
+                    Text("your rest + \(margin) bpm margin")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                }
             }
+            .frame(maxWidth: .infinity)
             Slider(value: Binding(get: { Double(margin) }, set: { margin = Int($0.rounded()) }),
                    in: 5...30, step: 1).tint(theme.dataRecovery)
-            HStack(spacing: 8) {
-                marginPreset(String(localized: "Close"), 10)
-                marginPreset(String(localized: "Normal"), 15)
-                marginPreset(String(localized: "Easy"), 20)
+            HStack {
+                Text("+5 hard").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Spacer()
+                Text("+30 easy").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
         }
-    }
-
-    /// Preset chips say the RESULT, not the arithmetic (owner call 2026-07-15): with a resting HR of
-    /// 50, «Easy» reads «Easy · hasta 70» — the bpm you'll rest down to — instead of «+20».
-    private func marginPreset(_ label: String, _ m: Int) -> some View {
-        let sel = margin == m
-        let text = restingHR.map { label + " · " + String(localized: "down to \(Int($0.rounded()) + m)") }
-            ?? "\(label) · +\(m)"
-        // r21 (deuda front): los tres presets de la hoja usan el MISMO componente del sistema.
-        return PresetPill(text, selected: sel, theme: theme) { margin = m }
     }
 
     /// «Reserve» (Karvonen 1957): a % of heart-rate reserve. Needs the HR-max profile to show bpm.
     private var reserveBody: some View {
+        // Misma anatomía del handoff que el margen: el bpm en el que ACABAS como numeral, la
+        // aritmética dicha, y las puntas del slider con su valencia.
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(thresholdBpm.map { "\($0)" } ?? "\(Int(reserve * 100))")
-                    .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                Text(thresholdBpm != nil ? "bpm · \(Int(reserve * 100))% of your reserve" : "% of your reserve")
-                    .font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+            VStack(alignment: .center, spacing: 4) {
+                Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(thresholdBpm.map { "\($0)" } ?? "\(Int(reserve * 100))")
+                        .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
+                    Text(verbatim: thresholdBpm != nil ? "bpm" : "%").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                }
+                (Text(verbatim: "\(Int((reserve * 100).rounded()))% ") + Text("of your heart-rate reserve"))
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
+            .frame(maxWidth: .infinity)
             Slider(value: $reserve, in: 0.30...0.55, step: 0.01).tint(theme.dataRecovery)
-            HStack(spacing: 8) {
-                reservePreset(String(localized: "Easy · 50%"), 0.50)
-                reservePreset(String(localized: "Normal · 41%"), 0.41)
-                reservePreset(String(localized: "Hard · 35%"), 0.35)
+            HStack {
+                Text("30% hard").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Spacer()
+                Text("55% easy").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
         }
-    }
-
-    private func reservePreset(_ label: String, _ frac: Double) -> some View {
-        let sel = abs(reserve - frac) < 0.005
-        return PresetPill(label, selected: sel, theme: theme) { reserve = frac }
     }
 
     // MARK: Time mode

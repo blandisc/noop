@@ -61,12 +61,16 @@ struct StarterTemplatesSheet: View {
     private var listContent: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
+                // FER-952: the sheet speaks the module's Grotesk voice (overline + hero title).
+                Text("Templates").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
                 Text("Start from a template")
-                    .font(StrandFont.title1).foregroundStyle(theme.ink)
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Begin with a proven base and edit it to taste. Everything works offline.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
             }
 
             ForEach(StarterTemplate.Group.allCases, id: \.self) { group in
@@ -90,7 +94,7 @@ struct StarterTemplatesSheet: View {
     }
 
     private func templateRow(_ t: StarterTemplate) -> some View {
-        Button { withAnimation(.snappy) { selected = t } } label: {
+        Button { withAnimation(StrandMotion.interactive) { selected = t } } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(templateName(t.id)).font(StrandFont.body).foregroundStyle(theme.ink)
@@ -112,7 +116,7 @@ struct StarterTemplatesSheet: View {
 
     private func preview(_ t: StarterTemplate) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            Button { withAnimation(.snappy) { selected = nil } } label: {
+            Button { withAnimation(StrandMotion.interactive) { selected = nil } } label: {
                 HStack(spacing: 4) {
                     StrandIcon.back.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Templates").font(StrandFont.subhead)
@@ -124,7 +128,9 @@ struct StarterTemplatesSheet: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(groupName(t.group)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text(templateName(t.id)).font(StrandFont.title1).foregroundStyle(theme.ink)
+                Text(templateName(t.id))
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("\(exerciseCountText(t.exerciseCount)) · \(String(localized: templateBlurb(t.id)))")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -145,30 +151,20 @@ struct StarterTemplatesSheet: View {
                 if let onStart {
                     // «Do it now» context (the planner's softer suggestion): start the session now is primary;
                     // saving it for later is the quiet secondary.
-                    Button { start(t, via: onStart) } label: {
-                        Text("Empezar")
-                            .font(StrandFont.headline).foregroundStyle(theme.paper)
-                            .frame(maxWidth: .infinity).padding(.vertical, 15)
-                            .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                    // FER-952: «Empezar» = la puerta ámbar del módulo con el glifo play — ahora vía
+                    // StrandCTAButton(tint:), el chrome ya no se copia a mano (auditoría D).
+                    StrandCTAButton("Empezar", systemImage: "play.fill", tint: theme.dataStrain) {
+                        start(t, via: onStart)
                     }
-                    .buttonStyle(.plain)
-
-                    Button { add(t) } label: {
-                        Text("Add to my routines")
-                            .font(StrandFont.headline).foregroundStyle(theme.ink)
-                            .frame(maxWidth: .infinity).padding(.vertical, 15)
-                            .background(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(saving)
-                    .opacity(saving ? 0.6 : 1)
+                    StrandCTAButton("Add to my routines", kind: .outline) { add(t) }
+                        .disabled(saving)
                 } else {
                     Button { add(t) } label: {
                         Text("Add to my routines")
-                            .font(StrandFont.headline).foregroundStyle(theme.paper)
+                            .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
+                            .foregroundStyle(theme.paper)
                             .frame(maxWidth: .infinity).padding(.vertical, 15)
-                            .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+                            .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .disabled(saving)
