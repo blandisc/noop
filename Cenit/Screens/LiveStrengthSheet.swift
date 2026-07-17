@@ -145,6 +145,7 @@ struct LiveStrengthSheet: View {
     @State private var changeExercise: ChangeTarget?
     /// The terminal «Nothing to save» result card for discarding an empty session (FER-894 · Estados 2).
     @State private var nothingToSave = false
+    @State private var saveError = false
 
     /// Identifies which exercise the «Change» sheet is swapping (FER-894); carries the run for its header
     /// and same-muscle shortlist. `id` is the run id so `.sheet(item:)` re-presents cleanly per exercise.
@@ -250,6 +251,24 @@ struct LiveStrengthSheet: View {
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
         .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
+        // FER-969: mid-session routine write failure (insert / superset / progression) — toast only;
+        // the FINAL session save failure is the persistent `saveErrorBanner` above (X-01), not this.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
         // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
         // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
         .sheet(isPresented: $showLibraryPicker) {
@@ -3555,8 +3574,12 @@ struct LiveStrengthSheet: View {
                 insertAt += 1
             }
             for i in res.indices { res[i].position = i }
-            try? await store.saveRoutine(routine, exercises: res)
-            await loadRoutineREs()
+            do {
+                try await store.saveRoutine(routine, exercises: res)
+                await loadRoutineREs()
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -3596,8 +3619,12 @@ struct LiveStrengthSheet: View {
             for i in res.indices where groups.keys.contains(res[i].id) {
                 res[i].supersetGroup = groups[res[i].id] ?? nil
             }
-            try? await store.saveRoutine(routine, exercises: res)
-            for re in res { routineREs[re.id] = re }
+            do {
+                try await store.saveRoutine(routine, exercises: res)
+                for re in res { routineREs[re.id] = re }
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -3618,8 +3645,12 @@ struct LiveStrengthSheet: View {
             for i in res[idx].sets.indices where res[idx].sets[i].kind == .work {
                 res[idx].sets[i].reps = targetReps
             }
-            try? await store.saveRoutine(routine, exercises: res)
-            routineREs[res[idx].id] = res[idx]
+            do {
+                try await store.saveRoutine(routine, exercises: res)
+                routineREs[res[idx].id] = res[idx]
+            } catch {
+                saveError = true
+            }
         }
     }
 

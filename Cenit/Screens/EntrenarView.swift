@@ -120,6 +120,7 @@ private struct EntrenarLanding: View {
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
     @State private var confirmResumeStrength = false
+    @State private var saveError = false
 
     /// Monday-first display order in the Calendar weekday convention.
     private let orderedWeekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -163,6 +164,23 @@ private struct EntrenarLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        // FER-969: write failure is an inline banner (same pattern as WorkoutEditSheet), not silent success.
+        .overlay(alignment: .top) {
+            if saveError {
+                Text("Couldn't save. Try again.")
+                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .foregroundStyle(theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .patternBlock(theme, bar: theme.critical)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        saveError = false
+                    }
+            }
+        }
+        .animation(StrandMotion.fade, value: saveError)
         // The ③ «softer» suggestion (FER-554) opens the templates sheet straight on the mobility routine.
         // «Empezar» starts a one-off guided session (on the sheet's dismiss, so it never stacks — FER-171),
         // with «Add to my routines» as the secondary action. Theme doesn't cross the sheet boundary.
@@ -435,10 +453,14 @@ private struct EntrenarLanding: View {
                                    targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
         }
         Task {
-            try? await repo.saveRoutine(r, exercises: exercises)
-            await load()
-            try? await Task.sleep(nanoseconds: 550_000_000)
-            openRoutine(r.id)
+            do {
+                try await repo.saveRoutine(r, exercises: exercises)
+                await load()
+                try? await Task.sleep(nanoseconds: 550_000_000)
+                openRoutine(r.id)
+            } catch {
+                saveError = true
+            }
         }
     }
 

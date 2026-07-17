@@ -16692,6 +16692,23 @@
         }
       }
     },
+    "Couldn't delete the workout. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't delete the workout. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo borrar el entrenamiento. Intenta de nuevo."
+          }
+        }
+      }
+    },
     "Couldn't download. Check your connection and try again." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -16705,6 +16722,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se pudo descargar. Revisa tu conexión e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "Couldn't export the file. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't export the file. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo exportar el archivo. Intenta de nuevo."
           }
         }
       }
@@ -16823,6 +16857,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No se pudo guardar el entrenamiento. Inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "Couldn't save. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo guardar. Intenta de nuevo."
           }
         }
       }
