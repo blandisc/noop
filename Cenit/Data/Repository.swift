@@ -187,8 +187,27 @@ final class Repository: ObservableObject {
     /// Parse a stored `yyyy-MM-dd` day key back to a Date in UTC (en_US_POSIX). Charts parse keys in
     /// UTC for DST-stable positions — distinct from `localDayKey` (which WRITES keys in local zone).
     /// The single shared inverse of the day-key contract (FER-325).
+    /// Pure arithmetic, zero DateFormatter (FER-972 · M-04).
     nonisolated private static let dayKeyParser = DayKey.utcFormatter
-    nonisolated static func parseDayKey(_ s: String) -> Date? { dayKeyParser.date(from: s) }
+
+    /// Days since 1970-01-01 for a civil date (Hinnant `days_from_civil`; valid for the app's range).
+    /// `ComparisonEngine.epochDay` is package-internal, so this copy lives here for the app layer.
+    private nonisolated static func epochDays(y: Int, m: Int, d: Int) -> Int {
+        let yy = y - (m <= 2 ? 1 : 0)
+        let era = (yy >= 0 ? yy : yy - 399) / 400
+        let yoe = yy - era * 400
+        let doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+        return era * 146097 + doe - 719468
+    }
+
+    nonisolated static func parseDayKey(_ s: String) -> Date? {
+        let parts = s.split(separator: "-")
+        guard parts.count == 3,
+              let y = Int(parts[0]), let m = Int(parts[1]), let d = Int(parts[2]),
+              (1...12).contains(m), (1...31).contains(d) else { return nil }
+        return Date(timeIntervalSince1970: Double(epochDays(y: y, m: m, d: d)) * 86_400)
+    }
 
     /// Format a chart date BACK to its `yyyy-MM-dd` key in UTC — the exact inverse of `parseDayKey`,
     /// for dates that were parsed/anchored in UTC (trend points). `localDayKey` on such a date shifts
