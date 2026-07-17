@@ -69,7 +69,11 @@ struct WeeklyPlanEditorView: View {
     @State private var renameText = ""
     // FER-837: which «···» paper menu is open (routine id / the tools row).
     @State private var menuRoutineId: String? = nil
-    @State private var showToolsMenu = false
+    /// Secciones colapsadas (carpetas como subdivisiones, decisión Fer 2026-07-16).
+    @State private var collapsedFolders: Set<String> = []
+    /// El «···» de banda abierto (renombrar / borrar carpeta).
+    @State private var menuFolderId: String? = nil
+    private static let unfiledSectionID = "unfiled-section"
 
     /// Monday-first display order in the Calendar weekday convention (2 = Mon … 1 = Sun).
     private let weekdays = [2, 3, 4, 5, 6, 7, 1]
@@ -150,7 +154,7 @@ struct WeeklyPlanEditorView: View {
             // FER-952 (owner, propuesta C aprobada): ONE integrated hero title — «Your weekly plan» —
             // no overline; the count rides as the subtitle. Nothing else on the screen changes.
             Text("Your weekly plan")
-                .font(InstrumentoType.grotesk(28, weight: .bold)).tracking(-0.8)
+                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                 .foregroundStyle(theme.ink)
             if loaded && !routines.isEmpty {
                 // Handoff v4b: a terse count («4 días · 3 rutinas»), not an opinion.
@@ -191,23 +195,11 @@ struct WeeklyPlanEditorView: View {
     @ViewBuilder
     private func dayRow(_ wd: Int) -> some View {
         if schedule[wd] != nil {
-            HStack(spacing: 0) {
-                Button { openDay(wd) } label: { rowLabel(wd, chevron: "chevron.right") }
-                    .buttonStyle(.plain)
-                Button { assignMenuDay = wd } label: {
-                    Image(systemName: "chevron.down")
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Change this day's routine"))
-                .paperMenu(
-                    isPresented: Binding(get: { assignMenuDay == wd },
-                                         set: { if !$0 { assignMenuDay = nil } }),
-                    items: assignMenuItems(wd)
-                )
-            }
+            // Propuesta B (elegida por Fer, 2026-07-16): la RUTINA es un chip troquel (tocarlo =
+            // editar esa rutina — el mismo objeto que en el resto del app) y el ⇄ al borde de la
+            // fila cambia la asignación del día. Dos objetos distintos, dos acciones obvias — los
+            // dos chevrons (›/▾) confundían.
+            assignedDayRow(wd)
         } else {
             Button { assignMenuDay = wd } label: { rowLabel(wd, chevron: "chevron.down") }
                 .buttonStyle(.plain)
@@ -237,6 +229,67 @@ struct WeeklyPlanEditorView: View {
         // routine is ever un-pickable.
         rows += unfiledRoutines.map { routinePickItem(wd, $0) }
         return rows
+    }
+
+    @ViewBuilder
+    private func assignedDayRow(_ wd: Int) -> some View {
+        if let rid = schedule[wd], let r = routines.first(where: { $0.id == rid }) {
+            let tint = routineTint(r)
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(weekdayLabel(wd))
+                        .font(InstrumentoType.grotesk(14, weight: .medium))
+                        .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
+                    if wd == today {
+                        Text("today").textCase(.uppercase)
+                            .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.ink)
+                    }
+                }
+                .frame(width: 52, alignment: .leading)
+                VStack(alignment: .leading, spacing: 5) {
+                    Button { openDay(wd) } label: {
+                        HStack(spacing: 6) {
+                            RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría de dato
+                                .fill(tint).frame(width: 8, height: 8)
+                            // Nombre largo: una línea, elipsis al final — el chip nunca empuja al ⇄.
+                            Text(r.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                                .lineLimit(1).truncationMode(.tail)
+                            StrandIcon.disclosure.image
+                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(tint)
+                        }
+                        .troquelChip(theme)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("Edit \(r.name)"))
+                    miniBars(rid)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Text(seriesText(rid)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                    .layoutPriority(1)
+                Button { assignMenuDay = wd } label: {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Change this day's routine"))
+                .paperMenu(
+                    isPresented: Binding(get: { assignMenuDay == wd },
+                                         set: { if !$0 { assignMenuDay = nil } }),
+                    items: assignMenuItems(wd)
+                )
+            }
+            .frame(minHeight: 52)
+            .padding(.horizontal, wd == today ? 10 : 0)
+            .background {
+                if wd == today {
+                    RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                        .fill(theme.surface)
+                }
+            }
+        }
     }
 
     private func routinePickItem(_ wd: Int, _ r: Routine) -> PaperMenuItem {
@@ -376,10 +429,38 @@ struct WeeklyPlanEditorView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.vertical, 10)
                     divider
-                } else {
+                } else if folders.isEmpty {
                     ForEach(routines) { r in
                         routineRow(r)
                         if r.id != routines.last?.id { divider }
+                    }
+                    divider
+                } else {
+                    // Decisión Fer (2026-07-16 v2): las carpetas son SUBDIVISIONES de esta lista —
+                    // banda troquel colapsable con conteo y «···» (renombrar / borrar con undo 4 s),
+                    // «Sueltas» al final. (Vivían en MisRutinasScreen, que no está ruteada en el app.)
+                    let byFolder = Dictionary(grouping: routines, by: \.folderId)
+                    ForEach(folders) { folder in
+                        let rs = byFolder[folder.id] ?? []
+                        folderBand(folder, count: rs.count)
+                        if !collapsedFolders.contains(folder.id) {
+                            ForEach(rs) { r in
+                                routineRow(r)
+                                if r.id != rs.last?.id { divider }
+                            }
+                        }
+                    }
+                    let unfiled = byFolder[nil] ?? []
+                    if !unfiled.isEmpty {
+                        sectionBand(String(localized: "Loose"), count: unfiled.count,
+                                    collapsed: collapsedFolders.contains(Self.unfiledSectionID),
+                                    toggle: { toggleCollapse(Self.unfiledSectionID) })
+                        if !collapsedFolders.contains(Self.unfiledSectionID) {
+                            ForEach(unfiled) { r in
+                                routineRow(r)
+                                if r.id != unfiled.last?.id { divider }
+                            }
+                        }
                     }
                     divider
                 }
@@ -418,23 +499,61 @@ struct WeeklyPlanEditorView: View {
         HStack(spacing: CenitMetrics.space2) {
             InstrumentoToolChip(systemImage: "square.stack.3d.up", label: Text("Templates")) { showTemplates = true }
             InstrumentoToolChip(systemImage: "square.and.arrow.down", label: Text("Import")) { showImport = true }
-            InstrumentoToolChip(systemImage: "folder", label: Text("Folders")) { showToolsMenu = true }
-                .paperMenu(isPresented: $showToolsMenu, items: folderMenuItems)
+            // Decisión Fer (2026-07-16 v2): UNA sola acción — crear la división. Renombrar/borrar
+            // viven en la banda de cada sección en Mis Rutinas (··· → undo de 4 s al borrar).
+            InstrumentoToolChip(systemImage: "folder.badge.plus", label: Text("New section")) { startNewFolder(moving: nil) }
         }
         .padding(.vertical, CenitMetrics.space2)
     }
 
-    private var folderMenuItems: [PaperMenuItem] {
-        var items: [PaperMenuItem] = [
-            .init(String(localized: "New folder"), systemImage: "folder.badge.plus") { startNewFolder(moving: nil) }
-        ]
-        for f in folders {
-            items.append(.init(f.name, systemImage: "folder", children: [
-                .init(String(localized: "Rename folder…"), systemImage: "pencil") { startRename(f) },
-                .init(String(localized: "Delete folder"), systemImage: "trash", isDestructive: true) { deleteFolder(f) }
-            ]))
+    private func folderBand(_ f: RoutineFolder, count: Int) -> some View {
+        sectionBand(f.name, count: count,
+                    collapsed: collapsedFolders.contains(f.id),
+                    toggle: { toggleCollapse(f.id) }) {
+            Button { menuFolderId = f.id } label: {
+                Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary).frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .paperMenu(
+                isPresented: Binding(get: { menuFolderId == f.id },
+                                     set: { if !$0 { menuFolderId = nil } }),
+                items: [
+                    .init(String(localized: "Rename folder"), systemImage: "pencil") { startRename(f) },
+                    .init(String(localized: "Delete folder"), systemImage: "trash", isDestructive: true) { deleteFolder(f) }
+                ]
+            )
         }
-        return items
+    }
+
+    private func toggleCollapse(_ id: String) {
+        withAnimation(StrandMotion.interactive) {
+            if collapsedFolders.contains(id) { collapsedFolders.remove(id) } else { collapsedFolders.insert(id) }
+        }
+    }
+
+    private func sectionBand<T: View>(_ name: String, count: Int, collapsed: Bool,
+                                      toggle: @escaping () -> Void,
+                                      @ViewBuilder trailing: () -> T = { EmptyView() }) -> some View {
+        HStack(spacing: 8) {
+            Button(action: toggle) {
+                HStack(spacing: 8) {
+                    Text(verbatim: name).groteskOverline().foregroundStyle(theme.inkSecondary)
+                    Text(verbatim: "· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(verbatim: name))
+            .accessibilityValue(Text(collapsed ? "collapsed" : "expanded"))
+            trailing()
+            Image(systemName: collapsed ? "chevron.right" : "chevron.down")
+                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+        }
+        .padding(.horizontal, 12).frame(minHeight: 40)
+        .background(theme.patternBlock)
+        .padding(.top, 10)
     }
 
     private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {

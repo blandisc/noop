@@ -421,7 +421,8 @@ private struct EntrenarFlowsMapCell: View {
                         WorkoutSessionDetailScreen(route: route,
                             openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) })
                     }
-                    .navigationDestination(for: MuscleVolumeRoute.self) { _ in MuscleVolumeScreen() }
+                    .navigationDestination(for: MuscleVolumeRoute.self) { _ in MuscleMapScreen(theme: .base, showsVolumeLink: true) }
+                    .navigationDestination(for: MuscleVolumeBarsRoute.self) { _ in MuscleVolumeScreen() }
                     .navigationDestination(for: SavedTicketsRoute.self) { _ in SavedTicketsScreen() }
                 }
             } else {
@@ -542,6 +543,24 @@ private struct MapSessionPillHost: View {
     @ObservedObject var model: AppModel
     @State private var confirmDiscard = false
     var body: some View {
+        hostBody
+            // En el canvas el host es la única superficie disponible: el velo se estira él mismo a
+            // pantalla con el frame del cell (393×852), suficiente para validar las esquinas.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .instrumentoConfirm(
+                isPresented: $confirmDiscard,
+                title: String(localized: "Discard this session?"),
+                context: String(localized: "SESSION · IN PROGRESS"),
+                message: String(localized: "Its logged sets won't be saved."),
+                actions: [
+                    .init(String(localized: "Keep training"), role: .primary),
+                    .init(String(localized: "Discard session"), role: .destructive) {
+                        model.endStrengthSession(save: false)
+                    }
+                ]
+            )
+    }
+    @ViewBuilder private var hostBody: some View {
         if let session = model.strengthSession {
             let theme = InstrumentoTheme.base
             TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -561,18 +580,6 @@ private struct MapSessionPillHost: View {
                     discardAccessibilityLabel: Text("Discard session")
                 )
             }
-            .instrumentoConfirm(
-                isPresented: $confirmDiscard,
-                title: String(localized: "Discard this session?"),
-                context: String(localized: "SESSION · IN PROGRESS"),
-                message: String(localized: "Its logged sets won't be saved."),
-                actions: [
-                    .init(String(localized: "Keep training"), role: .primary),
-                    .init(String(localized: "Discard session"), role: .destructive) {
-                        model.endStrengthSession(save: false)
-                    }
-                ]
-            )
         }
     }
 }

@@ -99,12 +99,9 @@ struct WorkoutHistoryScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Handoff v2 hero: overline + Grotesk title + terse subtitle. The muscle-map access moved
-            // to «Ver mapa» on the muscle band (FER-941), so the hero pill is gone.
-            Text("My workouts")
-                .font(InstrumentoType.groteskSheetTitle).tracking(InstrumentoType.groteskSheetTitleTracking)
-                .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-            InstrumentoFlowTitle(Text("On the rise"))
+            // Decisión Fer (2026-07-16): «On the rise» se retiró — el título principal es el nombre
+            // de la pantalla, sin editorializar.
+            InstrumentoFlowTitle(Text("My workouts"))
             // Handoff v2: sessions this month, plus the count of load raises when any (from progression).
             Group {
                 if raisedThisMonth > 0 {

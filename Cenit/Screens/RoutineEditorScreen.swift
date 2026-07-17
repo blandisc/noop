@@ -116,7 +116,10 @@ struct RoutineEditorScreen: View {
                 setNumber: nil,
                 current: exerciseRest(t.ei),
                 persistsToRoutine: false,
-                restingHR: nil, maxHR: nil,
+                // Reposo/máx reales (2026-07-16): la hoja dice «reposo 58 + margen 20 = 78» también
+                // desde el editor — misma fuente que la sesión (última fila con restingHr + Tanaka).
+                restingHR: repo.days.compactMap(\.restingHr).last.map(Double.init),
+                maxHR: Double(model.profile.hrMax),
                 defaultApplyToAll: true,
                 onCancel: { restTarget = nil },
                 onApply: { config, _, _ in
@@ -814,8 +817,15 @@ struct RoutineEditorScreen: View {
                 }
                 .frame(width: 14)
                 .padding(.leading, 0)
-                Text("Add exercise").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                Spacer(minLength: 0)
+                // Más prominente (Fer 2026-07-16): chip de ancho completo, misma anatomía que
+                // «＋ Nueva rutina» del hub — antes era un renglón fantasma que nadie veía.
+                HStack(spacing: 8) {
+                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    Text("Add exercise").font(StrandFont.subhead.weight(.semibold))
+                }
+                .foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             }
             .frame(minHeight: 44 + CenitMetrics.gap)   // the row's own breathing — not an inset hole
             .contentShape(Rectangle())

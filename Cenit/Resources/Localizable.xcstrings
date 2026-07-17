@@ -19877,6 +19877,23 @@
         }
       }
     },
+    "Edit %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar %@"
+          }
+        }
+      }
+    },
     "Edit rest" : {
       "localizations" : {
         "es" : {
@@ -57175,6 +57192,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Volumen de las últimas 8 semanas"
+          }
+        }
+      }
+    },
+    "Volume vs the 10-20 band" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume vs the 10-20 band"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volumen vs la banda 10-20"
           }
         }
       }

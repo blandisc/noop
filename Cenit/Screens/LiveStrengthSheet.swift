@@ -923,8 +923,14 @@ struct LiveStrengthSheet: View {
                         )
                 }
                 .frame(width: 14)
-                Text("Add exercise").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                Spacer(minLength: 0)
+                // Más prominente (Fer 2026-07-16): mismo chip de ancho completo que el editor.
+                HStack(spacing: 8) {
+                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    Text("Add exercise").font(StrandFont.subhead.weight(.semibold))
+                }
+                .foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             }
             .frame(minHeight: 44 + CenitMetrics.gap)   // the row's own breathing — not an inset hole
             .contentShape(Rectangle())

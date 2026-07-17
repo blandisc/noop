@@ -69,6 +69,8 @@ struct RootTabView: View {
     /// the last component clears the bar — see `barReservation`. Starts 0 and is
     /// filled on first layout via `BarHeightKey`.
     @State private var barHeight: CGFloat = 0
+    /// El ✕ del pill pide confirmación aquí (pantalla completa), no en el frame del pill.
+    @State private var confirmDiscardSession = false
 
     var body: some View {
         TabView(selection: $selection) {
@@ -117,7 +119,13 @@ struct RootTabView: View {
                         route: route,
                         openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) }))
                 }
+                // Decisión Fer (2026-07-16): «Ver mapa» abre el MAPA muscular real (las siluetas de
+                // Tendencias) — el mismo MuscleMapScreen, empujado; las barras vs banda viven como
+                // pantalla hija enlazada desde el mapa.
                 .navigationDestination(for: MuscleVolumeRoute.self) { _ in
+                    trainChrome(MuscleMapScreen(theme: .base, showsVolumeLink: true))
+                }
+                .navigationDestination(for: MuscleVolumeBarsRoute.self) { _ in
                     trainChrome(MuscleVolumeScreen())
                 }
                 .navigationDestination(for: SavedTicketsRoute.self) { _ in
@@ -183,12 +191,26 @@ struct RootTabView: View {
         // running and the full-screen cover is minimized. Tapping it re-opens the session.
         .overlay(alignment: .bottom) {
             if appModel.strengthSession != nil && !appModel.strengthSheetPresented {
-                ActiveSessionPillHost(model: appModel)
+                ActiveSessionPillHost(model: appModel, confirmDiscard: $confirmDiscardSession)
                     .padding(.horizontal, CenitMetrics.screenPadding)
                     .padding(.bottom, barHeight + CenitMetrics.space2)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        // El ConfirmCard del ✕ del pill vive AQUÍ (pantalla completa): colgado del host del pill se
+        // anclaba a su frame angosto — velo recortado y esquinas rotas (bug Fer 2026-07-16).
+        .instrumentoConfirm(
+            isPresented: $confirmDiscardSession,
+            title: String(localized: "Discard this session?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: String(localized: "Its logged sets won't be saved."),
+            actions: [
+                .init(String(localized: "Keep training"), role: .primary),
+                .init(String(localized: "Discard session"), role: .destructive) {
+                    appModel.endStrengthSession(save: false)
+                }
+            ]
+        )
         .animation(StrandMotion.gentle, value: appModel.strengthSheetPresented)
         .animation(StrandMotion.gentle, value: appModel.strengthSession == nil)
         // The guided strength session (FER-347/716): a full-screen cover so it covers the dock with no
@@ -400,7 +422,8 @@ private extension View {
 private struct ActiveSessionPillHost: View {
     @ObservedObject var model: AppModel
     /// Decisión Fer (2026-07-16): el ✕ del pill DESCARTA — destructivo, así que siempre confirma.
-    @State private var confirmDiscard = false
+    /// El ConfirmCard vive en el RootTabView (pantalla completa); aquí solo se dispara.
+    @Binding var confirmDiscard: Bool
     var body: some View {
         if let session = model.strengthSession {
             let theme = InstrumentoTheme.base
@@ -423,18 +446,6 @@ private struct ActiveSessionPillHost: View {
                     discardAccessibilityLabel: Text("Discard session")
                 )
             }
-            .instrumentoConfirm(
-                isPresented: $confirmDiscard,
-                title: String(localized: "Discard this session?"),
-                context: String(localized: "SESSION · IN PROGRESS"),
-                message: String(localized: "Its logged sets won't be saved."),
-                actions: [
-                    .init(String(localized: "Keep training"), role: .primary),
-                    .init(String(localized: "Discard session"), role: .destructive) {
-                        model.endStrengthSession(save: false)
-                    }
-                ]
-            )
         }
     }
 

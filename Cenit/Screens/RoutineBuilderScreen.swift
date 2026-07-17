@@ -21,6 +21,7 @@ struct RoutineBuilderScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
@@ -93,7 +94,8 @@ struct RoutineBuilderScreen: View {
                     setNumber: nil,
                     current: exerciseRest(t.ei),
                     persistsToRoutine: false,
-                    restingHR: nil, maxHR: nil,
+                    restingHR: repo.days.compactMap(\.restingHr).last.map(Double.init),
+                    maxHR: Double(model.profile.hrMax),
                     defaultApplyToAll: true,
                     onCancel: { restTarget = nil },
                     onApply: { config, _, _ in

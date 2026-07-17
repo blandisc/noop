@@ -735,6 +735,14 @@ private struct EntrenarLanding: View {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.surface)
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                         .strokeBorder(todayRingTint, lineWidth: 1.5)
+                } else if hasRoutine {
+                    // 2026-07-16 (bug Fer «no se actualizan los cuadritos»): un día asignado futuro
+                    // solo cambiaba el tinte de la LETRA — invisible. Ahora el cuadrito toma el wash
+                    // de su rutina con su anillo suave; descanso queda como puro patternBlock.
+                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                        .fill(routineTint(region).opacity(StrandOpacity.tintFill))
+                    RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                        .strokeBorder(routineTint(region).opacity(StrandOpacity.strokeSoft), lineWidth: 1)
                 } else {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.patternBlock)
                 }

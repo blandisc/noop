@@ -447,6 +447,7 @@ struct WorkoutImportView: View {
     private func stepper(current: Phase) -> some View {
         let labels: [LocalizedStringKey] = ["Capture", "Map", "Confirm", "Done"]
         let currentIndex = phaseIndex(current)
+        // El ✕ flota arriba-derecha (44pt): la tira le cede su carril para no chocar (bug Fer 2026-07-16).
         return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
@@ -456,6 +457,7 @@ struct WorkoutImportView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
+            .padding(.trailing, 44)
             HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
