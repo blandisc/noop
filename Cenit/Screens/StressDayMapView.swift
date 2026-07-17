@@ -161,7 +161,7 @@ struct StressDayMapBlock: View {
         let rows: [StressMoments.Moment] = m.activated + (m.calmest.map { [$0] } ?? [])
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { i, mo in
+                ForEach(Array(rows.enumerated()), id: \.element.date) { i, mo in
                     if i > 0 {
                         Rectangle().fill(theme.hairline).frame(height: 1)
                     }

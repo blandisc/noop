@@ -150,7 +150,7 @@ struct MetricExplorerView: View {
             VStack(spacing: 0) {
                 ForEach(Array(metrics.enumerated()), id: \.element.id) { idx, metric in
                     NavigationLink(value: metric) {
-                        MetricRow(metric: metric,
+                        CatalogRow(metric: metric,
                                   isEmpty: emptyByID[metric.id] ?? false,
                                   theme: theme)
                     }
@@ -184,7 +184,7 @@ struct MetricExplorerView: View {
 
 // MARK: - One catalog row
 
-private struct MetricRow: View {
+private struct CatalogRow: View {
     let metric: MetricDescriptor
     let isEmpty: Bool
     let theme: InstrumentoTheme

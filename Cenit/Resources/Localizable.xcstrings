@@ -47929,6 +47929,22 @@
     "sin entrenamientos aún" : {
 
     },
+    "no workouts yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no workouts yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin entrenamientos aún"
+          }
+        }
+      }
+    },
     "Since midnight" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -57323,6 +57339,86 @@
     },
     "vs tu media" : {
 
+    },
+    "vs your average" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vs your average"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vs tu media"
+          }
+        }
+      }
+    },
+    "Volume by week" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume by week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volumen por semana"
+          }
+        }
+      }
+    },
+    "8 wk" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8 wk"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8 sem"
+          }
+        }
+      }
+    },
+    "This week in amber · strength volume, last 8 weeks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This week in amber · strength volume, last 8 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta semana en ámbar · volumen de fuerza, últimas 8 semanas"
+          }
+        }
+      }
+    },
+    "last 6 months" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last 6 months"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "últimos 6 meses"
+          }
+        }
+      }
     },
     "vs yesterday" : {
       "extractionState" : "manual",

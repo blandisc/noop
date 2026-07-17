@@ -306,15 +306,6 @@ struct MetricInfoSheet: View {
                     Spacer()
                     if isCalculatedSummary { originDot("Calculated", color: theme.inkTertiary) }
                     else { vitalOriginDot }
-                } else if info.usesLevels {
-                    // FER-607 (migrated metric): the title leads in serif (headline role only), with the
-                    // ⓘ beside it and the source chip trailing — the handoff header.
-                    Text(info.name)
-                        .font(InstrumentoType.groteskHeadline(23))
-                        .foregroundStyle(theme.ink)
-                    infoButton
-                    Spacer()
-                    sourceChip
                 } else {
                     Text(info.name)
                         .instrumentoOverline()
@@ -675,24 +666,6 @@ struct MetricInfoSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(headlineExpanded ? "Hide explanation" : "Show explanation"))
-    }
-
-    /// FER-607: a quiet source chip in the migrated-metric header — «APPLE» (heart hue) when the shown
-    /// reading came from Apple Health, «BANDA» (the metric hue) when it came from the strap. Reuses the
-    /// same `appleSource` signal the foot line resolves per reading, so it never lies about provenance.
-    private var sourceChip: some View {
-        let tint = appleSource ? theme.dataHeart : metricHue
-        return Text(appleSource ? "APPLE" : "BAND")
-            .font(StrandFont.caption)
-            .foregroundStyle(tint)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2)
-            .overlay(
-                RoundedRectangle(cornerRadius: 5, style: .continuous) // token-exempt: geometría de dato (chip ≤6)
-                    .strokeBorder(tint.opacity(StrandOpacity.strokeSoft), lineWidth: 0.5)
-            )
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(appleSource ? "Source · Apple Health" : "Source · band"))
     }
 
     /// Quiet "this can come from Apple Health" line for an Apple-sourced metric that isn't connected
@@ -1257,30 +1230,6 @@ struct MetricInfoSheet: View {
             s += " " + String(localized: "An amber band marks when you usually train.")
         }
         return Text(s)
-    }
-
-    // MARK: - Shared chart wells (loading / empty), themed for warm paper
-
-    private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-            .fill(theme.surface)
-            .frame(height: height)
-            .overlay { ProgressView().tint(theme.inkTertiary) }
-    }
-
-    private func emptyWell(icon: String, text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(StrandFont.glyph(.lead))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     // MARK: - Recovery weight breakdown + method disclosure (FER-108)
