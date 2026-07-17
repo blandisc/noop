@@ -73,11 +73,18 @@ Cenit/
 │   ├── Data/                   # Repository, importers, MetricCatalog, profile
 │   ├── Screens/                # SwiftUI screens (Today, Sleep, Trends, MetricExplorer, …)
 │   └── System/                 # ProjectInfo and app-layer helpers
+├── CenitApp/                   # iOS app shell (scene, HealthKit, resources)
+├── CenitShared/                # code shared between app, widgets, and watch
+├── CenitWidgets/               # home / lock-screen widgets + Live Activity
+├── CenitWatch/                 # watchOS companion (mirrors strength session)
+├── CenitUnitTests/             # app-layer unit tests (simulator)
+├── CenitUITests/               # UI tests
 ├── Packages/
 │   ├── WhoopProtocol/          # BLE frame parsing, CRC, command/event/packet decode
 │   │                           #   (also builds the `whoop-decode` CLI — runs on Linux)
 │   ├── WhoopStore/             # GRDB/SQLite persistence (migrations, streams, caches)
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
+│   ├── StrandTraining/         # strength domain types, catalog, sets/reps rules (pure)
 │   ├── StrandImport/           # WHOOP CSV + Apple Health importers
 │   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
 ├── Tools/
@@ -94,6 +101,7 @@ Cenit/
 | Decoding strap bytes, CRC, framing, packet/event types | `Packages/WhoopProtocol` | **Platform-pure — no CoreBluetooth.** Runs in tests/CLI unchanged. |
 | Persisting decoded data, migrations, caches, reads | `Packages/WhoopStore` | GRDB/SQLite only. |
 | Computing recovery / strain / HRV / sleep / correlations | `Packages/StrandAnalytics` | Pure, database-free analyzers. |
+| Strength domain types & rules (exercise catalog, sets/reps modeling, progression) | `Packages/StrandTraining` | Pure domain; live session state & persistence → app layer (`Cenit/`). |
 | Parsing WHOOP CSV or Apple Health `export.xml` | `Packages/StrandImport` | Header-name-driven CSV; streaming SAX XML. |
 | Colors, fonts, motion, cards, charts | `Packages/StrandDesign` | No external UI deps; bridges AppKit/UIKit. |
 | CoreBluetooth, bonding, offload, live state | `Cenit/BLE`, `Cenit/Collect` | App layer — wraps the pure packages. |
@@ -136,7 +144,7 @@ on-device, pairing, re-importing into the on-device DB).
 | Tool | Notes |
 |---|---|
 | Xcode 15+ (Swift 5.9 toolchain) | Provides `xcodebuild` + the iOS SDK. |
-| iPhone (iOS 16+) | Deployment target is iOS 16.0. |
+| iPhone (iOS 17+) | Deployment target is iOS 17.0 (`project.yml`). |
 | XcodeGen | Generates `Cenit.xcodeproj` from `project.yml` (`brew install xcodegen`). |
 
 The packages themselves only need a Swift toolchain — they build and test with plain `swift build` /
@@ -189,7 +197,7 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform
 ```
 
 The scheme is `Cenit`; the built product is `Cenit.app` (`project.yml` sets `PRODUCT_NAME: Cenit`,
-display name `Cénit`, bundle id `com.noopapp.noop`). A **free** Apple ID is enough to install a personal build on your own
+display name `Cénit`, bundle id `com.feriracheta.noop`). A **free** Apple ID is enough to install a personal build on your own
 iPhone — no paid Apple Developer account needed. See [`BUILD.md`](BUILD.md) for the on-device install
 recipe and pairing notes.
 
@@ -236,7 +244,9 @@ let strain = StrandPalette.strainColor(value)      // 0...21 scale
 .background(Color(red: 0.05, green: 0.08, blue: 0.07))
 ```
 
-The palette is dark-only and instrument-grade. Semantic tokens exist for surfaces
+The **canonical DNA is «Instrumento diurno»** (light, warm paper — see
+[`docs/design-system/DESIGN.md`](design-system/DESIGN.md)); the dark system is **legacy** (maintain,
+don't extend). Semantic tokens exist for surfaces
 (`surfaceBase`/`surfaceRaised`/`surfaceOverlay`/`surfaceInset`), text
 (`textPrimary`/`textSecondary`/`textTertiary`), `hairline`/`hairlineStrong` borders, the `accent`
 chrome green, status colors (`statusPositive`/`statusWarning`/`statusCritical`), the recovery and
@@ -475,7 +485,7 @@ Only after re-reading [The BLE safety contract](#the-ble-safety-contract-read-th
 ### Add a database column or table
 
 Schema lives in `Packages/WhoopStore/Sources/WhoopStore/Database.swift` as a **versioned GRDB
-`DatabaseMigrator`** (currently through `v9`).
+`DatabaseMigrator`** (currently through `v35`).
 
 - **Never edit an existing migration.** They've already run on users' on-device databases. Add a
   **new** `migrator.registerMigration("vN") { db in … }` block.

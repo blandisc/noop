@@ -413,10 +413,8 @@ struct StrainDetailScreen: View {
         }
     }
 
-    private static let calDayFmt: DateFormatter = {
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")!; f.dateFormat = "yyyy-MM-dd"; return f
-    }()
+    /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
+    private static let calDayFmt = DayKey.utcFormatter
     private static let calReadoutFmt: DateFormatter = {
         let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
     }()

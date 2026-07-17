@@ -54,6 +54,10 @@ enum NightRhythmProvider {
         guard let night = lastNight(sessions) else { return .noSleepLastNight }
         let rr = await repo.rrIntervals(from: night.startTs, to: night.endTs)
         let gravity = await repo.gravitySamples(from: night.startTs, to: night.endTs)
-        return read(usesWhoop: true, night: night, rr: rr, gravity: gravity)
+        // FER-972 (P-02): the assemble walks the whole night's tacogram — pure CPU, so hop off the
+        // main actor (CalendarDayMap's pattern) and hand back only the value.
+        return await Task.detached(priority: .userInitiated) {
+            read(usesWhoop: true, night: night, rr: rr, gravity: gravity)
+        }.value
     }
 }

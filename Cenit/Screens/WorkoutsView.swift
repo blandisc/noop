@@ -317,7 +317,7 @@ struct WorkoutsView: View {
     // MARK: - Sessions (TarjetaSesion A → detail)
 
     private func sessionsSection(rows: [WorkoutRow]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        LazyVStack(alignment: .leading, spacing: 10) {
             ForEach(rows, id: \.self) { row in
                 NavigationLink(value: row) {
                     sessionCard(row)

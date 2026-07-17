@@ -122,7 +122,7 @@ struct PlanViajeSheet: View {
                 }
 
                 Divider().overlay(theme.hairline)
-                Text("DÍA CON DÍA").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("DAY BY DAY").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 VStack(spacing: 0) {
                     ForEach(plan.days, id: \.dayIndex) { day in
                         dayRow(day)

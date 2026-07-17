@@ -219,7 +219,7 @@ extension WhoopStore {
     /// Non-async so GRDB's synchronous `writeWithoutTransaction` overload is chosen (mirrors
     /// `checkpointWALImpl` / `vacuumImpl`). Cap N=200 — see `pruneRaw`.
     private func incrementalVacuumAfterPruneImpl() throws {
-        try dbQueue.writeWithoutTransaction { db in
+        try dbWriter.writeWithoutTransaction { db in
             try db.execute(sql: "PRAGMA incremental_vacuum(200)")
         }
     }

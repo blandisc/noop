@@ -248,44 +248,17 @@ extension WhoopStore {
     /// midnight) but runs into the window is still returned. Filtering on `startTs` alone would drop it,
     /// leaving the post-midnight sleep un-excluded from the intraday stress curve (FER-448).
     public func sleepSessions(deviceId: String, from: Int, to: Int, limit: Int) async throws -> [CachedSleepSession] {
+        // FER-970 (R-03): row SQL/mapping shared with `dashboardSnapshot` via the fetch helper.
         try syncRead { db in
-            try Row.fetchAll(db, sql: """
-                SELECT startTs, endTs, efficiency, restingHr, avgHrv, stagesJSON FROM sleepSession
-                WHERE deviceId = ? AND endTs >= ? AND startTs <= ?
-                ORDER BY startTs ASC LIMIT ?
-                """, arguments: [deviceId, from, to, limit])
-                .map {
-                    CachedSleepSession(startTs: $0["startTs"], endTs: $0["endTs"],
-                                       efficiency: $0["efficiency"], restingHr: $0["restingHr"],
-                                       avgHrv: $0["avgHrv"], stagesJSON: $0["stagesJSON"])
-                }
+            try Self.fetchSleepSessions(db, deviceId: deviceId, from: from, to: to, limit: limit)
         }
     }
 
     /// Cached daily metrics for days in [from, to] (lexicographic YYYY-MM-DD compare), oldest first.
     public func dailyMetrics(deviceId: String, from: String, to: String) async throws -> [DailyMetric] {
+        // FER-970 (R-03): row SQL/mapping shared with `dashboardSnapshot` via the fetch helper.
         try syncRead { db in
-            try Row.fetchAll(db, sql: """
-                SELECT day, totalSleepMin, efficiency, deepMin, remMin, lightMin, disturbances,
-                       restingHr, avgHrv, recovery, strain, exerciseCount,
-                       spo2Pct, skinTempDevC, respRateBpm, steps, activeKcalEst,
-                       effortConfidence, restConfidence FROM dailyMetric
-                WHERE deviceId = ? AND day >= ? AND day <= ?
-                ORDER BY day ASC
-                """, arguments: [deviceId, from, to])
-                .map {
-                    DailyMetric(day: $0["day"], totalSleepMin: $0["totalSleepMin"],
-                                efficiency: $0["efficiency"], deepMin: $0["deepMin"],
-                                remMin: $0["remMin"], lightMin: $0["lightMin"],
-                                disturbances: $0["disturbances"], restingHr: $0["restingHr"],
-                                avgHrv: $0["avgHrv"], recovery: $0["recovery"],
-                                strain: $0["strain"], exerciseCount: $0["exerciseCount"],
-                                spo2Pct: $0["spo2Pct"], skinTempDevC: $0["skinTempDevC"],
-                                respRateBpm: $0["respRateBpm"],
-                                steps: $0["steps"], activeKcalEst: $0["activeKcalEst"],
-                                effortConfidence: $0["effortConfidence"],
-                                restConfidence: $0["restConfidence"])
-                }
+            try Self.fetchDailyMetrics(db, deviceId: deviceId, from: from, to: to)
         }
     }
 }

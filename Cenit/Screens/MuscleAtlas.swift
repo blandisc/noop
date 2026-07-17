@@ -54,7 +54,7 @@ enum MuscleAtlas {
 struct AnatomyPath: Identifiable {
     let id: Int
     let muscle: String
-    let d: String
+    let segs: [SVGPath.Seg]
 }
 
 enum MuscleAnatomy {
@@ -64,8 +64,8 @@ enum MuscleAnatomy {
     /// The shared body silhouette contour (neck → torso → arms → legs), same on front and back, stroked
     /// in hairline behind the tinted muscle groups. The head is a separate ellipse drawn by
     /// `AnatomyBaseShape`. A single closed contour (owner-approved body, FER-781).
-    static let baseBody: [String] = [
-        """
+    static let baseBody: [[SVGPath.Seg]] = [
+        SVGPath.parse("""
         M91,48 C90,53 88,57 82,60 C68,64 58,70 52,80 C46,92 45,108 48,124 \
         L40,128 C33,148 30,176 30,200 C30,214 32,214 35,206 C39,186 43,168 48,152 \
         C49,168 49,186 50,206 C50,250 52,300 56,352 C58,384 62,410 68,420 \
@@ -74,7 +74,7 @@ enum MuscleAnatomy {
         C138,410 142,384 144,352 C148,300 150,250 150,206 C151,186 151,168 152,152 \
         C157,168 161,186 165,206 C168,214 170,214 170,200 C170,176 167,148 160,128 \
         L152,124 C155,108 154,92 148,80 C142,70 132,64 118,60 C112,57 110,53 109,48 Z
-        """,
+        """),
     ]
 
     /// Front muscle groups. Obliques have no catalog muscle of their own, so they ride `abdominals`.
@@ -126,7 +126,7 @@ enum MuscleAnatomy {
     }
 
     private static func build(_ rows: [(String, String)]) -> [AnatomyPath] {
-        rows.enumerated().map { AnatomyPath(id: $0.offset, muscle: $0.element.0, d: $0.element.1) }
+        rows.enumerated().map { AnatomyPath(id: $0.offset, muscle: $0.element.0, segs: SVGPath.parse($0.element.1)) }
     }
 }
 
@@ -136,12 +136,12 @@ enum MuscleAnatomy {
 /// `MuscleAnatomy.viewBox` coordinate space. Enough to draw the authored anatomical figure — not a
 /// general SVG engine.
 struct SVGPath: Shape {
-    private enum Seg { case move(CGPoint), line(CGPoint), curve(CGPoint, CGPoint, CGPoint), close }
+    enum Seg { case move(CGPoint), line(CGPoint), curve(CGPoint, CGPoint, CGPoint), close }
     private let segs: [Seg]
     private let viewBox: CGSize
 
-    init(_ d: String, viewBox: CGSize = MuscleAnatomy.viewBox) {
-        self.segs = SVGPath.parse(d)
+    init(segs: [Seg], viewBox: CGSize = MuscleAnatomy.viewBox) {
+        self.segs = segs
         self.viewBox = viewBox
     }
 
@@ -160,7 +160,7 @@ struct SVGPath: Shape {
         return path
     }
 
-    private static func parse(_ d: String) -> [Seg] {
+    static func parse(_ d: String) -> [Seg] {
         var segs: [Seg] = []
         let chars = Array(d)
         var idx = 0
@@ -218,8 +218,8 @@ struct AnatomyBaseShape: Shape {
         // Head — ellipse cx 100, cy 26, rx 19, ry 23 (owner-approved body, FER-781).
         p.addEllipse(in: CGRect(x: rect.minX + (100 - 19) * sx, y: rect.minY + (26 - 23) * sy,
                                 width: 38 * sx, height: 46 * sy))
-        for d in MuscleAnatomy.baseBody {
-            p.addPath(SVGPath(d).path(in: rect))
+        for segs in MuscleAnatomy.baseBody {
+            p.addPath(SVGPath(segs: segs).path(in: rect))
         }
         return p
     }

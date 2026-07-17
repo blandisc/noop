@@ -83,7 +83,7 @@ struct WhyVerdictSheet: View {
     /// falta (la pasa `TodayView` según el estado: te falta dormir/sincronizar, o calibrar más noches).
     private func noReadingBlock(_ explanation: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Aún no hay lectura de hoy")
+            Text("No reading yet today")
                 .font(StrandFont.title2)
                 .foregroundStyle(theme.ink)
             Text(explanation)
