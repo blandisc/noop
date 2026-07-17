@@ -209,6 +209,7 @@ public struct TileSurface: View {
     private let value: String
     private let valueColor: Color?
     private let valueSize: CGFloat
+    private let unit: String?
     private let caption: String?
     private let swatch: Color?
     private let delta: String?
@@ -216,13 +217,14 @@ public struct TileSurface: View {
     private let theme: InstrumentoTheme
 
     public init(label: String, value: String, valueColor: Color? = nil, valueSize: CGFloat = 15,
-                caption: String? = nil, swatch: Color? = nil,
+                unit: String? = nil, caption: String? = nil, swatch: Color? = nil,
                 delta: String? = nil, deltaColor: Color? = nil,
                 theme: InstrumentoTheme) {
         self.label = label
         self.value = value
         self.valueColor = valueColor
         self.valueSize = valueSize
+        self.unit = unit
         self.caption = caption
         self.swatch = swatch
         self.delta = delta
@@ -252,6 +254,12 @@ public struct TileSurface: View {
                     .foregroundStyle(valueColor ?? theme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                if let unit {
+                    Text(unit)
+                        .font(InstrumentoType.grotesk(10, weight: .medium))
+                        .foregroundStyle(theme.inkTertiary)
+                        .lineLimit(1)
+                }
                 if let delta {
                     Text(delta)
                         .font(InstrumentoType.groteskNumber(11, weight: .semibold))

@@ -489,7 +489,8 @@ struct MetricDetailScreen: View {
                         label: tileLabel(cell),
                         value: cell.value,
                         valueColor: cell.color == theme.ink ? nil : cell.color,
-                        caption: cell.unitSuffix ?? cell.note.map { plainLocalizedLabel($0) },
+                        unit: cell.unitSuffix,
+                        caption: cell.note.map { plainLocalizedLabel($0) },
                         theme: theme
                     )
                 }
