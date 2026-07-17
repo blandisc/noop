@@ -442,8 +442,8 @@ struct StressDetailScreen: View {
                     ticks: [.init(v: 3, label: "3"), .init(v: 2, label: "2"),
                             .init(v: 1, label: "1"), .init(v: 0, label: "0")],
                     hue: theme.verdict, ymin: 0, ymax: 3,
-                    startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
-                    endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
+                    endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
                     mediaValue: fmt(stat.mean),
                     mediaNote: String(localized: "average of the \(range.name)"),
                     mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
@@ -452,7 +452,7 @@ struct StressDetailScreen: View {
                     anchorMedia: String(localized: "Raw daily values, no smoothing: stress is read day to day. Lower is better."),
                     anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
                     scrub: true,
-                    labels: window.rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" },
+                    labels: window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" },
                     fmt: { String(format: "%.1f", $0) },
                     theme: theme)
                     .padding(.top, 6)

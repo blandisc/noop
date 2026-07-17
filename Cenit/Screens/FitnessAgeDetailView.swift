@@ -56,10 +56,10 @@ struct FitnessAgeDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { g in
-                Color.clear.preference(key: FitnessAgeSheetHeightKey.self, value: g.size.height)
+                Color.clear.preference(key: SheetContentHeightKey.self, value: g.size.height)
             })
         }
-        .onPreferenceChange(FitnessAgeSheetHeightKey.self) { contentHeight = $0 }
+        .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
         .background(theme.paper)
         .presentationDetents(contentHeight > 0 ? [.height(contentHeight)] : [.large])
         .presentationDragIndicator(.visible)
@@ -354,14 +354,6 @@ struct FitnessAgeDetailView: View {
         case .missing:   return theme.inkTertiary     // quiet, no alarm
         }
     }
-}
-
-// MARK: - Sheet plumbing (private clones of MetricInfoSheet's, so that file stays untouched)
-
-/// Carries the sheet content's measured natural height up to size the detent to content.
-private struct FitnessAgeSheetHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 // MARK: - Preview

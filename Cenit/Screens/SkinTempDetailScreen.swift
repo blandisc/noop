@@ -363,7 +363,7 @@ struct SkinTempDetailScreen: View {
         let wash: GraficaRangos.Wash? = typical > 0.01
             ? .init(lo: -typical, hi: typical)
             : nil
-        let labels = window.rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" }
+        let labels = window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" }
         GraficaRangos(
             points: window.values,
             bands: bands,
@@ -373,8 +373,8 @@ struct SkinTempDetailScreen: View {
             hue: theme.dataStrain,
             ymin: domain.lowerBound,
             ymax: domain.upperBound,
-            startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
-            endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+            startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
+            endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
             mediaValue: fmt(mean),
             mediaNote: String(localized: "average of the \(window.range.name)"),
             mediaDelta: periodDelta.map { fmt($0) },

@@ -351,7 +351,7 @@ struct MetricDetailScreen: View {
             }
             return String(localized: "7-day moving average.")
         }()
-        let labels = rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" }
+        let labels = rows.map { MetricWindowMath.axisLabel($0.day) ?? "" }
         GraficaRangos(
             points: plot,
             bands: bands,
@@ -361,8 +361,8 @@ struct MetricDetailScreen: View {
             hue: metricHue,
             ymin: domain.lowerBound,
             ymax: domain.upperBound,
-            startLabel: rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
-            endLabel: rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+            startLabel: rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
+            endLabel: rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
             mediaValue: plot.count > 1 ? fmt(stat.mean) : "—",
             mediaNote: mediaNote,
             mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },

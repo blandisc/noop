@@ -317,8 +317,8 @@ struct StrainDetailScreen: View {
                     bands: Self.strainBands(theme),
                     ticks: [.init(v: 18, label: "18"), .init(v: 13, label: "13"), .init(v: 8, label: "8")],
                     hue: theme.dataStrain, ymin: 6, ymax: 19,
-                    startLabel: window.rows.first.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
-                    endLabel: window.rows.last.flatMap { RecoveryDetailScreen.axisLabel($0.day) } ?? "",
+                    startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
+                    endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
                     mediaValue: fmt(mediaStat.mean),
                     mediaNote: String(localized: "average of the \(range.name)"),
                     mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
@@ -327,7 +327,7 @@ struct StrainDetailScreen: View {
                     anchorMedia: String(localized: "7-day moving average: day-to-day strain is noisy."),
                     anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
                     scrub: true,
-                    labels: window.rows.map { RecoveryDetailScreen.axisLabel($0.day) ?? "" },
+                    labels: window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" },
                     theme: theme)
                     .padding(.top, 6)
                     .id(range)
@@ -403,21 +403,23 @@ struct StrainDetailScreen: View {
     // MARK: - 5. Calendario · 90 días (YearHeatStrip re-tint + leyenda + read-out)
 
     private var calendarContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            heatGrid
-            heatReadout
-            HeatLegend([(theme.dataStrain, String(localized: "hard")),
-                        (theme.strainRampMid, String(localized: "moderate")),
-                        (theme.strainRampLow, String(localized: "light")),
-                        (theme.hairline, String(localized: "no data"))], theme: theme)
-        }
+        HeatCalendarSection(
+            days: strainHeat,
+            selected: $selectedStrainDay,
+            tint: strainHeatTint,
+            readoutValue: { String(format: "%.1f", $0) },
+            readoutWord: { strainWord($0) },
+            emptyHint: "Tap a day to see its strain.",
+            legend: [(theme.dataStrain, String(localized: "hard")),
+                     (theme.strainRampMid, String(localized: "moderate")),
+                     (theme.strainRampLow, String(localized: "light")),
+                     (theme.hairline, String(localized: "no data"))],
+            theme: theme
+        )
     }
 
     /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
     private static let calDayFmt = DayKey.utcFormatter
-    private static let calReadoutFmt: DateFormatter = {
-        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
-    }()
 
     /// The trailing 90 days as `RecoveryDay` (score = strain 0–21, nil where there's no reading).
     private var strainHeat: [RecoveryDay] {
@@ -448,47 +450,6 @@ struct StrainDetailScreen: View {
         if v >= 14 { return "hard" }
         if v >= 8 { return "moderate" }
         return "light"
-    }
-
-    private var heatGrid: some View {
-        Calendario90(
-            days: strainHeat,
-            tint: strainHeatTint,
-            onSelect: { selectedStrainDay = $0 },
-            theme: theme
-        )
-    }
-
-    @ViewBuilder private var heatReadout: some View {
-        if let d = selectedStrainDay {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Self.calReadoutFmt.string(from: d.date))
-                    .groteskOverline()
-                    .foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                if let v = d.score {
-                    Text(String(format: "%.1f", v))
-                        .font(InstrumentoType.groteskTileValue)
-                        .foregroundStyle(strainHeatTint(v))
-                    Text(strainWord(v))
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                } else {
-                    Text("—")
-                        .font(InstrumentoType.groteskTileValue)
-                        .foregroundStyle(theme.inkTertiary)
-                    Text("no reading")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkTertiary)
-                }
-            }
-            .accessibilityElement(children: .combine)
-        } else {
-            Text("Tap a day to see its strain.")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 
     // MARK: - Método + sello

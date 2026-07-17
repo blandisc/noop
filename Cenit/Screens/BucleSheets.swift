@@ -183,12 +183,6 @@ struct PalancaDetailSheet: View {
 
 // MARK: Efectos de tus hábitos (explorer)
 
-/// Carries the «Efectos» content's measured natural height up so its detent fits it exactly (FER-438).
-private struct EfectosSheetHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
 struct EfectosExplorerSheet: View {
     let behaviors: [Insight]
     let theme: InstrumentoTheme
@@ -247,11 +241,11 @@ struct EfectosExplorerSheet: View {
             .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { g in
-                Color.clear.preference(key: EfectosSheetHeightKey.self, value: g.size.height)
+                Color.clear.preference(key: SheetContentHeightKey.self, value: g.size.height)
             })
         }
         .background(theme.paper.ignoresSafeArea())
-        .onPreferenceChange(EfectosSheetHeightKey.self) { contentHeight = $0 }
+        .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
         // Open at the content's natural height (no full-screen for a few rows); «.large» stays for long lists.
         .presentationDetents(contentHeight > 0 ? [.height(contentHeight), .large] : [.large])
         .presentationDragIndicator(.visible)

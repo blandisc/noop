@@ -904,8 +904,8 @@ struct SleepDetailScreen: View {
                             .init(v: 7, label: "7"), .init(v: 5, label: "5")],
                     wash: .init(lo: 7, hi: 9, label: String(localized: "optimal 7–9 h")),
                     hue: theme.dataSleep, ymin: 5, ymax: 10,
-                    startLabel: window.rows.first.flatMap { Self.axisLabel($0.day) } ?? "",
-                    endLabel: window.rows.last.flatMap { Self.axisLabel($0.day) } ?? "",
+                    startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
+                    endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
                     mediaValue: window.values.count > 1
                         ? String(format: "%.1f h", stat.mean) : "—",
                     mediaNote: String(localized: "average of the \(range.name)"),
@@ -917,7 +917,7 @@ struct SleepDetailScreen: View {
                     anchorMedia: String(localized: "Hours asleep per night. The wash is the optimal 7–9 h band."),
                     anchorRangos: String(localized: "How many nights of the period fell in each band. Tap one to see its nights on the chart."),
                     scrub: true,
-                    labels: window.rows.map { Self.axisLabel($0.day) ?? "" },
+                    labels: window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" },
                     fmt: { String(format: "%.1f h", $0) },
                     theme: theme)
                     .padding(.top, 6)
@@ -956,37 +956,28 @@ struct SleepDetailScreen: View {
         ]
     }
 
-    /// «jun 6» for a day key, noon UTC so the local label never slips a day (same as Recovery).
-    static func axisLabel(_ dayKey: String) -> String? {
-        Repository.parseDayKey(dayKey).map { axisDateFmt.string(from: $0.addingTimeInterval(12 * 3600)) }
-    }
-
-    static let axisDateFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("dMMM")
-        return f
-    }()
-
     // MARK: - 9. Calendario · 90 noches
 
     private var calendarContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            heatGrid
-            heatReadout
-            HeatLegend([(theme.dataSleep, String(localized: "enough")),
-                        (theme.dataSleepLight, String(localized: "ok")),
-                        (theme.warning, String(localized: "short")),
-                        (theme.rangeBand, String(localized: "no data"))], theme: theme)
-        }
+        HeatCalendarSection(
+            days: sleepHeatCache,
+            selected: $selectedSleepNight,
+            tint: sleepHeatTint,
+            readoutValue: { m in String(format: "%d:%02d", Int(m), Int((m - Double(Int(m))) * 60)) },
+            readoutWord: { sleepWord($0) },
+            emptyHint: "Tap a night to see its sleep.",
+            legend: [(theme.dataSleep, String(localized: "enough")),
+                     (theme.dataSleepLight, String(localized: "ok")),
+                     (theme.warning, String(localized: "short")),
+                     (theme.rangeBand, String(localized: "no data"))],
+            theme: theme
+        )
     }
 
     /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
     /// FER-978: `nonisolated` so it's reachable from nonisolated contexts (DateFormatter is Sendable
     /// under strict concurrency; the property is immutable).
     nonisolated private static let calDayFmt = DayKey.utcFormatter
-    private static let calReadoutFmt: DateFormatter = {
-        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("EEEdMMM"); return f
-    }()
 
     /// Builds the 90-night heat grid from a duration series snapshot (FER-953: pure / off-main-safe).
     /// `todayKey` llega del caller en MainActor (`Repository.localDayKey` es main-isolated). (FER-953)
@@ -1018,48 +1009,6 @@ struct SleepDetailScreen: View {
         if hours >= 7 { return "enough" }
         if hours >= 6 { return "ok" }
         return "short"
-    }
-
-    private var heatGrid: some View {
-        Calendario90(
-            days: sleepHeatCache,
-            tint: sleepHeatTint,
-            onSelect: { selectedSleepNight = $0 },
-            theme: theme
-        )
-    }
-
-    @ViewBuilder private var heatReadout: some View {
-        if let n = selectedSleepNight {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Self.calReadoutFmt.string(from: n.date))
-                    .groteskOverline()
-                    .foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                if let m = n.score {
-                    Text(String(format: "%d:%02d", Int(m), Int((m - Double(Int(m))) * 60)))
-                        .font(InstrumentoType.groteskTileValue)
-                        .foregroundStyle(sleepHeatTint(m))
-                        .monospacedDigit()
-                    Text(sleepWord(m))
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                } else {
-                    Text("—")
-                        .font(InstrumentoType.groteskTileValue)
-                        .foregroundStyle(theme.inkTertiary)
-                    Text("no reading")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkTertiary)
-                }
-            }
-            .accessibilityElement(children: .combine)
-        } else {
-            Text("Tap a night to see its sleep.")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 
     // MARK: - 10. Método + sello

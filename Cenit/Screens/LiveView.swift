@@ -2,12 +2,6 @@ import SwiftUI
 import StrandDesign
 import WhoopStore
 
-/// Reports the live monitor's measured content height up so the sheet detent can fit it (FER-196).
-private struct SheetContentHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
 /// Live — the connected strap in real time, in the light «Instrumento diurno» language. Designed to
 /// read as a single **sheet** (FER-190): everything fits one view, no scrolling on a standard iPhone
 /// (a `ScrollView` only graceful-degrades on small screens / large Dynamic Type). Warm paper, ink

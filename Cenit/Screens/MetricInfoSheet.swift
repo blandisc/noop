@@ -73,9 +73,6 @@ struct MetricInfoSheet: View {
     /// content so it never opens taller than it needs to. (FER-112 follow-up)
     @State private var contentHeight: CGFloat = 0
 
-    /// "See the method" disclosure — collapsed each time the sheet opens. (FER-108)
-    @State private var methodExpanded = false
-
     /// The plain-language explanation (`info.headline`) is hidden behind the header's ⓘ; collapsed each
     /// time the sheet opens so the card reads clean (number first), one tap from the "why". (FER-243)
     @State private var headlineExpanded = false
@@ -579,18 +576,7 @@ struct MetricInfoSheet: View {
     /// «Para esta noche»: an honest, non-prescriptive line from regularity — the paper block with the sleep
     /// hue left bar. (FER-710)
     private var sleepParaEstaNoche: some View {
-        HStack(spacing: 0) {
-            Rectangle().fill(theme.dataSleep).frame(width: 2.5)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("For tonight").groteskOverline().foregroundStyle(theme.inkTertiary)
-                Text(sleepTonightText).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(14)
-            Spacer(minLength: 0)
-        }
-        .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+        PaperSideBarBlock(overline: "For tonight", text: sleepTonightText, hue: theme.dataSleep, theme: theme)
     }
     private var sleepTonightText: LocalizedStringKey {
         if let r = sleepDetail?.regularity, r.score >= 80 {
@@ -1282,7 +1268,9 @@ struct MetricInfoSheet: View {
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 14) {
-                ForEach(impact.signals) { impactRow($0) }
+                ForEach(Array(impact.signals.enumerated()), id: \.element.id) { i, s in
+                    impactRow(s, index: i)
+                }
             }
             impactLegend
         }
@@ -1308,26 +1296,20 @@ struct MetricInfoSheet: View {
     }
 
     /// One signal: overline label · position-vs-base word (flag hue) · `· N%` weight, and the divergent
-    /// contribution bar below. IDENTICAL to the Detalle's `levelSignalRow` (FER-642). VoiceOver reads the
-    /// combined row.
-    private func impactRow(_ s: RecoveryImpact.Signal) -> some View {
+    /// contribution bar below, via the shared `ImpactSignalRow` (FER-975; was a hand-copy of the
+    /// Detalle's `levelSignalRow`, now the same component). VoiceOver reads the combined row.
+    private func impactRow(_ s: RecoveryImpact.Signal, index: Int) -> some View {
         let flag = impactFlag(s)
         let color = flag == .neutral ? theme.inkSecondary : impactColor(flag)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Self.impactLabel(s.key)).groteskOverline().foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                Text(Self.baseBandWord(s))
-                    .font(StrandFont.captionNumber)
-                    .foregroundStyle(color)
-                Text(verbatim: "· \(Int((s.weight * 100).rounded()))%")
-                    .font(StrandFont.captionNumber)
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            impactBar(contribution: s.contribution, color: color)
-                .accessibilityHidden(true)
-        }
-        .accessibilityElement(children: .combine)
+        return ImpactSignalRow(
+            label: Self.impactLabel(s.key),
+            word: Self.baseBandWord(s),
+            weightPct: Int((s.weight * 100).rounded()),
+            contribution: s.contribution,
+            color: color,
+            index: index,
+            theme: theme
+        )
     }
 
     /// The position-vs-base word from the RAW deviation (+ = the metric itself sits above your average),
@@ -1349,50 +1331,9 @@ struct MetricInfoSheet: View {
             : (above ? ", above your base"      : ", below your base")
     }
 
-    /// The divergent «vs your base» bar: a center base tick, a capsule extending left (it pulled the
-    /// score down) or right (it lifted it), length ∝ |contribution| clamped at ~1.5 composite-z units
-    /// (the dominant driver on a very bad night). Family thickness (6px), like the Detalle's axis.
-    private func impactBar(contribution: Double, color: Color) -> some View {
-        GeometryReader { geo in
-            let half = geo.size.width / 2
-            let maxC: CGFloat = 1.5
-            let mag = Swift.max(4, Swift.min(abs(CGFloat(contribution)) / maxC, 1.0) * half)
-            // FER-836 «pista + zona base» — same polish as the Detalle's `impactBar`, kept identical so
-            // Resumen and Detalle never diverge (FER-642). Math unchanged; only the track is new.
-            let trackH: CGFloat = 12
-            let baseZoneW = geo.size.width * 0.24
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(theme.trackWarm)
-                    .frame(width: geo.size.width, height: trackH)
-                RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de dato
-                    .fill(theme.hairline)
-                    .frame(width: baseZoneW, height: trackH)
-                    .offset(x: half - baseZoneW / 2)
-                Capsule()
-                    .fill(color)
-                    .frame(width: mag, height: 6)
-                    .offset(x: contribution >= 0 ? half : half - mag)
-                Rectangle()
-                    .fill(theme.hairlineStrong)
-                    .frame(width: 1.5, height: 16)
-                    .offset(x: half - 0.75)
-            }
-            .frame(maxHeight: .infinity, alignment: .center)
-        }
-        .frame(height: 16)
-    }
-
     /// The axis legend: «◀ te la bajó · tu base · te la subió ▶» — decorative, hidden from VoiceOver.
     private var impactLegend: some View {
-        HStack {
-            Text("◀ holds it back").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Spacer()
-            Text("your base").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Spacer()
-            Text("holds it up ▶").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-        }
-        .accessibilityHidden(true)
+        ImpactAxisLegend(theme: theme)
     }
 
     /// The signal's display name — the same catalog keys the Detalle's driver rows use.
@@ -1416,32 +1357,22 @@ struct MetricInfoSheet: View {
     /// flag → theme color, shared with the Detalle's driver rows so both surfaces color states alike.
     private func impactColor(_ flag: ReadinessEngine.Flag) -> Color { flag.color(theme) }
 
-    /// Progressive disclosure: the technical "how" lives one tap down, collapsed by default.
+    /// Progressive disclosure: the technical "how" lives one tap down, collapsed by default. Uses the
+    /// shared `Metodo` component (FER-975; was a hand-copy — same DisclosureGroup shape as the Detalle
+    /// screens' «Cómo se calcula»). `Metodo` owns its own collapsed state internally.
     private func methodDisclosure(_ method: MetricInfo.Method) -> some View {
-        DisclosureGroup(isExpanded: $methodExpanded) {
-            VStack(alignment: .leading, spacing: 10) {
-                Divider().overlay(theme.hairline)
-                Text(method.prose)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let citation = method.citation {
-                    Text(citation)
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(.top, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Text("How it's calculated")
+        Metodo(title: String(localized: "How it's calculated"), theme: theme) {
+            Text(method.prose)
                 .font(StrandFont.subhead)
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let citation = method.citation {
+                Text(citation)
+                    .font(StrandFont.caption)
+                    .foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .tint(theme.inkTertiary)
-        .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
     /// Trailing "Ver más" link at the foot of the sheet: drills from this summary into the metric's rich
@@ -1491,14 +1422,6 @@ struct MetricInfoSheet: View {
             }
         }
     }
-}
-
-// MARK: - Helpers
-
-/// Carries the sheet content's measured natural height up to size the Day Strain detent. (FER-112)
-private struct SheetContentHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 // MARK: - Preview

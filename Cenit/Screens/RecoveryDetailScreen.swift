@@ -406,78 +406,24 @@ struct RecoveryDetailScreen: View {
     }
 
     /// One signal row: overline label · position-vs-base word (flag hue) · `· N%` weight, and the divergent
-    /// contribution bar below (recGrow, staggered by row). (FER-642/836/857)
+    /// contribution bar below (recGrow, staggered by row). (FER-642/836/857/975)
     private func levelSignalRow(_ s: RecoveryImpact.Signal, index: Int) -> some View {
         let flag = ReadinessEngine.Flag(orientedZ: s.orientedZ)
         let color = flag == .neutral ? theme.inkSecondary : flagColor(flag)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Self.driverLabel(s.key))
-                    .font(InstrumentoType.grotesk(10, weight: .semibold))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                Text(Self.baseBandWord(s: s))
-                    .font(InstrumentoType.grotesk(12))
-                    .foregroundStyle(color)
-                Text(verbatim: "· \(Int((s.weight * 100).rounded()))%")
-                    .font(InstrumentoType.groteskNumber(12, weight: .regular))
-                    .foregroundStyle(theme.inkMuted)
-            }
-            impactBar(contribution: s.contribution, color: color, index: index)
-                .accessibilityHidden(true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// The divergent «vs your base» bar: a center base tick, capsule extending right (holds recovery up) or
-    /// left (holds it back), length ∝ |contribution| clamped at ~1.5 composite-z units, entering with
-    /// `recGrow` staggered by row. Same construction and clamp as the summary's `impactBar`. (FER-642/836)
-    private func impactBar(contribution: Double, color: Color, index: Int = 0) -> some View {
-        GeometryReader { geo in
-            let half = geo.size.width / 2
-            let maxC: CGFloat = 1.5
-            let mag = Swift.max(4, Swift.min(abs(CGFloat(contribution)) / maxC, 1.0) * half)
-            // FER-836 «pista + zona base»: the capsule now rides a full-width track with a shaded
-            // central «tu base» zone, so today's value reads against the WHOLE range, not floating
-            // next to a lone tick. Colors stay token-only; the math is unchanged (position = sign of
-            // the real oriented-z, length ∝ |contribution|) — no additive claim.
-            let trackH: CGFloat = 12
-            let baseZoneW = geo.size.width * 0.24
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(theme.trackWarm)
-                    .frame(width: geo.size.width, height: trackH)
-                RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: geometría de dato
-                    .fill(theme.hairline)
-                    .frame(width: baseZoneW, height: trackH)
-                    .offset(x: half - baseZoneW / 2)
-                Capsule()
-                    .fill(color)
-                    .frame(width: mag, height: 6)
-                    .offset(x: contribution >= 0 ? half : half - mag)
-                    .recGrow(index: index, origin: contribution >= 0 ? .leading : .trailing)
-                Rectangle()
-                    .fill(theme.baseMark)
-                    .frame(width: 1.5, height: 16)
-                    .offset(x: half - 0.75)
-            }
-            .frame(maxHeight: .infinity, alignment: .center)
-        }
-        .frame(height: 16)
+        return ImpactSignalRow(
+            label: Self.driverLabel(s.key),
+            word: Self.baseBandWord(s: s),
+            weightPct: Int((s.weight * 100).rounded()),
+            contribution: s.contribution,
+            color: color,
+            index: index,
+            theme: theme
+        )
     }
 
     /// The unified axis legend: «◀ la frena · tu base · la sostiene ▶» — decorative, hidden from VoiceOver.
     private var levelLegend: some View {
-        HStack {
-            Text("◀ holds it back").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Spacer()
-            Text("your base").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Spacer()
-            Text("holds it up ▶").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-        }
-        .accessibilityHidden(true)
+        ImpactAxisLegend(theme: theme)
     }
 
     /// The flag → theme color (shared with the recovery summary's «Hoy, vs tu normal» rows, FER-628/FER-642).
@@ -798,8 +744,8 @@ struct RecoveryDetailScreen: View {
                 wash: .init(lo: 70, hi: 88),
                 refLine: baseValue.map { .init(v: Double($0), label: String(localized: "your base · \($0)")) },
                 hue: bandColor, ymin: 20, ymax: 95,
-                startLabel: window.rows.first.flatMap { Self.axisLabel($0.day) } ?? "",
-                endLabel: window.rows.last.flatMap { Self.axisLabel($0.day) } ?? "",
+                startLabel: window.rows.first.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
+                endLabel: window.rows.last.flatMap { MetricWindowMath.axisLabel($0.day) } ?? "",
                 mediaValue: window.values.count > 1 ? Self.levelWord(stat.mean) : "—",
                 mediaNote: String(localized: "your typical band this \(range.name)"),
                 mediaDelta: pct.map { $0 >= 0 ? "+\(Int($0.rounded()))%" : "\(Int($0.rounded()))%" },
@@ -807,7 +753,7 @@ struct RecoveryDetailScreen: View {
                 countUnit: "d",
                 anchorRangos: String(localized: "How many days of the period fell in each band. Tap one to see its days on the chart."),
                 scrub: true,
-                labels: window.rows.map { Self.axisLabel($0.day) ?? "" },
+                labels: window.rows.map { MetricWindowMath.axisLabel($0.day) ?? "" },
                 theme: theme)
                 .padding(.top, 6)
                 .id(range)  // fresh entrance (recFade) when the period changes
@@ -866,19 +812,6 @@ struct RecoveryDetailScreen: View {
         return String(localized: String.LocalizationValue(MetricLevels.name(for: key)))
     }
 
-    /// «jun 6» for a day key, anchored to NOON UTC before formatting so the local-zone label never
-    /// slips to the previous day west of UTC (same fix as `MetricWindowMath.decimatedPoints`, FER-630).
-    static func axisLabel(_ dayKey: String) -> String? {
-        Repository.parseDayKey(dayKey).map { axisDateFmt.string(from: $0.addingTimeInterval(12 * 3600)) }
-    }
-
-    /// «jun 6» axis dates for the chart floor.
-    static let axisDateFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("dMMM")
-        return f
-    }()
-
     // MARK: - 5. Consistencia (coeficiente de variación)
 
     /// CV of the full recovery series (nil when there aren't enough points). Feeds the «Your patterns»
@@ -893,51 +826,22 @@ struct RecoveryDetailScreen: View {
     // copy mirror «See the method». Holds the 90-day calendar. (The period-selector trend that used to sit
     // here alongside it was removed in FER-703.)
 
-    // MARK: - Calendario · 90 días (YearHeatStrip re-tintado + leyenda + read-out) — FER-857
+    // MARK: - Calendario · 90 días (HeatCalendarSection compartido) — FER-857/FER-975
 
     private var calendarContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            heatGrid
-            heatReadout
-            HeatLegend([(theme.verdict, String(localized: "ready")),
-                        (theme.warning, String(localized: "recovering")),
-                        (theme.critical, String(localized: "Low").lowercased()),
-                        (theme.rangeBand, String(localized: "no data"))], theme: theme)
-        }
-    }
-
-    /// The read-out under the calendar: the tapped day's date + score (in its band color) + state word,
-    /// or an honest "no reading" for an in-range gap; a quiet hint until the user taps a day. (FER-235)
-    @ViewBuilder private var heatReadout: some View {
-        if let day = selectedHeatDay {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Self.heatDateFmt.string(from: day.date))
-                    .groteskOverline()
-                    .foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                if let score = day.score {
-                    Text("\(Int(score.rounded()))")
-                        .font(InstrumentoType.groteskTileValue)
-                        .foregroundStyle(heatTint(score))
-                    Text(bandWord(score))
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary)
-                } else {
-                    Text("—")
-                        .font(InstrumentoType.groteskTileValue)
-                        .foregroundStyle(theme.inkTertiary)
-                    Text("no reading")
-                        .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkTertiary)
-                }
-            }
-            .accessibilityElement(children: .combine)
-        } else {
-            Text("Tap a day to see its recovery.")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        HeatCalendarSection(
+            days: model.heat,
+            selected: $selectedHeatDay,
+            tint: heatTint,
+            readoutValue: { "\(Int($0.rounded()))" },
+            readoutWord: { bandWord($0) },
+            emptyHint: "Tap a day to see its recovery.",
+            legend: [(theme.verdict, String(localized: "ready")),
+                     (theme.warning, String(localized: "recovering")),
+                     (theme.critical, String(localized: "Low").lowercased()),
+                     (theme.rangeBand, String(localized: "no data"))],
+            theme: theme
+        )
     }
 
     /// A short band word for the calendar read-out (matches the hero's band coloring).
@@ -947,17 +851,6 @@ struct RecoveryDetailScreen: View {
         case "yellow": return "Recovering"
         default:       return "Low"
         }
-    }
-
-    /// The 90-day heat strip, sized to fill the available width: measure the content width once, then
-    /// pick a cell size so the week columns span it (re-tinted to warm paper). (FER-225)
-    private var heatGrid: some View {
-        Calendario90(
-            days: model.heat,
-            tint: heatTint,
-            onSelect: { selectedHeatDay = $0 },
-            theme: theme
-        )
     }
 
     /// The cell tint in «Instrumento» colors: the same three band roles the hero uses (green/amber/red),
@@ -1035,12 +928,6 @@ struct RecoveryDetailScreen: View {
     /// The canonical UTC day-key formatter — read side of the day-key contract (FER-754).
     static let dayParser = DayKey.utcFormatter
 
-    /// Locale-aware "Wed 14 May" for the calendar read-out (orders/abbreviates per device locale). (FER-235)
-    static let heatDateFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
-        return f
-    }()
 }
 
 // MARK: - Sheet item
