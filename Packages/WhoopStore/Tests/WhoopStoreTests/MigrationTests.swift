@@ -5,6 +5,12 @@ import WhoopProtocol
 @testable import WhoopStore
 
 final class MigrationTests: XCTestCase {
+    func testMigratorRegistersContiguousVersions() {
+        XCTAssertEqual(WhoopStore.makeMigrator().migrations, (1...35).map { "v\($0)" })
+        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 35)
+        XCTAssertEqual(WhoopStoreInfo.latestMigration, "v35")
+    }
+
     func testInMemoryRunsMigrations() async throws {
         let store = try await WhoopStore.inMemory()
         let tables = try await store.tableNames()
@@ -62,7 +68,6 @@ final class MigrationTests: XCTestCase {
                               "\(table) keeps synced (not rebuilt)")
             }
         }
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 31)
     }
 
     /// v23 (FER-531): the weekly-split table exists with `weekday` as its PRIMARY KEY (one routine per
@@ -124,7 +129,6 @@ final class MigrationTests: XCTestCase {
         }
         let pk = try await store.primaryKeyColumns("circadianPhase")
         XCTAssertEqual(pk, ["deviceId", "day"], "PK is (deviceId, day) → at most one record per day")
-        XCTAssertEqual(WhoopStoreInfo.schemaVersion, 31)
     }
 
     /// v29 (FER-A): the four load-progression columns exist on `routineExercise`, and a routine seeded at
