@@ -514,6 +514,12 @@ semantics). Persisting them means the engine reads each day's raw `gravitySample
 day's data changes, instead of re-reading 60+14 days of gravity every 15-minute pass — and the derived
 motion history survives both an app relaunch and a raw-stream safe-trim.
 
+FER-972 (P-05) adds two more per-night scalars under the same `-noop` source: `night_dc_ms`
+(nocturnal Deceleration Capacity, ms, over the night's main in-bed session) and `night_warming_c`
+(distal warming onset→plateau, °C). The nightly pass persists them next to `hrv_lf`; the Sleep /
+Skin-temp detail loaders read the points and lazily write-through any night the engine window didn't
+cover, so opening those sheets no longer re-reads ~0.5–1 M raw sample rows.
+
 **Circadian phase** — `circadianPhase(deviceId, day, tempMinHour, acrophaseHours, offsetMinutes,
 confidence, daysObserved, bedtimeHour, wakeHour, computedAt)`, PK `(deviceId, day)`: one structured
 record per local civil day holding `CircadianEngine`'s cosinor phase estimate for the «Tu reloj

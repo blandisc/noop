@@ -41,6 +41,7 @@ final class Repository: ObservableObject {
     /// TodayView's parallel queries) share ONE open+migrate instead of racing `ensureStore`'s
     /// await window and opening the DB several times. @MainActor makes the set-before-await safe.
     private var storeInit: Task<WhoopStore?, Never>?
+    private var receiptCache: (value: (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)?, at: Date)?
 
     /// The whole dashboard, republished as ONE value. Previously `days`/`sleeps`/`importedSleep`/
     /// `loaded`/`refreshSeq` were five separate `@Published`s, so a single `refresh()` fired up to
@@ -187,8 +188,27 @@ final class Repository: ObservableObject {
     /// Parse a stored `yyyy-MM-dd` day key back to a Date in UTC (en_US_POSIX). Charts parse keys in
     /// UTC for DST-stable positions — distinct from `localDayKey` (which WRITES keys in local zone).
     /// The single shared inverse of the day-key contract (FER-325).
+    /// Pure arithmetic, zero DateFormatter (FER-972 · M-04).
     nonisolated private static let dayKeyParser = DayKey.utcFormatter
-    nonisolated static func parseDayKey(_ s: String) -> Date? { dayKeyParser.date(from: s) }
+
+    /// Days since 1970-01-01 for a civil date (Hinnant `days_from_civil`; valid for the app's range).
+    /// `ComparisonEngine.epochDay` is package-internal, so this copy lives here for the app layer.
+    private nonisolated static func epochDays(y: Int, m: Int, d: Int) -> Int {
+        let yy = y - (m <= 2 ? 1 : 0)
+        let era = (yy >= 0 ? yy : yy - 399) / 400
+        let yoe = yy - era * 400
+        let doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+        return era * 146097 + doe - 719468
+    }
+
+    nonisolated static func parseDayKey(_ s: String) -> Date? {
+        let parts = s.split(separator: "-")
+        guard parts.count == 3,
+              let y = Int(parts[0]), let m = Int(parts[1]), let d = Int(parts[2]),
+              (1...12).contains(m), (1...31).contains(d) else { return nil }
+        return Date(timeIntervalSince1970: Double(epochDays(y: y, m: m, d: d)) * 86_400)
+    }
 
     /// Format a chart date BACK to its `yyyy-MM-dd` key in UTC — the exact inverse of `parseDayKey`,
     /// for dates that were parsed/anchored in UTC (trend points). `localDayKey` on such a date shifts
@@ -252,10 +272,15 @@ final class Repository: ObservableObject {
     /// One-shot snapshot for the Today "data receipt": stored raw-sample counts + the latest stored
     /// HR sample time (proof the strap's streams are landing and current). nil if no store yet.
     func dataReceipt() async -> (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)? {
+        if let cached = receiptCache, Date.now.timeIntervalSince(cached.at) < 120 {
+            return cached.value
+        }
         guard let store = await ensureStore() else { return nil }
         guard let counts = try? await store.sampleCounts() else { return nil }
         let latest = (try? await store.latestHRSampleTs(deviceId: deviceId)) ?? nil
-        return (counts, latest)
+        let value: (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)? = (counts, latest)
+        receiptCache = (value, Date.now)
+        return value
     }
 
     /// "Verify my data": run the store's integrity check. false on any failure (incl. no store yet),
@@ -707,38 +732,40 @@ final class Repository: ObservableObject {
         return (try? await store.skinTempSamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
     }
 
+    /// FER-972 (P-05): day-keys (per scalar key) already attempted this app session whose night read
+    /// unreadable/too-thin — don't re-read their raw samples on every sheet open. In-memory only:
+    /// a relaunch (or the nightly pass re-scoring the night) retries naturally.
+    private var nocturnalScalarAttempted: Set<String> = []
+
     /// Per-night distal warming magnitudes (°C, sleep-onset → nocturnal plateau) over the last `nights`
     /// strap nights, oldest → newest, for the thermal-stability read (FER-850). `nil` for a night with too
-    /// little temp. A magnitude is a difference, so the raw→°C offset cancels: (plateauRaw − onsetRaw)/128.
-    /// Heavy (one skin-temp read per night) → the caller runs it off the hot path.
+    /// little temp. FER-972 (P-05): reads the `night_warming_c` scalar the nightly pass persists next to
+    /// `hrv_lf`; only nights the engine window didn't cover are computed here once (write-through), so a
+    /// sheet open stops re-reading ~28 nights × raw samples. The math lives in
+    /// `ThermalStabilityEngine.warmingMagnitudeC` (same body, moved to the package with its test).
     func nocturnalWarmingMagnitudes(nights: Int = 28) async -> [Double?] {
         guard dataSourceMode.usesWhoop else { return [] }
         let now = Int(Date().timeIntervalSince1970)
         let from = now - (nights + 2) * 86_400
         let sessions = (await sleepSessions(from: from, to: now)).suffix(nights)
+        let stored = Dictionary((await computedSeries(key: "night_warming_c", days: nights + 3))
+                                    .map { ($0.day, $0.value) }, uniquingKeysWith: { _, b in b })
         var out: [Double?] = []
         for s in sessions where s.startTs < s.endTs {
+            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.endTs)))
+            if let v = stored[day] { out.append(v); continue }
+            let memo = "w|\(day)"
+            if nocturnalScalarAttempted.contains(memo) { out.append(nil); continue }
+            nocturnalScalarAttempted.insert(memo)
             let samples = (await skinTempSamples(from: s.startTs, to: s.endTs)).sorted { $0.ts < $1.ts }
-            out.append(Self.warmingMagnitudeC(samples))
+            let v = ThermalStabilityEngine.warmingMagnitudeC(inBedRaw: samples)
+            if let v, let store = await ensureStore() {
+                _ = try? await store.upsertMetricSeries(
+                    [MetricPoint(day: day, key: "night_warming_c", value: v)], deviceId: computedDeviceId)
+            }
+            out.append(v)
         }
         return out
-    }
-
-    /// Onset → plateau warming (°C) for one night's in-bed skin-temp samples, or nil if too few. Onset =
-    /// mean of the first ~15% of the window (falling asleep), plateau = mean of the 40–90% window (the
-    /// settled night). Difference cancels the raw→°C offset (/128 only).
-    private static func warmingMagnitudeC(_ samples: [SkinTempSample]) -> Double? {
-        let n = samples.count
-        guard n >= 60 else { return nil }
-        let onsetHi = max(1, n * 15 / 100)
-        let plateauLo = n * 40 / 100
-        let plateauHi = max(plateauLo + 1, n * 90 / 100)
-        func meanRaw(_ r: ArraySlice<SkinTempSample>) -> Double {
-            Double(r.reduce(0) { $0 + $1.raw }) / Double(r.count)
-        }
-        let onset = meanRaw(samples[0..<onsetHi])
-        let plateau = meanRaw(samples[plateauLo..<plateauHi])
-        return (plateau - onset) / 128.0
     }
 
     /// Gravity (accelerometer) samples for the strap in `[from, to]`. Feeds the night-rhythm
@@ -844,11 +871,26 @@ final class Repository: ObservableObject {
         let now = Int(Date().timeIntervalSince1970)
         let from = now - (nights + 2) * 86_400
         let sessions = await sleepSessions(from: from, to: now)
+        // FER-972 (P-05): the nightly pass persists `night_dc_ms` per night (next to `hrv_lf`);
+        // only nights it didn't cover are computed here once (write-through) — a sheet open stops
+        // re-reading ~14 nights × R-R. Fallback math identical to before (NocturnalDC over the span).
+        let stored = Dictionary((await computedSeries(key: "night_dc_ms", days: nights + 3))
+                                    .map { ($0.day, $0.value) }, uniquingKeysWith: { _, b in b })
         var dcs: [Double] = []
         for s in sessions.suffix(nights) where s.startTs < s.endTs {
+            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.endTs)))
+            if let v = stored[day] { dcs.append(v); continue }
+            let memo = "dc|\(day)"
+            if nocturnalScalarAttempted.contains(memo) { continue }
+            nocturnalScalarAttempted.insert(memo)
             let rr = (await rrIntervals(from: s.startTs, to: s.endTs)).map { Double($0.rrMs) }
             let r = NocturnalDC.compute(rawRR: rr)
-            if r.confidence != .unreadable { dcs.append(r.dcMs) }
+            guard r.confidence != .unreadable else { continue }
+            if let store = await ensureStore() {
+                _ = try? await store.upsertMetricSeries(
+                    [MetricPoint(day: day, key: "night_dc_ms", value: r.dcMs)], deviceId: computedDeviceId)
+            }
+            dcs.append(r.dcMs)
         }
         guard dcs.count >= 3 else { return nil }
         let sorted = dcs.sorted()
@@ -880,11 +922,29 @@ final class Repository: ObservableObject {
     /// Idempotent — only days without a stored day-mean are computed. Builds ONE recent waking reference
     /// (sleep excluded) and applies it to all days (documented approximation; the pattern signal is
     /// relative). No-op without RR / a usable reference. Additive: does NOT touch IntelligenceEngine.
+    /// FER-972 (P-03): day-keys already attempted this session that yielded no summary (no band
+    /// worn that day) — permanent gaps must not re-trigger the reference build on every open.
+    /// In-memory only; today (back == 0) is never memoized (its data keeps growing).
+    private var stressBackfillAttempted: Set<String> = []
+
     func backfillStressSummaries(days: Int = 60, restingHR: Double, maxHR: Double) async {
         guard let store = await ensureStore() else { return }
         let existing = await stressDaySummaries(days: days)
         let cal = Calendar.current
         let startOfToday = cal.startOfDay(for: Date())
+
+        // FER-972 (P-03): the 7-day waking reference (~700k RR rows + 7 sleep-span reads) was
+        // built BEFORE checking whether any day needed it — every sheet open paid it even with
+        // the whole window already summarized. Compute the pending set first and return early.
+        var pending: [Int] = []
+        for back in 0..<days {
+            let dayStart = cal.date(byAdding: .day, value: -back, to: startOfToday)!
+            let key = Repository.localDayKey(dayStart)
+            if existing[key]?.dayMean != nil { continue }
+            if back != 0, stressBackfillAttempted.contains(key) { continue }
+            pending.append(back)
+        }
+        guard !pending.isEmpty else { return }
 
         var refDays: [[RRInterval]] = [], refExcluded: [[ClosedRange<Int>]] = []
         for back in 1...7 {
@@ -898,10 +958,10 @@ final class Repository: ObservableObject {
                                                            restingHR: restingHR, maxHR: maxHR) else { return }
 
         var rows: [MetricPoint] = []
-        for back in 0..<days {
+        for back in pending {
             let dayStart = cal.date(byAdding: .day, value: -back, to: startOfToday)!
             let key = Repository.localDayKey(dayStart)
-            if existing[key]?.dayMean != nil { continue }                 // already summarized
+            if back != 0 { stressBackfillAttempted.insert(key) }   // P-03: gaps don't retry this session
             let dayEnd = cal.date(byAdding: .day, value: 1, to: dayStart)!
             let from = Int(dayStart.timeIntervalSince1970), to = Int(dayEnd.timeIntervalSince1970)
             let rr = await rrIntervals(from: from, to: to)

@@ -1379,15 +1379,24 @@ public enum SleepStager {
         let seg = rr.filter { $0.ts >= start && $0.ts <= end }
         guard !seg.isEmpty else { return nil }
         let windowS = 5 * 60
-        var vals: [Double] = []
+        // Bucket each beat into its 5-min window in ONE O(n) pass instead of re-filtering `seg`
+        // per window — the same port `sessionRestingHR` got (FER-323; here FER-972 · M-02).
+        // Inclusion rule (incl. the ts==end edge) and within-window beat order — RMSSD reads
+        // successive differences, so order is load-bearing — are identical to the old filter.
+        var windowCount = 0
         var t = start
-        while t < end {
+        while t < end { windowCount += 1; t += windowS }
+        var buckets = [[Double]](repeating: [], count: windowCount)
+        for s in seg {
+            let w = (s.ts - start) / windowS
+            if w < windowCount { buckets[w].append(Double(s.rrMs)) }
+        }
+        var vals: [Double] = []
+        for w in 0..<windowCount {
             // Skip windows centered in a scored wake span (only when a hypnogram is given).
-            if !stages.isEmpty, stageAt(t + windowS / 2, stages) == "wake" { t += windowS; continue }
-            let bucket = seg.filter { $0.ts >= t && $0.ts < t + windowS }.map { Double($0.rrMs) }
-            let filtered = HRVAnalyzer.cleanRR(bucket)
+            if !stages.isEmpty, stageAt(start + w * windowS + windowS / 2, stages) == "wake" { continue }
+            let filtered = HRVAnalyzer.cleanRR(buckets[w])
             if filtered.count >= 2, let r = HRVAnalyzer.rmssdRaw(filtered) { vals.append(r) }
-            t += windowS
         }
         guard !vals.isEmpty else { return nil }
         return HRVAnalyzer.median(vals)

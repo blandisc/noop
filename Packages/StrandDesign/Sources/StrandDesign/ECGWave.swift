@@ -82,7 +82,7 @@ public struct ECGWave: View {
 
     /// Real-time patient-monitor sweep, redrawn each frame straight from the wall clock.
     private var monitor: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(minimumInterval: 1.0 / 40)) { timeline in
             Canvas { context, size in
                 drawSweep(into: &context, size: size,
                           now: timeline.date.timeIntervalSinceReferenceDate)
