@@ -306,18 +306,9 @@ struct MetricInfoSheet: View {
                     Spacer()
                     if isCalculatedSummary { originDot("Calculated", color: theme.inkTertiary) }
                     else { vitalOriginDot }
-                } else if info.usesLevels {
-                    // FER-607 (migrated metric): the title leads in serif (headline role only), with the
-                    // ⓘ beside it and the source chip trailing — the handoff header.
-                    Text(info.name)
-                        .font(InstrumentoType.groteskHeadline(23))
-                        .foregroundStyle(theme.ink)
-                    infoButton
-                    Spacer()
-                    sourceChip
                 } else {
                     Text(info.name)
-                        .instrumentoOverline()
+                        .groteskOverline()
                         .foregroundStyle(theme.inkTertiary)
                     Spacer()
                     infoButton
@@ -478,7 +469,7 @@ struct MetricInfoSheet: View {
             HStack(spacing: 0) {
                 Rectangle().fill(metricHue).frame(width: 2.5)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Your pattern").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Your pattern").groteskOverline().foregroundStyle(theme.inkTertiary)
                     ForEach(whatMovesIt) { f in
                         Text(f.phrase)
                             .font(StrandFont.subhead)
@@ -518,7 +509,7 @@ struct MetricInfoSheet: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(Self.sleepHM(sleepDetail?.night?.stages.asleep ?? 0))
                     .groteskSheetNumeral().foregroundStyle(theme.dataSleep)
-                Text("hours asleep").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("hours asleep").groteskOverline().foregroundStyle(theme.inkTertiary)
             }
             Rectangle().fill(theme.hairlineStrong).frame(width: 1, height: 46)
             VStack(alignment: .leading, spacing: 4) {
@@ -527,7 +518,7 @@ struct MetricInfoSheet: View {
                 } else {
                     Text(verbatim: "··").groteskSheetNumeral().foregroundStyle(theme.inkTertiary)
                 }
-                Text("regularity").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("regularity").groteskOverline().foregroundStyle(theme.inkTertiary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -556,7 +547,7 @@ struct MetricInfoSheet: View {
         if let night = sleepDetail?.night {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Last night").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Last night").groteskOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     Text(verbatim: "\(Self.clock(night.startTs)) → \(Self.clock(night.endTs))")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
@@ -591,7 +582,7 @@ struct MetricInfoSheet: View {
         HStack(spacing: 0) {
             Rectangle().fill(theme.dataSleep).frame(width: 2.5)
             VStack(alignment: .leading, spacing: 4) {
-                Text("For tonight").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("For tonight").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Text(sleepTonightText).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -675,24 +666,6 @@ struct MetricInfoSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(headlineExpanded ? "Hide explanation" : "Show explanation"))
-    }
-
-    /// FER-607: a quiet source chip in the migrated-metric header — «APPLE» (heart hue) when the shown
-    /// reading came from Apple Health, «BANDA» (the metric hue) when it came from the strap. Reuses the
-    /// same `appleSource` signal the foot line resolves per reading, so it never lies about provenance.
-    private var sourceChip: some View {
-        let tint = appleSource ? theme.dataHeart : metricHue
-        return Text(appleSource ? "APPLE" : "BAND")
-            .font(StrandFont.caption)
-            .foregroundStyle(tint)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2)
-            .overlay(
-                RoundedRectangle(cornerRadius: 5, style: .continuous) // token-exempt: geometría de dato (chip ≤6)
-                    .strokeBorder(tint.opacity(StrandOpacity.strokeSoft), lineWidth: 0.5)
-            )
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(appleSource ? "Source · Apple Health" : "Source · band"))
     }
 
     /// Quiet "this can come from Apple Health" line for an Apple-sourced metric that isn't connected
@@ -1179,7 +1152,7 @@ struct MetricInfoSheet: View {
     /// curve stays exactly as it was when neither is available. (§5, FER-732)
     @ViewBuilder private var strainIntradaySection: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            Text("Today, hour by hour").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Today, hour by hour").groteskOverline().foregroundStyle(theme.inkTertiary)
             if strainCurve.count > 1 {
                 StrainIntradayCurve(points: strainCurve, hue: theme.dataStrain, theme: theme,
                                     ceiling: strainCeiling, window: trainingWindow)
@@ -1259,30 +1232,6 @@ struct MetricInfoSheet: View {
         return Text(s)
     }
 
-    // MARK: - Shared chart wells (loading / empty), themed for warm paper
-
-    private func loadingWell(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-            .fill(theme.surface)
-            .frame(height: height)
-            .overlay { ProgressView().tint(theme.inkTertiary) }
-    }
-
-    private func emptyWell(icon: String, text: LocalizedStringKey) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(StrandFont.glyph(.lead))
-                .foregroundStyle(theme.inkTertiary)
-            Text(text)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-    }
-
     // MARK: - Recovery weight breakdown + method disclosure (FER-108)
 
     /// Cold-start progress: "Calibrating baseline" over a thin recovery-tinted track, shown instead of
@@ -1290,7 +1239,7 @@ struct MetricInfoSheet: View {
     private func calibrationCard(_ cal: MetricInfo.Calibration) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Calibrating baseline").strandOverline().foregroundStyle(theme.inkTertiary)
+                Text("Calibrating baseline").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Text("\(cal.done) of \(cal.needed) nights")
                     .font(StrandFont.captionNumber)
@@ -1326,7 +1275,7 @@ struct MetricInfoSheet: View {
     private func impactBlock(_ impact: RecoveryImpact.Result) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Today, vs your normal")
-                .instrumentoOverline()
+                .groteskOverline()
                 .foregroundStyle(theme.inkTertiary)
             impactHeadline(impact)
                 .font(StrandFont.subhead)
@@ -1366,7 +1315,7 @@ struct MetricInfoSheet: View {
         let color = flag == .neutral ? theme.inkSecondary : impactColor(flag)
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Self.impactLabel(s.key)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(Self.impactLabel(s.key)).groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 8)
                 Text(Self.baseBandWord(s))
                     .font(StrandFont.captionNumber)

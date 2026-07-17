@@ -195,6 +195,9 @@ final class StrengthSessionModel: ObservableObject {
     /// `summaryPhase` (FER-409). Computed once at finish in `AppModel`; the session stays alive until the
     /// user taps «Listo» so the summary has somewhere to live.
     @Published var summary: StrengthSummary?
+    /// FER-969 (X-01): the final save failed — the sheet shows an honest banner with retry; the
+    /// in-progress snapshot (FER-798) stays on disk until a save actually lands.
+    @Published var saveError = false
     /// Strap HR captured during the session (FER-399), in memory only — fed by `AppModel.ingestHR` on the
     /// main actor. Drives avgHr/strain + the Keytel calorie estimate at finish; never persisted as a series.
     var hrSamples: [HRSample] = []

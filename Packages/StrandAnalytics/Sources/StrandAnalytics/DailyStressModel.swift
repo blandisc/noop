@@ -188,7 +188,10 @@ public struct DailyStressModel {
         // z-score derivation against the SAME baseline so the line is comparable.
         var pts: [Point] = []
         for d in usable {
-            guard let date = Self.dayKeyParser.date(from: d.day) else { continue }
+            // Pure civil→epoch arithmetic (same as ComparisonEngine.epochDay / Repository.parseDayKey);
+            // avoids DateFormatter once per row on series up to ~4k days (FER-972 · M-04).
+            guard let epoch = ComparisonEngine.epochDay(of: d.day) else { continue }
+            let date = Date(timeIntervalSince1970: Double(epoch) * 86_400)
             if let v = storedByDay[d.day] {
                 pts.append(Point(date: date, value: v))
                 continue

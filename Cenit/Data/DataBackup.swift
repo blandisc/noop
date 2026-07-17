@@ -108,12 +108,21 @@ enum DataBackup {
                 sidecar = dbURL
             }
 
-            // Remove the live DB and its WAL/SHM siblings, then drop the backup in.
-            removeIfPresent(dbURL)
+            // FER-969 (X-04): never remove the live DB before its replacement is in place — stage the
+            // backup next to it, swap atomically, and only then drop the stale WAL/SHM. A failure
+            // mid-import leaves the original DB (including its WAL) fully intact; the tiny window
+            // where the new file coexists with the old WAL closes as soon as the removals land.
+            let incoming = dbURL.deletingLastPathComponent()
+                .appendingPathComponent("whoop-incoming-\(timestamp()).sqlite")
+            removeIfPresent(incoming)
+            try fm.copyItem(at: source, to: incoming)
+            if fm.fileExists(atPath: dbURL.path) {
+                _ = try fm.replaceItemAt(dbURL, withItemAt: incoming)
+            } else {
+                try fm.moveItem(at: incoming, to: dbURL)
+            }
             removeIfPresent(URL(fileURLWithPath: dbPath + "-wal"))
             removeIfPresent(URL(fileURLWithPath: dbPath + "-shm"))
-
-            try fm.copyItem(at: source, to: dbURL)
             return .imported(sidecar: sidecar)
         } catch {
             return .failure("Import failed: \(error.localizedDescription)")

@@ -147,7 +147,7 @@ struct SkinTempDetailScreen: View {
     /// 24-hour circadian amplitude (we only have the night). Only shown with the experimental toggle on.
     @ViewBuilder private func thermalBlock(_ t: ThermalStabilityEngine.Result) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Nightly thermal stability").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Nightly thermal stability").groteskOverline().foregroundStyle(theme.inkTertiary)
             if t.stability == .learning {
                 Text("Still learning how consistent your nightly warming is: keep wearing it to bed.")
                     .font(StrandFont.caption)
@@ -164,7 +164,7 @@ struct SkinTempDetailScreen: View {
                         .foregroundStyle(theme.inkSecondary)
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("night to night").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("night to night").groteskOverline().foregroundStyle(theme.inkTertiary)
                     Text(thermalWord(t.stability))
                         .font(StrandFont.number(21, weight: .semibold))
                         .foregroundStyle(thermalColor(t.stability))
@@ -465,7 +465,7 @@ struct SkinTempDetailScreen: View {
 
     private func inlineDisclosure(label: LocalizedStringKey, text: LocalizedStringKey) -> some View {
         disclosurePanel {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(label).groteskOverline().foregroundStyle(theme.inkTertiary)
             Text(text).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

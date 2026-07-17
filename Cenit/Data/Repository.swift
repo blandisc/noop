@@ -188,8 +188,27 @@ final class Repository: ObservableObject {
     /// Parse a stored `yyyy-MM-dd` day key back to a Date in UTC (en_US_POSIX). Charts parse keys in
     /// UTC for DST-stable positions — distinct from `localDayKey` (which WRITES keys in local zone).
     /// The single shared inverse of the day-key contract (FER-325).
+    /// Pure arithmetic, zero DateFormatter (FER-972 · M-04).
     nonisolated private static let dayKeyParser = DayKey.utcFormatter
-    nonisolated static func parseDayKey(_ s: String) -> Date? { dayKeyParser.date(from: s) }
+
+    /// Days since 1970-01-01 for a civil date (Hinnant `days_from_civil`; valid for the app's range).
+    /// `ComparisonEngine.epochDay` is package-internal, so this copy lives here for the app layer.
+    private nonisolated static func epochDays(y: Int, m: Int, d: Int) -> Int {
+        let yy = y - (m <= 2 ? 1 : 0)
+        let era = (yy >= 0 ? yy : yy - 399) / 400
+        let yoe = yy - era * 400
+        let doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+        return era * 146097 + doe - 719468
+    }
+
+    nonisolated static func parseDayKey(_ s: String) -> Date? {
+        let parts = s.split(separator: "-")
+        guard parts.count == 3,
+              let y = Int(parts[0]), let m = Int(parts[1]), let d = Int(parts[2]),
+              (1...12).contains(m), (1...31).contains(d) else { return nil }
+        return Date(timeIntervalSince1970: Double(epochDays(y: y, m: m, d: d)) * 86_400)
+    }
 
     /// Format a chart date BACK to its `yyyy-MM-dd` key in UTC — the exact inverse of `parseDayKey`,
     /// for dates that were parsed/anchored in UTC (trend points). `localDayKey` on such a date shifts
@@ -203,6 +222,18 @@ final class Repository: ObservableObject {
     nonisolated static func previousDayKey(_ s: String) -> String? {
         guard let d = dayKeyParser.date(from: s) else { return nil }
         return dayKeyParser.string(from: d.addingTimeInterval(-86_400))
+    }
+
+    /// FER-969 (X-03): the store failed to open (wedged migration, corrupt file) — the UI shows an
+    /// honest state with retry/restore instead of an eternally empty dashboard. Reset on success.
+    @Published private(set) var storeOpenFailed = false
+
+    /// «Reintentar» from the store-failure state: re-attempt the open and the launch refresh that
+    /// never ran. `ensureStore` re-tries naturally once `store`/`storeInit` are nil. (FER-969, X-03)
+    func retryStoreOpen() async {
+        guard store == nil else { return }
+        storeOpenFailed = false
+        await refresh()
     }
 
     private func ensureStore() async -> WhoopStore? {
@@ -228,6 +259,7 @@ final class Repository: ObservableObject {
         let s = await task.value
         store = s
         storeInit = nil
+        storeOpenFailed = (s == nil)  // FER-969 (X-03): surface the failure; clears itself on success
         return s
     }
 
