@@ -1901,7 +1901,8 @@ struct MetricDetailScreen: View {
     private func rangeCell(_ window: MetricWindow) -> StatCell {
         let s = ComparisonEngine.stat(trendStatRows(window).map(\.value))
         return StatCell(slot: "rango", label: "Range", value: "\(fmt(s.min))–\(fmt(s.max))",
-                        color: theme.ink, disclosure: (title: "Range", text: EX_TREND))
+                        unitSuffix: unit.isEmpty ? nil : unit, color: theme.ink,
+                        disclosure: (title: "Range", text: EX_TREND))
     }
 
     private func trendCell(_ window: MetricWindow) -> StatCell? {
