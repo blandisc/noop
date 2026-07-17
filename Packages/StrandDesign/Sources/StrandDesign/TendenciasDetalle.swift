@@ -209,6 +209,7 @@ public struct TileSurface: View {
     private let value: String
     private let valueColor: Color?
     private let valueSize: CGFloat
+    private let unit: String?
     private let caption: String?
     private let swatch: Color?
     private let delta: String?
@@ -216,13 +217,14 @@ public struct TileSurface: View {
     private let theme: InstrumentoTheme
 
     public init(label: String, value: String, valueColor: Color? = nil, valueSize: CGFloat = 15,
-                caption: String? = nil, swatch: Color? = nil,
+                unit: String? = nil, caption: String? = nil, swatch: Color? = nil,
                 delta: String? = nil, deltaColor: Color? = nil,
                 theme: InstrumentoTheme) {
         self.label = label
         self.value = value
         self.valueColor = valueColor
         self.valueSize = valueSize
+        self.unit = unit
         self.caption = caption
         self.swatch = swatch
         self.delta = delta
@@ -252,6 +254,12 @@ public struct TileSurface: View {
                     .foregroundStyle(valueColor ?? theme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                if let unit {
+                    Text(unit)
+                        .font(InstrumentoType.grotesk(10, weight: .medium))
+                        .foregroundStyle(theme.inkTertiary)
+                        .lineLimit(1)
+                }
                 if let delta {
                     Text(delta)
                         .font(InstrumentoType.groteskNumber(11, weight: .semibold))
@@ -426,10 +434,19 @@ public struct HeatLegend: View {
 
 #Preview("TileSurface") {
     let t = InstrumentoTheme.base
-    HStack(spacing: 8) {
-        TileSurface(label: "VS AYER", value: "+6", valueColor: t.verdictDeep, caption: "puntos", theme: t)
-        TileSurface(label: "VFC", value: "48→52", caption: "ms", delta: "+4", deltaColor: t.verdictDeep, theme: t)
-        TileSurface(label: "PROF.", value: "22%", swatch: t.dataSleepDeep, delta: "+3", theme: t)
+    VStack(spacing: 14) {
+        // La tira de los vitales: la unidad va inline junto al número, nunca en su propio renglón.
+        HStack(alignment: .top, spacing: 8) {
+            TileSurface(label: "PROMEDIO", value: "62", unit: "ms", theme: t)
+            TileSurface(label: "TENDENCIA", value: "▲ 4%", valueColor: t.verdictDeep, theme: t)
+            TileSurface(label: "RANGO", value: "48–71", unit: "ms", theme: t)
+        }
+        HStack(alignment: .top, spacing: 8) {
+            TileSurface(label: "VS AYER", value: "+6", valueColor: t.verdictDeep, unit: "puntos", theme: t)
+            TileSurface(label: "VFC", value: "48→52", unit: "ms", delta: "+4", deltaColor: t.verdictDeep, theme: t)
+            // El caption sigue siendo la nota real, no la unidad.
+            TileSurface(label: "NOCHES < 95%", value: "3", caption: "de 30", theme: t)
+        }
     }
     .padding(20)
     .background(t.paper)
