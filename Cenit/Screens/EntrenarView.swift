@@ -20,6 +20,14 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // RootTabView; the landing pushes via the injected closures and hosts the guided session + sheets here.
 
 struct EntrenarView: View {
+    /// Inject: los hooks de recarga en caliente van AQUÍ y no en `EntrenarLanding`. Swift emite los
+    /// miembros de un tipo `private` como símbolos locales, y `-interposable` solo puede interponer
+    /// símbolos globales — así que el `body` de `EntrenarLanding` es inalcanzable para la inyección.
+    /// El de `EntrenarView` sí es global, y es quien construye el Landing: al interponerlo, construye
+    /// la copia nueva que trae el dylib inyectado, con todo el código privado del archivo adentro.
+    /// Regla general: los hooks van en la vista NO privada más externa del archivo.
+    @ObserveInjection private var inject
+
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
     var openIntervals: () -> Void
@@ -45,6 +53,7 @@ struct EntrenarView: View {
                         openRoutines: openRoutines, openRestDay: openRestDay,
                         openOtherWays: openOtherWays, openWorkoutSession: openWorkoutSession)
             .instrumentoTheme(.base)
+            .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
 }
 

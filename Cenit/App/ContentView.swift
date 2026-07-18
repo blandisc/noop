@@ -12,9 +12,14 @@ struct ContentView: View {
     /// Whether Today is the active tab (RootTabView keeps this in sync). Drives the app's color scheme
     /// so the status bar is dark on Today's light paper and light on the dark instrument tabs.
     @State private var isTodayTab = true
-    /// Inject: al observar la recarga en caliente, la vista se redibuja cuando InjectionIII intercambia el
-    /// código. No-op en Release. Puesta en la raíz → toda la app reacciona; para una pantalla puntual,
-    /// copia estas dos líneas (la propiedad + `.enableInjection()` al final del `body`) en ese struct.
+    /// Inject: al observar la recarga en caliente, la vista se redibuja cuando InjectionNext intercambia
+    /// el código. No-op en Release. Puesta en la raíz → toda la app reacciona; para una pantalla puntual,
+    /// copia estas dos líneas (la propiedad + `.enableInjection()` al final del `body`) en ese struct —
+    /// pero SOLO si ese struct NO es `private`. Los miembros de un tipo privado compilan como símbolos
+    /// locales y `-interposable` únicamente alcanza los globales, así que ahí los hooks quedan inertes en
+    /// silencio: la inyección reporta éxito y la pantalla no cambia. Cuélgalos de la vista no privada más
+    /// externa del archivo; al re-ligar su `body` construye la copia nueva, con todo el código privado
+    /// adentro (ver `EntrenarView` y la sección de hot reload en docs/BUILD.md).
     @ObserveInjection private var inject
 
     #if os(iOS)

@@ -38,11 +38,12 @@ struct CenitApp: App {
         // silent no-op (e.g. Shortcuts' PendingIntents) can mask it. No-op in Release.
         AppGroup.assertGroupProvisioned()
         configureInstrumentoControlAppearance()   // FER-408: warm the native segmented control once at launch
-        // Inject/InjectionIII: carga el puente de recarga en caliente SOLO en Debug (inerte en Release).
-        // Con InjectionIII.app abierta sobre este proyecto y corriendo en el Simulador, deja intercambiar
-        // el código de las pantallas al guardar, sin recompilar la app.
+        // Inject/InjectionNext: carga el puente de recarga en caliente SOLO en Debug (inerte en Release).
+        // Con InjectionNext.app abierta (y Xcode lanzado DESDE ella) corriendo en el Simulador, intercambia
+        // el código de las pantallas al guardar, sin recompilar. InjectionNext es el sucesor de InjectionIII,
+        // hecho para Xcode 16.3+/26.x (el clásico ya no logra el redibujo en toolchains nuevos).
         #if DEBUG
-        Bundle(path: "/Applications/InjectionIII.app/Contents/Resources/iOSInjection.bundle")?.load()
+        Bundle(path: "/Applications/InjectionNext.app/Contents/Resources/iOSInjection.bundle")?.load()
         #endif
         // Warm the bundled Space Grotesk registration OFF the main thread (perf): otherwise the first
         // Grotesk token during TodayView's first render pays the one-time CoreText registration on the

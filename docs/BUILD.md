@@ -158,6 +158,48 @@ cd Packages/WhoopStore    && swift build && swift test
 cd Packages/StrandImport  && swift build && swift test
 ```
 
+#### Hot reload (Inject / InjectionNext)
+
+Swapping a screen's code in the running Simulator without relaunching. The wiring is already in the
+repo: `-Xlinker -interposable` + `EMIT_FRONTEND_COMMAND_LINES` on the app target's Debug config, the
+`INJECTION_PROJECT_ROOT: $(SRCROOT)` env var on the `Cenit` run scheme, and the bundle load in
+`CenitApp.swift`. A view opts in with `@ObserveInjection` + `.enableInjection()` (see `EntrenarView`).
+
+InjectionNext has three modes and the *first* one wins: Xcode launched from the app (it reads Xcode's
+own compile commands), compiler-proxy, then build-log parsing. The scheme env var is what makes it also
+watch the filesystem, so edits made **outside** Xcode's editor — an agent, vim — trigger a reload too.
+Without it, only ⌘S inside Xcode counts.
+
+**Put the Inject hooks on the outermost non-`private` View of the file.** This is the one that will waste
+your afternoon. Swift emits the members of a `private` type as *local* symbols, and `-interposable` can
+only interpose *global* ones — so a `private` view's `body` is unreachable. Injection still reports
+`✅ Hot reload complete - Rebound N symbols` and the screen simply does not change. Measured on
+`Cenit.debug.dylib`: `EntrenarView` (internal) exports 33 global symbols; `private struct EntrenarLanding`
+exports **zero**, and a `private` member of an *internal* struct is local too, so relaxing the type alone
+is not enough. Roughly 44% of this app's views are `private`.
+
+The way out is indirect injection, and it needs no access-level changes. The injected dylib holds a fresh
+copy of the *whole file*, private types included. Interposing one global entry point in that file — here
+`EntrenarView.body`, which constructs `EntrenarLanding` — makes it build the new copy, private code and
+all. So `@ObserveInjection` and `.enableInjection()` belong on `EntrenarView`, **not** on the private
+landing struct that draws the screen. Hooks on a private view are silently inert.
+
+**"Unhide Symbols" does not fix this.** Its own message says *"if this was due to a default argument"* —
+it promotes default-argument thunks, not the members of `private` types. Measured: after running it and
+rebuilding, `formOptions` was still 11 local symbols. Don't burn time on it.
+
+One hazard specific to this repo: `INJECTION_PROJECT_ROOT` points at the repo root, and worktrees live
+under `.claude/worktrees/`, so the watcher sees them too. Worse, log-parsing picks the *most recently
+built* `Cenit-*` DerivedData — a worktree build steals it from the canonical checkout and injection then
+fails with `Could not locate command`. Map them with:
+
+```bash
+plutil -extract WorkspacePath raw ~/Library/Developer/Xcode/DerivedData/Cenit-*/info.plist
+```
+
+InjectionNext logs to the app's stdout, so its messages appear in **Xcode's console** — `simctl log show`
+does not capture them.
+
 ### 6. Re-importing data into the on-device DB
 
 `Tools/Backfill` is a small executable that re-runs the WHOOP CSV / Apple Health import mapping
