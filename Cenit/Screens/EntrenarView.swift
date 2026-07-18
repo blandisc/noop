@@ -744,53 +744,16 @@ private struct EntrenarLanding: View {
     /// when a routine is assigned, muted on rest days, and today marked with the same ring language as
     /// Constancia. Tapping an assigned day opens that routine.
     private var weekStrip: some View {
-        VStack(spacing: CenitMetrics.space2) {
-            HStack(spacing: 0) {
-                ForEach(orderedWeekdays, id: \.self) { wd in
-                    weekStripCell(wd)
-                }
+        HStack(spacing: 0) {
+            ForEach(orderedWeekdays, id: \.self) { wd in
+                weekStripCell(wd)
             }
-            weekStripLegend
         }
         .padding(.top, CenitMetrics.gap).padding(.bottom, CenitMetrics.space2)
     }
 
-    /// Qué significa relleno vs. contorno vs. liso. La retícula mezcla plan e historial —el cuadro se
-    /// llena con lo que ENTRENASTE, el contorno marca lo que TE TOCA— y sin decirlo un día pendiente se
-    /// lee como descanso (bug Fer 2026-07-18). Va en tinta terciaria: es una nota al pie, no una sección.
-    private var weekStripLegend: some View {
-        HStack(spacing: CenitMetrics.gap) {
-            legendKey(.trained, "Trained")
-            legendKey(.planned, "Planned")
-            legendKey(.rest, "Rest")
-            Spacer(minLength: 0)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Filled means trained, outlined means planned, plain means rest"))
-    }
 
-    /// Los tres estados que puede tener una celda de la tira.
-    private enum LegendKind { case trained, planned, rest }
 
-    /// Una clave de la leyenda: la misma geometría del cuadrito de la tira, a escala de nota al pie.
-    /// El `switch` sobre un enum (en vez de `if/else if/else` sobre un `Bool?`) es a propósito: las tres
-    /// ramas devolvían tipos distintos y este archivo ya carga expresiones lentas de type-check, así que
-    /// la versión anterior tumbaba la compilación de la inyección en silencio.
-    private func legendKey(_ kind: LegendKind, _ label: LocalizedStringKey) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 3, style: .continuous)
-        return HStack(spacing: 6) {
-            Group {
-                switch kind {
-                case .trained: shape.fill(theme.inkTertiary)
-                case .planned: shape.strokeBorder(theme.inkTertiary, lineWidth: 1.5)
-                case .rest:    shape.fill(theme.patternBlock)
-                }
-            }
-            .frame(width: 10, height: 10)
-            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-        }
-        .accessibilityHidden(true)
-    }
 
     @ViewBuilder
     private func weekStripCell(_ wd: Int) -> some View {
