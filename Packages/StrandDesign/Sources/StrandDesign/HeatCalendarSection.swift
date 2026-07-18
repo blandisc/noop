@@ -99,21 +99,46 @@ public struct HeatCalendarSection: View {
 }
 
 #if DEBUG
+// Every closure and literal below is explicitly typed, and the nested ternaries are spelled out as
+// `if` statements on purpose. Inferring them cost the type-checker so much on the iOS SDK that the
+// compiler gave up outright ("unable to type-check this expression in reasonable time") on a CI
+// runner, failing the whole build — while the same code type-checked in ~5 ms in the macOS package
+// build, which is why it went unnoticed. The worst offender was `readoutWord`: a nested ternary of
+// bare string literals that each had to be resolved through `ExpressibleByStringLiteral` to
+// `LocalizedStringKey`. Keep the annotations when editing this preview. (FER-985)
 #Preview("HeatCalendarSection") {
     let t = InstrumentoTheme.base
-    let days: [RecoveryDay] = (0..<90).map { i in
-        RecoveryDay(date: Date().addingTimeInterval(Double(i - 89) * 86_400),
-                    score: i % 7 == 0 ? nil : Double((i * 13) % 100))
+    let days: [RecoveryDay] = (0..<90).map { (i: Int) -> RecoveryDay in
+        let offset: TimeInterval = Double(i - 89) * 86_400
+        let score: Double? = i % 7 == 0 ? nil : Double((i * 13) % 100)
+        return RecoveryDay(date: Date().addingTimeInterval(offset), score: score)
     }
+    let tint: (Double) -> Color = { (v: Double) -> Color in
+        if v >= 67 { return t.verdict }
+        if v >= 34 { return t.warning }
+        return t.critical
+    }
+    let readoutValue: (Double) -> String = { (v: Double) -> String in
+        "\(Int(v.rounded()))"
+    }
+    let readoutWord: (Double) -> LocalizedStringKey = { (v: Double) -> LocalizedStringKey in
+        if v >= 67 { return "Ready" }
+        if v >= 34 { return "Recovering" }
+        return "Low"
+    }
+    let legend: [(Color, String)] = [
+        (t.verdict, "ready"), (t.warning, "recovering"),
+        (t.critical, "low"), (t.rangeBand, "no data"),
+    ]
     ScrollView {
         HeatCalendarSection(
             days: days,
             selected: .constant(days.last),
-            tint: { $0 >= 67 ? t.verdict : ($0 >= 34 ? t.warning : t.critical) },
-            readoutValue: { "\(Int($0.rounded()))" },
-            readoutWord: { $0 >= 67 ? "Ready" : ($0 >= 34 ? "Recovering" : "Low") },
+            tint: tint,
+            readoutValue: readoutValue,
+            readoutWord: readoutWord,
             emptyHint: "Tap a day to see its recovery.",
-            legend: [(t.verdict, "ready"), (t.warning, "recovering"), (t.critical, "low"), (t.rangeBand, "no data")],
+            legend: legend,
             theme: t)
         .padding(20)
     }
