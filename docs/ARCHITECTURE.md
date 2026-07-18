@@ -109,8 +109,6 @@ CenitWidgets/                   iOS home / lock-screen widgets
 CenitWatch/                     watchOS 10 companion app (single target, FER-740). Runs the real
                                 HKWorkoutSession and mirrors it to the iPhone; no GRDB on the wrist.
                                 Depends only on StrandDesign (project.yml + `import StrandDesign` only).
-
-Tools/Backfill/                 CLI offload/replay tool
 ```
 
 The app target is **`Cenit`** (Swift module `Cenit`, product `Cenit.app`): its shell (scene, HealthKit,
