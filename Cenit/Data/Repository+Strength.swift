@@ -111,6 +111,13 @@ extension Repository {
         return (eff != nil && eff != base.type) ? base.retyped(to: eff!) : base
     }
 
+    /// The user-created exercises only (the bundled catalog excluded) — so the library can tell which
+    /// rows it may edit, and which of those are still missing a primary muscle (FER-995).
+    func customExercises() async -> [Exercise] {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.customExercises()) ?? []
+    }
+
     func saveCustomExercise(_ e: Exercise) async throws {
         guard let store = await storeHandle() else { return }
         try await store.saveCustomExercise(e)
