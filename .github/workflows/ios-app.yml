@@ -3,7 +3,8 @@ name: iOS App Compile Check
 # FER-973 (A-01): the app layer (~75% of the code) had NO mechanical gate — the packages CI only
 # watches Packages/**, so a PR touching only Cenit/** could land without any machine compiling it.
 # This job compiles the Cenit SCHEME (app + widget/Live-Activity extensions via the scheme's
-# dependency graph) unsigned, mirroring release.yaml's recipe.
+# dependency graph) unsigned, plus the test targets (see the build step's note on
+# `build-for-testing`), mirroring release.yaml's recipe.
 #
 # Deliberately LABEL-GATED (`ci-app`) + manual dispatch, NOT on every PR: macOS runners bill at
 # 10× and this account has hit Actions spending limits before (2026-07-11). Apply the `ci-app`
@@ -41,14 +42,28 @@ jobs:
         run: xcodegen generate
 
       # Scheme build (not -target) so the widget and Live Activity extensions compile too.
+      #
+      # `build-for-testing`, NOT plain `build`: a plain `build` never compiles CenitUnitTests /
+      # CenitUITests, so a stale call site in a test compiles nowhere in CI and only surfaces when a
+      # human runs the harness. That happened: FER-954 added a `todayKey:` parameter to
+      # `StrainDetailModel.build` and left TrendCurrentDayTests behind, which broke the whole
+      # screenshot/UI harness (Tools/update-screen-map.sh, iterate-shot.sh, capture-appmap.sh —
+      # `xcodebuild test` builds ALL test targets even under `-only-testing`) while both this job and
+      # release.yaml stayed green. `build-for-testing` closes exactly that gap.
+      #
+      # `build-for-testing` needs a destination that can host tests, so the device SDK
+      # (`-sdk iphoneos`) becomes a generic Simulator destination. It still only COMPILES: no
+      # simulator is booted and no test is executed, so this adds neither the ~8 GB simulator boot
+      # nor test flakiness — just the compile time of the test targets.
+      #
       # Compile-only check: unsigned, entitlements stripped — green means "compiles cleanly",
-      # exactly like release.yaml's build step.
-      - name: Compile Unsigned iOS App
+      # like release.yaml's build step.
+      - name: Compile Unsigned iOS App + Test Targets
         run: |
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project Cenit.xcodeproj \
             -scheme Cenit \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
