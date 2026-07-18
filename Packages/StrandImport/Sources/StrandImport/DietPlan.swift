@@ -169,7 +169,7 @@ public enum DietPlanParseError: Error, Equatable, Sendable, CustomStringConverti
 // MARK: - Importer
 
 /// Parses and validates a `noop.diet.v1` payload (from any producer) into a `DietPlan`.
-/// Parse-only — it does not touch the database (mirrors `WhoopExportImporter`). Persistence
+/// Parse-only — it does not touch the database (mirrors `AppleHealthImporter`). Persistence
 /// is wired separately (see `makeDietPlanRow` + WhoopStore).
 public struct DietPlanImporter {
 

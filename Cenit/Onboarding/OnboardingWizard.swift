@@ -681,7 +681,7 @@ private struct ImportStep: View {
     @Environment(AppModel.self) private var model
     @Environment(\.instrumentoTheme) private var theme
     @State private var showingImporter = false
-    @State private var importTarget: ImportTarget = .whoop
+    @State private var importTarget: ImportTarget = .appleHealth
 
     var body: some View {
         StepShell {
@@ -694,16 +694,13 @@ private struct ImportStep: View {
                 .font(StrandFont.body)
                 .foregroundStyle(theme.inkSecondary)
                 .padding(.top, CenitMetrics.space2)
-            Text("A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight.")
+            Text("An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, CenitMetrics.gap)
 
             VStack(spacing: CenitMetrics.gap) {
-                ImportRow(title: model.isImporting(.whoop) ? "Importing…" : "Import WHOOP export",
-                          systemImage: "tray.and.arrow.down",
-                          disabled: model.hasActiveImport) { presentImporter(.whoop) }
                 ImportRow(title: model.isImporting(.appleHealth) ? "Importing…" : "Import Apple Health export",
                           systemImage: "heart.fill",
                           disabled: model.hasActiveImport) { presentImporter(.appleHealth) }
@@ -745,13 +742,11 @@ private struct ImportStep: View {
 
     private var importKind: DataSourceImportKind {
         switch importTarget {
-        case .whoop: return .whoop
         case .appleHealth: return .appleHealth
         }
     }
     private var lastSummary: String? {
         switch importTarget {
-        case .whoop: return model.whoopImportSummary
         case .appleHealth: return model.appleHealthImportSummary
         }
     }
@@ -762,15 +757,13 @@ private struct ImportStep: View {
     private func handleImportResult(_ result: Result<[URL], Error>, for target: ImportTarget) {
         guard case .success(let urls) = result, let url = urls.first else { return }
         switch target {
-        case .whoop: model.importWhoop(url: url)
         case .appleHealth: model.importAppleHealth(url: url)
         }
     }
     private enum ImportTarget {
-        case whoop, appleHealth
+        case appleHealth
         var allowedContentTypes: [UTType] {
             switch self {
-            case .whoop: return [.zip, .folder]
             case .appleHealth: return [.zip, .xml, .folder]
             }
         }
