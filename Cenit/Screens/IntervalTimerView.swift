@@ -121,7 +121,7 @@ struct IntervalTimerView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Interval Timer")
-                .font(StrandFont.title1)
+                .font(InstrumentoType.grotesk(28, weight: .bold, relativeTo: .title))
                 .foregroundStyle(theme.ink)
             Text("Silent haptic HIIT: the strap buzzes the transitions")
                 .font(StrandFont.subhead)
@@ -136,7 +136,7 @@ struct IntervalTimerView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("INTERVALS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Build your HIIT")
-                    .font(StrandFont.title1)
+                    .font(InstrumentoType.grotesk(28, weight: .bold, relativeTo: .title))
                     .foregroundStyle(theme.ink)
             }
 
@@ -229,17 +229,17 @@ struct IntervalTimerView: View {
                 // Phase + round line
                 HStack(alignment: .firstTextBaseline) {
                     Text(phase.label)
-                        .font(StrandFont.number(34, weight: .heavy))
+                        .font(InstrumentoType.grotesk(34, weight: .bold))
                         .tracking(2)
                         .foregroundStyle(phaseColor)
                     Spacer()
                     HStack(spacing: 6) {
                         Text("ROUND").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         Text("\(min(currentRound, rounds))")
-                            .font(StrandFont.number(20))
+                            .font(InstrumentoType.groteskNumber(20))
                             .foregroundStyle(theme.ink)
                         Text("/ \(rounds)")
-                            .font(StrandFont.number(20))
+                            .font(InstrumentoType.groteskNumber(20))
                             .foregroundStyle(theme.inkTertiary)
                     }
                 }
@@ -251,15 +251,15 @@ struct IntervalTimerView: View {
                 ZStack {
                     intervalRing
                     VStack(spacing: 2) {
+                        // La cuenta regresiva ES el numeral protagonista de esta pantalla, así que habla
+                        // en la voz Grotesk como el resto de la app (FER-900) y no en la SF vieja.
                         Text(isFinished ? "✓" : "\(remaining)")
-                            .font(StrandFont.number(96, weight: .bold))
+                            .instrumentoHero(96)
                             .foregroundStyle(isFinished ? theme.dataRecovery : theme.ink)
                             .contentTransition(.numericText())
                             .animation(.snappy, value: remaining)
-                            .monospacedDigit()
                         Text(isFinished ? "SESSION DONE" : "SECONDS")
-                            .font(StrandFont.footnote)
-                            .tracking(1.2)
+                            .instrumentoOverline()
                             .foregroundStyle(theme.inkTertiary)
                     }
                 }
@@ -365,7 +365,7 @@ struct IntervalTimerView: View {
                     Text("Session").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     Text("\(timeString(elapsed)) / \(timeString(totalPlanned))")
-                        .font(StrandFont.bodyNumber)
+                        .font(InstrumentoType.groteskNumber(15, weight: .semibold))
                         .foregroundStyle(theme.ink)
                 }
 
@@ -400,7 +400,7 @@ struct IntervalTimerView: View {
     private func overviewStat(_ label: LocalizedStringKey, _ value: String, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.number(18)).foregroundStyle(color)
+            Text(value).font(InstrumentoType.groteskNumber(18)).foregroundStyle(color)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -418,7 +418,7 @@ struct IntervalTimerView: View {
             Spacer()
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text("\(value.wrappedValue)")
-                    .font(StrandFont.number(24))
+                    .font(InstrumentoType.groteskNumber(24))
                     .foregroundStyle(tint)
                     .frame(minWidth: 44, alignment: .trailing)
                 if let unit {

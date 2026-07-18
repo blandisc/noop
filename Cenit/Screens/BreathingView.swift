@@ -431,16 +431,18 @@ struct BreathingView: View {
             PulseReader(live.pulse) { p in
                 readoutTile(label: "Heart rate",
                             value: p.smoothedBpm.map { "\($0)" } ?? "—",
-                            unit: String(localized: "bpm"),
+                            unit: "bpm",
                             accent: theme.dataHeart,
-                            caption: live.worn ? "Live" : "Strap not worn")
+                            caption: live.worn ? String(localized: "Live") : String(localized: "Strap not worn"))
             }
 
             readoutTile(label: "HRV (RMSSD)",
                         value: rmssd.map { String(format: "%.0f", $0) } ?? "—",
                         unit: "ms",
                         accent: theme.dataHrv,
-                        caption: rrBuffer.isEmpty ? "Waiting for R-R" : "Last \(rrBuffer.count) beats")
+                        caption: rrBuffer.isEmpty
+                                 ? String(localized: "Waiting for R-R")
+                                 : String(localized: "Last \(rrBuffer.count) beats"))
 
             readoutTile(label: "Pace",
                         value: String(format: "%.1f", pace.bpm),
@@ -450,7 +452,12 @@ struct BreathingView: View {
         }
     }
 
-    private func readoutTile(label: String, value: String, unit: String,
+    /// `label` y `unit` son `LocalizedStringKey`: como `String` planos, `Text(label)` los pintaba tal cual
+    /// y ni «HRV (RMSSD)» ni «Pace» ni las unidades pasaban por el catálogo (auditoría i18n 2026-07-18).
+    /// `caption` se queda `String` a propósito — una de las llamadas interpola un conteo, y un ternario
+    /// con rama interpolada resuelve a `String`, no a `LocalizedStringKey`; los call sites usan
+    /// `String(localized:)` en cada rama.
+    private func readoutTile(label: LocalizedStringKey, value: String, unit: LocalizedStringKey,
                              accent: Color, caption: String) -> some View {
         card(padding: 14) {
             VStack(alignment: .leading, spacing: 0) {

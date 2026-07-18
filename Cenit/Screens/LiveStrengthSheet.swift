@@ -1330,12 +1330,15 @@ struct LiveStrengthSheet: View {
     }
 
     /// The region as a quiet word next to the dot («push» / «pull» / «legs» / «full body»).
+    /// Claves con prefijo `muscleGroup.` — las mismas del planificador semanal. La clave DESNUDA «Push»
+    /// choca con el botón «Push» del catálogo, que localiza a «Sube», así que la píldora de la sesión
+    /// activa acababa diciendo «● Sube» en vez de «● Empuje» (bug Fer 2026-07-18).
     private var sessionRegionWord: LocalizedStringKey? {
         switch sessionRegion {
-        case .push: return "Push"
-        case .pull: return "Pull"
-        case .legs: return "Legs"
-        case .fullBody: return "Full body"
+        case .push: return "muscleGroup.push"
+        case .pull: return "muscleGroup.pull"
+        case .legs: return "muscleGroup.legs"
+        case .fullBody: return "muscleGroup.fullBody"
         case nil: return nil
         }
     }

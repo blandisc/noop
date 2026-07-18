@@ -39,7 +39,7 @@ struct LiveWorkoutHubRow: View {
                 .sheet(isPresented: $showSheet) {
                     LiveWorkoutSheet(theme: theme)
                         .environment(model)
-                        .presentationDetents([.medium, .large])
+                        .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
                         .presentationDragIndicator(.visible)
                         .presentationBackground(theme.paper)
                         .preferredColorScheme(.light)

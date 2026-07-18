@@ -228,7 +228,7 @@ private struct EntrenarLanding: View {
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
                 .environment(model)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
@@ -744,12 +744,52 @@ private struct EntrenarLanding: View {
     /// when a routine is assigned, muted on rest days, and today marked with the same ring language as
     /// Constancia. Tapping an assigned day opens that routine.
     private var weekStrip: some View {
-        HStack(spacing: 0) {
-            ForEach(orderedWeekdays, id: \.self) { wd in
-                weekStripCell(wd)
+        VStack(spacing: CenitMetrics.space2) {
+            HStack(spacing: 0) {
+                ForEach(orderedWeekdays, id: \.self) { wd in
+                    weekStripCell(wd)
+                }
             }
+            weekStripLegend
         }
         .padding(.top, CenitMetrics.gap).padding(.bottom, CenitMetrics.space2)
+    }
+
+    /// Qué significa relleno vs. contorno vs. liso. La retícula mezcla plan e historial —el cuadro se
+    /// llena con lo que ENTRENASTE, el contorno marca lo que TE TOCA— y sin decirlo un día pendiente se
+    /// lee como descanso (bug Fer 2026-07-18). Va en tinta terciaria: es una nota al pie, no una sección.
+    private var weekStripLegend: some View {
+        HStack(spacing: CenitMetrics.gap) {
+            legendKey(.trained, "Trained")
+            legendKey(.planned, "Planned")
+            legendKey(.rest, "Rest")
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Filled means trained, outlined means planned, plain means rest"))
+    }
+
+    /// Los tres estados que puede tener una celda de la tira.
+    private enum LegendKind { case trained, planned, rest }
+
+    /// Una clave de la leyenda: la misma geometría del cuadrito de la tira, a escala de nota al pie.
+    /// El `switch` sobre un enum (en vez de `if/else if/else` sobre un `Bool?`) es a propósito: las tres
+    /// ramas devolvían tipos distintos y este archivo ya carga expresiones lentas de type-check, así que
+    /// la versión anterior tumbaba la compilación de la inyección en silencio.
+    private func legendKey(_ kind: LegendKind, _ label: LocalizedStringKey) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 3, style: .continuous)
+        return HStack(spacing: 6) {
+            Group {
+                switch kind {
+                case .trained: shape.fill(theme.inkTertiary)
+                case .planned: shape.strokeBorder(theme.inkTertiary, lineWidth: 1.5)
+                case .rest:    shape.fill(theme.patternBlock)
+                }
+            }
+            .frame(width: 10, height: 10)
+            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        }
+        .accessibilityHidden(true)
     }
 
     @ViewBuilder
@@ -761,7 +801,10 @@ private struct EntrenarLanding: View {
         // Handoff v4b: 26pt rounded squares. A day already trained this week fills with that session's
         // routine tint and takes a paper check; today is a paper square ringed in its routine's tint;
         // an assigned future day keeps its tinted letter over the wash; a rest day is just wash.
-        let doneTint = trainedThisWeek(wd).map { routineTint(self.region(name: $0)) }   // `region` local shadows the func
+        let doneRegion = trainedThisWeek(wd).map { self.region(name: $0) }   // `region` local shadows the func
+        let doneTint = doneRegion.map { routineTint($0) }
+        /// Entrenaste algo distinto a lo planeado ese día: el contorno lo delata.
+        let swapped = doneRegion != nil && hasRoutine && doneRegion! != region
         let a11y = weekStripAccessibilityLabel(wd)
         let cell = VStack(spacing: 5) {
             Text(weekdayLetter(wd))
@@ -770,7 +813,15 @@ private struct EntrenarLanding: View {
                 .accessibilityHidden(true)
             ZStack {
                 if let doneTint {
+                    // Relleno = lo que ENTRENASTE. Si además había algo planeado y NO fue lo que hiciste,
+                    // el contorno lleva el color de lo planeado (decisión Fer 2026-07-18): el mismo cuadro
+                    // carga las dos dimensiones sin inventar un cuarto estado, y cuando coinciden se lee
+                    // como un cuadro sólido normal. Ese desvío hoy se perdía por completo.
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(doneTint)
+                    if swapped {
+                        RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                            .strokeBorder(routineTint(region), lineWidth: 2.5)
+                    }
                     StrandIcon.confirm.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.paper)
                 } else if isToday {
@@ -778,13 +829,17 @@ private struct EntrenarLanding: View {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                         .strokeBorder(todayRingTint, lineWidth: 1.5)
                 } else if hasRoutine {
-                    // 2026-07-16 (bug Fer «no se actualizan los cuadritos»): un día asignado futuro
-                    // solo cambiaba el tinte de la LETRA — invisible. Ahora el cuadrito toma el wash
-                    // de su rutina con su anillo suave; descanso queda como puro patternBlock.
+                    // 2026-07-16 (bug Fer «no se actualizan los cuadritos»): un día asignado solo cambiaba
+                    // el tinte de la LETRA — invisible. Se le puso un wash con anillo suave, pero seguía
+                    // leyéndose como descanso (bug Fer 2026-07-18: «el martes tiene rutina y no aparece»):
+                    // `tintFill` + `strokeSoft` a 1pt desaparecen sobre el papel. Ahora el CONTORNO lleva
+                    // el color a plena opacidad y el relleno es papel: la diferencia vive en el cuadro,
+                    // que es lo que se mira, y no en una letra de 10pt. Lleno = hecho, contorno =
+                    // planeado pendiente, liso = descanso — tres estados que ya no se confunden.
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                        .fill(routineTint(region).opacity(StrandOpacity.tintFill))
+                        .fill(theme.paper)
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                        .strokeBorder(routineTint(region).opacity(StrandOpacity.strokeSoft), lineWidth: 1)
+                        .strokeBorder(routineTint(region), lineWidth: 2)
                 } else {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.patternBlock)
                 }
@@ -1223,10 +1278,21 @@ private struct EntrenarLanding: View {
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
     }
 
-    /// Localized short weekday letter (respects locale), single character.
+    /// Localized short weekday letter (respects locale), single character. Solo para la TIRA de 7 celdas:
+    /// ahí la posición desambigua, igual que en cualquier calendario. Fuera de esa retícula usa
+    /// `weekdayShort`, porque la inicial sola es ambigua —«M» es martes Y miércoles en español, y en
+    /// inglés «T» es Tuesday Y Thursday.
     private func weekdayLetter(_ wd: Int) -> String {
         let s = Calendar.current.veryShortWeekdaySymbols[(wd - 1) % 7]
         return s.uppercased()
+    }
+
+    /// Localized two-letter weekday, para cuando NO hay retícula que desambigüe (el subtítulo «Ma · Sá» de
+    /// una rutina del plan). Sale de `shortWeekdaySymbols` («mar» → «Ma»), así que respeta el idioma:
+    /// es-MX da Lu/Ma/Mi/Ju/Vi/Sá/Do y en inglés Mo/Tu/We/Th/Fr/Sa/Su, ambos sin repetidos.
+    private func weekdayShort(_ wd: Int) -> String {
+        let s = Calendar.current.shortWeekdaySymbols[(wd - 1) % 7]
+        return s.prefix(2).capitalized
     }
 
     // MARK: - Derived
@@ -1298,7 +1364,7 @@ private struct EntrenarLanding: View {
         }
         return order.compactMap { id in
             guard let n = routinesById[id]?.name else { return nil }
-            let days = (daysOf[id] ?? []).map(weekdayLetter).joined(separator: " · ")
+            let days = (daysOf[id] ?? []).map(weekdayShort).joined(separator: " · ")
             return (id, n, days)
         }
     }
@@ -1530,7 +1596,7 @@ struct RestDayScreen: View {
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
                 .environment(model)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
@@ -1649,7 +1715,7 @@ struct OtherWaysScreen: View {
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
                 .environment(model)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)

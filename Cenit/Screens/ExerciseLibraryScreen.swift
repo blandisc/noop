@@ -71,6 +71,12 @@ struct ExerciseLibraryScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { if addMode { addBar } }
+        // El dock cede el carril mientras eliges (bug Fer 2026-07-18: «agrego ejercicios y luego no hay
+        // nada»). En ADD mode el `safeAreaInset` inferior y la barra de pestañas se pelean el mismo
+        // espacio y «Agregar N» quedaba DEBAJO del dock: el flujo se veía sin salida aunque el botón
+        // existiera. Elegir ejercicios es una tarea con principio y fin, así que ocultar el dock aquí
+        // es además lo que pide la HIG; vuelve solo al hacer pop.
+        .toolbar(addMode ? .hidden : .visible, for: .tabBar)
         .task { await reload() }
         .onChange(of: search) {
             searchDebounceTask?.cancel()

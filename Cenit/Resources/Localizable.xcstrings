@@ -4,6 +4,262 @@
     "" : {
 
     },
+    "Cardio" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cardio"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cardio"
+                }
+            }
+        }
+    },
+    "Even breathing · ~5.5/min" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Even breathing · ~5.5/min"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Respiración pareja · ~5.5/min"
+                }
+            }
+        }
+    },
+    "Filled means trained, outlined means planned, plain means rest" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Filled means trained, outlined means planned, plain means rest"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Relleno es entrenado, contorno es planeado, liso es descanso"
+                }
+            }
+        }
+    },
+    "HRV (RMSSD)" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "HRV (RMSSD)"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "HRV (RMSSD)"
+                }
+            }
+        }
+    },
+    "Last %lld beats" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Last %lld beats"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Últimos %lld latidos"
+                }
+            }
+        }
+    },
+    "Long exhale · winds down" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Long exhale · winds down"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Exhalación larga · te baja"
+                }
+            }
+        }
+    },
+    "Pace" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Pace"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Ritmo"
+                }
+            }
+        }
+    },
+    "Planned" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Planned"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Planeado"
+                }
+            }
+        }
+    },
+    "Remove from session" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Remove from session"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Quitar de la sesión"
+                }
+            }
+        }
+    },
+    "Rest done" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Rest done"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Descanso listo"
+                }
+            }
+        }
+    },
+    "Resting, almost done" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Resting, almost done"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Descansando, ya casi"
+                }
+            }
+        }
+    },
+    "Square · steady focus" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Square · steady focus"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cuadrada · foco estable"
+                }
+            }
+        }
+    },
+    "Strap not worn" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Strap not worn"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Banda sin puesta"
+                }
+            }
+        }
+    },
+    "Strength" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Strength"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Fuerza"
+                }
+            }
+        }
+    },
+    "Trained" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Trained"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Entrenado"
+                }
+            }
+        }
+    },
+    "Waiting for R-R" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Waiting for R-R"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Esperando R-R"
+                }
+            }
+        }
+    },
     "\n" : {
 
     },
@@ -212,6 +468,38 @@
           }
         }
       }
+    },
+    "br/min" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "br/min"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "resp/min"
+                }
+            }
+        }
+    },
+    "muscleGroup.fullBody" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Full body"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cuerpo completo"
+                }
+            }
+        }
     },
     "–" : {
       "extractionState" : "stale",

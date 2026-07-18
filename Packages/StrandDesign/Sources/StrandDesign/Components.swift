@@ -18,6 +18,12 @@ public enum CenitMetrics {
     /// between tabs. «Hoy» is exempt: it's the dial dashboard and keeps its tighter `space2` rhythm.
     public static let screenTop: CGFloat = 14
 
+    /// Alto de la hoja «En vivo»: overline + reloj de 56pt + Ritmo/Prom/Máx + «Terminar». Es un
+    /// grabador, no una pantalla — con `.medium` (media pantalla) quedaba medio lienzo vacío. Este alto
+    /// es el que el contenido pide de verdad; la hoja conserva `.large` como segundo detent y su
+    /// `ScrollView`, así que con Dynamic Type grande se sube y nada se recorta.
+    public static let liveSheetHeight: CGFloat = 320
+
     // MARK: Fine spacing ramp (FER-206)
     // Named steps below `gap` (plus a compact section rhythm and two control radii) so
     // the «Instrumento» Today path stops using magic numbers — every spacing/radius
