@@ -71,12 +71,6 @@ struct ExerciseLibraryScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { if addMode { addBar } }
-        // El dock cede el carril mientras eliges (bug Fer 2026-07-18: «agrego ejercicios y luego no hay
-        // nada»). En ADD mode el `safeAreaInset` inferior y la barra de pestañas se pelean el mismo
-        // espacio y «Agregar N» quedaba DEBAJO del dock: el flujo se veía sin salida aunque el botón
-        // existiera. Elegir ejercicios es una tarea con principio y fin, así que ocultar el dock aquí
-        // es además lo que pide la HIG; vuelve solo al hacer pop.
-        .toolbar(addMode ? .hidden : .visible, for: .tabBar)
         .task { await reload() }
         .onChange(of: search) {
             searchDebounceTask?.cancel()
@@ -282,16 +276,27 @@ struct ExerciseLibraryScreen: View {
             Button {
                 toggle(ex)
             } label: {
-                if selected.contains(ex.id) {
-                    Image(systemName: "checkmark.circle.fill").font(.system(size: 21)).foregroundStyle(theme.ink)  // token-exempt: glifo 21pt fuera de banda lead
-                } else {
-                    Text("Add").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space1)
-                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                // Ancho FIJO y alineado a la derecha: la cápsula «Agregar» y el círculo de la palomita
+                // tienen anchos muy distintos, así que al alternar SwiftUI interpolaba entre los dos y la
+                // palomita se veía deslizarse hacia la izquierda (bug Fer 2026-07-18). Con el carril fijo,
+                // el control cambia en su sitio.
+                Group {
+                    if selected.contains(ex.id) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 21)).foregroundStyle(theme.ink)  // token-exempt: glifo 21pt fuera de banda lead
+                    } else {
+                        // «Agregar» es un BOTÓN: va en Grotesk, no en la SF del cuerpo de texto
+                        // (DESIGN.md §«Space Grotesk toma … y botones»).
+                        Text("Add").font(InstrumentoType.grotesk(13, weight: .semibold)).foregroundStyle(theme.ink)
+                            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space1)
+                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    }
                 }
+                .frame(width: 78)   // token-exempt: carril del control, al ancho de la cápsula — centrado, así la palomita cae donde estaba la palabra
             }
             .buttonStyle(.plain)
             .contentShape(Rectangle())
+            .animation(nil, value: selected)   // sin interpolación de layout: el cambio es instantáneo
         } else {
             StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                 .foregroundStyle(theme.inkTertiary)
@@ -312,22 +317,41 @@ struct ExerciseLibraryScreen: View {
 
     // MARK: - Add bar (ADD mode)
 
+    /// El botón dice a dónde va, no qué hace con la lista. En el flujo de CREACIÓN «Agregar 3 ejercicios»
+    /// no se lee como la salida del flujo —suena a agregar a algo que ya existe— y la pantalla parecía
+    /// no tener continuación (bug Fer 2026-07-18). Ahí nombra el resultado: «Crear rutina con 3».
+    private var addBarLabel: String {
+        if selected.isEmpty {
+            return createFlow ? String(localized: "Pick at least one exercise")
+                              : String(localized: "Select exercises")
+        }
+        return createFlow ? String(localized: "Create routine with \(selected.count)")
+                          : String(localized: "Add \(selected.count) exercise(s)")
+    }
+
     private var addBar: some View {
         Button { onAdd?(exercises.filter { selected.contains($0.id) }); dismiss() } label: {
             // A ternary with an interpolated branch resolves to plain `String`, not `LocalizedStringKey` —
             // wrap each branch in `String(localized:)` so both localize (and the count uses the catalog's
             // es-MX plural template) instead of silently falling back to English.
-            Text(selected.isEmpty
-                 ? String(localized: "Select exercises")
-                 : String(localized: "Add \(selected.count) exercise(s)"))
-                .font(StrandFont.headline).foregroundStyle(selected.isEmpty ? theme.inkTertiary : theme.ink)
+            Text(addBarLabel)
+                // La misma voz que `StrandCTAButton` («Empezar»): es la acción principal de la pantalla,
+                // así que habla en Grotesk como los demás CTAs y no en la SF de `headline`.
+                .font(InstrumentoType.grotesk(15, weight: .bold))
+                .foregroundStyle(selected.isEmpty ? theme.inkTertiary : (createFlow ? theme.paper : theme.ink))
                 .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.gap)
-                .background(theme.surface, in: Capsule(style: .continuous))
-                .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .background(createFlow && !selected.isEmpty ? AnyShapeStyle(theme.dataStrain) : AnyShapeStyle(theme.surface),
+                            in: Capsule(style: .continuous))
+                .overlay(Capsule(style: .continuous)
+                    .strokeBorder(createFlow && !selected.isEmpty ? .clear : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain).disabled(selected.isEmpty)
-        .padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.space2)
-        .background(theme.paper.opacity(0.96).ignoresSafeArea(edges: .bottom))  // token-exempt: casi-opaco fuera de banda
+        .padding(.horizontal, CenitMetrics.screenPadding)
+        // Libra el dock, que se queda visible (decisión Fer): el `safeAreaInset` inferior comparte carril
+        // con la barra de pestañas y el botón quedaba medio tapado. Sin banda de papel detrás — la lámina
+        // casi-opaca se desbordaba por abajo y se veía como un borde suelto; ahora solo flota la cápsula,
+        // y el inset ya reserva el alto para que la lista no se le meta debajo.
+        .padding(.bottom, 68)   // token-exempt: alto del dock + respiro
     }
 
     // MARK: - Data
@@ -440,7 +464,7 @@ private struct CreateExerciseSheet: View {
                 }
 
                 Button { create() } label: {
-                    Text("Create exercise").font(StrandFont.headline)
+                    Text("Create exercise").font(InstrumentoType.grotesk(15, weight: .bold))
                         .foregroundStyle(canCreate ? theme.ink : theme.inkTertiary)
                         .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.gap)
                         .background(theme.surface, in: Capsule(style: .continuous))

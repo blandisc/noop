@@ -552,7 +552,7 @@ struct DietCaptureView: View {
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
                     if let pct {
                         Text("\(pct)").instrumentoHero(62).foregroundStyle(theme.dataRecovery)
-                        Text(verbatim: "%").font(StrandFont.title1).foregroundStyle(theme.dataRecovery)
+                        Text(verbatim: "%").font(InstrumentoType.grotesk(20, weight: .bold)).foregroundStyle(theme.dataRecovery)
                     } else {
                         Text(verbatim: "—").instrumentoHero(62).foregroundStyle(theme.ink)
                     }
@@ -717,7 +717,8 @@ struct DietCaptureView: View {
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(title).font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text(title).font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                .foregroundStyle(theme.ink)
         }
     }
 
@@ -739,7 +740,7 @@ struct DietCaptureView: View {
                                     @ViewBuilder action: () -> Action) -> some View {
         HStack(alignment: .top, spacing: CenitMetrics.gap) {
             Text("\(n)")
-                .font(StrandFont.headline).monospacedDigit()
+                .font(InstrumentoType.groteskNumber(15))
                 .foregroundStyle(theme.inkTertiary)
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text(text)

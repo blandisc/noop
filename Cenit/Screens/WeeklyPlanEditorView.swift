@@ -723,7 +723,7 @@ struct WeeklyPlanEditorView: View {
             Text("Routine deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
             Spacer(minLength: 8)
             Button { undoDelete(d) } label: {
-                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+                Text("Undo").font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.surface)
             }
             .buttonStyle(.plain)
         }
@@ -830,7 +830,7 @@ struct WeeklyPlanEditorView: View {
             Text("Folder deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
             Spacer(minLength: 8)
             Button { undoDeleteFolder(d) } label: {
-                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+                Text("Undo").font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.surface)
             }
             .buttonStyle(.plain)
         }

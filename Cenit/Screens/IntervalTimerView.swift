@@ -155,7 +155,7 @@ struct IntervalTimerView: View {
 
             HStack {
                 Text("Total \(timeString(totalPlanned))")
-                    .font(StrandFont.headline)
+                    .font(InstrumentoType.groteskNumber(16))
                     .foregroundStyle(theme.ink)
                 Spacer()
             }

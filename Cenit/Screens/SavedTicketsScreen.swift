@@ -118,7 +118,7 @@ struct SavedTicketsScreen: View {
             Image(systemName: "doc.plaintext")
                 .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
-            Text(emptyTitle).font(StrandFont.title2).foregroundStyle(theme.ink)
+            Text(emptyTitle).font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
             Text(emptyCaption)
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)

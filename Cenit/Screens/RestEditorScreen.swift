@@ -160,7 +160,7 @@ struct RestEditorScreen: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(marginTargetBpm.map { "\($0)" } ?? "+\(margin)")
                         .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                    Text(verbatim: "bpm").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                    Text(verbatim: "bpm").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.inkSecondary)
                 }
                 if let resting = restingHR {
                     Text("rest \(Int(resting.rounded())) + margin \(margin) bpm")
@@ -191,7 +191,7 @@ struct RestEditorScreen: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(thresholdBpm.map { "\($0)" } ?? "\(Int(reserve * 100))")
                         .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                    Text(verbatim: thresholdBpm != nil ? "bpm" : "%").font(StrandFont.headline).foregroundStyle(theme.inkSecondary)
+                    Text(verbatim: thresholdBpm != nil ? "bpm" : "%").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.inkSecondary)
                 }
                 (Text(verbatim: "\(Int((reserve * 100).rounded()))% ") + Text("of your heart-rate reserve"))
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

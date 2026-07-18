@@ -499,7 +499,7 @@ struct WorkoutHistoryScreen: View {
                                 .foregroundStyle(theme.ink)
                         )
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("My saved tickets").font(StrandFont.title2).foregroundStyle(theme.ink)
+                        Text("My saved tickets").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
                         Text("\(sessions.count) receipts · today's on top")
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     }
@@ -542,7 +542,7 @@ struct WorkoutHistoryScreen: View {
             Image(systemName: "clock.arrow.circlepath")
                 .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
                 .accessibilityHidden(true)
-            Text("No workouts yet").font(StrandFont.title2).foregroundStyle(theme.ink)
+            Text("No workouts yet").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
             Text("When you finish a strength session, it shows up here with its breakdown, volume and effort.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
@@ -665,7 +665,7 @@ struct WorkoutHistoryScreen: View {
             Text("Workout deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
             Spacer(minLength: 8)
             Button { undoDelete(d) } label: {
-                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+                Text("Undo").font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.surface)
             }
             .buttonStyle(.plain)
         }
@@ -1227,7 +1227,7 @@ struct WorkoutSessionDetailScreen: View {
                     }
                     Spacer(minLength: 8)
                     Text(StrengthHistoryFormat.setLine(set, system: system))
-                        .font(StrandFont.subhead).foregroundStyle(theme.ink).monospacedDigit()
+                        .font(InstrumentoType.groteskNumber(14)).foregroundStyle(theme.ink)
                 }
                 .padding(.vertical, 5)
                 .overlay(alignment: .top) {

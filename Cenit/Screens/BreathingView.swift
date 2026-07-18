@@ -143,7 +143,7 @@ struct BreathingView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Breathe")
-                .font(StrandFont.title1)
+                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                 .foregroundStyle(theme.ink)
             Text("Haptic-paced breathing · watch your HRV respond")
                 .font(StrandFont.subhead)
@@ -168,7 +168,7 @@ struct BreathingView: View {
 
             HStack(spacing: 6) {
                 Text(timeString(sessionSeconds))
-                    .font(StrandFont.number(15))
+                    .font(InstrumentoType.groteskNumber(15))
                     .foregroundStyle(theme.ink)
                 Text("·").foregroundStyle(theme.inkTertiary)
                 Text("\(breathCount) breaths")
@@ -214,7 +214,7 @@ struct BreathingView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("BREATHE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Choose a pace")
-                    .font(StrandFont.title1)
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                     .foregroundStyle(theme.ink)
             }
 
@@ -234,7 +234,7 @@ struct BreathingView: View {
             HStack(alignment: .center, spacing: CenitMetrics.gap) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(option.label)
-                        .font(StrandFont.headline)
+                        .font(InstrumentoType.grotesk(16, weight: .semibold))
                         .foregroundStyle(theme.ink)
                     Text(option.tagline)
                         .font(StrandFont.footnote)
@@ -370,7 +370,7 @@ struct BreathingView: View {
                 PulseReader(live.pulse) { p in
                     VStack(spacing: 2) {
                         Text(p.smoothedBpm.map(String.init) ?? "—")
-                            .font(StrandFont.number(40))
+                            .font(InstrumentoType.groteskHeroNumeral(40))
                             .foregroundStyle(p.smoothedBpm == nil ? theme.inkTertiary : theme.dataHeart)
                             .contentTransition(.numericText())
                             .animation(.snappy, value: p.smoothedBpm)
@@ -394,7 +394,7 @@ struct BreathingView: View {
             } label: {
                 Label(running ? "Stop session" : "Start · 3 min",
                       systemImage: running ? "stop.fill" : "play.fill")
-                    .font(StrandFont.headline)
+                    .font(InstrumentoType.groteskHeadline(17))
                     .foregroundStyle(theme.paper)
                     .lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
@@ -465,7 +465,7 @@ struct BreathingView: View {
                 Spacer(minLength: 6)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(value)
-                        .font(StrandFont.number(26))
+                        .font(InstrumentoType.groteskNumber(26))
                         .foregroundStyle(accent)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)

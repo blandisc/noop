@@ -230,7 +230,7 @@ struct RoutineEditorScreen: View {
             Button { back() } label: {
                 HStack(spacing: 4) {
                     StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                    Text("Back").font(StrandFont.body)
+                    Text("Back").font(InstrumentoType.grotesk(15, weight: .semibold))
                 }
                 .foregroundStyle(theme.ink).frame(minHeight: 44).contentShape(Rectangle())
             }
@@ -238,7 +238,7 @@ struct RoutineEditorScreen: View {
             Spacer()
             if dirty {
                 Button { undo() } label: {
-                    Text(String(localized: "Undo")).font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(String(localized: "Undo")).font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
                         .frame(minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -843,7 +843,7 @@ struct RoutineEditorScreen: View {
                 // «＋ Nueva rutina» del hub — antes era un renglón fantasma que nadie veía.
                 HStack(spacing: 8) {
                     StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add exercise").font(StrandFont.subhead.weight(.semibold))
+                    Text("Add exercise").font(InstrumentoType.grotesk(14, weight: .semibold))
                 }
                 .foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -880,7 +880,7 @@ struct RoutineEditorScreen: View {
     private var emptyFallback: some View {
         VStack(spacing: 10) {
             StrandIcon.sleep.image.font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
-            Text(isPlanDay ? "Rest day" : "No routine").font(StrandFont.title2).foregroundStyle(theme.ink)
+            Text(isPlanDay ? "Rest day" : "No routine").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
             Text(isPlanDay ? "This day has no routine. Assign one from the weekly plan."
                            : "This routine could not be found.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

@@ -71,7 +71,9 @@ struct LiveWorkoutHubRow: View {
                 Spacer(minLength: 8)
                 TimelineView(.periodic(from: w.start, by: 1)) { ctx in
                     Text(Self.elapsed(from: w.start, to: ctx.date))
-                        .font(StrandFont.bodyNumber).foregroundStyle(theme.inkSecondary)
+                        .font(InstrumentoType.groteskSessionClockInline)
+                        .tracking(InstrumentoType.groteskSessionClockTracking)
+                        .foregroundStyle(theme.inkSecondary)
                 }
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
@@ -175,7 +177,7 @@ struct LiveWorkoutSheet: View {
                     dismiss()
                 } label: {
                     Label("Finish", systemImage: "stop.fill")
-                        .font(StrandFont.headline)
+                        .font(InstrumentoType.groteskHeadline(17))
                         .foregroundStyle(theme.critical)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)

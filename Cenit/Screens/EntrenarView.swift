@@ -723,7 +723,7 @@ private struct EntrenarLanding: View {
             Button { showCreateRoutine = true } label: {
                 HStack(spacing: 8) {
                     StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("New routine").font(StrandFont.subhead.weight(.semibold))
+                    Text("New routine").font(InstrumentoType.grotesk(14, weight: .semibold))
                 }
                 .foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -1202,7 +1202,7 @@ private struct EntrenarLanding: View {
         VStack(spacing: 14) {
             Image(systemName: "calendar.badge.plus")
                 .font(.system(size: 36, weight: .regular)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)  // token-exempt: glifo 36pt fuera de banda empty
-            Text("No plan yet").font(StrandFont.title2).foregroundStyle(theme.ink).multilineTextAlignment(.center)
+            Text("No plan yet").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink).multilineTextAlignment(.center)
             Text("Build your week to see today and your progress.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
@@ -1252,7 +1252,7 @@ private struct EntrenarLanding: View {
     private var loadErrorState: some View {
         card {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("We couldn't read your routines").font(StrandFont.title3).foregroundStyle(theme.ink)
+                Text("We couldn't read your routines").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
                 Text("Something went wrong opening your data.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1561,7 +1561,8 @@ struct RestDayScreen: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Today you rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Today you rest. It counts too.")
-                    .font(StrandFont.title1).foregroundStyle(theme.ink).padding(.top, 3)
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink).padding(.top, 3)
                     .fixedSize(horizontal: false, vertical: true)
 
                 streakBullet.padding(.top, 16)
@@ -1692,7 +1693,8 @@ struct OtherWaysScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Another type?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Another way to train").font(StrandFont.title1).foregroundStyle(theme.ink).padding(.top, 3)
+                Text("Another way to train").font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink).padding(.top, 3)
 
                 VStack(spacing: 0) {
                     bigRow("figure.cooldown", "Mobility", subtitle: String(localized: "Gentle · 20 min")) { model.startMobilityOneOff() }
@@ -1728,7 +1730,7 @@ struct OtherWaysScreen: View {
             HStack(spacing: 15) {
                 Image(systemName: icon).font(.system(size: 22)).foregroundStyle(theme.inkSecondary).frame(width: 30)  // token-exempt: glifo 22pt fuera de banda lead
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
+                    Text(title).font(InstrumentoType.grotesk(16, weight: .semibold)).foregroundStyle(theme.ink)
                     Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)

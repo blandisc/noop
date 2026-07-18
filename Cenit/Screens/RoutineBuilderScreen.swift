@@ -178,7 +178,7 @@ struct RoutineBuilderScreen: View {
                 nameField
                 VStack(spacing: 11) {
                     Image(systemName: "square.stack.3d.up").font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
-                    Text("No exercises yet").font(StrandFont.title2).foregroundStyle(theme.ink)
+                    Text("No exercises yet").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
                     Text("Add exercises from the library to build this routine.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)

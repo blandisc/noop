@@ -1063,7 +1063,7 @@ struct LiveStrengthSheet: View {
                 // Más prominente (Fer 2026-07-16): mismo chip de ancho completo que el editor.
                 HStack(spacing: 8) {
                     StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add exercise").font(StrandFont.subhead.weight(.semibold))
+                    Text("Add exercise").font(InstrumentoType.grotesk(14, weight: .semibold))
                 }
                 .foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -1629,7 +1629,7 @@ struct LiveStrengthSheet: View {
         } label: {
             // Canvas pass 2026-07-15: the handoff's big ink capsule.
             Label("Register set", systemImage: "checkmark")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15)
                 .background(theme.ink, in: Capsule())
@@ -1841,7 +1841,7 @@ struct LiveStrengthSheet: View {
         } label: {
             Label(running ? "Stop and save" : "Start",
                   systemImage: running ? "stop.fill" : "play.fill")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, CenitMetrics.sectionGap)
                 .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
@@ -1885,7 +1885,8 @@ struct LiveStrengthSheet: View {
                 }
             } else {
                 Text(Self.clock(session.currentSet?.timeS ?? 0))
-                    .font(StrandFont.title2).monospacedDigit()
+                    .font(InstrumentoType.groteskSessionClock)
+                    .tracking(InstrumentoType.groteskSessionClockTracking)
                     .foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity)
             }
@@ -1914,7 +1915,7 @@ struct LiveStrengthSheet: View {
             }
         } label: {
             Label("Register set", systemImage: "checkmark")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, CenitMetrics.sectionGap)
                 .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
@@ -2042,7 +2043,7 @@ struct LiveStrengthSheet: View {
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                     Text("\(bpm)").instrumentoHero(100).monospacedDigit().foregroundStyle(theme.paper)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
+                    Text("bpm").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 }
             }
             if let target, !ready {
@@ -2126,8 +2127,8 @@ struct LiveStrengthSheet: View {
         let digits = String(label.dropFirst())
         return Button(action: action) {
             HStack(spacing: 0) {
-                Text(sign).font(StrandFont.headline).frame(width: 12)
-                Text(digits).font(StrandFont.headline).monospacedDigit()
+                Text(sign).font(InstrumentoType.groteskNumber(17)).frame(width: 12)
+                Text(digits).font(InstrumentoType.groteskNumber(17))
             }
             .foregroundStyle(theme.paper)
             .frame(width: 56)
@@ -2992,7 +2993,7 @@ struct LiveStrengthSheet: View {
                         : session.startSetTimer()
             }
         } label: {
-            Text(running ? "Stop" : "Start").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text(running ? "Stop" : "Start").font(InstrumentoType.grotesk(14, weight: .semibold)).foregroundStyle(theme.inkSecondary)
                 .padding(.horizontal, 14).frame(height: 34)
                 .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 .contentShape(Capsule())
@@ -3795,13 +3796,13 @@ struct LiveStrengthSheet: View {
             Image(systemName: "checkmark.seal")
                 .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkSecondary)
                 .accessibilityHidden(true)
-            Text("Nothing to save").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Nothing to save").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
             Text("Your history stays clean: no sets were logged this session.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button { model.endStrengthSession(save: false) } label: {
                 Text("Got it")
-                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             }
@@ -3937,7 +3938,7 @@ struct LiveStrengthSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             Button { finishTapped() } label: {
                 Label("Finish", systemImage: "checkmark")
-                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             }

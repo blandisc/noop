@@ -253,7 +253,7 @@ struct MuscleVolumeScreen: View {
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("No sets in this range")
-                .font(StrandFont.title2).foregroundStyle(theme.ink)
+                .font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
             Text("Log your workouts and you'll see each muscle's weekly volume against the band.")
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)

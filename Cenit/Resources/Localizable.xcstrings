@@ -20,6 +20,22 @@
             }
         }
     },
+    "Create routine with %lld" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Create routine with %lld"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Crear rutina con %lld"
+                }
+            }
+        }
+    },
     "Even breathing · ~5.5/min" : {
         "localizations" : {
             "en" : {
@@ -112,6 +128,22 @@
                 "stringUnit" : {
                     "state" : "translated",
                     "value" : "Ritmo"
+                }
+            }
+        }
+    },
+    "Pick at least one exercise" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Pick at least one exercise"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Elige al menos un ejercicio"
                 }
             }
         }
