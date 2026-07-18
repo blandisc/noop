@@ -87,8 +87,7 @@ Cenit/
 │   ├── StrandTraining/         # strength domain types, catalog, sets/reps rules (pure)
 │   ├── StrandImport/           # WHOOP CSV + Apple Health importers
 │   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
-├── Tools/
-│   └── Backfill/               # `swift run backfill` — re-runs importers into the on-device DB
+├── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
 ├── tools/
 │   └── linux-capture/          # Headless Linux capture workbench (Python/bleak + whoop-decode)
 └── Fixtures/                   # Sample WHOOP export used by tests

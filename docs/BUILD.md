@@ -35,8 +35,7 @@ Cenit/
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
 │   ├── StrandImport/           # WHOOP CSV + Apple Health importers
 │   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
-├── Tools/
-│   └── Backfill/               # `swift run backfill` — re-runs importers into the on-device DB
+├── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
 └── Fixtures/                   # Sample data for tests
 ```
 
@@ -199,16 +198,6 @@ plutil -extract WorkspacePath raw ~/Library/Developer/Xcode/DerivedData/Cenit-*/
 
 InjectionNext logs to the app's stdout, so its messages appear in **Xcode's console** — `simctl log show`
 does not capture them.
-
-### 6. Re-importing data into the on-device DB
-
-`Tools/Backfill` is a small executable that re-runs the WHOOP CSV / Apple Health import mapping
-directly against a Cénit SQLite database — useful after changing importer logic:
-
-```bash
-cd Tools/Backfill
-swift run backfill
-```
 
 ---
 
