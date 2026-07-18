@@ -1,6 +1,7 @@
 import Foundation
 import CoreBluetooth
 import WhoopProtocol
+import BiometricStreams
 import CenitStore
 import StrandAnalytics
 

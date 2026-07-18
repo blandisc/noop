@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // NocturnalDC.swift — nocturnal Deceleration Capacity (DC) via Phase-Rectified Signal Averaging
 // (PRSA) over the night's R-R series (FER-680). Pure, deterministic, DB-free.

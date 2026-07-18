@@ -146,8 +146,8 @@ a `deviceId` text column, scoping all data per device.
 These eight tables are the **durable, compact local record** of what the strap measured. They are
 decoded on-device from BLE frames by the `WhoopProtocol` package and written by
 `CenitStore.insert(_ streams:deviceId:)` (`StreamStore.swift`). The in-memory shapes are the
-`WhoopProtocol` stream structs (`Packages/WhoopProtocol/Sources/WhoopProtocol/Streams.swift`):
-`HRSample`, `RRInterval`, `WhoopEvent`, `BatterySample`, `SpO2Sample`, `SkinTempSample`,
+`BiometricStreams` stream structs (`Packages/BiometricStreams/Sources/BiometricStreams/Streams.swift`):
+`HRSample`, `RRInterval`, `StreamEvent`, `BatterySample`, `SpO2Sample`, `SkinTempSample`,
 `RespSample`, `GravitySample`, aggregated into `Streams`.
 
 All inserts are **idempotent by natural key** — they use `ON CONFLICT(...) DO NOTHING`, so

@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 /// FER-970 (R-03) — `dashboardSnapshot` reads everything the dashboard refresh consumes in ONE

@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.iOS(.v16), .macOS(.v13)],
     products: [.library(name: "CenitStore", type: .static, targets: ["CenitStore"])],
     dependencies: [
-        .package(path: "../WhoopProtocol"),
+        .package(path: "../BiometricStreams"),
         .package(path: "../StrandTraining"),
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "6.0.0"),
     ],
@@ -14,7 +14,7 @@ let package = Package(
         .target(
             name: "CenitStore",
             dependencies: [
-                "WhoopProtocol",
+                "BiometricStreams",
                 "StrandTraining",
                 .product(name: "GRDB", package: "GRDB.swift"),
             ],

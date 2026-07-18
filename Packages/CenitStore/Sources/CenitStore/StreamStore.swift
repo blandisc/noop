@@ -1,6 +1,6 @@
 import Foundation
 import GRDB
-import WhoopProtocol
+import BiometricStreams
 
 extension CenitStore {
     /// Deterministic JSON for an event payload (sorted keys so the same payload always

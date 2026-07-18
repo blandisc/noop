@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // NightAutonomicShape.swift — the SHAPE of the nocturnal heart-rate fall (FER-678). Pure, DB-free.
 //

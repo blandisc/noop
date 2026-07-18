@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import CenitStore
 import WhoopProtocol
+import BiometricStreams
 import StrandAnalytics
 
 /// Per-day sleep figures the WHOOP export carried verbatim (metricSeries rows written by

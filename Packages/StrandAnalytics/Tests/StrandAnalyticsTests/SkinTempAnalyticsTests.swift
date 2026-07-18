@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// Unit tests for the WHOOP 5.0/MG skin-temperature pipeline in AnalyticsEngine
 /// (macOS parity with the Android SkinTempAnalyticsTest).

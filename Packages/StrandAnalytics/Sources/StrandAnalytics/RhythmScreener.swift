@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // RhythmScreener.swift — beat-to-beat regularity DESCRIPTIVE statistics + Poincaré
 // point cloud for an experimental, non-clinical wellness VISUALIZATION.

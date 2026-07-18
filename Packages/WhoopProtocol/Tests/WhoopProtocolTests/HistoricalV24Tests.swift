@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 /// type-47 HISTORICAL_DATA V24 — the 14-day biometric store record. Mirrors the Python
 /// test at tests/test_historical_v24.py: a SYNTHETIC record (HR=63, one R-R, on-wrist) built

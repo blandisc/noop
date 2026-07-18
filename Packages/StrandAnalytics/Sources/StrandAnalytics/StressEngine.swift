@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // StressEngine.swift — intraday "autonomic activation" (a.k.a. stress) curve, 0–3. APPROXIMATE.
 //

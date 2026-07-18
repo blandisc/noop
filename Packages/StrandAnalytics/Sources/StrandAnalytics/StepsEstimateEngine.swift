@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 /// Estimate daily steps for a WHOOP 4.0 from the strap's MOTION, calibrated per-user against a phone
 /// step count (Apple Health).

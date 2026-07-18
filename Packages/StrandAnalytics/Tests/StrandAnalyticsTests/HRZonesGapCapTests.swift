@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import StrandAnalytics
 
 // FER-647 — HRZones.timeInZone must cap each per-sample duration at the median inter-sample

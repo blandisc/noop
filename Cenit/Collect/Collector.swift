@@ -1,5 +1,6 @@
 import Foundation
 import WhoopProtocol
+import BiometricStreams
 import CenitStore
 
 /// The subset of CenitStore the Collector needs. A protocol so tests can inject a spy

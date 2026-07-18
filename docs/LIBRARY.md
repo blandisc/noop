@@ -152,10 +152,11 @@ ParsedValue]` dictionary. `ParsedValue` is a JSON-round-tripping scalar/array
 enum (`.int`, `.double`, `.string`, `.intArray`, `.bool`, `.null`) with
 `intValue` / `doubleValue` / `stringValue` / `intArrayValue` accessors.
 
-**Decoded stream rows** (`Streams.swift`) — the durable, compact record shapes
-that `CenitStore` persists:
+**Decoded stream rows** (`BiometricStreams/Streams.swift`) — the durable, compact record shapes
+that `CenitStore` persists. They live in the neutral **`BiometricStreams`** package (as does
+`ParsedValue`), which `WhoopProtocol` depends on — never the reverse (FER-993 · D2):
 
-`HRSample`, `RRInterval`, `WhoopEvent`, `BatterySample`, `SpO2Sample`,
+`HRSample`, `RRInterval`, `StreamEvent`, `BatterySample`, `SpO2Sample`,
 `SkinTempSample`, `RespSample`, `GravitySample`, all gathered into a single
 `Streams` value. All carry wall-clock unix-second timestamps and are `Codable`.
 
@@ -270,7 +271,7 @@ public func insert(_ streams: Streams, deviceId: String) async throws
 ```swift
 public func hrSamples(...)  -> [HRSample]
 public func rrIntervals(...) -> [RRInterval]
-public func events(...)      -> [WhoopEvent]
+public func events(...)      -> [StreamEvent]
 public func batterySamples(...) -> [BatterySample]
 public func spo2Samples(...) / skinTempSamples(...) / respSamples(...) / gravitySamples(...)
 public func latestHRSampleTs(deviceId:) async throws -> Int?

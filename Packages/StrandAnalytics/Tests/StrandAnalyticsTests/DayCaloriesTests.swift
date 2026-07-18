@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// Tests Calories.estimateDayCalories — the APPROXIMATE whole-day HR-only energy estimate
 /// (Keytel active + Harris–Benedict BMR) that backs DailyMetric.activeKcalEst for BLE-only

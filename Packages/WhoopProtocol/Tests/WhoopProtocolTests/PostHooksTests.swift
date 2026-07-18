@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 final class PostHooksTests: XCTestCase {
     static func hex(_ s: String) -> [UInt8] { FramingTests.hex(s) }

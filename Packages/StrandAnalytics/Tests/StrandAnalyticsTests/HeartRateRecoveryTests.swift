@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// FER-683 — post-session 60-second heart-rate recovery (HRR-60s).
 ///

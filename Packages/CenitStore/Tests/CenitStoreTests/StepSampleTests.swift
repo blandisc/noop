@@ -1,6 +1,6 @@
 import XCTest
 import GRDB
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 /// v10 migration: WHOOP5 step_motion_counter persistence (macOS parity with Android, #78).

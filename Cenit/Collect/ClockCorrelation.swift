@@ -1,5 +1,6 @@
 import Foundation
 import WhoopProtocol
+import BiometricStreams
 import CenitStore
 
 /// Pure helper: correlate the strap's monotonic device clock to wall time.

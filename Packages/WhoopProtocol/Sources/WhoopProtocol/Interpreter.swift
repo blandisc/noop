@@ -1,4 +1,5 @@
 import Foundation
+import BiometricStreams
 
 public struct DecodedField: Codable, Equatable, Sendable {
     public let off: Int

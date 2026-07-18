@@ -1,6 +1,6 @@
 import Foundation
 import GRDB
-import WhoopProtocol
+import BiometricStreams
 
 /// OpenWhoop persistence library — decoded streams are durable; raw frames are a
 /// transient, compressed, prunable outbox. Built on GRDB/SQLite.

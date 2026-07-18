@@ -1,6 +1,7 @@
 #if DEBUG
 import Foundation
 import WhoopProtocol
+import BiometricStreams
 import CenitStore
 import StrandAnalytics
 import StrandTraining

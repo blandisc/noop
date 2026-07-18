@@ -12,6 +12,7 @@ Cénit is a fully **offline, on-device** companion app for WHOOP straps (4.0 / 5
 
 Cross-platform **Swift packages do the real work**; thin platform apps wrap them.
 
+- `Packages/BiometricStreams` — the neutral vocabulary of decoded rows (`HRSample`, `RRInterval`, `StreamEvent`, `Streams`, `ParsedValue`). **Root of the graph: zero deps, Foundation-only.** `WhoopProtocol` depends on it, **never the reverse**; no `@_exported import`.
 - `Packages/WhoopProtocol` — BLE frame parsing, CRC, packet/event decode. **Pure, no CoreBluetooth** (runs in tests / CLI / Linux).
 - `Packages/CenitStore` — GRDB/SQLite persistence (versioned migrations).
 - `Packages/StrandAnalytics` — recovery / strain / HRV / sleep math. **Pure, database-free.**

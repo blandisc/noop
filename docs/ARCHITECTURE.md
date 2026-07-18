@@ -95,6 +95,7 @@ Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compi
 
 Packages/                       Cross-platform Swift packages (base `.iOS(.v16)` / `.macOS(.v13)`;
 │                               StrandDesign is `.iOS(.v17)` / `.macOS(.v14)` + `.watchOS(.v10)`)
+├── BiometricStreams/           neutral vocabulary of decoded rows (`Streams`, `ParsedValue`) — no deps
 ├── WhoopProtocol/              BLE frame parsing, CRC, command/event/packet decode
 ├── CenitStore/                 GRDB/SQLite persistence (actor)
 ├── StrandTraining/             strength domain types + bundled exercise catalog (free-exercise-db, FER-923; pure, no DB)
@@ -142,23 +143,33 @@ Each package has a narrow contract. The dependency graph is acyclic and the leaf
 StrandDesign        (no deps — pure SwiftUI)
 StrandTraining      (no deps — pure domain types + bundled exercise catalog)
 
-WhoopProtocol       (no deps)
-   ▲
-   │
-CenitStore ─────────▶ GRDB.swift + StrandTraining
-   ▲
-   │
-StrandAnalytics ────▶ WhoopProtocol + CenitStore   (NO StrandTraining dep: the strength engines —
-                                                    MuscleFatigueMap FER-350, the 1RM estimator FER-346,
-                                                    WeeklySplit FER-531 — take plain primitives the app
-                                                    projects from StrandTraining types, keeping
-                                                    StrandAnalytics decoupled)
+BiometricStreams    (no deps — the ROOT: the neutral vocabulary of decoded biometric rows)
+
+WhoopProtocol ──────▶ BiometricStreams
+CenitStore ─────────▶ BiometricStreams + StrandTraining + GRDB.swift
+StrandAnalytics ────▶ BiometricStreams + CenitStore   (NO StrandTraining dep: the strength engines —
+                                                       MuscleFatigueMap FER-350, the 1RM estimator FER-346,
+                                                       WeeklySplit FER-531 — take plain primitives the app
+                                                       projects from StrandTraining types, keeping
+                                                       StrandAnalytics decoupled)
 StrandImport ───────▶ CenitStore + StrandTraining + ZIPFoundation
 ```
 
+> **Directional rule (FER-993 · D2): `WhoopProtocol → BiometricStreams`, never the reverse.**
+> `BiometricStreams` owns the *vocabulary of decoded data* — `HRSample`, `RRInterval`, `StreamEvent`,
+> `BatterySample`, the type-47 biometric samples, `Streams`, and `ParsedValue`. It is Foundation-only and
+> depends on nothing, so persistence (`CenitStore`) and math (`StrandAnalytics`) speak it **without linking
+> the strap's wire protocol** — neither imports `WhoopProtocol` any more. `WhoopProtocol` keeps everything
+> that touches the wire: framing, CRC, `ParsedFrame`, `DeviceFamily` (GATT UUIDs + CLIENT_HELLO), and the
+> extractors (`extractStreams` / `extractHistoricalStreams`) that *produce* `Streams` from `ParsedFrame`.
+> Anything neutral enough that a non-WHOOP source could emit it belongs in `BiometricStreams`; anything
+> that names a frame, a byte, or a strap belongs in `WhoopProtocol`. **No `@_exported import`** — the
+> boundary has to be verifiable by the compiler, which a re-export would erase.
+
 | Package | Responsibility | Key types / functions | Notable boundary |
 |---|---|---|---|
-| **WhoopProtocol** | The reverse-engineering core: turn raw BLE bytes into typed rows. Framing, CRC, fragment reassembly, schema-driven field decode, stream extraction, historical-chunk classification. | `Reassembler`, `verifyFrame`, `parseFrame` → `ParsedFrame`, `extractStreams`, `extractHistoricalStreams`, `classifyHistoricalMeta`, `Streams`, `DeviceFamily`, `crc8`/`crc16Modbus`/`crc32` | **No CoreBluetooth.** Exposes GATT UUIDs as `String`; the app wraps them in `CBUUID`. |
+| **BiometricStreams** | The neutral vocabulary of decoded biometric rows — the durable shapes everything downstream stores, computes over and serializes. Source-agnostic: nothing here names a frame, a byte, or a strap. | `HRSample`, `RRInterval`, `StreamEvent`, `BatterySample`, `SpO2Sample`, `SkinTempSample`, `RespSample`, `GravitySample`, `StepSample`, `Streams` (+ `.empty`), `ParsedValue` | **Root of the graph — zero dependencies, Foundation only.** No CoreBluetooth/UIKit/AppKit/GRDB, and no CRC/UUID/CLIENT_HELLO/schema. (FER-993 · D2) |
+| **WhoopProtocol** | The reverse-engineering core: turn raw BLE bytes into typed rows. Framing, CRC, fragment reassembly, schema-driven field decode, stream extraction, historical-chunk classification. | `Reassembler`, `verifyFrame`, `parseFrame` → `ParsedFrame`, `extractStreams`, `extractHistoricalStreams`, `classifyHistoricalMeta`, `DeviceFamily`, `crc8`/`crc16Modbus`/`crc32` | **No CoreBluetooth.** Exposes GATT UUIDs as `String`; the app wraps them in `CBUUID`. Depends on `BiometricStreams` (it *produces* `Streams`); never the reverse. |
 | **CenitStore** | Durable on-device persistence built on GRDB/SQLite. Migrations, decoded streams, metric caches, generic metric series, raw outbox, cursors. | `actor CenitStore`, `makeMigrator()`, `insert(_:deviceId:)`, `dailyMetrics`, `sleepSessions`, `metricSeries`, `pruneRaw`, `ClockRef`, `RawBatchMeta` | An **`actor`** — all writes/reads run off the main thread on its serial executor. |
 | **StrandAnalytics** | All physiological math, as pure functions over inputs. HRV, recovery, strain, sleep staging, workout detection, baselines, HR zones, correlation/comparison. | `AnalyticsEngine.analyzeDay(...)` → `DayResult`, `HRVAnalyzer`, `RecoveryScorer`, `StrainScorer`, `SleepStager`, `WorkoutDetector`, `Baselines`, `CorrelationEngine`, `DailyBriefEngine`, `WeeklySplit` (split → today's routine / day states / consistency streak, FER-531) | **Pure** — never touches the database. Produces `DailyMetric`/`CachedSleepSession` shapes for the store. |
 | **StrandImport** | Parse data the user already owns: WHOOP CSV exports and Apple Health exports (`export.xml`, streaming). | `ImportCoordinator.detectAndImport`, `WhoopExportImporter`, `AppleHealthImporter`, `AppleHealthAggregator`, `SleepHKEncoder`/`SleepHKDecoder` | **Parsing only** — returns normalized model arrays; the app maps them into the store. |

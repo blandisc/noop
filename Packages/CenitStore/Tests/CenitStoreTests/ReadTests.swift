@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 final class ReadTests: XCTestCase {
@@ -11,7 +11,7 @@ final class ReadTests: XCTestCase {
             hr: [HRSample(ts: 100, bpm: 60), HRSample(ts: 200, bpm: 61),
                  HRSample(ts: 300, bpm: 62)],
             rr: [RRInterval(ts: 100, rrMs: 800), RRInterval(ts: 100, rrMs: 820)],
-            events: [WhoopEvent(ts: 150, kind: "BLE_CONNECTION_DOWN(12)",
+            events: [StreamEvent(ts: 150, kind: "BLE_CONNECTION_DOWN(12)",
                                 payload: ["k": .int(9)])],
             battery: [BatterySample(ts: 120, soc: 88.0, mv: 3900)])
         _ = try await store.insert(s, deviceId: "dev1")
@@ -53,7 +53,7 @@ final class ReadTests: XCTestCase {
     func testEventsDecodePayload() async throws {
         let store = try await seeded()
         let evs = try await store.events(deviceId: "dev1", from: 0, to: 1000, limit: 100)
-        XCTAssertEqual(evs, [WhoopEvent(ts: 150, kind: "BLE_CONNECTION_DOWN(12)",
+        XCTAssertEqual(evs, [StreamEvent(ts: 150, kind: "BLE_CONNECTION_DOWN(12)",
                                         payload: ["k": .int(9)])])
     }
 

@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 /// WHOOP 5.0 ("puffin") HISTORICAL_DATA (type 47) decode, verified against a real captured frame.
 ///

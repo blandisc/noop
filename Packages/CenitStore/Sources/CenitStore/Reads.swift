@@ -1,6 +1,6 @@
 import Foundation
 import GRDB
-import WhoopProtocol
+import BiometricStreams
 
 /// One downsampled heart-rate point: the bucket's start (unix seconds) and the mean bpm over it.
 /// Returned by the `GROUP BY ts/bucket` aggregate so a day chart plots ~N-minute means instead of
@@ -60,7 +60,7 @@ extension CenitStore {
         }
     }
 
-    public func events(deviceId: String, from: Int, to: Int, limit: Int) async throws -> [WhoopEvent] {
+    public func events(deviceId: String, from: Int, to: Int, limit: Int) async throws -> [StreamEvent] {
         try syncRead { db in
             try Row.fetchAll(db, sql: """
                 SELECT ts, kind, payloadJSON FROM event
@@ -72,7 +72,7 @@ extension CenitStore {
                     let payload = (try? CenitStore.eventDecoder.decode(
                         [String: ParsedValue].self,
                         from: Data(json.utf8))) ?? [:]
-                    return WhoopEvent(ts: row["ts"], kind: row["kind"], payload: payload)
+                    return StreamEvent(ts: row["ts"], kind: row["kind"], payload: payload)
                 }
         }
     }

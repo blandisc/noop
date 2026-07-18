@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// Tests SleepStager.respRateFromRR (RSA) on a synthetic R-R series with a KNOWN breathing
 /// frequency. WHOOP5 v18 carries no raw resp ADC, so respiratory rate is derived on-device

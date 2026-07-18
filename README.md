@@ -209,6 +209,7 @@ CenitApp/              iOS app shell — HealthKit, widgets, intents
 CenitWidgets/          WidgetKit extension (Home / Lock-screen widget)
 CenitShared/           code shared between the app and the widgets
 Packages/
+  BiometricStreams/     neutral vocabulary of decoded biometric rows (pure, zero deps)
   WhoopProtocol/        BLE frame parsing, CRC, command/event/packet decode (pure, no CoreBluetooth)
   CenitStore/           GRDB/SQLite persistence (versioned migrations, through v12)
   StrandAnalytics/      HRV / recovery / strain / sleep / correlation math + Coach grounding (pure, DB-free)

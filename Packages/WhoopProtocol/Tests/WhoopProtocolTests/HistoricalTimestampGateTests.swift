@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 /// #547 — the type-47 ingest timestamp gate (FER-691). A bad-clock WHOOP 4.0 (repeated
 /// trim=0xFFFFFFFF) emits records whose own unix decodes to scattered garbage: far-past (2024),

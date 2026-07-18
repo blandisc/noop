@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // SleepStager.swift — sleep/wake detection + APPROXIMATE 4-class staging.
 //
