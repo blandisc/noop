@@ -340,6 +340,9 @@ final class MigrationTests: XCTestCase {
             try db.execute(sql: """
                 INSERT INTO sleepSession (deviceId, startTs, endTs) VALUES ('my-whoop',100,200), ('my-whoop-noop',300,400)
                 """)
+            // `device` keeps its partition label in the PRIMARY KEY `id`, not in a `deviceId` column, so
+            // the schema sweep walks right past it unless it is handled by name (QA found it orphaned).
+            try db.execute(sql: "INSERT INTO device (id, firstSeen) VALUES ('my-whoop',1), ('apple-health',2)")
             // workout: `source` carries the computed partition id for detected bouts.
             try db.execute(sql: """
                 INSERT INTO workout (deviceId, startTs, sport, endTs, source) VALUES
@@ -381,6 +384,12 @@ final class MigrationTests: XCTestCase {
             XCTAssertEqual(try String.fetchOne(db, sql: "SELECT source FROM workout WHERE sport = 'detected'"), "strap-noop")
             // A legacy import source that merely CONTAINS the brand is not a partition id → untouched.
             XCTAssertEqual(try String.fetchOne(db, sql: "SELECT source FROM workout WHERE sport = 'Running'"), "whoop")
+
+            // `device.id` — the PK-as-label case — moved too, so the next connect finds its row instead
+            // of writing a fresh one with `firstSeen` reset.
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM device WHERE id LIKE 'my-whoop%'"), 0,
+                           "device.id must not be left orphaned under the old label")
+            XCTAssertEqual(try Int64.fetchOne(db, sql: "SELECT firstSeen FROM device WHERE id = 'strap'"), 1)
 
             // A foreign partition is never collateral damage.
             XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM dailyMetric WHERE deviceId = 'apple-health'"), 1)

@@ -858,6 +858,16 @@ extension CenitStore {
             UPDATE workout SET source = ? || substr(source, ?)
             WHERE source = ? OR source LIKE ?
             """, arguments: [new, tailStart, old, prefixLike])
+
+        // `device` is the one table whose partition label is the PRIMARY KEY `id`, not a `deviceId`
+        // column, so the schema sweep above walks right past it. Left behind, the old row is orphaned
+        // and the next connect writes a fresh `strap` row with `firstSeen` reset. No history is at
+        // stake (in production this table is write-only — its only reader is a test helper), but
+        // leaving it would make the sweep's own promise, «no table can be forgotten», false. Found by QA.
+        try db.execute(sql: """
+            UPDATE device SET id = ? || substr(id, ?)
+            WHERE id = ? OR id LIKE ?
+            """, arguments: [new, tailStart, old, prefixLike])
     }
 
     /// Idempotent `ADD COLUMN`: runs `body` (which should add `column` to `table`) **only if the live
