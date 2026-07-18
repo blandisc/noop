@@ -335,20 +335,30 @@ private struct EntrenarLanding: View {
                 if let rec = recovery { recoveryChip(rec) } else { recoveryChipPlaceholder }
             }
             if let r = todayRoutine {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt: geometría de dato
-                        .fill(routineFill(region(name: r.name))).frame(width: 12, height: 12)
-                        .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
+                // «Bisel»: la marca de familia es una regla vertical, no un cuadro en línea. El cuadro vivía
+                // dentro del HStack, así que le robaba ancho al título y lo empujaba a la derecha; con
+                // nombres de dos líneas el bloque perdía el eje. Ahora la REGLA marca el margen —queda a
+                // plomo con «Empezar» y los discos— y el texto se indenta después de ella, en vez de que
+                // la regla se salga al canalón. Su alto lo deriva del contenido: crece sola con la segunda
+                // línea y con Dynamic Type.
+                VStack(alignment: .leading, spacing: 8) {
                     Text(r.name)
                         .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
                         .foregroundStyle(theme.ink)
                         .lineLimit(2).minimumScaleFactor(0.65)
                         .fixedSize(horizontal: false, vertical: true)
+                    if let muscles = routineMuscleLine(r.id) {
+                        Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    }
                 }
+                .padding(.leading, 11)
                 .padding(.top, 8)
-                if let muscles = routineMuscleLine(r.id) {
-                    Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .padding(.top, 4)
+                .background(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)  // token-exempt: geometría de dato
+                        .fill(routineFill(region(name: r.name)))
+                        .frame(width: 3)
+                        .padding(.vertical, 2)
+                        .accessibilityHidden(true)   // el color no porta significado por sí solo
                 }
             } else {
                 Text("Rest")

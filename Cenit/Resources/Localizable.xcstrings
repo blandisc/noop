@@ -20311,7 +20311,20 @@
       }
     },
     "Edit routines and week" : {
-
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Edit routines and week"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Editar rutinas y semana"
+                }
+            }
+        }
     },
     "Edit week" : {
       "extractionState" : "stale",
@@ -61297,6 +61310,22 @@
           }
         }
       }
+    },
+    "YOUR PLAN" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "YOUR PLAN"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "TU PLAN"
+                }
+            }
+        }
     },
     "You can still change it" : {
       "localizations" : {

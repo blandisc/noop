@@ -492,6 +492,10 @@ struct WorkoutImportView: View {
                         .minimumScaleFactor(0.8)
                 }
             }
+            // El MISMO carril cedido que las barras: sin este padding las etiquetas se reparten el ancho
+            // completo y las barras `ancho − 44`, así que cada etiqueta se centraba en una celda más ancha
+            // que su barra y el desfase crecía hacia la derecha.
+            .padding(.trailing, 44)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Step \(currentIndex + 1) of 4"))
