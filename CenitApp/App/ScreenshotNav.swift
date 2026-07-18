@@ -12,9 +12,15 @@ import SwiftUI
 ///   Tabs: today · body (aliases: trends, sleep — Sueño lives inside Cuerpo now) · coach ·
 ///     train (alias: entrenar) · settings (aliases: ajustes, more)
 ///   Pushed onto a hub: breathe · intervals · routineToday · dieta ·
+///     library · weeklyplan · misrutinas · workouthistory ·
 ///     explore · compare · workouts ·
 ///     applehealth · datasources · automations · support
 ///   (En vivo is no longer a key — it opens as a cover from Today's "beat by beat".)
+///
+/// The list below must stay in sync with `RootTabView.SecondaryScreen`'s raw values: the handler
+/// resolves ANY of them, but only the keys observed here are reachable by Darwin notification (the
+/// transport `CenitScreenshotTests` uses). The four Entrenar screens above were resolvable but
+/// unobserved, so the screenshot suite had to tap through localized labels to reach them instead.
 extension Notification.Name {
     static let noopDebugNav = Notification.Name("noop.debugNav")
 }
@@ -40,6 +46,7 @@ final class DebugNavWatcher {
     private static let screens = [
         "today", "body", "trends", "coach", "train", "entrenar", "settings", "ajustes", "more",
         "breathe", "intervals", "routineToday", "dieta",
+        "library", "weeklyplan", "misrutinas", "workouthistory",
         "sleep", "explore", "compare", "workouts",
         "applehealth", "datasources", "automations", "support",
     ]
