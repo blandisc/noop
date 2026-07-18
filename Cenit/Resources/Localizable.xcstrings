@@ -4,6 +4,40 @@
     "" : {
 
     },
+    "An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una exportación de Apple Health agrega FC, VFC, sueño, oxígeno en sangre, pasos y peso."
+          }
+        }
+      }
+    },
+    "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar sobrescribe todo lo que hay ahora en Cénit. Tus datos anteriores se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que la importación surta efecto."
+          }
+        }
+      }
+    },
     "\n" : {
 
     },
@@ -7616,23 +7650,6 @@
         }
       }
     },
-    "A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una exportación de WHOOP rellena recuperación, esfuerzo, sueño y entrenamientos. Una exportación de Apple Salud agrega FC, HRV, sueño, oxígeno, pasos y peso."
-          }
-        }
-      }
-    },
     "A workout needs at least one set." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14713,23 +14730,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elegir ejercicio"
-          }
-        }
-      }
-    },
-    "Choose export…" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose export…"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elegir exportación…"
           }
         }
       }
@@ -21988,17 +21988,6 @@
         }
       }
     },
-    "Export CSV…" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exportar CSV…"
-          }
-        }
-      }
-    },
     "Export frames…" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26529,23 +26518,6 @@
         }
       }
     },
-    "Import WHOOP export" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import WHOOP export"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar exportación de WHOOP"
-          }
-        }
-      }
-    },
     "Import your AI's plan" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -26626,23 +26598,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importando Apple Salud…"
-          }
-        }
-      }
-    },
-    "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar sobrescribe todo lo que hay en Cénit. Tus datos viejos se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que la importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, sueños, entrenamientos y diario que se re-importa a Cénit."
           }
         }
       }

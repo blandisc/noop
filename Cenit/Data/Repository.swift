@@ -5,7 +5,7 @@ import WhoopProtocol
 import StrandAnalytics
 
 /// Per-day sleep figures the WHOOP export carried verbatim (metricSeries rows written by
-/// WhoopImporter under the imported deviceId). The Detalle de Sueño prefers these over its on-device
+/// the retired WHOOP CSV import under the imported deviceId). The Detalle de Sueño prefers these over its on-device
 /// APPROXIMATE recomputations.
 struct ImportedSleepFigures: Equatable {
     var performancePct: Double?   // "sleep_performance", 0–100
@@ -384,7 +384,7 @@ final class Repository: ObservableObject {
             appleHrRaw = []
         }
 
-        // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
+        // Export-verbatim sleep figures (long-format metricSeries rows from the retired WHOOP CSV import).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
         // FER-670: single-construct fusion inputs the daily rows above don't carry — Apple's step/energy
         // aggregates (appleDaily) and the WHOOP 4.0 on-device step estimate (steps_est). Gated on the

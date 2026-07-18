@@ -23,7 +23,7 @@ enum WorkoutFormat {
 /// Origin of a workout row, classified from its stored `source` column. The macOS read model
 /// (`WorkoutRow`) carries no `deviceId`, so the row's origin has to be recovered from `source`.
 /// Stored values today:
-///   - "whoop"        — WhoopImporter (imported WHOOP session)
+///   - "whoop"        — retired WHOOP CSV import (imported WHOOP session)
 ///   - "apple_health" / "apple-health" — AppleHealthImport
 ///   - "manual"       — AppModel.endWorkout (v1.67 live session) AND the retro add/edit sheet
 ///   - "my-whoop-noop"— IntelligenceEngine detected bouts (source == the computed deviceId, i.e.

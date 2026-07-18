@@ -90,7 +90,7 @@ public enum AnalyticsEngine {
     /// Format a unix-seconds timestamp as a `YYYY-MM-DD` day string in a wall-clock zone
     /// `tzOffsetSeconds` east of UTC. Default 0 = UTC, which keeps pure-function callers and tests on
     /// UTC. The device's LOCAL civil day is obtained by shifting the instant by the offset and
-    /// formatting in UTC — the same trick `WhoopImporter` uses with `tzOffsetMin`, so day-keys stay
+    /// formatting in UTC — the same trick the WHOOP CSV import used with `tzOffsetMin`, so day-keys stay
     /// deterministic and dedup-stable across sources. (FER-226: `dailyMetric.day` is the local civil day.)
     public static func dayString(_ ts: Int, tzOffsetSeconds: Int = 0) -> String {
         isoDay.string(from: Date(timeIntervalSince1970: TimeInterval(ts + tzOffsetSeconds)))

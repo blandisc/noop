@@ -37,24 +37,6 @@ final class ImportCoordinatorTests: XCTestCase {
         return zipURL
     }
 
-    // MARK: - Whoop zip (nested folder names)
-
-    func testWhoopExportFromZipWithNestedFolder() throws {
-        let zip = try makeZip(named: "my_whoop.zip", entries: [
-            ("my_whoop_data_2024_01_05/physiological_cycles.csv", "physiological_cycles.csv"),
-            ("my_whoop_data_2024_01_05/sleeps.csv", "sleeps.csv"),
-            ("my_whoop_data_2024_01_05/workouts.csv", "workouts.csv"),
-            ("my_whoop_data_2024_01_05/journal_entries.csv", "journal_entries.csv"),
-        ])
-
-        let result = try ImportCoordinator().importWhoopExport(from: zip)
-        XCTAssertEqual(result.cycles.count, 2)
-        XCTAssertEqual(result.sleeps.count, 2)
-        XCTAssertEqual(result.workouts.count, 2)
-        XCTAssertEqual(result.journal.count, 2)
-        XCTAssertEqual(result.cycles[0].recoveryScore, 72)
-    }
-
     // MARK: - Apple Health zip
 
     func testAppleHealthFromZipNested() throws {
@@ -118,20 +100,6 @@ final class ImportCoordinatorTests: XCTestCase {
         }
     }
 
-    func testDetectKindWhoopByFolderContents() throws {
-        let folder = Fixtures.url("physiological_cycles.csv").deletingLastPathComponent()
-        // The Resources folder contains BOTH whoop CSVs and export.xml. export.xml
-        // detection wins per the documented order; verify both branches with
-        // dedicated folders instead.
-        let whoopOnly = makeTempDir()
-        try FileManager.default.copyItem(
-            at: Fixtures.url("physiological_cycles.csv"),
-            to: whoopOnly.appendingPathComponent("physiological_cycles.csv"))
-        let kind = try ImportCoordinator().detectKind(of: whoopOnly)
-        XCTAssertEqual(kind, .whoopExport)
-        _ = folder
-    }
-
     func testDetectKindAppleHealthByZipEntry() throws {
         let zip = try makeZip(named: "export.zip", entries: [
             ("apple_health_export/export.xml", appleHealthFixture),
@@ -148,20 +116,11 @@ final class ImportCoordinatorTests: XCTestCase {
         XCTAssertEqual(result.kind, .appleHealth)
     }
 
-    func testDetectKindWhoopByZipEntry() throws {
-        let zip = try makeZip(named: "whoop.zip", entries: [
-            ("nested/deeper/physiological_cycles.csv", "physiological_cycles.csv"),
-        ])
-        let result = try ImportCoordinator().detectAndImport(from: zip)
-        XCTAssertEqual(result.kind, .whoopExport)
-        XCTAssertEqual(result.summary.sourceKind, .whoopExport)
-    }
-
     // MARK: - Error handling
 
     func testMissingFileThrows() {
         let bogus = URL(fileURLWithPath: "/tmp/does-not-exist-\(UUID().uuidString).zip")
-        XCTAssertThrowsError(try ImportCoordinator().importWhoopExport(from: bogus)) { err in
+        XCTAssertThrowsError(try ImportCoordinator().detectKind(of: bogus)) { err in
             XCTAssertTrue(err is ImportError)
         }
     }

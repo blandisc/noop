@@ -28,7 +28,7 @@ struct DataSourcesView: View {
     @Environment(LiveState.self) var live
     @Environment(\.instrumentoTheme) private var theme
     @State private var showingImporter = false
-    @State private var importTarget: ImportTarget = .whoop
+    @State private var importTarget: ImportTarget = .appleHealth
     /// FER-485: the mode the user picked this session (nil → reflect the persisted `model.sources.mode`).
     @State private var pickedMode: DataSourceMode?
     @Environment(\.dismiss) private var dismiss
@@ -285,32 +285,11 @@ struct DataSourcesView: View {
     }
     #endif
 
-    // MARK: - Importar (WHOOP .zip + Apple Health .zip)
+    // MARK: - Importar (Apple Health .zip)
 
     private var importSection: some View {
         section("Import") {
-            whoopBlock
-            divider
             appleHealthImportBlock
-        }
-    }
-
-    private var whoopBlock: some View {
-        block("WHOOP Export",
-              subtitle: "Import your full WHOOP history, recovery, strain, sleep, workouts, from a data export (.zip). Works for WHOOP 4.0, 5.0 and MG. Get one at app.whoop.com → Data Management.") {
-            let importingWhoop = model.isImporting(.whoop)
-            HStack(spacing: 12) {
-                QuietButton(importingWhoop ? "Importing…" : "Choose export…") { presentImporter(.whoop) }
-                    .disabled(model.hasActiveImport)
-                if importingWhoop { ProgressView().controlSize(.small).tint(theme.inkSecondary) }
-                Spacer(minLength: 0)
-            }
-            if let s = model.whoopImportSummary {
-                Text(verbatim: s).font(StrandFont.subhead)
-                    .foregroundStyle(model.whoopImportFailed ? theme.warning : theme.verdict)
-            }
-            Text("\(repo.storedStrapDays.count) days · \(repo.storedSleepsCount) sleeps stored")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
     }
 
@@ -974,21 +953,16 @@ struct DataSourcesView: View {
     private func handleImportResult(_ result: Result<[URL], Error>, for target: ImportTarget) {
         guard case .success(let urls) = result, let url = urls.first else { return }
         switch target {
-        case .whoop:
-            model.importWhoop(url: url)
         case .appleHealth:
             model.importAppleHealth(url: url)
         }
     }
 
     private enum ImportTarget {
-        case whoop
         case appleHealth
 
         var allowedContentTypes: [UTType] {
             switch self {
-            case .whoop:
-                return [.zip, .folder]
             case .appleHealth:
                 return [.zip, .xml, .folder]
             }
@@ -1013,14 +987,13 @@ struct DataSourcesView: View {
                 HStack(spacing: 12) {
                     QuietButton("Export…") { runExport() }.disabled(backupBusy)
                     QuietButton("Import…") { runImport() }.disabled(backupBusy)
-                    QuietButton("Export CSV…") { runCsvExport() }.disabled(backupBusy)
                     if backupBusy { ProgressView().controlSize(.small).tint(theme.inkSecondary) }
                     Spacer(minLength: 0)
                 }
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "info.circle.fill").foregroundStyle(theme.inkTertiary)
                         .font(StrandFont.glyph(.chevron)).accessibilityHidden(true)
-                    Text("Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit.")
+                    Text("Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect.")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -1091,23 +1064,6 @@ struct DataSourcesView: View {
         Task {
             let result = await DataBackup.runImport()
             handleBackup(result)
-        }
-    }
-    private func runCsvExport() {
-        backupBusy = true
-        Task {
-            let result = await CsvExport.run(repo: model.repo)
-            backupBusy = false
-            switch result {
-            case .cancelled: return
-            case .exported(let url):
-                backupAlertTitle = "CSV exported"
-                backupAlertMessage = "Saved to \(url.lastPathComponent). The zip re-imports into Cénit (Data Sources → WHOOP Export)."
-                backupAlertIsError = false; showBackupAlert = true
-            case .failure(let message):
-                backupAlertTitle = "Export problem"; backupAlertMessage = message
-                backupAlertIsError = true; showBackupAlert = true
-            }
         }
     }
     @MainActor

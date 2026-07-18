@@ -9,7 +9,7 @@ import WhoopProtocol
 // ReceiptPrinterScreen.swift — full-screen thermal receipt printer for a finished strength session.
 // Presents via `.fullScreenCover` so the printer mouth reaches the true top of the screen.
 //
-// FER-720 NOTE: The old ShareReceiptScreen had privacy toggles (HR/kcal off by default, FER-720). This receipt
+// FER-720 NOTE: The old share-receipt screen had privacy toggles (HR/kcal off by default, FER-720). This receipt
 // intentionally shows everything (owner-approved) — no toggles here, by design.
 
 struct ReceiptPrinterScreen: View {

@@ -166,7 +166,7 @@ private struct EntrenarLanding: View {
                         if !tricksCardDismissed { tricksCard }   // una-sola-vez (decisión Fer)
                         tuPlanSection     // ④ «TU PLAN» — week squares + every routine + new-routine row
                         constanciaSection // ⑤ 90-day dot grid — no streak guilt (mock 1a)
-                        footRows          // ⑥ history + diet
+                        footRows          // ⑥ history (Dieta off — FER-992)
                     }
                 }
             }
@@ -865,12 +865,13 @@ private struct EntrenarLanding: View {
         }
     }
 
-    /// Quiet standalone foot rows at the very bottom: history + diet, each with a verb of its own
-    /// («consultar» / «registrar»), distinct from the discs' «empezar» (mock 1a / v4b).
+    /// Quiet standalone foot row at the very bottom: history («consultar»), distinct from the discs'
+    /// «empezar» (mock 1a / v4b). FER-992: Dieta row off — re-enable the fork.knife utilityRow below.
     private var footRows: some View {
         VStack(alignment: .leading, spacing: 0) {
             utilityRow(icon: "chart.line.uptrend.xyaxis", label: "Mis entrenamientos y progreso") { openHistory() }
-            utilityRow(icon: "fork.knife", label: "Dieta · registro de hoy") { openDiet() }
+            // FER-992: Dieta entry off — openDiet + DietCaptureView stay.
+            // utilityRow(icon: "fork.knife", label: "Dieta · registro de hoy") { openDiet() }
         }
     }
 

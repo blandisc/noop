@@ -2,107 +2,12 @@
 import SwiftUI
 import StrandDesign
 
-// MARK: - Share the receipt, privacy-first (FER-720 · 3c)
+// MARK: - ShareCardView — la tarjeta compartible del recibo de fuerza
 //
-// Pushed from the 1l receipt. Renders a dedicated card with `ImageRenderer` and lets the user choose
-// exactly what it carries: heart rate and calories are OFF on every open, records ON. Nothing leaves
-// the app until «Guardar» (photo library) or «Compartir…» (system share sheet) — no social feed, no
-// network. The preview reflects the toggles live, and the exported image is the SAME view, so a datum
-// with its toggle off is never in the file.
+// Vivía dentro de ShareReceiptScreen.swift, que FER-990 retiró por inalcanzable. Esta vista NO lo era:
+// ReceiptPrinterScreen (la pantalla viva del recibo térmico) la renderiza con ImageRenderer, así que
+// sobrevive al borrado en archivo propio, sin un solo cambio de comportamiento.
 
-struct ShareReceiptScreen: View {
-    let theme: InstrumentoTheme
-    let summary: StrengthSummary
-    let onClose: () -> Void
-
-    // OFF on every open (fresh @State each presentation) — the privacy default (FER-720).
-    @State private var includeHR = false
-    @State private var includeKcal = false
-    @State private var includeRecords = true
-
-    private var card: ShareCardView {
-        ShareCardView(theme: theme, summary: summary,
-                      includeHR: includeHR && summary.avgHr != nil,
-                      includeKcal: includeKcal && summary.energyKcal != nil,
-                      includeRecords: includeRecords && !summary.prs.isEmpty)
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                header
-                card.frame(width: ShareCardView.width).frame(maxWidth: .infinity)
-                toggles
-                actions
-                Text("Nothing leaves the app without this step. No social feed.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 18)
-            .padding(.bottom, CenitMetrics.screenPadding)
-        }
-        .background(theme.paper.ignoresSafeArea())
-        .instrumentoTheme(theme)
-        .preferredColorScheme(.light)
-    }
-
-    private var header: some View {
-        HStack {
-            Text("Share").groteskOverline().foregroundStyle(theme.inkTertiary)
-            Spacer()
-            Button(action: onClose) {
-                StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.inkSecondary)
-            }
-            .accessibilityLabel(Text("Close"))
-        }
-    }
-
-    private var toggles: some View {
-        VStack(spacing: 0) {
-            if summary.avgHr != nil {
-                toggleRow("Include heart rate", isOn: $includeHR, top: false)
-            }
-            if summary.energyKcal != nil {
-                toggleRow("Include calories", isOn: $includeKcal, top: summary.avgHr != nil)
-            }
-            if !summary.prs.isEmpty {
-                toggleRow("Include records", isOn: $includeRecords,
-                          top: summary.avgHr != nil || summary.energyKcal != nil)
-            }
-        }
-    }
-
-    private func toggleRow(_ label: LocalizedStringKey, isOn: Binding<Bool>, top: Bool) -> some View {
-        VStack(spacing: 0) {
-            if top { Rectangle().fill(theme.hairline).frame(height: 1) }
-            Toggle(isOn: isOn) {
-                Text(label).font(StrandFont.subhead).foregroundStyle(theme.ink)
-            }
-            .tint(theme.verdict)
-            .padding(.vertical, 4)
-        }
-    }
-
-    private var actions: some View {
-        HStack(spacing: 12) {
-            StrandCTAButton("Save", kind: .outline) { if let img = render() { FileExport.saveImageToPhotos(img) } }
-            StrandCTAButton("Share…") { if let img = render() { FileExport.exportImage(img) } }
-        }
-    }
-
-    /// Rasterize the SAME card the preview shows — so the file carries exactly the toggled-on data.
-    @MainActor private func render() -> UIImage? {
-        let renderer = ImageRenderer(content:
-            card.frame(width: ShareCardView.width).instrumentoTheme(theme)
-        )
-        renderer.scale = UIScreen.main.scale
-        return renderer.uiImage
-    }
-}
-
-// MARK: - The rendered card
 
 /// The shareable card, faithful to «Instrumento»: warm paper, the Cénit wordmark, an editorial title,
 /// the date, three metrics (plus heart rate / calories when opted in), and a records footer. This exact
