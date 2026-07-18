@@ -344,11 +344,21 @@ struct RootTabView: View {
     private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .coach || tab == .train || tab == .settings }
 
     /// The hub tab that owns a given secondary screen (for debug navigation).
+    ///
+    /// Exhaustive on purpose — no `default`. A screen routed to the wrong hub lands on a stack that
+    /// doesn't inject that hub's environment objects, and SwiftUI answers a missing `@EnvironmentObject`
+    /// with a `fatalError`, not a fallback: `.workoutHistory` used to fall through `default` to Ajustes,
+    /// whose destination lacks the `.environmentObject(workoutHistory)` the Entrenar stack applies, so
+    /// screenshot-nav to it crashed the app. Listing every case makes that a compile error instead.
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
-        case .coach: return .coach
-        case .library, .breathe, .intervals, .dieta, .weeklyPlan, .misRutinas, .restDay, .otherWays, .routineToday: return .train
-        default:                               return .settings
+        case .coach:
+            return .coach
+        case .library, .workoutHistory, .breathe, .intervals, .dieta, .weeklyPlan, .misRutinas,
+             .restDay, .otherWays, .routineToday:
+            return .train
+        case .explore, .compare, .workouts, .applehealth, .datasources, .automations, .support:
+            return .settings
         }
     }
 

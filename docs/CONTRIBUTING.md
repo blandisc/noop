@@ -510,6 +510,35 @@ Schema lives in `Packages/WhoopStore/Sources/WhoopStore/Database.swift` as a **v
   fixtures rather than requiring a strap.
 - The **app test target** is the app-layer integration suite (run via `xcodebuild … test`).
 
+### The screen map (`docs/screen-map.html`)
+
+`CenitUITests/CenitScreenshotTests` captures one PNG per screen into `docs/fixtures/`, which the HTML
+screen map loads as thumbnails. Regenerate with the one command:
+
+```bash
+./Tools/update-screen-map.sh                 # iPhone 17 Pro Max (por defecto)
+./Tools/update-screen-map.sh "iPhone 16"     # otro simulador
+```
+
+It boots a simulator, so **CI can't run it** — it's manual, and the fixtures are committed. The script
+reports which tests failed and which fixtures it did *not* regenerate, and exits non-zero if either
+happened; a green run is the only run you should commit.
+
+Two rules keep the suite from silently rotting (both were learned by it rotting):
+
+- **Navigate with `nav(_:)`, never by tapping labels.** Screens are reached through `ScreenshotNav`
+  (`noop.nav.<key>`, DEBUG-only), which sets the tab and pushes the stack directly. Tapping text
+  couples the suite to copy *and* to the host simulator's language — the string catalog's source
+  language is English, so `buttons["Entrenar"]` only matched on a Spanish machine. Worse, taps guarded
+  by `if exists` no-op silently, so a test could "pass" while snapping the wrong screen into a fixture.
+  Adding a screen means adding its key to `DebugNavWatcher.screens`.
+- **The captured language is pinned to Spanish** (`baseArgs`), so the map looks the same on every
+  machine. It's the product's copy, and two tab keys («Tendencias», «Patrones») have no English
+  translation — an English run renders a mixed-language bar.
+
+Also note `app.tabBars` is **empty**: the native bar is hidden app-wide in favour of the custom
+`InstrumentTabBar` (FER-163/FER-490). Querying it silently matches nothing.
+
 ---
 
 ## Commit & PR conventions

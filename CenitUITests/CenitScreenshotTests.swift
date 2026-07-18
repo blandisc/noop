@@ -1,17 +1,36 @@
 import XCTest
 
-/// Captures a screenshot of every main screen in NOOP and saves PNGs to docs/fixtures/.
+/// Captures a screenshot of every main screen in Cénit and saves PNGs to docs/fixtures/.
 /// The HTML screen map at docs/screen-map.html loads these as thumbnails.
 ///
 /// Run (no simulator pre-launch needed — xcodebuild boots one):
 ///   GIT_CONFIG=/dev/null xcodebuild test \
 ///     -project Cenit.xcodeproj -scheme Cenit \
-///     -destination 'platform=iOS Simulator,name=iPhone 16' \
+///     -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
 ///     CODE_SIGNING_ALLOWED=NO \
 ///     -only-testing CenitUITests/CenitScreenshotTests
+/// or just `Tools/update-screen-map.sh`, which also copies the PNGs into docs/fixtures/.
 ///
 /// Maintenance: when you add/remove/rename a state in a *View.swift, add/update the
 /// corresponding case here and re-run to regenerate the fixtures in the same PR.
+///
+/// ## Two rules that keep this suite from rotting (learned the hard way)
+///
+/// 1. **Navigate with `nav(_:)`, not by tapping labels.** Every screen here is reachable through
+///    `ScreenshotNav` (`noop.nav.<key>`, DEBUG-only), which sets the tab + pushes the stack
+///    directly. Tapping localized text was how this suite broke: the string catalog's source
+///    language is English (keys ARE the English literals), so `buttons["Entrenar"]` matched only
+///    when the host simulator happened to run in Spanish, and renamed copy («Editar semana» →
+///    «Edit routines and week») silently stopped matching anything. Worse, taps guarded by
+///    `if exists` no-oped and the test still "passed" — snapping the WRONG screen into a fixture.
+///    `nav(_:)` cannot land on the wrong screen, so a bad key fails loudly instead.
+/// 2. **The language is pinned** (`baseArgs`). Unpinned, the same test produced a different UI per
+///    machine. Spanish is the product's copy (es-MX) and the only coherent choice: the tab keys
+///    «Tendencias» and «Patrones» have no English translation, so an English run renders a
+///    mixed-language bar.
+///
+/// The native tab bar is hidden app-wide (`.toolbar(.hidden, for: .tabBar)`) in favour of the
+/// custom `InstrumentTabBar` (FER-163/FER-490) — `app.tabBars` is EMPTY. Never query it.
 final class CenitScreenshotTests: XCTestCase {
 
     var app: XCUIApplication!
@@ -35,21 +54,31 @@ final class CenitScreenshotTests: XCTestCase {
         return dir
     }()
 
+    /// Launch arguments shared by every capture: skip onboarding / terms / What's New / the restore
+    /// nudge, and PIN the language so the captured UI is identical on every machine (see rule 2).
+    private static let baseArgs = [
+        "-AppleLanguages",               "(es)",
+        "-AppleLocale",                  "es_MX",
+        "-noop.onboarded",               "YES",
+        "-noop.acceptedTermsVersion",    "1.0",
+        "-noop.lastSeenChangelogVersion","1.80",
+        "-noop.didOfferRestore",         "YES",
+    ]
+
+    /// A fresh app pinned to `baseArgs`, optionally seeded with a `ScreenshotFixtures` state.
+    private func makeApp(fixture: String? = nil) -> XCUIApplication {
+        let a = XCUIApplication()
+        a.launchArguments = Self.baseArgs + (fixture.map { ["-noop.fixture", $0] } ?? [])
+        return a
+    }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app = XCUIApplication()
-
-        // Skip onboarding, terms acceptance, What's New sheet, and restore nudge
-        app.launchArguments += [
-            "-noop.onboarded",               "YES",
-            "-noop.acceptedTermsVersion",    "1.0",
-            "-noop.lastSeenChangelogVersion","1.80",
-            "-noop.didOfferRestore",         "YES",
-        ]
+        app = makeApp()
 
         // Dismiss any system permission alert (HealthKit, Bluetooth) without blocking
         addUIInterruptionMonitor(withDescription: "System permission") { alert in
-            for label in ["Don't Allow", "Allow", "OK"] {
+            for label in ["Don't Allow", "No permitir", "Allow", "Permitir", "OK"] {
                 let btn = alert.buttons[label]
                 if btn.exists { btn.tap(); return true }
             }
@@ -57,10 +86,12 @@ final class CenitScreenshotTests: XCTestCase {
         }
 
         app.launch()
-        _ = app.tabBars.firstMatch.waitForExistence(timeout: 8)
+        // NOT `app.tabBars` — the native bar is hidden (see the class note), so waiting on it just
+        // burned the full timeout on every test.
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15), "app never reached the foreground")
     }
 
-    // MARK: - Today (three verdict states)
+    // MARK: - Today (verdict states)
 
     /// Each state is its OWN test so a permission alert in one doesn't block the others.
     /// Run on an ERASED simulator for a clean store: `xcrun simctl erase <udid>`.
@@ -76,77 +107,34 @@ final class CenitScreenshotTests: XCTestCase {
     /// FER-286 · «Downloading / your night is on its way»: offload en curso, sin recovery de hoy aún.
     func test_today_downloading() throws { captureToday(state: "downloading") }
 
+    // MARK: - Entrenar (seeded plan + routines)
+
     /// FER-939 · the Entrenar hub's PLANNED state (open hero + discs + «LA SESIÓN DE HOY» + TU PLAN +
     /// Constancia). The `primed` fixture also seeds the demo plan (`seedTrainingPlan`), so the tab
     /// renders the full layout. Two frames: top + one swipe (plan/consistency/foot).
     func test_entrenar_hub() throws {
-        let a = XCUIApplication()
-        a.launchArguments = [
-            "-noop.onboarded",               "YES",
-            "-noop.acceptedTermsVersion",    "1.0",
-            "-noop.lastSeenChangelogVersion","1.80",
-            "-noop.didOfferRestore",         "YES",
-            "-noop.fixture",                 "primed",
-        ]
-        a.launch()
-        wait(6)   // seeding (dashboard + plan) is async
-        // The dock is the custom InstrumentTabBar (FER-490) — not a native TabBar, so query the
-        // localized button label directly.
-        let entrenar = a.buttons["Entrenar"].firstMatch
-        if entrenar.waitForExistence(timeout: 6) { entrenar.tap() }
-        else { a.staticTexts["Entrenar"].firstMatch.tap() }
-        wait(3)   // EntrenarLanding's own async load()
+        let a = launchSeeded()
+        nav("train", app: a, settle: 3)   // EntrenarLanding runs its own async load()
         snap("entrenar_hub", app: a)
         a.swipeUp(); wait(1)
         snap("entrenar_hub_2", app: a)
     }
 
     /// FER-939 follow-up · «Tu Plan» (WeeklyPlanEditorView) with the seeded demo plan: hero, LA SEMANA
-    /// (one row per day), weekly volume, MIS RUTINAS. Entered from the hub's «Editar semana».
+    /// (one row per day), weekly volume, MIS RUTINAS.
     func test_tu_plan() throws {
-        let a = XCUIApplication()
-        a.launchArguments = [
-            "-noop.onboarded",               "YES",
-            "-noop.acceptedTermsVersion",    "1.0",
-            "-noop.lastSeenChangelogVersion","1.80",
-            "-noop.didOfferRestore",         "YES",
-            "-noop.fixture",                 "primed",
-        ]
-        a.launch()
-        wait(6)   // seeding (dashboard + plan) is async
-        let entrenar = a.buttons["Entrenar"].firstMatch
-        if entrenar.waitForExistence(timeout: 6) { entrenar.tap() }
-        wait(3)
-        let editar = a.buttons["Editar semana"].firstMatch
-        if editar.waitForExistence(timeout: 4) { editar.tap() }
-        else { a.staticTexts["Editar semana"].firstMatch.tap() }
-        wait(3)
+        let a = launchSeeded()
+        nav("weeklyplan", app: a, settle: 3)
         snap("tu_plan", app: a)
         a.swipeUp(); wait(1)
         snap("tu_plan_2", app: a)
     }
 
-    /// «Mis entrenamientos» (WorkoutHistoryScreen) with the seeded demo plan+sessions. Entered from
-    /// the hub's foot row (below the fold — swipe first). Three frames: the screen is long.
+    /// «Mis entrenamientos» (WorkoutHistoryScreen) with the seeded demo plan+sessions.
+    /// Three frames: the screen is long.
     func test_mis_entrenamientos() throws {
-        let a = XCUIApplication()
-        a.launchArguments = [
-            "-noop.onboarded",               "YES",
-            "-noop.acceptedTermsVersion",    "1.0",
-            "-noop.lastSeenChangelogVersion","1.80",
-            "-noop.didOfferRestore",         "YES",
-            "-noop.fixture",                 "primed",
-        ]
-        a.launch()
-        wait(6)
-        let entrenar = a.buttons["Entrenar"].firstMatch
-        if entrenar.waitForExistence(timeout: 6) { entrenar.tap() }
-        wait(3)
-        a.swipeUp(); a.swipeUp(); wait(1)
-        let hist = a.buttons["Mis entrenamientos y progreso"].firstMatch
-        if hist.waitForExistence(timeout: 4) { hist.tap() }
-        else { a.staticTexts["Mis entrenamientos y progreso"].firstMatch.tap() }
-        wait(3)
+        let a = launchSeeded()
+        nav("workouthistory", app: a, settle: 3)
         snap("mis_entrenamientos", app: a)
         a.swipeUp(); wait(1)
         snap("mis_entrenamientos_2", app: a)
@@ -154,131 +142,84 @@ final class CenitScreenshotTests: XCTestCase {
         snap("mis_entrenamientos_3", app: a)
     }
 
-    // MARK: - Entrenar (training flow, seeded routines + plan)
-
-    /// El flujo de Entrenar con datos sembrados (fixture `train`): hub poblado → rutina de hoy →
-    /// sesión guiada. Navegación defensiva: snapea lo que alcanza sin fallar duro.
-    func test_train_flow() throws {
-        continueAfterFailure = true
-        let a = XCUIApplication()
-        a.launchArguments = [
-            "-noop.onboarded", "YES", "-noop.acceptedTermsVersion", "1.0",
-            "-noop.lastSeenChangelogVersion", "1.80", "-noop.didOfferRestore", "YES",
-            "-noop.fixture", "train",
-        ]
-        a.launch()
-        _ = a.otherElements.firstMatch.waitForExistence(timeout: 8)
-        wait(7)   // las rutinas se siembran async en el store — dale tiempo antes de abrir Entrenar
-
-        // La barra de pestañas es custom (InstrumentTabBar, la nativa va oculta) → XCUI no la ve como
-        // `tabBars`. Tocamos el tab Entrenar por coordenada: 4º de 5, pegado al fondo.
-        func tapTab(_ dx: CGFloat) {
-            a.coordinate(withNormalizedOffset: CGVector(dx: dx, dy: 0.965)).tap()
-        }
-        tapTab(0.7); wait(3)   // Entrenar
-        snap("train-hub", app: a)
-
-        // Sesión guiada de fuerza: «Empezar» desde el hub (el botón sí trae label accesible).
-        let empezar = a.buttons["Empezar"].firstMatch
-        if empezar.waitForExistence(timeout: 4) {
-            empezar.tap(); wait(3)
-            snap("train-sesion", app: a)
-            // cerrar la hoja (swipe down) para volver al hub
-            a.swipeDown(); wait(2)
-        }
-
-        // Rutina de hoy: tocar el nombre de la rutina del día («Empuje») en la tarjeta de Hoy.
-        let empuje = a.staticTexts["Empuje"].firstMatch
-        if empuje.waitForExistence(timeout: 3) {
-            empuje.tap(); wait(3)
-            snap("train-rutina", app: a)
-        }
-    }
-
-    /// «Biblioteca de ejercicios» (ExerciseLibraryScreen) — entered from Tu Plan's foot row.
+    /// «Biblioteca de ejercicios» (ExerciseLibraryScreen).
     func test_biblioteca() throws {
-        let a = XCUIApplication()
-        a.launchArguments = [
-            "-noop.onboarded",               "YES",
-            "-noop.acceptedTermsVersion",    "1.0",
-            "-noop.lastSeenChangelogVersion","1.80",
-            "-noop.didOfferRestore",         "YES",
-            "-noop.fixture",                 "primed",
-        ]
-        a.launch()
-        wait(6)
-        let entrenar = a.buttons["Entrenar"].firstMatch
-        if entrenar.waitForExistence(timeout: 6) { entrenar.tap() }
-        wait(3)
-        let editar = a.buttons["Editar semana"].firstMatch
-        if editar.waitForExistence(timeout: 4) { editar.tap() }
-        wait(2)
-        a.swipeUp(); a.swipeUp(); wait(1)
-        let lib = a.buttons["Biblioteca de ejercicios"].firstMatch
-        if lib.waitForExistence(timeout: 4) { lib.tap() }
-        else { a.staticTexts["Biblioteca de ejercicios"].firstMatch.tap() }
-        wait(4)   // catalog load
+        let a = launchSeeded()
+        nav("library", app: a, settle: 4)   // catalog load
         snap("biblioteca", app: a)
         a.swipeUp(); wait(1)
         snap("biblioteca_2", app: a)
     }
 
+    /// El flujo de Entrenar con datos sembrados (fixture `train`): hub poblado → rutina de hoy →
+    /// sesión guiada. Navegación defensiva: snapea lo que alcanza sin fallar duro. Éste es el único
+    /// test que TOCA la UI (el punto es ejercitar el flujo real, no sólo llegar a la pantalla); sus
+    /// labels son deterministas porque el idioma va fijado en `baseArgs`.
+    func test_train_flow() throws {
+        continueAfterFailure = true
+        let a = makeApp(fixture: "train")
+        a.launch()
+        XCTAssertTrue(a.wait(for: .runningForeground, timeout: 15))
+        wait(7)   // las rutinas se siembran async en el store
+
+        nav("train", app: a, settle: 3)
+        snap("train-hub", app: a)
+
+        // Rutina de hoy ANTES de la sesión: la sesión de fuerza es un cover propiedad de AppModel, y
+        // cerrarlo solo lo MINIMIZA a la píldora flotante (RootTabView) — el hub queda en estado «sesión
+        // activa» y la tarjeta de rutina en reposo ya no se puede capturar después. Por eso la sesión va
+        // al final. Se navega por nav(), no tocando «Empuje», para no depender del copy del fixture.
+        nav("routineToday", app: a, settle: 3)
+        snap("train-rutina", app: a)
+
+        // Sesión guiada de fuerza: «Empezar» desde el hub. Este sí es un tap real por label — el punto
+        // del test es ejercitar el flujo de verdad, y el idioma va fijado en `baseArgs`.
+        nav("train", app: a, settle: 3)
+        let empezar = a.buttons["Empezar"].firstMatch
+        if empezar.waitForExistence(timeout: 4) {
+            empezar.tap(); wait(3)
+            snap("train-sesion", app: a)
+        } else {
+            XCTFail("«Empezar» no existe en el hub de Entrenar — ¿cambió el copy o el fixture `train`?")
+        }
+    }
+
     // MARK: - All screens (empty/default state)
 
+    /// Sweeps the 5-tab shell (FER-182: Hoy · Tendencias · Patrones · Entrenar · Ajustes) plus every
+    /// secondary screen, all via `nav(_:)`.
+    ///
+    /// Not swept: `sleep` — Sueño is no longer a standalone screen, its `noop.nav` key is an ALIAS of
+    /// the Cuerpo tab (see `RootTabView`), so capturing it would just duplicate `trends.png`.
+    /// `docs/fixtures/sleep.png` is therefore an orphan of the old shell, as are health/insights/
+    /// intelligence/live/stress. «En vivo» is likewise no longer a tab (it opens as a cover from
+    /// Today's «beat by beat»).
     func test_captureAllScreens() throws {
         continueAfterFailure = true
 
-        // 5-tab shell (FER-182): Hoy · Cuerpo · Coach · Entrenar · Ajustes. Tab labels are the
-        // English `tabItem` titles (the hidden native bar still exposes them to XCUI). En vivo is no
-        // longer a tab — it opens as a cover from Today's "beat by beat", so it's not swept here.
-        wait(1);  snap("today")
-        tap(tab: "Body"); wait(2); snap("trends")   // Cuerpo (snapshot histórico «trends»)
+        let screens: [(key: String, id: String)] = [
+            ("today",       "today"),
+            ("body",        "trends"),      // Cuerpo (snapshot histórico «trends»)
+            ("coach",       "coach"),
+            // Entrenar hub → the active-session tools.
+            ("breathe",     "breathing"),
+            ("intervals",   "interval"),
+            // Ajustes + the screens that open from Cuerpo's footer.
+            ("settings",    "settings"),
+            ("compare",     "compare"),
+            ("workouts",    "workouts"),
+            ("applehealth", "apple-health"),
+            ("datasources", "data-sources"),
+            ("automations", "automations"),
+            ("support",     "support"),
+            ("explore",     "explore"),     // last (FER-171 fixed the old exit crash)
+        ]
 
-        // Coach.
-        captureHub(tab: "Coach", screens: [
-            ("Coach",        "coach"),
-        ])
-
-        // Entrenar hub → the active-session tools.
-        captureHub(tab: "Train", screens: [
-            ("Breathe",   "breathing"),
-            ("Intervals", "interval"),
-        ])
-
-        // Ajustes → Settings + the temporary «Más» orphans. "Explore" (MetricExplorer) is kept last
-        // (it used to crash on exit via a nested NavigationStack — fixed in FER-171).
-        captureHub(tab: "Settings", screens: [
-            ("Settings",     "settings"),
-            ("Sleep",        "sleep"),
-            ("Compare",      "compare"),
-            ("Workouts",     "workouts"),
-            ("Apple Health", "apple-health"),
-            ("Data Sources", "data-sources"),
-            ("Automations",  "automations"),
-            ("Support",      "support"),
-            ("Explore",      "explore"),   // last (FER-171 fixed the old exit crash)
-        ])
-    }
-
-    /// Walks a hub tab's list, tapping each row and snapping the pushed screen. Relaunches defensively
-    /// if the app dropped out of the foreground on a previous screen.
-    private func captureHub(tab: String, screens: [(cell: String, id: String)]) {
-        for (cell, id) in screens {
-            if app.state != .runningForeground {
-                app.launch()
-                guard app.tabBars.firstMatch.waitForExistence(timeout: 8) else {
-                    XCTFail("App failed to relaunch for '\(cell)'"); continue
-                }
-                wait(1)
+        for (key, id) in screens {
+            guard app.state == .runningForeground else {
+                XCTFail("App dropped out of the foreground before '\(id)'"); return
             }
-            returnToHub(tab)
-            // Use cells to avoid ambiguity when the label appears in multiple elements
-            let row = app.cells.containing(.staticText, identifier: cell).firstMatch
-            guard row.waitForExistence(timeout: 3) else {
-                XCTFail("Cell '\(cell)' not found in '\(tab)'"); continue
-            }
-            row.tap()
-            wait(2)
+            nav(key, app: app)
             snap(id)
         }
     }
@@ -286,16 +227,9 @@ final class CenitScreenshotTests: XCTestCase {
     // MARK: - Today detail (top → bottom scroll for design review)
 
     private func captureToday(state: String) {
-        let a = XCUIApplication()
-        a.launchArguments = [
-            "-noop.onboarded",               "YES",
-            "-noop.acceptedTermsVersion",    "1.0",
-            "-noop.lastSeenChangelogVersion","1.80",
-            "-noop.didOfferRestore",         "YES",
-        ]
-        if state != "empty" { a.launchArguments += ["-noop.fixture", state] }
+        let a = makeApp(fixture: state == "empty" ? nil : state)
         a.launch()
-        _ = a.tabBars.firstMatch.waitForExistence(timeout: 8)
+        XCTAssertTrue(a.wait(for: .runningForeground, timeout: 15))
 
         // Seeding writes to the store asynchronously; give it extra time on non-empty states.
         wait(state == "empty" ? 2 : 5)
@@ -311,17 +245,29 @@ final class CenitScreenshotTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func tap(tab: String) { app.tabBars.buttons[tab].tap() }
+    /// Launches the `primed` fixture (dashboard + demo training plan, both seeded async).
+    private func launchSeeded() -> XCUIApplication {
+        let a = makeApp(fixture: "primed")
+        a.launch()
+        XCTAssertTrue(a.wait(for: .runningForeground, timeout: 15))
+        wait(6)   // seeding (dashboard + plan) is async
+        return a
+    }
 
-    private func returnToHub(_ tab: String) {
-        guard app.state == .runningForeground else { return }
-        // Pop back through any pushed views (max 3 levels)
-        for _ in 0..<3 {
-            let back = app.navigationBars.buttons.firstMatch
-            guard back.exists && back.isHittable else { break }
-            back.tap(); wait(1)
-        }
-        tap(tab: tab); wait(1)
+    /// Drives `ScreenshotNav` (`CenitApp/App/ScreenshotNav.swift`) by posting the Darwin notification
+    /// it observes. The Darwin notify center is system-wide on the simulator, so the runner process
+    /// can steer the app under test without touching a single pixel — no localized labels, no
+    /// coordinates, no `app.tabBars` (hidden). A key the app doesn't observe is a silent no-op, so
+    /// keep this in sync with `DebugNavWatcher.screens`.
+    private func nav(_ screen: String, app a: XCUIApplication? = nil, settle: TimeInterval = 2) {
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            CFNotificationName("noop.nav.\(screen)" as CFString),
+            nil, nil, true)
+        wait(settle)
+        let target = a ?? self.app!
+        XCTAssertEqual(target.state, .runningForeground,
+                       "app left the foreground while navigating to '\(screen)'")
     }
 
     private func wait(_ seconds: TimeInterval) {
