@@ -615,8 +615,17 @@ struct WeeklyPlanEditorView: View {
             Image(systemName: collapsed ? "chevron.right" : "chevron.down")
                 .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
         }
-        .padding(.horizontal, 12).frame(minHeight: 40)
+        // El mismo truco de sangrado que `InstrumentoSectionBand` (SectionBand.swift): el fondo se pinta
+        // al ancho completo y luego un padding negativo lo saca del canalón de la pantalla. Sin esto la
+        // banda quedaba flotando con un hueco de papel a los lados, como una tarjeta a medio hacer.
+        // La indentación de más a la izquierda se conserva a propósito: es lo que dice que esto es una
+        // SUBsección de «Mis rutinas» y no otra sección al mismo nivel.
+        .padding(.leading, CenitMetrics.screenPadding + CenitMetrics.gap)
+        .padding(.trailing, CenitMetrics.screenPadding)
+        .frame(minHeight: 40)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.patternBlock)
+        .padding(.horizontal, -CenitMetrics.screenPadding)
         .padding(.top, 10)
     }
 
