@@ -19,6 +19,55 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **La pantalla «Hoy» dejaba de responder al rato de tenerla abierta / «Today» would stop responding after a while.**
+  **ES** — La app se quedaba trabada con el teléfono caliente: el hilo principal al 100 %, sin responder a los toques. El botón de apoyo de la barra superior arma un temporizador para su «guiño», y ese temporizador vivía en un estado que SwiftUI descarta y vuelve a crear cada vez que reconstruye la barra. Cada reconstrucción armaba otro temporizador; se iban acumulando hasta que el teléfono no hacía otra cosa que redibujar. Ahora hay uno solo, y el guiño sigue apareciendo tres veces por sesión como siempre.
+  **EN** — The app would lock up with the phone warm: main thread pinned at 100 %, taps ignored. The support button in the top bar arms a timer for its "wiggle", and that timer lived in state SwiftUI throws away and recreates every time it rebuilds the bar. Each rebuild armed another timer; they piled up until the phone did nothing but redraw. Now there's exactly one, and the wiggle still shows three times per launch.
+  ([WiggleEffect.swift](Cenit/System/WiggleEffect.swift), [TodayView.swift](Cenit/Screens/TodayView.swift))
+
+- **Arrastra una rutina a otra sección / Drag a routine into another section.**
+  **ES** — En el planificador semanal ya se puede arrastrar una rutina a otra carpeta, y soltarla en «Sueltas» para sacarla. Antes solo se podía por el menú «···» → «Mover a…», que costaba encontrar.
+  **EN** — In the weekly planner you can now drag a routine into another folder, and drop it on "Loose" to take it out. Before it was only reachable through the "···" → "Move to…" menu, which was easy to miss.
+  ([RoutineDragAndDrop.swift](Cenit/System/RoutineDragAndDrop.swift), [WeeklyPlanEditorView.swift](Cenit/Screens/WeeklyPlanEditorView.swift))
+
+- **Desliza para volver, también donde no hay barra de navegación / Swipe back works again where the navigation bar is hidden.**
+  **ES** — El editor de rutina y el constructor esconden la barra de arriba para poner su propia cabecera, y al hacerlo iOS desactivaba el gesto de arrastrar desde el borde izquierdo: solo se podía volver tocando el botón. El gesto vuelve, y solo cuando hay una pantalla debajo a la cual volver.
+  **EN** — The routine editor and builder hide the top bar to draw their own header, and doing so disabled iOS's swipe-from-the-left-edge gesture: the only way back was the button. The gesture is back, and only fires when there's actually a screen underneath.
+  ([SwipeBack.swift](Cenit/System/SwipeBack.swift))
+
+- **La semana ya no confunde martes con miércoles, y dice qué entrenaste de verdad / The week strip no longer confuses Tuesday with Wednesday, and shows what you actually trained.**
+  **ES** — Los días de cada rutina se abreviaban con una sola letra, y en español «M» es martes Y miércoles: «Día A: M · S» era imposible de leer. Ahora usan dos letras («Ma · Sá»). Además, un día planeado que aún no entrenas se dibuja con el contorno de su color en vez de verse igual que un día de descanso, y cuando entrenaste algo distinto a lo planeado el cuadro lo dice: relleno del color que hiciste, contorno del que tocaba.
+  **EN** — Each routine's days were abbreviated to a single letter, and in Spanish "M" is both Tuesday and Wednesday: "Day A: M · S" was unreadable. They now use two letters. On top of that, a planned day you haven't trained yet is drawn with its colour as an outline instead of looking identical to a rest day — and when you trained something other than what was planned, the square says so: filled with what you did, outlined with what was due.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
+- **Crear una rutina ya no parece un callejón sin salida / Creating a routine no longer looks like a dead end.**
+  **ES** — Al elegir ejercicios para una rutina nueva, el botón para terminar quedaba DEBAJO de la barra de pestañas: se veía la lista y ninguna salida. Ahora se ve, y dice a dónde lleva («Crear rutina con 3») en vez de «Agregar 3 ejercicios», que sonaba a agregar a algo que ya existía.
+  **EN** — When picking exercises for a new routine, the button that finishes the flow sat UNDER the tab bar: you saw the list and no way out. It's visible now, and says where it takes you ("Create routine with 3") instead of "Add 3 exercises", which sounded like adding to something that already existed.
+  ([ExerciseLibraryScreen.swift](Cenit/Screens/ExerciseLibraryScreen.swift))
+
+- **La sesión decía «Sube» donde debía decir «Empuje» / The live session said "Sube" where it meant "Empuje".**
+  **ES** — La píldora de la sesión activa mostraba la familia del entrenamiento con la misma clave de texto que un botón llamado «Push», que se traduce como «Sube». Ahora dice Empuje / Tirón / Pierna / Cuerpo completo.
+  **EN** — The live session pill showed the training family using the same text key as a button called "Push", which localizes to "Sube" (a verb). It now reads the muscle-group names properly.
+  ([LiveStrengthSheet.swift](Cenit/Screens/LiveStrengthSheet.swift))
+
+- **«Agregar serie» y «Calentamiento» se ven igual en editar y en la sesión / "Add set" and "Warm-up" now look the same when editing and when training.**
+  **ES** — El par de botones que cierra cada ejercicio se había separado entre las dos pantallas: rectángulos contra cápsulas, gris contra naranja, distinta altura. Ahora es un solo componente. El principal pasa a tinta en vez de naranja —el naranja está reservado para el esfuerzo medido— y ambos suben a la altura mínima que pide iOS para poder tocarlos bien.
+  **EN** — The pair of buttons closing each exercise had drifted apart between the two screens: rectangles vs capsules, grey vs orange, different heights. It's one component now. The primary switches to ink rather than orange — orange is reserved for measured effort — and both grow to the minimum tap height iOS asks for.
+  ([SetActionPills.swift](Cenit/Screens/SetActionPills.swift))
+
+- **«Mis entrenamientos» asoma las tres últimas sesiones / "My workouts" now previews the last three sessions.**
+  **ES** — La lista mostraba todas las sesiones, así que había que bajar mucho para llegar al resto de la pantalla. Ahora se asoman tres y una fila abre el historial completo, diciendo de paso cuántas llevas.
+  **EN** — The list showed every session, so reaching the rest of the screen meant a long scroll. It now previews three, with a row that opens the full history and tells you the total on the way.
+  ([WorkoutHistoryScreen.swift](Cenit/Screens/WorkoutHistoryScreen.swift))
+
+- **La progresión dice cuánto vas a subir / Progression now tells you how much you'll add.**
+  **ES** — Cuando el incremento salía de tus discos en vez de estar puesto a mano, el indicador decía «Progresión · activa» y se guardaba el número. Ahora siempre dice el peso («+2,5 kg cada 2 ✓»), venga de donde venga.
+  **EN** — When the increment came from your plates rather than being set by hand, the chip just said "Progression · on" and kept the number to itself. It now always shows the weight, wherever it comes from.
+  ([ProgressionChip.swift](Cenit/Screens/ProgressionChip.swift))
+
+- **Miniaturas, tipografía y textos en español por todo Entrenar / Thumbnails, typography and Spanish copy across Train.**
+  **ES** — Los ejercicios que entran por importación vuelven a mostrar su miniatura en la sesión activa (antes solo se veían en el editor). Se corrigieron unos 50 lugares donde la fuente no seguía la regla del sistema de diseño —Grotesk para números, títulos y botones; la de siempre para el texto corrido—, con Intervalos, Respira y el importador completos. Y entraron ~30 textos que seguían saliendo en inglés con la app en español.
+  **EN** — Exercises that came in through an import show their thumbnail in the live session again (before, only the editor had them). Around 50 places where the typeface didn't follow the design system were fixed — Grotesk for numbers, titles and buttons; the regular face for running text — with Intervals, Breathe and the importer done end to end. Plus ~30 strings that still showed in English with the app set to Spanish.
+
 - **Rendimiento: arrastrar sobre la gráfica de rangos deja de rehacer la misma cuenta en cada cuadro / Performance: dragging across the ranges chart stops redoing the same arithmetic every frame.**
   **ES** — Al arrastrar el dedo sobre la gráfica de rangos, la app recalculaba en CADA cuadro a qué banda pertenece cada punto (~365) y cuántos puntos tiene cada carril: unas 2,900 comparaciones por cuadro. Ahora se calcula una sola vez al construir la gráfica. **No se pierde ningún punto ni cambia el dibujo** — es exactamente el mismo gráfico, solo deja de repetir la cuenta.
   **EN** — Dragging across the ranges chart recomputed, on EVERY frame, which band each of the ~365 points falls in plus each lane's point count: about 2,900 range comparisons per frame. It's now computed once when the chart is built. **No point is dropped and nothing looks different** — same chart, it just stops redoing the arithmetic.
