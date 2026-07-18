@@ -44,6 +44,8 @@ final class MuscleInferenceTests: XCTestCase {
             ("Elevación de talones de pie", "calves"),
             ("Encogimientos abdominales", "abdominals"),  // beats «encogimientos» (traps)
             ("Encogimientos con mancuernas", "traps"),
+            ("Remo al mentón", "shoulders"),   // beats the «remo» it contains (QA D1, round 2)
+            ("Peso muerto con piernas rígidas", "lower back"),
         ]
         for (name, expected) in cases {
             XCTAssertEqual(MuscleInference.primaryMuscle(forName: name), expected, "for '\(name)'")

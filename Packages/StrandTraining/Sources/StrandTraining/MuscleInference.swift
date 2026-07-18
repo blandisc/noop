@@ -24,7 +24,7 @@ public enum MuscleInference {
         // Chest
         "bench press": "chest", "chest press": "chest", "chest fly": "chest", "chest flye": "chest",
         "pec deck": "chest", "pushup": "chest", "push up": "chest", "push ups": "chest",
-        "dips": "chest", "dip": "chest", "pullover": "chest", "chest": "chest", "pec": "chest",
+        "dips": "chest", "dip": "chest", "pullover": "chest", "pull over": "chest", "chest": "chest", "pec": "chest",
 
         // Shoulders
         "shoulder press": "shoulders", "overhead press": "shoulders", "military press": "shoulders",
@@ -80,7 +80,7 @@ public enum MuscleInference {
         "curl de biceps": "biceps", "predicador": "biceps",
         "jalon al pecho": "lats", "jalon": "lats", "dominadas": "lats", "dorsales": "lats",
         "dominadas supinas": "biceps",
-        "remo": "middle back", "espalda media": "middle back",
+        "remo": "middle back", "espalda media": "middle back", "remo al menton": "shoulders",
         "encogimientos": "traps", "trapecio": "traps", "trapecios": "traps",
         "peso muerto": "lower back", "hiperextensiones": "lower back", "buenos dias": "lower back",
         "espalda baja": "lower back",
