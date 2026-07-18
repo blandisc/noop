@@ -24,7 +24,19 @@ enum StrengthDisplay {
 
     /// An exercise's display name in the device language: Spanish when a translation exists, else
     /// the English catalog name. Custom exercises (no `nameES`) always show what the user typed. (FER-501)
-    static func name(_ e: Exercise) -> String { e.displayName(localized: localized) }
+    ///
+    /// La inicial se fuerza a mayúscula. El catálogo empaquetado ya viene en Title Case, pero los
+    /// ejercicios que entran por importación llegan en minúsculas («dumbbell incline bench press») y se
+    /// veían así en la sesión (bug Fer 2026-07-18). Se capitaliza SOLO la primera letra, no cada palabra:
+    /// title-case reescribiría lo que el usuario tecleó en un ejercicio propio, y en español además sería
+    /// incorrecto («Curl Inclinado Con Mancuernas»).
+    static func name(_ e: Exercise) -> String { sentenceCase(e.displayName(localized: localized)) }
+
+    /// Primera letra en mayúscula, el resto intacto. Respeta acrónimos y lo que el usuario escribió.
+    static func sentenceCase(_ s: String) -> String {
+        guard let f = s.first, f.isLowercase else { return s }
+        return f.uppercased() + s.dropFirst()
+    }
 
     /// A muscle key's display label: the Spanish term on a Spanish device, else the title-cased English
     /// key. The KEY itself is never changed — filters and the muscle-fatigue map still join on it. (FER-501)

@@ -294,7 +294,7 @@ struct WorkoutImportView: View {
                 }
                 .accessibilityElement(children: .combine)
                 Button { mappingTarget = MappingName(name: name) } label: {
-                    Text("Change mapping").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+                    Text("Change mapping").font(InstrumentoType.grotesk(13, weight: .medium)).foregroundStyle(theme.inkTertiary).underline()
                 }
                 .buttonStyle(.plain)
             } else {
@@ -308,7 +308,7 @@ struct WorkoutImportView: View {
                                 Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.dataStrain)
                                 Text(StrengthDisplay.name(s)).font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.ink)
                                 Spacer(minLength: CenitMetrics.space2)
-                                Text("Use").font(StrandFont.caption.weight(.bold)).foregroundStyle(theme.paperHi)
+                                Text("Use").font(InstrumentoType.grotesk(12, weight: .bold)).foregroundStyle(theme.paperHi)
                                     .padding(.horizontal, 11).padding(.vertical, 4)
                                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                             }
@@ -335,14 +335,14 @@ struct WorkoutImportView: View {
     /// A small underlined «Undo» link — reverts a suggestion/omit so the row goes back to unmatched.
     private func undoLink(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text("Undo").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
+            Text("Undo").font(InstrumentoType.grotesk(13, weight: .medium)).foregroundStyle(theme.inkTertiary).underline()
         }
         .buttonStyle(.plain)
     }
 
     private func chip(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)
                 .padding(.horizontal, 13).padding(.vertical, 6)
                 .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
         }
@@ -485,7 +485,7 @@ struct WorkoutImportView: View {
             HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
-                        .font(StrandFont.footnote)
+                        .font(InstrumentoType.grotesk(12, weight: .medium))
                         .foregroundStyle(i == currentIndex ? theme.ink : theme.inkTertiary)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .lineLimit(1)
@@ -520,7 +520,7 @@ struct WorkoutImportView: View {
     private func step<Action: View>(_ n: Int, _ text: LocalizedStringKey,
                                     @ViewBuilder action: () -> Action) -> some View {
         HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            Text("\(n)").font(StrandFont.subhead.weight(.bold)).monospacedDigit()
+            Text("\(n)").font(InstrumentoType.groteskNumber(15))
                 .foregroundStyle(theme.paperHi)
                 .frame(width: 26, height: 26)
                 .background(Circle().fill(theme.dataStrain))

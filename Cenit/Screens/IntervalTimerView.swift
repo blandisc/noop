@@ -164,7 +164,7 @@ struct IntervalTimerView: View {
                 startFromConfigure()
             } label: {
                 Text("Start")
-                    .font(StrandFont.headline)
+                    .font(InstrumentoType.groteskHeadline(17))
                     .foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
@@ -331,7 +331,7 @@ struct IntervalTimerView: View {
             } label: {
                 Label(running ? "Pause" : (isFinished ? "Restart" : "Start"),
                       systemImage: running ? "pause.fill" : "play.fill")
-                    .font(StrandFont.headline)
+                    .font(InstrumentoType.groteskHeadline(17))
                     .foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
@@ -343,7 +343,7 @@ struct IntervalTimerView: View {
                 stopAndReset()
             } label: {
                 Label("Reset", systemImage: "arrow.counterclockwise")
-                    .font(StrandFont.headline)
+                    .font(InstrumentoType.groteskHeadline(17))
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
@@ -411,7 +411,7 @@ struct IntervalTimerView: View {
                                range: ClosedRange<Int>, step: Int, tint: Color) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
+                Text(title).font(InstrumentoType.grotesk(16, weight: .semibold)).foregroundStyle(theme.ink)
                 Text("\(range.lowerBound)–\(range.upperBound)\(unit.map { " \($0)" } ?? "") · step \(step)")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
@@ -422,7 +422,7 @@ struct IntervalTimerView: View {
                     .foregroundStyle(tint)
                     .frame(minWidth: 44, alignment: .trailing)
                 if let unit {
-                    Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    Text(unit).font(InstrumentoType.grotesk(12, weight: .medium)).foregroundStyle(theme.inkTertiary)
                 }
             }
             Stepper("", value: value, in: range, step: step)
