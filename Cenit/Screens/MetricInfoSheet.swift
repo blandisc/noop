@@ -132,93 +132,9 @@ struct MetricInfoSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                header
-                if isRecoverySummary {
-                    // F2 (FER-710): the redesigned recovery summary — verdict word + zone meter under the
-                    // hero, then «Hoy, vs tu normal» ABOVE the level instrument, no vs-ayer line. The
-                    // detail (RecoveryDetailScreen, opened by «Ver más en Tendencias») keeps every block.
-                    recoveryReading
-                    recoveryZoneMeter
-                    headlineText
-                    if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
-                    levelsBlock
-                } else if isVitalTemplate {
-                    // F2 (FER-710): the six vitals — data-driven verdict reading under the hero, the level
-                    // instrument, then «Tu patrón» (only where WhatMovesIt has an honest finding: HRV / FC).
-                    vitalReading
-                    headlineText
-                    levelsBlock
-                    vitalPatternBlock
-                } else if isSleepSummary {
-                    // F2 (FER-710) §4: doble dato (in place of the numeral) + verdict + «Anoche» stage bar,
-                    // the active lane label moved above the selector, then the level instrument + «Para esta
-                    // noche». No-night / Apple-only-without-stages fall through to the classic layout below.
-                    sleepDobleDato
-                    sleepReading
-                    headlineText
-                    sleepAnocheBlock
-                    sleepActiveLaneLabel
-                    levelsBlock
-                    sleepParaEstaNoche
-                } else if isStrainSummary {
-                    // F2 (FER-710): Day Strain — verdict by level, then the intraday accumulated curve
-                    // (between the verdict and the selector) and the level instrument.
-                    vitalReading
-                    headlineText
-                    strainIntradaySection
-                    levelsBlock
-                } else {
-                    headlineText
-                    if info.usesLevels {
-                        // FER-607: the F6 levels instrument (selector + tappable levels + chart over the
-                        // active band) replaces the static 14-day trend + bands table for migrated metrics.
-                        levelsBlock
-                    } else {
-                        if trendLoader != nil { trendSection }
-                        // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
-                        // the 14-day trend on every other metric — after the headline, before the reference
-                        // bands — so chart placement reads consistently across all sheets. (strain has no
-                        // trendLoader, so the two never both appear.)
-                        if info.id == "strain" { strainSection }
-                        // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
-                        // so the two never both appear). (FER-137)
-                        if info.id == "heart_rate" { heartRateSection }
-                        if !info.bands.isEmpty {
-                            bandsTable
-                        }
-                    }
-                    // Recovery's calibration card + today's impact block ride alongside BOTH layouts — only
-                    // Recovery sets them, so they stay invisible on every other metric. With the levels
-                    // instrument they sit just below it («qué la movió hoy»). (FER-620 / FER-628)
-                    if let calibration = info.calibration { calibrationCard(calibration) }
-                    if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
-                }
-                if let method = info.method { methodDisclosure(method) }
-                if appleConnectHint {
-                    appleConnectLine
-                } else if let note = info.note {
-                    Text(note)
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let disclaimer = info.disclaimer {
-                    Text(disclaimer)
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if appleSource { appleSourceLine }
-                if let onSeeMore { seeMoreLink(onSeeMore) }
-            }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(GeometryReader { g in
-                Color.clear.preference(key: SheetContentHeightKey.self, value: g.size.height)
-            })
+            sheetColumn
         }
-        .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
+        .onPreferenceChange(SheetContentHeightKey.self) { (h: CGFloat) in contentHeight = h }
         .background(theme.paper)
         .presentationDetents(strainDetents)
         .presentationDragIndicator(.visible)
@@ -238,7 +154,8 @@ struct MetricInfoSheet: View {
         .task {
             guard let loader = trendLoader else { return }
             trendLoading = true
-            trendData = (await loader()).sorted { $0.date < $1.date }
+            let loaded: [TrendPoint] = await loader()
+            trendData = loaded.sorted { (a: TrendPoint, b: TrendPoint) in a.date < b.date }
             trendLoading = false
         }
         .task {
@@ -246,11 +163,138 @@ struct MetricInfoSheet: View {
             // selector can re-window. Parse each day to a `Date` ONCE here, not per render. Supplied only
             // when `info.usesLevels`.
             guard let loader = levelsSeriesLoader else { return }
-            levelsParsed = await loader().map {
-                (day: $0.day, date: Repository.parseDayKey($0.day), value: $0.value)
+            let rows: [(day: String, value: Double)] = await loader()
+            levelsParsed = rows.map { (row: (day: String, value: Double)) in
+                (day: row.day, date: Repository.parseDayKey(row.day), value: row.value)
             }
             refreshResolvedLevelsCache()
         }
+    }
+
+    /// Column inside the sheet scroll — extracted so `body`'s type-check stays under the 100 ms budget. (FER-981)
+    @ViewBuilder private var sheetColumn: some View {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            header
+            summaryBranch
+            sheetFoot
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { (g: GeometryProxy) in
+            Color.clear.preference(key: SheetContentHeightKey.self, value: g.size.height)
+        })
+    }
+
+    /// The five summary layouts (recovery / vitals / sleep / strain / classic). Split from `body` so the
+    /// type-checker type-checks each branch in isolation. (FER-981)
+    @ViewBuilder private var summaryBranch: some View {
+        if isRecoverySummary {
+            recoverySummaryContent
+        } else if isVitalTemplate {
+            vitalTemplateContent
+        } else if isSleepSummary {
+            sleepSummaryContent
+        } else if isStrainSummary {
+            strainSummaryContent
+        } else {
+            classicSummaryContent
+        }
+    }
+
+    /// F2 (FER-710): the redesigned recovery summary — verdict word + zone meter under the
+    /// hero, then «Hoy, vs tu normal» ABOVE the level instrument, no vs-ayer line. The
+    /// detail (RecoveryDetailScreen, opened by «Ver más en Tendencias») keeps every block.
+    @ViewBuilder private var recoverySummaryContent: some View {
+        recoveryReading
+        recoveryZoneMeter
+        headlineText
+        if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
+        levelsBlock
+    }
+
+    /// F2 (FER-710): the six vitals — data-driven verdict reading under the hero, the level
+    /// instrument, then «Tu patrón» (only where WhatMovesIt has an honest finding: HRV / FC).
+    @ViewBuilder private var vitalTemplateContent: some View {
+        vitalReading
+        headlineText
+        levelsBlock
+        vitalPatternBlock
+    }
+
+    /// F2 (FER-710) §4: doble dato (in place of the numeral) + verdict + «Anoche» stage bar,
+    /// the active lane label moved above the selector, then the level instrument + «Para esta
+    /// noche». No-night / Apple-only-without-stages fall through to the classic layout below.
+    @ViewBuilder private var sleepSummaryContent: some View {
+        sleepDobleDato
+        sleepReading
+        headlineText
+        sleepAnocheBlock
+        sleepActiveLaneLabel
+        levelsBlock
+        sleepParaEstaNoche
+    }
+
+    /// F2 (FER-710): Day Strain — verdict by level, then the intraday accumulated curve
+    /// (between the verdict and the selector) and the level instrument.
+    @ViewBuilder private var strainSummaryContent: some View {
+        vitalReading
+        headlineText
+        strainIntradaySection
+        levelsBlock
+    }
+
+    /// Classic / fallback layout: levels instrument when migrated, else trend / strain / HR charts + bands.
+    @ViewBuilder private var classicSummaryContent: some View {
+        headlineText
+        if info.usesLevels {
+            // FER-607: the F6 levels instrument (selector + tappable levels + chart over the
+            // active band) replaces the static 14-day trend + bands table for migrated metrics.
+            levelsBlock
+        } else {
+            classicMiddleCharts
+        }
+        // Recovery's calibration card + today's impact block ride alongside BOTH layouts — only
+        // Recovery sets them, so they stay invisible on every other metric. With the levels
+        // instrument they sit just below it («qué la movió hoy»). (FER-620 / FER-628)
+        if let calibration = info.calibration { calibrationCard(calibration) }
+        if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
+    }
+
+    /// Charts + bands for the classic (non-levels) middle slot. (FER-981)
+    @ViewBuilder private var classicMiddleCharts: some View {
+        if trendLoader != nil { trendSection }
+        // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
+        // the 14-day trend on every other metric — after the headline, before the reference
+        // bands — so chart placement reads consistently across all sheets. (strain has no
+        // trendLoader, so the two never both appear.)
+        if info.id == "strain" { strainSection }
+        // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
+        // so the two never both appear). (FER-137)
+        if info.id == "heart_rate" { heartRateSection }
+        if !info.bands.isEmpty {
+            bandsTable
+        }
+    }
+
+    /// Method / note / disclaimer / Apple source / «Ver más» foot of the sheet. (FER-981)
+    @ViewBuilder private var sheetFoot: some View {
+        if let method = info.method { methodDisclosure(method) }
+        if appleConnectHint {
+            appleConnectLine
+        } else if let note = info.note {
+            Text(note)
+                .font(StrandFont.caption)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        if let disclaimer = info.disclaimer {
+            Text(disclaimer)
+                .font(StrandFont.footnote)
+                .foregroundStyle(theme.inkTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        if appleSource { appleSourceLine }
+        if let onSeeMore { seeMoreLink(onSeeMore) }
     }
 
     /// Sheets with a trend chart (or the strain accumulation curve) are sized to their content so the
@@ -913,16 +957,29 @@ struct MetricInfoSheet: View {
         }
     }
 
+    /// Min / avg / max under the 24h HR chart. Stats are pre-computed with explicit Double arithmetic so
+    /// the type-checker doesn't thrash on `reduce(0, +)` (Int vs Double). Row UI is a separate piece. (FER-981)
     private func hrFooter(_ v: [Double]) -> some View {
-        let lo = Int((v.min() ?? 0).rounded())
-        let avg = Int((v.reduce(0, +) / Double(max(v.count, 1))).rounded())
-        let hi = Int((v.max() ?? 0).rounded())
-        return HStack {
-            footerStat("Min", "\(lo)")
+        let loRaw: Double = v.min() ?? 0.0
+        let hiRaw: Double = v.max() ?? 0.0
+        let sum: Double = v.reduce(0.0, +)
+        let denom: Double = Double(max(v.count, 1))
+        let lo: Int = Int(loRaw.rounded())
+        let avg: Int = Int((sum / denom).rounded())
+        let hi: Int = Int(hiRaw.rounded())
+        return hrFooterRow(lo: lo, avg: avg, hi: hi)
+    }
+
+    @ViewBuilder private func hrFooterRow(lo: Int, avg: Int, hi: Int) -> some View {
+        let loText: String = String(lo)
+        let avgText: String = String(avg)
+        let hiText: String = String(hi)
+        HStack {
+            footerStat("Min", loText)
             Spacer()
-            footerStat("Avg", "\(avg)")
+            footerStat("Avg", avgText)
             Spacer()
-            footerStat("Max", "\(hi)")
+            footerStat("Max", hiText)
         }
     }
 
