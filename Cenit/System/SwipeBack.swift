@@ -102,78 +102,109 @@ struct SwipeBackEnabler: UIViewControllerRepresentable {
 /// propósito: el reconocedor de UIKit solo despierta en el borde real de la pantalla y convive con
 /// los scrolls y arrastres que ya viven dentro (reordenar ejercicios en la sesión), en vez de
 /// robarles el toque con una franja invisible encima.
-struct EdgeSwipeToExit: UIViewRepresentable {
+/// Es un `UIViewControllerRepresentable` (igual que `SwipeBackEnabler`) y no un
+/// `UIViewRepresentable`: UIKit nos entrega el controlador que nos contiene en vez de tener que
+/// adivinarlo caminando la cadena de responders, que puede no estar completa todavía cuando la
+/// vista entra en la ventana y dejaría el gesto mudo sin decirlo.
+struct EdgeSwipeToExit: UIViewControllerRepresentable {
     /// La MISMA salida que corre el botón — nunca un `dismiss` crudo, o el gesto se saltaría la
     /// confirmación de descartar y el trabajo se perdería.
     let exit: () -> Void
 
     /// Cuánto hay que arrastrar para que cuente. Un roce en el borde no debe sacarte de una sesión.
     private static let threshold: CGFloat = 70
+    /// Un lanzallamas horizontal cuenta aunque recorra poco — así se siente el pop nativo.
+    private static let flickVelocity: CGFloat = 800
 
     func makeCoordinator() -> Coordinator { Coordinator(exit: exit) }
 
-    func makeUIView(context: Context) -> UIView {
-        let view = ProbeView()
-        view.isUserInteractionEnabled = false
-        view.onAttach = { [weak coordinator = context.coordinator] host in
-            coordinator?.install(on: host)
-        }
-        return view
+    func makeUIViewController(context: Context) -> UIViewController {
+        Probe(coordinator: context.coordinator)
     }
 
-    func updateUIView(_ view: UIView, context: Context) { context.coordinator.exit = exit }
+    func updateUIViewController(_ controller: UIViewController, context: Context) {
+        context.coordinator.exit = exit
+    }
+
+    /// Sin esto el reconocedor sobrevive a la pantalla: se cuelga de una vista que no es nuestra y
+    /// que SwiftUI puede reutilizar entre presentaciones, dejando un gesto huérfano que dispara la
+    /// salida de una presentación anterior.
+    static func dismantleUIViewController(_ controller: UIViewController, coordinator: Coordinator) {
+        coordinator.uninstall()
+    }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var exit: () -> Void
-        private var installed = false
+        private weak var host: UIView?
+        private var pan: UIScreenEdgePanGestureRecognizer?
 
         init(exit: @escaping () -> Void) { self.exit = exit }
 
         func install(on host: UIView) {
-            guard !installed else { return }
-            let pan = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handle(_:)))
-            pan.edges = .left
-            pan.delegate = self
-            host.addGestureRecognizer(pan)
-            installed = true
+            guard pan == nil else { return }
+            let recognizer = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handle(_:)))
+            recognizer.edges = .left
+            recognizer.delegate = self
+            host.addGestureRecognizer(recognizer)
+            self.host = host
+            self.pan = recognizer
+        }
+
+        func uninstall() {
+            guard let pan else { return }
+            host?.removeGestureRecognizer(pan)
+            self.pan = nil
+            self.host = nil
         }
 
         @objc private func handle(_ pan: UIScreenEdgePanGestureRecognizer) {
             guard pan.state == .ended else { return }
-            let dx = pan.translation(in: pan.view).x
-            let vx = pan.velocity(in: pan.view).x
-            // Un arrastre corto pero decidido cuenta igual que uno largo y lento — es como se siente
-            // el pop nativo.
-            guard dx > EdgeSwipeToExit.threshold || vx > 800 else { return }
+            let translation = pan.translation(in: pan.view)
+            let velocity = pan.velocity(in: pan.view)
+            // Exigir que el gesto sea DOMINANTEMENTE horizontal: en la sesión conviven arrastres
+            // verticales (reordenar ejercicios, el asa «≡») y un flick diagonal que arranque cerca
+            // del margen alcanzaría el umbral de velocidad, minimizando la sesión a media
+            // reordenación.
+            guard abs(translation.x) > abs(translation.y) else { return }
+            guard translation.x > EdgeSwipeToExit.threshold
+                    || velocity.x > EdgeSwipeToExit.flickVelocity else { return }
             exit()
         }
 
-        /// Convivir, no competir: si un scroll u otro arrastre ya va en curso, ambos siguen vivos y
-        /// gana el que el usuario realmente esté haciendo.
-        func gestureRecognizer(_ g: UIGestureRecognizer,
+        /// Convivir, no competir: el reconocedor de borde solo despierta en el margen, así que
+        /// dejarlo correr junto a los scrolls internos evita que se cancelen entre sí. Quien decide
+        /// si la intención era horizontal es `handle`, no esta bandera.
+        func gestureRecognizer(_ gesture: UIGestureRecognizer,
                                shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
     }
 
-    /// Una vista inerte de tamaño cero cuyo único trabajo es avisarnos cuándo ya existe la vista de
-    /// la pantalla, para colgarle el reconocedor a ella y no a nosotros.
-    private final class ProbeView: UIView {
-        var onAttach: ((UIView) -> Void)?
+    /// Un controlador vacío: su único trabajo es darnos la vista de la pantalla a la que colgarle el
+    /// reconocedor — la de ESTA modal, nunca la raíz de la app (ahí el gesto viviría en toda ella).
+    private final class Probe: UIViewController {
+        private let coordinator: Coordinator
 
-        override func didMoveToWindow() {
-            super.didMoveToWindow()
-            guard window != nil, let host = enclosingControllerView else { return }
-            onAttach?(host)
+        init(coordinator: Coordinator) {
+            self.coordinator = coordinator
+            super.init(nibName: nil, bundle: nil)
         }
 
-        /// La vista del controlador que nos contiene — el de ESTA modal, no el raíz de la app.
-        /// Colgarle el gesto al raíz lo dispararía en toda la app.
-        private var enclosingControllerView: UIView? {
-            var responder: UIResponder? = self
-            while let current = responder {
-                if let controller = current as? UIViewController { return controller.view }
-                responder = current.next
-            }
-            return nil
+        @available(*, unavailable) required init?(coder: NSCoder) { fatalError("init(coder:) no se usa") }
+
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            if let host = parent?.view { coordinator.install(on: host) }
+        }
+
+        /// Segundo intento: si al montarnos el padre todavía no existía, aquí ya existe. Sin este
+        /// reintento el modo de falla es «el gesto simplemente no está», sin error ni aviso.
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            if let host = parent?.view { coordinator.install(on: host) }
+        }
+
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+            coordinator.uninstall()
         }
     }
 }
