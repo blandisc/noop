@@ -1,7 +1,8 @@
 import XCTest
 
 /// Captures a screenshot of every main screen in Cénit and saves PNGs to docs/fixtures/.
-/// The HTML screen map at docs/screen-map.html loads these as thumbnails.
+/// `Tools/build-appmap.py` picks a subset of them (its `SHOT_SRC` table) for the state wall
+/// at docs/appmap/ — that wall is the reason these captures exist.
 ///
 /// Run (no simulator pre-launch needed — xcodebuild boots one):
 ///   GIT_CONFIG=/dev/null xcodebuild test \
@@ -9,10 +10,12 @@ import XCTest
 ///     -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
 ///     CODE_SIGNING_ALLOWED=NO \
 ///     -only-testing CenitUITests/CenitScreenshotTests
-/// or just `Tools/update-screen-map.sh`, which also copies the PNGs into docs/fixtures/.
+/// or just `Tools/capture-screens.sh`, which also copies the PNGs into docs/fixtures/.
 ///
 /// Maintenance: when you add/remove/rename a state in a *View.swift, add/update the
-/// corresponding case here and re-run to regenerate the fixtures in the same PR.
+/// corresponding case here and re-run to regenerate the fixtures in the same PR. If the new
+/// state belongs on the wall, add its entry to `SHOT_SRC` too — otherwise the PNG is captured
+/// and never seen.
 ///
 /// ## Two rules that keep this suite from rotting (learned the hard way)
 ///
@@ -234,7 +237,7 @@ final class CenitScreenshotTests: XCTestCase {
         // Seeding writes to the store asynchronously; give it extra time on non-empty states.
         wait(state == "empty" ? 2 : 5)
 
-        // Frame 1 = top (used as the primary fixture thumbnail in screen-map.html)
+        // Frame 1 = top (the frame `SHOT_SRC` maps onto the state wall; the rest are scroll context)
         let prefix = state == "empty" ? "today" : "today_\(state)"
         snap(prefix, app: a)
         for i in 2...4 {

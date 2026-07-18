@@ -510,19 +510,30 @@ Schema lives in `Packages/WhoopStore/Sources/WhoopStore/Database.swift` as a **v
   fixtures rather than requiring a strap.
 - The **app test target** is the app-layer integration suite (run via `xcodebuild … test`).
 
-### The screen map (`docs/screen-map.html`)
+### Screen captures (`docs/fixtures/`)
 
-`CenitUITests/CenitScreenshotTests` captures one PNG per screen into `docs/fixtures/`, which the HTML
-screen map loads as thumbnails. Regenerate with the one command:
+`CenitUITests/CenitScreenshotTests` captures one PNG per screen (and per state) into `docs/fixtures/`.
+Regenerate with the one command:
 
 ```bash
-./Tools/update-screen-map.sh                 # iPhone 17 Pro Max (por defecto)
-./Tools/update-screen-map.sh "iPhone 16"     # otro simulador
+./Tools/capture-screens.sh                 # iPhone 17 Pro Max (por defecto)
+./Tools/capture-screens.sh "iPhone 16"     # otro simulador
 ```
 
 It boots a simulator, so **CI can't run it** — it's manual, and the fixtures are committed. The script
 reports which tests failed and which fixtures it did *not* regenerate, and exits non-zero if either
 happened; a green run is the only run you should commit.
+
+The consumer is the **state wall** (`docs/appmap/`): `Tools/build-appmap.py` picks a subset of these
+raw PNGs — the mapping lives in its `SHOT_SRC` — rescales them, and lays them out as a navigable
+canvas. Its live sibling is `Cenit/App/AppMap.swift`, an Xcode `#Preview` that seeds the *same*
+`ScreenshotFixtures` and renders the real screens without running the harness at all. Adding a state
+worth seeing on the wall means adding a case here **and** an entry to `SHOT_SRC`.
+
+(There used to be a second consumer, `docs/screen-map.html`. It was retired: its screen inventory
+never tracked this suite — over half its entries pointed at PNGs that no capture produced — while the
+script stamped a fresh "Actualizado" date on every run, so it always looked current. If you want that
+kind of index back, generate it *from* the fixtures rather than maintaining a parallel list by hand.)
 
 Two rules keep the suite from silently rotting (both were learned by it rotting):
 

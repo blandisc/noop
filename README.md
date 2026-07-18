@@ -214,7 +214,7 @@ Packages/
   StrandAnalytics/      HRV / recovery / strain / sleep / correlation math + Coach grounding (pure, DB-free)
   StrandImport/         WHOOP CSV + Apple Health importers
   StrandDesign/         SwiftUI design system (palette, components, charts)
-Tools/                  developer scripts (localization, screen-map, protocol decode)
+Tools/                  developer scripts (localization, screen captures, protocol decode)
 Fixtures/               sample WHOOP export for tests
 ```
 

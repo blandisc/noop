@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Regenera los screenshots del mapa de pantallas (docs/screen-map.html).
-# Corre el UI test de iOS, copia los PNGs a docs/fixtures/ y actualiza la fecha
-# del toolbar del mapa. Es el "un solo comando" para mantener el mapa al día.
+# Regenera las capturas de pantalla del repo: corre el UI test de iOS
+# (CenitUITests/CenitScreenshotTests) y copia los PNGs a docs/fixtures/.
+#
+# Quien las consume es el muro de estados: Tools/build-appmap.py toma un
+# subconjunto (su tabla SHOT_SRC), lo reescala y lo acomoda en docs/appmap/.
+# Si agregas un estado que valga la pena ver en el muro, agrégale también su
+# entrada en SHOT_SRC — si no, la captura se genera pero nadie la mira.
 #
 # Uso:
-#   ./Tools/update-screen-map.sh                 # iPhone 17 Pro Max (por defecto)
-#   ./Tools/update-screen-map.sh "iPhone 16"     # otro simulador
+#   ./Tools/capture-screens.sh                 # iPhone 17 Pro Max (por defecto)
+#   ./Tools/capture-screens.sh "iPhone 16"     # otro simulador
 #
 # Requiere: Xcode + un simulador iOS. (El CI no puede correr esto — necesita
 # bootear el simulador — por eso es un comando manual.)
@@ -13,8 +17,8 @@
 # El script SIEMPRE reporta, y sale != 0 si algo falló:
 #   · qué pruebas fallaron (con su razón), en vez de tragárselas y salir 0;
 #   · qué fixtures de docs/ NO se regeneraron en esta corrida (o sea, están viejas).
-# Antes, un `|| true` mal puesto dejaba pasar una corrida parcial en silencio y el
-# mapa mostraba miniaturas viejas sin ningún aviso.
+# Antes, un `|| true` mal puesto dejaba pasar una corrida parcial en silencio y
+# las capturas viejas se quedaban sin ningún aviso.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -95,14 +99,6 @@ if [ "$n" -eq 0 ]; then
   exit 1
 fi
 
-# Sube la fecha 'Actualizado' del toolbar del mapa.
-TODAY="$(date +%F)"
-MAP="$ROOT/docs/screen-map.html"
-if grep -q 'tb-updated' "$MAP" 2>/dev/null; then
-  /usr/bin/sed -i '' -E "s#(Actualizado )[0-9]{4}-[0-9]{2}-[0-9]{2}#\1${TODAY}#" "$MAP"
-  echo "  Fecha del mapa → $TODAY"
-fi
-
 if [ "$xcb_status" -ne 0 ]; then
   echo "" >&2
   echo "✗ La corrida terminó con fallas (xcodebuild status $xcb_status). Log: $LOG" >&2
@@ -110,4 +106,5 @@ if [ "$xcb_status" -ne 0 ]; then
   exit "$xcb_status"
 fi
 
-echo "✓ Listo. Ábrelo con doble clic (docs/screen-map.html) y commitea los cambios en docs/."
+echo "✓ Listo. Para rehacer el muro de estados: python3 Tools/build-appmap.py"
+echo "  Luego commitea los cambios en docs/fixtures/ y docs/appmap/."
