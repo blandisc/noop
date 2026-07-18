@@ -184,6 +184,22 @@ struct RootTabView: View {
     }
 
     /// Tint + floating instrument bar + active-session pill (FER-163 / FER-716).
+    ///
+    /// FER-985 — CASO CERRADO en ~201 ms de type-check, a propósito. Se intentó izar la condición del
+    /// pill (`appModel.strengthSession != nil && !appModel.strengthSheetPresented`) a un `let Bool` con
+    /// tipo explícito fuera del `@ViewBuilder`. Medido, el costo NO se fue: se MOVIÓ y quedó peor.
+    ///
+    ///   antes .... método 201 ms · condición (el `if` de abajo) 196 ms
+    ///   después .. método 291 ms · `.tint` 274 ms · isLightTab 103 ms   ← peor, y dos hotspots nuevos
+    ///
+    /// Es el MISMO desenlace que el intento previo de FER-981 (mover la cadena a una sola función
+    /// genérica: body 284 → rootChrome 309). Partir o izar piezas de esta cadena redistribuye el costo
+    /// entre las expresiones vecinas en vez de bajarlo, porque el costo real no está en la forma de la
+    /// cadena: son accesos al tipo expandido por el macro `@Observable` de `AppModel` — la misma causa
+    /// confirmada por bisección en el `#Preview` de `CuerpoView`. El único arreglo de fondo sería
+    /// adelgazar `AppModel` (17 vistas dependen de él), y no se paga por ~200 ms de build en Debug.
+    ///
+    /// NO lo vuelvas a intentar sin medir antes y después: dos intentos ya salieron peor.
     private func rootChromeOverlays<Content: View>(_ content: Content) -> some View {
         content
         // `.tint` no longer paints the tab bar (it's hidden below; the custom
