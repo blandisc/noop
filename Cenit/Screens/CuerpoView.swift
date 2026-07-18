@@ -1650,12 +1650,14 @@ private struct CuerpoLanding: View {
     repo.setDashboard(days: sample)
 
     // FER-981: izados a `let` (y `AppModel.preview` compartido) para no reconstruirlos por preview.
-    // OJO — esto NO bajó el hotspot de type-check de este preview: sigue en ~237 ms medidos. La causa
-    // real NO es la cadena de modificadores ni construir AppModel, sino el bucle de datos de muestra de
-    // arriba: `DailyMetric(...)` con ~12 argumentos de aritmética mixta Int/Double sobre literales
-    // (`420 + 60 * sin(phase/5)`, `min(max(60 + 30 * sin(...), 10), 99)`), que el type-checker resuelve
-    // como un solo sistema. Si se quiere bajar, hay que anotar tipos ahí. Se dejó pendiente a propósito:
-    // es código DEBUG-only de preview, el de menor valor del inventario.
+    // OJO — esto NO bajó el hotspot de type-check de este preview: sigue en ~237 ms medidos, y la causa
+    // sigue SIN identificar. Se descartaron tres hipótesis con evidencia: (1) la cadena de modificadores
+    // —izarlos a `let` no movió el número—; (2) construir `AppModel()` —cambiarlo por la estática
+    // `AppModel.preview` tampoco—; (3) el bucle de datos de muestra de arriba —refutada porque los
+    // previews de OnboardingWizard e IntervalTimerView NO tienen bucle y cuestan lo mismo (~230 ms)—.
+    // Lo único común a los cuatro previews caros es que referencian `AppModel` (sospecha viva: la
+    // expansión del macro @Observable). Para atacarlo hay que BISECAR con mediciones, no adivinar otra
+    // vez. Se dejó pendiente a propósito: es DEBUG-only de preview, lo de menor valor del inventario.
     let live = LiveState()
     let appModel = AppModel.preview
     let health = HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview")
