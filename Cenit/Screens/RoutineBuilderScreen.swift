@@ -105,6 +105,7 @@ struct RoutineBuilderScreen: View {
                     }
                 )
                 .toolbar(.hidden, for: .navigationBar)   // RestEditorScreen draws its own back/cancel header
+                .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
             }
             // 2c as a push (FER-D): the per-exercise progression plan. Saves on back (Instrumento editor
             // convention); like rest, every change lands on the routine at «Save».
@@ -133,6 +134,7 @@ struct RoutineBuilderScreen: View {
                     }
                 )
                 .toolbar(.hidden, for: .navigationBar)   // ProgressionSetupScreen draws its own back header
+                .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
             }
         }
         .sheet(isPresented: $showLibrary) {

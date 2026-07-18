@@ -172,7 +172,7 @@ struct BreathingView: View {
                     .foregroundStyle(theme.ink)
                 Text("·").foregroundStyle(theme.inkTertiary)
                 Text("\(breathCount) breaths")
-                    .font(StrandFont.captionNumber)
+                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
                     .foregroundStyle(theme.inkSecondary)
             }
         }
@@ -212,7 +212,7 @@ struct BreathingView: View {
     private var paceSelector: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("BREATHE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("BREATHE").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Text("Choose a pace")
                     .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                     .foregroundStyle(theme.ink)
@@ -242,7 +242,7 @@ struct BreathingView: View {
                 }
                 Spacer(minLength: 0)
                 Text(String(format: "%.1f br/min", option.bpm))
-                    .font(StrandFont.captionNumber)
+                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
                     .foregroundStyle(selected ? theme.dataHrv : theme.inkSecondary)
             }
             .padding(CenitMetrics.cardPadding)
@@ -268,10 +268,10 @@ struct BreathingView: View {
         card(padding: 24) {
             VStack(spacing: 18) {
                 HStack {
-                    Text(pace.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(pace.label).groteskOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     Text(String(format: "%.1f br/min", pace.bpm))
-                        .font(StrandFont.captionNumber)
+                        .font(InstrumentoType.groteskNumber(12, weight: .medium))
                         .foregroundStyle(theme.inkSecondary)
                 }
 
@@ -281,7 +281,7 @@ struct BreathingView: View {
 
                 Text(running ? phaseWord : pace.tagline)
                     .font(StrandFont.subhead)
-                    .foregroundStyle(running ? theme.dataRecovery : theme.inkSecondary)
+                    .foregroundStyle(running ? theme.ink : theme.inkSecondary)
                     .animation(.easeInOut(duration: 0.2), value: phaseWord)
                     .animation(.easeInOut(duration: 0.2), value: running)
             }
@@ -388,7 +388,7 @@ struct BreathingView: View {
     // MARK: - Controls
 
     private var controlRow: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: CenitMetrics.gap) {
             Button {
                 running ? stop() : start()
             } label: {
@@ -408,7 +408,7 @@ struct BreathingView: View {
                 model.buzz(loops: 1)
             } label: {
                 Label("Test buzz", systemImage: "waveform.path")
-                    .font(StrandFont.body)
+                    .font(InstrumentoType.groteskHeadline(17))
                     .foregroundStyle(theme.ink)
                     .padding(.vertical, 14)
                     .padding(.horizontal, 14)
@@ -461,7 +461,7 @@ struct BreathingView: View {
                              accent: Color, caption: String) -> some View {
         card(padding: 14) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(label).groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 6)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(value)
@@ -490,7 +490,7 @@ struct BreathingView: View {
         card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Coherence estimate").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Coherence estimate").groteskOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     pill(LocalizedStringKey(coherenceLabel), dotColor: coherenceDotColor)
                 }

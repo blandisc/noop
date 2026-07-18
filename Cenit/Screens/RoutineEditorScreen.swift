@@ -120,6 +120,7 @@ struct RoutineEditorScreen: View {
         }
         .animation(StrandMotion.fade, value: saveError)
         .toolbar(.hidden, for: .navigationBar)
+        .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -150,6 +151,7 @@ struct RoutineEditorScreen: View {
                 }
             )
             .toolbar(.hidden, for: .navigationBar)
+            .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
         }
         // 2c as a push: the per-exercise progression plan (menu «···» → Progresión, mock 4b).
         .navigationDestination(item: $progressionTarget) { t in
@@ -178,6 +180,7 @@ struct RoutineEditorScreen: View {
                 }
             )
             .toolbar(.hidden, for: .navigationBar)
+            .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
         }
         .sheet(isPresented: $showLibrary) {
             ExerciseLibraryScreen { picks in addOrReplace(with: picks) }
