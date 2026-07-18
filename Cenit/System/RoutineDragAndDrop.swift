@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UniformTypeIdentifiers
+import StrandDesign   // InstrumentoTheme, CenitMetrics, StrandMotion
 
 // MARK: - Arrastrar una rutina a otra sección
 //
