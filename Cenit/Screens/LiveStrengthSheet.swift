@@ -208,7 +208,14 @@ struct LiveStrengthSheet: View {
 
     /// The user's resting-HR baseline for the HR rest target (FER-506): the most recent trustworthy nightly
     /// RHR. nil → the rest falls back to the fixed timer (peakDrop/fixedBpm still work via an explicit target).
-    private var restingBaseline: Double? { model.repo.days.compactMap(\.restingHr).last.map(Double.init) }
+    private var restingBaseline: Double? {
+        // Explicit types — breaks the compactMap/last/map(Double.init) inference chain (type-check hotspot).
+        let restingHrs: [Int] = model.repo.days.compactMap(\.restingHr)
+        let last: Int? = restingHrs.last
+        guard let last else { return nil }
+        let baseline: Double = Double(last)
+        return baseline
+    }
     /// Profile HR-max (Tanaka if no override) — the Karvonen ceiling.
     private var profileMaxHR: Double { Double(model.profile.hrMax) }
 
@@ -228,222 +235,306 @@ struct LiveStrengthSheet: View {
     /// guided session.
     private var isEmptyAdHoc: Bool { session.routineId == nil && session.runs.isEmpty }
 
+    // Type-check split (FER-981): `body` was the project’s costliest getter (~359 ms). Chunked into
+    // phase content + chrome + presenters + confirms — same render, smaller expressions for the checker.
     var body: some View {
+        bodyWithConfirms
+    }
+
+    /// Phase content only: nothing-to-save / summary / empty ad-hoc / live inline session.
+    @ViewBuilder
+    private var bodyPhaseContent: some View {
         Group {
             if nothingToSave {
                 nothingToSaveCard
             } else if let summary = session.summary {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                        summaryPhase(summary)
-                    }
-                    .padding(.horizontal, CenitMetrics.screenPadding)
-                    .padding(.top, 18)
-                    .padding(.bottom, CenitMetrics.screenPadding)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                bodySummaryScroll(summary)
             } else if isEmptyAdHoc {
                 emptyAdHocSession
             } else {
                 inlineSession
             }
         }
-        .background(theme.paper.ignoresSafeArea())
-        .instrumentoTheme(theme)
-        .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
-        // FER-969: mid-session routine write failure (insert / superset / progression) — toast only;
-        // the FINAL session save failure is the persistent `saveErrorBanner` above (X-01), not this.
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't save. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
+    }
+
+    @ViewBuilder
+    private func bodySummaryScroll(_ summary: StrengthSummary) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+                summaryPhase(summary)
             }
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.top, 18)
+            .padding(.bottom, CenitMetrics.screenPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .animation(StrandMotion.fade, value: saveError)
-        // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
-        // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
-        .sheet(isPresented: $showLibraryPicker) {
-            // Canvas pass 2026-07-15: sin leyenda (owner call) — el ejercicio se inserta después del
-            // actual y se queda PERMANENTE en la rutina (persistencia abajo en `addExercises`).
-            ExerciseLibraryScreen { picks in
-                showLibraryPicker = false
-                Task { await addExercises(picks) }
+    }
+
+    /// Theme, banners, library picker, rest-anchor onChange — no session sheets yet.
+    private var bodyChrome: some View {
+        bodyPhaseContent
+            .background(theme.paper.ignoresSafeArea())
+            .instrumentoTheme(theme)
+            .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
+            // FER-969: mid-session routine write failure (insert / superset / progression) — toast only;
+            // the FINAL session save failure is the persistent `saveErrorBanner` above (X-01), not this.
+            .overlay(alignment: .top) {
+                bodySaveErrorToast
             }
-            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
-        }
-        .onChange(of: session.phase) { _, phase in
-            if phase != .resting { restAnchorEi = nil }
-        }
-        .sheet(item: $progressionEdit) { target in
-            // r7: la pantalla de progresión COMPLETA (la misma del editor de rutina, con deload e
-            // ignorar-recuperación) — el dueño la recordaba bien; la mini-hoja lean se retira.
-            if session.runs.indices.contains(target.id) {
-                let run = session.runs[target.id]
-                ProgressionSetupScreen(
-                    theme: theme,
-                    exercise: routineREs[run.id] ?? syntheticRE(from: run, position: target.id),
-                    exerciseName: run.name,
-                    currentWeightKg: run.sets.first?.weightKg,
-                    derivedIncrementKg: weightStepKg,
-                    onBack: { progressionEdit = nil },
-                    onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
-                        persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
-                                               sessions: sessions, incrementKg: incrementKg,
-                                               deload: deload, ignoreRecovery: ignoreRecovery)
-                        progressionEdit = nil
-                    }
-                )
-                .padding(.top, CenitMetrics.gap)
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
+            .animation(StrandMotion.fade, value: saveError)
+            // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
+            // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
+            .sheet(isPresented: $showLibraryPicker) {
+                bodyLibraryPickerSheet
             }
-        }
-        .task(id: session.routineId) { await loadRoutineREs() }
-        .sheet(item: $detailExercise) { ex in
-            NavigationStack {
-                ExerciseDetailScreen(exercise: ex)
-                    .toolbar { ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
-                    } }
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(theme.paper, for: .navigationBar)
+            .onChange(of: session.phase) { _, phase in
+                if phase != .resting { restAnchorEi = nil }
             }
-            .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+    }
+
+    @ViewBuilder
+    private var bodySaveErrorToast: some View {
+        if saveError {
+            Text("Couldn't save. Try again.")
+                .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                .foregroundStyle(theme.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .patternBlock(theme, bar: theme.critical)
+                .padding(.horizontal, 16)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .task {
+                    try? await Task.sleep(for: .seconds(4))
+                    saveError = false
+                }
         }
-        .sheet(item: $changeExercise) { target in
-            ChangeExerciseSheet(
-                theme: theme, run: target.run, repo: model.repo,
-                onUse: { ex in
-                    changeExercise = nil
-                    Task {
-                        let last = await model.repo.exerciseHistory(exerciseId: ex.id).last
-                        await MainActor.run {
-                            withAnimation(.snappy) {
-                                session.replaceExercise(at: target.ei, with: ex,
-                                                        lastWeightKg: last?.weightKg, lastReps: last?.reps)
-                            }
+    }
+
+    @ViewBuilder
+    private var bodyLibraryPickerSheet: some View {
+        // Canvas pass 2026-07-15: sin leyenda (owner call) — el ejercicio se inserta después del
+        // actual y se queda PERMANENTE en la rutina (persistencia abajo en `addExercises`).
+        ExerciseLibraryScreen { picks in
+            showLibraryPicker = false
+            Task { await addExercises(picks) }
+        }
+        .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+    }
+
+    /// Progression / detail / change / rest·plates·RPE·note (focus-silenced) + fullScreen covers.
+    private var bodyPresenters: some View {
+        bodyChrome
+            .sheet(item: $progressionEdit) { target in
+                bodyProgressionSheet(target)
+            }
+            .task(id: session.routineId) { await loadRoutineREs() }
+            .sheet(item: $detailExercise) { ex in
+                bodyDetailSheet(ex)
+            }
+            .sheet(item: $changeExercise) { target in
+                bodyChangeSheet(target)
+            }
+            // r15: durante el modo foco estos cuatro presentadores externos se SILENCIAN (binding
+            // constante nil) — el cover cuelga sus propias copias adentro; dos presentadores vivos
+            // sobre el mismo estado peleaban la presentación y tumbaban el foco a la pantalla base.
+            .sheet(item: focusMode ? .constant(nil) : $restEdit) { edit in
+                restEditorSheet(edit)
+            }
+            .sheet(item: focusMode ? .constant(nil) : $platesTarget) { target in
+                platesSheet(target)
+            }
+            .sheet(item: focusMode ? .constant(nil) : $rpeTarget) { target in
+                rpeSheet(target)
+            }
+            .sheet(item: focusMode ? .constant(nil) : $noteTarget) { target in
+                noteSheet(target)
+            }
+            .fullScreenCover(item: $shareReceipt) { ref in
+                bodyShareCover(ref)
+            }
+            .fullScreenCover(isPresented: $focusMode) {
+                bodyFocusCover
+            }
+    }
+
+    @ViewBuilder
+    private func bodyProgressionSheet(_ target: ProgressionEditTarget) -> some View {
+        // r7: la pantalla de progresión COMPLETA (la misma del editor de rutina, con deload e
+        // ignorar-recuperación) — el dueño la recordaba bien; la mini-hoja lean se retira.
+        if session.runs.indices.contains(target.id) {
+            let run = session.runs[target.id]
+            ProgressionSetupScreen(
+                theme: theme,
+                exercise: routineREs[run.id] ?? syntheticRE(from: run, position: target.id),
+                exerciseName: run.name,
+                currentWeightKg: run.sets.first?.weightKg,
+                derivedIncrementKg: weightStepKg,
+                onBack: { progressionEdit = nil },
+                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                    persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
+                                           sessions: sessions, incrementKg: incrementKg,
+                                           deload: deload, ignoreRecovery: ignoreRecovery)
+                    progressionEdit = nil
+                }
+            )
+            .padding(.top, CenitMetrics.gap)
+            .presentationDragIndicator(.visible)
+            .presentationBackground(theme.paper)
+            .preferredColorScheme(.light)
+        }
+    }
+
+    @ViewBuilder
+    private func bodyDetailSheet(_ ex: Exercise) -> some View {
+        NavigationStack {
+            ExerciseDetailScreen(exercise: ex)
+                .toolbar { ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
+                } }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(theme.paper, for: .navigationBar)
+        }
+        .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+    }
+
+    @ViewBuilder
+    private func bodyChangeSheet(_ target: ChangeTarget) -> some View {
+        ChangeExerciseSheet(
+            theme: theme, run: target.run, repo: model.repo,
+            onUse: { ex in
+                changeExercise = nil
+                Task {
+                    let last = await model.repo.exerciseHistory(exerciseId: ex.id).last
+                    await MainActor.run {
+                        withAnimation(.snappy) {
+                            session.replaceExercise(at: target.ei, with: ex,
+                                                    lastWeightKg: last?.weightKg, lastReps: last?.reps)
                         }
                     }
-                },
-                onClose: { changeExercise = nil }
+                }
+            },
+            onClose: { changeExercise = nil }
+        )
+        .instrumentoTheme(theme).preferredColorScheme(.light)
+        .presentationBackground(theme.paper)
+    }
+
+    @ViewBuilder
+    private func bodyShareCover(_ ref: ShareRef) -> some View {
+        if let summary = session.summary {
+            ReceiptPrinterScreen(
+                theme: theme,
+                summary: summary,
+                sessionId: ref.sessionId,
+                onClose: { shareReceipt = nil }
             )
-            .instrumentoTheme(theme).preferredColorScheme(.light)
-            .presentationBackground(theme.paper)
+            .environment(model)
         }
-        // r15: durante el modo foco estos cuatro presentadores externos se SILENCIAN (binding
-        // constante nil) — el cover cuelga sus propias copias adentro; dos presentadores vivos
-        // sobre el mismo estado peleaban la presentación y tumbaban el foco a la pantalla base.
-        .sheet(item: focusMode ? .constant(nil) : $restEdit) { edit in
-            restEditorSheet(edit)
-        }
-        .sheet(item: focusMode ? .constant(nil) : $platesTarget) { target in
-            platesSheet(target)
-        }
-        .sheet(item: focusMode ? .constant(nil) : $rpeTarget) { target in
-            rpeSheet(target)
-        }
-        .sheet(item: focusMode ? .constant(nil) : $noteTarget) { target in
-            noteSheet(target)
-        }
-        .fullScreenCover(item: $shareReceipt) { ref in
-            if let summary = session.summary {
-                ReceiptPrinterScreen(
-                    theme: theme,
-                    summary: summary,
-                    sessionId: ref.sessionId,
-                    onClose: { shareReceipt = nil }
-                )
-                .environment(model)
+    }
+
+    @ViewBuilder
+    private var bodyFocusCover: some View {
+        // r15: TODA la interacción del foco ocurre DENTRO del cover — discos, RPE, nota y el
+        // editor de descanso cuelgan aquí (los presentadores externos quedan silenciados
+        // mientras el foco está arriba). Un sheet presentado desde la base tumbaba el cover.
+        focusModeView
+            .sheet(item: $platesTarget) { target in
+                platesSheet(target)
             }
-        }
-        .fullScreenCover(isPresented: $focusMode) {
-            // r15: TODA la interacción del foco ocurre DENTRO del cover — discos, RPE, nota y el
-            // editor de descanso cuelgan aquí (los presentadores externos quedan silenciados
-            // mientras el foco está arriba). Un sheet presentado desde la base tumbaba el cover.
-            focusModeView
-                .sheet(item: $platesTarget) { target in
-                    platesSheet(target)
-                }
-                .sheet(item: $rpeTarget) { target in
-                    rpeSheet(target)
-                }
-                .sheet(item: $noteTarget) { target in
-                    noteSheet(target)
-                }
-                .sheet(item: $restEdit) { edit in
-                    restEditorSheet(edit)
-                }
-        }
-        // S-2 (FER-830) → FER-837: one destructive-confirmation pattern across the flow, now the
-        // «Instrumento» ConfirmCard. The stay-safe verb names its action («Keep training»), never a
-        // generic cancel; destructive is always the red outline.
-        .instrumentoConfirm(
-            isPresented: $confirmFinish,
-            title: String(localized: "Finish workout?"),
-            context: String(localized: "SESSION · IN PROGRESS"),
-            message: session.doneCount == 0
-                ? String(localized: "You haven't logged any sets yet.")
-                : (session.pendingCount > 0
-                   ? String(localized: "\(session.pendingCount) sets aren't logged yet. Save keeps them; discard deletes everything.")
-                   : String(localized: "Save keeps this workout. Discard deletes everything you logged.")),
-            // r20 (auditoría UX #2): con 0 series «Guardar» descartaba en silencio (el modelo exige
-            // doneCount > 0) — el botón hacía lo contrario de lo que decía. Sin series: quedarse es
-            // la primaria y descartar la destructiva; guardar solo existe cuando hay qué guardar.
-            actions: session.doneCount == 0
-                ? [
+            .sheet(item: $rpeTarget) { target in
+                rpeSheet(target)
+            }
+            .sheet(item: $noteTarget) { target in
+                noteSheet(target)
+            }
+            .sheet(item: $restEdit) { edit in
+                restEditorSheet(edit)
+            }
+    }
+
+    /// Destructive confirms (finish / discard / superset steal) — last layer on `body`.
+    private var bodyWithConfirms: some View {
+        bodyPresenters
+            // S-2 (FER-830) → FER-837: one destructive-confirmation pattern across the flow, now the
+            // «Instrumento» ConfirmCard. The stay-safe verb names its action («Keep training»), never a
+            // generic cancel; destructive is always the red outline.
+            .instrumentoConfirm(
+                isPresented: $confirmFinish,
+                title: String(localized: "Finish workout?"),
+                context: String(localized: "SESSION · IN PROGRESS"),
+                message: bodyFinishConfirmMessage,
+                // r20 (auditoría UX #2): con 0 series «Guardar» descartaba en silencio (el modelo exige
+                // doneCount > 0) — el botón hacía lo contrario de lo que decía. Sin series: quedarse es
+                // la primaria y descartar la destructiva; guardar solo existe cuando hay qué guardar.
+                actions: bodyFinishConfirmActions
+            )
+            .instrumentoConfirm(
+                isPresented: $confirmDiscard,
+                title: String(localized: "Discard workout?"),
+                context: String(localized: "SESSION · IN PROGRESS"),
+                message: String(localized: "Everything you logged in this session will be deleted. This can't be undone."),
+                actions: [
                     .init(String(localized: "Keep training"), role: .primary),
                     .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
                 ]
-                : [
-                    .init(String(localized: "Save workout"), role: .primary) { model.endStrengthSession(save: true) },
-                    .init(String(localized: "Keep training"), role: .secondary),
-                    .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
+            )
+            // r21 (auditoría UX #5a): emparejar con un vecino que YA es de otra superserie deshace
+            // aquella pareja — se confirma con su nombre en la mano, nunca en silencio.
+            .instrumentoConfirm(
+                isPresented: Binding(get: { confirmSupersetSteal != nil },
+                                     set: { if !$0 { confirmSupersetSteal = nil } }),
+                title: String(localized: "Break its current superset?"),
+                context: String(localized: "SESSION · IN PROGRESS"),
+                message: bodySupersetStealMessage,
+                actions: [
+                    .init(String(localized: "Pair here"), role: .primary) {
+                        if let ei = confirmSupersetSteal {
+                            withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
+                            persistSupersetGroups()   // r30: también el robo consentido queda en la rutina
+                        }
+                        confirmSupersetSteal = nil
+                    },
+                    .init(String(localized: "Keep as is"), role: .secondary)
                 ]
-        )
-        .instrumentoConfirm(
-            isPresented: $confirmDiscard,
-            title: String(localized: "Discard workout?"),
-            context: String(localized: "SESSION · IN PROGRESS"),
-            message: String(localized: "Everything you logged in this session will be deleted. This can't be undone."),
-            actions: [
+            )
+    }
+
+    private var bodyFinishConfirmMessage: String {
+        if session.doneCount == 0 {
+            return String(localized: "You haven't logged any sets yet.")
+        }
+        if session.pendingCount > 0 {
+            return String(localized: "\(session.pendingCount) sets aren't logged yet. Save keeps them; discard deletes everything.")
+        }
+        return String(localized: "Save keeps this workout. Discard deletes everything you logged.")
+    }
+
+    private var bodyFinishConfirmActions: [InstrumentoConfirmAction] {
+        if session.doneCount == 0 {
+            return [
                 .init(String(localized: "Keep training"), role: .primary),
                 .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
             ]
-        )
-        // r21 (auditoría UX #5a): emparejar con un vecino que YA es de otra superserie deshace
-        // aquella pareja — se confirma con su nombre en la mano, nunca en silencio.
-        .instrumentoConfirm(
-            isPresented: Binding(get: { confirmSupersetSteal != nil },
-                                 set: { if !$0 { confirmSupersetSteal = nil } }),
-            title: String(localized: "Break its current superset?"),
-            context: String(localized: "SESSION · IN PROGRESS"),
-            message: String(format: String(localized: "%@ is already paired in another superset. Pairing it here undoes that one."),
-                            confirmSupersetSteal.flatMap { session.runs.indices.contains($0 + 1) ? session.runs[$0 + 1].name : nil } ?? ""),
-            actions: [
-                .init(String(localized: "Pair here"), role: .primary) {
-                    if let ei = confirmSupersetSteal {
-                        withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
-                        persistSupersetGroups()   // r30: también el robo consentido queda en la rutina
-                    }
-                    confirmSupersetSteal = nil
-                },
-                .init(String(localized: "Keep as is"), role: .secondary)
-            ]
-        )
+        }
+        return [
+            .init(String(localized: "Save workout"), role: .primary) { model.endStrengthSession(save: true) },
+            .init(String(localized: "Keep training"), role: .secondary),
+            .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
+        ]
+    }
+
+    private var bodySupersetStealMessage: String {
+        let neighborName: String = confirmSupersetSteal.flatMap { ei -> String? in
+            let next: Int = ei + 1
+            guard session.runs.indices.contains(next) else { return nil }
+            return session.runs[next].name
+        } ?? ""
+        return String(format: String(localized: "%@ is already paired in another superset. Pairing it here undoes that one."),
+                      neighborName)
     }
 
     // MARK: Inline session (the default view — the Hevy-style logging table, FER-497)
 
+    // Type-check split (FER-981): stack / row / chrome pieces keep inference off the ~136 ms getter.
     private var inlineSession: some View {
         // r18: ScrollView + VStack, ya NO `List` — the List's cells carried unpredictable per-row
         // slack that broke the rail thread at a different seam every round (r7–r17 chased it seam by
@@ -454,47 +545,14 @@ struct LiveStrengthSheet: View {
         // Canvas pass 2026-07-15 (sugerencia 3): the jump to the next exercise is NARRATED — when the
         // guided focus moves, the list scrolls the new active card into view instead of teleporting.
         ScrollViewReader { proxy in
-        ScrollView {
-        VStack(alignment: .leading, spacing: 0) {
-            // FER-933: modo mover — every exercise compresses to a draggable row with a «SOLTAR AQUÍ ·
-            // POSICIÓN N» drop zone; the accordion (`activeExerciseBlock`) stays closed for the duration.
-            if reorderMode { reorderModeBar.plainRow(top: CenitMetrics.gap, bottom: 4).transition(.opacity) }
-            ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
-                if !run.skipped {
-                    if reorderMode {
-                        // UX·anim #3: mode changes fade explicitly — the row TYPE swap (riel ↔ mover)
-                        // had no declared transition and read as a flicker.
-                        reorderRow(run, ei: ei).plainRow(top: 4, bottom: 4).transition(.opacity)
-                    } else {
-                        switch railState(ei: ei, run: run) {
-                        case .active:
-                            activeExerciseBlock(run, ei: ei)
-                        case .done:
-                            doneRow(run, ei: ei)
-                                .plainRow()
-                                // anim r7: al completarse, la fila «se guarda» — entra desde arriba
-                                // con fade, como asentándose en el riel.
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .top).combined(with: .opacity),
-                                    removal: .opacity))
-                        case .upcoming:
-                            comingRow(run, ei: ei)
-                                .plainRow()
-                                .transition(.opacity)
-                        }
-                    }
-                }
-            }
-            if !reorderMode {
-                // Canvas pass 2026-07-15: no top inset — an inset is a HOLE in the rail thread; the
-                // node's breathing lives in its own taller row so the line arrives unbroken.
-                addExerciseNode.plainRow()
-                // FER-952 (owner): the tail breathed 28+12+24 — tightened to the compact rhythm; the
-                // stats bar below already separates the list from the edge.
-                if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.gap) }
-                discardFooter.plainRow(top: 4, bottom: CenitMetrics.gap)
-            }
+            inlineSessionScroll(proxy: proxy)
         }
+    }
+
+    /// Scroll + chrome (head / keypad|stats / cell + accordion onChange). Row stack lives below.
+    private func inlineSessionScroll(proxy: ScrollViewProxy) -> some View {
+        ScrollView {
+            inlineSessionStack
         }
         .onAppear { scrollProxy = proxy }
         .background(theme.paper)
@@ -503,7 +561,7 @@ struct LiveStrengthSheet: View {
         .animation(StrandMotion.gentle, value: accordionIndex)
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if let cell = activeCell { keypad(for: cell) } else { statsBar }
+            inlineSessionBottomInset
         }
         .onChange(of: activeCell) { _, newValue in
             // Seed the buffer from the newly-active cell's current value (replace-on-first-keystroke), and
@@ -524,6 +582,61 @@ struct LiveStrengthSheet: View {
                 proxy.scrollTo("session-exercise-\(newIndex)", anchor: .center)
             }
         }
+    }
+
+    @ViewBuilder
+    private var inlineSessionBottomInset: some View {
+        if let cell = activeCell { keypad(for: cell) } else { statsBar }
+    }
+
+    /// Exercise list + reorder bar + add/complete/discard footers (no chrome).
+    @ViewBuilder
+    private var inlineSessionStack: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // FER-933: modo mover — every exercise compresses to a draggable row with a «SOLTAR AQUÍ ·
+            // POSICIÓN N» drop zone; the accordion (`activeExerciseBlock`) stays closed for the duration.
+            if reorderMode { reorderModeBar.plainRow(top: CenitMetrics.gap, bottom: 4).transition(.opacity) }
+            ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
+                if !run.skipped {
+                    inlineSessionRow(run: run, ei: ei)
+                }
+            }
+            if !reorderMode {
+                // Canvas pass 2026-07-15: no top inset — an inset is a HOLE in the rail thread; the
+                // node's breathing lives in its own taller row so the line arrives unbroken.
+                addExerciseNode.plainRow()
+                // FER-952 (owner): the tail breathed 28+12+24 — tightened to the compact rhythm; the
+                // stats bar below already separates the list from the edge.
+                if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.gap) }
+                discardFooter.plainRow(top: 4, bottom: CenitMetrics.gap)
+            }
+        }
+    }
+
+    /// One exercise row in reorder mode or accordion (active / done / upcoming).
+    @ViewBuilder
+    private func inlineSessionRow(run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        if reorderMode {
+            // UX·anim #3: mode changes fade explicitly — the row TYPE swap (riel ↔ mover)
+            // had no declared transition and read as a flicker.
+            reorderRow(run, ei: ei).plainRow(top: 4, bottom: 4).transition(.opacity)
+        } else {
+            switch railState(ei: ei, run: run) {
+            case .active:
+                activeExerciseBlock(run, ei: ei)
+            case .done:
+                doneRow(run, ei: ei)
+                    .plainRow()
+                    // anim r7: al completarse, la fila «se guarda» — entra desde arriba
+                    // con fade, como asentándose en el riel.
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .opacity))
+            case .upcoming:
+                comingRow(run, ei: ei)
+                    .plainRow()
+                    .transition(.opacity)
+            }
         }
     }
 
@@ -3330,9 +3443,16 @@ struct LiveStrengthSheet: View {
     /// «+ Serie»; reuses the editor's ramp and the model's `insertWarmup`).
     private func addWarmupRamp(_ ei: Int) {
         guard session.runs.indices.contains(ei) else { return }
-        let top = session.runs[ei].sets.first(where: { $0.kind == .work })?.weightKg
-            ?? session.runs[ei].sets.first?.weightKg ?? 0
-        let ramp = [0.4, 0.6, 0.8].map { (weightKg: top * $0, reps: 10) }
+        // Explicit types — breaks mixed Double/tuple/map inference (type-check hotspot).
+        let workWeight: Double? = session.runs[ei].sets.first(where: { $0.kind == .work })?.weightKg
+        let firstWeight: Double? = session.runs[ei].sets.first?.weightKg
+        let top: Double = workWeight ?? firstWeight ?? 0
+        let factors: [Double] = [0.4, 0.6, 0.8]
+        let ramp: [(weightKg: Double, reps: Int)] = factors.map { factor -> (weightKg: Double, reps: Int) in
+            let weightKg: Double = top * factor
+            let reps: Int = 10
+            return (weightKg: weightKg, reps: reps)
+        }
         withAnimation(StrandMotion.gentle) { session.insertWarmup(exercise: ei, sets: ramp) }
     }
 
