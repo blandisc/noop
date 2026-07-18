@@ -20,6 +20,13 @@ public enum WhoopModel: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    /// Whether this band ESTIMATES daily steps from motion instead of reading a native counter
+    /// (FER-663). FER-993 (D3): the façade the non-BLE layers read, so the intelligence engine and
+    /// Settings get the bit without importing the protocol module (whose family type carries the GATT
+    /// UUIDs and the CLIENT_HELLO bytes). Still derived — never re-stated — from the protocol layer's
+    /// own rule, so the two can't drift.
+    public var estimatesSteps: Bool { deviceFamily.estimatesSteps }
+
     /// The model the user last chose, read from the same key the pickers write
     /// (`@AppStorage("selectedWhoopModel")`). Used as the default for scans the user
     /// didn't directly trigger — BLE state restoration, power-on reconnect — so those

@@ -253,7 +253,7 @@ private struct AjustesLanding: View {
                      a11y: "Maximum heart rate, \(maxHRDisplay)") { showMaxHR = true }
             // Pasos por banda: la 4.0 ESTIMA pasos del movimiento (FER-663); el 5/MG lee un contador
             // NATIVO que sobre-cuenta y se calibra con un divisor (FER-665). Cada banda ve solo la suya.
-            if WhoopModel.persisted.deviceFamily.estimatesSteps {
+            if WhoopModel.persisted.estimatesSteps {
                 divider
                 valueRow("Steps estimate", value: stepsCalDisplay,
                          a11y: "Steps estimate, \(stepsCalDisplay)") { showStepsCal = true }
