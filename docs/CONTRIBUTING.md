@@ -211,6 +211,14 @@ It is opt-in on purpose — macOS runners bill at 10× and this account has hit 
 limits — so reach for the label on any PR whose app-layer changes deserve a machine check
 (refactors, wide sweeps, anything merged without a local build). (FER-973)
 
+The check runs `build-for-testing`, so it compiles the **test targets** (`CenitUnitTests`,
+`CenitUITests`) as well as the app and its extensions. That matters more than it sounds: a plain
+`build` never touches the test targets, so a stale call site in a test compiles nowhere in CI and
+only surfaces when a human runs the harness — and because `xcodebuild test` builds *every* test
+target even under `-only-testing`, one rotten line takes down the whole screenshot harness
+(`Tools/update-screen-map.sh`, `iterate-shot.sh`, `capture-appmap.sh`). It only compiles: no
+simulator is booted and no test is executed. (FER-986)
+
 ### Before you push
 
 - `swift test` passes in every package you touched (and the app's test target if you touched the
