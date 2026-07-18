@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 import StrandAnalytics
 
 /// Pins FER-224: `DailyStressModel` must anchor "today" to the device's LOCAL day and ignore a

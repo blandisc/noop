@@ -1,6 +1,6 @@
 import XCTest
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// FER-692 (#150): the `trim=0xFFFFFFFF` "no valid flash cursor" sentinel. A fully-drained WHOOP 4.0

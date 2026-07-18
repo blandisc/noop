@@ -1,6 +1,6 @@
 import Foundation
 
-// Value models for the strength tracker. Pure (Codable, Sendable) — WhoopStore adds
+// Value models for the strength tracker. Pure (Codable, Sendable) — CenitStore adds
 // GRDB persistence by extension (so GRDB never enters this package); the app and
 // StrandAnalytics consume them directly. Ids are UUID strings (user-authored,
 // relational data — unlike the sensor streams keyed by (deviceId, ts)). (FER-345)
@@ -150,7 +150,7 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     public var position: Int
     /// The per-set prescription — the source of truth for reps/weight since FER-492. Each work set
     /// carries its own reps and weight (Hevy-style). `targetSets/targetReps/targetWeightKg` below are
-    /// kept as derived compatibility fields (WhoopStore mirrors the first work set + count into them).
+    /// kept as derived compatibility fields (CenitStore mirrors the first work set + count into them).
     public var sets: [RoutineSet]
     public var targetSets: Int
     public var targetReps: Int?
@@ -295,7 +295,7 @@ public struct SetEntry: Codable, Sendable, Identifiable, Equatable {
 
 /// A durable snapshot of a strength session **in progress** (FER-798) — everything the app needs to
 /// rebuild the live session after a crash/kill so the Apple Watch's `.end` still finds it and the
-/// receipt is saved. Pure/`Codable` (lives here, not in the app) so `WhoopStore` can persist it without
+/// receipt is saved. Pure/`Codable` (lives here, not in the app) so `CenitStore` can persist it without
 /// importing the UI model. Captures only what can't be recomputed: the plan, the logged sets, the focus,
 /// and the in-flight rest/stopwatch. Deliberately omits `hrSamples` (memory-only by design), the receipt
 /// (once there's a summary the session is already saved), and the phase (derivable from `restEndsAt`).
@@ -438,7 +438,7 @@ public enum PRMetric: String, Codable, Sendable {
 }
 
 /// The best observed work set for an exercise on a given metric. Derived/updated by
-/// WhoopStore when a session is saved; read cheaply by the library/detail screens.
+/// CenitStore when a session is saved; read cheaply by the library/detail screens.
 public struct PersonalRecord: Codable, Sendable, Identifiable, Equatable {
     /// "<exerciseId>:<metric>" so there is exactly one PR row per exercise per metric.
     public var id: String

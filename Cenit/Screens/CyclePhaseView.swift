@@ -1,7 +1,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 // CyclePhaseView.swift — the opt-in «Fase del ciclo» experiment surface (FER-672). Lives in Ajustes →
 // Experiments, OFF by default. A tap opens the consent screen (declares what it is and is NOT); only an

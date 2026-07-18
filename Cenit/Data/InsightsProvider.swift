@@ -1,6 +1,6 @@
 import Foundation
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 /// La lista rankeada de `Insight` — UNA sola fuente para Patrones (BucleView) y «La conexión de hoy» del
 /// Daily Brief (FER-614), para que la correlación que muestra el brief sea EXACTAMENTE la misma (misma

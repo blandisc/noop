@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// FER-881: pins `IntelligenceEngine.computedDailiesChanged`, the pure seam that gates `repo.refresh()`

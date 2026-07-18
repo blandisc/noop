@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 // MARK: - Sleep Regularity Index (SRI) — FER-214
 //

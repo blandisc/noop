@@ -14,7 +14,7 @@ import Foundation
 // Parsing is intentionally manual (JSONSerialization, not synthesized Decodable) so each
 // validation failure maps to a precise `DietPlanParseError` and unknown fields are ignored
 // for forward-compatibility. The Codable conformance is used only to RE-ENCODE a validated
-// plan into the canonical payload that WhoopStore persists.
+// plan into the canonical payload that CenitStore persists.
 
 /// The content language of a plan, detected by the producer. Not the app's UI language.
 public enum DietPlanLanguage: String, Codable, Sendable, Equatable, CaseIterable {
@@ -170,7 +170,7 @@ public enum DietPlanParseError: Error, Equatable, Sendable, CustomStringConverti
 
 /// Parses and validates a `noop.diet.v1` payload (from any producer) into a `DietPlan`.
 /// Parse-only — it does not touch the database (mirrors `AppleHealthImporter`). Persistence
-/// is wired separately (see `makeDietPlanRow` + WhoopStore).
+/// is wired separately (see `makeDietPlanRow` + CenitStore).
 public struct DietPlanImporter {
 
     public init() {}

@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// Pins the FER-486 sleep merge: strap (imported wins over computed on the same startTs) is the base,

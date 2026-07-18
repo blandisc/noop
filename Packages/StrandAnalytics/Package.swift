@@ -7,12 +7,12 @@ let package = Package(
     products: [.library(name: "StrandAnalytics", type: .static, targets: ["StrandAnalytics"])],
     dependencies: [
         .package(path: "../WhoopProtocol"),
-        .package(path: "../WhoopStore"),
+        .package(path: "../CenitStore"),
     ],
     targets: [
         .target(
             name: "StrandAnalytics",
-            dependencies: ["WhoopProtocol", "WhoopStore"],
+            dependencies: ["WhoopProtocol", "CenitStore"],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(

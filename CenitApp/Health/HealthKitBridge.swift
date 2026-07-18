@@ -5,12 +5,12 @@ import HealthKit
 import StrandAnalytics
 import StrandImport
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 
 /// Two-way Apple Health bridge for the iOS app.
 ///
 /// iOS has HealthKit (macOS does not), so the iOS target can do far more than parse a static export:
-/// it reads the user's own Health data live and maps it onto the **same** `WhoopStore` rows the
+/// it reads the user's own Health data live and maps it onto the **same** `CenitStore` rows the
 /// macOS importer produces (under the `apple-health` source id), and it writes NOOP-computed metrics
 /// back into Apple Health. Everything stays on-device and strictly opt-in.
 @MainActor
@@ -492,7 +492,7 @@ final class HealthKitBridge: ObservableObject {
     // MARK: - Strength session → Apple Health (FER-390)
 
     /// Write a finished guided strength session into Apple Health as an `HKWorkout`, but only when the
-    /// user opted in. Best-effort and **non-throwing**: the session is already persisted in `WhoopStore`
+    /// user opted in. Best-effort and **non-throwing**: the session is already persisted in `CenitStore`
     /// (the source of truth), so a Health failure must never throw to the caller or block the session.
     /// Idempotent by external UUID — re-saving the same session replaces its prior workout instead of
     /// duplicating it. The estimated active-energy sample inside `[start, end]` is what lets the iPhone's
@@ -548,7 +548,7 @@ final class HealthKitBridge: ObservableObject {
         }
     }
 
-    private func writeBack(whoopStore: WhoopStore, days: Int = 14) async throws {
+    private func writeBack(whoopStore: CenitStore, days: Int = 14) async throws {
         guard auth == .authorized else { return }
         let cal = Calendar.current
         let to = HealthKitBridge.dayString(Date())

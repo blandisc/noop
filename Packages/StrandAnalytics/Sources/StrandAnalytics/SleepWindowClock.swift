@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 // MARK: - Sleep window as clock hours (FER-154)
 //

@@ -1,6 +1,6 @@
 #if DEBUG && os(iOS)
 import SwiftUI
-import WhoopStore
+import CenitStore
 import StrandTraining
 import StrandDesign
 

@@ -1,7 +1,7 @@
 import XCTest
 @testable import Cenit
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 
 /// FER-693: `RawHistoryArchive.replay` re-decodes the durable reject archive through the CURRENT decoder
 /// and inserts whatever now decodes — the only path by which already-acked banked history backfills after

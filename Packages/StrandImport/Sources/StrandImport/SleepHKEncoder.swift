@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 /// Descriptor for a single Apple Health sleep sample — platform-agnostic so the
 /// mapping logic is testable on macOS without a HealthKit import.
@@ -16,7 +16,7 @@ public struct SleepHKSample: Equatable {
     }
 }
 
-/// Maps `CachedSleepSession` records from WhoopStore into `SleepHKSample` descriptors
+/// Maps `CachedSleepSession` records from CenitStore into `SleepHKSample` descriptors
 /// that `HealthKitBridge` (iOS-only) writes to `HKHealthStore`.
 ///
 /// Keeping this encoder separate from the bridge means the stage-mapping and

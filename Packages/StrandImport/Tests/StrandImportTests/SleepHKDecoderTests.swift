@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import StrandImport
 
 // Pins FER-486 (F3 of FER-483): the pure HK→NOOP sleep decode that HealthKitBridge

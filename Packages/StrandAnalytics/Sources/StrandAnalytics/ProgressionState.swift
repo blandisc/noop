@@ -22,7 +22,7 @@ import Foundation
 // the raise simply waits for the next session.
 //
 // Pure & framework-free: primitives in, enum out. The caller (the app layer) builds `ProgressionInput`
-// from WhoopStore history and the routine plan, mirroring `OneRepMax`.
+// from CenitStore history and the routine plan, mirroring `OneRepMax`.
 
 /// The progression verdict for one exercise. `.deferred` is a `.readyToAdvance` that today's low recovery
 /// is holding back — the raise is earned, it just waits.

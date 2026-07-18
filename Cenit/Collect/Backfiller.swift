@@ -1,11 +1,11 @@
 import Foundation
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 
 // MARK: - BackfillStoreWriting protocol
 
 /// The async subset the Backfiller needs. Plain async protocol (not @MainActor) so both the
-/// real WhoopStore actor and a @MainActor SpyBackfillStore in tests can satisfy it.
+/// real CenitStore actor and a @MainActor SpyBackfillStore in tests can satisfy it.
 protocol BackfillStoreWriting: AnyObject {
     @discardableResult
     func insert(_ streams: Streams, deviceId: String) async throws
@@ -16,7 +16,7 @@ protocol BackfillStoreWriting: AnyObject {
     func cursor(_ name: String) async throws -> Int?
 }
 
-extension WhoopStore: BackfillStoreWriting {}
+extension CenitStore: BackfillStoreWriting {}
 
 // MARK: - Backfiller
 

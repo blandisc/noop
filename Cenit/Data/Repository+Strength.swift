@@ -1,13 +1,13 @@
 import Foundation
 import StrandAnalytics
 import StrandTraining
-import WhoopStore
+import CenitStore
 
 // Repository+Strength.swift — read/write pass-throughs to the strength tracker (FER-346).
 //
-// Thin async wrappers over the `WhoopStore` strength API (FER-345), mirroring `Repository+Goal`:
+// Thin async wrappers over the `CenitStore` strength API (FER-345), mirroring `Repository+Goal`:
 // no logic here, just `storeHandle()` + a clean call. The strength screens (builder / library /
-// detail) talk to the store only through these, so they never hold a `WhoopStore` of their own.
+// detail) talk to the store only through these, so they never hold a `CenitStore` of their own.
 // All return empty/no-op when the store can't be opened (same contract as the rest of Repository).
 
 extension Repository {

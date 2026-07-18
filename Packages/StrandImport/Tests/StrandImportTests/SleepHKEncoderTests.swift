@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import StrandImport
 
 // Pins FER-103: the pure stage-mapping and key-generation logic that HealthKitBridge

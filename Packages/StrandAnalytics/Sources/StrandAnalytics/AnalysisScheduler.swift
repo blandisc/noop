@@ -6,7 +6,7 @@ import Foundation
 // the stream writers only ever `INSERT … ON CONFLICT DO NOTHING` (never UPDATE in place), so a
 // day's COUNT(*) grows iff genuinely-new rows landed — a backfill that fills a gap moves the COUNT
 // even when it doesn't move MAX(ts) — and the safe-trim that deletes rows LOWERS it: both directions
-// read as dirty. Pure and DB-free: the counts come from `WhoopStore.streamDayCounts`.
+// read as dirty. Pure and DB-free: the counts come from `CenitStore.streamDayCounts`.
 public enum AnalysisScheduler {
 
     /// The dirtiness signature of one night's read window: for every (stream, local epoch-day) the

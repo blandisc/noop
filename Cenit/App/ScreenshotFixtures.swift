@@ -1,7 +1,7 @@
 #if DEBUG
 import Foundation
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 import StrandAnalytics
 import StrandTraining
 
@@ -337,7 +337,7 @@ enum ScreenshotFixtures {
     /// plus a dense 8-week bench progression (2 sessions/week, a raise every ~2) so «Detalle · Progreso»
     /// draws real charts — 1RM trend, best-set sparkline, weekly volume bars — and «Historial» shows
     /// day blocks with set chips + the RÉCORD badge on today (FER-951).
-    private static func seedSessions(store: WhoopStore, pushId: String, pullId: String, legsId: String) async {
+    private static func seedSessions(store: CenitStore, pushId: String, pullId: String, legsId: String) async {
         let cal = Calendar(identifier: .gregorian)
         /// Matches `AppModel.deviceId`, so `Repository.workoutRows` joins the journal row (zones/max HR).
         let journalDeviceId = "my-whoop"

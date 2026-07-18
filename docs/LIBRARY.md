@@ -23,11 +23,11 @@ These packages build on prior community reverse-engineering and
 interoperability work:
 
 - **`johnmiddleton12/my-whoop`** — the WHOOP 4.0 BLE framing, command/decode,
-  and collection logic that `WhoopProtocol` and `WhoopStore` are adapted from.
+  and collection logic that `WhoopProtocol` and `CenitStore` are adapted from.
 - **`b-nnett/goose`** — the WHOOP 5.0 / MG protocol work (the `fd4b0001-…`
   service family, CRC16-Modbus header, `CLIENT_HELLO`, and the "puffin" packet
   types) that the WHOOP 5.0 paths are ported from.
-- **`groue/GRDB.swift`** — SQLite persistence used by `WhoopStore`.
+- **`groue/GRDB.swift`** — SQLite persistence used by `CenitStore`.
 
 ---
 
@@ -36,8 +36,8 @@ interoperability work:
 | Package | Purpose | Pure / portable? | UI deps | External deps |
 |---|---|---|---|---|
 | **WhoopProtocol** | BLE frame parsing, CRC, command/event/packet decode (the reverse-engineering core) | ✅ Pure Foundation | none | none |
-| **WhoopStore** | GRDB/SQLite persistence: migrations, decoded streams, raw outbox, metric caches | ✅ Pure (server-free) | none | GRDB |
-| **StrandAnalytics** | HRV / recovery / strain / sleep / correlation math | ✅ Pure, deterministic | none | (WhoopProtocol, WhoopStore types) |
+| **CenitStore** | GRDB/SQLite persistence: migrations, decoded streams, raw outbox, metric caches | ✅ Pure (server-free) | none | GRDB |
+| **StrandAnalytics** | HRV / recovery / strain / sleep / correlation math | ✅ Pure, deterministic | none | (WhoopProtocol, CenitStore types) |
 | **StrandImport** | WHOOP CSV + Apple Health (`export.xml`, streaming) importers | ✅ Pure Foundation/XML | none | ZIPFoundation |
 | **StrandDesign** | SwiftUI design system (palette, components, charts) | SwiftUI only | SwiftUI | none |
 
@@ -53,12 +53,12 @@ unavoidable, guarded with `#if canImport(UIKit)` / `#if canImport(AppKit)`.
 ```
 WhoopProtocol  (no internal deps)
       │
-      ├──────────────► WhoopStore        (+ GRDB)
+      ├──────────────► CenitStore        (+ GRDB)
       │                     │
       ▼                     ▼
-StrandAnalytics ◄───────────┘            (depends on WhoopProtocol + WhoopStore types)
+StrandAnalytics ◄───────────┘            (depends on WhoopProtocol + CenitStore types)
 
-StrandImport   ──► WhoopProtocol, WhoopStore   (+ ZIPFoundation)
+StrandImport   ──► WhoopProtocol, CenitStore   (+ ZIPFoundation)
 
 StrandDesign   (standalone — SwiftUI only, no internal deps)
 ```
@@ -153,7 +153,7 @@ enum (`.int`, `.double`, `.string`, `.intArray`, `.bool`, `.null`) with
 `intValue` / `doubleValue` / `stringValue` / `intArrayValue` accessors.
 
 **Decoded stream rows** (`Streams.swift`) — the durable, compact record shapes
-that `WhoopStore` persists:
+that `CenitStore` persists:
 
 `HRSample`, `RRInterval`, `WhoopEvent`, `BatterySample`, `SpO2Sample`,
 `SkinTempSample`, `RespSample`, `GravitySample`, all gathered into a single
@@ -200,14 +200,14 @@ print("HR samples:", streams.hr.count, "R-R intervals:", streams.rr.count)
 
 ---
 
-## WhoopStore
+## CenitStore
 
 On-device persistence built on **GRDB/SQLite**. Decoded streams are durable;
 raw frames are a transient, compressed, prunable outbox. The store is an
 `actor`, so its API is `async` and all `DatabaseQueue` work runs off the main
 thread on the actor's serial executor.
 
-**Sources:** `WhoopStore.swift`, `Database.swift` (the migrator),
+**Sources:** `CenitStore.swift`, `Database.swift` (the migrator),
 `StreamStore.swift`, `Reads.swift`, `RawOutbox.swift`, `Cursors.swift`,
 `MetricsCache.swift`, `JournalWorkoutAppleCache.swift`, `MetricSeriesStore.swift`.
 
@@ -221,15 +221,15 @@ dependencies: [
 ],
 targets: [
     .target(name: "MyTarget", dependencies: [
-        .product(name: "WhoopStore", package: "WhoopStore"),
+        .product(name: "CenitStore", package: "CenitStore"),
     ]),
 ]
 ```
 
 ### Schema
 
-The migrator (`WhoopStore.makeMigrator()`) runs `v1`…`v9`
-(`WhoopStoreInfo.schemaVersion == 9`). On open, the store enables WAL journal
+The migrator (`CenitStore.makeMigrator()`) runs `v1`…`v9`
+(`CenitStoreInfo.schemaVersion == 9`). On open, the store enables WAL journal
 mode, `synchronous = NORMAL`, a 16 MB page cache, 256 MB mmap, and a 5-second
 busy timeout so two handles to the same file don't deadlock.
 
@@ -250,8 +250,8 @@ busy timeout so two handles to the same file don't deadlock.
 
 ```swift
 public init(path: String) async throws          // open (creating) + migrate
-public static func inMemory() async throws -> WhoopStore   // tests
-public static let schemaVersion: Int             // on WhoopStoreInfo
+public static func inMemory() async throws -> CenitStore   // tests
+public static let schemaVersion: Int             // on CenitStoreInfo
 ```
 
 **Write decoded streams** (idempotent upsert by natural key; returns rows
@@ -300,10 +300,10 @@ public func pruneRaw(now:keepWindowSeconds:maxUnsyncedBytes:) async throws -> In
 ### Minimal usage
 
 ```swift
-import WhoopStore
+import CenitStore
 import WhoopProtocol
 
-let store = try await WhoopStore(path: "/path/to/noop.sqlite")
+let store = try await CenitStore(path: "/path/to/noop.sqlite")
 try await store.upsertDevice(id: "AA:BB:CC", mac: "AA:BB:CC", name: "My WHOOP")
 
 // Persist decoded streams (idempotent — safe to replay).
@@ -322,7 +322,7 @@ let hr = try await store.hrSamples(deviceId: "AA:BB:CC",
 Pure, deterministic on-device analytics: HRV, recovery, strain, sleep staging,
 workout detection, baselines, and statistical comparison/correlation. **No
 database access** — every entry point is a pure function over its inputs (it
-consumes the `WhoopProtocol` stream types and produces `WhoopStore` cache
+consumes the `WhoopProtocol` stream types and produces `CenitStore` cache
 shapes, but performs no I/O). All derived values are explicitly **approximate**.
 
 **Sources:** `HRVAnalyzer.swift`, `RecoveryScorer.swift`, `StrainScorer.swift`,
@@ -336,7 +336,7 @@ shapes, but performs no I/O). All derived values are explicitly **approximate**.
 // Package.swift
 dependencies: [
     .package(path: "../WhoopProtocol"),
-    .package(path: "../WhoopStore"),
+    .package(path: "../CenitStore"),
     .package(path: "../StrandAnalytics"),
 ],
 targets: [
@@ -404,7 +404,7 @@ does not touch the database, so the whole package is unit-testable.
 // Package.swift
 dependencies: [
     .package(path: "../WhoopProtocol"),
-    .package(path: "../WhoopStore"),
+    .package(path: "../CenitStore"),
     .package(path: "../StrandImport"),
     .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
 ],
@@ -438,7 +438,7 @@ public struct ImportCoordinator {
 - **`AppleHealthAggregator`** — `daily(samples:)`, `sleepDaily(...)`,
   `aggregate(_:)` roll samples into per-civil-day `AppleDailyAggregate`s;
   `metricPoints(_:)` projects them into `(day, key, value)` triples ready for
-  `WhoopStore.upsertMetricSeries`.
+  `CenitStore.upsertMetricSeries`.
 - **`WhoopExportImporter`** — `import(from:)` parses the CSV bundle
   (`physiological_cycles.csv`, `sleeps.csv`, `workouts.csv`,
   `journal_entries.csv`) from a folder or `.zip`. Header-name-driven and
@@ -553,7 +553,7 @@ struct RecoveryHeader: View {
 ## Reuse notes
 
 - **Pick only what you need.** `WhoopProtocol` is self-contained (no
-  dependencies); `WhoopStore` adds GRDB; `StrandImport` adds ZIPFoundation;
+  dependencies); `CenitStore` adds GRDB; `StrandImport` adds ZIPFoundation;
   `StrandAnalytics` consumes the first two's types but does no I/O. A headless
   tool can decode and analyze WHOOP data with no SwiftUI involved at all.
 - **Bring your own transport.** The protocol library never opens a Bluetooth

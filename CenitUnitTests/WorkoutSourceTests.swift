@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// Pins the pure workout-editing logic: source classification (the macOS read model has no

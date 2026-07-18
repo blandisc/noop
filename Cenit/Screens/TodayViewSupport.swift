@@ -2,7 +2,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
-import WhoopStore
+import CenitStore
 import Foundation
 
 /// Publica el offset vertical del tope del contenido de Hoy para el pull-to-refresh propio (FER-222).

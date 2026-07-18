@@ -2,7 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 import Foundation
 
 // MARK: - Cuerpo (the «between-days / history» landing) — FER-186

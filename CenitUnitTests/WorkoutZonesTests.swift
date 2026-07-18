@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// Pins the Workouts HR-zone card's parsing/aggregation to the real stored shapes:

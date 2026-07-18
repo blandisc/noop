@@ -2,7 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 import Foundation
 
 // MARK: - Carga de entrenamiento — franja en «Hoy» + hoja «Detalle de Tendencias Final» (FER-705 · FER-862)

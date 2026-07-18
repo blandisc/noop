@@ -2,7 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 // MARK: - Bucle sheets (FER-292)
 //

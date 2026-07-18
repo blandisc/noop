@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import StrandDesign
-import WhoopStore
+import CenitStore
 #if canImport(UIKit)
 import UIKit
 #endif

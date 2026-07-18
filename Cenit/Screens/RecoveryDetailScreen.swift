@@ -2,7 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 import Foundation
 
 // MARK: - RecoveryDetailScreen — el «Detalle de Recuperación» en «Instrumento» (FER-225)

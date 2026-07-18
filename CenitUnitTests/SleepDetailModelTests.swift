@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// Pins FER-228: `SleepDetailModel.build` must anchor "last night" to the device's LOCAL day and

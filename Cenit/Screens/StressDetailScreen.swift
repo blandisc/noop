@@ -2,7 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 import Foundation
 
 // MARK: - StressDetailScreen — el «Detalle de Estrés» en «Instrumento» (FER-241 · FER-860)

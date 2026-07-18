@@ -1,6 +1,6 @@
 import SwiftUI
 import StrandDesign
-import WhoopStore
+import CenitStore
 
 // MARK: - Manual workout sheet — «Instrumento diurno» (FER-266)
 //

@@ -5,7 +5,7 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 
 /// The «Change {exercise}» sheet (FER-894 · «Cómo llego a Cambiar»): a search field over the library plus a
 /// shortlist of alternatives for the SAME primary muscle as the exercise being replaced. Picking «Use» swaps

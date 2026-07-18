@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 // OutcomeTests.swift — binds the Bucle's outcome join key to its single source (FER-353).
 //
