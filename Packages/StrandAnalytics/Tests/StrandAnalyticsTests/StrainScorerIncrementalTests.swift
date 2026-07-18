@@ -135,6 +135,42 @@ final class StrainScorerIncrementalTests: XCTestCase {
         }
     }
 
+    // MARK: - The non-obvious case: the median gap SHIFTS mid-day (FER-996)
+
+    /// The equivalence argument's load-bearing claim is that `sampleDur` (= median gap / 60) is factored
+    /// OUT of the accumulator and applied ONCE at materialization — so when the median moves as the day
+    /// fills in, every earlier bucket re-weights exactly as the batch recompute would. That claim is the
+    /// hypothesis, not the conclusion: this measures it. A day that starts on a sparse 30 s cadence and
+    /// switches to dense 1 Hz drags the median from 30 s down to 1 s partway through.
+    func testMedianShiftMidDayStillEqualsBatch() {
+        // Phase A: 400 samples @ 30 s (median gap 30). Phase B: 900 samples @ 1 Hz (median gap → 1).
+        let phaseA = series(n: 400, stepSec: 30, start: 1_700_000_000, seed: 11)
+        let bStart = (phaseA.last?.ts ?? 0) + 1
+        let phaseB = series(n: 900, stepSec: 1, start: bStart, seed: 23)
+        let samples = phaseA + phaseB
+
+        // The median really does move (otherwise the test proves nothing).
+        var mid = StrainScorer.CumulativeStrainState(maxHR: 190, restingHR: 60)
+        mid.extend(with: phaseA)
+        XCTAssertEqual(mid.medianIntervalSeconds(), 30.0, accuracy: 1e-9)
+        XCTAssertEqual(mid.curve, StrainScorer.cumulativeStrain(phaseA, maxHR: 190, restingHR: 60),
+                       "mid-day (pre-shift) curve diverged")
+
+        let batch = StrainScorer.cumulativeStrain(samples, maxHR: 190, restingHR: 60)
+        XCTAssertFalse(batch.isEmpty)
+        for chunk in [1, 5, 97, 400, 401, 1300] {
+            let state = foldChunked(samples, chunk: chunk,
+                                    StrainScorer.CumulativeStrainState(maxHR: 190, restingHR: 60))
+            XCTAssertEqual(state.medianIntervalSeconds(), HRZones.medianInterval(samples), accuracy: 1e-9,
+                           "shifted median diverged at chunk \(chunk)")
+            XCTAssertNotEqual(state.medianIntervalSeconds(), 30.0)   // it really shifted
+            // Every EARLIER bucket must be re-weighted by the new median, exactly like the batch.
+            XCTAssertEqual(state.curve, batch, "post-shift curve diverged at chunk \(chunk)")
+            XCTAssertEqual(state.strain, StrainScorer.strain(samples, maxHR: 190, restingHR: 60),
+                           "post-shift endpoint strain diverged at chunk \(chunk)")
+        }
+    }
+
     // MARK: - Median histogram exactness
 
     func testMedianHistogramMatchesHRZonesEvenAndOdd() {
