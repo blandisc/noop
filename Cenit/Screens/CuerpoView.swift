@@ -1649,15 +1649,26 @@ private struct CuerpoLanding: View {
     }
     repo.setDashboard(days: sample)
 
-    // FER-981: izados a `let` (y `AppModel.preview` compartido) para no reconstruirlos por preview.
-    // OJO — esto NO bajó el hotspot de type-check de este preview: sigue en ~237 ms medidos, y la causa
-    // sigue SIN identificar. Se descartaron tres hipótesis con evidencia: (1) la cadena de modificadores
-    // —izarlos a `let` no movió el número—; (2) construir `AppModel()` —cambiarlo por la estática
-    // `AppModel.preview` tampoco—; (3) el bucle de datos de muestra de arriba —refutada porque los
-    // previews de OnboardingWizard e IntervalTimerView NO tienen bucle y cuestan lo mismo (~230 ms)—.
-    // Lo único común a los cuatro previews caros es que referencian `AppModel` (sospecha viva: la
-    // expansión del macro @Observable). Para atacarlo hay que BISECAR con mediciones, no adivinar otra
-    // vez. Se dejó pendiente a propósito: es DEBUG-only de preview, lo de menor valor del inventario.
+    // FER-985 — CASO CERRADO: el hotspot de type-check de este preview (~198 ms) es `AppModel.preview`
+    // de abajo, y la causa es la expansión del macro @Observable sobre AppModel (~20 propiedades
+    // rastreadas + ~14 sub-objetos): para resolver el miembro estático, el type-checker procesa el tipo
+    // entero. NO lo vuelvas a investigar y NO hay arreglo barato — se midió con bisección (3 builds):
+    //
+    //   base (`let appModel = AppModel.preview`) ......... 5 avisos, máx 198 ms
+    //   con tipo explícito (`let appModel: AppModel = …`) . 8 avisos, máx 291 ms  ← PEOR
+    //   sin la referencia a AppModel ..................... 0 avisos              ← confirma la causa
+    //
+    // Quitarlo no es opción: CuerpoView declara `@Environment(AppModel.self) var model` sin opcional
+    // (línea ~185), así que el preview compilaría pero reventaría al renderizar. El único arreglo real
+    // sería adelgazar AppModel, y 17 vistas dependen de él — no se paga por ~198 ms de build en Debug.
+    //
+    // CUATRO hipótesis refutadas con evidencia, no las repitas: (1) la cadena de modificadores —izarlos
+    // a `let` no movió el número—; (2) construir `AppModel()` vs la estática `AppModel.preview` —igual—;
+    // (3) el bucle de datos de muestra de arriba —refutada: otros previews sin bucle costaban lo mismo—;
+    // (4) anotar el tipo explícitamente —lo empeoró, ver tabla—.
+    //
+    // Nota: los otros tres previews que FER-985 listaba como caros (TodayView, OnboardingWizard,
+    // IntervalTimerView) ya NO aparecen sobre el umbral de 100 ms; bajaron solos con FER-981/984.
     let live = LiveState()
     let appModel = AppModel.preview
     let health = HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview")
