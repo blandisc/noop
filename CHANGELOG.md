@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Rendimiento: el catálogo de ejercicios deja de tocar el disco ~1,300 veces al cargarse / Performance: the exercise catalog stops hitting disk ~1,300 times as it loads.**
+  **ES** — Al construir el catálogo, la app le preguntaba al disco «¿existe la imagen de este ejercicio?» una vez por ejercicio (~1,324 consultas, todas fallidas hoy porque las imágenes aún no se hornean). Ahora lee el índice del directorio una sola vez y responde de memoria. Se nota al entrar a Entrenar por primera vez y al restaurar una sesión de fuerza al abrir la app. Interno: el catálogo resultante es idéntico.
+  **EN** — Building the catalog asked disk "does this exercise's image exist?" once per exercise (~1,324 lookups, all failing today since the images aren't baked yet). It now reads the directory index once and answers from memory. Noticeable when first opening Train and when restoring a strength session at launch. Internal: the resulting catalog is identical.
+  ([Exercise.swift](Packages/StrandTraining/Sources/StrandTraining/Exercise.swift))
+
 - **Rendimiento: menos re-dibujos de pantalla cuando llegan datos en vivo / Performance: fewer full-screen redraws when live data arrives.**
   **ES** — Migramos el modelo central de la app a **observación por-propiedad**: antes, cualquier dato que cambiara (p.ej. tu frecuencia cardiaca en vivo) marcaba las ~16 pantallas para re-evaluarse aunque no mostraran ese dato; ahora solo se re-evalúa la pantalla que de verdad lee lo que cambió. Interno, sin cambio visible.
   **EN** — Migrated the app's central model to **per-property observation**: before, any changing datum (e.g. your live heart rate) marked all ~16 screens to re-evaluate even if they didn't show it; now only the screen that actually reads what changed re-evaluates. Internal, no visible change.
