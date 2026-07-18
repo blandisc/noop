@@ -54,6 +54,14 @@ extension WhoopStore {
         }
     }
 
+    /// Just the ids of the user-created exercises — the library only needs to know *which* rows are
+    /// its own, and this skips decoding every custom exercise's JSON blobs to answer that (FER-995).
+    public func customExerciseIds() async throws -> Set<String> {
+        try syncRead { db in
+            Set(try String.fetchAll(db, sql: "SELECT id FROM customExercise"))
+        }
+    }
+
     public func deleteCustomExercise(id: String) async throws {
         try syncWrite { db in try db.execute(sql: "DELETE FROM customExercise WHERE id = ?", arguments: [id]) }
     }

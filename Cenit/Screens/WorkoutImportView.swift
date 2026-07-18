@@ -48,6 +48,7 @@ struct WorkoutImportView: View {
     @State private var autoMatched: Set<String> = []   // resolved by autoMatch (FER-794) — marked, reversible
     @State private var omitted: Set<String> = []   // normalized names the user chose not to import (FER-536)
     @State private var mappingTarget: MappingName?  // name being mapped → drives the library picker sheet
+    @State private var creationTarget: MappingName? // name being created → drives the create-exercise sheet (FER-995)
     @State private var createdCount = 0
     @State private var celebrate = false   // done-screen pop-in (respects Reduce Motion)
     /// M4 (decisión Fer): cerrar con el mapeo/confirmación a medias pide confirmación — antes el
@@ -131,6 +132,16 @@ struct WorkoutImportView: View {
                 ExerciseLibraryScreen { picks in
                     if let chosen = picks.first { resolve(target.name, with: chosen) }
                 }
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // FER-995: «create new» opens the library's own create form, pre-filled with the plan's name,
+        // the type it declared and a muscle proposed from the name — instead of silently saving an
+        // exercise with no muscle, which is invisible to the muscle map, the volume and the classifier.
+        .sheet(item: $creationTarget) { target in
+            CreateExerciseSheet(catalog: catalog, initialName: target.name,
+                                initialType: declaredType(target.name)) { exercise in
+                createNew(target.name, as: exercise)
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
@@ -320,7 +331,7 @@ struct WorkoutImportView: View {
                 }
                 HStack(spacing: CenitMetrics.space2) {
                     chip("Match") { mappingTarget = MappingName(name: name) }
-                    chip("Create new") { createNew(name) }
+                    chip("Create new") { creationTarget = MappingName(name: name) }
                     chip("Omit") { omitted.insert(key) }
                 }
             }
@@ -551,12 +562,11 @@ struct WorkoutImportView: View {
         // The learned alias is persisted at save() (FER-536), not here, so Undo can revert cleanly.
     }
 
-    /// «Create new» fast path: a user exercise from the LLM's name, with the type the plan declared.
-    /// Saved so the muscle map / library can see it; the user can flesh it out later in the library. The
+    /// «Create new»: persist the exercise the user just completed in the create sheet and resolve the
+    /// plan's name to it. The sheet requires a primary muscle, so this can no longer produce an exercise
+    /// that's invisible to the muscle map, the weekly volume and `RoutineClassifier` (FER-995). The
     /// learned alias for the import name is persisted at save(), not here (FER-536).
-    private func createNew(_ name: String) {
-        let exercise = Exercise(id: UUID().uuidString, name: name, type: declaredType(name),
-                                equipment: nil, primaryMuscles: [], secondaryMuscles: [], instructions: [])
+    private func createNew(_ name: String, as exercise: Exercise) {
         Task {
             do {
                 try await repo.saveCustomExercise(exercise)
