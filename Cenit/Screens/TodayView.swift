@@ -3291,7 +3291,7 @@ struct TodayView: View {
         // iOS TodayView reads AppModel (first-launch "Scan for strap" CTA) and HealthKitBridge (the
         // Apple Health connect nudge); inject both so the iOS canvas renders instead of trapping on a
         // missing environment object.
-        .environment(AppModel())
+        .environment(AppModel.preview)
         .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
         #endif
         .frame(width: 920, height: 940)

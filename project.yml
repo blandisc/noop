@@ -153,6 +153,12 @@ targets:
           # Inject/InjectionIII: permite intercambiar el código en caliente (solo Debug). `$(inherited)`
           # conserva cualquier otro flag. Este bloque NO aplica en Release → el build de tienda queda intacto.
           OTHER_LDFLAGS: -Xlinker -interposable $(inherited)
+          # FER-981: instrumentación de type-check. El compilador avisa de cada función/expresión que
+          # tarda más del umbral (ms) en type-checkear, con archivo:línea — la lista MEDIDA (no adivinada)
+          # de qué `body` partir. Va aquí (settings del target) y NO en `Cenit/Config.xcconfig`: los
+          # settings de target que escribe xcodegen PISAN el xcconfig, por eso ahí no aplicaba (Ola A).
+          # Solo Debug: el build de tienda no paga ni ruido ni tiempo extra.
+          OTHER_SWIFT_FLAGS: $(inherited) -Xfrontend -warn-long-function-bodies=100 -Xfrontend -warn-long-expression-type-checking=100
     dependencies:
       - package: WhoopProtocol
       - package: WhoopStore

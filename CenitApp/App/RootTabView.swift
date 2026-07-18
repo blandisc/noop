@@ -72,10 +72,15 @@ struct RootTabView: View {
     /// El ✕ del pill pide confirmación aquí (pantalla completa), no en el frame del pill.
     @State private var confirmDiscardSession = false
 
+    // FER-981: `body` kept thin so type-check stays under the long-function budget. Tab shell,
+    // heavy tabs, and the modifier chain each type-check in their own scope.
     var body: some View {
-        // FER-984: `appModel` es `@Environment` (sin `$` publishers); este `@Bindable` local habilita el
-        // binding `$appModel.strengthSheetPresented` del fullScreenCover de la sesión de fuerza (abajo).
-        @Bindable var appModel = appModel
+        rootChrome(rootTabs)
+    }
+
+    /// Five-tab shell. Extracted from `body` (FER-981) so TabView + tags type-check apart from chrome.
+    @ViewBuilder
+    private var rootTabs: some View {
         TabView(selection: $selection) {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
             lazyTab(.body,  "Tendencias", "chart.xyaxis.line") { CuerpoView() }
@@ -87,80 +92,100 @@ struct RootTabView: View {
             // on «Hoy»). It's a LIGHT tab (warm paper), so it joins Hoy/Cuerpo in `isLightTab`.
             lazyTab(.coach, "Patrones", "sparkles") { BucleView() }
 
-            // Entrenar — the redesigned light «Instrumento» hub (FER-343 + FER-346): the «Hoy» card +
-            // recovery band, «Mis rutinas» (build / edit), the exercise library, and the Respira /
-            // Intervalos / Dieta / En-vivo tools (FER-39 epic). Like Cuerpo/Ajustes the visible hub
-            // navigates by pushing onto this tab's NavigationStack; that stack also lets DEBUG
-            // screenshot-nav reach «Rutina de hoy» / Biblioteca / Respira / Intervalos / Dieta. Warm
-            // paper throughout, so there's no light-tab → dark-screen status-bar bridge to manage.
-            NavigationStack(path: $trainStack) {
-                EntrenarView(
-                    openRoutine: { id in trainStack.append(RoutineEditorRoute.today(routineId: id)) },
-                    openBreathe: { trainStack.append(SecondaryScreen.breathe) },
-                    openIntervals: { trainStack.append(SecondaryScreen.intervals) },
-                    openDiet: { trainStack.append(SecondaryScreen.dieta) },
-                    openHistory: { trainStack.append(SecondaryScreen.workoutHistory) },
-                    openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
-                    openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
-                    openRestDay: { trainStack.append(SecondaryScreen.restDay) },
-                    openOtherWays: { trainStack.append(SecondaryScreen.otherWays) },
-                    openWorkoutSession: { trainStack.append($0) }
-                )
+            trainTab
+            settingsTab
+        }
+    }
+
+    // Entrenar — the redesigned light «Instrumento» hub (FER-343 + FER-346): the «Hoy» card +
+    // recovery band, «Mis rutinas» (build / edit), the exercise library, and the Respira /
+    // Intervalos / Dieta / En-vivo tools (FER-39 epic). Like Cuerpo/Ajustes the visible hub
+    // navigates by pushing onto this tab's NavigationStack; that stack also lets DEBUG
+    // screenshot-nav reach «Rutina de hoy» / Biblioteca / Respira / Intervalos / Dieta. Warm
+    // paper throughout, so there's no light-tab → dark-screen status-bar bridge to manage.
+    @ViewBuilder
+    private var trainTab: some View {
+        NavigationStack(path: $trainStack) {
+            EntrenarView(
+                openRoutine: { id in trainStack.append(RoutineEditorRoute.today(routineId: id)) },
+                openBreathe: { trainStack.append(SecondaryScreen.breathe) },
+                openIntervals: { trainStack.append(SecondaryScreen.intervals) },
+                openDiet: { trainStack.append(SecondaryScreen.dieta) },
+                openHistory: { trainStack.append(SecondaryScreen.workoutHistory) },
+                openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
+                openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
+                openRestDay: { trainStack.append(SecondaryScreen.restDay) },
+                openOtherWays: { trainStack.append(SecondaryScreen.otherWays) },
+                openWorkoutSession: { trainStack.append($0) }
+            )
+            .barReservation(barHeight)
+            .navigationDestination(for: SecondaryScreen.self) { screen in
+                trainChrome(secondaryDestination(screen))
+            }
+            .navigationDestination(for: RoutineEditorRoute.self) { route in
+                // «Rutina» (FER-839): ONE prescription editor for every origin (today / plan day /
+                // Mis rutinas). It draws its own back/cancel header + pinned CTA, so the native nav
+                // bar is hidden (trainChrome still paints paper + reserves the bar).
+                trainChrome(RoutineEditorScreen(origin: route))
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+            .navigationDestination(for: WorkoutSessionRoute.self) { route in
+                trainChrome(WorkoutSessionDetailScreen(
+                    route: route,
+                    openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) }))
+            }
+            // Decisión Fer (2026-07-16): «Ver mapa» abre el MAPA muscular real (las siluetas de
+            // Tendencias) — el mismo MuscleMapScreen, empujado; las barras vs banda viven como
+            // pantalla hija enlazada desde el mapa.
+            .navigationDestination(for: MuscleVolumeRoute.self) { _ in
+                trainChrome(MuscleMapScreen(theme: .base, showsVolumeLink: true))
+            }
+            .navigationDestination(for: MuscleVolumeBarsRoute.self) { _ in
+                trainChrome(MuscleVolumeScreen())
+            }
+            .navigationDestination(for: SavedTicketsRoute.self) { _ in
+                trainChrome(SavedTicketsScreen())
+            }
+        }
+        .environmentObject(workoutHistory)
+        .toolbar(.hidden, for: .tabBar)
+        .tabItem { Label("Train", systemImage: "figure.strengthtraining.functional") }
+        .tag(Tab.train)
+    }
+
+    // Ajustes — the redesigned light «Instrumento» Settings root (FER-337). Replaces the old
+    // list → SettingsView indirection AND the «Más» drawer: the tab now opens directly here.
+    // The visible UI navigates by SHEET (AjustesView), like Cuerpo; the NavigationStack here
+    // exists only so DEBUG screenshot-nav can still push a secondary screen — its path only
+    // ever carries `SecondaryScreen` (one value type), so there's no FER-171 mixed-path crash.
+    // Explore · Compare · Workouts are gone from Ajustes (they open from Cuerpo now).
+    @ViewBuilder
+    private var settingsTab: some View {
+        NavigationStack(path: $settingsStack) {
+            AjustesView()
                 .barReservation(barHeight)
                 .navigationDestination(for: SecondaryScreen.self) { screen in
-                    trainChrome(secondaryDestination(screen))
+                    secondaryDestination(screen)
+                        .background(InstrumentoTheme.base.paper.ignoresSafeArea())
+                        .barReservation(barHeight)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbarBackground(InstrumentoTheme.base.paper, for: .navigationBar)
                 }
-                .navigationDestination(for: RoutineEditorRoute.self) { route in
-                    // «Rutina» (FER-839): ONE prescription editor for every origin (today / plan day /
-                    // Mis rutinas). It draws its own back/cancel header + pinned CTA, so the native nav
-                    // bar is hidden (trainChrome still paints paper + reserves the bar).
-                    trainChrome(RoutineEditorScreen(origin: route))
-                        .toolbar(.hidden, for: .navigationBar)
-                }
-                .navigationDestination(for: WorkoutSessionRoute.self) { route in
-                    trainChrome(WorkoutSessionDetailScreen(
-                        route: route,
-                        openRoutine: { id in trainStack.append(RoutineEditorRoute.routine(routineId: id)) }))
-                }
-                // Decisión Fer (2026-07-16): «Ver mapa» abre el MAPA muscular real (las siluetas de
-                // Tendencias) — el mismo MuscleMapScreen, empujado; las barras vs banda viven como
-                // pantalla hija enlazada desde el mapa.
-                .navigationDestination(for: MuscleVolumeRoute.self) { _ in
-                    trainChrome(MuscleMapScreen(theme: .base, showsVolumeLink: true))
-                }
-                .navigationDestination(for: MuscleVolumeBarsRoute.self) { _ in
-                    trainChrome(MuscleVolumeScreen())
-                }
-                .navigationDestination(for: SavedTicketsRoute.self) { _ in
-                    trainChrome(SavedTicketsScreen())
-                }
-            }
-            .environmentObject(workoutHistory)
-            .toolbar(.hidden, for: .tabBar)
-            .tabItem { Label("Train", systemImage: "figure.strengthtraining.functional") }
-            .tag(Tab.train)
-
-            // Ajustes — the redesigned light «Instrumento» Settings root (FER-337). Replaces the old
-            // list → SettingsView indirection AND the «Más» drawer: the tab now opens directly here.
-            // The visible UI navigates by SHEET (AjustesView), like Cuerpo; the NavigationStack here
-            // exists only so DEBUG screenshot-nav can still push a secondary screen — its path only
-            // ever carries `SecondaryScreen` (one value type), so there's no FER-171 mixed-path crash.
-            // Explore · Compare · Workouts are gone from Ajustes (they open from Cuerpo now).
-            NavigationStack(path: $settingsStack) {
-                AjustesView()
-                    .barReservation(barHeight)
-                    .navigationDestination(for: SecondaryScreen.self) { screen in
-                        secondaryDestination(screen)
-                            .background(InstrumentoTheme.base.paper.ignoresSafeArea())
-                            .barReservation(barHeight)
-                            .navigationBarTitleDisplayMode(.inline)
-                            .toolbarBackground(InstrumentoTheme.base.paper, for: .navigationBar)
-                    }
-            }
-            .toolbar(.hidden, for: .tabBar)
-            .tabItem { Label("Ajustes", systemImage: "gearshape.fill") }
-            .tag(Tab.settings)
         }
+        .toolbar(.hidden, for: .tabBar)
+        .tabItem { Label("Ajustes", systemImage: "gearshape.fill") }
+        .tag(Tab.settings)
+    }
+
+    /// Overlays, covers, and lifecycle observers on the tab shell. Composed from three
+    /// smaller modifier helpers so no single chain type-checks over the long-function budget (FER-981).
+    private func rootChrome<Content: View>(_ content: Content) -> some View {
+        rootChromeLifecycle(rootChromeCovers(rootChromeOverlays(content)))
+    }
+
+    /// Tint + floating instrument bar + active-session pill (FER-163 / FER-716).
+    private func rootChromeOverlays<Content: View>(_ content: Content) -> some View {
+        content
         // `.tint` no longer paints the tab bar (it's hidden below; the custom
         // `InstrumentTabBar` sets its own ink), but it still tints links/controls
         // inside the screens — kept for those.
@@ -200,6 +225,15 @@ struct RootTabView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+    }
+
+    /// Confirm discard, session animations, and the guided-strength fullScreenCover (FER-347/716).
+    /// Own `@Bindable` for FER-984 (`$appModel.strengthSheetPresented`).
+    private func rootChromeCovers<Content: View>(_ content: Content) -> some View {
+        // FER-984: `appModel` es `@Environment` (sin `$` publishers); este `@Bindable` local habilita el
+        // binding `$appModel.strengthSheetPresented` del fullScreenCover de la sesión de fuerza (abajo).
+        @Bindable var appModel = appModel
+        return content
         // El ConfirmCard del ✕ del pill vive AQUÍ (pantalla completa): colgado del host del pill se
         // anclaba a su frame angosto — velo recortado y esquinas rotas (bug Fer 2026-07-16).
         .instrumentoConfirm(
@@ -229,6 +263,11 @@ struct RootTabView: View {
                     .preferredColorScheme(.light)
             }
         }
+    }
+
+    /// Preference, tab selection, cross-tab routing, watch receipt, and DEBUG nav observers.
+    private func rootChromeLifecycle<Content: View>(_ content: Content) -> some View {
+        content
         .onPreferenceChange(BarHeightKey.self) { barHeight = $0 }
         // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
         // mantenemos sincronizado con la pestaña visible. Solo Hoy es papel claro «Instrumento»; las

@@ -138,82 +138,129 @@ struct WorkoutHistoryScreen: View {
 
     @State private var selectedWeek: Int? = nil   // nil / 7 = current week
 
+    /// Split for type-check cost (FER-981): volume card + month tiles are separate ViewBuilders.
     private var tuMes: some View {
-        let m = monthAggregate
-        let weeks = weeklyVolumes
-        let peak = max(weeks.map(\.volumeKg).max() ?? 1, 1)
-        let sel = weeks.first { $0.id == (selectedWeek ?? 7) } ?? weeks[7]
-        return VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
             InstrumentoSectionBand("Your month")
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Volume per week").font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
-                    Spacer(minLength: 8)
-                    if let delta = monthVolumeDeltaPercent {
-                        let up = delta >= 0
-                        let n = abs(Int(delta.rounded()))
-                        Group {
-                            if up { Text("↗ +\(n)% vs. last month") } else { Text("↘ −\(n)% vs. last month") }
-                        }
-                        .font(InstrumentoType.grotesk(11, weight: .bold))
-                        // §8.7: valence en texto <24pt usa positiveText (5.0:1), no el hue del dato.
-                        .foregroundStyle(up ? theme.positiveText : theme.warning)
-                        .padding(.horizontal, 9).padding(.vertical, 3)
-                        .background((up ? theme.positiveText : theme.warning).opacity(StrandOpacity.tintFill),
-                                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-                    }
-                }
-                VStack(spacing: 4) {
-                    HStack(alignment: .bottom, spacing: 6) {
-                        ForEach(weeks) { w in
-                            UnevenRoundedRectangle(topLeadingRadius: 3, topTrailingRadius: 3)  // token-exempt: geometría de dato
-                                .fill(w.id == (selectedWeek ?? 7) ? theme.dataRecovery : theme.hairlineStrong)
-                                .frame(height: max(3, CGFloat(w.volumeKg / peak) * 54))
-                                .frame(maxWidth: .infinity)
-                                .contentShape(Rectangle())
-                                .onTapGesture { withAnimation(StrandMotion.interactive) { selectedWeek = w.id } }
-                        }
-                    }
-                    .frame(height: 58, alignment: .bottom)
-                    Rectangle().fill(theme.hairlineStrong).frame(height: 1.2)  // token-exempt: eje de dato
-                    HStack {
-                        Text(weekLabel(weeks.first?.start)).font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
-                        Spacer(minLength: 8)
-                        Text("this week").font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text("Volume over the last 8 weeks"))
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Group {
-                            if sel.isCurrent {
-                                Text("This week · in progress").instrumentoOverline()
-                            } else {
-                                Text("Week of \(weekLabel(sel.start))").instrumentoOverline()
-                            }
-                        }
-                        .foregroundStyle(theme.inkTertiary)
-                        Text("\(sel.count) sessions · tap another bar to switch")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    }
-                    Spacer(minLength: 10)
-                    Text(StrengthHistoryFormat.volume(sel.volumeKg, system: system))
-                        .font(InstrumentoType.groteskNumber(17)).foregroundStyle(theme.ink)
-                }
-                .padding(.horizontal, 12).padding(.vertical, 9)
-                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            tuMesVolumeCard
+            tuMesMonthTiles
+        }
+    }
+
+    /// Weekly volume card (header, bars, selected-week strip) — extracted so its CGFloat/ternary
+    /// chains type-check alone (FER-981).
+    @ViewBuilder
+    private var tuMesVolumeCard: some View {
+        let weeks: [WeekVolume] = weeklyVolumes
+        let peakRaw: Double = weeks.map(\.volumeKg).max() ?? 1.0
+        let peak: Double = max(peakRaw, 1.0)
+        let selectedId: Int = selectedWeek ?? 7
+        let sel: WeekVolume = weeks.first { (w: WeekVolume) in w.id == selectedId } ?? weeks[7]
+        VStack(alignment: .leading, spacing: 10) {
+            tuMesVolumeHeader
+            tuMesWeeklyBars(weeks: weeks, peak: peak, selectedId: selectedId)
+            tuMesSelectedWeekStrip(sel: sel)
+        }
+        .padding(CenitMetrics.cardPadding)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+            .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    @ViewBuilder
+    private var tuMesVolumeHeader: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("Volume per week").font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
+            Spacer(minLength: 8)
+            if let delta: Double = monthVolumeDeltaPercent {
+                tuMesDeltaChip(delta: delta)
             }
-            .padding(CenitMetrics.cardPadding)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
-            HStack(spacing: 8) {
-                monthTile("Sessions", "\(m.count)", caption: "this month")
-                monthTile("Hours", m.hours > 0 ? String(format: "%.1f", m.hours) : "—", caption: "trained")
-                monthTile("Energy", m.energyKcal.map(StrandFormat.groupedInt) ?? "—",
-                          unit: m.energyKcal != nil ? "kcal" : nil, caption: "measured")
+        }
+    }
+
+    /// «↗ +N% / ↘ −N% vs. last month» chip — valence color pre-bound so the ternary isn't re-inferred
+    /// on every modifier (FER-981).
+    @ViewBuilder
+    private func tuMesDeltaChip(delta: Double) -> some View {
+        let up: Bool = delta >= 0
+        let n: Int = abs(Int(delta.rounded()))
+        let valence: Color = up ? theme.positiveText : theme.warning
+        Group {
+            if up { Text("↗ +\(n)% vs. last month") } else { Text("↘ −\(n)% vs. last month") }
+        }
+        .font(InstrumentoType.grotesk(11, weight: .bold))
+        // §8.7: valence en texto <24pt usa positiveText (5.0:1), no el hue del dato.
+        .foregroundStyle(valence)
+        .padding(.horizontal, 9).padding(.vertical, 3)
+        .background(valence.opacity(StrandOpacity.tintFill),
+                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+    }
+
+    /// 8-week bar chart + axis labels. Bar height uses fully-typed CGFloat math (FER-981).
+    private func tuMesWeeklyBars(weeks: [WeekVolume], peak: Double, selectedId: Int) -> some View {
+        VStack(spacing: 4) {
+            HStack(alignment: .bottom, spacing: 6) {
+                ForEach(weeks) { (w: WeekVolume) in
+                    let isSelected: Bool = w.id == selectedId
+                    let fill: Color = isSelected ? theme.dataRecovery : theme.hairlineStrong
+                    let ratio: Double = w.volumeKg / peak
+                    let barH: CGFloat = max(CGFloat(3), CGFloat(ratio) * CGFloat(54))
+                    UnevenRoundedRectangle(topLeadingRadius: 3, topTrailingRadius: 3)  // token-exempt: geometría de dato
+                        .fill(fill)
+                        .frame(height: barH)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture { withAnimation(StrandMotion.interactive) { selectedWeek = w.id } }
+                }
             }
+            .frame(height: 58, alignment: .bottom)
+            Rectangle().fill(theme.hairlineStrong).frame(height: 1.2)  // token-exempt: eje de dato
+            HStack {
+                Text(weekLabel(weeks.first?.start)).font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 8)
+                Text("this week").font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Volume over the last 8 weeks"))
+    }
+
+    @ViewBuilder
+    private func tuMesSelectedWeekStrip(sel: WeekVolume) -> some View {
+        let volumeText: String = StrengthHistoryFormat.volume(sel.volumeKg, system: system)
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 1) {
+                Group {
+                    if sel.isCurrent {
+                        Text("This week · in progress").instrumentoOverline()
+                    } else {
+                        Text("Week of \(weekLabel(sel.start))").instrumentoOverline()
+                    }
+                }
+                .foregroundStyle(theme.inkTertiary)
+                Text("\(sel.count) sessions · tap another bar to switch")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            }
+            Spacer(minLength: 10)
+            Text(volumeText)
+                .font(InstrumentoType.groteskNumber(17)).foregroundStyle(theme.ink)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+    }
+
+    /// The three month tiles (Sessions / Hours / Energy) with pre-formatted strings (FER-981).
+    @ViewBuilder
+    private var tuMesMonthTiles: some View {
+        let m: MonthAggregate = monthAggregate
+        let sessionsValue: String = "\(m.count)"
+        let hoursValue: String = m.hours > 0 ? String(format: "%.1f", m.hours) : "—"
+        let energyValue: String = m.energyKcal.map(StrandFormat.groupedInt) ?? "—"
+        let energyUnit: LocalizedStringKey? = m.energyKcal != nil ? "kcal" : nil
+        HStack(spacing: 8) {
+            monthTile("Sessions", sessionsValue, caption: "this month")
+            monthTile("Hours", hoursValue, caption: "trained")
+            monthTile("Energy", energyValue, unit: energyUnit, caption: "measured")
         }
     }
 
@@ -888,23 +935,40 @@ struct WorkoutSessionDetailScreen: View {
 
     /// This session's exercises re-based onto builder items for «Duplicar como rutina». Each exercise gets
     /// as many sets as it had work sets in the session, carrying the logged reps/weight as the targets.
+    /// Explicit types on the compactMap / RoutineExercise init cut inference cost (FER-981, ~:919).
     private var duplicateSeed: [(re: RoutineExercise, exercise: Exercise)] {
-        groups.compactMap { g in
-            guard let ex = exercisesByID[g.exerciseId] else { return nil }
-            let work = g.sets.filter { $0.kind == .work }
-            let sets = work.enumerated().map { i, s in
+        typealias SeedItem = (re: RoutineExercise, exercise: Exercise)
+        typealias Group = (exerciseId: String, name: String, sets: [SetEntry])
+        return groups.compactMap { (g: Group) -> SeedItem? in
+            guard let ex: Exercise = exercisesByID[g.exerciseId] else { return nil }
+            let work: [SetEntry] = g.sets.filter { (s: SetEntry) in s.kind == .work }
+            let sets: [RoutineSet] = work.enumerated().map { (i: Int, s: SetEntry) -> RoutineSet in
                 RoutineSet(position: i, kind: .work, reps: s.reps, weightKg: s.weightKg)
             }
-            let re = RoutineExercise(routineId: "", exerciseId: g.exerciseId, position: 0,
-                                     targetSets: max(1, sets.count),
-                                     targetReps: work.first?.reps, targetWeightKg: work.first?.weightKg,
-                                     supersetGroup: supersetGroup(g.exerciseId), sets: sets)
-            return (re, ex)
+            let targetSets: Int = max(1, sets.count)
+            let targetReps: Int? = work.first?.reps
+            let targetWeightKg: Double? = work.first?.weightKg
+            let group: Int? = supersetGroup(g.exerciseId)
+            let re: RoutineExercise = RoutineExercise(
+                routineId: "",
+                exerciseId: g.exerciseId,
+                position: 0,
+                targetSets: targetSets,
+                targetReps: targetReps,
+                targetWeightKg: targetWeightKg,
+                supersetGroup: group,
+                sets: sets
+            )
+            let pair: SeedItem = (re: re, exercise: ex)
+            return pair
         }
     }
 
     private var duplicateName: String {
-        dispRoutineName == String(localized: "Strength workout") ? String(localized: "New routine") : dispRoutineName
+        let defaultName: String = String(localized: "Strength workout")
+        let newName: String = String(localized: "New routine")
+        let name: String = dispRoutineName
+        return name == defaultName ? newName : name
     }
 
     /// «Repetir hoy» (2A): start a fresh guided session from this session's exercises. Reuses each
@@ -912,11 +976,18 @@ struct WorkoutSessionDetailScreen: View {
     private func repeatToday() {
         // The plan comes from each exercise's re.sets (targets); `lastSets` is the «la última vez» prefill,
         // left empty here so the session model seeds straight from the planned sets.
-        let slots: [StrengthSessionModel.PlanSlot] = duplicateSeed.map { item in
-            StrengthSessionModel.PlanSlot(re: item.re, exercise: item.exercise, lastSets: [])
+        typealias SeedItem = (re: RoutineExercise, exercise: Exercise)
+        let seed: [SeedItem] = duplicateSeed
+        let emptyLast: [SetEntry] = []
+        let slots: [StrengthSessionModel.PlanSlot] = seed.map { (item: SeedItem) -> StrengthSessionModel.PlanSlot in
+            StrengthSessionModel.PlanSlot(re: item.re, exercise: item.exercise, lastSets: emptyLast)
         }
         guard !slots.isEmpty else { return }
-        model.startStrengthSession(routineId: dispRoutineId, routineName: dispRoutineName, slots: slots)
+        // Fully-typed args so the startStrengthSession call doesn't re-infer through @Observable (FER-981).
+        let routineId: String? = dispRoutineId
+        let routineName: String = dispRoutineName
+        let planSlots: [StrengthSessionModel.PlanSlot] = slots
+        model.startStrengthSession(routineId: routineId, routineName: routineName, slots: planSlots)
     }
 
     /// Delete from the detail: read the sets (so an undo can restore them), delete (the store recomputes

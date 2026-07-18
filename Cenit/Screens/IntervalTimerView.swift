@@ -536,7 +536,7 @@ struct IntervalTimerView: View {
 #if DEBUG
 #Preview("Interval Timer · Instrumento") {
     IntervalTimerView()
-        .environment(AppModel())
+        .environment(AppModel.preview)
         .environment(LiveState())
         .frame(width: 720, height: 900)
 }

@@ -925,36 +925,62 @@ struct MetricDetailScreen: View {
     }
 
     /// Today's minute curve + Min/Average/Max row, in a SeccionBloque wrapper.
+    /// Split for type-check cost (FER-981): chart + stats row are separate ViewBuilders.
     @ViewBuilder private var intradayCurveFinalContent: some View {
         if intradayCurve.count > 1 {
-            let v = intradayCurve.map(\.value)
             VStack(alignment: .leading, spacing: 12) {
-                TrendChart(
-                    points: intradayCurve,
-                    gradient: chartGradient,
-                    valueRange: Self.hrRange(v, resting: restingHR),
-                    showsArea: true,
-                    height: 240,
-                    showsScrub: true,
-                    valueFormat: { "\(Int($0.rounded())) \(unit)" },
-                    dateFormat: { Self.hrClock.string(from: $0) },
-                    axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline,
-                    referenceLine: restingHR,
-                    referenceLineColor: theme.inkTertiary.opacity(StrandOpacity.muted),
-                    markedPoint: peakPoint,
-                    tightTrailing: true,
-                    accessibilityLabel: "Today's heart rate, 5-minute averages"
-                )
+                intradayCurveChart
                 peakRestingCaption
-                HStack(spacing: 9) {
-                    hrStatCell("Min", "\(Int((v.min() ?? 0).rounded()))")
-                    hrStatCell("Average", "\(Int((v.reduce(0, +) / Double(max(v.count, 1))).rounded()))")
-                    hrStatCell("Max", "\(Int((v.max() ?? 0).rounded()))")
-                }
+                intradayCurveStatsRow
             }
         } else {
             ChartWell(theme).empty(text: "No readings yet today.")
+        }
+    }
+
+    /// TrendChart for today's HR curve (extracted so its long argument list type-checks alone).
+    @ViewBuilder private var intradayCurveChart: some View {
+        let values: [Double] = intradayCurve.map(\.value)
+        let range: ClosedRange<Double> = Self.hrRange(values, resting: restingHR)
+        let refColor: Color = theme.inkTertiary.opacity(StrandOpacity.muted)
+        let axisColor: Color = theme.inkTertiary
+        let gridColor: Color = theme.hairline
+        let chartHeight: CGFloat = 240
+        let unitSuffix: String = unit
+        TrendChart(
+            points: intradayCurve,
+            gradient: chartGradient,
+            valueRange: range,
+            showsArea: true,
+            height: chartHeight,
+            showsScrub: true,
+            valueFormat: { (v: Double) -> String in "\(Int(v.rounded())) \(unitSuffix)" },
+            dateFormat: { (d: Date) -> String in Self.hrClock.string(from: d) },
+            axisLabelColor: axisColor,
+            gridLineColor: gridColor,
+            referenceLine: restingHR,
+            referenceLineColor: refColor,
+            markedPoint: peakPoint,
+            tightTrailing: true,
+            accessibilityLabel: "Today's heart rate, 5-minute averages"
+        )
+    }
+
+    /// Min / Average / Max cells under the intraday curve (precomputed strings cut inference cost).
+    @ViewBuilder private var intradayCurveStatsRow: some View {
+        let values: [Double] = intradayCurve.map(\.value)
+        let minRaw: Double = values.min() ?? 0.0
+        let maxRaw: Double = values.max() ?? 0.0
+        let sum: Double = values.reduce(0.0, +)
+        let count: Int = max(values.count, 1)
+        let avgRaw: Double = sum / Double(count)
+        let minText: String = "\(Int(minRaw.rounded()))"
+        let avgText: String = "\(Int(avgRaw.rounded()))"
+        let maxText: String = "\(Int(maxRaw.rounded()))"
+        HStack(spacing: 9) {
+            hrStatCell("Min", minText)
+            hrStatCell("Average", avgText)
+            hrStatCell("Max", maxText)
         }
     }
 
@@ -1006,21 +1032,48 @@ struct MetricDetailScreen: View {
 
     /// A weekend-vs-weekday reading of your steps, computed from the dated series — an honest «what moves
     /// it» with no extra engine. nil unless both groups have ≥3 completed days. (FER-824)
+    /// Split for type-check cost (FER-981): bucketing + summary are separate pure helpers.
     private var stepsMovers: (weekendAvg: Double, pct: Int, weekendHigher: Bool)? {
-        var wkend: [Double] = [], wkday: [Double] = []
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC") ?? cal.timeZone
-        for row in parsedSeries.dropLast() {          // completed days only
-            guard let d = row.date else { continue }
-            if cal.isDateInWeekend(d) { wkend.append(row.value) } else { wkday.append(row.value) }
+        let buckets: (weekend: [Double], weekday: [Double]) = stepsWeekendWeekdayBuckets
+        let weekend: [Double] = buckets.weekend
+        let weekday: [Double] = buckets.weekday
+        guard weekend.count >= 3, weekday.count >= 3 else { return nil }
+        return stepsMoversSummary(weekend: weekend, weekday: weekday)
+    }
+
+    /// Completed-day steps split into weekend vs weekday buckets (UTC gregorian). (FER-981)
+    private var stepsWeekendWeekdayBuckets: (weekend: [Double], weekday: [Double]) {
+        var wkend: [Double] = []
+        var wkday: [Double] = []
+        var cal: Calendar = Calendar(identifier: .gregorian)
+        let utc: TimeZone? = TimeZone(identifier: "UTC")
+        cal.timeZone = utc ?? cal.timeZone
+        let completed: ArraySlice<(day: String, date: Date?, value: Double)> = parsedSeries.dropLast()
+        for row in completed {
+            guard let d: Date = row.date else { continue }
+            if cal.isDateInWeekend(d) {
+                wkend.append(row.value)
+            } else {
+                wkday.append(row.value)
+            }
         }
-        guard wkend.count >= 3, wkday.count >= 3 else { return nil }
-        let we = wkend.reduce(0, +) / Double(wkend.count)
-        let wd = wkday.reduce(0, +) / Double(wkday.count)
-        guard wd > 0 else { return nil }
-        let pct = Int((abs(we - wd) / wd * 100).rounded())
+        let result: (weekend: [Double], weekday: [Double]) = (weekend: wkend, weekday: wkday)
+        return result
+    }
+
+    /// Weekend average + % gap vs weekdays from pre-bucketed values. nil if weekday mean is 0 or gap < 5%.
+    private func stepsMoversSummary(weekend: [Double], weekday: [Double])
+        -> (weekendAvg: Double, pct: Int, weekendHigher: Bool)? {
+        let we: Double = weekend.reduce(0.0, +) / Double(weekend.count)
+        let wd: Double = weekday.reduce(0.0, +) / Double(weekday.count)
+        guard wd > 0.0 else { return nil }
+        let gapRatio: Double = abs(we - wd) / wd * 100.0
+        let pct: Int = Int(gapRatio.rounded())
         guard pct >= 5 else { return nil }            // below ~noise, don't overclaim a pattern
-        return (we, pct, we >= wd)
+        let weekendHigher: Bool = we >= wd
+        let result: (weekendAvg: Double, pct: Int, weekendHigher: Bool) =
+            (weekendAvg: we, pct: pct, weekendHigher: weekendHigher)
+        return result
     }
 
     // MARK: - Derived series

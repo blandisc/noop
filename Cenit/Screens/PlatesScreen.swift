@@ -310,16 +310,29 @@ struct PlateChips: View {
         // (handoff voice), sharing the width equally.
         HStack(spacing: 6) {
             ForEach(items) { chip in
-                Text(chip.label)
-                    .font(InstrumentoType.groteskNumber(13)).monospacedDigit()
-                    .foregroundStyle(chip.owned ? theme.ink : theme.inkTertiary)
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .padding(.horizontal, 8).frame(height: 30).frame(maxWidth: .infinity)
-                    .background(Capsule().fill(chip.owned ? theme.surface : Color.clear))
-                    .overlay(Capsule().strokeBorder(chip.owned ? theme.hairlineStrong : theme.hairline,
-                                                    style: StrokeStyle(lineWidth: 1, dash: chip.owned ? [] : [3, 3])))
+                chipView(chip)
             }
         }
+    }
+
+    /// One inventory chip. Extracted + explicit types so `body` type-checks cheaply
+    /// (ternaries Color/Color.clear and `[CGFloat]` dash arrays are the slow inference).
+    private func chipView(_ chip: Chip) -> some View {
+        let labelColor: Color = chip.owned ? theme.ink : theme.inkTertiary
+        let fillColor: Color = chip.owned ? theme.surface : Color.clear
+        let borderColor: Color = chip.owned ? theme.hairlineStrong : theme.hairline
+        let dashPattern: [CGFloat] = chip.owned ? [] : [3, 3]
+        let chipHeight: CGFloat = 30
+        let lineWidth: CGFloat = 1
+
+        return Text(chip.label)
+            .font(InstrumentoType.groteskNumber(13)).monospacedDigit()
+            .foregroundStyle(labelColor)
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .padding(.horizontal, 8).frame(height: chipHeight).frame(maxWidth: .infinity)
+            .background(Capsule().fill(fillColor))
+            .overlay(Capsule().strokeBorder(borderColor,
+                                            style: StrokeStyle(lineWidth: lineWidth, dash: dashPattern)))
     }
 }
 #endif
