@@ -323,7 +323,9 @@ struct RootTabView: View {
             // Sueño lost its own screen — it now lives as a row inside «Cuerpo» (FER-186/212), so the
             // screenshot key lands on the Body tab (the screen that owns it) instead of a standalone push.
             case "body", "trends", "sleep": .body
-            case "coach":              .coach
+            // FER-992: «coach» sale del ruteo de screenshots — sin `lazyTab` en el TabView, asignar
+            // `selection = .coach` dejaba a SwiftUI en un estado sin tag (pestaña en blanco). Apagado,
+            // no roto. Re-enable con la pestaña: case "coach": .coach
             case "train", "entrenar":  .train
             case "settings", "ajustes", "more": .settings
             default:                   nil
