@@ -3,8 +3,8 @@
 > Documento de trabajo. Captura el **estado actual** del área *hero* de la pantalla
 > Today (la tarjeta grande de arriba) como punto de partida para retrabajarla en el
 > nuevo rediseño ("Instrumento diurno" / dial de 24h). No es la documentación
-> canónica — esa vive en [`docs/SCREENS.md`](SCREENS.md) y
-> [`docs/screen-map.html`](screen-map.html); este doc es el insumo del rediseño.
+> canónica — esa vive en [`docs/SCREENS.md`](SCREENS.md); este doc es el insumo
+> del rediseño.
 >
 > Fuente: `Cenit/Screens/TodayView.swift`. Última revisión: 2026-06-16 (post FER-106).
 > **Decisión de diseño añadida 2026-06-16** (ver §6): el hero se rediseña como un
@@ -333,4 +333,4 @@ si algún día se diera veredicto desde Apple Health, el estado §7-6 cambiaría
   Health), FER-61 (card de 4 puntos), y el rediseño "Instrumento diurno"
   (FER-131…136); el **ensamblaje de TodayView fue FER-135** (Done) y la
   **consolidación del hero en este doc es FER-160**.
-- **Mapa canónico:** [`docs/SCREENS.md`](SCREENS.md) · [`docs/screen-map.html`](screen-map.html).
+- **Mapa canónico:** [`docs/SCREENS.md`](SCREENS.md).
