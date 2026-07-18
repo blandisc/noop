@@ -249,9 +249,9 @@ enum DataSourceImportKind {
             : (age > 0 ? StrainScorer.tanakaHRmax(age: Double(age)) : nil)
         self.repo.strainHRmax = strainHRmax
         self.repo.strainSex = profile.sex
-        let deviceFamily: DeviceFamily = WhoopModel.persisted.deviceFamily
+        // FER-993 (D3): the engine takes the band capability bit, not the hardware-family type.
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
-                                               family: deviceFamily)
+                                               estimatesSteps: WhoopModel.persisted.estimatesSteps)
         // Smooth HR centrally so it's solid everywhere it's shown.
         live.pulse.$heartRate.sink { [weak self] (_: Int?) in self?.ingestHR() }.store(in: &hrCancellables)
         live.pulse.$rr.sink { [weak self] (_: [Int]) in self?.ingestHR() }.store(in: &hrCancellables)

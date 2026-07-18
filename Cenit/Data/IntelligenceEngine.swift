@@ -1,6 +1,5 @@
 import Foundation
 import Combine
-import WhoopProtocol
 import CenitStore
 import StrandAnalytics
 
@@ -24,19 +23,35 @@ final class IntelligenceEngine: ObservableObject {
     private let repo: Repository
     private let profile: ProfileStore
     private let deviceId: String
-    private let family: DeviceFamily
+    /// FER-993 (D3): the ONLY band fact this engine needs — true for the band that estimates steps
+    /// from motion (the 4.0), false for the one with a native counter (5/MG). The engine no longer
+    /// knows the hardware-family type at all: that type carries the GATT UUIDs and the CLIENT_HELLO
+    /// bytes, and stays behind the BLE boundary (WhoopProtocol). The app hands this bit in via
+    /// `WhoopModel.estimatesSteps`, which still derives it from the protocol layer's own
+    /// `estimatesSteps` rule — one source of truth, flowing one direction (BLE → intelligence).
+    /// Internal (not private) only so the D3 regression test can pin the default; never written after
+    /// `init`.
+    let estimatesSteps: Bool
 
     /// Additive skin-temp calibration (°C) for this band, handed to `AnalyticsEngine.analyzeDay`.
     /// The 4.0's historical (v24) record drops the integer part of the AS6221 register, so its raw
     /// reads ~28 °C too low; +28.5 °C (anchored to a real 4.0 backup) restores a worn night to
     /// ~32–36 °C so it survives the analytics gate. The 5.0 streams the full register → offset 0.
     /// This is band-calibration knowledge (the app's), kept out of the pure analytics package.
-    private var skinTempOffsetC: Double {
-        switch family {
-        case .whoop4: return 28.5
-        case .whoop5: return 0
-        }
-    }
+    ///
+    /// FER-993: keyed off the same 4.0-vs-5/MG bit as the steps estimate (`estimatesSteps` is exactly
+    /// "this is a 4.0"), so the value per band is unchanged from the hardware-family switch it
+    /// replaced. `testEstimatesStepsIsExactlyTheWhoop4Bit` (WhoopProtocol tests) pins that equivalence
+    /// at the source, so a future third band can't silently inherit 4.0 calibration.
+    private var skinTempOffsetC: Double { Self.skinTempOffsetC(estimatesSteps: estimatesSteps) }
+
+    /// Band calibration derived from the `estimatesSteps` bit. `nonisolated static` so the detached
+    /// heavy body (and the regression test) can read them without the main actor.
+    nonisolated static func skinTempOffsetC(estimatesSteps: Bool) -> Double { estimatesSteps ? 28.5 : 0 }
+
+    /// Motion-window span (days) the dirtiness signature scans: 60 for the band that estimates steps
+    /// (the calibration fit needs a generous window), 14 for the one that doesn't (circadian only).
+    nonisolated static func motionWindowDays(estimatesSteps: Bool) -> Int { estimatesSteps ? 60 : 14 }
 
     @Published var results: [Computed] = []      // newest first
     @Published var computing = false
@@ -70,8 +85,9 @@ final class IntelligenceEngine: ObservableObject {
         var id: String { day }
     }
 
-    init(repo: Repository, profile: ProfileStore, deviceId: String, family: DeviceFamily = .whoop4) {
-        self.repo = repo; self.profile = profile; self.deviceId = deviceId; self.family = family
+    init(repo: Repository, profile: ProfileStore, deviceId: String, estimatesSteps: Bool = true) {
+        self.repo = repo; self.profile = profile; self.deviceId = deviceId
+        self.estimatesSteps = estimatesSteps
     }
 
     // MARK: - Incremental-pass value types (FER-868)
@@ -124,7 +140,7 @@ final class IntelligenceEngine: ObservableObject {
         let now: Int
         let tzOffset: Int
         let deviceId: String
-        let family: DeviceFamily
+        let estimatesSteps: Bool
         let skinTempOffsetC: Double
         let maxDays: Int
         let force: Bool
@@ -218,7 +234,7 @@ final class IntelligenceEngine: ObservableObject {
             baselineEpoch: profile.baselineEpochOrNil,
             now: Int(Date().timeIntervalSince1970),
             tzOffset: TimeZone.current.secondsFromGMT(),
-            deviceId: deviceId, family: family, skinTempOffsetC: skinTempOffsetC,
+            deviceId: deviceId, estimatesSteps: estimatesSteps, skinTempOffsetC: skinTempOffsetC,
             maxDays: maxDays, force: force,
             stepsManualCoefficient: profile.stepsManualCoefficient)
 
@@ -306,7 +322,7 @@ final class IntelligenceEngine: ObservableObject {
         let contextKey = [
             "\(up.weightKg)", "\(up.heightCm)", "\(up.age)", up.sex, "\(up.stepTicksPerStep)",
             "\(inputs.maxHR ?? -1)", baselineEpoch ?? "", "\(tzOffset)", mode.rawValue,
-            "\(skinOffset)", "\(maxDays)", inputs.family.rawValue,
+            "\(skinOffset)", "\(maxDays)", "\(inputs.estimatesSteps)",
             "\(inputs.stepsManualCoefficient)",
         ].joined(separator: "|")
         if inputs.force || contextKey != cache.contextKey {
@@ -316,7 +332,7 @@ final class IntelligenceEngine: ObservableObject {
 
         // ── ONE count query per pass covers every night window AND the motion window: the dirtiness
         // signature for both the per-night loop and the motion block below.
-        let motionWindowDays = inputs.family.estimatesSteps ? 60 : 14   // 60 = steps calibration, 14 = circadian
+        let motionWindowDays = Self.motionWindowDays(estimatesSteps: inputs.estimatesSteps)   // 60 = steps calibration, 14 = circadian
         let nightsFrom = now - (maxDays - 1) * 86_400 - 30 * 3_600
         let motionFrom = AnalyticsEngine.localMidnight(now - (motionWindowDays - 1) * 86_400, tzOffsetSeconds: tzOffset)
         var dayCounts: [String: [Int: Int]] = [:]
@@ -690,7 +706,7 @@ final class IntelligenceEngine: ObservableObject {
         // points just computed) instead of 60 raw gravity reads per pass.
         var stepsCalibration: StepsEstimateEngine.Calibration?
         var stepsProgressDays: Int?
-        if inputs.family.estimatesSteps {
+        if inputs.estimatesSteps {
             // Calibration window: a generous 60 days (not the 21 the scoring loop uses) so enough
             // both-have days accumulate to fit. Reference steps = the apple-health daily `steps`
             // (the same source the dashboard's steps tile reads); motion = the [localMidnight, +24h)
