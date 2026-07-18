@@ -403,11 +403,13 @@ struct IntervalTimerView: View {
 
     // MARK: Config steppers (configure screen only)
 
-    private func configStepper(title: LocalizedStringKey, unit: String?, value: Binding<Int>,
+    private func configStepper(title: String, unit: String?, value: Binding<Int>,
                                range: ClosedRange<Int>, step: Int, tint: Color) -> some View {
-        HStack {
+        // El literal inglés ES la clave del catálogo; VoiceOver necesita el String ya resuelto.
+        let accessibilityName = String(localized: String.LocalizationValue(title))
+        return HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
+                Text(LocalizedStringKey(title)).font(StrandFont.headline).foregroundStyle(theme.ink)
                 Text("\(range.lowerBound)–\(range.upperBound)\(unit.map { " \($0)" } ?? "") · step \(step)")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
@@ -421,10 +423,8 @@ struct IntervalTimerView: View {
                     Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
             }
-            Stepper("", value: value, in: range, step: step)
-                .labelsHidden()
-                .tint(theme.inkSecondary)
-                .accessibilityLabel(title)
+            PaperStepper(value: value, in: range, step: step,
+                         label: accessibilityName, unit: unit)
         }
     }
 
