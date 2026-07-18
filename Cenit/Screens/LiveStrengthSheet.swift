@@ -242,6 +242,10 @@ struct LiveStrengthSheet: View {
     // phase content + chrome + presenters + confirms — same render, smaller expressions for the checker.
     var body: some View {
         bodyWithConfirms
+        // FER-998: la sesión se presenta como `fullScreenCover`, así que no hereda el gesto de borde
+        // de iOS — se lo damos. Hace lo MISMO que el botón: minimiza. La sesión sigue viva; deslizar
+        // nunca la termina ni la descarta.
+        .edgeSwipeToExit { model.strengthSheetPresented = false }
         .enableInjection()
     }
 
@@ -1218,13 +1222,11 @@ struct LiveStrengthSheet: View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             // Nav row: minimize «‹» (session stays alive, the pill re-opens it) · live/paused pulse.
             HStack(spacing: 10) {
-                Button { model.strengthSheetPresented = false } label: {
-                    StrandIcon.back.image
-                        .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
-                        .frame(width: 44, height: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Minimize session"))
+                // FER-998: el mismo disco que el resto de la app. El rol es `.back` (chevron) pero
+                // NO vuelve: minimiza — la sesión sigue viva y la píldora la reabre. Por eso el
+                // label de VoiceOver es suyo y no el «Atrás» del componente.
+                BackButton(role: .back, theme: theme) { model.strengthSheetPresented = false }
+                    .accessibilityLabel(Text("Minimize session"))
                 Spacer(minLength: 8)
                 HStack(spacing: 6) {
                     // Canvas pass 2026-07-15: recording-red and STILL — a state lamp, not a heartbeat
@@ -1236,7 +1238,7 @@ struct LiveStrengthSheet: View {
                 }
                 .accessibilityElement(children: .combine)
             }
-            .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
+            .padding(.leading, -2)   // el disco de 40 vive en un marco de 44: solo 2pt de aire que recuperar
 
             // Title, underlined solid `ink` (not the dotted neutral rule reserved for table values).
             // Canvas pass 2026-07-15: sin subrayado — el peso de la tipografía basta (owner call).

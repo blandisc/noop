@@ -79,7 +79,9 @@ struct WorkoutEditSheet: View {
             .toolbarBackground(theme.paper, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { cancel() }.foregroundStyle(theme.ink)
+                    // FER-998: el disco de papel en vez de la palabra «Cancel» — la misma salida que
+                    // el resto de la app. `cancel()` conserva la confirmación de descartar.
+                    BackButton(role: .close, theme: theme) { cancel() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
@@ -90,6 +92,9 @@ struct WorkoutEditSheet: View {
             }
         }
         .interactiveDismissDisabled(isDirty)
+        // FER-998: una hoja no tiene gesto de borde; se lo damos. Pasa por `cancel()`, así que con
+        // cambios sin guardar sale la confirmación de descartar igual que al tocar el botón.
+        .edgeSwipeToExit { cancel() }
         .instrumentoConfirm(
             isPresented: $showDiscard,
             title: String(localized: "Discard changes?"),
