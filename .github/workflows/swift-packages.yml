@@ -29,8 +29,8 @@ jobs:
     # Linux-safe packages run on ubuntu (1× billing / faster queue). The rest need macOS
     # because of Apple-only frameworks unavailable on Linux:
     #   - StrandDesign: SwiftUI / Charts / UIKit / AppKit
-    #   - WhoopStore:   Compression (RawOutbox.swift) — and its dependents inherit it:
-    #   - StrandAnalytics, StrandImport depend on WhoopStore, so they fail to build on
+    #   - CenitStore:   Compression (RawOutbox.swift) — and its dependents inherit it:
+    #   - StrandAnalytics, StrandImport depend on CenitStore, so they fail to build on
     #     Linux transitively.
     #   - StrandTraining: Compression (Exercise.swift — zlib-inflated catalog, FER-875).
     # Only WhoopProtocol is pure and builds/tests cleanly on Linux.
@@ -43,7 +43,7 @@ jobs:
             os: ubuntu-latest
           - package: StrandTraining
             os: macos-15
-          - package: WhoopStore
+          - package: CenitStore
             os: macos-15
           - package: StrandAnalytics
             os: macos-15

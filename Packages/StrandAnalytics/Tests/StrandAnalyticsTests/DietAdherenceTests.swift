@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 final class DietAdherenceTests: XCTestCase {
 

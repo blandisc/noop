@@ -1,7 +1,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 import Foundation
 
 // MARK: - Apple Health (per-source page) — light «Instrumento diurno» (FER-338)

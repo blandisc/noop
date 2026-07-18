@@ -1,6 +1,6 @@
 import Foundation
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 
 /// Pure helper: correlate the strap's monotonic device clock to wall time.
 /// REALTIME_DATA timestamps are a device monotonic epoch; the server/app maps them to

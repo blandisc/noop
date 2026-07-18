@@ -32,7 +32,7 @@ packages — they build and test on their own, no Xcode project and no strap nee
 cd Packages/WhoopProtocol && swift build && swift test
 ```
 
-The five packages are `WhoopProtocol` (BLE framing / decode), `WhoopStore`
+The five packages are `WhoopProtocol` (BLE framing / decode), `CenitStore`
 (SQLite persistence), `StrandAnalytics` (recovery / strain / HRV / sleep math),
 `StrandImport` (WHOOP CSV + Apple Health importers), and `StrandDesign` (the
 SwiftUI design system).

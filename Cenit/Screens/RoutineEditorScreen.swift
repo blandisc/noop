@@ -3,7 +3,6 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
-import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Rutina» — the ONE prescription editor (FER-839, handoff entrenamiento-v4 §2, screens 3a/4a/4b)
 //
@@ -76,8 +75,6 @@ struct RoutineEditorScreen: View {
     @State private var routineTint: Color = .clear
     @State private var groupTitle: String = ""
     @State private var saveError = false
-    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
-    @ObserveInjection private var inject
     @FocusState private var focusedCell: String?
 
     /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
@@ -120,7 +117,14 @@ struct RoutineEditorScreen: View {
         }
         .animation(StrandMotion.fade, value: saveError)
         .toolbar(.hidden, for: .navigationBar)
-        .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
+        // FER-988: ocultar la barra mata el gesto de volver; esto lo devuelve. Con cambios sin
+        // guardar vetamos el pop y corremos `back()` — el mismo autosave que corre el botón, en vez
+        // de sacar la pantalla de la pila y perder el trabajo.
+        .keepsSwipeBack {
+            guard dirty || isOrphan else { return true }
+            back()
+            return false
+        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -151,7 +155,6 @@ struct RoutineEditorScreen: View {
                 }
             )
             .toolbar(.hidden, for: .navigationBar)
-            .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
         }
         // 2c as a push: the per-exercise progression plan (menu «···» → Progresión, mock 4b).
         .navigationDestination(item: $progressionTarget) { t in
@@ -180,7 +183,6 @@ struct RoutineEditorScreen: View {
                 }
             )
             .toolbar(.hidden, for: .navigationBar)
-            .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
         }
         .sheet(isPresented: $showLibrary) {
             ExerciseLibraryScreen { picks in addOrReplace(with: picks) }
@@ -203,7 +205,6 @@ struct RoutineEditorScreen: View {
             await load()
             loaded = true
         }
-        .enableInjection()
     }
 
     // MARK: - Origin chrome (mock 4a)
@@ -230,18 +231,12 @@ struct RoutineEditorScreen: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Button { back() } label: {
-                HStack(spacing: 4) {
-                    StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                    Text("Back").font(InstrumentoType.grotesk(15, weight: .semibold))
-                }
-                .foregroundStyle(theme.ink).frame(minHeight: 44).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).accessibilityLabel(Text("Back"))
+            BackButton(role: .back, theme: theme) { back() }
+                .padding(.leading, -2)
             Spacer()
             if dirty {
                 Button { undo() } label: {
-                    Text(String(localized: "Undo")).font(InstrumentoType.grotesk(15, weight: .semibold)).foregroundStyle(theme.ink)
+                    Text(String(localized: "Undo")).font(StrandFont.body).foregroundStyle(theme.ink)
                         .frame(minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -789,6 +784,9 @@ struct RoutineEditorScreen: View {
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
 
+    /// The card's closing row (approved mock): TWIN pills of equal weight — «＋ Agregar serie» on the
+    /// sunken gray, «🔥 Calentamiento» spelled in the ember voice (it deserved to be seen). The warm-up
+    /// pill hides once the ramp exists.
     /// The card's closing row: the shared `SetActionPills` — twin full-width pills, ink primary + ember
     /// outline warm-up, identical to the live session's (see the component for the decisions behind it).
     private func addRowPills(_ idx: Int) -> some View {
@@ -825,7 +823,7 @@ struct RoutineEditorScreen: View {
                 // «＋ Nueva rutina» del hub — antes era un renglón fantasma que nadie veía.
                 HStack(spacing: 8) {
                     StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add exercise").font(InstrumentoType.grotesk(14, weight: .semibold))
+                    Text("Add exercise").font(StrandFont.subhead.weight(.semibold))
                 }
                 .foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -862,7 +860,7 @@ struct RoutineEditorScreen: View {
     private var emptyFallback: some View {
         VStack(spacing: 10) {
             StrandIcon.sleep.image.font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
-            Text(isPlanDay ? "Rest day" : "No routine").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
+            Text(isPlanDay ? "Rest day" : "No routine").font(StrandFont.title2).foregroundStyle(theme.ink)
             Text(isPlanDay ? "This day has no routine. Assign one from the weekly plan."
                            : "This routine could not be found.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

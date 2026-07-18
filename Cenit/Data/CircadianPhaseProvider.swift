@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 import StrandAnalytics
 
 // CircadianPhaseProvider.swift — the app-layer read for FER-712's «Tu reloj corporal» surface. It

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 // WhatMovesIt.swift — FER-209. App-layer orchestration for the "Qué la mueve" block.
 //

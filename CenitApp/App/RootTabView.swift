@@ -20,7 +20,6 @@ struct RootTabView: View {
     /// Every screen reachable by pushing onto a hub tab's stack. Raw values match the `noop.nav.<key>`
     /// debug-navigation keys (`ScreenshotNav.swift`) so screenshot automation still reaches each one.
     private enum SecondaryScreen: String, Hashable {
-        case coach                                // Coach hub
         case library                              // Entrenar hub — exercise library (FER-346)
         case workoutHistory = "workouthistory"    // Entrenar hub — «Mis entrenamientos» (FER-504)
         case breathe, intervals, dieta            // Entrenar hub
@@ -58,7 +57,6 @@ struct RootTabView: View {
     /// One type-erased path per hub. `NavigationPath` (not a homogeneous `[SecondaryScreen]`) because
     /// the Ajustes stack carries Explore, which pushes `MetricDescriptor` values onto it — a typed
     /// path crossing a second value type crashed SwiftUI (FER-171).
-    @State private var coachStack = NavigationPath()
     @State private var trainStack = NavigationPath()
     @State private var settingsStack = NavigationPath()
     /// Bridges the workout-history list and the session detail (siblings in `trainStack`) so a delete or
@@ -85,12 +83,10 @@ struct RootTabView: View {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
             lazyTab(.body,  "Tendencias", "chart.xyaxis.line") { CuerpoView() }
 
-            // Patrones — the redesigned Coach tab (was «el Bucle», FER-292): one «Instrumento diurno»
-            // screen fed by the InsightEngine (FER-290). The screen now exists to surface findings your
-            // data reveals on its own and put them to the test with experiments — the verdict/recovery,
-            // señales, trayectoria, meta and «Pregúntale» chat were retired from here (the verdict lives
-            // on «Hoy»). It's a LIGHT tab (warm paper), so it joins Hoy/Cuerpo in `isLightTab`.
-            lazyTab(.coach, "Patrones", "sparkles") { BucleView() }
+            // FER-992: Patrones off the dock (code + Tab.coach + BucleView stay; re-enable by restoring
+            // the lazyTab below and the barItems row). Was: one «Instrumento diurno» screen fed by
+            // InsightEngine (FER-290/292), light tab (warm paper).
+            // lazyTab(.coach, "Patrones", "sparkles") { BucleView() }
 
             trainTab
             settingsTab
@@ -110,7 +106,9 @@ struct RootTabView: View {
                 openRoutine: { id in trainStack.append(RoutineEditorRoute.today(routineId: id)) },
                 openBreathe: { trainStack.append(SecondaryScreen.breathe) },
                 openIntervals: { trainStack.append(SecondaryScreen.intervals) },
-                openDiet: { trainStack.append(SecondaryScreen.dieta) },
+                // FER-992: Dieta UI entry off — SecondaryScreen.dieta + DietCaptureView stay.
+                // Re-enable: openDiet: { trainStack.append(SecondaryScreen.dieta) },
+                openDiet: { },
                 openHistory: { trainStack.append(SecondaryScreen.workoutHistory) },
                 openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
@@ -325,14 +323,16 @@ struct RootTabView: View {
             // Sueño lost its own screen — it now lives as a row inside «Cuerpo» (FER-186/212), so the
             // screenshot key lands on the Body tab (the screen that owns it) instead of a standalone push.
             case "body", "trends", "sleep": .body
-            case "coach":              .coach
+            // FER-992: «coach» sale del ruteo de screenshots — sin `lazyTab` en el TabView, asignar
+            // `selection = .coach` dejaba a SwiftUI en un estado sin tag (pestaña en blanco). Apagado,
+            // no roto. Re-enable con la pestaña: case "coach": .coach
             case "train", "entrenar":  .train
             case "settings", "ajustes", "more": .settings
             default:                   nil
             }
             if let tab {
                 selection = tab
-                coachStack = NavigationPath(); trainStack = NavigationPath(); settingsStack = NavigationPath()
+                trainStack = NavigationPath(); settingsStack = NavigationPath()
                 return
             }
             // Secondary screens: select the owning hub and push the screen onto its stack.
@@ -341,7 +341,6 @@ struct RootTabView: View {
                 selection = owner
                 var path = NavigationPath(); path.append(sec)
                 switch owner {
-                case .coach:    coachStack = path
                 case .train:    trainStack = path
                 default:        settingsStack = path
                 }
@@ -368,8 +367,6 @@ struct RootTabView: View {
     /// screenshot-nav to it crashed the app. Listing every case makes that a compile error instead.
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
-        case .coach:
-            return .coach
         case .library, .workoutHistory, .breathe, .intervals, .dieta, .weeklyPlan, .misRutinas,
              .restDay, .otherWays, .routineToday:
             return .train
@@ -417,14 +414,14 @@ struct RootTabView: View {
 
     // MARK: - Custom bar (FER-163)
 
-    /// The five tabs as drawn by `InstrumentTabBar`. Thin-stroke set: the 24h dial for Hoy (the bar's
+    /// The dock tabs as drawn by `InstrumentTabBar`. Thin-stroke set: the 24h dial for Hoy (the bar's
     /// signature mark), line glyphs for the rest. (Hidden `tabItem` icons use the filled variants from
-    /// the issue spec; only this custom bar is visible.)
+    /// the issue spec; only this custom bar is visible.) FER-992: Patrones removed — four tabs.
     private var barItems: [InstrumentTabBar<Tab>.Item] {
         [
             .init(.today,    "Today",   .dial),
             .init(.body,     "Tendencias", .curveNodes),
-            .init(.coach,    "Patrones", .linkedCircles),
+            // FER-992: Patrones off — re-enable: .init(.coach, "Patrones", .linkedCircles),
             .init(.train,    "Train",   .system("figure.strengthtraining.functional")),
             .init(.settings, "Ajustes", .system("gearshape")),
         ]
@@ -433,7 +430,6 @@ struct RootTabView: View {
     @ViewBuilder
     private func secondaryDestination(_ screen: SecondaryScreen) -> some View {
         switch screen {
-        case .coach:        CoachView()
         case .library:      ExerciseLibraryScreen()
         case .workoutHistory: WorkoutHistoryScreen()
         case .breathe:      BreathingView()

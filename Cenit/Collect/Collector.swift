@@ -1,10 +1,10 @@
 import Foundation
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 
-/// The subset of WhoopStore the Collector needs. A protocol so tests can inject a spy
-/// (WhoopStore is `final`). WhoopStore conforms via the extension below.
-/// Not @MainActor — the WhoopStore actor's async methods satisfy the async requirements;
+/// The subset of CenitStore the Collector needs. A protocol so tests can inject a spy
+/// (CenitStore is `final`). CenitStore conforms via the extension below.
+/// Not @MainActor — the CenitStore actor's async methods satisfy the async requirements;
 /// a @MainActor SpyStore in tests also conforms (async witnesses hop actors).
 protocol StoreWriting: AnyObject {
     @discardableResult
@@ -13,7 +13,7 @@ protocol StoreWriting: AnyObject {
             spo2: Int, skinTemp: Int, resp: Int, gravity: Int)
     func enqueueRawBatch(_ meta: RawBatchMeta, frames: [[UInt8]]) async throws
 }
-extension WhoopStore: StoreWriting {}
+extension CenitStore: StoreWriting {}
 
 /// Cadence: flush after this many buffered frames OR this many seconds since the last
 /// flush — whichever first. Also flushed explicitly on disconnect/foreground.
@@ -57,7 +57,7 @@ final class Collector {
     private let store: StoreWriting
     /// Concrete store for prune + stats (the StoreWriting seam covers the hot insert/enqueue path;
     /// prune/stats are infrequent so a direct reference is clearer than widening the protocol).
-    private let concreteStore: WhoopStore?
+    private let concreteStore: CenitStore?
     private let deviceId: String
     private let policy: CollectorPolicy
     /// Research toggle. When false (DEFAULT) no raw frames are persisted at all — the app is
@@ -100,7 +100,7 @@ final class Collector {
         self.enableRawCapture = enableRawCapture
         self.now = now; self.monotonic = monotonic
         self.batchStartedAt = monotonic()
-        self.concreteStore = store as? WhoopStore
+        self.concreteStore = store as? CenitStore
     }
 
     /// Light storage summary for the UI. nil if there's no concrete store or the read throws.

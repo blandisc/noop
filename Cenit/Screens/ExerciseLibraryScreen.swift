@@ -43,6 +43,10 @@ struct ExerciseLibraryScreen: View {
     @State private var selected: Set<String> = []
     @State private var detail: Exercise? = nil
     @State private var showCreate = false
+    /// Ids of user-created exercises — the only rows the library may edit (FER-995).
+    @State private var customIds: Set<String> = []
+    /// The exercise being completed/edited in the sheet.
+    @State private var editingExercise: Exercise? = nil
     @State private var filtered: [Exercise] = []
     @State private var mine: [Exercise] = []
     @State private var rest: [Exercise] = []
@@ -95,8 +99,16 @@ struct ExerciseLibraryScreen: View {
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showCreate) {
-            CreateExerciseSheet(muscles: muscleOptions, equipment: equipmentOptions) { ex in
+            CreateExerciseSheet(catalog: exercises) { ex in
                 Task { try? await repo.saveCustomExercise(ex); await reload() }
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
+        // FER-995: completing an exercise created before the muscle was required — the same form,
+        // pre-filled, keeping the id so the save edits in place.
+        .sheet(item: $editingExercise) { ex in
+            CreateExerciseSheet(catalog: exercises, editing: ex) { updated in
+                Task { try? await repo.saveCustomExercise(updated); await reload() }
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
@@ -226,9 +238,15 @@ struct ExerciseLibraryScreen: View {
         }
     }
 
+    /// A user-created exercise with no primary muscle: it doesn't count toward the muscle map or the
+    /// weekly volume, so the library offers to complete it instead of opening its (empty) detail (FER-995).
+    private func needsMuscle(_ ex: Exercise) -> Bool {
+        customIds.contains(ex.id) && ex.primaryMuscles.isEmpty
+    }
+
     private func exerciseRow(_ ex: Exercise, showsHistory: Bool) -> some View {
         Button {
-            detail = ex
+            if needsMuscle(ex) { editingExercise = ex } else { detail = ex }
         } label: {
             HStack(spacing: CenitMetrics.gap) {
                 // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
@@ -238,7 +256,12 @@ struct ExerciseLibraryScreen: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
                         .multilineTextAlignment(.leading)
-                    Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    if needsMuscle(ex) {
+                        Text("No muscle · tap to complete")
+                            .font(StrandFont.caption).foregroundStyle(theme.dataStrain)
+                    } else {
+                        Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    }
                 }
                 Spacer(minLength: 8)
                 // No sparkline here (FER-951): with long catalog names it starved the title into a
@@ -360,6 +383,7 @@ struct ExerciseLibraryScreen: View {
 
     private func reload() async {
         exercises = await repo.allExercises()
+        customIds = await repo.customExerciseIds()
         // Filter options are invariant between reloads — derive them once here, not per body pass.
         muscleOptions = Set(exercises.flatMap { $0.primaryMuscles }).sorted()
         equipmentOptions = Set(exercises.compactMap { $0.equipment }).sorted()
@@ -416,21 +440,61 @@ struct ExerciseLibraryScreen: View {
 // MARK: - Create exercise (sheet)
 
 /// «Crear ejercicio propio»: name + primary muscle + equipment + record type. Builds a user-defined
-/// `Exercise` (a fresh UUID id) and hands it back; the catalog stays read-only.
-private struct CreateExerciseSheet: View {
-    let muscles: [String]
-    let equipment: [String]
+/// `Exercise` and hands it back; the catalog stays read-only.
+///
+/// Shared by three callers (FER-995): the library's «create your own», the import flow's «create new»
+/// (pre-filled with the plan's name and a muscle proposed by `MuscleInference`), and the repair path
+/// that completes an exercise created before this existed. When `editing` is non-nil the sheet keeps
+/// that exercise's id, so `saveCustomExercise`'s upsert edits in place instead of adding a duplicate.
+///
+/// The primary muscle is **required**: an exercise without one is invisible to the muscle map, the
+/// weekly volume and `RoutineClassifier`, and that was silent data loss (FER-995).
+struct CreateExerciseSheet: View {
+    /// Non-nil → edit mode: keeps this exercise's id and pre-fills every field from it.
+    var editing: Exercise? = nil
     let onCreate: (Exercise) -> Void
+    /// The picker vocabularies, derived once from the catalog the caller passes — so both flows offer
+    /// exactly the same options without each one re-deriving them.
+    private let muscles: [String]
+    private let equipment: [String]
+    /// The muscle this sheet proposed from the name. Derived here rather than passed in, so proposing
+    /// is the sheet's own behaviour and no caller can forget it.
+    private let proposedMuscle: String
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
-    @State private var name = ""
-    @State private var muscle: String = ""
-    @State private var equip: String = ""
-    @State private var type: ExerciseType = .weightReps
+    @State private var name: String
+    @State private var muscle: String
+    @State private var equip: String
+    @State private var type: ExerciseType
     @State private var showMusclePicker = false
     @State private var showEquipPicker = false
+
+    /// `initialName` / `initialType` seed a *fresh* exercise (the import flow passes the plan's name and
+    /// the type it declared); `editing` overrides both.
+    init(catalog: [Exercise], editing: Exercise? = nil,
+         initialName: String = "", initialType: ExerciseType = .weightReps,
+         onCreate: @escaping (Exercise) -> Void) {
+        self.muscles = Set(catalog.flatMap { $0.primaryMuscles }).sorted()
+        self.equipment = Set(catalog.compactMap { $0.equipment }).sorted()
+        self.editing = editing
+        self.onCreate = onCreate
+        let seedName = editing?.name ?? initialName
+        let proposed = MuscleInference.primaryMuscle(forName: seedName) ?? ""
+        self.proposedMuscle = proposed
+        _name = State(initialValue: seedName)
+        _muscle = State(initialValue: editing?.primaryMuscles.first ?? proposed)
+        _equip = State(initialValue: editing?.equipment ?? "")
+        _type = State(initialValue: editing?.type ?? initialType)
+    }
+
+    private var isEditing: Bool { editing != nil }
+    /// True while the muscle shown is still the one proposed from the name — the sheet says so, so a
+    /// guess is never passed off as a fact. An exercise that already had a muscle isn't a proposal.
+    private var showsProposedHint: Bool {
+        !proposedMuscle.isEmpty && muscle == proposedMuscle && editing?.primaryMuscles.first == nil
+    }
 
     var body: some View {
         ScrollView {
@@ -438,7 +502,7 @@ private struct CreateExerciseSheet: View {
                 VStack(alignment: .leading, spacing: 2) {
                     // The sheet speaks the same Grotesk voice as the Library header that opens it.
                     Text("Library").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-                    Text("New exercise")
+                    Text(isEditing ? "Edit exercise" : "New exercise")
                         .font(InstrumentoType.groteskHeroNumeral(28)).tracking(InstrumentoType.groteskHeroTrackingScaled(28))
                         .foregroundStyle(theme.ink)
                 }
@@ -456,6 +520,14 @@ private struct CreateExerciseSheet: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     pickerRow("Primary muscle", isPresented: $showMusclePicker, selection: $muscle, options: muscles, placeholder: String(localized: "Pick a muscle"), label: StrengthDisplay.muscle)
+                    // The muscle is what makes the exercise count: say why it's being asked, and never
+                    // let a proposal pass as a fact (FER-995).
+                    Text(showsProposedHint
+                         ? "Suggested from the name · change it if it's wrong."
+                         : "Without it the exercise won't count toward your muscle map or weekly volume.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, CenitMetrics.space1)
                     Divider().overlay(theme.hairline)
                     pickerRow("Equipment", isPresented: $showEquipPicker, selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"), label: StrengthDisplay.equipment)
                 }
@@ -466,7 +538,8 @@ private struct CreateExerciseSheet: View {
                 }
 
                 Button { create() } label: {
-                    Text("Create exercise").font(InstrumentoType.grotesk(15, weight: .bold))
+                    Text(isEditing ? "Save changes" : "Create exercise")
+                        .font(InstrumentoType.grotesk(15, weight: .bold))
                         .foregroundStyle(canCreate ? theme.ink : theme.inkTertiary)
                         .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.gap)
                         .background(theme.surface, in: Capsule(style: .continuous))
@@ -522,12 +595,20 @@ private struct CreateExerciseSheet: View {
         .buttonStyle(.plain)
     }
 
-    private var canCreate: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    /// The muscle is required alongside the name (FER-995): shipping an exercise with no primary muscle
+    /// is what made imported exercises invisible to the analysis in the first place.
+    private var canCreate: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && !muscle.isEmpty
+    }
 
     private func create() {
-        let ex = Exercise(id: UUID().uuidString, name: name.trimmingCharacters(in: .whitespaces),
+        // Edit mode reuses the id so the store's upsert updates in place; anything else the exercise
+        // already carried (instructions, artwork) is preserved rather than blanked by this form.
+        let base = editing
+        let ex = Exercise(id: base?.id ?? UUID().uuidString, name: name.trimmingCharacters(in: .whitespaces),
                           type: type, equipment: equip.isEmpty ? nil : equip,
-                          primaryMuscles: muscle.isEmpty ? [] : [muscle], secondaryMuscles: [], instructions: [])
+                          primaryMuscles: [muscle], secondaryMuscles: base?.secondaryMuscles ?? [],
+                          instructions: base?.instructions ?? [])
         onCreate(ex); dismiss()
     }
 }

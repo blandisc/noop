@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 // SleepMath.swift — the single source of truth for sleep "need" and accumulated "debt" (FER-339).
 //

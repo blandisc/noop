@@ -101,7 +101,6 @@ struct CenitApp: App {
                 .environmentObject(model.inactivity)
                 .environmentObject(model.goal)
                 .environmentObject(model.intelligence)
-                .environmentObject(model.coach)
                 .environmentObject(health)
                 .environmentObject(autoBackup)
                 .environmentObject(tabRouter)

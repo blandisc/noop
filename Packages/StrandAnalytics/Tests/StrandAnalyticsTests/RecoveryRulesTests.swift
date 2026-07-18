@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import StrandAnalytics
 
 /// FER-709 — «las cinco reglas»: the mark rows must carry the engine's REAL weights and their lit

@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 import StrandDesign
 import StrandImport
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 import UIKit       // UIApplication.openSettingsURLString (open Settings when notifications are denied)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 

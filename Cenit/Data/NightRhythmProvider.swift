@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 import WhoopProtocol
 import StrandAnalytics
 

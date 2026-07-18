@@ -82,13 +82,12 @@ Cenit/
 ├── Packages/
 │   ├── WhoopProtocol/          # BLE frame parsing, CRC, command/event/packet decode
 │   │                           #   (also builds the `whoop-decode` CLI — runs on Linux)
-│   ├── WhoopStore/             # GRDB/SQLite persistence (migrations, streams, caches)
+│   ├── CenitStore/             # GRDB/SQLite persistence (migrations, streams, caches)
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
 │   ├── StrandTraining/         # strength domain types, catalog, sets/reps rules (pure)
 │   ├── StrandImport/           # WHOOP CSV + Apple Health importers
 │   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
-├── Tools/
-│   └── Backfill/               # `swift run backfill` — re-runs importers into the on-device DB
+├── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
 ├── tools/
 │   └── linux-capture/          # Headless Linux capture workbench (Python/bleak + whoop-decode)
 └── Fixtures/                   # Sample WHOOP export used by tests
@@ -99,7 +98,7 @@ Cenit/
 | If your change is about… | It belongs in… | Notes |
 |---|---|---|
 | Decoding strap bytes, CRC, framing, packet/event types | `Packages/WhoopProtocol` | **Platform-pure — no CoreBluetooth.** Runs in tests/CLI unchanged. |
-| Persisting decoded data, migrations, caches, reads | `Packages/WhoopStore` | GRDB/SQLite only. |
+| Persisting decoded data, migrations, caches, reads | `Packages/CenitStore` | GRDB/SQLite only. |
 | Computing recovery / strain / HRV / sleep / correlations | `Packages/StrandAnalytics` | Pure, database-free analyzers. |
 | Strength domain types & rules (exercise catalog, sets/reps modeling, progression) | `Packages/StrandTraining` | Pure domain; live session state & persistence → app layer (`Cenit/`). |
 | Parsing WHOOP CSV or Apple Health `export.xml` | `Packages/StrandImport` | Header-name-driven CSV; streaming SAX XML. |
@@ -157,7 +156,7 @@ the whole app and needs no strap:
 
 ```bash
 cd Packages/WhoopProtocol && swift build && swift test
-cd Packages/WhoopStore     && swift build && swift test
+cd Packages/CenitStore     && swift build && swift test
 cd Packages/StrandAnalytics && swift build && swift test
 cd Packages/StrandImport   && swift build && swift test
 cd Packages/StrandDesign   && swift build && swift test
@@ -433,7 +432,7 @@ to the Explore / Compare / tile UI. The catalog is the contract.
 
 1. **Write the series.** An importer (`Packages/StrandImport`) or analyzer
    (`Packages/StrandAnalytics`) produces points; they're persisted via
-   `WhoopStore.upsertMetricSeries(_:deviceId:)` into the `metricSeries` table. **The series `key`
+   `CenitStore.upsertMetricSeries(_:deviceId:)` into the `metricSeries` table. **The series `key`
    must match exactly** what the catalog expects.
 2. **Register it in the catalog.** Add a `MetricDescriptor` row in
    `Cenit/Data/MetricCatalog.swift` via the `d(...)` helper:
@@ -492,7 +491,7 @@ Only after re-reading [The BLE safety contract](#the-ble-safety-contract-read-th
 
 ### Add a database column or table
 
-Schema lives in `Packages/WhoopStore/Sources/WhoopStore/Database.swift` as a **versioned GRDB
+Schema lives in `Packages/CenitStore/Sources/CenitStore/Database.swift` as a **versioned GRDB
 `DatabaseMigrator`** (currently through `v35`).
 
 - **Never edit an existing migration.** They've already run on users' on-device databases. Add a

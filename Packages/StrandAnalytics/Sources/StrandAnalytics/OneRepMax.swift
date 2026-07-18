@@ -19,7 +19,7 @@ import Foundation
 // A true single (reps == 1) is its own 1RM and is returned as the bare weight.
 //
 // Pure & database-free: operates on `(weightKg, reps)` primitives, so it needs no dependency on
-// StrandTraining's `SetEntry`. The caller (the detail screen) reads work sets from WhoopStore, maps
+// StrandTraining's `SetEntry`. The caller (the detail screen) reads work sets from CenitStore, maps
 // them to tuples, and buckets by day for the sparkline.
 
 public enum OneRepMax {

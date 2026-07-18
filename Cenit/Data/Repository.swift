@@ -1,11 +1,11 @@
 import Foundation
 import Combine
-import WhoopStore
+import CenitStore
 import WhoopProtocol
 import StrandAnalytics
 
 /// Per-day sleep figures the WHOOP export carried verbatim (metricSeries rows written by
-/// WhoopImporter under the imported deviceId). The Detalle de Sueño prefers these over its on-device
+/// the retired WHOOP CSV import under the imported deviceId). The Detalle de Sueño prefers these over its on-device
 /// APPROXIMATE recomputations.
 struct ImportedSleepFigures: Equatable {
     var performancePct: Double?   // "sleep_performance", 0–100
@@ -14,7 +14,7 @@ struct ImportedSleepFigures: Equatable {
     var debtMin: Double?          // "sleep_debt_min", minutes
 }
 
-/// Read model over the on-device WhoopStore. Opens its own handle (WAL + busy-timeout makes the
+/// Read model over the on-device CenitStore. Opens its own handle (WAL + busy-timeout makes the
 /// two-handle BLEManager+Repository pattern safe) and publishes the dashboard caches the screens bind to.
 @MainActor
 final class Repository: ObservableObject {
@@ -36,11 +36,11 @@ final class Repository: ObservableObject {
     /// streams by IntelligenceEngine). Merged UNDER the imported `deviceId` rows at read time, so a
     /// real WHOOP import always wins and the strap-only user still gets a populated dashboard.
     private var computedDeviceId: String { deviceId + "-noop" }
-    private var store: WhoopStore?
+    private var store: CenitStore?
     /// In-flight store creation, memoized so concurrent first-callers (the launch refresh and
     /// TodayView's parallel queries) share ONE open+migrate instead of racing `ensureStore`'s
     /// await window and opening the DB several times. @MainActor makes the set-before-await safe.
-    private var storeInit: Task<WhoopStore?, Never>?
+    private var storeInit: Task<CenitStore?, Never>?
     private var receiptCache: (value: (counts: (hr: Int, rr: Int, spo2: Int, skinTemp: Int, resp: Int, gravity: Int), latestHRTs: Int?)?, at: Date)?
 
     /// The whole dashboard, republished as ONE value. Previously `days`/`sleeps`/`importedSleep`/
@@ -181,7 +181,7 @@ final class Repository: ObservableObject {
     }
 
     /// `yyyy-MM-dd` in the device's local zone, matching how `DailyMetric.day` is stored.
-    /// Canonical instance lives in `WhoopStore.DayKey` (FER-754); this is the same object.
+    /// Canonical instance lives in `CenitStore.DayKey` (FER-754); this is the same object.
     private static let dayKeyFormatter = DayKey.localFormatter
     static func localDayKey(_ date: Date) -> String { dayKeyFormatter.string(from: date) }
 
@@ -236,23 +236,23 @@ final class Repository: ObservableObject {
         await refresh()
     }
 
-    private func ensureStore() async -> WhoopStore? {
+    private func ensureStore() async -> CenitStore? {
         if let store { return store }
         if let storeInit { return await storeInit.value }   // a creation is already in flight — join it
-        let task = Task { () -> WhoopStore? in
+        let task = Task { () -> CenitStore? in
             guard let path = try? StorePaths.defaultDatabasePath() else { return nil }
             // Don't mask a store-open/migration failure as a silent nil (FER-793). This offline app
             // degrades (returns nil) rather than crashing when the DB won't open, but the failure must
             // be observable — a swallowed `try?` here left a wedged migration undebuggable ("app se trabó"
             // with no error). Log the real error; callers still get nil and degrade.
-            let s: WhoopStore?
+            let s: CenitStore?
             do {
                 // FER-970 (R-04): the Repository handle opens a WAL reader pool so the dashboard
                 // snapshot read never waits behind a long engine/import write on this same handle.
                 // The BLE handle keeps the default `.queue` backend.
-                s = try await WhoopStore(path: path, backend: .pool(maxReaders: 2))
+                s = try await CenitStore(path: path, backend: .pool(maxReaders: 2))
             } catch {
-                print("[FER-793] WhoopStore failed to open at \(path): \(error)")
+                print("[FER-793] CenitStore failed to open at \(path): \(error)")
                 s = nil
             }
             if let s { try? await s.upsertDevice(id: deviceId, mac: nil, name: "WHOOP") }
@@ -267,7 +267,7 @@ final class Repository: ObservableObject {
     }
 
     /// Expose the shared store handle (used by the importer to persist mapped rows).
-    func storeHandle() async -> WhoopStore? { await ensureStore() }
+    func storeHandle() async -> CenitStore? { await ensureStore() }
 
     /// One-shot snapshot for the Today "data receipt": stored raw-sample counts + the latest stored
     /// HR sample time (proof the strap's streams are landing and current). nil if no store yet.
@@ -344,8 +344,8 @@ final class Repository: ObservableObject {
         // one dashboard). `dashboardSnapshot` runs the SAME queries — shared row fetchers, identical
         // SQL — inside ONE transaction: one hop, one snapshot, cross-table consistent. The source-mode
         // query gating (FER-484/486) rides in the request; the in-memory gating below is unchanged.
-        // (Unqualified type names: the ACTOR `WhoopStore` shadows the module of the same name in
-        // qualified lookup from the app layer — `WhoopStore.DashboardReadRequest` doesn't resolve.)
+        // (Unqualified type names: the ACTOR `CenitStore` shadows the module of the same name in
+        // qualified lookup from the app layer — `CenitStore.DashboardReadRequest` doesn't resolve.)
         let snap = (try? await store.dashboardSnapshot(DashboardReadRequest(
             strapDeviceId: deviceId, computedDeviceId: computedDeviceId, appleDeviceId: "apple-health",
             fromDay: fromDay, toDay: toDay, fromTs: lo, toTs: hi, sleepLimit: 4000,
@@ -384,7 +384,7 @@ final class Repository: ObservableObject {
             appleHrRaw = []
         }
 
-        // Export-verbatim sleep figures (long-format metricSeries rows from WhoopImporter).
+        // Export-verbatim sleep figures (long-format metricSeries rows from the retired WHOOP CSV import).
         // The Detalle de Sueño prefers these per day over its APPROXIMATE recomputations.
         // FER-670: single-construct fusion inputs the daily rows above don't carry — Apple's step/energy
         // aggregates (appleDaily) and the WHOOP 4.0 on-device step estimate (steps_est). Gated on the
@@ -618,7 +618,7 @@ final class Repository: ObservableObject {
     /// pure + static (RepositoryMergeTests pins it), NEVER folded into `days`/`displayDays`, surfaced only
     /// via `repo.today`/`estimatedStrain`/`isStrainEstimated`. `hrByDay` is apple-health HR samples
     /// (workout-only — HealthKitBridge only persists HR during HKWorkouts) grouped by LOCAL day
-    /// (`WhoopStore.DayKey.local`). Reuses `StrainScorer.strain` (Edwards TRIMP) — no new math.
+    /// (`CenitStore.DayKey.local`). Reuses `StrainScorer.strain` (Edwards TRIMP) — no new math.
     /// `maxHR`/`sex` come from the user's `Profile` (`hrMaxOverride ?? Tanaka(age)`), threaded via the
     /// Repository props by `AppModel` — the SAME HRmax the strap live-strain path uses, so the estimate
     /// never jumps band↔Apple (FER-883 /cso). nil `maxHR` still falls back to the StrainScorer default.

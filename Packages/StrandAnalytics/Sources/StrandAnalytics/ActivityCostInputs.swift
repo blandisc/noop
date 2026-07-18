@@ -12,7 +12,7 @@ import Foundation
 // day-key in that same local `timeZone` — pass the timezone the recovery keys were
 // built in. Tests pin it for determinism.
 //
-// This stays agnostic of WhoopStore and of how a workout was tagged: the app layer
+// This stays agnostic of CenitStore and of how a workout was tagged: the app layer
 // filters sources (e.g. drops auto-detected bouts) and cleans the sport name before
 // handing sessions here, so the pure package never imports the persistence types.
 

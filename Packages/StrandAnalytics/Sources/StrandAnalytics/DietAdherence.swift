@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 /// Diet-plan adherence (FER-372).
 ///

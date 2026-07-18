@@ -10,7 +10,7 @@ import Foundation
 /// (`sendToRemoteWorkoutSession`, tolerant of loss — the watch runs its own local countdown). Each is
 /// JSON-encoded to `Data`; the HealthKit payload wraps it under `WorkoutMirrorKey.payloadKey`.
 ///
-/// The iPhone stays the single source of truth and the only one that persists to `WhoopStore`; the
+/// The iPhone stays the single source of truth and the only one that persists to `CenitStore`; the
 /// watch is a control + display surface in F1.1 and owns only its own `HKWorkout`.
 public enum WorkoutMirrorMessage: Codable, Equatable {
     /// iPhone → watch: start the mirrored session. Carries the iPhone's `sessionId` so both devices

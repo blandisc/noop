@@ -3,7 +3,7 @@ import Combine
 import Observation
 import UserNotifications
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 import StrandImport
 import StrandAnalytics
 import StrandTraining
@@ -11,7 +11,6 @@ import StrandDesign
 
 /// Data source currently running an import from the Data Sources screen.
 enum DataSourceImportKind {
-    case whoop
     case appleHealth
 }
 
@@ -57,9 +56,6 @@ enum DataSourceImportKind {
     let sources = SourceModeStore()
     /// On-device WHOOP-style recovery/strain/sleep computation from raw strap streams.
     let intelligence: IntelligenceEngine
-
-    /// Opt-in AI coach (bring-your-own-key) — the one networked feature, off until the user enables it.
-    let coach: AICoachEngine
 
     /// The iOS Apple Health bridge, wired in by `CenitApp` right after init (it depends on `repo`).
     /// `weak` so SwiftUI owns its lifetime; AppModel only reaches it for the one-time day-key
@@ -147,14 +143,11 @@ enum DataSourceImportKind {
 
     /// Import source currently writing to the local store, if any.
     private var activeImportSource: DataSourceImportKind?
-    /// Last WHOOP export import result surfaced in the WHOOP card.
-    var whoopImportSummary: String?
     /// Last Apple Health import result surfaced in the Apple Health card.
     var appleHealthImportSummary: String?
     /// Typed failure flags per source — the summary's warning styling reads these instead of
     /// substring-matching the human-readable message (which misses errors like "Couldn't open
     /// the local store."). Surfaced on both the Data Sources cards and the onboarding import step.
-    var whoopImportFailed = false
     var appleHealthImportFailed = false
     /// Live element count during an Apple Health import, so the card shows real
     /// progress instead of a frozen-looking spinner on a multi-minute parse.
@@ -205,7 +198,6 @@ enum DataSourceImportKind {
     /// Whether the last import for a source ended in failure (for warning styling).
     func importFailed(_ source: DataSourceImportKind) -> Bool {
         switch source {
-        case .whoop: return whoopImportFailed
         case .appleHealth: return appleHealthImportFailed
         }
     }
@@ -256,7 +248,6 @@ enum DataSourceImportKind {
             : (age > 0 ? StrainScorer.tanakaHRmax(age: Double(age)) : nil)
         self.repo.strainHRmax = strainHRmax
         self.repo.strainSex = profile.sex
-        self.coach = AICoachEngine(repo: repo)
         let deviceFamily: DeviceFamily = WhoopModel.persisted.deviceFamily
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
                                                family: deviceFamily)
@@ -482,7 +473,7 @@ enum DataSourceImportKind {
     /// the local-day rows the re-group just wrote. Only future-dated rows are touched, so a past day
     /// that couldn't be recomputed keeps its row (no data loss). `written` are this run's freshly
     /// written local days, excluded defensively. Static: no instance state, just the store.
-    private static func pruneFutureLocalDays(store: WhoopStore, deviceId: String,
+    private static func pruneFutureLocalDays(store: CenitStore, deviceId: String,
                                              written: Set<String>) async {
         let todayLocal = Repository.localDayKey(Date())
         // A UTC offset shifts a row by at most one day, so [today … +2d local] covers every future orphan.
@@ -1250,7 +1241,7 @@ enum DataSourceImportKind {
     }
 
     /// Prior best-per-metric PRs per exercise, BEFORE this session's save — the baseline new records beat.
-    private func priorStrengthPRs(store: WhoopStore, ids: Set<String>) async -> [String: [PRMetric: PersonalRecord]] {
+    private func priorStrengthPRs(store: CenitStore, ids: Set<String>) async -> [String: [PRMetric: PersonalRecord]] {
         var out: [String: [PRMetric: PersonalRecord]] = [:]
         for id in ids {
             let prs = (try? await store.personalRecords(exerciseId: id)) ?? []
@@ -1264,7 +1255,7 @@ enum DataSourceImportKind {
     /// session carries strain (FER-399), so the view omits the cost block rather than inventing a zero.
     private func buildStrengthSummary(session: StrengthSessionModel, record: StrengthSession,
                                       sets: [SetEntry], prior: [String: [PRMetric: PersonalRecord]],
-                                      store: WhoopStore) async -> StrengthSummary {
+                                      store: CenitStore) async -> StrengthSummary {
         let work: [SetEntry] = sets.filter { (s: SetEntry) in s.kind == .work && s.done }
         let volumeKg: Double = work.reduce(0.0) { (acc: Double, s: SetEntry) -> Double in
             let w: Double = s.weightKg ?? 0.0
@@ -1857,38 +1848,6 @@ enum DataSourceImportKind {
         evaluateIllness(repo.days)
     }
 
-    /// Import a Whoop CSV export (.zip or folder) → on-device store, then refresh the dashboard.
-    func importWhoop(url: URL) {
-        beginImport(.whoop)
-        importTask?.cancel()
-        // Not nil'd on completion: a finished `Task<Void, Never>` is harmless to retain, and nil'ing
-        // it in a `defer` would race a newer import that already replaced the handle. `cancelImport()`
-        // cancelling an already-finished task is a no-op. `hasActiveImport` keys off `activeImportSource`.
-        importTask = Task { [weak self] in
-            guard let self else { return }
-            let scoped = url.startAccessingSecurityScopedResource()
-            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            do {
-                guard let store = await repo.storeHandle() else {
-                    finishImport(.whoop, summary: "Couldn't open the local store.", failed: true)
-                    return
-                }
-                let summary = try await WhoopImporter.importExport(url: url, into: store, deviceId: deviceId)
-                await repo.refresh()
-                let span: String
-                if let a = summary.earliest, let b = summary.latest {
-                    let f = DateFormatter(); f.dateFormat = "MMM yyyy"
-                    span = " · \(f.string(from: a))–\(f.string(from: b))"
-                } else { span = "" }
-                finishImport(.whoop, summary: "Imported \(summary.recordCount) records\(span)")
-            } catch is CancellationError {
-                finishImport(.whoop, summary: "Import cancelled.")
-            } catch {
-                finishImport(.whoop, summary: "Import failed: \(error)", failed: true)
-            }
-        }
-    }
-
     /// Import an Apple Health export (export.zip) — streams + aggregates per-day into the store
     /// under the `apple-health` source, then refreshes. Large exports take ~1–2 minutes.
     func importAppleHealth(url: URL) {
@@ -1925,9 +1884,6 @@ enum DataSourceImportKind {
     private func beginImport(_ source: DataSourceImportKind) {
         activeImportSource = source
         switch source {
-        case .whoop:
-            whoopImportSummary = nil
-            whoopImportFailed = false
         case .appleHealth:
             appleHealthImportSummary = nil
             appleHealthImportFailed = false
@@ -1938,9 +1894,6 @@ enum DataSourceImportKind {
     /// Stores the completed import summary (and typed failure flag) on the matching source card.
     private func finishImport(_ source: DataSourceImportKind, summary: String, failed: Bool = false) {
         switch source {
-        case .whoop:
-            whoopImportSummary = summary
-            whoopImportFailed = failed
         case .appleHealth:
             appleHealthImportSummary = summary
             appleHealthImportFailed = failed

@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 import StrandAnalytics
 
 /// On-device "intelligence": computes recovery / day-strain / sleep from the raw strap streams using
@@ -13,7 +13,7 @@ import StrandAnalytics
 /// NOOP scores it itself rather than relying on the values WHOOP computed in the imported CSV.
 ///
 /// FER-868 — the pass is INCREMENTAL and OFF-MAIN: dirtiness is detected per night by a COUNT-per-
-/// local-day signature over the raw streams (`WhoopStore.streamDayCounts` + `AnalysisScheduler`), so
+/// local-day signature over the raw streams (`CenitStore.streamDayCounts` + `AnalysisScheduler`), so
 /// only the days with genuinely new (or trimmed) data re-run `analyzeDay`; the heavy body runs as a
 /// `nonisolated static` on a `.utility` detached task (pattern: `Repository.assembleDashboard`),
 /// keeping the main thread free while the band is connected. Pass 2 (baseline seed + recovery
@@ -280,7 +280,7 @@ final class IntelligenceEngine: ObservableObject {
     /// lands (pattern: `Repository.assembleDashboard`). Pure function of (inputs, cache, store): no
     /// engine state is touched — the caller adopts the returned cache/output on the main actor.
     private nonisolated static func runAnalysis(_ inputs: AnalysisInputs, cache cacheIn: AnalysisCache,
-                                                store: WhoopStore) async -> AnalysisOutput {
+                                                store: CenitStore) async -> AnalysisOutput {
         var cache = cacheIn
         let emptyOut = { (c: AnalysisCache) in
             AnalysisOutput(computed: [], writtenDays: [], hadDailies: false, changed: false,

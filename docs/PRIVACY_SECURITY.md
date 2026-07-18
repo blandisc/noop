@@ -40,7 +40,7 @@ traffic of any kind.
 ### 1.1 Network code: only the optional AI Coach
 
 The biometric pipeline and all five Swift packages
-(`WhoopProtocol`, `WhoopStore`, `StrandAnalytics`, `StrandImport`, `StrandDesign`)
+(`WhoopProtocol`, `CenitStore`, `StrandAnalytics`, `StrandImport`, `StrandDesign`)
 contain **no** use of `URLSession`, `URLRequest`, `NWConnection`, `dataTask`, or any
 other networking API. The **only** networking anywhere in the app is the AI Coach
 (`Cenit/AI/AICoach.swift`), described in
@@ -48,7 +48,7 @@ other networking API. The **only** networking anywhere in the app is the AI Coac
 Manager resolves at build time, never at runtime:
 
 ```
-Packages/WhoopStore/Package.swift   → https://github.com/groue/GRDB.swift.git
+Packages/CenitStore/Package.swift   → https://github.com/groue/GRDB.swift.git
 Packages/StrandImport/Package.swift → https://github.com/weichsel/ZIPFoundation.git
 ```
 
@@ -122,7 +122,7 @@ the app's private data container** (under the app's home directory), not in any
 shared or user-global location. No other app can reach it through the filesystem.
 
 The schema is defined by a versioned `DatabaseMigrator` in
-`Packages/WhoopStore/Sources/WhoopStore/Database.swift` (currently schema version 9).
+`Packages/CenitStore/Sources/CenitStore/Database.swift` (currently schema version 9).
 It holds exactly the kinds of data you would expect from the features:
 
 - **Decoded biometric streams** (durable): `hrSample`, `rrInterval`, `spo2Sample`,
@@ -134,7 +134,7 @@ It holds exactly the kinds of data you would expect from the features:
 
 The database is opened in WAL journal mode with `synchronous = NORMAL` and a busy
 timeout, tuned for bulk import/backfill writes
-(`Packages/WhoopStore/Sources/WhoopStore/WhoopStore.swift`). WAL means you will also
+(`Packages/CenitStore/Sources/CenitStore/CenitStore.swift`). WAL means you will also
 see `whoop.sqlite-wal` and `whoop.sqlite-shm` sidecar files alongside the main
 database — they live in the same container.
 
@@ -160,7 +160,7 @@ backups) so the database isn't readable inside a backup.
 > drop-in. Wiring Cénit's `DatabaseQueue` to a SQLCipher build with a
 > Keychain-derived key would give at-rest encryption independent of the OS Data
 > Protection class. This is not enabled in the current build, but the persistence
-> layer is small and centralized (one `WhoopStore.init(path:)`), so it is a
+> layer is small and centralized (one `CenitStore.init(path:)`), so it is a
 > contained change.
 
 ### 2.3 Data minimization & pruning
@@ -168,7 +168,7 @@ backups) so the database isn't readable inside a backup.
 The raw-frame outbox (`rawBatch`) is treated as transient, not as the system of
 record — the decoded streams are durable, the raw frames are a compressed,
 **prunable** buffer. The prune policy in
-`Packages/WhoopStore/Sources/WhoopStore/RawOutbox.swift` deletes old batches:
+`Packages/CenitStore/Sources/CenitStore/RawOutbox.swift` deletes old batches:
 
 ```sql
 DELETE FROM rawBatch WHERE syncedAt IS NOT NULL AND syncedAt < ?
@@ -369,7 +369,7 @@ bundle of CSV files, but the same defensive posture applies.
 | Health import | Zip bomb | 8 GB decompressed ceiling, chunked to disk, hard abort | `StrandImport/AppleHealthImporter.swift` |
 | CSV import | Zip bomb / oversized entries | 256 MB per-entry cap (declared + running budget); CRC32 verify | `StrandImport/WhoopExportImporter.swift` |
 | CSV import | Arbitrary archive members | Filename allow-list; tolerant optional-column parsing | `StrandImport/WhoopExportImporter.swift` |
-| Data at rest | Device theft / offline access | Relies on iOS Data Protection (passcode-tied) + app sandbox; SQLCipher available as an option | `WhoopStore/WhoopStore.swift` |
+| Data at rest | Device theft / offline access | Relies on iOS Data Protection (passcode-tied) + app sandbox; SQLCipher available as an option | `CenitStore/CenitStore.swift` |
 | Diagnostics log | Strap connection log leaking secrets | In-app ring buffer only; no biometric values / tokens logged (§2.4) | `Cenit/BLE/BLEManager.swift` |
 
 ---
@@ -391,7 +391,7 @@ The protocol and persistence work Cénit builds on is community reverse-engineer
 hardware the user owns, used for interoperability:
 
 - **`johnmiddleton12/my-whoop`** — the WHOOP 4.0 BLE framing/command/decode work and
-  the collection logic the `WhoopProtocol` / `WhoopStore` packages and the app's
+  the collection logic the `WhoopProtocol` / `CenitStore` packages and the app's
   collection layer are adapted from.
 - **`b-nnett/goose`** — the WHOOP 5.0 protocol (the `fd4b0001-…` service family, the
   CRC16-Modbus header, and the "puffin" packet types) the v5 decode path is ported

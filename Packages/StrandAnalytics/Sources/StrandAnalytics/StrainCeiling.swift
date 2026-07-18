@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 // StrainCeiling.swift — a PERSONAL, recovery-scaled ceiling for today's day-strain, in
 // the same 0–21 log units the strain curve plots. NOT a fixed zone constant, NOT WHOOP's

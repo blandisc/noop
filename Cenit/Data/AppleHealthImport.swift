@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 import StrandImport
 
 /// Maps a parsed + aggregated Apple Health export into the on-device store under its own
@@ -10,7 +10,7 @@ enum AppleHealthImport {
     @discardableResult
     static func importExport(
         url: URL,
-        into store: WhoopStore,
+        into store: CenitStore,
         deviceId: String,
         progress: AppleHealthImporter.ProgressHandler? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil

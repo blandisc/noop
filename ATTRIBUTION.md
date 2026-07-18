@@ -7,7 +7,7 @@ identify the hardware the app interoperates with.
 Strand builds on prior community reverse-engineering and interoperability work:
 
 ## WHOOP 4.0 protocol + Swift packages
-- **`johnmiddleton12/my-whoop`** — the `WhoopProtocol` and `WhoopStore` Swift packages
+- **`johnmiddleton12/my-whoop`** — the `WhoopProtocol` and `CenitStore` Swift packages
   (vendored under `Packages/`), the WHOOP 4.0 BLE framing/command/decode work, and the
   iOS collection logic that Strand's `WhoopBLE`/`Collect` layers are adapted from.
   See `DISCLAIMER.md` (carried over from that project).

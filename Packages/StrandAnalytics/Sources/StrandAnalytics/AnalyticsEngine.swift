@@ -1,12 +1,12 @@
 import Foundation
 import WhoopProtocol
-@preconcurrency import WhoopStore
+@preconcurrency import CenitStore
 
 // AnalyticsEngine.swift — orchestrator producing DailyMetric + sleep-session results.
 //
 // Mirrors the role of server/ingest/app/analysis/daily.py + sleep.daily_sleep_summary:
 // given a day's raw streams + a user profile + personal baselines, it runs the
-// individual analyzers and assembles a `DailyMetric` (WhoopStore shape) plus the
+// individual analyzers and assembles a `DailyMetric` (CenitStore shape) plus the
 // detected `SleepSession`s (and their `CachedSleepSession` cache shapes).
 //
 // This is a PURE function over its inputs — it does NOT touch the database
@@ -30,11 +30,11 @@ public enum AnalyticsEngine {
     /// The full analysis result for one day.
     ///
     /// NOTE: not `Sendable` — it embeds `DailyMetric` / `CachedSleepSession` from
-    /// WhoopStore, which are not `Sendable` (and that package is out of scope to
+    /// CenitStore, which are not `Sendable` (and that package is out of scope to
     /// modify here). The individual analyzer result types in this package ARE
     /// `Sendable`.
     public struct DayResult {
-        /// DailyMetric in the WhoopStore cache shape (recovery/strain/sleep rolled up).
+        /// DailyMetric in the CenitStore cache shape (recovery/strain/sleep rolled up).
         public let daily: DailyMetric
         /// Detected sleep sessions (rich, with stage segments).
         public let sleepSessions: [SleepSession]
@@ -90,7 +90,7 @@ public enum AnalyticsEngine {
     /// Format a unix-seconds timestamp as a `YYYY-MM-DD` day string in a wall-clock zone
     /// `tzOffsetSeconds` east of UTC. Default 0 = UTC, which keeps pure-function callers and tests on
     /// UTC. The device's LOCAL civil day is obtained by shifting the instant by the offset and
-    /// formatting in UTC — the same trick `WhoopImporter` uses with `tzOffsetMin`, so day-keys stay
+    /// formatting in UTC — the same trick the WHOOP CSV import used with `tzOffsetMin`, so day-keys stay
     /// deterministic and dedup-stable across sources. (FER-226: `dailyMetric.day` is the local civil day.)
     public static func dayString(_ ts: Int, tzOffsetSeconds: Int = 0) -> String {
         isoDay.string(from: Date(timeIntervalSince1970: TimeInterval(ts + tzOffsetSeconds)))

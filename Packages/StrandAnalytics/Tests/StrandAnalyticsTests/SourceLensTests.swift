@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 /// FER-623 / FER-631 / FER-882 — the source lens keeps a baseline pure by source (RMSSD band vs SDNN Apple),
 /// the same policy FER-519/FER-543 applied to Recovery and the illness sentinel. RMSSD and SDNN are two

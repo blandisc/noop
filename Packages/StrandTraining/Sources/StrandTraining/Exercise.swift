@@ -10,7 +10,7 @@ public enum ExerciseType: String, Codable, Sendable, CaseIterable {
 }
 
 /// A single exercise. The same value type backs both the bundled read-only catalog
-/// (`ExerciseCatalog`) and user-created exercises (persisted by WhoopStore). Pure —
+/// (`ExerciseCatalog`) and user-created exercises (persisted by CenitStore). Pure —
 /// no DB, no UIKit.
 public struct Exercise: Codable, Sendable, Identifiable, Equatable, Hashable {
     /// Stable id: the native ExerciseDB id for catalog entries (e.g. "01qpYSe"), a UUID
@@ -87,7 +87,7 @@ public extension Exercise {
 /// instructions) and shipped as a zlib-compressed package resource so it works fully offline
 /// (FER-875). `gifUrl` is derived at load from the baked still presence, not stored in the JSON.
 /// The es-MX overlay (name + instructions) is LLM-translated at bake into `exercises.es.json.zlib`.
-/// User-created exercises live in WhoopStore and are merged with this catalog by the app's library.
+/// User-created exercises live in CenitStore and are merged with this catalog by the app's library.
 public enum ExerciseCatalog {
     /// Every bundled exercise, decoded once and cached.
     public static let all: [Exercise] = load()
@@ -97,7 +97,7 @@ public enum ExerciseCatalog {
         Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
     /// A bundled exercise by id, or nil if it isn't in the seed catalog (e.g. a
-    /// user-created exercise, which the app resolves from WhoopStore instead).
+    /// user-created exercise, which the app resolves from CenitStore instead).
     public static func byID(_ id: String) -> Exercise? { index[id] }
 
     /// The baked row-thumbnail still for an exercise, or nil if none was baked (FER-800). Each still

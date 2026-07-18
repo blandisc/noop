@@ -3,7 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
-import WhoopStore   // WorkoutRow — the journal join that carries zones / max HR (FER-952)
+import CenitStore   // WorkoutRow — the journal join that carries zones / max HR (FER-952)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // WorkoutHistoryScreen.swift — «Mis entrenamientos» (FER-504): the completed strength sessions, newest

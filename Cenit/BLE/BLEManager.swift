@@ -1,7 +1,7 @@
 import Foundation
 import CoreBluetooth
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 import StrandAnalytics
 
 /// Detects a marginal Bluetooth radio that can't sustain the WHOOP 4 R10/R11 raw realtime stream
@@ -98,7 +98,7 @@ public final class BLEManager: NSObject, ObservableObject {
     private var collector: Collector?
     /// The single `bootstrapStore()` build task. Memoizes store creation so concurrent callers (e.g.
     /// `centralManagerDidUpdateState` firing twice, or a state restore racing a poweredOn) join the
-    /// same task instead of each building a `WhoopStore` and running the DB migration twice. Mirrors
+    /// same task instead of each building a `CenitStore` and running the DB migration twice. Mirrors
     /// the `Repository.ensureStore()` guard (FER-25). The task's `Bool` result is its success: a
     /// SUCCESS handle stays memoized (re-entry is short-circuited by `collector != nil`); a FAILURE
     /// handle is cleared by its owner so the next trigger rebuilds — never left poisoned, so a joiner
@@ -302,7 +302,7 @@ public final class BLEManager: NSObject, ObservableObject {
         self.state = state
         self.deviceId = deviceId
         self.router = FrameRouter(state: state)
-        // WhoopStore.init is now async, so it can't run here.
+        // CenitStore.init is now async, so it can't run here.
         // bootstrapStore() is called once the CBCentralManager reaches poweredOn
         // (see centralManagerDidUpdateState), which guarantees the store is ready
         // before any BLE data arrives.
@@ -341,7 +341,7 @@ public final class BLEManager: NSObject, ObservableObject {
         )
     }
 
-    /// Build the WhoopStore + Collector + Backfiller asynchronously. Safe to call multiple times —
+    /// Build the CenitStore + Collector + Backfiller asynchronously. Safe to call multiple times —
     /// and safe to call CONCURRENTLY: a second caller that arrives while creation is in flight joins
     /// the same task instead of building a second store and re-running the DB migration. The guard
     /// mirrors `Repository.ensureStore()` — the `@MainActor` isolation makes the
@@ -358,11 +358,11 @@ public final class BLEManager: NSObject, ObservableObject {
             guard let path = try? StorePaths.defaultDatabasePath() else { return false }
             // Observable failure, not a silent nil (FER-793): a swallowed store-open error here left a
             // wedged migration undebuggable. Log it, then degrade (return false) as before.
-            let store: WhoopStore
+            let store: CenitStore
             do {
-                store = try await WhoopStore(path: path)
+                store = try await CenitStore(path: path)
             } catch {
-                print("[FER-793] WhoopStore failed to open at \(path): \(error)")
+                print("[FER-793] CenitStore failed to open at \(path): \(error)")
                 return false
             }
             try? await store.upsertDevice(id: deviceId, mac: nil, name: "WHOOP 4.0")

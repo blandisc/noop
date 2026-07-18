@@ -2,7 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 import Foundation
 
 // MARK: - SkinTempDetailScreen — el «Detalle de Temperatura de la piel» en «Instrumento» (FER-256)

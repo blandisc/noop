@@ -5,7 +5,7 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).

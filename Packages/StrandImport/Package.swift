@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.macOS(.v13), .iOS(.v16)],
     products: [.library(name: "StrandImport", type: .static, targets: ["StrandImport"])],
     dependencies: [
-        .package(path: "../WhoopStore"),
+        .package(path: "../CenitStore"),
         .package(path: "../StrandTraining"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
     ],
@@ -14,7 +14,7 @@ let package = Package(
         .target(
             name: "StrandImport",
             dependencies: [
-                "WhoopStore", "StrandTraining",
+                "CenitStore", "StrandTraining",
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
             ],
             resources: [
@@ -24,7 +24,7 @@ let package = Package(
         ),
         .testTarget(
             name: "StrandImportTests",
-            dependencies: ["StrandImport", "WhoopStore"],
+            dependencies: ["StrandImport", "CenitStore"],
             resources: [
                 .copy("Resources"),
             ],

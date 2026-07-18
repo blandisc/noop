@@ -3,7 +3,7 @@ import PackageDescription
 
 // StrandTraining — pure domain types for the strength tracker (Exercise, muscles,
 // routine/session/set value models) + the bundled, read-only exercise catalog.
-// Foundation-only: no GRDB, no UIKit, no CoreBluetooth. WhoopStore depends on it for
+// Foundation-only: no GRDB, no UIKit, no CoreBluetooth. CenitStore depends on it for
 // persistence (GRDB conformance lives there, by extension); StrandAnalytics depends on
 // it for the muscle-load / 1RM math (FER-350/FER-349). (FER-345)
 let package = Package(

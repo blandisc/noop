@@ -210,7 +210,7 @@ CenitWidgets/          WidgetKit extension (Home / Lock-screen widget)
 CenitShared/           code shared between the app and the widgets
 Packages/
   WhoopProtocol/        BLE frame parsing, CRC, command/event/packet decode (pure, no CoreBluetooth)
-  WhoopStore/           GRDB/SQLite persistence (versioned migrations, through v12)
+  CenitStore/           GRDB/SQLite persistence (versioned migrations, through v12)
   StrandAnalytics/      HRV / recovery / strain / sleep / correlation math + Coach grounding (pure, DB-free)
   StrandImport/         WHOOP CSV + Apple Health importers
   StrandDesign/         SwiftUI design system (palette, components, charts)
@@ -239,7 +239,7 @@ interpretation, and historical-stream reassembly. The app layer (`Cenit/BLE/`,
 `Cenit/Collect/`) wraps these UUID *strings* in `CBUUID` and handles bonding,
 offload, and live notifications.
 
-### `WhoopStore` — local SQLite via GRDB
+### `CenitStore` — local SQLite via GRDB
 
 Everything is stored on-device in SQLite (using
 [GRDB.swift](https://github.com/groue/GRDB.swift)). The schema is a versioned
@@ -344,7 +344,7 @@ See [`docs/BUILD.md`](docs/BUILD.md) for the full build guide.
 WHOOP strap ──BLE──▶ Cenit/BLE + Cenit/Collect ──▶ WhoopProtocol (decode)
                                                           │
 WHOOP CSV  ─┐                                             ▼
-Apple Health├─▶ StrandImport (parse) ───────────▶ WhoopStore (local SQLite)
+Apple Health├─▶ StrandImport (parse) ───────────▶ CenitStore (local SQLite)
  export.xml ─┘                                            │
                                                           ▼
                                             StrandAnalytics (recovery/strain/
@@ -390,7 +390,7 @@ Cénit stands on community reverse-engineering and interoperability work. With
 thanks:
 
 - **`johnmiddleton12/my-whoop`** — the WHOOP 4.0 BLE protocol; the `WhoopProtocol`
-  and `WhoopStore` packages and the collection logic are adapted from this work.
+  and `CenitStore` packages and the collection logic are adapted from this work.
 - **`b-nnett/goose`** — the WHOOP 5.0 / MG BLE reverse-engineering (the `fd4b0001-…`
   service family, CRC16-Modbus header, and "puffin" packet types) that Cénit's
   WHOOP 5.0 path is ported from.

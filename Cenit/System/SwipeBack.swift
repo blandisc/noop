@@ -1,56 +1,103 @@
-#if os(iOS)
 import SwiftUI
 import UIKit
 
-// MARK: - Deslizar para volver, también con la barra de navegación oculta
-//
-// Varias pantallas del flujo Entrenar esconden la `navigationBar` para poner su propia cabecera de papel
-// (`RoutineEditorScreen`, `RoutineBuilderScreen`). Al hacerlo, UIKit deja huérfano el
-// `interactivePopGestureRecognizer` —su delegado por defecto es la barra— y el gesto de arrastrar desde
-// el borde izquierdo deja de funcionar: solo se puede volver tocando el botón. En iOS eso se siente como
-// que la app está trabada (bug Fer 2026-07-18).
-//
-// Este modificador vuelve a armar el gesto y le pone un delegado propio que solo lo permite cuando hay
-// algo a lo que volver. Se cuelga de una vista vacía de cero puntos, así que no participa del layout.
+/// Devuelve el gesto de «deslizar desde el borde para volver» a las pantallas que ocultan la barra
+/// de navegación (FER-988).
+///
+/// Cuando una pantalla hace `.toolbar(.hidden, for: .navigationBar)`, UIKit desactiva el
+/// `interactivePopGestureRecognizer` — el botón de atrás desaparece y el gesto se va con él. Es una
+/// expectativa tan básica de iOS que su ausencia se siente como que la app está trabada.
+///
+/// El arreglo: adueñarse del delegate del gesto y decidir nosotros cuándo puede empezar.
+/// `gestureRecognizerShouldBegin` consulta `shouldPop`, así que una pantalla con trabajo sin
+/// guardar puede vetar el pop y correr en su lugar su propia salida — la misma que corre el botón.
+/// Sin eso, deslizar sacaría la pantalla de la pila sin pasar por el autosave y el trabajo se
+/// perdería en silencio.
+struct SwipeBackEnabler: UIViewControllerRepresentable {
+    /// `true` = el gesto puede hacer pop normal. `false` = lo vetamos; devolver `false` desde aquí
+    /// es responsabilidad de la pantalla, que debe ejecutar su propia salida.
+    let shouldPop: () -> Bool
 
-/// Rearma «deslizar para volver» en la pantalla actual. Úsalo en TODA vista que oculte la barra de
-/// navegación; en las que la conservan es inofensivo (el gesto ya funciona).
-extension View {
-    func keepsSwipeBack() -> some View { background(SwipeBackEnabler().frame(width: 0, height: 0)) }
-}
+    func makeCoordinator() -> Coordinator { Coordinator(shouldPop: shouldPop) }
 
-private struct SwipeBackEnabler: UIViewControllerRepresentable {
-    func makeCoordinator() -> Coordinator { Coordinator() }
-    func makeUIViewController(context: Context) -> UIViewController { UIViewController() }
-
-    func updateUIViewController(_ vc: UIViewController, context: Context) {
-        // En `updateUIViewController` el controlador aún puede no estar en la jerarquía, y el
-        // `navigationController` sería nil. Un salto al siguiente ciclo basta para que ya esté colgado.
-        DispatchQueue.main.async {
-            guard let nav = vc.navigationController,
-                  let gesture = nav.interactivePopGestureRecognizer else { return }
-            context.coordinator.nav = nav
-            gesture.isEnabled = true
-            gesture.delegate = context.coordinator   // el coordinator vive lo que vive la vista
-        }
+    func makeUIViewController(context: Context) -> UIViewController {
+        Probe(coordinator: context.coordinator)
     }
 
-    /// El delegado que hacía falta. Sin él habría que dejar `delegate = nil`, y entonces el gesto también
-    /// dispararía en la pantalla RAÍZ de la pila: UIKit intenta desapilar lo que no existe y la navegación
-    /// se queda congelada. Aquí solo se permite cuando de verdad hay una pantalla debajo.
+    func updateUIViewController(_ controller: UIViewController, context: Context) {
+        // La pantalla puede volverse «sucia» después de aparecer; el coordinator siempre debe
+        // consultar el closure más reciente, no el de la primera evaluación de `body`.
+        context.coordinator.shouldPop = shouldPop
+    }
+
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        weak var nav: UINavigationController?
+        var shouldPop: () -> Bool
+        weak var navigationController: UINavigationController?
+        private weak var previousDelegate: UIGestureRecognizerDelegate?
+        private var installed = false
+
+        init(shouldPop: @escaping () -> Bool) { self.shouldPop = shouldPop }
+
+        func install(on nav: UINavigationController) {
+            guard !installed, let gesture = nav.interactivePopGestureRecognizer else { return }
+            navigationController = nav
+            previousDelegate = gesture.delegate
+            gesture.delegate = self
+            gesture.isEnabled = true
+            installed = true
+        }
+
+        /// Devolver el gesto como estaba: otras pantallas de la pila tienen sus propias reglas y no
+        /// deben heredar las nuestras.
+        func uninstall() {
+            guard installed, let gesture = navigationController?.interactivePopGestureRecognizer else { return }
+            gesture.delegate = previousDelegate
+            installed = false
+        }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-            (nav?.viewControllers.count ?? 0) > 1
+            // Sin nada debajo, dejar empezar el gesto deja la pila en un estado roto del que UIKit
+            // no se recupera (la pantalla raíz se queda a medio arrastrar).
+            guard let nav = navigationController, nav.viewControllers.count > 1 else { return false }
+            return shouldPop()
+        }
+    }
+
+    /// Un controlador vacío cuyo único trabajo es encontrar el `UINavigationController` que SwiftUI
+    /// tiene arriba — no hay API pública para pedirlo desde una vista.
+    private final class Probe: UIViewController {
+        private let coordinator: Coordinator
+
+        init(coordinator: Coordinator) {
+            self.coordinator = coordinator
+            super.init(nibName: nil, bundle: nil)
         }
 
-        /// Convive con el scroll de la pantalla: sin esto, un `ScrollView` horizontal o un carrusel se
-        /// tragarían el arrastre desde el borde y el gesto sería intermitente.
-        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                               shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-            true
+        @available(*, unavailable) required init?(coder: NSCoder) { fatalError("init(coder:) no se usa") }
+
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            if let nav = parent?.navigationController { coordinator.install(on: nav) }
+        }
+
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            if let nav = navigationController { coordinator.install(on: nav) }
+        }
+
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+            coordinator.uninstall()
         }
     }
 }
-#endif
+
+extension View {
+    /// Mantiene vivo el gesto de volver aunque la pantalla oculte la barra de navegación.
+    ///
+    /// - Parameter shouldPop: se consulta al empezar el gesto. Devuelve `false` para vetarlo cuando
+    ///   deslizar perdería trabajo — y corre ahí la misma salida que corre tu botón de atrás.
+    func keepsSwipeBack(shouldPop: @escaping () -> Bool = { true }) -> some View {
+        background(SwipeBackEnabler(shouldPop: shouldPop).frame(width: 0, height: 0).accessibilityHidden(true))
+    }
+}

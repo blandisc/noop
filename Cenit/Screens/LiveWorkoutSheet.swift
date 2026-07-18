@@ -1,6 +1,6 @@
 import SwiftUI
 import StrandDesign
-import WhoopStore
+import CenitStore
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Train hub: live-workout entry + recording sheet (FER-197)

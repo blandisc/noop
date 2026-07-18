@@ -46,8 +46,8 @@ settings:
 packages:
   WhoopProtocol:
     path: Packages/WhoopProtocol
-  WhoopStore:
-    path: Packages/WhoopStore
+  CenitStore:
+    path: Packages/CenitStore
   StrandAnalytics:
     path: Packages/StrandAnalytics
   StrandImport:
@@ -165,7 +165,7 @@ targets:
           EMIT_FRONTEND_COMMAND_LINES: YES
     dependencies:
       - package: WhoopProtocol
-      - package: WhoopStore
+      - package: CenitStore
       - package: StrandAnalytics
       - package: StrandImport
       - package: StrandDesign
@@ -301,7 +301,7 @@ targets:
       # host (Cenit.app), si no Xcode truena por duplicacion de codigo.
       - package: WhoopProtocol
         link: false
-      - package: WhoopStore
+      - package: CenitStore
         link: false
       - package: StrandAnalytics
         link: false
