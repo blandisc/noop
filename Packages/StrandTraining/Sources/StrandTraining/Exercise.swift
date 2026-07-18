@@ -109,6 +109,15 @@ public enum ExerciseCatalog {
         Bundle.module.url(forResource: id, withExtension: "jpg", subdirectory: "exercise-stills")
     }
 
+    /// Los ids con still horneado, leídos UNA vez del bundle en vez de un lookup de disco por
+    /// ejercicio (~1,324) al construir el catálogo. Misma pregunta, O(1) y sin IO por elemento.
+    private static let bakedStillIDs: Set<String> = {
+        guard let dir = Bundle.module.url(forResource: "exercise-stills", withExtension: nil),
+              let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path)
+        else { return [] }
+        return Set(names.filter { $0.hasSuffix(".jpg") }.map { String($0.dropLast(4)) })
+    }()
+
     private static func load() -> [Exercise] {
         guard let url = Bundle.module.url(forResource: "exercises.json", withExtension: "zlib"),
               let compressed = try? Data(contentsOf: url),
@@ -133,7 +142,7 @@ public enum ExerciseCatalog {
     /// this id had a valid gifUrl at bake time; if not, it was pruned (dead CDN) and stays nil, exactly
     /// preserving pre-FER-875 behavior (see CatalogTests.testBakedStillsCoverExercisesWithMedia).
     private static func withDerivedGifURL(_ ex: Exercise) -> Exercise {
-        guard stillURL(id: ex.id) != nil else { return ex }
+        guard bakedStillIDs.contains(ex.id) else { return ex }
         return Exercise(id: ex.id, name: ex.name, nameES: ex.nameES, type: ex.type, equipment: ex.equipment,
                         bodyParts: ex.bodyParts, primaryMuscles: ex.primaryMuscles,
                         secondaryMuscles: ex.secondaryMuscles, instructions: ex.instructions,
