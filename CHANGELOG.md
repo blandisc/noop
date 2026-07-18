@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Rendimiento: arrastrar sobre la gráfica de rangos deja de rehacer la misma cuenta en cada cuadro / Performance: dragging across the ranges chart stops redoing the same arithmetic every frame.**
+  **ES** — Al arrastrar el dedo sobre la gráfica de rangos, la app recalculaba en CADA cuadro a qué banda pertenece cada punto (~365) y cuántos puntos tiene cada carril: unas 2,900 comparaciones por cuadro. Ahora se calcula una sola vez al construir la gráfica. **No se pierde ningún punto ni cambia el dibujo** — es exactamente el mismo gráfico, solo deja de repetir la cuenta.
+  **EN** — Dragging across the ranges chart recomputed, on EVERY frame, which band each of the ~365 points falls in plus each lane's point count: about 2,900 range comparisons per frame. It's now computed once when the chart is built. **No point is dropped and nothing looks different** — same chart, it just stops redoing the arithmetic.
+  ([GraficaRangos.swift](Packages/StrandDesign/Sources/StrandDesign/GraficaRangos.swift))
+
 - **Rendimiento: el catálogo de ejercicios deja de tocar el disco ~1,300 veces al cargarse / Performance: the exercise catalog stops hitting disk ~1,300 times as it loads.**
   **ES** — Al construir el catálogo, la app le preguntaba al disco «¿existe la imagen de este ejercicio?» una vez por ejercicio (~1,324 consultas, todas fallidas hoy porque las imágenes aún no se hornean). Ahora lee el índice del directorio una sola vez y responde de memoria. Se nota al entrar a Entrenar por primera vez y al restaurar una sesión de fuerza al abrir la app. Interno: el catálogo resultante es idéntico.
   **EN** — Building the catalog asked disk "does this exercise's image exist?" once per exercise (~1,324 lookups, all failing today since the images aren't baked yet). It now reads the directory index once and answers from memory. Noticeable when first opening Train and when restoring a strength session at launch. Internal: the resulting catalog is identical.

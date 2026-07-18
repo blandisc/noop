@@ -91,6 +91,15 @@ public struct GraficaRangos: View {
     private let fmt: (Double) -> String
     private let theme: InstrumentoTheme
 
+    /// FER-983: la banda de cada punto y el conteo de cada carril, precomputados UNA vez en el `init`
+    /// (mismo patrón que `OverlayChart.plots`, FER-319). Antes se recalculaban en CADA render, y el
+    /// scrub cambia `scrubIndex` por frame: `bandIndex(v)` corría por punto (~365 × nº de bandas) y
+    /// `laneRow` filtraba los 365 puntos por cada carril → ~2,900 comparaciones de rango por frame.
+    /// Derivan solo de `points`/`bands` (ambos `let`), así que el `init` es el lugar correcto. Mismo
+    /// dibujo exacto: NO se decima ni se pierde ningún punto.
+    private let bandIndices: [Int?]
+    private let laneCounts: [Int]
+
     @State private var mode: TrendMode = .media
     @State private var activeLane: Int? = nil
     @State private var scrubIndex: Int? = nil
@@ -119,6 +128,9 @@ public struct GraficaRangos: View {
             v == v.rounded() ? "\(Int(v))" : String(format: "%.2f", v)
         }
         self.theme = theme
+        // Ver la nota de `bandIndices`/`laneCounts`: una pasada aquí en vez de N por render.
+        self.bandIndices = points.map { v in bands.firstIndex { $0.contains(v) } }
+        self.laneCounts = bands.map { b in points.filter { b.contains($0) }.count }
     }
 
     /// VoiceOver value: scrubbed point if active, else the last point. (FER-977)
@@ -229,7 +241,7 @@ public struct GraficaRangos: View {
     @ViewBuilder private func scrubOverlay(_ i: Int, _ w: CGFloat) -> some View {
         let px = x(i, w)
         let py = y(points[i])
-        let ringColor = bandIndex(points[i]).map { bands[$0].color } ?? hue
+        let ringColor = bandIndices[i].map { bands[$0].color } ?? hue
         let text = labels.indices.contains(i) ? "\(fmt(points[i])) · \(labels[i])" : fmt(points[i])
 
         Rectangle()
@@ -367,7 +379,7 @@ public struct GraficaRangos: View {
                 .stroke(theme.baseMark.opacity(0.55),
                         style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
             ForEach(Array(points.enumerated()), id: \.offset) { i, v in
-                let bi = bandIndex(v)
+                let bi = bandIndices[i]
                 let hot = activeLane == nil || activeLane == bi
                 let r: CGFloat = hot ? 3.5 : 2.5
                 Circle()
@@ -437,10 +449,6 @@ public struct GraficaRangos: View {
         }
     }
 
-    private func bandIndex(_ v: Double) -> Int? {
-        bands.firstIndex { $0.contains(v) }
-    }
-
     // MARK: Carriles (modo RANGOS)
 
     private var lanes: some View {
@@ -457,7 +465,7 @@ public struct GraficaRangos: View {
 
     private func laneRow(_ i: Int, _ b: Banda) -> some View {
         let active = activeLane == i
-        let count = points.filter { b.contains($0) }.count
+        let count = laneCounts[i]
         return Button {
             withAnimation(StrandMotion.interactive) {
                 activeLane = active ? nil : i
