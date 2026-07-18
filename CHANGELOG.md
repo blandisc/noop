@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **El temporizador de intervalos ya no tiene el botón gris de iOS / The interval timer no longer has the grey iOS button.**
+  **ES** — Los controles − / + para ajustar Trabajo, Descanso y Rondas eran la cápsula gris del sistema, la única pieza que rompía el papel cálido de esa pantalla. Ahora son de papel, como el resto de la app. Conservan todo lo que hacían: mantener pulsado sigue avanzando rápido, el valor nunca se sale de su rango, y VoiceOver los sigue leyendo y ajustando con un deslizamiento.
+  **EN** — The − / + controls for Work, Rest and Rounds were the system's grey capsule — the one piece breaking that screen's warm paper. They're paper now, like the rest of the app. Everything they did survives: press-and-hold still ramps, the value never leaves its range, and VoiceOver still reads and adjusts them with a swipe.
+  ([PaperStepper.swift](Packages/StrandDesign/Sources/StrandDesign/PaperStepper.swift))
+
 - **Rendimiento: arrastrar sobre la gráfica de rangos deja de rehacer la misma cuenta en cada cuadro / Performance: dragging across the ranges chart stops redoing the same arithmetic every frame.**
   **ES** — Al arrastrar el dedo sobre la gráfica de rangos, la app recalculaba en CADA cuadro a qué banda pertenece cada punto (~365) y cuántos puntos tiene cada carril: unas 2,900 comparaciones por cuadro. Ahora se calcula una sola vez al construir la gráfica. **No se pierde ningún punto ni cambia el dibujo** — es exactamente el mismo gráfico, solo deja de repetir la cuenta.
   **EN** — Dragging across the ranges chart recomputed, on EVERY frame, which band each of the ~365 points falls in plus each lane's point count: about 2,900 range comparisons per frame. It's now computed once when the chart is built. **No point is dropped and nothing looks different** — same chart, it just stops redoing the arithmetic.

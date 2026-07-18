@@ -30,7 +30,8 @@ public enum CenitMetrics {
     public static let tileRadius: CGFloat = 17         // «Hoy» metric tile corner (handoff «Hoy · Estados»)
     public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
     public static let insetRadius: CGFloat = 10        // sub-tarjeta anidada dentro de otra tarjeta (auditoría jul-2026, H3 — absorbe 9/10/11)
-    public static let rowVPad: CGFloat = 10            // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
+    public static let touchTarget: CGFloat = 44        // área táctil mínima (HIG) — el glifo visible puede ser menor
+    public static let rowVPad: CGFloat = 10          // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
     public static let receiptPadding: CGFloat = 14     // padding interno de la tarjeta-recibo de la sesión de fuerza (canvas 2026-07, decisión del dueño — entre gap 12 y cardPadding 16)
 
     public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
