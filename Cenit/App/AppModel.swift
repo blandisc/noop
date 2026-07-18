@@ -58,9 +58,6 @@ enum DataSourceImportKind {
     /// On-device WHOOP-style recovery/strain/sleep computation from raw strap streams.
     let intelligence: IntelligenceEngine
 
-    /// Opt-in AI coach (bring-your-own-key) — the one networked feature, off until the user enables it.
-    let coach: AICoachEngine
-
     /// The iOS Apple Health bridge, wired in by `CenitApp` right after init (it depends on `repo`).
     /// `weak` so SwiftUI owns its lifetime; AppModel only reaches it for the one-time day-key
     /// re-bucket (FER-226), and tolerates nil (Apple re-group is then deferred to the normal sync).
@@ -256,7 +253,6 @@ enum DataSourceImportKind {
             : (age > 0 ? StrainScorer.tanakaHRmax(age: Double(age)) : nil)
         self.repo.strainHRmax = strainHRmax
         self.repo.strainSex = profile.sex
-        self.coach = AICoachEngine(repo: repo)
         let deviceFamily: DeviceFamily = WhoopModel.persisted.deviceFamily
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
                                                family: deviceFamily)

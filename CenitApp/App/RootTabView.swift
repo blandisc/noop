@@ -20,7 +20,6 @@ struct RootTabView: View {
     /// Every screen reachable by pushing onto a hub tab's stack. Raw values match the `noop.nav.<key>`
     /// debug-navigation keys (`ScreenshotNav.swift`) so screenshot automation still reaches each one.
     private enum SecondaryScreen: String, Hashable {
-        case coach                                // Coach hub
         case library                              // Entrenar hub — exercise library (FER-346)
         case workoutHistory = "workouthistory"    // Entrenar hub — «Mis entrenamientos» (FER-504)
         case breathe, intervals, dieta            // Entrenar hub
@@ -58,7 +57,6 @@ struct RootTabView: View {
     /// One type-erased path per hub. `NavigationPath` (not a homogeneous `[SecondaryScreen]`) because
     /// the Ajustes stack carries Explore, which pushes `MetricDescriptor` values onto it — a typed
     /// path crossing a second value type crashed SwiftUI (FER-171).
-    @State private var coachStack = NavigationPath()
     @State private var trainStack = NavigationPath()
     @State private var settingsStack = NavigationPath()
     /// Bridges the workout-history list and the session detail (siblings in `trainStack`) so a delete or
@@ -332,7 +330,7 @@ struct RootTabView: View {
             }
             if let tab {
                 selection = tab
-                coachStack = NavigationPath(); trainStack = NavigationPath(); settingsStack = NavigationPath()
+                trainStack = NavigationPath(); settingsStack = NavigationPath()
                 return
             }
             // Secondary screens: select the owning hub and push the screen onto its stack.
@@ -341,7 +339,6 @@ struct RootTabView: View {
                 selection = owner
                 var path = NavigationPath(); path.append(sec)
                 switch owner {
-                case .coach:    coachStack = path
                 case .train:    trainStack = path
                 default:        settingsStack = path
                 }
@@ -368,8 +365,6 @@ struct RootTabView: View {
     /// screenshot-nav to it crashed the app. Listing every case makes that a compile error instead.
     private func hub(for screen: SecondaryScreen) -> Tab {
         switch screen {
-        case .coach:
-            return .coach
         case .library, .workoutHistory, .breathe, .intervals, .dieta, .weeklyPlan, .misRutinas,
              .restDay, .otherWays, .routineToday:
             return .train
@@ -433,7 +428,6 @@ struct RootTabView: View {
     @ViewBuilder
     private func secondaryDestination(_ screen: SecondaryScreen) -> some View {
         switch screen {
-        case .coach:        CoachView()
         case .library:      ExerciseLibraryScreen()
         case .workoutHistory: WorkoutHistoryScreen()
         case .breathe:      BreathingView()
