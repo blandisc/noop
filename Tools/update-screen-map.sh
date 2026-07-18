@@ -26,7 +26,7 @@ GIT_CONFIG=/dev/null xcodebuild test \
   -project "$ROOT/Cenit.xcodeproj" -scheme Cenit \
   -destination "platform=iOS Simulator,name=$SIM" \
   CODE_SIGNING_ALLOWED=NO \
-  -only-testing CenitUITests/NOOPScreenshotTests \
+  -only-testing CenitUITests/CenitScreenshotTests \
   2>&1 | tee "$LOG" | grep -E "Test Case|FIXTURE_WRITTEN|error:" || true
 
 echo "▶︎ Copiando fixtures a docs/fixtures/…"

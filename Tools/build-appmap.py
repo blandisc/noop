@@ -3,7 +3,7 @@
 nodos = capturas REALES del simulador, conectados por flechas de flujo, con pan + zoom.
 
 Filosofía (enfoque B): el PNG ES la pantalla — renderizada por el código real vía el harness
-(CenitUITests/NOOPScreenshotTests + ScreenshotFixtures). Este script NO redibuja UI: la acomoda
+(CenitUITests/CenitScreenshotTests + ScreenshotFixtures). Este script NO redibuja UI: la acomoda
 en un lienzo navegable, la etiqueta y traza las transiciones entre estados.
 
 Regenerar tras capturar estados nuevos:  python3 Tools/build-appmap.py
