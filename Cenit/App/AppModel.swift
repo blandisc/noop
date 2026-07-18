@@ -1949,3 +1949,11 @@ enum DataSourceImportKind {
         activeImportSource = nil
     }
 }
+
+#if DEBUG
+extension AppModel {
+    /// Instancia compartida para los `#Preview` (FER-981): construir `AppModel()` cuesta ~230 ms
+    /// de type-check por sitio; con una sola estática se paga UNA vez en vez de en cada preview.
+    static let preview = AppModel()
+}
+#endif

@@ -177,13 +177,14 @@ struct RootTabView: View {
         .tag(Tab.settings)
     }
 
-    /// Overlays, covers, and lifecycle observers on the tab shell. Own `@Bindable` for FER-984
-    /// (`$appModel.strengthSheetPresented`); kept out of `body` so type-check stays cheap (FER-981).
-    @ViewBuilder
+    /// Overlays, covers, and lifecycle observers on the tab shell. Composed from three
+    /// smaller modifier helpers so no single chain type-checks over the long-function budget (FER-981).
     private func rootChrome<Content: View>(_ content: Content) -> some View {
-        // FER-984: `appModel` es `@Environment` (sin `$` publishers); este `@Bindable` local habilita el
-        // binding `$appModel.strengthSheetPresented` del fullScreenCover de la sesión de fuerza (abajo).
-        @Bindable var appModel = appModel
+        rootChromeLifecycle(rootChromeCovers(rootChromeOverlays(content)))
+    }
+
+    /// Tint + floating instrument bar + active-session pill (FER-163 / FER-716).
+    private func rootChromeOverlays<Content: View>(_ content: Content) -> some View {
         content
         // `.tint` no longer paints the tab bar (it's hidden below; the custom
         // `InstrumentTabBar` sets its own ink), but it still tints links/controls
@@ -224,6 +225,15 @@ struct RootTabView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+    }
+
+    /// Confirm discard, session animations, and the guided-strength fullScreenCover (FER-347/716).
+    /// Own `@Bindable` for FER-984 (`$appModel.strengthSheetPresented`).
+    private func rootChromeCovers<Content: View>(_ content: Content) -> some View {
+        // FER-984: `appModel` es `@Environment` (sin `$` publishers); este `@Bindable` local habilita el
+        // binding `$appModel.strengthSheetPresented` del fullScreenCover de la sesión de fuerza (abajo).
+        @Bindable var appModel = appModel
+        return content
         // El ConfirmCard del ✕ del pill vive AQUÍ (pantalla completa): colgado del host del pill se
         // anclaba a su frame angosto — velo recortado y esquinas rotas (bug Fer 2026-07-16).
         .instrumentoConfirm(
@@ -253,6 +263,11 @@ struct RootTabView: View {
                     .preferredColorScheme(.light)
             }
         }
+    }
+
+    /// Preference, tab selection, cross-tab routing, watch receipt, and DEBUG nav observers.
+    private func rootChromeLifecycle<Content: View>(_ content: Content) -> some View {
+        content
         .onPreferenceChange(BarHeightKey.self) { barHeight = $0 }
         // Color scheme lo decide ContentView (cercano a la raíz) según `isTodayActive`; aquí solo lo
         // mantenemos sincronizado con la pestaña visible. Solo Hoy es papel claro «Instrumento»; las

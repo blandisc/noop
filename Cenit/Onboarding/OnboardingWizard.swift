@@ -865,7 +865,7 @@ private struct ImportRow: View {
 
 #if DEBUG
 private struct OnboardingPreview: View {
-    @State private var model = AppModel()
+    @State private var model = AppModel.preview
     var body: some View {
         OnboardingWizard(onFinished: {})
             .environment(model)

@@ -1653,7 +1653,7 @@ private struct CuerpoLanding: View {
     // type-checker resolviera todo como UNA expresión gigante (~246 ms medidos con -warn-long).
     // Izarlos a `let` deja cada pieza trivial de inferir. Mismo preview, mismo render.
     let live = LiveState()
-    let appModel = AppModel()
+    let appModel = AppModel.preview
     let health = HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview")
     return CuerpoView()
         .environmentObject(repo)
