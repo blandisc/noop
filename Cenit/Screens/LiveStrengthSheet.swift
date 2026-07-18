@@ -6,6 +6,7 @@ import StrandTraining
 import StrandAnalytics
 import WhoopProtocol
 import WhoopStore
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).
 private func plateNumber(_ v: Double) -> String {
@@ -146,6 +147,8 @@ struct LiveStrengthSheet: View {
     /// The terminal «Nothing to save» result card for discarding an empty session (FER-894 · Estados 2).
     @State private var nothingToSave = false
     @State private var saveError = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     /// Identifies which exercise the «Change» sheet is swapping (FER-894); carries the run for its header
     /// and same-muscle shortlist. `id` is the run id so `.sheet(item:)` re-presents cleanly per exercise.
@@ -239,6 +242,7 @@ struct LiveStrengthSheet: View {
     // phase content + chrome + presenters + confirms — same render, smaller expressions for the checker.
     var body: some View {
         bodyWithConfirms
+        .enableInjection()
     }
 
     /// Phase content only: nothing-to-save / summary / empty ad-hoc / live inline session.

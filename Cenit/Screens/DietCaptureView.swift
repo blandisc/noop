@@ -6,6 +6,7 @@ import StrandImport
 import StrandAnalytics
 import WhoopStore
 import UIKit       // UIApplication.openSettingsURLString (open Settings when notifications are denied)
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// Diet capture + daily tracker — the plan your nutritionist gave you, and how you follow it (FER-371/372).
 ///
@@ -57,6 +58,8 @@ struct DietCaptureView: View {
     // Manual capture (FER-403): the form being typed.
     @State private var manualPlanName = ""
     @State private var manualMeals: [ManualMeal] = [ManualMeal()]
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     private let importer = DietPlanImporter()
 
@@ -80,6 +83,7 @@ struct DietCaptureView: View {
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.json]) { result in
             handleImport(result)
         }
+        .enableInjection()
     }
 
     // MARK: - Empty

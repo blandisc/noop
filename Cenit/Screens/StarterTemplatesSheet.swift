@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // StarterTemplatesSheet.swift — «Start from a template» (FER-386).
 //
@@ -33,6 +34,8 @@ struct StarterTemplatesSheet: View {
     @State private var selected: StarterTemplate?
     @State private var saving = false
     @State private var saveError = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     /// `initialSelection` opens the sheet straight on a template's preview (the planner's «softer»
     /// suggestion lands here on the mobility routine — FER-554); nil opens the grouped list.
@@ -72,6 +75,7 @@ struct StarterTemplatesSheet: View {
             }
         }
         .animation(StrandMotion.fade, value: saveError)
+        .enableInjection()
     }
 
     // MARK: - List (grouped by program)

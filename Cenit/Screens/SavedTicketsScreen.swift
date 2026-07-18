@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // SavedTicketsScreen.swift — «Tickets guardados»: grid of thermal mini-receipts for completed
 // strength sessions. Read-only — never edits or deletes. Pushed from WorkoutHistoryScreen via
@@ -25,6 +26,8 @@ struct SavedTicketsScreen: View {
 
     /// The receipt being reprinted (tap → reconstruct summary → present the printer). nil = closed.
     @State private var receiptTarget: ReceiptTarget?
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
     private struct ReceiptTarget: Identifiable {
         let id = UUID()
         let summary: StrengthSummary
@@ -71,6 +74,7 @@ struct SavedTicketsScreen: View {
             ReceiptPrinterScreen(theme: theme, summary: target.summary,
                                  sessionId: target.sessionId, onClose: { receiptTarget = nil })
         }
+        .enableInjection()
     }
 
     private var header: some View {

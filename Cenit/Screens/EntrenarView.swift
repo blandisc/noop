@@ -62,8 +62,6 @@ private struct EntrenarLanding: View {
     @Environment(AppModel.self) var model
     @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
-    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
-    @ObserveInjection private var inject
 
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
@@ -265,7 +263,6 @@ private struct EntrenarLanding: View {
         .onChange(of: tabRouter.startTodaySession) { _, requested in
             if requested { consumeBriefStart() }
         }
-        .enableInjection()   // Inject: activa la recarga en caliente del hub (no-op en Release)
     }
 
     /// Consume the one-shot start request from the Daily Brief. Reuses `startToday()` (the same path as the
@@ -1475,6 +1472,8 @@ struct RestDayScreen: View {
     @State private var split: [Int: String] = [:]
     @State private var routineNames: [String: String] = [:]
     @State private var showLive = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     private var recovery: Double? { repo.today?.recovery }
     private var alt: TrainingRegulation.LightAlternative? {
@@ -1527,6 +1526,7 @@ struct RestDayScreen: View {
                 .preferredColorScheme(.light)
         }
         .task { await load() }
+        .enableInjection()
     }
 
     /// The streak-protected reassurance: color only on the recovery bullet, copy explicit that resting
@@ -1609,6 +1609,8 @@ struct OtherWaysScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(AppModel.self) private var model
     @State private var showLive = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     var body: some View {
         ScrollView {
@@ -1642,6 +1644,7 @@ struct OtherWaysScreen: View {
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
         }
+        .enableInjection()
     }
 
     private func bigRow(_ icon: String, _ title: LocalizedStringKey, subtitle: String, last: Bool = false, action: @escaping () -> Void) -> some View {

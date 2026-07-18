@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 import StrandDesign
 import StrandImport
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// Import an LLM-generated workout program (FER-496) — the «trae-tu-propio-LLM» path, mirroring Diet
 /// capture (FER-371). NOOP hands out a prompt, the user runs it in their own AI with their plan, and
@@ -59,6 +60,8 @@ struct WorkoutImportView: View {
 
     /// The user's weight unit (kg / lb), for the confirm-step preview only — stored weights are kg.
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     private let importer = WorkoutProgramImporter()
@@ -134,6 +137,7 @@ struct WorkoutImportView: View {
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
+        .enableInjection()
     }
 
     // MARK: - Capture

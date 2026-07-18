@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // ExerciseLibraryScreen.swift — browse the on-device exercise catalog (FER-346). Two modes from one
 // view: BROWSE (opened from the Train hub — tap an exercise to open its detail) and ADD (presented by
@@ -47,6 +48,8 @@ struct ExerciseLibraryScreen: View {
     @State private var rest: [Exercise] = []
     @State private var libraryGroups: [(key: String, items: [Exercise])] = []
     @State private var searchDebounceTask: Task<Void, Never>? = nil
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     private var addMode: Bool { onAdd != nil }
 
@@ -97,6 +100,7 @@ struct ExerciseLibraryScreen: View {
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
+        .enableInjection()
     }
 
     // MARK: - Header

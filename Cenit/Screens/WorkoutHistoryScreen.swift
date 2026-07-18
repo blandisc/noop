@@ -4,6 +4,7 @@ import StrandDesign
 import StrandAnalytics
 import StrandTraining
 import WhoopStore   // WorkoutRow — the journal join that carries zones / max HR (FER-952)
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // WorkoutHistoryScreen.swift — «Mis entrenamientos» (FER-504): the completed strength sessions, newest
 // first, each opening a per-exercise breakdown. Read-only — it never edits or deletes a session. Pure
@@ -66,6 +67,8 @@ struct WorkoutHistoryScreen: View {
     @State private var loaded = false
     /// FER-969 / X-05a: undo-restore write failure on the list.
     @State private var saveError = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     var body: some View {
         ScrollView {
@@ -114,6 +117,7 @@ struct WorkoutHistoryScreen: View {
         .sensoryFeedback(trigger: coordinator.pendingUndo?.id) { _, new in new != nil ? .warning : nil }
         // Reloads on first appear (token 0) and whenever a delete/edit deeper in the stack bumps it.
         .task(id: coordinator.reloadToken) { await load() }
+        .enableInjection()
     }
 
     private var header: some View {
@@ -793,6 +797,8 @@ struct WorkoutSessionDetailScreen: View {
     @State private var showDeleteConfirm = false
     @State private var showMoreMenu = false
     @State private var saveError = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     // Display prefers the reloaded `fullSession` (so an edit's new date/routine shows at once), falling
     // back to the immutable route while it loads (FER-556).
@@ -920,6 +926,7 @@ struct WorkoutSessionDetailScreen: View {
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .task { await load() }
+        .enableInjection()
     }
 
     // MARK: - Parity actions (v3 · 2A) — «Duplicar como rutina» + «Repetir hoy»

@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import StrandDesign
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// Silent haptic HIIT interval timer.
 ///
@@ -43,6 +44,8 @@ struct IntervalTimerView: View {
     @State private var running: Bool = false
     @State private var elapsed: Int = 0             // total elapsed seconds across the session
     @State private var configuring: Bool = true
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     // 1Hz tick.
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -110,6 +113,7 @@ struct IntervalTimerView: View {
             if !running { resetToStart() }
         }
         .onAppear { if remaining == 0 { resetToStart() } }
+        .enableInjection()
     }
 
     // MARK: Header

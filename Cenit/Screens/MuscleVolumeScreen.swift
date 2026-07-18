@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MuscleVolumeScreen.swift — «Volumen por músculo» (Entrenar v3 · 3d, FER-719): average weekly
 // sets per muscle over a chosen span, judged against the ~10–20 sets/week hypertrophy band
@@ -43,6 +44,8 @@ struct MuscleVolumeScreen: View {
     /// Work sets over the trailing year, expanded to per-muscle events (one fetch; the span slices).
     @State private var events: [MuscleFatigueMap.MuscleSetEvent] = []
     @State private var loaded = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     /// The band rail draws 0…30 sets/week, like the muscle detail (band at 10–20 sits centered).
     private var railTop: Double { MuscleFatigueMap.weeklyVolumeRailTop }
@@ -117,6 +120,7 @@ struct MuscleVolumeScreen: View {
             .presentationDetents([.height(max(infoSheetHeight, 120))])
             .presentationBackground(theme.paper)
         }
+        .enableInjection()
     }
 
     // MARK: - Span picker (30 d / 90 d / 6 m / 1 y) — the shared Instrumento segmented control

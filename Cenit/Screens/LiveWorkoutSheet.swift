@@ -1,6 +1,7 @@
 import SwiftUI
 import StrandDesign
 import WhoopStore
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Train hub: live-workout entry + recording sheet (FER-197)
 //
@@ -137,6 +138,8 @@ struct LiveWorkoutHubRow: View {
 struct LiveWorkoutSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
     var theme: InstrumentoTheme = .base
 
     var body: some View {
@@ -187,6 +190,7 @@ struct LiveWorkoutSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        .enableInjection()
     }
 
     private func stat(_ label: LocalizedStringKey, _ value: String) -> some View {

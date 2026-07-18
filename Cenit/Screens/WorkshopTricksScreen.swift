@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import StrandDesign
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Lo que Cénit sabe hacer» (decisión Fer 2026-07-16)
 //
@@ -12,6 +13,8 @@ import StrandDesign
 
 struct WorkshopTricksScreen: View {
     @Environment(\.instrumentoTheme) private var theme
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     private struct Trick: Identifiable {
         let id: String
@@ -71,6 +74,7 @@ struct WorkshopTricksScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        .enableInjection()
     }
 
     private func trickRow(_ t: Trick) -> some View {

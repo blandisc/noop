@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import StrandDesign
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// HRV haptic breathing biofeedback trainer — Strand's flagship novel feature.
 ///
@@ -87,6 +88,8 @@ struct BreathingView: View {
     /// Rolling buffer of the most recent R-R intervals (ms) for RMSSD.
     @State private var rrBuffer: [Int] = []
     @State private var rmssd: Double? = nil
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     /// Phase driver (fast, smooth) and a once-per-second session tick.
     private let phaseTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
@@ -132,6 +135,7 @@ struct BreathingView: View {
             if running { armPhase(.inhale, from: Date(), buzz: false) }
         }
         .onDisappear { stop() }
+        .enableInjection()
     }
 
     // MARK: - Header

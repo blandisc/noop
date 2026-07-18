@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Rutina» — the ONE prescription editor (FER-839, handoff entrenamiento-v4 §2, screens 3a/4a/4b)
 //
@@ -75,6 +76,8 @@ struct RoutineEditorScreen: View {
     @State private var routineTint: Color = .clear
     @State private var groupTitle: String = ""
     @State private var saveError = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
     @FocusState private var focusedCell: String?
 
     /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
@@ -197,6 +200,7 @@ struct RoutineEditorScreen: View {
             await load()
             loaded = true
         }
+        .enableInjection()
     }
 
     // MARK: - Origin chrome (mock 4a)

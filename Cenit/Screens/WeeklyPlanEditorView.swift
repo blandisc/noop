@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Tu Plan» — the single home for the week + the routines (FER-890, was FER-533 + FER-534)
 //
@@ -74,6 +75,8 @@ struct WeeklyPlanEditorView: View {
     /// El «···» de banda abierto (renombrar / borrar carpeta).
     @State private var menuFolderId: String? = nil
     @State private var saveError = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
     private static let unfiledSectionID = "unfiled-section"
 
     /// Monday-first display order in the Calendar weekday convention (2 = Mon … 1 = Sun).
@@ -163,6 +166,7 @@ struct WeeklyPlanEditorView: View {
         // FER-787: the list + the week share one `load()`; the initial `.task` doesn't re-run on a
         // NavigationStack pop, so refresh on return (e.g. from the routine/day editor) too.
         .onAppear { if loaded { Task { await load() } } }
+        .enableInjection()
     }
 
     // MARK: - Header

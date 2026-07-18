@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Mapa muscular (Cuerpo) — FER-350 · rediseño «la respuesta lidera»
 //
@@ -62,6 +63,8 @@ struct MuscleMapScreen: View {
     /// state) from «all recovered» (the green map). (FER-525)
     @State private var hasHistory = false
     @State private var showResetConfirm = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     private static let trendDays = 84
 
@@ -126,6 +129,7 @@ struct MuscleMapScreen: View {
             )
             .preferredColorScheme(.light)
         }
+        .enableInjection()
     }
 
     // MARK: - Header — the grotesk verdict leads, the recovery bullet explains the gate
