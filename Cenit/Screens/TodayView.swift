@@ -663,7 +663,9 @@ struct TodayView: View {
         return TrainingLoadItem(
             model: model,
             patternText: loadInsight?.reading,
-            onSeePattern: loadInsight.map { i in { tabRouter.openInsight(key: InsightFreshness.key(for: i)) } },
+            // FER-992: CTA to Patrones off — re-enable:
+            // onSeePattern: loadInsight.map { i in { tabRouter.openInsight(key: InsightFreshness.key(for: i)) } },
+            onSeePattern: nil,
             onSeeTrends: { tabRouter.select(.body) })
     }
 
@@ -1673,7 +1675,8 @@ struct TodayView: View {
             Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if let conn = dayConnection { dayConnectionView(conn) }
+            // FER-992: «La conexión de hoy» + CTAs to Patrones off (helpers below stay for re-enable).
+            // Re-enable: if let conn = dayConnection { dayConnectionView(conn) }
 
             VStack(spacing: 0) {
                 ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
