@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 @preconcurrency import CenitStore
 
 // AnalyticsEngine.swift — orchestrator producing DailyMetric + sleep-session results.

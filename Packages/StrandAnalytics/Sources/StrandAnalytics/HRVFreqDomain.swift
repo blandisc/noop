@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // HRVFreqDomain.swift, frequency-domain HRV (LF / HF / LF-HF / total power) over an R-R series.
 //

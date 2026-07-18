@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 /// type-47 HISTORICAL_DATA from a **real WHOOP 4** (firmware 41.17.6.0), captured over BlueZ on
 /// 2026-06-08 with the tool's new 4.0 offload handshake (`whoop_capture.py --model whoop4

@@ -1,6 +1,7 @@
 import XCTest
 @testable import Cenit
 import WhoopProtocol
+import BiometricStreams
 import CenitStore
 
 /// FER-693: `RawHistoryArchive.replay` re-decodes the durable reject archive through the CURRENT decoder

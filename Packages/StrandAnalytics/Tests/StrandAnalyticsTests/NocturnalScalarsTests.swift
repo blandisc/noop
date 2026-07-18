@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// FER-972 (P-05) — the per-night display scalars the nightly pass persists (`night_dc_ms`,
 /// `night_warming_c`): the warming math moved verbatim from the app layer into

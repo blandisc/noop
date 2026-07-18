@@ -1,6 +1,7 @@
 import Foundation
 import CenitStore
 import WhoopProtocol
+import BiometricStreams
 import StrandAnalytics
 
 // NightRhythmProvider.swift — the app-layer read for FER-666's «Ritmo» surface. It picks last

@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// Tests for the app-facing `NightRhythmAssembler` — the wiring that slices a night's raw
 /// R-R + gravity into resting windows and feeds each to the pure `RhythmScreener`. These

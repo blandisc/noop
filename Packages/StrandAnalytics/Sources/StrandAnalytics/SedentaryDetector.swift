@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // SedentaryDetector.swift — the pure core of the "inactivity reminder" (wrist buzz after sitting
 // too long, FER-664). Ported from the upstream engine (NoopApp/noop): bout detection + the may-buzz

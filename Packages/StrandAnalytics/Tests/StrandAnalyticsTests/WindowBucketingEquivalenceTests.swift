@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import StrandAnalytics
 
 /// FER-972 (P-02 · M-02): the O(n) window-bucketing rewrites must be beat-for-beat equivalent to

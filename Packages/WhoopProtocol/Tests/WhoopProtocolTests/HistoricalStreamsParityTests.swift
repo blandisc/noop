@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 final class HistoricalStreamsParityTests: XCTestCase {
     private let deviceClockRef = 31_538_447

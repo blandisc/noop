@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import EventKit
 import WhoopProtocol
+import BiometricStreams
 import StrandAnalytics
 
 // CalendarDayMap.swift — the app-layer orchestrator for the «mapa del día» (FER-377).

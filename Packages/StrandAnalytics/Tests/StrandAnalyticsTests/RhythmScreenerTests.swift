@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// Tests for the experimental, non-clinical RhythmScreener regularity engine.
 ///

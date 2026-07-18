@@ -4,6 +4,7 @@ import StrandDesign
 import StrandAnalytics
 import StrandTraining
 import WhoopProtocol
+import BiometricStreams
 
 // ReceiptMapping.swift — pure StrengthSummary → ThermalReceipt mapper for the workout receipt printer.
 // No view code. Deterministic (stable order #, barcode seed) so the same session always reprints the

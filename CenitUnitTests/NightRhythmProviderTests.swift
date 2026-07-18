@@ -1,6 +1,7 @@
 import XCTest
 import CenitStore
 import WhoopProtocol
+import BiometricStreams
 import StrandAnalytics
 @testable import Cenit
 

@@ -1,5 +1,6 @@
 import Foundation
 import WhoopProtocol
+import BiometricStreams
 import CenitStore
 
 // MARK: - BackfillStoreWriting protocol

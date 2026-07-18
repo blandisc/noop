@@ -5,6 +5,7 @@ import HealthKit
 import StrandAnalytics
 import StrandImport
 import WhoopProtocol
+import BiometricStreams
 import CenitStore
 
 /// Two-way Apple Health bridge for the iOS app.

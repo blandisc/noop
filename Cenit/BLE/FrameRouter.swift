@@ -1,5 +1,6 @@
 import Foundation
 import WhoopProtocol
+import BiometricStreams
 
 /// Pure decode→state router. Takes a COMPLETE (already reassembled) frame, decodes it with
 /// WhoopProtocol.parseFrame, and updates LiveState. No CoreBluetooth — fully unit-testable.

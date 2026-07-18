@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // StrainScorerIncremental.swift — an incremental fold for the in-progress day's cumulative strain
 // (FER-870). `StrainScorer.cumulativeStrain(_:)` recomputes the whole day from scratch on every call:

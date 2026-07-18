@@ -1,7 +1,7 @@
 import Foundation
 import Compression
 import GRDB
-import WhoopProtocol
+import BiometricStreams
 
 public struct ClockRef: Equatable, Codable, Sendable {
     public let device: Int

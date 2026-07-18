@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 /// FER-970 (R-04) — the Repository handle opens a `DatabasePool`; the default `.queue` backend

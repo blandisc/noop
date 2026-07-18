@@ -1,5 +1,5 @@
 import XCTest
-@testable import WhoopProtocol
+@testable import BiometricStreams
 
 final class ValuesTests: XCTestCase {
     func testAccessors() {

@@ -1,6 +1,6 @@
 import XCTest
 import GRDB
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 /// Task A: persistence for the 4 type-47 biometric streams (spo2/skinTemp/resp/gravity).

@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // HRVAnalyzer.swift — RMSSD + SDNN from RR intervals with cleaning.
 //

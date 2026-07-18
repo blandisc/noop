@@ -1,4 +1,5 @@
 import Foundation
+import BiometricStreams
 
 // Local LE readers mirroring interpreter._read (nil when out of range).
 private func u8(_ f: [UInt8], _ off: Int) -> Int? { off + 1 <= f.count ? Int(f[off]) : nil }

@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // NightRhythmAssembler.swift — assemble ONE night's resting windows from raw R-R + gravity
 // and feed them to the pure `RhythmScreener` engine. This is the wiring half of FER-666:

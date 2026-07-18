@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // RecoveryScorer.swift — resting HR during sleep + a transparent 0–100 recovery score.
 //
