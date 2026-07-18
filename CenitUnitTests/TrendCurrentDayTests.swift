@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// Pins FER-630: with the in-progress day's row present in the daily rows, the Esfuerzo/Estrés trend

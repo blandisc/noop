@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// Pins the native-journal merge logic, mirroring the Android JournalLogTest value-for-value so the

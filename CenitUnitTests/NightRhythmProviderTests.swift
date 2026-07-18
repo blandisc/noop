@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 import WhoopProtocol
 import StrandAnalytics
 @testable import Cenit

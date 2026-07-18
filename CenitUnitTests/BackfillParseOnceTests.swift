@@ -1,6 +1,6 @@
 import XCTest
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// Pins **parse-once + safe-trim ordering** on the historical-offload path (FER-752): the

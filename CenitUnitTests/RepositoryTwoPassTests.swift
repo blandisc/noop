@@ -1,5 +1,5 @@
 import XCTest
-import WhoopStore
+import CenitStore
 @testable import Cenit
 
 /// Pins the two-pass launch refresh coordination: `shouldPublish` (a stale
