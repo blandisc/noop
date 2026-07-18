@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 import StrandDesign
 import StrandImport
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 import UIKit       // UIApplication.openSettingsURLString (open Settings when notifications are denied)
 
 /// Diet capture + daily tracker — the plan your nutritionist gave you, and how you follow it (FER-371/372).

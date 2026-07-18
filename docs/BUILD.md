@@ -31,7 +31,7 @@ Cenit/
 │   └── System/                 # ProjectInfo and app-layer helpers
 ├── Packages/
 │   ├── WhoopProtocol/          # BLE frame parsing, CRC, command/event/packet decode
-│   ├── WhoopStore/             # GRDB/SQLite persistence (migrations, streams, caches)
+│   ├── CenitStore/             # GRDB/SQLite persistence (migrations, streams, caches)
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
 │   ├── StrandImport/           # WHOOP CSV + Apple Health importers
 │   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
@@ -49,9 +49,9 @@ platforms). Any framework-specific code is guarded with `#if canImport(AppKit) /
 | Package          | Platforms                | Key dependencies                          | Responsibility |
 |------------------|--------------------------|-------------------------------------------|----------------|
 | `WhoopProtocol`  | iOS 16+, macOS 13+       | none (bundles `Resources/whoop_protocol.json`) | BLE framing, CRC, command/event/packet decode — the reverse-engineering core |
-| `WhoopStore`     | iOS 16+, macOS 13+       | `WhoopProtocol`, `GRDB.swift` (≥ 6.0.0)   | SQLite persistence, migrations, decoded streams, metric caches |
-| `StrandAnalytics`| macOS 13+, iOS 16+       | `WhoopProtocol`, `WhoopStore`             | HRV / recovery / strain / sleep / correlation math |
-| `StrandImport`   | macOS 13+, iOS 16+       | `WhoopProtocol`, `WhoopStore`, `ZIPFoundation` (≥ 0.9.0) | WHOOP CSV + Apple Health (`export.xml`, streaming) importers |
+| `CenitStore`     | iOS 16+, macOS 13+       | `WhoopProtocol`, `GRDB.swift` (≥ 6.0.0)   | SQLite persistence, migrations, decoded streams, metric caches |
+| `StrandAnalytics`| macOS 13+, iOS 16+       | `WhoopProtocol`, `CenitStore`             | HRV / recovery / strain / sleep / correlation math |
+| `StrandImport`   | macOS 13+, iOS 16+       | `WhoopProtocol`, `CenitStore`, `ZIPFoundation` (≥ 0.9.0) | WHOOP CSV + Apple Health (`export.xml`, streaming) importers |
 | `StrandDesign`   | macOS 13+, iOS 16+       | none                                      | SwiftUI design system: palette, components, charts |
 
 All third-party dependencies are resolved through **Swift Package Manager**; nothing is vendored
@@ -153,7 +153,7 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit \
 
 # per-package iteration (much faster than the full app):
 cd Packages/WhoopProtocol && swift build && swift test
-cd Packages/WhoopStore    && swift build && swift test
+cd Packages/CenitStore    && swift build && swift test
 cd Packages/StrandImport  && swift build && swift test
 ```
 
@@ -217,7 +217,7 @@ the non-UI core stays portable across platforms.
 ```bash
 # Package test suites (no Xcode project needed):
 cd Packages/WhoopProtocol && swift test
-cd Packages/WhoopStore    && swift test
+cd Packages/CenitStore    && swift test
 cd Packages/StrandAnalytics && swift test
 cd Packages/StrandImport  && swift test
 cd Packages/StrandDesign  && swift test
@@ -233,7 +233,7 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform
 
 Cénit builds on prior community reverse-engineering and interoperability work:
 
-- **`johnmiddleton12/my-whoop`** — WHOOP 4.0 BLE protocol; the `WhoopProtocol` and `WhoopStore`
+- **`johnmiddleton12/my-whoop`** — WHOOP 4.0 BLE protocol; the `WhoopProtocol` and `CenitStore`
   packages are adapted from this work.
 - **`b-nnett/goose`** — WHOOP 5.0 / MG BLE protocol (service family `fd4b0001-…`, CRC16-Modbus
   header) that the WHOOP-5 decode path is ported from.

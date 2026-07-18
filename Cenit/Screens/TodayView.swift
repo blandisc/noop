@@ -2,7 +2,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
-import WhoopStore
+import CenitStore
 import Foundation
 
 

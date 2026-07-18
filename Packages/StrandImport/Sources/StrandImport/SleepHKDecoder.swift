@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 /// FER-486 (F3 of the FER-483 epic) — the INVERSE of `SleepHKEncoder`.
 ///

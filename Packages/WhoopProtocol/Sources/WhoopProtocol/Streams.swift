@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - Decoded stream rows (the durable, compact local record)
-// Phase E and WhoopStore depend on these EXACT shapes. ts is wall-clock unix seconds
+// Phase E and CenitStore depend on these EXACT shapes. ts is wall-clock unix seconds
 // EXCEPT inside extractStreams' inputs; the structs themselves always carry wall-clock ts.
 
 public struct HRSample: Equatable, Codable, Sendable {

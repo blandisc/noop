@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import StrandDesign
-import WhoopStore
+import CenitStore
 import StrandAnalytics
 #if os(iOS)
 import HealthKit   // HKAuthorizationStatus, for the write-back permission tally

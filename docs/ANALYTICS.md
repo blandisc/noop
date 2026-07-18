@@ -4,7 +4,7 @@ On-device analytics for **Cénit** — a standalone, fully offline companion app
 
 > **Not affiliated with WHOOP.** Cénit interoperates with hardware and data you already own. The metrics below are **approximations** of common exercise-physiology and HRV methods, derived from published literature — they are **not** reproductions of any proprietary scoring model, and they are **not a medical device**. Nothing here is medical advice.
 
-All analytics live in the cross-platform `StrandAnalytics` Swift package. Every entry point is a **pure, deterministic, DB-free** function over its inputs — no I/O, no global state, no network. Persistence and BLE are wired in elsewhere (`WhoopStore`, the app target). This makes the whole package straightforward to unit-test against fixed vectors.
+All analytics live in the cross-platform `StrandAnalytics` Swift package. Every entry point is a **pure, deterministic, DB-free** function over its inputs — no I/O, no global state, no network. Persistence and BLE are wired in elsewhere (`CenitStore`, the app target). This makes the whole package straightforward to unit-test against fixed vectors.
 
 - Package: `Packages/StrandAnalytics/Sources/StrandAnalytics/`
 - Top-level index: `StrandAnalytics.swift` (`StrandAnalytics.version == "0.1.0"`)
@@ -627,7 +627,7 @@ Source: `AnalyticsEngine.swift`. A pure function that ties the recompute engines
 5. `StrainScorer.strain(...)` over the full day's HR window (Tanaka HRmax from age unless overridden).
 6. `WorkoutDetector.detect(...)`.
 
-It assembles a `DailyMetric` (the `WhoopStore` cache shape) plus rich `SleepSession`s and `CachedSleepSession` cache rows. Every derived value is **approximate** by construction.
+It assembles a `DailyMetric` (the `CenitStore` cache shape) plus rich `SleepSession`s and `CachedSleepSession` cache rows. Every derived value is **approximate** by construction.
 
 ---
 
@@ -679,7 +679,7 @@ A sport with fewer than `minSessions` next-morning pairs is **omitted entirely**
 
 ```
 WHOOP strap (BLE) ─┐
-                   ├─► WhoopProtocol (frame decode) ─► WhoopStore (SQLite, 1 Hz streams)
+                   ├─► WhoopProtocol (frame decode) ─► CenitStore (SQLite, 1 Hz streams)
 WHOOP CSV export ──┤                                         │
 Apple Health XML ──┘                                         │
                                                              ▼

@@ -1,6 +1,6 @@
 import SwiftUI
 import StrandDesign
-import WhoopStore
+import CenitStore
 
 // MARK: - Train hub: live-workout entry + recording sheet (FER-197)
 //

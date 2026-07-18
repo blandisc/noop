@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 /// FER-214 — the real Sleep Regularity Index (Phillips 2017 / Windred 2024): concordance of the
 /// asleep/awake state with the instant 24 h later, over a window of nights.

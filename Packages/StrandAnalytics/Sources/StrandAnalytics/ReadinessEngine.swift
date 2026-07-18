@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 /// On-device "Readiness" intelligence.
 ///

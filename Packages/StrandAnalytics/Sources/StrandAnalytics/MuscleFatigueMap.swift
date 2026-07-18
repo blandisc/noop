@@ -53,7 +53,7 @@ import Foundation
 //
 // Pure & database-free, like `OneRepMax`: it operates on flat `MuscleSetEvent` primitives, so it
 // needs no dependency on StrandTraining or GRDB. The caller (the Cuerpo screen) reads work sets
-// from WhoopStore, expands each one across `Exercise.muscleInvolvement`, computes `daysAgo` in the
+// from CenitStore, expands each one across `Exercise.muscleInvolvement`, computes `daysAgo` in the
 // device's local calendar, and reads systemic recovery from the dashboard.
 
 public enum MuscleFatigueMap {

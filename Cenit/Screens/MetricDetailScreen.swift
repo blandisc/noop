@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import WhoopStore
+import CenitStore
 import StrandDesign
 import StrandAnalytics
 import Foundation

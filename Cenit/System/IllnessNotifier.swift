@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 import UserNotifications
 
 /// Surfaces the illness early-warning as a macOS user notification when the banner transitions

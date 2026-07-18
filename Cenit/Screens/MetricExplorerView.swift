@@ -3,7 +3,7 @@ import SwiftUI
 import Foundation
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 // MARK: - Explore (Metric Explorer + Detail) — «Instrumento diurno» (FER-272)
 //

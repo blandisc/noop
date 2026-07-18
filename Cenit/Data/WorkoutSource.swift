@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 /// Locale-aware display formatting shared by the workouts list and the session detail (so the two never
 /// drift, and the list doesn't reach into the detail's private statics). Dates/times render in the device
@@ -109,7 +109,7 @@ enum WorkoutSource: Equatable {
     // The engine wipes + re-derives "detected" rows every run, so deleting a detected row from the
     // table would only hide it until the next analyzeRecent recreates the same (startTs, sport) PK.
     // The durable "this isn't a workout" record is a list of dismissed time spans persisted in
-    // UserDefaults (the macOS WorkoutRow lives in the WhoopStore Journal file, which this layer must
+    // UserDefaults (the macOS WorkoutRow lives in the CenitStore Journal file, which this layer must
     // not extend with a new column). A detected row overlapping any dismissed span stays hidden.
     // (#107)
 

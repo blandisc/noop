@@ -1,7 +1,7 @@
 import XCTest
 @testable import StrandAnalytics
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 
 final class AnalyticsEngineTests: XCTestCase {
 
@@ -142,7 +142,7 @@ final class AnalyticsEngineTests: XCTestCase {
     }
 
     func testAnalyzeDayDailyMetricRoundTripsThroughCodable() throws {
-        // The produced DailyMetric must encode/decode (it's the WhoopStore cache shape).
+        // The produced DailyMetric must encode/decode (it's the CenitStore cache shape).
         let day = "2021-06-20"
         let n = night(endDay: day, hours: 7)
         let result = AnalyticsEngine.analyzeDay(

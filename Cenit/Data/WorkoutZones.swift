@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 // MARK: - Imported per-workout HR zones
 //

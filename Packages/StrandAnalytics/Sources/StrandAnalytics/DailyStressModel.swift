@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 // MARK: - Daily stress model (transparent autonomic-load proxy)
 //

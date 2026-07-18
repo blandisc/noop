@@ -18,7 +18,7 @@ Recursos generados:
 - `Packages/StrandTraining/.../Resources/exercises.es.json(.zlib)` — overlay es-MX (nombre +
   instrucciones), traducido por un LLM en el bake.
 - `Packages/StrandImport/.../Resources/exercise-aliases.json` — nombres comunes de gym → id nativo.
-- `Packages/WhoopStore/.../Resources/{exercise-id-remap,legacy-exercise-data}.json.zlib` — los mapas
+- `Packages/CenitStore/.../Resources/{exercise-id-remap,legacy-exercise-data}.json.zlib` — los mapas
   que alimentan la **migración v33** que remapea el historial del usuario de los ids viejos
   (ExerciseDB) a los nuevos (ver `build_remap.py`).
 
@@ -74,5 +74,5 @@ de `Resources/`.
 Al cambiar la fuente, los ids de ejercicio cambian. El historial del usuario los referencia, así que
 `build_remap.py` produce dos mapas (por **nombre exacto normalizado**): `exercise-id-remap` (old→new,
 los que tienen match, 132) y `legacy-exercise-data` (old→datos, los sin match, 1368). La migración
-**v33** de `WhoopStore` (con su `MigrationTests.testV33Remap`) los usa para reescribir los ids del
+**v33** de `CenitStore` (con su `MigrationTests.testV33Remap`) los usa para reescribir los ids del
 historial y materializar los no-mapeados como `customExercise` — **cero entrenamientos huérfanos**.

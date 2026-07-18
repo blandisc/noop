@@ -2,7 +2,7 @@ import SwiftUI
 import Foundation
 import StrandAnalytics
 import StrandDesign
-import WhoopStore
+import CenitStore
 
 // MARK: - Stress model (presentation layer)
 //

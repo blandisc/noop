@@ -3,7 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
-import WhoopStore
+import CenitStore
 import Foundation
 
 // MARK: - WorkoutDetailScreen — el detalle de UNA sesión, en «Instrumento» (FER-261)

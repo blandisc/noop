@@ -3,7 +3,7 @@ import Combine
 import Observation
 import UserNotifications
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 import StrandImport
 import StrandAnalytics
 import StrandTraining
@@ -473,7 +473,7 @@ enum DataSourceImportKind {
     /// the local-day rows the re-group just wrote. Only future-dated rows are touched, so a past day
     /// that couldn't be recomputed keeps its row (no data loss). `written` are this run's freshly
     /// written local days, excluded defensively. Static: no instance state, just the store.
-    private static func pruneFutureLocalDays(store: WhoopStore, deviceId: String,
+    private static func pruneFutureLocalDays(store: CenitStore, deviceId: String,
                                              written: Set<String>) async {
         let todayLocal = Repository.localDayKey(Date())
         // A UTC offset shifts a row by at most one day, so [today … +2d local] covers every future orphan.
@@ -1241,7 +1241,7 @@ enum DataSourceImportKind {
     }
 
     /// Prior best-per-metric PRs per exercise, BEFORE this session's save — the baseline new records beat.
-    private func priorStrengthPRs(store: WhoopStore, ids: Set<String>) async -> [String: [PRMetric: PersonalRecord]] {
+    private func priorStrengthPRs(store: CenitStore, ids: Set<String>) async -> [String: [PRMetric: PersonalRecord]] {
         var out: [String: [PRMetric: PersonalRecord]] = [:]
         for id in ids {
             let prs = (try? await store.personalRecords(exerciseId: id)) ?? []
@@ -1255,7 +1255,7 @@ enum DataSourceImportKind {
     /// session carries strain (FER-399), so the view omits the cost block rather than inventing a zero.
     private func buildStrengthSummary(session: StrengthSessionModel, record: StrengthSession,
                                       sets: [SetEntry], prior: [String: [PRMetric: PersonalRecord]],
-                                      store: WhoopStore) async -> StrengthSummary {
+                                      store: CenitStore) async -> StrengthSummary {
         let work: [SetEntry] = sets.filter { (s: SetEntry) in s.kind == .work && s.done }
         let volumeKg: Double = work.reduce(0.0) { (acc: Double, s: SetEntry) -> Double in
             let w: Double = s.weightKg ?? 0.0

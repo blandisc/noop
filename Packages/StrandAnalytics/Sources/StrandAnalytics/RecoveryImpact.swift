@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 /// «Qué la movió hoy» — the per-signal decomposition of TODAY's recovery score (FER-628).
 ///

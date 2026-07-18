@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandImport
-import WhoopStore
+import CenitStore
 
 final class DietPlanImporterTests: XCTestCase {
 
@@ -219,7 +219,7 @@ final class DietPlanImporterTests: XCTestCase {
         let plan = try importer.parse(text: weeklyES)
         let row = try importer.makeDietPlanRow(plan, id: "w1", createdAt: 1000)
         XCTAssertEqual(row.cycle, "semanal")
-        let store = try await WhoopStore.inMemory()
+        let store = try await CenitStore.inMemory()
         try await store.upsertDietPlan(row, deviceId: "dev")
         let stored = try await store.activeDietPlan(deviceId: "dev")
         XCTAssertEqual(try importer.parse(text: try XCTUnwrap(stored).payloadJSON), plan)
@@ -235,7 +235,7 @@ final class DietPlanImporterTests: XCTestCase {
         XCTAssertEqual(row.language, "es")
         XCTAssertEqual(row.cycle, "diario")
 
-        let store = try await WhoopStore.inMemory()
+        let store = try await CenitStore.inMemory()
         try await store.upsertDietPlan(row, deviceId: "dev")
         let stored = try await store.activeDietPlan(deviceId: "dev")
         let reparsed = try importer.parse(text: try XCTUnwrap(stored).payloadJSON)

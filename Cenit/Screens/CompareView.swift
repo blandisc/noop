@@ -3,7 +3,7 @@ import Foundation
 import Charts
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 // MARK: - Compare — en lenguaje «Instrumento diurno» (FER-268)
 //

@@ -15,10 +15,10 @@ and the migration history that produced the current schema.
 
 ## Where the database lives
 
-The persistence layer is the `WhoopStore` Swift package
-(`Packages/WhoopStore`), built on [GRDB](https://github.com/groue/GRDB.swift) over SQLite. Like
+The persistence layer is the `CenitStore` Swift package
+(`Packages/CenitStore`), built on [GRDB](https://github.com/groue/GRDB.swift) over SQLite. Like
 every package in the repo, it declares both platforms — `.iOS(.v16)` and `.macOS(.v13)`
-(`Packages/WhoopStore/Package.swift`) — and is UI-framework agnostic, so the same schema and
+(`Packages/CenitStore/Package.swift`) — and is UI-framework agnostic, so the same schema and
 storage code back the `Cenit` app from a single cross-platform core.
 
 The app target opens the database at a fixed, per-user location
@@ -42,11 +42,11 @@ static func defaultDatabasePath() throws -> String {
 
 On iOS that resolves inside the app's sandbox, to
 `<app sandbox>/Library/Application Support/OpenWhoop/whoop.sqlite`. Tests use an in-memory database via
-`WhoopStore.inMemory()`.
+`CenitStore.inMemory()`.
 
 ### Connection configuration
 
-`WhoopStore.init(path:)` (`Packages/WhoopStore/Sources/WhoopStore/WhoopStore.swift`) opens a
+`CenitStore.init(path:)` (`Packages/CenitStore/Sources/CenitStore/CenitStore.swift`) opens a
 single `DatabaseQueue` and applies these PRAGMAs before any query runs:
 
 | PRAGMA | Value | Why |
@@ -58,9 +58,9 @@ single `DatabaseQueue` and applies these PRAGMAs before any query runs:
 | `temp_store` | `MEMORY` | In-memory temp tables. |
 | `busyMode` | `.timeout(5)` | 5-second busy timeout under write contention. |
 
-`WhoopStore` is an `actor`: all GRDB calls run on the actor's serial executor (off the main
+`CenitStore` is an `actor`: all GRDB calls run on the actor's serial executor (off the main
 thread) through the `syncRead` / `syncWrite` helpers. The reported schema version is
-`WhoopStoreInfo.schemaVersion = 16`.
+`CenitStoreInfo.schemaVersion = 16`.
 
 ---
 
@@ -87,7 +87,7 @@ lexicographically.
 
 ## Migration history
 
-Migrations are registered in `Packages/WhoopStore/Sources/WhoopStore/Database.swift`
+Migrations are registered in `Packages/CenitStore/Sources/CenitStore/Database.swift`
 (`makeMigrator()`) and run in order on every open.
 
 | Version | What it adds |
@@ -145,7 +145,7 @@ a `deviceId` text column, scoping all data per device.
 
 These eight tables are the **durable, compact local record** of what the strap measured. They are
 decoded on-device from BLE frames by the `WhoopProtocol` package and written by
-`WhoopStore.insert(_ streams:deviceId:)` (`StreamStore.swift`). The in-memory shapes are the
+`CenitStore.insert(_ streams:deviceId:)` (`StreamStore.swift`). The in-memory shapes are the
 `WhoopProtocol` stream structs (`Packages/WhoopProtocol/Sources/WhoopProtocol/Streams.swift`):
 `HRSample`, `RRInterval`, `WhoopEvent`, `BatterySample`, `SpO2Sample`, `SkinTempSample`,
 `RespSample`, `GravitySample`, aggregated into `Streams`.
@@ -473,7 +473,7 @@ builds upon:
 - **WHOOP 5.0 protocol** — [`b-nnett/goose`](https://github.com/b-nnett/goose)
 
 The frame parsing, CRC, and command/event/packet decode that feed the decoded-stream tables above
-live in the `WhoopProtocol` package; persistence is `WhoopStore`; the local recovery / strain /
+live in the `WhoopProtocol` package; persistence is `CenitStore`; the local recovery / strain /
 HRV / sleep math is `StrandAnalytics`; and the CSV / Apple-Health importers are `StrandImport`.
 
 > **Reminder.** Cénit is not affiliated with WHOOP and is not a medical device. All stored data is

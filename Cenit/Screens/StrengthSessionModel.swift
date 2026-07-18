@@ -5,7 +5,7 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 import WhoopProtocol
-import WhoopStore
+import CenitStore
 
 // MARK: - Session model (the durable, observable state owned by AppModel)
 

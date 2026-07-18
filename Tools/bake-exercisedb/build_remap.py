@@ -3,7 +3,7 @@
 
 El id de ejercicio cambia al migrar la fuente, y 5 tablas on-device lo referencian
 (routineExercise, setEntry, personalRecord, exercisePreference, importMatch). La migración
-`v33` de WhoopStore usa estos recursos para NO orfanar el historial del usuario:
+`v33` de CenitStore usa estos recursos para NO orfanar el historial del usuario:
 
   * exercise-id-remap.json.zlib   → { oldId: newId }  (match EXACTO de nombre normalizado)
   * legacy-exercise-data.json.zlib → { oldId: {name,type,equipment,primaryMuscles,secondaryMuscles} }
@@ -24,7 +24,7 @@ NEW = os.path.abspath(os.path.join(
     HERE, "..", "..", "Packages", "StrandTraining", "Sources", "StrandTraining", "Resources",
     "exercises.json"))
 WHOOPSTORE_RES = os.path.abspath(os.path.join(
-    HERE, "..", "..", "Packages", "WhoopStore", "Sources", "WhoopStore", "Resources"))
+    HERE, "..", "..", "Packages", "CenitStore", "Sources", "CenitStore", "Resources"))
 OUT_REMAP = os.path.join(WHOOPSTORE_RES, "exercise-id-remap.json.zlib")
 OUT_LEGACY = os.path.join(WHOOPSTORE_RES, "legacy-exercise-data.json.zlib")
 

@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 // SourceLens.swift — keep a baseline pure by SOURCE (FER-623 · FER-631).
 //

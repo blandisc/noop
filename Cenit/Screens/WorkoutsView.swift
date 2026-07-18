@@ -2,7 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
-import WhoopStore
+import CenitStore
 import Foundation
 
 // MARK: - Workouts — la bitácora de actividad en «Instrumento diurno» (FER-260)

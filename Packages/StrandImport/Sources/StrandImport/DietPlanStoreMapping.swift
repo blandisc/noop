@@ -1,10 +1,10 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
-// MARK: - DietPlan → WhoopStore.DietPlanRow (FER-370)
+// MARK: - DietPlan → CenitStore.DietPlanRow (FER-370)
 //
-// WhoopStore persists a plan as an OPAQUE JSON payload — it never decodes the nested
-// structure. This bridge (StrandImport depends on WhoopStore, not the reverse) re-encodes a
+// CenitStore persists a plan as an OPAQUE JSON payload — it never decodes the nested
+// structure. This bridge (StrandImport depends on CenitStore, not the reverse) re-encodes a
 // validated `DietPlan` into the canonical `noop.diet.v1` JSON and packs it, with the
 // denormalized listing columns, into a `DietPlanRow`. Canonical = sorted keys, so the stored
 // payload is stable and a round-trip (`parse(makeDietPlanRow(plan).payloadJSON) == plan`) holds.

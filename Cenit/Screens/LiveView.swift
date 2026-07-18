@@ -1,6 +1,6 @@
 import SwiftUI
 import StrandDesign
-import WhoopStore
+import CenitStore
 
 /// Live — the connected strap in real time, in the light «Instrumento diurno» language. Designed to
 /// read as a single **sheet** (FER-190): everything fits one view, no scrolling on a standard iPhone

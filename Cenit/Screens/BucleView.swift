@@ -2,7 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 // MARK: - Patrones (formerly «el Bucle» / Coach)
 //

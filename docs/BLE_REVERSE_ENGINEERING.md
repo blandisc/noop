@@ -638,7 +638,7 @@ The decoder is **data-driven**: most of the protocol lives in
    `frame[5]`); use `"ref"` to reuse another version's layout, or give it its own `fields`.
 5. **New durable row** — define the struct in `Streams.swift`, add it to the `Streams` aggregate, and
    emit it from `extractStreams` / `extractHistoricalStreams`. The GRDB persistence layer lives in
-   the `WhoopStore` package.
+   the `CenitStore` package.
 6. **New command** — add a case to `WhoopCommand` in `Commands.swift` with its on-wire raw value.
    Keep the [safety rule](#safety) below.
 

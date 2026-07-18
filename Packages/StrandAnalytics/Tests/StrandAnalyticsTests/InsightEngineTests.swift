@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopStore
+import CenitStore
 
 // Synthetic validation suite for the InsightEngine (FER-290).
 //

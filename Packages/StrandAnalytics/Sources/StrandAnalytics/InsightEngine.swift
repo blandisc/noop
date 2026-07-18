@@ -1,5 +1,5 @@
 import Foundation
-import WhoopStore
+import CenitStore
 
 // InsightEngine.swift — the single, pure, deterministic source of on-device findings.
 //
@@ -54,7 +54,7 @@ public enum InsightEngine {
 
     /// Everything the detectors need, all already read from the store by the caller.
     /// Most fields default to empty so a caller (or a test) supplies only what it has.
-    /// (Not `Sendable`: `DailyMetric` / `CachedSleepSession` from WhoopStore aren't, and
+    /// (Not `Sendable`: `DailyMetric` / `CachedSleepSession` from CenitStore aren't, and
     /// the engine is a synchronous pure function — it never crosses an actor boundary.)
     public struct Inputs {
         /// Daily rows; any order (the engine sorts).

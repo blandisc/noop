@@ -33,7 +33,7 @@ off-device.
    └──────────────┘        │        │                             │ Streams          │
                            │        │ complete frame              ▼                  │
                            │        ▼                  ┌──────────────────────┐      │
-                           │  ┌───────────┐  live      │  WhoopStore (actor)  │      │
+                           │  ┌───────────┐  live      │  CenitStore (actor)  │      │
                            │  │FrameRouter│──events────▶│  GRDB / SQLite       │      │
                            │  │ LiveState │  HR/RR/UI  │  decoded streams +   │      │
                            │  └───────────┘            │  metric caches +     │      │
@@ -51,7 +51,7 @@ off-device.
                            └─────────────────────────────────────────────────────────┘
 ```
 
-The same `WhoopStore` SQLite file is the single convergence point for three independent producers:
+The same `CenitStore` SQLite file is the single convergence point for three independent producers:
 the **live** BLE path, the **historical** BLE offload path, and the **import** path. All readers go
 through `Repository`.
 
@@ -81,7 +81,7 @@ Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compi
 │   ├── PrunePolicy.swift       raw-outbox retention (24h / 50MB)
 │   └── RawCaptureWindow.swift  bounded on-demand raw-capture window
 ├── Data/                       Read model + import glue
-│   ├── Repository.swift        @MainActor read model over WhoopStore
+│   ├── Repository.swift        @MainActor read model over CenitStore
 │   ├── WhoopImporter.swift     CSV result → store rows
 │   ├── AppleHealthImport.swift Apple Health result → store rows
 │   ├── Profile.swift           user profile (age/sex/body/HRmax)
@@ -96,7 +96,7 @@ Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compi
 Packages/                       Cross-platform Swift packages (base `.iOS(.v16)` / `.macOS(.v13)`;
 │                               StrandDesign is `.iOS(.v17)` / `.macOS(.v14)` + `.watchOS(.v10)`)
 ├── WhoopProtocol/              BLE frame parsing, CRC, command/event/packet decode
-├── WhoopStore/                 GRDB/SQLite persistence (actor)
+├── CenitStore/                 GRDB/SQLite persistence (actor)
 ├── StrandTraining/             strength domain types + bundled exercise catalog (free-exercise-db, FER-923; pure, no DB)
 ├── StrandAnalytics/            HRV/recovery/strain/sleep/correlation math
 ├── StrandImport/               WHOOP CSV + Apple Health importers
@@ -122,7 +122,7 @@ core/data/analytics packages declare `.iOS(.v16)`/`.macOS(.v13)`, guarding UI-fr
 `.macOS(.v13)`) and also declares **`.watchOS(.v10)`** (FER-740). **`StrandDesign` is higher:**
 `.iOS(.v17)` / `.macOS(.v14)` / `.watchOS(.v10)` so the watch app can paint with the design tokens —
 both are pure (Foundation-only / SwiftUI behind `#if canImport(UIKit|AppKit)`, with `#if os(iOS)`
-guards on the two haptic/hover-scrub spots). `WhoopStore`/`WhoopProtocol`/`StrandAnalytics`/
+guards on the two haptic/hover-scrub spots). `CenitStore`/`WhoopProtocol`/`StrandAnalytics`/
 `StrandImport` are **not** watchOS-bound: no DB, BLE, or analytics runs on the wrist.
 
 **Frozen identifiers from the NOOP legacy.** Bundle id `com.feriracheta.noop`, App Group
@@ -145,31 +145,31 @@ StrandTraining      (no deps — pure domain types + bundled exercise catalog)
 WhoopProtocol       (no deps)
    ▲
    │
-WhoopStore ─────────▶ GRDB.swift + StrandTraining
+CenitStore ─────────▶ GRDB.swift + StrandTraining
    ▲
    │
-StrandAnalytics ────▶ WhoopProtocol + WhoopStore   (NO StrandTraining dep: the strength engines —
+StrandAnalytics ────▶ WhoopProtocol + CenitStore   (NO StrandTraining dep: the strength engines —
                                                     MuscleFatigueMap FER-350, the 1RM estimator FER-346,
                                                     WeeklySplit FER-531 — take plain primitives the app
                                                     projects from StrandTraining types, keeping
                                                     StrandAnalytics decoupled)
-StrandImport ───────▶ WhoopStore + StrandTraining + ZIPFoundation
+StrandImport ───────▶ CenitStore + StrandTraining + ZIPFoundation
 ```
 
 | Package | Responsibility | Key types / functions | Notable boundary |
 |---|---|---|---|
 | **WhoopProtocol** | The reverse-engineering core: turn raw BLE bytes into typed rows. Framing, CRC, fragment reassembly, schema-driven field decode, stream extraction, historical-chunk classification. | `Reassembler`, `verifyFrame`, `parseFrame` → `ParsedFrame`, `extractStreams`, `extractHistoricalStreams`, `classifyHistoricalMeta`, `Streams`, `DeviceFamily`, `crc8`/`crc16Modbus`/`crc32` | **No CoreBluetooth.** Exposes GATT UUIDs as `String`; the app wraps them in `CBUUID`. |
-| **WhoopStore** | Durable on-device persistence built on GRDB/SQLite. Migrations, decoded streams, metric caches, generic metric series, raw outbox, cursors. | `actor WhoopStore`, `makeMigrator()`, `insert(_:deviceId:)`, `dailyMetrics`, `sleepSessions`, `metricSeries`, `pruneRaw`, `ClockRef`, `RawBatchMeta` | An **`actor`** — all writes/reads run off the main thread on its serial executor. |
+| **CenitStore** | Durable on-device persistence built on GRDB/SQLite. Migrations, decoded streams, metric caches, generic metric series, raw outbox, cursors. | `actor CenitStore`, `makeMigrator()`, `insert(_:deviceId:)`, `dailyMetrics`, `sleepSessions`, `metricSeries`, `pruneRaw`, `ClockRef`, `RawBatchMeta` | An **`actor`** — all writes/reads run off the main thread on its serial executor. |
 | **StrandAnalytics** | All physiological math, as pure functions over inputs. HRV, recovery, strain, sleep staging, workout detection, baselines, HR zones, correlation/comparison. | `AnalyticsEngine.analyzeDay(...)` → `DayResult`, `HRVAnalyzer`, `RecoveryScorer`, `StrainScorer`, `SleepStager`, `WorkoutDetector`, `Baselines`, `CorrelationEngine`, `DailyBriefEngine`, `WeeklySplit` (split → today's routine / day states / consistency streak, FER-531) | **Pure** — never touches the database. Produces `DailyMetric`/`CachedSleepSession` shapes for the store. |
 | **StrandImport** | Parse data the user already owns: WHOOP CSV exports and Apple Health exports (`export.xml`, streaming). | `ImportCoordinator.detectAndImport`, `WhoopExportImporter`, `AppleHealthImporter`, `AppleHealthAggregator`, `SleepHKEncoder`/`SleepHKDecoder` | **Parsing only** — returns normalized model arrays; the app maps them into the store. |
 | **StrandDesign** | The SwiftUI design system: palette, typography, motion, charts, components. | `StrandPalette`, `StrandCard`, `RecoveryRing`, `StrainGauge`, `Hypnogram`, `TrendChart`, `Sparkline`, `YearHeatStrip` | No data or protocol deps — pure presentation. |
-| **StrandTraining** | Strength-tracker domain types + the bundled, read-only exercise catalog (**free-exercise-db**, 873 exercises with native slug ids; FER-923, was ExerciseDB OSS in FER-779). The value models WhoopStore persists and StrandAnalytics computes over. | `Exercise`, `ExerciseType`, `ExerciseCatalog`, `Routine`, `RoutineExercise` (with `supersetGroup`, FER-346), `RoutineSet` (per-set prescription, FER-492; optional per-set `RestConfig` override with exercise fallback, FER-715), `RoutineSchedule` (the weekly split, FER-531), `StrengthSession` (with persisted `energyKcal`/`EnergySource`, FER-715), `SetEntry`, `PersonalRecord` | **Pure** — Foundation only (no GRDB/UIKit). GRDB conformance lives in WhoopStore by extension. (FER-345) |
+| **StrandTraining** | Strength-tracker domain types + the bundled, read-only exercise catalog (**free-exercise-db**, 873 exercises with native slug ids; FER-923, was ExerciseDB OSS in FER-779). The value models CenitStore persists and StrandAnalytics computes over. | `Exercise`, `ExerciseType`, `ExerciseCatalog`, `Routine`, `RoutineExercise` (with `supersetGroup`, FER-346), `RoutineSet` (per-set prescription, FER-492; optional per-set `RestConfig` override with exercise fallback, FER-715), `RoutineSchedule` (the weekly split, FER-531), `StrengthSession` (with persisted `energyKcal`/`EnergySource`, FER-715), `SetEntry`, `PersonalRecord` | **Pure** — Foundation only (no GRDB/UIKit). GRDB conformance lives in CenitStore by extension. (FER-345) |
 
-> **Exercise type override (FER-541).** The user can override an exercise's `ExerciseType` — including a catalog entry's (e.g. mark a "Plank" as time-based). The override is *user data*, so it lives in WhoopStore (`exerciseTypeOverride`, migration v24), **not** in the read-only bundled catalog. Precedence (user override > custom > catalog) is decided by the pure `ExerciseTypeResolver` and applied at a single resolver in `Cenit/Data/Repository+Strength.swift` (`resolvedExercise` / `allExercises`), which materializes the effective type into `Exercise.type`. Every downstream reader (guided session, builder, detail) sees the resolved type without bespoke logic; the catalog JSON is never mutated, so reverting is a plain delete.
+> **Exercise type override (FER-541).** The user can override an exercise's `ExerciseType` — including a catalog entry's (e.g. mark a "Plank" as time-based). The override is *user data*, so it lives in CenitStore (`exerciseTypeOverride`, migration v24), **not** in the read-only bundled catalog. Precedence (user override > custom > catalog) is decided by the pure `ExerciseTypeResolver` and applied at a single resolver in `Cenit/Data/Repository+Strength.swift` (`resolvedExercise` / `allExercises`), which materializes the effective type into `Exercise.type`. Every downstream reader (guided session, builder, detail) sees the resolved type without bespoke logic; the catalog JSON is never mutated, so reverting is a plain delete.
 
 > **Catalog adoption (FER-779 → FER-923).** The seed catalog is **free-exercise-db** (yuhonas — 873 real exercises, **The Unlicense / public domain**, native slug ids like `Barbell_Bench_Press_-_Medium_Grip`), baked offline by `Tools/bake-exercisedb/` into `exercises.json(.zlib)` (+ an `exercises.es.json(.zlib)` es-MX overlay, LLM-translated at bake). It **replaced ExerciseDB OSS** (~1500, non-commercial license + duplicates/junk) in FER-923: since Cénit ships its **own art** (FER-919), the base only needs clean data + a sane license, not media. free-exercise-db already uses Cénit's 17 canonical `MuscleAtlas` keys (identity, zero remap; `MuscleAtlas`/`MuscleVocabulary`/`MuscleFatigueMap` untouched); the bake derives `ExerciseType` from category/equipment/name and `bodyParts` from `primaryMuscles`. `Exercise.id` is the native slug, so media/data resolve **by id, without name matching**. The model carries `instructions`/`bodyParts`/`gifUrl`; custom exercises persist those via migration **v27**.
 >
-> **History remap (FER-923, migration v33).** Because the catalog source changed, the exercise ids changed too — and the user's saved history *does* reference them (`routineExercise`, `setEntry`, `personalRecord` [composite id `exerciseId:metric`], `learnedExerciseAlias`, `exerciseTypeOverride`, `progressionOptOut`). So FER-923 adds a **real history migration** (superseding FER-779's "no migration, fresh start" stance): v33 loads two baked maps from WhoopStore's bundle — `exercise-id-remap` (old ExerciseDB id → new slug, exact-name match) and `legacy-exercise-data` (old id → its record, for ids with no match) — and for every in-use id either **rewrites** the reference to the new slug, **materializes** a `customExercise` carrying the old id (no match), or leaves it (already a slug / user custom). Invariant: **zero orphaned history** (`MigrationTests.testV33Remap`). The bake also drops the old ExerciseDB stills (the new catalog ships no media; Cénit art lands per-id in FER-919) and rebuilds the import alias table (`build_aliases.py`) against the new names.
+> **History remap (FER-923, migration v33).** Because the catalog source changed, the exercise ids changed too — and the user's saved history *does* reference them (`routineExercise`, `setEntry`, `personalRecord` [composite id `exerciseId:metric`], `learnedExerciseAlias`, `exerciseTypeOverride`, `progressionOptOut`). So FER-923 adds a **real history migration** (superseding FER-779's "no migration, fresh start" stance): v33 loads two baked maps from CenitStore's bundle — `exercise-id-remap` (old ExerciseDB id → new slug, exact-name match) and `legacy-exercise-data` (old id → its record, for ids with no match) — and for every in-use id either **rewrites** the reference to the new slug, **materializes** a `customExercise` carrying the old id (no match), or leaves it (already a slug / user custom). Invariant: **zero orphaned history** (`MigrationTests.testV33Remap`). The bake also drops the old ExerciseDB stills (the new catalog ships no media; Cénit art lands per-id in FER-919) and rebuilds the import alias table (`build_aliases.py`) against the new names.
 
 ### Multi-generation protocol support
 
@@ -192,7 +192,7 @@ Concurrency is deliberately split between two isolation domains plus a serial dr
 
 | Component | Isolation | Why |
 |---|---|---|
-| `WhoopStore` | **`actor`** | GRDB calls block; the actor moves that blocking off the main thread and keeps **writes** serialized (a single writer per handle). The **BLE handle stays a `DatabaseQueue`**; the **Repository handle opens a `DatabasePool`** (FER-970 · R-04) so the nonisolated bulk read (`dashboardSnapshot`) runs on WAL reader connections and never queues behind a long engine/import write. |
+| `CenitStore` | **`actor`** | GRDB calls block; the actor moves that blocking off the main thread and keeps **writes** serialized (a single writer per handle). The **BLE handle stays a `DatabaseQueue`**; the **Repository handle opens a `DatabasePool`** (FER-970 · R-04) so the nonisolated bulk read (`dashboardSnapshot`) runs on WAL reader connections and never queues behind a long engine/import write. |
 | `AppModel`, `LiveState`, `Repository`, `BLEManager`, `FrameRouter`, `Collector`, `Backfiller` | **`@MainActor`** | These observe/mutate published UI state. CoreBluetooth's central is created on `queue: .main`, so delegate callbacks already arrive on the main actor — no hopping needed to update `LiveState`. |
 | Historical frame drain | **serial Task queue** | `BLEManager.routeBackfillFrame` appends frames synchronously (delegate order) and a single drain `Task` awaits `Backfiller.ingest` one frame at a time, so `HISTORY_START → data → HISTORY_END` chunk assembly can never be reordered. |
 
@@ -219,7 +219,7 @@ main actor and a detached task.
 > hardware.
 
 Two SQLite handles are open simultaneously — one inside `BLEManager`'s `Collector`/`Backfiller`, one
-inside `Repository`. This is safe because `WhoopStore` enables **WAL journal mode** and a **5-second
+inside `Repository`. This is safe because `CenitStore` enables **WAL journal mode** and a **5-second
 busy timeout** (`PRAGMA journal_mode = WAL`, `config.busyMode = .timeout(5)`), so the writer and the
 reader never deadlock on contention.
 
@@ -364,7 +364,7 @@ mirror payload (`sendToRemoteWorkoutSession`, best-effort — rest windows via t
 messages: start / end / "watch saved" / "watch won't save"). The single contract is `WorkoutMirrorMessage`
 in `CenitShared`; the iPhone half is `WorkoutMirroringBridge` (`CenitApp/Health/`), wired into `AppModel`.
 
-The iPhone stays the **single source of truth**: it persists the session to `WhoopStore` before any
+The iPhone stays the **single source of truth**: it persists the session to `CenitStore` before any
 HealthKit/watch step (decoded-first, unchanged). The **one-`HKWorkout` invariant** is held by the
 deterministic shared key `HKMetadataKeyExternalUUID = "noop:strength:<sessionId>"`: whichever device writes,
 the write is idempotent (delete-by-key then save). The iPhone omits its own `saveStrengthWorkoutIfEnabled`
@@ -374,7 +374,7 @@ watch is regression-free. Heart rate for the iPhone's own strain still comes fro
 recovery/strain engine is Phase 2.
 
 The in-progress session is **durable across a crash/kill of the iPhone** (FER-798): a Codable
-`StrengthSessionSnapshot` (defined in `StrandTraining`) is written to `WhoopStore`'s singleton
+`StrengthSessionSnapshot` (defined in `StrandTraining`) is written to `CenitStore`'s singleton
 `inProgressStrengthSession` table on start and on each durable edit (debounced; immediate on rest
 start/end), and restored in the launch `analysisTask` — so the Apple Watch's queued `.end` finds a live
 session and saves the receipt instead of dropping the workout. The snapshot is deleted on save/discard.
@@ -459,7 +459,7 @@ UI doesn't re-render on every beat.
 
 ---
 
-## 7. Storage model (WhoopStore / SQLite)
+## 7. Storage model (CenitStore / SQLite)
 
 GRDB drives a migrator (the migrator currently reaches `v35`; see `Database.swift` — the source of
 truth is the migration list, not a constant). The schema groups into four
@@ -478,7 +478,7 @@ concerns:
   written (**v20, FER-511**) and its rows were purged; it survives empty for downgrade-safe reads.
 - The surrogate map is **`deviceIdMap(deviceId TEXT PK, intId INTEGER UNIQUE)`** — distinct from
   `device` (hardware): writes/tests insert sample rows for source partitions that never have a `device`
-  row, so binding the surrogate to `device.rowid` would JOIN-drop them. `WhoopStore` translates at the
+  row, so binding the surrogate to `device.rowid` would JOIN-drop them. `CenitStore` translates at the
   actor boundary via a `[String: Int64]` cache (`resolvedDeviceId`), so the public read/write API still
   takes `deviceId: String`. The write path creates the mapping on demand (never throws on an unknown id
   → the Backfiller, which acks+trims history even when `insert` fails, can't lose acked data).
@@ -498,7 +498,7 @@ concerns:
   `noop.diet.v1` JSON `payloadJSON` (PK `id`, + denormalized `nombre`/`idioma`/`ciclo`/`createdAt`),
   and per-meal daily adherence keyed `(deviceId, day, mealId)` with a tri-state `status`
   (cumpli/sustitui/salte) plus a nullable `optionIndex` (v16, FER-401) recording WHICH equivalent
-  `opciones` index was eaten — registro only, it does not change the apego %. WhoopStore never decodes
+  `opciones` index was eaten — registro only, it does not change the apego %. CenitStore never decodes
   the plan (that's `StrandImport.DietPlan`); the apego % (FER-372) is computed from `dietAdherence`
   against the active plan's meal count. Mirrors `journal`.
 - `inProgressStrengthSession` (v28, FER-798) — a singleton control table (0 or 1 row, PK `id`) holding a
@@ -537,7 +537,7 @@ record per local civil day holding `CircadianEngine`'s cosinor phase estimate fo
 corporal» surface (FER-712). Written by the nightly `IntelligenceEngine` pass (gated to WHOOP bands —
 the phase signal is the accelerometer rest-activity rhythm). A dedicated table, not `metricSeries`,
 because the record is multi-field including an enum confidence. `confidence` is stored as the raw
-`PhaseConfidence` string; `WhoopStore` keeps no dependency on `StrandAnalytics`.
+`PhaseConfidence` string; `CenitStore` keeps no dependency on `StrandAnalytics`.
 
 **Raw outbox** — `rawBatch`: the compressed, **transient, prunable** record of original frames,
 captured only when the research toggle is on. Decoded data is always committed *before* raw is queued,
@@ -752,7 +752,7 @@ Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on da
 immediately (`loaded == true`, `fullyLoaded == false`) so Today renders without waiting for the full
 history, then a full pass whose merge work runs **off the main actor** (`Repository.assembleDashboard`,
 nonisolated) and publishes the identical final dashboard (`fullyLoaded == true`). Each pass reads the
-store through ONE `WhoopStore.dashboardSnapshot` call — a single read transaction / WAL snapshot
+store through ONE `CenitStore.dashboardSnapshot` call — a single read transaction / WAL snapshot
 (FER-970 · R-03) instead of ~13 sequential actor reads — so the published dashboard is cross-table
 consistent by construction; the only separate read left is the skippable Apple workout-HR phase (R-01). A monotonic
 generation counter makes the most recently started refresh the only one that may publish, and a
@@ -762,7 +762,7 @@ baselines, `Repository.closeDueExperiment`, the restore offer — must gate on `
 pure display readers may see the short window transiently and self-correct on the full publish.
 
 `IntelligenceEngine.analyzeRecent` — the ~15-minute scoring loop — is **incremental per day and
-off-main** (FER-868). Each pass takes ONE `WhoopStore.streamDayCounts` snapshot (COUNT(\*) per local
+off-main** (FER-868). Each pass takes ONE `CenitStore.streamDayCounts` snapshot (COUNT(\*) per local
 civil day per raw stream; sound because the stream writers only `INSERT … ON CONFLICT DO NOTHING`,
 never UPDATE — a backfill that fills a gap moves the COUNT even when it doesn't move MAX(ts), and a
 safe-trim lowers it) and compares each night's window signature (`AnalysisScheduler`, pure, in
@@ -845,7 +845,7 @@ never imported — `StrandDesign` remains the dependency-free leaf of the packag
    prunable convenience, never the source of truth.
 3. **Resumable safe-trim.** The strap forgets historical data only after Cénit has it durably and has
    confirmed the ack; a durable cursor makes every offload resumable.
-4. **Pure cores, thin shell.** `WhoopProtocol`, `WhoopStore`, `StrandAnalytics`, and `StrandImport`
+4. **Pure cores, thin shell.** `WhoopProtocol`, `CenitStore`, `StrandAnalytics`, and `StrandImport`
    are platform-pure and testable in isolation; the app target is the only CoreBluetooth/SwiftUI
    surface.
 5. **Interoperability, not impersonation.** Cénit reads your strap and your exports for your own use.
