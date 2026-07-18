@@ -1649,11 +1649,17 @@ private struct CuerpoLanding: View {
     }
     repo.setDashboard(days: sample)
 
+    // FER-981: construir los objetos INLINE dentro de la cadena de modificadores hacía que el
+    // type-checker resolviera todo como UNA expresión gigante (~246 ms medidos con -warn-long).
+    // Izarlos a `let` deja cada pieza trivial de inferir. Mismo preview, mismo render.
+    let live = LiveState()
+    let appModel = AppModel()
+    let health = HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview")
     return CuerpoView()
         .environmentObject(repo)
-        .environment(LiveState())
-        .environment(AppModel())
-        .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
+        .environment(live)
+        .environment(appModel)
+        .environmentObject(health)
         .frame(width: 390, height: 900)
 }
 #endif
