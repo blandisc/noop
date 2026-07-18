@@ -44,7 +44,8 @@ final class TrendCurrentDayTests: XCTestCase {
     func testStrainDetailSeriesIncludesInProgressToday() {
         var days = baseline()
         days.append(dm("2026-06-27", strain: 1.9))   // in-progress today, partial score
-        let model = StrainDetailModel.build(days: days, today: days.last, loaded: true)
+        let model = StrainDetailModel.build(days: days, today: days.last, loaded: true,
+                                            todayKey: "2026-06-27")
         XCTAssertEqual(model.series.last?.day, "2026-06-27",
                        "the trend's last point must be the hero's day (today), not yesterday")
         XCTAssertEqual(model.series.last?.value, 1.9)
