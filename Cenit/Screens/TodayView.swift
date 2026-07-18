@@ -545,7 +545,10 @@ struct TodayView: View {
                             .foregroundStyle(theme.critical)
                             .attentionWiggle(period: 4)
                     }
-                    .help("Support Cénit · donate or get in touch")
+                    // Sin `.help()`: en iOS no dibuja nada (es el tooltip de macOS) pero SwiftUI igual
+                    // corre la cadena por `Text.assertUnstyled` → `AttributedString.init(markdown:)`
+                    // en CADA evaluación del body — parseo de markdown por pasada de layout, a cambio
+                    // de nada. `accessibilityLabel` es lo que de verdad expone el botón en iOS.
                     .accessibilityLabel("Support Cénit · donate or get in touch")
                 }
             }
