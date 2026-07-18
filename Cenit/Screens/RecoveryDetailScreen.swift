@@ -4,6 +4,7 @@ import StrandDesign
 import StrandAnalytics
 import CenitStore
 import Foundation
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - RecoveryDetailScreen — el «Detalle de Recuperación» en «Instrumento» (FER-225)
 //
@@ -59,6 +60,8 @@ struct RecoveryDetailScreen: View {
     @State private var selectedHeatDay: RecoveryDay? = nil
     /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-857)
     @State private var infoOpen = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     // MARK: - Body — el esqueleto estándar del handoff «Detalle de Tendencias Final» (FER-857)
     //
@@ -138,6 +141,7 @@ struct RecoveryDetailScreen: View {
                 series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
             }.value
         }
+        .enableInjection()
     }
 
     /// One skeleton section: shared `SeccionBloque` (franja + handoff padding 14 · 20 · 22).

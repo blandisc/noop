@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Tu Plan» — the single home for the week + the routines (FER-890, was FER-533 + FER-534)
 //
@@ -73,7 +74,12 @@ struct WeeklyPlanEditorView: View {
     @State private var collapsedFolders: Set<String> = []
     /// El «···» de banda abierto (renombrar / borrar carpeta).
     @State private var menuFolderId: String? = nil
+    /// La sección sobre la que flota ahora mismo una rutina arrastrada (id de carpeta, o
+    /// `unfiledSectionID` para «Sueltas»). Solo pinta el resalte: el movimiento lo hace `accept`.
+    @State private var dropTarget: String? = nil
     @State private var saveError = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
     private static let unfiledSectionID = "unfiled-section"
 
     /// Monday-first display order in the Calendar weekday convention (2 = Mon … 1 = Sun).
@@ -163,6 +169,7 @@ struct WeeklyPlanEditorView: View {
         // FER-787: the list + the week share one `load()`; the initial `.task` doesn't re-run on a
         // NavigationStack pop, so refresh on return (e.g. from the routine/day editor) too.
         .onAppear { if loaded { Task { await load() } } }
+        .enableInjection()
     }
 
     // MARK: - Header
@@ -519,26 +526,48 @@ struct WeeklyPlanEditorView: View {
                 ForEach(folders) { folder in
                     let rs = byFolder[folder.id] ?? []
                     folderBand(folder, count: rs.count)
+                        .routineDropTarget(active: dropTarget == folder.id, theme: theme) { id in
+                            accept(id, into: folder.id)
+                        } targeted: { on in
+                            dropTarget = on ? folder.id : (dropTarget == folder.id ? nil : dropTarget)
+                        }
                     if !collapsedFolders.contains(folder.id) {
                         ForEach(rs) { r in
-                            routineRow(r)
+                            routineRow(r).routineDraggable(r.id)
                             if r.id != rs.last?.id { divider }
                         }
                     }
                 }
+                // «Sueltas» también recibe: soltar aquí SACA la rutina de su carpeta. Sin esto el arrastre
+                // sería de una sola dirección y habría que volver al menú para deshacerlo.
                 if !unfiled.isEmpty {
                     sectionBand(String(localized: "Loose"), count: unfiled.count,
                                 collapsed: collapsedFolders.contains(Self.unfiledSectionID),
                                 toggle: { toggleCollapse(Self.unfiledSectionID) })
+                        .routineDropTarget(active: dropTarget == Self.unfiledSectionID, theme: theme) { id in
+                            accept(id, into: nil)
+                        } targeted: { on in
+                            dropTarget = on ? Self.unfiledSectionID
+                                            : (dropTarget == Self.unfiledSectionID ? nil : dropTarget)
+                        }
                     if !collapsedFolders.contains(Self.unfiledSectionID) {
                         ForEach(unfiled) { r in
-                            routineRow(r)
+                            routineRow(r).routineDraggable(r.id)
                             if r.id != unfiled.last?.id { divider }
                         }
                     }
                 }
             }
         )
+    }
+
+    /// Recibe una rutina soltada sobre una sección. Resuelve el id contra las rutinas cargadas —lo que
+    /// entrega un proveedor de arrastre es texto y podría venir de cualquier app— y descarta el caso
+    /// trivial de soltarla donde ya estaba, para no escribir en la base ni recargar por nada.
+    private func accept(_ routineId: String, into folderId: String?) -> Bool {
+        guard let r = routines.first(where: { $0.id == routineId }), r.folderId != folderId else { return false }
+        move(r, to: folderId)
+        return true
     }
 
     private func folderBand(_ f: RoutineFolder, count: Int) -> some View {
@@ -586,8 +615,17 @@ struct WeeklyPlanEditorView: View {
             Image(systemName: collapsed ? "chevron.right" : "chevron.down")
                 .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
         }
-        .padding(.horizontal, 12).frame(minHeight: 40)
+        // El mismo truco de sangrado que `InstrumentoSectionBand` (SectionBand.swift): el fondo se pinta
+        // al ancho completo y luego un padding negativo lo saca del canalón de la pantalla. Sin esto la
+        // banda quedaba flotando con un hueco de papel a los lados, como una tarjeta a medio hacer.
+        // La indentación de más a la izquierda se conserva a propósito: es lo que dice que esto es una
+        // SUBsección de «Mis rutinas» y no otra sección al mismo nivel.
+        .padding(.leading, CenitMetrics.screenPadding + CenitMetrics.gap)
+        .padding(.trailing, CenitMetrics.screenPadding)
+        .frame(minHeight: 40)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.patternBlock)
+        .padding(.horizontal, -CenitMetrics.screenPadding)
         .padding(.top, 10)
     }
 
@@ -719,7 +757,7 @@ struct WeeklyPlanEditorView: View {
             Text("Routine deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
             Spacer(minLength: 8)
             Button { undoDelete(d) } label: {
-                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+                Text("Undo").font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.surface)
             }
             .buttonStyle(.plain)
         }
@@ -826,7 +864,7 @@ struct WeeklyPlanEditorView: View {
             Text("Folder deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
             Spacer(minLength: 8)
             Button { undoDeleteFolder(d) } label: {
-                Text("Undo").font(StrandFont.headline).foregroundStyle(theme.surface)
+                Text("Undo").font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.surface)
             }
             .buttonStyle(.plain)
         }

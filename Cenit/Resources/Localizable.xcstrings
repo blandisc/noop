@@ -4,6 +4,22 @@
     "" : {
 
     },
+    "A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight." : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "A WHOOP export backfills recovery, strain, sleep and workouts. An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight."
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Una exportación de WHOOP rellena recuperación, esfuerzo, sueño y entrenamientos. Una exportación de Apple Salud agrega FC, HRV, sueño, oxígeno, pasos y peso."
+                }
+            }
+        }
+    },
     "An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -21,6 +37,134 @@
         }
       }
     },
+    "Cardio" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cardio"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cardio"
+                }
+            }
+        }
+    },
+    "Choose export…" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Choose export…"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Elegir exportación…"
+                }
+            }
+        }
+    },
+    "Create routine with %lld" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Create routine with %lld"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Crear rutina con %lld"
+                }
+            }
+        }
+    },
+    "Even breathing · ~5.5/min" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Even breathing · ~5.5/min"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Respiración pareja · ~5.5/min"
+                }
+            }
+        }
+    },
+    "Export CSV…" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Export CSV…"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Exportar CSV…"
+                }
+            }
+        }
+    },
+    "Filled means trained, outlined means planned, plain means rest" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Filled means trained, outlined means planned, plain means rest"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Relleno es entrenado, contorno es planeado, liso es descanso"
+                }
+            }
+        }
+    },
+    "HRV (RMSSD)" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "HRV (RMSSD)"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "HRV (RMSSD)"
+                }
+            }
+        }
+    },
+    "Import WHOOP export" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Import WHOOP export"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Importar exportación de WHOOP"
+                }
+            }
+        }
+    },
     "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37,6 +181,262 @@
           }
         }
       }
+    },
+    "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit." : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect. Export CSV writes a WHOOP-format zip of your days, sleeps, workouts and journal that re-imports into Cénit."
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Importar sobrescribe todo lo que hay en Cénit. Tus datos viejos se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que la importación surta efecto. Exportar CSV genera un zip en formato WHOOP de tus días, sueños, entrenamientos y diario que se re-importa a Cénit."
+                }
+            }
+        }
+    },
+    "Last %lld beats" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Last %lld beats"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Últimos %lld latidos"
+                }
+            }
+        }
+    },
+    "Long exhale · winds down" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Long exhale · winds down"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Exhalación larga · te baja"
+                }
+            }
+        }
+    },
+    "Pace" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Pace"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Ritmo"
+                }
+            }
+        }
+    },
+    "Pick at least one exercise" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Pick at least one exercise"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Elige al menos un ejercicio"
+                }
+            }
+        }
+    },
+    "Planned" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Planned"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Planeado"
+                }
+            }
+        }
+    },
+    "Remove from session" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Remove from session"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Quitar de la sesión"
+                }
+            }
+        }
+    },
+    "Rest done" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Rest done"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Descanso listo"
+                }
+            }
+        }
+    },
+    "Resting, almost done" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Resting, almost done"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Descansando, ya casi"
+                }
+            }
+        }
+    },
+    "See all sessions" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "See all sessions"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Ver todas las sesiones"
+                }
+            }
+        }
+    },
+    "Square · steady focus" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Square · steady focus"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cuadrada · foco estable"
+                }
+            }
+        }
+    },
+    "Strap not worn" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Strap not worn"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Banda sin puesta"
+                }
+            }
+        }
+    },
+    "Strength" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Strength"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Fuerza"
+                }
+            }
+        }
+    },
+    "Trained" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Trained"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Entrenado"
+                }
+            }
+        }
+    },
+    "Waiting for R-R" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Waiting for R-R"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Esperando R-R"
+                }
+            }
+        }
+    },
+    "YOUR PLAN" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "YOUR PLAN"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "TU PLAN"
+                }
+            }
+        }
     },
     "\n" : {
 
@@ -246,6 +646,38 @@
           }
         }
       }
+    },
+    "br/min" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "br/min"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "resp/min"
+                }
+            }
+        }
+    },
+    "muscleGroup.fullBody" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Full body"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cuerpo completo"
+                }
+            }
+        }
     },
     "–" : {
       "extractionState" : "stale",
@@ -20311,7 +20743,20 @@
       }
     },
     "Edit routines and week" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit routines and week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar rutinas y semana"
+          }
+        }
+      }
     },
     "Edit week" : {
       "extractionState" : "stale",

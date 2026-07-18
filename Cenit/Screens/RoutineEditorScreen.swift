@@ -335,7 +335,9 @@ struct RoutineEditorScreen: View {
                     .buttonStyle(.plain)
                     .accessibilityHint(Text("Opens the exercise"))
                     if item.re.progressionEnabled {
-                        ProgressionChip(re: item.re, system: system, theme: theme, disabled: locked, action: { progressionTarget = ProgressionTarget(ei: idx) })
+                        ProgressionChip(re: item.re, system: system, theme: theme,
+                                        derivedIncrementKg: PlateMath.minimumIncrement(for: .from(equipment: item.exercise.equipment), inventory: plates.inventory),
+                                        disabled: locked, action: { progressionTarget = ProgressionTarget(ei: idx) })
                     }
                 }
                 Spacer(minLength: 8)
@@ -679,7 +681,10 @@ struct RoutineEditorScreen: View {
         }
         if item.exercise.type == .weightReps {
             rows.append(.init(String(localized: "Progression"),
-                              subtitle: item.re.progressionEnabled ? ProgressionChip.summary(item.re, system: system) : nil,
+                              subtitle: item.re.progressionEnabled
+                                  ? ProgressionChip.summary(item.re, system: system,
+                                                            derived: PlateMath.minimumIncrement(for: .from(equipment: item.exercise.equipment), inventory: plates.inventory))
+                                  : nil,
                               systemImage: "chart.line.uptrend.xyaxis") {
                 progressionTarget = ProgressionTarget(ei: idx)
             })
@@ -782,34 +787,11 @@ struct RoutineEditorScreen: View {
     /// The card's closing row (approved mock): TWIN pills of equal weight — «＋ Agregar serie» on the
     /// sunken gray, «🔥 Calentamiento» spelled in the ember voice (it deserved to be seen). The warm-up
     /// pill hides once the ramp exists.
+    /// The card's closing row: the shared `SetActionPills` — twin full-width pills, ink primary + ember
+    /// outline warm-up, identical to the live session's (see the component for the decisions behind it).
     private func addRowPills(_ idx: Int) -> some View {
-        HStack(spacing: CenitMetrics.space2) {
-            Button { addSet(idx) } label: {
-                HStack(spacing: 6) {
-                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add set")
-                }
-                .font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, minHeight: 34)
-                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            if !hasWarmups(idx) {
-                Button { addWarmupRamp(idx) } label: {
-                    HStack(spacing: 6) {
-                        StrandIcon.flame.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                        Text("Add warm-up")
-                    }
-                    .font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.dataStrain)
-                    .frame(maxWidth: .infinity, minHeight: 34)
-                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                        .strokeBorder(theme.dataStrain.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
+        SetActionPills(showWarmup: !hasWarmups(idx), theme: theme,
+                       addSet: { addSet(idx) }, addWarmup: { addWarmupRamp(idx) })
     }
 
     /// The rail's terminal node (Serie activa's grammar, FER-952): the thread drops from the last card

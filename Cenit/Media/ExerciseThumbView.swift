@@ -41,23 +41,39 @@ struct ExerciseThumbView: View {
     }
 }
 
-/// The session-row variant: loads the baked still by exercise ID alone. The live session model carries
-/// only `exerciseId` (no resolved `Exercise`), and the guided flow can't depend on the opt-in
-/// `MediaDownloadCoordinator` environment — so this takes the offline path only (still catalog → placeholder).
+/// The session-row variant: the live session model carries only `exerciseId` (no resolved `Exercise`),
+/// so this resolves the thumbnail by id. Same two sources as `ExerciseThumbView`.
 struct SessionRunThumb: View {
     let exerciseId: String
     var side: CGFloat = 44
 
+    /// Los cinco sitios que presentan la sesión inyectan este coordinador (el árbol real desde
+    /// `CenitApp`, y los harness de `AppMap*` a mano), así que aquí siempre existe.
+    @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
     @State private var image: Image?
 
     var body: some View {
         ExerciseThumbnail(side: side, image: image)
-            .task(id: exerciseId) {
-                guard image == nil,
-                      let url = ExerciseCatalog.stillURL(id: exerciseId),
-                      let ui = await ExerciseThumbStillCache.shared.still(at: url, id: exerciseId) else { return }
-                image = Image(uiImage: ui)
-            }
+            .task(id: exerciseId) { await load() }
+    }
+
+    /// Antes solo miraba la imagen horneada, así que un ejercicio fuera del catálogo —los que entran por
+    /// importación— salía sin miniatura en la sesión activa aunque el editor sí se la mostrara con el
+    /// respaldo (bug Fer 2026-07-18). Ahora usa las MISMAS dos fuentes que `ExerciseThumbView`.
+    private func load() async {
+        guard image == nil else { return }
+        // 1. La imagen horneada (FER-800): offline, sin toggle.
+        if let baked = ExerciseCatalog.stillURL(id: exerciseId),
+           let ui = await ExerciseThumbStillCache.shared.still(at: baked, id: exerciseId) {
+            image = Image(uiImage: ui)
+            return
+        }
+        // 2. Respaldo: el still del GIF opt-in, si ya está descargado (FER-790).
+        guard mediaCoordinator.isEnabled,
+              let url = mediaCoordinator.cachedMediaURL(forId: exerciseId) else { return }
+        if let ui = await ExerciseThumbStillCache.shared.still(at: url, id: exerciseId) {
+            image = Image(uiImage: ui)
+        }
     }
 }
 

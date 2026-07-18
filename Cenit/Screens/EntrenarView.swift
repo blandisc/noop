@@ -62,8 +62,6 @@ private struct EntrenarLanding: View {
     @Environment(AppModel.self) var model
     @EnvironmentObject var tabRouter: TabRouter
     @Environment(\.instrumentoTheme) private var theme
-    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
-    @ObserveInjection private var inject
 
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
@@ -230,7 +228,7 @@ private struct EntrenarLanding: View {
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
                 .environment(model)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
@@ -265,7 +263,6 @@ private struct EntrenarLanding: View {
         .onChange(of: tabRouter.startTodaySession) { _, requested in
             if requested { consumeBriefStart() }
         }
-        .enableInjection()   // Inject: activa la recarga en caliente del hub (no-op en Release)
     }
 
     /// Consume the one-shot start request from the Daily Brief. Reuses `startToday()` (the same path as the
@@ -338,20 +335,30 @@ private struct EntrenarLanding: View {
                 if let rec = recovery { recoveryChip(rec) } else { recoveryChipPlaceholder }
             }
             if let r = todayRoutine {
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt: geometría de dato
-                        .fill(routineFill(region(name: r.name))).frame(width: 12, height: 12)
-                        .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
+                // «Bisel»: la marca de familia es una regla vertical, no un cuadro en línea. El cuadro vivía
+                // dentro del HStack, así que le robaba ancho al título y lo empujaba a la derecha; con
+                // nombres de dos líneas el bloque perdía el eje. Ahora la REGLA marca el margen —queda a
+                // plomo con «Empezar» y los discos— y el texto se indenta después de ella, en vez de que
+                // la regla se salga al canalón. Su alto lo deriva del contenido: crece sola con la segunda
+                // línea y con Dynamic Type.
+                VStack(alignment: .leading, spacing: 8) {
                     Text(r.name)
                         .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
                         .foregroundStyle(theme.ink)
                         .lineLimit(2).minimumScaleFactor(0.65)
                         .fixedSize(horizontal: false, vertical: true)
+                    if let muscles = routineMuscleLine(r.id) {
+                        Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    }
                 }
+                .padding(.leading, 11)
                 .padding(.top, 8)
-                if let muscles = routineMuscleLine(r.id) {
-                    Text(muscles).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                        .padding(.top, 4)
+                .background(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)  // token-exempt: geometría de dato
+                        .fill(routineFill(region(name: r.name)))
+                        .frame(width: 3)
+                        .padding(.vertical, 2)
+                        .accessibilityHidden(true)   // el color no porta significado por sí solo
                 }
             } else {
                 Text("Rest")
@@ -716,7 +723,7 @@ private struct EntrenarLanding: View {
             Button { showCreateRoutine = true } label: {
                 HStack(spacing: 8) {
                     StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("New routine").font(StrandFont.subhead.weight(.semibold))
+                    Text("New routine").font(InstrumentoType.grotesk(14, weight: .semibold))
                 }
                 .foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -745,6 +752,9 @@ private struct EntrenarLanding: View {
         .padding(.top, CenitMetrics.gap).padding(.bottom, CenitMetrics.space2)
     }
 
+
+
+
     @ViewBuilder
     private func weekStripCell(_ wd: Int) -> some View {
         let routineId = split[wd]
@@ -754,7 +764,10 @@ private struct EntrenarLanding: View {
         // Handoff v4b: 26pt rounded squares. A day already trained this week fills with that session's
         // routine tint and takes a paper check; today is a paper square ringed in its routine's tint;
         // an assigned future day keeps its tinted letter over the wash; a rest day is just wash.
-        let doneTint = trainedThisWeek(wd).map { routineTint(self.region(name: $0)) }   // `region` local shadows the func
+        let doneRegion = trainedThisWeek(wd).map { self.region(name: $0) }   // `region` local shadows the func
+        let doneTint = doneRegion.map { routineTint($0) }
+        /// Entrenaste algo distinto a lo planeado ese día: el contorno lo delata.
+        let swapped = doneRegion != nil && hasRoutine && doneRegion! != region
         let a11y = weekStripAccessibilityLabel(wd)
         let cell = VStack(spacing: 5) {
             Text(weekdayLetter(wd))
@@ -763,7 +776,15 @@ private struct EntrenarLanding: View {
                 .accessibilityHidden(true)
             ZStack {
                 if let doneTint {
+                    // Relleno = lo que ENTRENASTE. Si además había algo planeado y NO fue lo que hiciste,
+                    // el contorno lleva el color de lo planeado (decisión Fer 2026-07-18): el mismo cuadro
+                    // carga las dos dimensiones sin inventar un cuarto estado, y cuando coinciden se lee
+                    // como un cuadro sólido normal. Ese desvío hoy se perdía por completo.
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(doneTint)
+                    if swapped {
+                        RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                            .strokeBorder(routineTint(region), lineWidth: 2.5)
+                    }
                     StrandIcon.confirm.image
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.paper)
                 } else if isToday {
@@ -771,13 +792,17 @@ private struct EntrenarLanding: View {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                         .strokeBorder(todayRingTint, lineWidth: 1.5)
                 } else if hasRoutine {
-                    // 2026-07-16 (bug Fer «no se actualizan los cuadritos»): un día asignado futuro
-                    // solo cambiaba el tinte de la LETRA — invisible. Ahora el cuadrito toma el wash
-                    // de su rutina con su anillo suave; descanso queda como puro patternBlock.
+                    // 2026-07-16 (bug Fer «no se actualizan los cuadritos»): un día asignado solo cambiaba
+                    // el tinte de la LETRA — invisible. Se le puso un wash con anillo suave, pero seguía
+                    // leyéndose como descanso (bug Fer 2026-07-18: «el martes tiene rutina y no aparece»):
+                    // `tintFill` + `strokeSoft` a 1pt desaparecen sobre el papel. Ahora el CONTORNO lleva
+                    // el color a plena opacidad y el relleno es papel: la diferencia vive en el cuadro,
+                    // que es lo que se mira, y no en una letra de 10pt. Lleno = hecho, contorno =
+                    // planeado pendiente, liso = descanso — tres estados que ya no se confunden.
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                        .fill(routineTint(region).opacity(StrandOpacity.tintFill))
+                        .fill(theme.paper)
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                        .strokeBorder(routineTint(region).opacity(StrandOpacity.strokeSoft), lineWidth: 1)
+                        .strokeBorder(routineTint(region), lineWidth: 2)
                 } else {
                     RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous).fill(theme.patternBlock)
                 }
@@ -1141,7 +1166,7 @@ private struct EntrenarLanding: View {
         VStack(spacing: 14) {
             Image(systemName: "calendar.badge.plus")
                 .font(.system(size: 36, weight: .regular)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)  // token-exempt: glifo 36pt fuera de banda empty
-            Text("No plan yet").font(StrandFont.title2).foregroundStyle(theme.ink).multilineTextAlignment(.center)
+            Text("No plan yet").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink).multilineTextAlignment(.center)
             Text("Build your week to see today and your progress.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
@@ -1191,7 +1216,7 @@ private struct EntrenarLanding: View {
     private var loadErrorState: some View {
         card {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("We couldn't read your routines").font(StrandFont.title3).foregroundStyle(theme.ink)
+                Text("We couldn't read your routines").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
                 Text("Something went wrong opening your data.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1217,10 +1242,21 @@ private struct EntrenarLanding: View {
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
     }
 
-    /// Localized short weekday letter (respects locale), single character.
+    /// Localized short weekday letter (respects locale), single character. Solo para la TIRA de 7 celdas:
+    /// ahí la posición desambigua, igual que en cualquier calendario. Fuera de esa retícula usa
+    /// `weekdayShort`, porque la inicial sola es ambigua —«M» es martes Y miércoles en español, y en
+    /// inglés «T» es Tuesday Y Thursday.
     private func weekdayLetter(_ wd: Int) -> String {
         let s = Calendar.current.veryShortWeekdaySymbols[(wd - 1) % 7]
         return s.uppercased()
+    }
+
+    /// Localized two-letter weekday, para cuando NO hay retícula que desambigüe (el subtítulo «Ma · Sá» de
+    /// una rutina del plan). Sale de `shortWeekdaySymbols` («mar» → «Ma»), así que respeta el idioma:
+    /// es-MX da Lu/Ma/Mi/Ju/Vi/Sá/Do y en inglés Mo/Tu/We/Th/Fr/Sa/Su, ambos sin repetidos.
+    private func weekdayShort(_ wd: Int) -> String {
+        let s = Calendar.current.shortWeekdaySymbols[(wd - 1) % 7]
+        return s.prefix(2).capitalized
     }
 
     // MARK: - Derived
@@ -1292,7 +1328,7 @@ private struct EntrenarLanding: View {
         }
         return order.compactMap { id in
             guard let n = routinesById[id]?.name else { return nil }
-            let days = (daysOf[id] ?? []).map(weekdayLetter).joined(separator: " · ")
+            let days = (daysOf[id] ?? []).map(weekdayShort).joined(separator: " · ")
             return (id, n, days)
         }
     }
@@ -1476,6 +1512,8 @@ struct RestDayScreen: View {
     @State private var split: [Int: String] = [:]
     @State private var routineNames: [String: String] = [:]
     @State private var showLive = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     private var recovery: Double? { repo.today?.recovery }
     private var alt: TrainingRegulation.LightAlternative? {
@@ -1487,7 +1525,8 @@ struct RestDayScreen: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Today you rest").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Text("Today you rest. It counts too.")
-                    .font(StrandFont.title1).foregroundStyle(theme.ink).padding(.top, 3)
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink).padding(.top, 3)
                     .fixedSize(horizontal: false, vertical: true)
 
                 streakBullet.padding(.top, 16)
@@ -1522,12 +1561,13 @@ struct RestDayScreen: View {
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
                 .environment(model)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
         }
         .task { await load() }
+        .enableInjection()
     }
 
     /// The streak-protected reassurance: color only on the recovery bullet, copy explicit that resting
@@ -1610,12 +1650,15 @@ struct OtherWaysScreen: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(AppModel.self) private var model
     @State private var showLive = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Another type?").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Another way to train").font(StrandFont.title1).foregroundStyle(theme.ink).padding(.top, 3)
+                Text("Another way to train").font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                    .foregroundStyle(theme.ink).padding(.top, 3)
 
                 VStack(spacing: 0) {
                     bigRow("figure.cooldown", "Mobility", subtitle: String(localized: "Gentle · 20 min")) { model.startMobilityOneOff() }
@@ -1638,11 +1681,12 @@ struct OtherWaysScreen: View {
         .sheet(isPresented: $showLive) {
             LiveWorkoutSheet(theme: theme)
                 .environment(model)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(theme.paper)
                 .preferredColorScheme(.light)
         }
+        .enableInjection()
     }
 
     private func bigRow(_ icon: String, _ title: LocalizedStringKey, subtitle: String, last: Bool = false, action: @escaping () -> Void) -> some View {
@@ -1650,7 +1694,7 @@ struct OtherWaysScreen: View {
             HStack(spacing: 15) {
                 Image(systemName: icon).font(.system(size: 22)).foregroundStyle(theme.inkSecondary).frame(width: 30)  // token-exempt: glifo 22pt fuera de banda lead
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(StrandFont.headline).foregroundStyle(theme.ink)
+                    Text(title).font(InstrumentoType.grotesk(16, weight: .semibold)).foregroundStyle(theme.ink)
                     Text(subtitle).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
                 Spacer(minLength: 8)

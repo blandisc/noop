@@ -105,6 +105,7 @@ struct RoutineBuilderScreen: View {
                     }
                 )
                 .toolbar(.hidden, for: .navigationBar)   // RestEditorScreen draws its own back/cancel header
+                .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
             }
             // 2c as a push (FER-D): the per-exercise progression plan. Saves on back (Instrumento editor
             // convention); like rest, every change lands on the routine at «Save».
@@ -133,6 +134,7 @@ struct RoutineBuilderScreen: View {
                     }
                 )
                 .toolbar(.hidden, for: .navigationBar)   // ProgressionSetupScreen draws its own back header
+                .keepsSwipeBack()   // ocultar la barra deja huérfano el gesto de volver
             }
         }
         .sheet(isPresented: $showLibrary) {
@@ -178,7 +180,7 @@ struct RoutineBuilderScreen: View {
                 nameField
                 VStack(spacing: 11) {
                     Image(systemName: "square.stack.3d.up").font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
-                    Text("No exercises yet").font(StrandFont.title2).foregroundStyle(theme.ink)
+                    Text("No exercises yet").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
                     Text("Add exercises from the library to build this routine.")
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
@@ -297,7 +299,9 @@ struct RoutineBuilderScreen: View {
                     .buttonStyle(.plain)
                     // Progression chip under the name — same destination as «···» → Progression.
                     if item.re.progressionEnabled {
-                        ProgressionChip(re: item.re, system: system, theme: theme, action: { progressionTarget = ProgressionTarget(ei: idx) })
+                        ProgressionChip(re: item.re, system: system, theme: theme,
+                                        derivedIncrementKg: PlateMath.minimumIncrement(for: .from(equipment: item.exercise.equipment), inventory: plates.inventory),
+                                        action: { progressionTarget = ProgressionTarget(ei: idx) })
                     }
                 }
                 Spacer(minLength: 8)

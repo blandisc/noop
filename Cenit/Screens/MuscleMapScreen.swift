@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Mapa muscular (Cuerpo) — FER-350 · rediseño «la respuesta lidera»
 //
@@ -62,6 +63,8 @@ struct MuscleMapScreen: View {
     /// state) from «all recovered» (the green map). (FER-525)
     @State private var hasHistory = false
     @State private var showResetConfirm = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     private static let trendDays = 84
 
@@ -126,6 +129,7 @@ struct MuscleMapScreen: View {
             )
             .preferredColorScheme(.light)
         }
+        .enableInjection()
     }
 
     // MARK: - Header — the grotesk verdict leads, the recovery bullet explains the gate
@@ -480,7 +484,7 @@ struct MuscleMapScreen: View {
                 .frame(maxHeight: 220)
                 .padding(.top, 8)
             Text("Train to fill your map")
-                .font(StrandFont.title2).foregroundStyle(theme.ink)
+                .font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
             Text("Log your sets and you'll see which muscles are loaded and which are fresh to train today.")
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center)
@@ -640,7 +644,7 @@ private struct MuscleDetailView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(MuscleFatigueMap.formattedSets(weeklySets))
-                        .font(StrandFont.number(52)).foregroundStyle(stateColor)
+                        .font(InstrumentoType.groteskHeroNumeral(52)).foregroundStyle(stateColor)
                     Text("sets · 7 d").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
 
@@ -723,7 +727,7 @@ private struct MuscleDetailView: View {
     private func tile(title: LocalizedStringKey, value: LocalizedStringKey, color: Color? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            Text(value).font(StrandFont.headline).foregroundStyle(color ?? theme.ink)
+            Text(value).font(InstrumentoType.groteskTileValue).foregroundStyle(color ?? theme.ink)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
@@ -775,7 +779,7 @@ private struct MuscleDetailView: View {
     private var recommendation: some View {
         let readiness = MuscleFatigueMap.readiness(state: state, recovery: recovery)
         return Text(recommendationText(readiness))
-            .font(StrandFont.headline).foregroundStyle(theme.ink)
+            .font(InstrumentoType.groteskTileValue).foregroundStyle(theme.ink)
             .fixedSize(horizontal: false, vertical: true)
             .padding(CenitMetrics.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)

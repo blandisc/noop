@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import StrandDesign
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// HRV haptic breathing biofeedback trainer — Strand's flagship novel feature.
 ///
@@ -87,6 +88,8 @@ struct BreathingView: View {
     /// Rolling buffer of the most recent R-R intervals (ms) for RMSSD.
     @State private var rrBuffer: [Int] = []
     @State private var rmssd: Double? = nil
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     /// Phase driver (fast, smooth) and a once-per-second session tick.
     private let phaseTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
@@ -132,6 +135,7 @@ struct BreathingView: View {
             if running { armPhase(.inhale, from: Date(), buzz: false) }
         }
         .onDisappear { stop() }
+        .enableInjection()
     }
 
     // MARK: - Header
@@ -139,7 +143,7 @@ struct BreathingView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Breathe")
-                .font(StrandFont.title1)
+                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                 .foregroundStyle(theme.ink)
             Text("Haptic-paced breathing · watch your HRV respond")
                 .font(StrandFont.subhead)
@@ -164,11 +168,11 @@ struct BreathingView: View {
 
             HStack(spacing: 6) {
                 Text(timeString(sessionSeconds))
-                    .font(StrandFont.number(15))
+                    .font(InstrumentoType.groteskNumber(15))
                     .foregroundStyle(theme.ink)
                 Text("·").foregroundStyle(theme.inkTertiary)
                 Text("\(breathCount) breaths")
-                    .font(StrandFont.captionNumber)
+                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
                     .foregroundStyle(theme.inkSecondary)
             }
         }
@@ -208,9 +212,9 @@ struct BreathingView: View {
     private var paceSelector: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("BREATHE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("BREATHE").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Text("Choose a pace")
-                    .font(StrandFont.title1)
+                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
                     .foregroundStyle(theme.ink)
             }
 
@@ -230,7 +234,7 @@ struct BreathingView: View {
             HStack(alignment: .center, spacing: CenitMetrics.gap) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(option.label)
-                        .font(StrandFont.headline)
+                        .font(InstrumentoType.grotesk(16, weight: .semibold))
                         .foregroundStyle(theme.ink)
                     Text(option.tagline)
                         .font(StrandFont.footnote)
@@ -238,7 +242,7 @@ struct BreathingView: View {
                 }
                 Spacer(minLength: 0)
                 Text(String(format: "%.1f br/min", option.bpm))
-                    .font(StrandFont.captionNumber)
+                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
                     .foregroundStyle(selected ? theme.dataHrv : theme.inkSecondary)
             }
             .padding(CenitMetrics.cardPadding)
@@ -264,10 +268,10 @@ struct BreathingView: View {
         card(padding: 24) {
             VStack(spacing: 18) {
                 HStack {
-                    Text(pace.label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(pace.label).groteskOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     Text(String(format: "%.1f br/min", pace.bpm))
-                        .font(StrandFont.captionNumber)
+                        .font(InstrumentoType.groteskNumber(12, weight: .medium))
                         .foregroundStyle(theme.inkSecondary)
                 }
 
@@ -277,7 +281,7 @@ struct BreathingView: View {
 
                 Text(running ? phaseWord : pace.tagline)
                     .font(StrandFont.subhead)
-                    .foregroundStyle(running ? theme.dataRecovery : theme.inkSecondary)
+                    .foregroundStyle(running ? theme.ink : theme.inkSecondary)
                     .animation(.easeInOut(duration: 0.2), value: phaseWord)
                     .animation(.easeInOut(duration: 0.2), value: running)
             }
@@ -366,7 +370,7 @@ struct BreathingView: View {
                 PulseReader(live.pulse) { p in
                     VStack(spacing: 2) {
                         Text(p.smoothedBpm.map(String.init) ?? "—")
-                            .font(StrandFont.number(40))
+                            .font(InstrumentoType.groteskHeroNumeral(40))
                             .foregroundStyle(p.smoothedBpm == nil ? theme.inkTertiary : theme.dataHeart)
                             .contentTransition(.numericText())
                             .animation(.snappy, value: p.smoothedBpm)
@@ -384,13 +388,13 @@ struct BreathingView: View {
     // MARK: - Controls
 
     private var controlRow: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: CenitMetrics.gap) {
             Button {
                 running ? stop() : start()
             } label: {
                 Label(running ? "Stop session" : "Start · 3 min",
                       systemImage: running ? "stop.fill" : "play.fill")
-                    .font(StrandFont.headline)
+                    .font(InstrumentoType.groteskHeadline(17))
                     .foregroundStyle(theme.paper)
                     .lineLimit(1).minimumScaleFactor(0.7)
                     .frame(maxWidth: .infinity)
@@ -404,7 +408,7 @@ struct BreathingView: View {
                 model.buzz(loops: 1)
             } label: {
                 Label("Test buzz", systemImage: "waveform.path")
-                    .font(StrandFont.body)
+                    .font(InstrumentoType.groteskHeadline(17))
                     .foregroundStyle(theme.ink)
                     .padding(.vertical, 14)
                     .padding(.horizontal, 14)
@@ -427,16 +431,18 @@ struct BreathingView: View {
             PulseReader(live.pulse) { p in
                 readoutTile(label: "Heart rate",
                             value: p.smoothedBpm.map { "\($0)" } ?? "—",
-                            unit: String(localized: "bpm"),
+                            unit: "bpm",
                             accent: theme.dataHeart,
-                            caption: live.worn ? "Live" : "Strap not worn")
+                            caption: live.worn ? String(localized: "Live") : String(localized: "Strap not worn"))
             }
 
             readoutTile(label: "HRV (RMSSD)",
                         value: rmssd.map { String(format: "%.0f", $0) } ?? "—",
                         unit: "ms",
                         accent: theme.dataHrv,
-                        caption: rrBuffer.isEmpty ? "Waiting for R-R" : "Last \(rrBuffer.count) beats")
+                        caption: rrBuffer.isEmpty
+                                 ? String(localized: "Waiting for R-R")
+                                 : String(localized: "Last \(rrBuffer.count) beats"))
 
             readoutTile(label: "Pace",
                         value: String(format: "%.1f", pace.bpm),
@@ -446,15 +452,20 @@ struct BreathingView: View {
         }
     }
 
-    private func readoutTile(label: String, value: String, unit: String,
+    /// `label` y `unit` son `LocalizedStringKey`: como `String` planos, `Text(label)` los pintaba tal cual
+    /// y ni «HRV (RMSSD)» ni «Pace» ni las unidades pasaban por el catálogo (auditoría i18n 2026-07-18).
+    /// `caption` se queda `String` a propósito — una de las llamadas interpola un conteo, y un ternario
+    /// con rama interpolada resuelve a `String`, no a `LocalizedStringKey`; los call sites usan
+    /// `String(localized:)` en cada rama.
+    private func readoutTile(label: LocalizedStringKey, value: String, unit: LocalizedStringKey,
                              accent: Color, caption: String) -> some View {
         card(padding: 14) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(label).groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 6)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(value)
-                        .font(StrandFont.number(26))
+                        .font(InstrumentoType.groteskNumber(26))
                         .foregroundStyle(accent)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
@@ -479,7 +490,7 @@ struct BreathingView: View {
         card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Coherence estimate").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Coherence estimate").groteskOverline().foregroundStyle(theme.inkTertiary)
                     Spacer()
                     pill(LocalizedStringKey(coherenceLabel), dotColor: coherenceDotColor)
                 }

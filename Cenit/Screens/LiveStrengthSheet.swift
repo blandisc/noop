@@ -6,6 +6,7 @@ import StrandTraining
 import StrandAnalytics
 import WhoopProtocol
 import CenitStore
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).
 private func plateNumber(_ v: Double) -> String {
@@ -146,6 +147,8 @@ struct LiveStrengthSheet: View {
     /// The terminal «Nothing to save» result card for discarding an empty session (FER-894 · Estados 2).
     @State private var nothingToSave = false
     @State private var saveError = false
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
 
     /// Identifies which exercise the «Change» sheet is swapping (FER-894); carries the run for its header
     /// and same-muscle shortlist. `id` is the run id so `.sheet(item:)` re-presents cleanly per exercise.
@@ -239,6 +242,7 @@ struct LiveStrengthSheet: View {
     // phase content + chrome + presenters + confirms — same render, smaller expressions for the checker.
     var body: some View {
         bodyWithConfirms
+        .enableInjection()
     }
 
     /// Phase content only: nothing-to-save / summary / empty ad-hoc / live inline session.
@@ -1059,7 +1063,7 @@ struct LiveStrengthSheet: View {
                 // Más prominente (Fer 2026-07-16): mismo chip de ancho completo que el editor.
                 HStack(spacing: 8) {
                     StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add exercise").font(StrandFont.subhead.weight(.semibold))
+                    Text("Add exercise").font(InstrumentoType.grotesk(14, weight: .semibold))
                 }
                 .foregroundStyle(theme.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -1326,12 +1330,15 @@ struct LiveStrengthSheet: View {
     }
 
     /// The region as a quiet word next to the dot («push» / «pull» / «legs» / «full body»).
+    /// Claves con prefijo `muscleGroup.` — las mismas del planificador semanal. La clave DESNUDA «Push»
+    /// choca con el botón «Push» del catálogo, que localiza a «Sube», así que la píldora de la sesión
+    /// activa acababa diciendo «● Sube» en vez de «● Empuje» (bug Fer 2026-07-18).
     private var sessionRegionWord: LocalizedStringKey? {
         switch sessionRegion {
-        case .push: return "Push"
-        case .pull: return "Pull"
-        case .legs: return "Legs"
-        case .fullBody: return "Full body"
+        case .push: return "muscleGroup.push"
+        case .pull: return "muscleGroup.pull"
+        case .legs: return "muscleGroup.legs"
+        case .fullBody: return "muscleGroup.fullBody"
         case nil: return nil
         }
     }
@@ -1622,7 +1629,7 @@ struct LiveStrengthSheet: View {
         } label: {
             // Canvas pass 2026-07-15: the handoff's big ink capsule.
             Label("Register set", systemImage: "checkmark")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15)
                 .background(theme.ink, in: Capsule())
@@ -1834,7 +1841,7 @@ struct LiveStrengthSheet: View {
         } label: {
             Label(running ? "Stop and save" : "Start",
                   systemImage: running ? "stop.fill" : "play.fill")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, CenitMetrics.sectionGap)
                 .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
@@ -1878,7 +1885,8 @@ struct LiveStrengthSheet: View {
                 }
             } else {
                 Text(Self.clock(session.currentSet?.timeS ?? 0))
-                    .font(StrandFont.title2).monospacedDigit()
+                    .font(InstrumentoType.groteskSessionClock)
+                    .tracking(InstrumentoType.groteskSessionClockTracking)
                     .foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity)
             }
@@ -1907,7 +1915,7 @@ struct LiveStrengthSheet: View {
             }
         } label: {
             Label("Register set", systemImage: "checkmark")
-                .font(StrandFont.headline).foregroundStyle(theme.paper)
+                .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, CenitMetrics.sectionGap)
                 .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
@@ -2035,7 +2043,7 @@ struct LiveStrengthSheet: View {
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                     Text("\(bpm)").instrumentoHero(100).monospacedDigit().foregroundStyle(theme.paper)
-                    Text("bpm").font(StrandFont.headline).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
+                    Text("bpm").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 }
             }
             if let target, !ready {
@@ -2119,8 +2127,8 @@ struct LiveStrengthSheet: View {
         let digits = String(label.dropFirst())
         return Button(action: action) {
             HStack(spacing: 0) {
-                Text(sign).font(StrandFont.headline).frame(width: 12)
-                Text(digits).font(StrandFont.headline).monospacedDigit()
+                Text(sign).font(InstrumentoType.groteskNumber(17)).frame(width: 12)
+                Text(digits).font(InstrumentoType.groteskNumber(17))
             }
             .foregroundStyle(theme.paper)
             .frame(width: 56)
@@ -2353,7 +2361,12 @@ struct LiveStrengthSheet: View {
                 Button { openDetail(run) } label: {
                     // r8b (owner): sin chevron junto al nombre — el toque al nombre sigue abriendo el
                     // detalle; la flecha era ruido.
+                    // `minimumScaleFactor`: un nombre largo se partía en dos renglones dejando un hueco
+                    // grande a la derecha —el corte cae por palabra, así que la última bajaba entera y la
+                    // primera línea quedaba a medias (bug Fer 2026-07-18)—. Con margen para encoger un
+                    // poco, aprovecha el ancho antes de partirse.
                     Text(run.name).font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .lineLimit(2).minimumScaleFactor(0.82)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
@@ -2985,7 +2998,7 @@ struct LiveStrengthSheet: View {
                         : session.startSetTimer()
             }
         } label: {
-            Text(running ? "Stop" : "Start").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text(running ? "Stop" : "Start").font(InstrumentoType.grotesk(14, weight: .semibold)).foregroundStyle(theme.inkSecondary)
                 .padding(.horizontal, 14).frame(height: 34)
                 .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 .contentShape(Capsule())
@@ -3461,8 +3474,13 @@ struct LiveStrengthSheet: View {
         // closing row (top hairline separates it from the last set). FER-952 seats the warm-up pill
         // next to it — quiet ember outline, visible only while the exercise has no warm-ups yet
         // (same grammar as the routine editor's twin pills).
-        HStack(spacing: 8) {
-            Button {
+        // El MISMO componente que cierra la tarjeta en el editor de rutina: gemelos de ancho completo,
+        // primario en tinta, calentamiento con contorno ember. Ver `SetActionPills` para el porqué.
+        SetActionPills(
+            showWarmup: session.runs.indices.contains(ei)
+                        && !session.runs[ei].sets.contains(where: { $0.kind == .warmup }),
+            theme: theme,
+            addSet: {
                 // Canvas pass 2026-07-15: a contained, gentle open — ONE row's worth of space, not a leap
                 // (owner: «que se abra solamente con un nuevo renglón»).
                 withAnimation(StrandMotion.gentle) {
@@ -3472,30 +3490,11 @@ struct LiveStrengthSheet: View {
                     scrollProxy?.scrollTo("session-exercise-\(ei)", anchor: .bottom)
                 }
                 addedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil
-            } label: {
-                Label("Add set", systemImage: "plus")
-                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(theme.dataStrain, in: Capsule())
-                    .frame(minHeight: 44)          // visual 33, toque 44 (HIG §8.7-4)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
-            .sensoryFeedback(.impact(weight: .light), trigger: addedSetId)
-            if session.runs.indices.contains(ei), !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
-                Button { addWarmupRamp(ei) } label: {
-                    Label("Add warm-up", systemImage: "flame")
-                        .font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.dataStrain)
-                        .padding(.horizontal, 14).padding(.vertical, 8)
-                        .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
-                        .frame(minHeight: 44)      // visual 33, toque 44 (HIG §8.7-4)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            Spacer(minLength: 0)
-        }
+            },
+            addWarmup: { addWarmupRamp(ei) }
+        )
+        // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
+        .sensoryFeedback(.impact(weight: .light), trigger: addedSetId)
         .padding(.top, 8)
     }
 
@@ -3788,13 +3787,13 @@ struct LiveStrengthSheet: View {
             Image(systemName: "checkmark.seal")
                 .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkSecondary)
                 .accessibilityHidden(true)
-            Text("Nothing to save").font(StrandFont.title1).foregroundStyle(theme.ink)
+            Text("Nothing to save").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
             Text("Your history stays clean: no sets were logged this session.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button { model.endStrengthSession(save: false) } label: {
                 Text("Got it")
-                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             }
@@ -3930,7 +3929,7 @@ struct LiveStrengthSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             Button { finishTapped() } label: {
                 Label("Finish", systemImage: "checkmark")
-                    .font(StrandFont.headline).foregroundStyle(theme.paper)
+                    .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
                     .frame(maxWidth: .infinity).padding(.vertical, 15)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             }

@@ -128,9 +128,15 @@ final class MediaDownloadCoordinator: ObservableObject {
     /// The exercise's already-cached media file, or nil — NEVER downloads. For list rows (FER-790):
     /// a scrolling catalog of ~1500 exercises must show the thumb only when it's already on disk,
     /// never fire a per-row GET. Keeps the zero-request guarantee: no cache / not cached ⇒ nil.
-    func cachedMediaURL(for exercise: Exercise) -> URL? {
-        guard let cache, cache.hasThumb(for: exercise.id) else { return nil }
-        return cache.thumbPath(exercise.id)
+    func cachedMediaURL(for exercise: Exercise) -> URL? { cachedMediaURL(forId: exercise.id) }
+
+    /// La misma búsqueda, con el id solo. La sesión guiada lleva `exerciseId` y no un `Exercise` resuelto,
+    /// así que sin esta variante `SessionRunThumb` no podía usar el respaldo del GIF: un ejercicio sin
+    /// imagen horneada —los que entran por importación— salía SIN miniatura en la sesión activa aunque el
+    /// editor sí se la mostrara (bug Fer 2026-07-18).
+    func cachedMediaURL(forId id: String) -> URL? {
+        guard let cache, cache.hasThumb(for: id) else { return nil }
+        return cache.thumbPath(id)
     }
 
     /// Deletes every cached GIF and forgets recorded misses, so a future bulk run retries

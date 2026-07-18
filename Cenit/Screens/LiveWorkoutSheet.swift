@@ -1,6 +1,7 @@
 import SwiftUI
 import StrandDesign
 import CenitStore
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Train hub: live-workout entry + recording sheet (FER-197)
 //
@@ -38,7 +39,7 @@ struct LiveWorkoutHubRow: View {
                 .sheet(isPresented: $showSheet) {
                     LiveWorkoutSheet(theme: theme)
                         .environment(model)
-                        .presentationDetents([.medium, .large])
+                        .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
                         .presentationDragIndicator(.visible)
                         .presentationBackground(theme.paper)
                         .preferredColorScheme(.light)
@@ -70,7 +71,9 @@ struct LiveWorkoutHubRow: View {
                 Spacer(minLength: 8)
                 TimelineView(.periodic(from: w.start, by: 1)) { ctx in
                     Text(Self.elapsed(from: w.start, to: ctx.date))
-                        .font(StrandFont.bodyNumber).foregroundStyle(theme.inkSecondary)
+                        .font(InstrumentoType.groteskSessionClockInline)
+                        .tracking(InstrumentoType.groteskSessionClockTracking)
+                        .foregroundStyle(theme.inkSecondary)
                 }
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
@@ -137,6 +140,8 @@ struct LiveWorkoutHubRow: View {
 struct LiveWorkoutSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
+    /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
+    @ObserveInjection private var inject
     var theme: InstrumentoTheme = .base
 
     var body: some View {
@@ -172,7 +177,7 @@ struct LiveWorkoutSheet: View {
                     dismiss()
                 } label: {
                     Label("Finish", systemImage: "stop.fill")
-                        .font(StrandFont.headline)
+                        .font(InstrumentoType.groteskHeadline(17))
                         .foregroundStyle(theme.critical)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -187,6 +192,7 @@ struct LiveWorkoutSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        .enableInjection()
     }
 
     private func stat(_ label: LocalizedStringKey, _ value: String) -> some View {
