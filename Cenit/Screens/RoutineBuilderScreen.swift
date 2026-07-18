@@ -297,7 +297,9 @@ struct RoutineBuilderScreen: View {
                     .buttonStyle(.plain)
                     // Progression chip under the name — same destination as «···» → Progression.
                     if item.re.progressionEnabled {
-                        ProgressionChip(re: item.re, system: system, theme: theme, action: { progressionTarget = ProgressionTarget(ei: idx) })
+                        ProgressionChip(re: item.re, system: system, theme: theme,
+                                        derivedIncrementKg: PlateMath.minimumIncrement(for: .from(equipment: item.exercise.equipment), inventory: plates.inventory),
+                                        action: { progressionTarget = ProgressionTarget(ei: idx) })
                     }
                 }
                 Spacer(minLength: 8)

@@ -337,7 +337,9 @@ struct RoutineEditorScreen: View {
                     .buttonStyle(.plain)
                     .accessibilityHint(Text("Opens the exercise"))
                     if item.re.progressionEnabled {
-                        ProgressionChip(re: item.re, system: system, theme: theme, disabled: locked, action: { progressionTarget = ProgressionTarget(ei: idx) })
+                        ProgressionChip(re: item.re, system: system, theme: theme,
+                                        derivedIncrementKg: PlateMath.minimumIncrement(for: .from(equipment: item.exercise.equipment), inventory: plates.inventory),
+                                        disabled: locked, action: { progressionTarget = ProgressionTarget(ei: idx) })
                     }
                 }
                 Spacer(minLength: 8)
@@ -681,7 +683,10 @@ struct RoutineEditorScreen: View {
         }
         if item.exercise.type == .weightReps {
             rows.append(.init(String(localized: "Progression"),
-                              subtitle: item.re.progressionEnabled ? ProgressionChip.summary(item.re, system: system) : nil,
+                              subtitle: item.re.progressionEnabled
+                                  ? ProgressionChip.summary(item.re, system: system,
+                                                            derived: PlateMath.minimumIncrement(for: .from(equipment: item.exercise.equipment), inventory: plates.inventory))
+                                  : nil,
                               systemImage: "chart.line.uptrend.xyaxis") {
                 progressionTarget = ProgressionTarget(ei: idx)
             })

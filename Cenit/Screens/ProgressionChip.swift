@@ -7,6 +7,8 @@ struct ProgressionChip: View {
     let re: RoutineExercise
     let system: UnitSystem
     let theme: InstrumentoTheme
+    /// El incremento que sale de TUS discos, para cuando el ejercicio no guarda uno a mano.
+    let derivedIncrementKg: Double
     var disabled: Bool = false
     let action: () -> Void
 
@@ -15,7 +17,7 @@ struct ProgressionChip: View {
             HStack(spacing: 3) {
                 StrandIcon.up.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
-                Text(Self.summary(re, system: system))
+                Text(Self.summary(re, system: system, derived: derivedIncrementKg))
                     .font(StrandFont.caption)
             }
             .foregroundStyle(theme.dataRecovery)
@@ -24,11 +26,15 @@ struct ProgressionChip: View {
         .disabled(disabled)
     }
 
-    /// «+2,5 kg cada 2 ✓» — the active plan. Without an explicit increment, just marks the plan as on.
-    static func summary(_ re: RoutineExercise, system: UnitSystem) -> String {
-        guard let inc = re.progressionIncrementKg else {
-            return String(localized: "Progression · on")
-        }
+    /// «+2,5 kg cada 2 ✓» — el plan activo, SIEMPRE con su incremento.
+    ///
+    /// Antes, sin `progressionIncrementKg` explícito decía «Progresión · activa» a secas. Pero ese nil no
+    /// significa «sin configurar»: significa que el incremento se DERIVA de tus discos en vez de estar
+    /// guardado a mano. El chip acababa distinguiendo «explícito vs. derivado» —una diferencia interna que
+    /// no le importa a nadie— y dejando de decir el dato justo en el caso más común, el del valor por
+    /// defecto (bug Fer 2026-07-18). Ahora cae al mínimo derivado: si va a subir 2,5 kg, lo dice.
+    static func summary(_ re: RoutineExercise, system: UnitSystem, derived: Double) -> String {
+        let inc = re.progressionIncrementKg ?? derived
         let unit = StrengthDisplay.weightUnit(system).lowercased()
         return "+\(StrengthDisplay.weightNumber(inc, system: system)) \(unit) "
             + String(localized: "every \(re.progressionSessions)") + " ✓"
@@ -50,6 +56,7 @@ struct ProgressionChip: View {
         re: re,
         system: .metric,
         theme: .base,
+        derivedIncrementKg: 2.5,
         action: {}
     )
     .padding()
