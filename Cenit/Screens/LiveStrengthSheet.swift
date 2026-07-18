@@ -2361,7 +2361,12 @@ struct LiveStrengthSheet: View {
                 Button { openDetail(run) } label: {
                     // r8b (owner): sin chevron junto al nombre — el toque al nombre sigue abriendo el
                     // detalle; la flecha era ruido.
+                    // `minimumScaleFactor`: un nombre largo se partía en dos renglones dejando un hueco
+                    // grande a la derecha —el corte cae por palabra, así que la última bajaba entera y la
+                    // primera línea quedaba a medias (bug Fer 2026-07-18)—. Con margen para encoger un
+                    // poco, aprovecha el ancho antes de partirse.
                     Text(run.name).font(StrandFont.headline).foregroundStyle(theme.ink)
+                        .lineLimit(2).minimumScaleFactor(0.82)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())

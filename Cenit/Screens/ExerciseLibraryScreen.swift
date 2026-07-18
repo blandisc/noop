@@ -339,10 +339,12 @@ struct ExerciseLibraryScreen: View {
                 // así que habla en Grotesk como los demás CTAs y no en la SF de `headline`.
                 .font(InstrumentoType.grotesk(15, weight: .bold))
                 .foregroundStyle(selected.isEmpty ? theme.inkTertiary : (createFlow ? theme.paper : theme.ink))
-                .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.gap)
+                // Rectángulo redondeado con `ctaRadius`, no cápsula: es la MISMA forma que
+                // `StrandCTAButton` («Empezar»), la gramática de CTA de la app.
+                .frame(maxWidth: .infinity).padding(.vertical, 15)
                 .background(createFlow && !selected.isEmpty ? AnyShapeStyle(theme.dataStrain) : AnyShapeStyle(theme.surface),
-                            in: Capsule(style: .continuous))
-                .overlay(Capsule(style: .continuous)
+                            in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
                     .strokeBorder(createFlow && !selected.isEmpty ? .clear : theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain).disabled(selected.isEmpty)
