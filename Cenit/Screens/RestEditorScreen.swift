@@ -107,19 +107,17 @@ struct RestEditorScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        // FER-988: el gesto de volver, vetado a favor de `onCancel` — la salida de esta pantalla
+        // aplica/descarta según su modo, y un pop crudo se la saltaría. Inerte como hoja (`.close`).
+        .keepsSwipeBack { onCancel(); return false }
     }
 
     private var header: some View {
         HStack {
             // EST-6 (FER-814/831): a single close affordance that matches the presentation — the back
             // chevron when pushed (Builder), the ✕ when presented as a sheet (the live session). Never two.
-            Button(action: onCancel) {
-                Image(systemName: closeAsDismiss ? "xmark" : "chevron.left")
-                    .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
-                    .frame(width: 44, height: 44).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).accessibilityLabel(Text(closeAsDismiss ? "Close" : "Back"))
-            .padding(.leading, -12)
+            BackButton(role: closeAsDismiss ? .close : .back, theme: theme, action: onCancel)
+                .padding(.leading, -2)
             Spacer()
         }
     }

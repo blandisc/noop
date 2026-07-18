@@ -19,6 +19,11 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 ## Unreleased
 
+- **Un solo botón de atrás, y vuelve el gesto de deslizar / One back button everywhere, and the swipe-back gesture returns.**
+  **ES** — Cada pantalla de Entrenar dibujaba su propia salida y ninguna coincidía con la de al lado. Ahora todas usan el mismo disco de papel con el chevron. Más importante: en el editor de rutinas, el de descanso y el de progresión, deslizar desde el borde izquierdo vuelve a la pantalla anterior — antes esas pantallas solo se dejaban salir con el botón y se sentían trabadas. Si tienes cambios sin guardar, deslizar hace exactamente lo mismo que tocar el botón (guarda), nunca pierde trabajo en silencio.
+  **EN** — Every Entrenar screen drew its own exit and none of them matched. They all use the same paper disc with the chevron now. More importantly: in the routine, rest and progression editors, swiping from the left edge goes back — those screens previously only let you leave via the button and felt stuck. With unsaved changes, swiping does exactly what tapping the button does (it saves); it never loses work silently.
+  ([BackButton.swift](Packages/StrandDesign/Sources/StrandDesign/BackButton.swift), [SwipeBack.swift](Cenit/System/SwipeBack.swift))
+
 - **El temporizador de intervalos ya no tiene el botón gris de iOS / The interval timer no longer has the grey iOS button.**
   **ES** — Los controles − / + para ajustar Trabajo, Descanso y Rondas eran la cápsula gris del sistema, la única pieza que rompía el papel cálido de esa pantalla. Ahora son de papel, como el resto de la app. Conservan todo lo que hacían: mantener pulsado sigue avanzando rápido, el valor nunca se sale de su rango, y VoiceOver los sigue leyendo y ajustando con un deslizamiento.
   **EN** — The − / + controls for Work, Rest and Rounds were the system's grey capsule — the one piece breaking that screen's warm paper. They're paper now, like the rest of the app. Everything they did survives: press-and-hold still ramps, the value never leaves its range, and VoiceOver still reads and adjusts them with a swipe.

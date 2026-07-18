@@ -133,18 +133,15 @@ struct ProgressionSetupScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
+        // FER-988: deslizar guarda igual que el chevron — la convención del editor Instrumento.
+        .keepsSwipeBack { saveAndClose(); return false }
     }
 
     private var header: some View {
         HStack {
             // Saves on back — the Instrumento editor convention (no «OK»); RestEditorScreen's chevron.
-            Button(action: saveAndClose) {
-                StrandIcon.back.image
-                    .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
-                    .frame(width: 44, height: 44).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).accessibilityLabel(Text("Back"))
-            .padding(.leading, -12)
+            BackButton(role: .back, theme: theme, action: saveAndClose)
+                .padding(.leading, -2)
             Spacer()
         }
     }
