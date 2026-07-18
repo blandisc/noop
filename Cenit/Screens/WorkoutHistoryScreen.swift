@@ -67,6 +67,8 @@ struct WorkoutHistoryScreen: View {
     @State private var loaded = false
     /// FER-969 / X-05a: undo-restore write failure on the list.
     @State private var saveError = false
+    /// Empuja el historial completo. Las tres de arriba son un asomo; esta es la lista entera.
+    @State private var showAllSessions = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -93,6 +95,7 @@ struct WorkoutHistoryScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        .navigationDestination(isPresented: $showAllSessions) { allSessionsList }
         // The detail push (`WorkoutSessionRoute`) is registered once on the Entrenar NavigationStack in
         // RootTabView (alongside the other train routes), so it isn't re-declared here.
         // «Undo» toast after a delete (FER-527), now seeded by the list OR the detail via the coordinator.
@@ -407,21 +410,73 @@ struct WorkoutHistoryScreen: View {
         }
     }
 
+    /// Cuántas sesiones se asoman aquí. El resto vive en su propia pantalla: esta es un panorama del mes
+    /// —tarjeta del mes, progresión, volumen por músculo— y una lista sin fondo la convertía en un archivo
+    /// por el que hay que hacer scroll para llegar a todo lo demás (petición Fer 2026-07-18).
+    private static let sessionsPreviewCount = 3
+
     private var sessionsSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             InstrumentoSectionBand("Sessions")
             LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(sessions) { session in
+                let shown = Array(sessions.prefix(Self.sessionsPreviewCount))
+                ForEach(shown) { session in
                     NavigationLink(value: route(for: session)) {
                         sessionRow(session)
                     }
                     .buttonStyle(.plain)
                     // The long-press delete `contextMenu` was retired (FER-951): iOS draws it as a
                     // system balloon that ignores the theme; «Delete» lives in the detail's «···» menu.
-                    if session.id != sessions.last?.id { Divider().overlay(theme.hairline) }
+                    if session.id != shown.last?.id { Divider().overlay(theme.hairline) }
+                }
+                if sessions.count > Self.sessionsPreviewCount {
+                    Divider().overlay(theme.hairline)
+                    seeAllSessionsRow
                 }
             }
         }
+    }
+
+    /// La puerta al historial completo. Dice el TOTAL, no solo «ver todas»: el número es el dato y de paso
+    /// responde «¿cuántas llevo?» sin tener que entrar.
+    private var seeAllSessionsRow: some View {
+        Button { showAllSessions = true } label: {
+            HStack(spacing: 8) {
+                Text("See all sessions").font(StrandFont.body).foregroundStyle(theme.ink)
+                Text(verbatim: "\(sessions.count)")
+                    .font(InstrumentoType.groteskNumber(15)).foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: 0)
+                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.vertical, 13)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("See all sessions"))
+        .accessibilityValue(Text(verbatim: "\(sessions.count)"))
+    }
+
+    /// El historial completo. Vive aquí dentro a propósito: reusa `sessionRow` y `route(for:)` tal cual,
+    /// así una sesión se dibuja igual en las dos pantallas y no hay dos verdades que mantener.
+    private var allSessionsList: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(sessions) { session in
+                    NavigationLink(value: route(for: session)) {
+                        sessionRow(session)
+                    }
+                    .buttonStyle(.plain)
+                    if session.id != sessions.last?.id { Divider().overlay(theme.hairline) }
+                }
+            }
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.bottom, CenitMetrics.screenPadding)
+        }
+        .background(theme.paper.ignoresSafeArea())
+        .navigationTitle(Text("Sessions"))
+        .navigationBarTitleDisplayMode(.inline)
+        .keepsSwipeBack()
     }
 
     /// Handoff v2 session row: family glyph chip · name + «vie 10 jul · 48 min · 4.320 kg» · one right

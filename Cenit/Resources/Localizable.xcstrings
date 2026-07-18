@@ -4,6 +4,22 @@
     "" : {
 
     },
+    "See all sessions" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "See all sessions"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Ver todas las sesiones"
+                }
+            }
+        }
+    },
     "\n" : {
 
     },
