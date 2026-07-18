@@ -66,6 +66,38 @@ public enum MuscleInference {
         "hanging knee raise": "abdominals", "abdominal": "abdominals", "abs": "abdominals",
         "neck curl": "neck", "neck": "neck",
         "wrist curl": "forearms", "forearm": "forearms", "grip": "forearms",
+
+        // Spanish. The import prompt keeps the plan's exercise names *as written* (WorkoutPrompt), so an
+        // es-MX plan arrives in Spanish — without these the proposal would almost never fire for it.
+        // Keys are written unaccented because `normalize` folds diacritics.
+        "press de banca": "chest", "banca": "chest", "aperturas": "chest", "pecho": "chest",
+        "lagartijas": "chest", "flexiones": "chest", "fondos": "chest",
+        "press militar": "shoulders", "press de hombro": "shoulders", "elevaciones laterales": "shoulders",
+        "elevacion lateral": "shoulders", "elevaciones frontales": "shoulders", "hombro": "shoulders",
+        "hombros": "shoulders", "deltoides": "shoulders",
+        // («triceps» and «biceps» are already keys above — the folded Spanish spelling matches them.)
+        "extension de triceps": "triceps", "jalon de triceps": "triceps",
+        "curl de biceps": "biceps", "predicador": "biceps",
+        "jalon al pecho": "lats", "jalon": "lats", "dominadas": "lats", "dorsales": "lats",
+        "dominadas supinas": "biceps",
+        "remo": "middle back", "espalda media": "middle back",
+        "encogimientos": "traps", "trapecio": "traps", "trapecios": "traps",
+        "peso muerto": "lower back", "hiperextensiones": "lower back", "buenos dias": "lower back",
+        "espalda baja": "lower back",
+        "sentadilla": "quadriceps", "sentadillas": "quadriceps", "prensa": "quadriceps",
+        "prensa de piernas": "quadriceps", "extension de piernas": "quadriceps",
+        "zancadas": "quadriceps", "desplantes": "quadriceps", "cuadriceps": "quadriceps",
+        "peso muerto rumano": "hamstrings", "curl femoral": "hamstrings", "femoral": "hamstrings",
+        "isquiotibiales": "hamstrings",
+        "empuje de cadera": "glutes", "puente de gluteo": "glutes", "gluteo": "glutes", "gluteos": "glutes",
+        "pantorrilla": "calves", "pantorrillas": "calves", "gemelos": "calves",
+        "elevacion de talones": "calves",
+        "abduccion de cadera": "abductors", "abductores": "abductors",
+        "aduccion de cadera": "adductors", "aductores": "adductors",
+        "abdominales": "abdominals", "abdomen": "abdominals", "plancha": "abdominals",
+        "encogimientos abdominales": "abdominals", "elevacion de piernas": "abdominals",
+        "cuello": "neck",
+        "antebrazo": "forearms", "antebrazos": "forearms", "curl de muneca": "forearms",
     ]
 
     /// The primary muscle implied by `name`, or `nil` when nothing in the vocabulary matches.
@@ -87,10 +119,12 @@ public enum MuscleInference {
         return best?.muscle
     }
 
-    /// Lowercase and reduce anything that isn't a letter or digit to a single space, so hyphens, slashes
-    /// and parentheses in a plan's names («close-grip bench press (barbell)») don't hide a match.
+    /// Lowercase, fold diacritics and reduce anything that isn't a letter or digit to a single space, so
+    /// neither hyphens and parentheses («close-grip bench press (barbell)») nor a missing accent
+    /// («triceps» for «tríceps», which people type both ways) hides a match.
     static func normalize(_ name: String) -> String {
-        let scalars = name.lowercased().unicodeScalars.map { scalar -> Character in
+        let folded = name.folding(options: .diacriticInsensitive, locale: Locale(identifier: "en_US"))
+        let scalars = folded.lowercased().unicodeScalars.map { scalar -> Character in
             CharacterSet.alphanumerics.contains(scalar) ? Character(scalar) : " "
         }
         return String(scalars).split(separator: " ").joined(separator: " ")

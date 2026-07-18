@@ -26,6 +26,30 @@ final class MuscleInferenceTests: XCTestCase {
         }
     }
 
+    /// The import prompt keeps the plan's names as written, so an es-MX plan arrives in Spanish — with
+    /// or without accents, since people type both ways.
+    func testInfersTheMuscleFromSpanishNames() {
+        let cases: [(String, String)] = [
+            ("Press de banca con barra", "chest"),
+            ("Sentadilla trasera", "quadriceps"),
+            ("Peso muerto rumano", "hamstrings"),   // beats the «peso muerto» it contains
+            ("Peso muerto convencional", "lower back"),
+            ("Remo con barra", "middle back"),
+            ("Jalón al pecho", "lats"),
+            ("Elevaciones laterales", "shoulders"),
+            ("Curl femoral acostado", "hamstrings"),   // beats the generic «curl»
+            ("Extensión de tríceps", "triceps"),
+            ("Extension de triceps", "triceps"),       // same, unaccented
+            ("Empuje de cadera", "glutes"),
+            ("Elevación de talones de pie", "calves"),
+            ("Encogimientos abdominales", "abdominals"),  // beats «encogimientos» (traps)
+            ("Encogimientos con mancuernas", "traps"),
+        ]
+        for (name, expected) in cases {
+            XCTAssertEqual(MuscleInference.primaryMuscle(forName: name), expected, "for '\(name)'")
+        }
+    }
+
     /// The whole point of longest-phrase-wins: a specific phrase must beat a generic one it contains.
     func testTheMostSpecificPhraseWins() {
         XCTAssertEqual(MuscleInference.primaryMuscle(forName: "Leg Press"), "quadriceps")       // not chest
