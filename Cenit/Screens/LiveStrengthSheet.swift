@@ -3474,8 +3474,13 @@ struct LiveStrengthSheet: View {
         // closing row (top hairline separates it from the last set). FER-952 seats the warm-up pill
         // next to it — quiet ember outline, visible only while the exercise has no warm-ups yet
         // (same grammar as the routine editor's twin pills).
-        HStack(spacing: 8) {
-            Button {
+        // El MISMO componente que cierra la tarjeta en el editor de rutina: gemelos de ancho completo,
+        // primario en tinta, calentamiento con contorno ember. Ver `SetActionPills` para el porqué.
+        SetActionPills(
+            showWarmup: session.runs.indices.contains(ei)
+                        && !session.runs[ei].sets.contains(where: { $0.kind == .warmup }),
+            theme: theme,
+            addSet: {
                 // Canvas pass 2026-07-15: a contained, gentle open — ONE row's worth of space, not a leap
                 // (owner: «que se abra solamente con un nuevo renglón»).
                 withAnimation(StrandMotion.gentle) {
@@ -3485,30 +3490,11 @@ struct LiveStrengthSheet: View {
                     scrollProxy?.scrollTo("session-exercise-\(ei)", anchor: .bottom)
                 }
                 addedSetId = session.runs.indices.contains(ei) ? session.runs[ei].sets.last?.id : nil
-            } label: {
-                Label("Add set", systemImage: "plus")
-                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(theme.dataStrain, in: Capsule())
-                    .frame(minHeight: 44)          // visual 33, toque 44 (HIG §8.7-4)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
-            .sensoryFeedback(.impact(weight: .light), trigger: addedSetId)
-            if session.runs.indices.contains(ei), !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
-                Button { addWarmupRamp(ei) } label: {
-                    Label("Add warm-up", systemImage: "flame")
-                        .font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.dataStrain)
-                        .padding(.horizontal, 14).padding(.vertical, 8)
-                        .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
-                        .frame(minHeight: 44)      // visual 33, toque 44 (HIG §8.7-4)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            Spacer(minLength: 0)
-        }
+            },
+            addWarmup: { addWarmupRamp(ei) }
+        )
+        // r22: confirmación táctil ligera al abrir el renglón nuevo — hermana del .success del ✓.
+        .sensoryFeedback(.impact(weight: .light), trigger: addedSetId)
         .padding(.top, 8)
     }
 
