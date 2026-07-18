@@ -1649,9 +1649,13 @@ private struct CuerpoLanding: View {
     }
     repo.setDashboard(days: sample)
 
-    // FER-981: construir los objetos INLINE dentro de la cadena de modificadores hacía que el
-    // type-checker resolviera todo como UNA expresión gigante (~246 ms medidos con -warn-long).
-    // Izarlos a `let` deja cada pieza trivial de inferir. Mismo preview, mismo render.
+    // FER-981: izados a `let` (y `AppModel.preview` compartido) para no reconstruirlos por preview.
+    // OJO — esto NO bajó el hotspot de type-check de este preview: sigue en ~237 ms medidos. La causa
+    // real NO es la cadena de modificadores ni construir AppModel, sino el bucle de datos de muestra de
+    // arriba: `DailyMetric(...)` con ~12 argumentos de aritmética mixta Int/Double sobre literales
+    // (`420 + 60 * sin(phase/5)`, `min(max(60 + 30 * sin(...), 10), 99)`), que el type-checker resuelve
+    // como un solo sistema. Si se quiere bajar, hay que anotar tipos ahí. Se dejó pendiente a propósito:
+    // es código DEBUG-only de preview, el de menor valor del inventario.
     let live = LiveState()
     let appModel = AppModel.preview
     let health = HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview")
