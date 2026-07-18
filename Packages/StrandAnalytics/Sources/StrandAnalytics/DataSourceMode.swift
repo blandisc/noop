@@ -12,7 +12,7 @@ public enum DataSourceMode: String, Codable, CaseIterable, Sendable {
     /// Apple Health only — the strap is excluded from every read (its rows stay stored, just unused).
     case appleHealthOnly
 
-    /// True when WHOOP strap rows (raw `my-whoop` + on-device `my-whoop-noop`) may be read.
+    /// True when WHOOP strap rows (raw `strap` + on-device `strap-noop`) may be read.
     public var usesWhoop: Bool { self != .appleHealthOnly }
     /// True when Apple Health rows may be read.
     public var usesAppleHealth: Bool { self != .whoopOnly }

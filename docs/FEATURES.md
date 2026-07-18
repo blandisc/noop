@@ -96,7 +96,7 @@ The home dashboard (`TodayView.swift`, titled "Control Center"). A tight, gaples
   word (Depleted / Low / Steady / Primed / Peak).
 - **Key Metrics** — a uniform tile grid, each with a 14-day sparkline: Recovery, Day Strain
   (of 21), Sleep (hours + efficiency), HRV, Resting HR, Blood Oxygen, Respiratory, Steps,
-  Weight, Calories. WHOOP metrics come from the `my-whoop` source; Steps/Weight/Calories/
+  Weight, Calories. WHOOP metrics come from the `strap` source; Steps/Weight/Calories/
   Respiratory pull from `apple-health`. Sparse series (e.g. weight) fall back to all history so
   a tile never shows empty when data exists.
 - **Last Workouts** — up to six recent sessions as tiles (duration, date, avg HR, kcal).
@@ -356,7 +356,7 @@ composition and more. Large exports take a minute or two.
 Shows whether the strap is bonded and streaming. Pairs directly over Bluetooth — no WHOOP app,
 no cloud. Open **Live** to pair if it isn't connected.
 
-All imports run on-device; nothing is uploaded. WHOOP data is stored under the `my-whoop` source
+All imports run on-device; nothing is uploaded. WHOOP data is stored under the `strap` source
 and Apple Health under `apple-health`, so per-source pages and cross-source consensus stay distinct.
 
 ---

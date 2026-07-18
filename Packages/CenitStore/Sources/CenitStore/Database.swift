@@ -795,7 +795,69 @@ extension CenitStore {
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_exNote_ex ON strengthExerciseNote(exerciseId, ts)")
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_exNote_sess ON strengthExerciseNote(sessionId)")
         }
+        // v36 (FER-993): relabel the strap SOURCE PARTITION 'my-whoop' → 'strap'. The old label is a
+        // third-party brand baked into the user's data; the app is going to the App Store, so the id it
+        // writes has to be neutral. `deviceId` was never hardware — it is the partition key — so this is a
+        // pure relabel, not a device change.
+        //
+        // Append-only: v21 (which INSERTs the 'my-whoop' floor row) is NOT touched. A DB that has never
+        // seen v21 still runs it first and lands on 'my-whoop'; this migration then rewrites it. Fresh
+        // installs run v21 → v36 in the same pass and end on 'strap' too, so both paths converge.
+        //
+        // ZERO data loss, by two different mechanisms:
+        //   - the five 1 Hz tables rebuilt by v21 store an INTEGER surrogate, so renaming the single
+        //     `deviceIdMap` row re-points every one of their rows at once — no sample row is rewritten;
+        //   - every other table stores the partition as TEXT, so each needs an in-place UPDATE.
+        // The TEXT sweep is driven off the LIVE schema rather than a hand-written table list: a table that
+        // this migration forgot would silently orphan the user's rows (they'd still be on disk, but no read
+        // path queries 'my-whoop' any more), and that is exactly the failure a hard-coded list invites.
+        // Reading `pragma table_info` also self-corrects for the v21 tables — their `deviceId` is INTEGER,
+        // so the type check skips them instead of corrupting the surrogate.
+        //
+        // The derived computed partition ('my-whoop-noop', written by IntelligenceEngine as
+        // `deviceId + "-noop"`) is carried along by rewriting the PREFIX, so 'my-whoop-noop' → 'strap-noop'
+        // in the same pass and keeps matching the app's newly derived id.
+        //
+        // A plain UPDATE (not UPDATE OR REPLACE) is deliberate: several of these tables have a PK on
+        // (deviceId, …), and 'strap' has never been written by any shipped build, so a conflict is
+        // impossible. If one ever happened we want the loud throw + full rollback, NOT a silent row delete.
+        migrator.registerMigration("v36") { db in
+            try renameDevicePartition(db, from: "my-whoop", to: "strap")
+        }
         return migrator
+    }
+
+    /// Rewrite a source-partition label everywhere it is persisted: every TEXT `deviceId` column in the
+    /// live schema (including `deviceIdMap`, which re-points the v21 integer-surrogate tables for free)
+    /// plus `workout.source`, which stores the *computed* partition id for detector-derived bouts.
+    ///
+    /// Matches `old` exactly and as a prefix (`old + "-…"`), so derived partitions like `-noop` follow
+    /// their parent. Naturally idempotent: after the first pass nothing matches `old` any more.
+    static func renameDevicePartition(_ db: Database, from old: String, to new: String) throws {
+        // substr() is 1-based: skipping the old prefix starts at old.count + 1.
+        let tailStart = old.count + 1
+        let prefixLike = old + "-%"
+
+        let tables = try String.fetchAll(db, sql: """
+            SELECT name FROM sqlite_master
+            WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%'
+            """)
+        for table in tables {
+            // Only TEXT `deviceId` columns hold the label; the v21 tables hold an INTEGER surrogate.
+            guard let col = try db.columns(in: table).first(where: { $0.name == "deviceId" }),
+                  col.type.uppercased().contains("TEXT") else { continue }
+            try db.execute(sql: """
+                UPDATE "\(table)" SET deviceId = ? || substr(deviceId, ?)
+                WHERE deviceId = ? OR deviceId LIKE ?
+                """, arguments: [new, tailStart, old, prefixLike])
+        }
+
+        // `workout.source` carries the computed partition id ('…-noop') for detected bouts, so it has to
+        // move in lockstep with `workout.deviceId` or WorkoutSource.classify would read a stale origin.
+        try db.execute(sql: """
+            UPDATE workout SET source = ? || substr(source, ?)
+            WHERE source = ? OR source LIKE ?
+            """, arguments: [new, tailStart, old, prefixLike])
     }
 
     /// Idempotent `ADD COLUMN`: runs `body` (which should add `column` to `table`) **only if the live

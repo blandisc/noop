@@ -21,7 +21,7 @@ import Foundation
 // WITHOUT a nested NavigationStack (a nested stack crossing the tab's path crashed SwiftUI — FER-171).
 //
 // Data: the three vitals come from `repo.displayDays` for a BLE user (computed scores live under
-// `my-whoop-noop`, so `series("my-whoop")` is empty) — the caller injects the loaders. The hero is the
+// `strap-noop`, so `series("strap")` is empty) — the caller injects the loaders. The hero is the
 // 7-day moving average (`SeriesShape.latestMovingAverage`), not today's single reading; today is shown
 // as secondary context.
 

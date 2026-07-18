@@ -836,7 +836,7 @@ final class Repository: ObservableObject {
 
     // MARK: - Metric explorer reads (generic substrate)
 
-    /// Daily series for any metric key from a given source ("my-whoop" / "apple-health").
+    /// Daily series for any metric key from a given source ("strap" / "apple-health").
     func series(key: String, source: String, days: Int = 4000) async -> [(day: String, value: Double)] {
         guard let store = await ensureStore() else { return [] }
         let (from, to) = Self.dayWindow(days: days)

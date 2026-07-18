@@ -555,19 +555,30 @@ captured only when the research toggle is on. Decoded data is always committed *
 so pruning raw (`PrunePolicy`: 24h window / 50MB cap) can never lose a metric. `cursors` holds durable
 watermarks such as `strap_trim`.
 
-`deviceId` is the per-source partition key. The app uses `"my-whoop"` for the strap and
+`deviceId` is the per-source partition key. The app uses `"strap"` for the band and
 `"apple-health"` for imported Apple Health, so per-source pages and cross-source "consensus" views
 read the same tables filtered by source. On the five v21 `WITHOUT ROWID` sample tables the stored
 `deviceId` is the integer surrogate from `deviceIdMap`; everywhere else it is still the TEXT partition
-key. A one-time VACUUM after the v21 rebuild (and after the v20 spo2 purge) returns the freed pages to
+key.
+
+The strap partition was labelled `"my-whoop"` until **v36 (FER-993)**, which relabels it to the
+brand-neutral `"strap"` (the app ships to the App Store, so the id it writes into the user's data can't
+carry a third-party brand). The relabel is lossless by two different mechanisms: the five v21 tables
+store the *surrogate*, so rewriting the single `deviceIdMap` row re-points all their rows at once
+without touching a sample row; every other table stores the label as TEXT and is swept in place. The
+sweep is driven off the **live schema** (`sqlite_master` + `pragma table_info`, TEXT `deviceId` columns
+only) rather than a hand-written table list — a forgotten table would silently orphan real rows, and
+reading the schema also self-corrects for the v21 tables (their `deviceId` is INTEGER, so it skips
+them). The derived computed partition follows by prefix rewrite (`my-whoop-noop` → `strap-noop`), and
+`workout.source` — which stores the computed id for detector-derived bouts — moves in lockstep. A one-time VACUUM after the v21 rebuild (and after the v20 spo2 purge) returns the freed pages to
 the OS — each runs once per install, gated by a `cursors` flag (`rebuildVacuumV1Done` / `spo2VacuumV1Done`),
 off the launch path; `auto_vacuum=INCREMENTAL` (FER-511) keeps later deletes reclaimable.
 
 ### Day-key convention (local civil day)
 
 `dailyMetric.day` (and the additive-totals window behind it) is the device's **local civil day** in
-**every** source — on-device computed (`my-whoop-noop`), Apple Health (`apple-health`), and imported
-WHOOP (`my-whoop`, already local-of-cycle). The local day is derived by shifting the instant by the
+**every** source — on-device computed (`strap-noop`), Apple Health (`apple-health`), and imported
+strap history (`strap`, already local-of-cycle). The local day is derived by shifting the instant by the
 device's UTC offset and formatting in UTC — the pure `AnalyticsEngine.dayString(_:tzOffsetSeconds:)` /
 `localMidnight(_:tzOffsetSeconds:)` (offset passed explicitly so the math stays testable), the same
 trick `WhoopImporter` uses with `tzOffsetMin`. Consumers pick "today" by the matching local key

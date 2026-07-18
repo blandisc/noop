@@ -6,9 +6,9 @@ import BiometricStreams
 
 final class MigrationTests: XCTestCase {
     func testMigratorRegistersContiguousVersions() {
-        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...35).map { "v\($0)" })
-        XCTAssertEqual(CenitStoreInfo.schemaVersion, 35)
-        XCTAssertEqual(CenitStoreInfo.latestMigration, "v35")
+        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...36).map { "v\($0)" })
+        XCTAssertEqual(CenitStoreInfo.schemaVersion, 36)
+        XCTAssertEqual(CenitStoreInfo.latestMigration, "v36")
     }
 
     func testInMemoryRunsMigrations() async throws {
@@ -276,7 +276,9 @@ final class MigrationTests: XCTestCase {
             try db.execute(sql: "INSERT INTO gravitySample (deviceId, ts, x, y, z) VALUES ('my-whoop',1,0.1,0.2,0.3)")
         }
 
-        try migrator.migrate(dbQueue)   // → v21
+        // Pinned to v21: this case asserts v21's OWN output, and v36 later relabels the 'my-whoop'
+        // partition to 'strap' (that relabel has its own test below).
+        try migrator.migrate(dbQueue, upTo: "v21")
 
         try await dbQueue.read { db in
             for t in ["hrSample", "rrInterval", "skinTempSample", "respSample", "gravitySample"] {
@@ -297,6 +299,119 @@ final class MigrationTests: XCTestCase {
             // Natural PKs preserved → ON CONFLICT DO NOTHING still dedupes.
             XCTAssertEqual(try db.primaryKey("hrSample").columns, ["deviceId", "ts"])
             XCTAssertEqual(try db.primaryKey("rrInterval").columns, ["deviceId", "ts", "rrMs"])
+        }
+    }
+
+    /// v36 (FER-993) relabels the strap source partition 'my-whoop' → 'strap' with ZERO row loss.
+    /// Seeds a DB in the **v21 state** (the migration that wrote the 'my-whoop' label) with real rows in
+    /// both the integer-surrogate tables and every TEXT-`deviceId` table, migrates to HEAD, and asserts:
+    /// every row survives, the label moved, the derived '-noop' partition followed, `workout.source` moved
+    /// with it, the surrogate `intId` is UNCHANGED (so the 1 Hz samples still resolve), and a foreign
+    /// partition ('apple-health') is untouched.
+    func testV36RelabelsStrapPartitionWithoutLosingRows() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v21")
+
+        // The intId v21 assigned to 'my-whoop' — the 1 Hz tables reference it, and it must NOT change.
+        let intId = try await dbQueue.read { db in
+            try Int64.fetchOne(db, sql: "SELECT intId FROM deviceIdMap WHERE deviceId = 'my-whoop'")
+        }
+        XCTAssertNotNil(intId, "v21 must have seeded the 'my-whoop' floor row")
+
+        try await dbQueue.write { db in
+            // Integer-surrogate tables (v21 shape): rows point at the map, not at the label.
+            try db.execute(sql: "INSERT INTO hrSample (deviceId, ts, bpm) VALUES (?,1,60),(?,2,61)",
+                           arguments: [intId, intId])
+            try db.execute(sql: "INSERT INTO rrInterval (deviceId, ts, rrMs) VALUES (?,1,800)", arguments: [intId])
+            // TEXT-deviceId tables, under BOTH the strap label and its derived computed partition.
+            try db.execute(sql: """
+                INSERT INTO dailyMetric (deviceId, day) VALUES
+                ('my-whoop','2026-07-01'), ('my-whoop-noop','2026-07-01'), ('apple-health','2026-07-01')
+                """)
+            try db.execute(sql: """
+                INSERT INTO metricSeries (deviceId, day, key, value) VALUES
+                ('my-whoop','2026-07-01','hrv',65.0), ('my-whoop-noop','2026-07-01','steps_est',9000.0),
+                ('apple-health','2026-07-01','steps',8000.0)
+                """)
+            try db.execute(sql: """
+                INSERT INTO journal (deviceId, day, question, answeredYes) VALUES ('my-whoop','2026-07-01','alcohol',1)
+                """)
+            try db.execute(sql: """
+                INSERT INTO sleepSession (deviceId, startTs, endTs) VALUES ('my-whoop',100,200), ('my-whoop-noop',300,400)
+                """)
+            // workout: `source` carries the computed partition id for detected bouts.
+            try db.execute(sql: """
+                INSERT INTO workout (deviceId, startTs, sport, endTs, source) VALUES
+                ('my-whoop',1000,'Running',2000,'whoop'),
+                ('my-whoop-noop',3000,'detected',4000,'my-whoop-noop'),
+                ('apple-health',5000,'Walking',6000,'apple-health')
+                """)
+        }
+
+        let before = try await dbQueue.read { db in try Self.rowCounts(db) }
+
+        try migrator.migrate(dbQueue)   // → HEAD, running v36
+
+        try await dbQueue.read { db in
+            // ZERO loss: every table that existed at v21 has exactly the count it had before the relabel.
+            // (v22…v35 CREATE further tables on the way to HEAD; those are new and empty, not our ledger.)
+            let after = try Self.rowCounts(db).filter { before.keys.contains($0.key) }
+            XCTAssertEqual(after, before, "v36 must not add or drop a single row")
+
+            // The label moved, and the OLD label is gone everywhere.
+            XCTAssertNil(try String.fetchOne(db, sql: "SELECT deviceId FROM deviceIdMap WHERE deviceId = 'my-whoop'"))
+            // …and the surrogate is unchanged, so the 1 Hz samples still resolve through it.
+            XCTAssertEqual(try Int64.fetchOne(db, sql: "SELECT intId FROM deviceIdMap WHERE deviceId = 'strap'"), intId)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM hrSample WHERE deviceId = ?", arguments: [intId]), 2)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM rrInterval WHERE deviceId = ?", arguments: [intId]), 1)
+
+            // Every TEXT table relabelled, and the derived '-noop' partition followed its parent.
+            for t in ["dailyMetric", "metricSeries", "journal", "sleepSession", "workout"] {
+                XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM \(t) WHERE deviceId LIKE 'my-whoop%'"), 0,
+                               "\(t) must have no row left under the old label")
+            }
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM dailyMetric WHERE deviceId = 'strap'"), 1)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM dailyMetric WHERE deviceId = 'strap-noop'"), 1)
+            XCTAssertEqual(try Double.fetchOne(db, sql: "SELECT value FROM metricSeries WHERE deviceId = 'strap' AND key = 'hrv'"), 65.0)
+            XCTAssertEqual(try Double.fetchOne(db, sql: "SELECT value FROM metricSeries WHERE deviceId = 'strap-noop' AND key = 'steps_est'"), 9000.0)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM sleepSession WHERE deviceId = 'strap-noop'"), 1)
+
+            // workout.source moved in lockstep, so WorkoutSource.classify still reads '-noop' → detected.
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT source FROM workout WHERE sport = 'detected'"), "strap-noop")
+            // A legacy import source that merely CONTAINS the brand is not a partition id → untouched.
+            XCTAssertEqual(try String.fetchOne(db, sql: "SELECT source FROM workout WHERE sport = 'Running'"), "whoop")
+
+            // A foreign partition is never collateral damage.
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM dailyMetric WHERE deviceId = 'apple-health'"), 1)
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM workout WHERE deviceId = 'apple-health'"), 1)
+        }
+    }
+
+    /// v36 is idempotent and safe on a DB that never held the old label (fresh install): running the
+    /// relabel again is a no-op, and the strap partition still resolves.
+    func testV36IsIdempotent() async throws {
+        let dbQueue = try DatabaseQueue()
+        try CenitStore.makeMigrator().migrate(dbQueue)   // fresh → HEAD
+        try await dbQueue.write { db in
+            try db.execute(sql: "INSERT INTO dailyMetric (deviceId, day) VALUES ('strap','2026-07-01')")
+            // Re-run the relabel by hand; nothing matches the old label any more.
+            try CenitStore.renameDevicePartition(db, from: "my-whoop", to: "strap")
+        }
+        try await dbQueue.read { db in
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM dailyMetric WHERE deviceId = 'strap'"), 1)
+            XCTAssertEqual(try Int64.fetchOne(db, sql: "SELECT COUNT(*) FROM deviceIdMap WHERE deviceId = 'strap'"), 1)
+        }
+    }
+
+    /// Row count of every user table, keyed by table name — the zero-loss ledger for the v36 relabel.
+    private static func rowCounts(_ db: Database) throws -> [String: Int] {
+        let tables = try String.fetchAll(db, sql: """
+            SELECT name FROM sqlite_master
+            WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'grdb_%'
+            """)
+        return try tables.reduce(into: [:]) { acc, t in
+            acc[t] = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM \"\(t)\"") ?? -1
         }
     }
 

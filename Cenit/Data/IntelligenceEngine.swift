@@ -598,7 +598,7 @@ final class IntelligenceEngine: ObservableObject {
 
         // Persist the computed scores under a dedicated "-noop" source so the WHOLE dashboard
         // (Today / Recovery / Strain / Sleep / Trends), not just this screen, reads them. The
-        // Repository merges these UNDER any imported "my-whoop" rows, so a real WHOOP import
+        // Repository merges these UNDER any imported "strap" rows, so a real WHOOP import
         // always wins; this only fills the days the strap collected but no import covered.
         // FER-868: the upserts intentionally still write the FULL set (not just dirty nights) —
         // the workout prune below deletes-and-reinserts the whole window and must stay paired
