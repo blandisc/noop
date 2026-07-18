@@ -117,6 +117,14 @@ struct RoutineEditorScreen: View {
         }
         .animation(StrandMotion.fade, value: saveError)
         .toolbar(.hidden, for: .navigationBar)
+        // FER-988: ocultar la barra mata el gesto de volver; esto lo devuelve. Con cambios sin
+        // guardar vetamos el pop y corremos `back()` — el mismo autosave que corre el botón, en vez
+        // de sacar la pantalla de la pila y perder el trabajo.
+        .keepsSwipeBack {
+            guard dirty || isOrphan else { return true }
+            back()
+            return false
+        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -223,14 +231,8 @@ struct RoutineEditorScreen: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Button { back() } label: {
-                HStack(spacing: 4) {
-                    StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                    Text("Back").font(StrandFont.body)
-                }
-                .foregroundStyle(theme.ink).frame(minHeight: 44).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).accessibilityLabel(Text("Back"))
+            BackButton(role: .back, theme: theme) { back() }
+                .padding(.leading, -2)
             Spacer()
             if dirty {
                 Button { undo() } label: {
