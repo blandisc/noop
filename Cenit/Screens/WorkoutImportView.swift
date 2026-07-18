@@ -139,20 +139,13 @@ struct WorkoutImportView: View {
         // the type it declared and a muscle proposed from the name — instead of silently saving an
         // exercise with no muscle, which is invisible to the muscle map, the volume and the classifier.
         .sheet(item: $creationTarget) { target in
-            CreateExerciseSheet(muscles: muscleOptions, equipment: equipmentOptions,
-                                initialName: target.name,
-                                initialMuscle: MuscleInference.primaryMuscle(forName: target.name) ?? "",
+            CreateExerciseSheet(catalog: catalog, initialName: target.name,
                                 initialType: declaredType(target.name)) { exercise in
                 createNew(target.name, as: exercise)
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
     }
-
-    /// Picker options for the create sheet, derived from the loaded catalog — the same source the
-    /// library uses, so both forms offer exactly the same vocabulary.
-    private var muscleOptions: [String] { Set(catalog.flatMap { $0.primaryMuscles }).sorted() }
-    private var equipmentOptions: [String] { Set(catalog.compactMap { $0.equipment }).sorted() }
 
     // MARK: - Capture
 

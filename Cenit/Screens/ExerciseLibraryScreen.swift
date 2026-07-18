@@ -96,7 +96,7 @@ struct ExerciseLibraryScreen: View {
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showCreate) {
-            CreateExerciseSheet(muscles: muscleOptions, equipment: equipmentOptions) { ex in
+            CreateExerciseSheet(catalog: exercises) { ex in
                 Task { try? await repo.saveCustomExercise(ex); await reload() }
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
@@ -104,8 +104,7 @@ struct ExerciseLibraryScreen: View {
         // FER-995: completing an exercise created before the muscle was required — the same form,
         // pre-filled, keeping the id so the save edits in place.
         .sheet(item: $editingExercise) { ex in
-            CreateExerciseSheet(muscles: muscleOptions, equipment: equipmentOptions, editing: ex,
-                                initialMuscle: MuscleInference.primaryMuscle(forName: ex.name) ?? "") { updated in
+            CreateExerciseSheet(catalog: exercises, editing: ex) { updated in
                 Task { try? await repo.saveCustomExercise(updated); await reload() }
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
@@ -348,7 +347,7 @@ struct ExerciseLibraryScreen: View {
 
     private func reload() async {
         exercises = await repo.allExercises()
-        customIds = Set(await repo.customExercises().map(\.id))
+        customIds = await repo.customExerciseIds()
         // Filter options are invariant between reloads — derive them once here, not per body pass.
         muscleOptions = Set(exercises.flatMap { $0.primaryMuscles }).sorted()
         equipmentOptions = Set(exercises.compactMap { $0.equipment }).sorted()
@@ -415,17 +414,16 @@ struct ExerciseLibraryScreen: View {
 /// The primary muscle is **required**: an exercise without one is invisible to the muscle map, the
 /// weekly volume and `RoutineClassifier`, and that was silent data loss (FER-995).
 struct CreateExerciseSheet: View {
-    let muscles: [String]
-    let equipment: [String]
     /// Non-nil → edit mode: keeps this exercise's id and pre-fills every field from it.
     var editing: Exercise? = nil
-    /// Pre-filled name for a fresh exercise (the import flow passes the plan's name).
-    var initialName: String = ""
-    /// Muscle proposed from the name — pre-selected so the user confirms rather than starts blank.
-    var initialMuscle: String = ""
-    /// The record type the plan declared, so an imported exercise keeps it.
-    var initialType: ExerciseType = .weightReps
     let onCreate: (Exercise) -> Void
+    /// The picker vocabularies, derived once from the catalog the caller passes — so both flows offer
+    /// exactly the same options without each one re-deriving them.
+    private let muscles: [String]
+    private let equipment: [String]
+    /// The muscle this sheet proposed from the name. Derived here rather than passed in, so proposing
+    /// is the sheet's own behaviour and no caller can forget it.
+    private let proposedMuscle: String
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
@@ -437,27 +435,29 @@ struct CreateExerciseSheet: View {
     @State private var showMusclePicker = false
     @State private var showEquipPicker = false
 
-    init(muscles: [String], equipment: [String], editing: Exercise? = nil,
-         initialName: String = "", initialMuscle: String = "",
-         initialType: ExerciseType = .weightReps, onCreate: @escaping (Exercise) -> Void) {
-        self.muscles = muscles
-        self.equipment = equipment
+    /// `initialName` / `initialType` seed a *fresh* exercise (the import flow passes the plan's name and
+    /// the type it declared); `editing` overrides both.
+    init(catalog: [Exercise], editing: Exercise? = nil,
+         initialName: String = "", initialType: ExerciseType = .weightReps,
+         onCreate: @escaping (Exercise) -> Void) {
+        self.muscles = Set(catalog.flatMap { $0.primaryMuscles }).sorted()
+        self.equipment = Set(catalog.compactMap { $0.equipment }).sorted()
         self.editing = editing
-        self.initialName = initialName
-        self.initialMuscle = initialMuscle
-        self.initialType = initialType
         self.onCreate = onCreate
-        _name = State(initialValue: editing?.name ?? initialName)
-        _muscle = State(initialValue: editing?.primaryMuscles.first ?? initialMuscle)
+        let seedName = editing?.name ?? initialName
+        let proposed = MuscleInference.primaryMuscle(forName: seedName) ?? ""
+        self.proposedMuscle = proposed
+        _name = State(initialValue: seedName)
+        _muscle = State(initialValue: editing?.primaryMuscles.first ?? proposed)
         _equip = State(initialValue: editing?.equipment ?? "")
         _type = State(initialValue: editing?.type ?? initialType)
     }
 
     private var isEditing: Bool { editing != nil }
-    /// True when the muscle shown was proposed from the name and the user hasn't changed it — the sheet
-    /// says so, so a guess is never passed off as a fact.
+    /// True while the muscle shown is still the one proposed from the name — the sheet says so, so a
+    /// guess is never passed off as a fact. An exercise that already had a muscle isn't a proposal.
     private var showsProposedHint: Bool {
-        !initialMuscle.isEmpty && muscle == initialMuscle && editing?.primaryMuscles.first == nil
+        !proposedMuscle.isEmpty && muscle == proposedMuscle && editing?.primaryMuscles.first == nil
     }
 
     var body: some View {
