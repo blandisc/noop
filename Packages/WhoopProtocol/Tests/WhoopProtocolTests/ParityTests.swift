@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 /// Decodes only the subset of the golden parse_frame dict that the parity guard checks.
 private struct GoldenEntry: Decodable {

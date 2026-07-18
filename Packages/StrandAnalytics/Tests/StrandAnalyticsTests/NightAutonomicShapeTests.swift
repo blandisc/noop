@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import StrandAnalytics
 
 // FER-678 — the shape of the nocturnal HR fall: dip%, nadir hour, % of night below RHR.

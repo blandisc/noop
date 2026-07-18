@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // StrainScorer.swift — cardiovascular load on a 0–21 logarithmic strain scale.
 //

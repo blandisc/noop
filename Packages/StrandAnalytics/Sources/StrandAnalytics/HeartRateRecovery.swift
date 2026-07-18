@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // HeartRateRecovery.swift — post-session 60-second heart-rate recovery (HRR-60s). Pure, deterministic,
 // DB-free. The safer half of FER-683's athlete pair (the strap is still and PPG is clean once the

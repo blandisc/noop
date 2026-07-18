@@ -6,13 +6,13 @@ let package = Package(
     platforms: [.macOS(.v13), .iOS(.v16)],
     products: [.library(name: "StrandAnalytics", type: .static, targets: ["StrandAnalytics"])],
     dependencies: [
-        .package(path: "../WhoopProtocol"),
+        .package(path: "../BiometricStreams"),
         .package(path: "../CenitStore"),
     ],
     targets: [
         .target(
             name: "StrandAnalytics",
-            dependencies: ["WhoopProtocol", "CenitStore"],
+            dependencies: ["BiometricStreams", "CenitStore"],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(

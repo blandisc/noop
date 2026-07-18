@@ -1,5 +1,6 @@
 import XCTest
 import WhoopProtocol
+import BiometricStreams
 
 /// Pins the standard BLE Heart Rate Measurement (0x2A37) parser after its move into WhoopProtocol
 /// (FER-756). Layout per the Bluetooth GATT spec: flags byte, then 8- or 16-bit HR (flag bit 0),

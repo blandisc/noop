@@ -1,4 +1,5 @@
 import Foundation
+import BiometricStreams
 
 /// Shared plausibility bounds for a type-47 record's own unix timestamp (#547). A WHOOP strap with a
 /// bad clock/flash emits records whose decoded unix is scattered garbage — far-past (2024), a bogus
@@ -233,7 +234,7 @@ public func extractHistoricalStreams(_ parsed: [ParsedFrame],
             var payload = p
             payload.removeValue(forKey: "event")
             payload.removeValue(forKey: "event_timestamp")
-            out.events.append(WhoopEvent(ts: ts, kind: kind, payload: payload))
+            out.events.append(StreamEvent(ts: ts, kind: kind, payload: payload))
         case "COMMAND_RESPONSE":
             // No device timestamp on COMMAND_RESPONSE → stamp battery at wallClockRef.
             appendBattery(&out, ts: wallClockRef, p: p)

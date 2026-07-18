@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// Unit tests for the daily-steps derivation in AnalyticsEngine.analyzeDay: cumulative-counter
 /// delta summation, u16 wraparound, sub-2-sample and cross-day filtering, and nil-when-no-movement.

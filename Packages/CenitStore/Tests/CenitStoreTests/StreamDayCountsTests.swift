@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 /// FER-868 — `streamDayCounts`, the per-local-day COUNT signature feeding the incremental engine.

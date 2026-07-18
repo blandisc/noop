@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import StrandAnalytics
 
 // CDOAuditRegressionTests — regression tests dropped by the CDO audit (modo solo-evaluación).

@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// FER-870: the incremental `CumulativeStrainState` fold must equal the from-scratch
 /// `StrainScorer.cumulativeStrain` / `StrainScorer.strain` over the same samples — at every hour of

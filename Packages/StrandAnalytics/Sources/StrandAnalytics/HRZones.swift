@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // HRZones.swift — HR-max + 5 heart-rate zones and time-in-zone from an HR stream.
 //

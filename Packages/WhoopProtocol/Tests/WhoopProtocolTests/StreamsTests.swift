@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 /// Synthetic, protocol-valid frames (built by scripts/gen_synthetic_fixtures.py's frame
 /// builders), decoded then stream-extracted. No real biometric capture is embedded.

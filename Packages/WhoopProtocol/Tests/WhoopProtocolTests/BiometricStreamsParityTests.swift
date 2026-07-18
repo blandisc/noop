@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 /// Cross-language guarantee that Swift extractHistoricalStreams == Python
 /// extract_historical_streams over the 60 type-47 HISTORICAL_DATA (V24) records.

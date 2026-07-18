@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 import CenitStore
 
 final class AnalyticsEngineTests: XCTestCase {

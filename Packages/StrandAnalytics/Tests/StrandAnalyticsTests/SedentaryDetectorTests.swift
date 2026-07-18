@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import WhoopProtocol
+import BiometricStreams
 
 /// Tests for SedentaryDetector — the pure core of the inactivity reminder (FER-664). The detection
 /// tests cover bout detection; the decision tests cover the live-path guard (fires after the

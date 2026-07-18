@@ -1,5 +1,6 @@
 import XCTest
 import WhoopProtocol
+import BiometricStreams
 @testable import Cenit
 
 /// Thread-safe parse counter. `ParseInstrumentation.onParse` is `@Sendable`, so it can't close over a

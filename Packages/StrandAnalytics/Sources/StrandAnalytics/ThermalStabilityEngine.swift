@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // ThermalStabilityEngine.swift — nocturnal distal (wrist) warming magnitude + its night-to-night
 // stability. Pure, deterministic, DB-free. The NIGHT-TIME arm of the circadian thermal oscillation —

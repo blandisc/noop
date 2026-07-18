@@ -1,7 +1,7 @@
 import XCTest
 import GRDB
 import StrandTraining
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 final class MigrationTests: XCTestCase {

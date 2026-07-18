@@ -1,5 +1,5 @@
 import Foundation
-import WhoopProtocol
+import BiometricStreams
 
 // CircadianEngine.swift — on-device body-clock phase estimate + a jet-lag / shift-work LIGHT &
 // SLEEP-TIMING plan. Pure, deterministic, DB-free.

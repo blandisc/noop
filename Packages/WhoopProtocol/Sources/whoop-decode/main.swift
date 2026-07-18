@@ -1,5 +1,6 @@
 import Foundation
 import WhoopProtocol
+import BiometricStreams
 
 // whoop-decode — decode captured WHOOP frames with the SAME WhoopProtocol decoder the macOS/iOS app
 // uses, from the command line on any platform (Linux included). This is the Swift half of the

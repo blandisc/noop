@@ -44,6 +44,10 @@ settings:
       # Release/archive builds every valid arch, not just the host's active one.
       ONLY_ACTIVE_ARCH: NO
 packages:
+  # BiometricStreams — vocabulario neutro de filas biométricas (FER-993 · D2). Raíz del grafo:
+  # no depende de nadie; WhoopProtocol depende de él, nunca al revés.
+  BiometricStreams:
+    path: Packages/BiometricStreams
   WhoopProtocol:
     path: Packages/WhoopProtocol
   CenitStore:
@@ -164,6 +168,7 @@ targets:
           # re-activa (solo Debug). Requiere UN rebuild para que el log se regenere.
           EMIT_FRONTEND_COMMAND_LINES: YES
     dependencies:
+      - package: BiometricStreams
       - package: WhoopProtocol
       - package: CenitStore
       - package: StrandAnalytics
@@ -299,6 +304,8 @@ targets:
       # Los paquetes van .static (fix del canvas): el bundle de tests compila
       # contra los modulos pero NO linkea su copia — los simbolos los da el
       # host (Cenit.app), si no Xcode truena por duplicacion de codigo.
+      - package: BiometricStreams
+        link: false
       - package: WhoopProtocol
         link: false
       - package: CenitStore

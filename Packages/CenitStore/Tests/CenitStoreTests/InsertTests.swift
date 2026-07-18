@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 final class InsertTests: XCTestCase {
@@ -7,7 +7,7 @@ final class InsertTests: XCTestCase {
         Streams(
             hr: [HRSample(ts: 1000, bpm: 60), HRSample(ts: 1001, bpm: 61)],
             rr: [RRInterval(ts: 1000, rrMs: 800), RRInterval(ts: 1000, rrMs: 820)],
-            events: [WhoopEvent(ts: 1736365593, kind: "BLE_CONNECTION_DOWN(12)",
+            events: [StreamEvent(ts: 1736365593, kind: "BLE_CONNECTION_DOWN(12)",
                                 payload: ["foo": .int(7), "bar": .string("x")])],
             battery: [BatterySample(ts: 1736365593, soc: 25.5, mv: nil)])
     }

@@ -4,6 +4,7 @@ import StrandDesign
 import StrandAnalytics
 import CenitStore
 import WhoopProtocol
+import BiometricStreams
 import Foundation
 
 // MARK: - SleepDetailScreen — el «Detalle de Sueño» en esqueleto «Tendencias Final» (FER-858)

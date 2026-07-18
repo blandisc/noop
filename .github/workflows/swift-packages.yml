@@ -33,12 +33,14 @@ jobs:
     #   - StrandAnalytics, StrandImport depend on CenitStore, so they fail to build on
     #     Linux transitively.
     #   - StrandTraining: Compression (Exercise.swift — zlib-inflated catalog, FER-875).
-    # Only WhoopProtocol is pure and builds/tests cleanly on Linux.
+    # Only BiometricStreams and WhoopProtocol are pure and build/test cleanly on Linux.
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
+          - package: BiometricStreams
+            os: ubuntu-latest
           - package: WhoopProtocol
             os: ubuntu-latest
           - package: StrandTraining

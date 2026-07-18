@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import CenitStore
 
 final class LatestSampleTests: XCTestCase {

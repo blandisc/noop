@@ -1,5 +1,6 @@
 import XCTest
 @testable import WhoopProtocol
+import BiometricStreams
 
 /// type-47 HISTORICAL_DATA **v25** — the WHOOP 4.0 layout (issue #30 / FER-690) that is structurally
 /// incompatible with the v24 fallback. These are REAL v25 records (84 B, 1 Hz) captured from v1.92+ full

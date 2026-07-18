@@ -1,5 +1,5 @@
 import XCTest
-import WhoopProtocol
+import BiometricStreams
 @testable import StrandAnalytics
 
 /// `Calories.estimateStrengthCalories` — the MET-based active-energy estimate a guided strength
