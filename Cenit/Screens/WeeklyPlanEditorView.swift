@@ -74,6 +74,9 @@ struct WeeklyPlanEditorView: View {
     @State private var collapsedFolders: Set<String> = []
     /// El «···» de banda abierto (renombrar / borrar carpeta).
     @State private var menuFolderId: String? = nil
+    /// La sección sobre la que flota ahora mismo una rutina arrastrada (id de carpeta, o
+    /// `unfiledSectionID` para «Sueltas»). Solo pinta el resalte: el movimiento lo hace `accept`.
+    @State private var dropTarget: String? = nil
     @State private var saveError = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
@@ -523,26 +526,48 @@ struct WeeklyPlanEditorView: View {
                 ForEach(folders) { folder in
                     let rs = byFolder[folder.id] ?? []
                     folderBand(folder, count: rs.count)
+                        .routineDropTarget(active: dropTarget == folder.id, theme: theme) { id in
+                            accept(id, into: folder.id)
+                        } targeted: { on in
+                            dropTarget = on ? folder.id : (dropTarget == folder.id ? nil : dropTarget)
+                        }
                     if !collapsedFolders.contains(folder.id) {
                         ForEach(rs) { r in
-                            routineRow(r)
+                            routineRow(r).routineDraggable(r.id)
                             if r.id != rs.last?.id { divider }
                         }
                     }
                 }
+                // «Sueltas» también recibe: soltar aquí SACA la rutina de su carpeta. Sin esto el arrastre
+                // sería de una sola dirección y habría que volver al menú para deshacerlo.
                 if !unfiled.isEmpty {
                     sectionBand(String(localized: "Loose"), count: unfiled.count,
                                 collapsed: collapsedFolders.contains(Self.unfiledSectionID),
                                 toggle: { toggleCollapse(Self.unfiledSectionID) })
+                        .routineDropTarget(active: dropTarget == Self.unfiledSectionID, theme: theme) { id in
+                            accept(id, into: nil)
+                        } targeted: { on in
+                            dropTarget = on ? Self.unfiledSectionID
+                                            : (dropTarget == Self.unfiledSectionID ? nil : dropTarget)
+                        }
                     if !collapsedFolders.contains(Self.unfiledSectionID) {
                         ForEach(unfiled) { r in
-                            routineRow(r)
+                            routineRow(r).routineDraggable(r.id)
                             if r.id != unfiled.last?.id { divider }
                         }
                     }
                 }
             }
         )
+    }
+
+    /// Recibe una rutina soltada sobre una sección. Resuelve el id contra las rutinas cargadas —lo que
+    /// entrega un proveedor de arrastre es texto y podría venir de cualquier app— y descarta el caso
+    /// trivial de soltarla donde ya estaba, para no escribir en la base ni recargar por nada.
+    private func accept(_ routineId: String, into folderId: String?) -> Bool {
+        guard let r = routines.first(where: { $0.id == routineId }), r.folderId != folderId else { return false }
+        move(r, to: folderId)
+        return true
     }
 
     private func folderBand(_ f: RoutineFolder, count: Int) -> some View {
