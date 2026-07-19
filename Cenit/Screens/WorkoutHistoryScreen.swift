@@ -832,10 +832,6 @@ struct WorkoutSessionDetailScreen: View {
     /// El fallo al DUPLICAR va aparte de `saveError`: ese banner dice «no se pudo borrar», con copy
     /// propio, y reusarlo aquí le mentiría al usuario sobre qué falló.
     @State private var duplicateError = false
-    /// The routine the duplicate-builder just created; pushed onto «Rutina» when its sheet finishes
-    /// dismissing (pushing mid-dismiss stacks transitions, FER-171 lesson).
-    @State private var savedRoutineId: String? = nil
-
     /// Work sets grouped by exercise, in the order they were performed.
     @State private var groups: [(exerciseId: String, name: String, sets: [SetEntry])] = []
     /// Resolved exercises by id, so tapping a block opens its detail (FER-517).
@@ -1028,9 +1024,13 @@ struct WorkoutSessionDetailScreen: View {
     /// ajustarla. Mismo camino que «＋ Nueva rutina» del hub (`createRoutineFromHub`): persistir y
     /// empujar el editor, sin una segunda pantalla de prescripción de por medio.
     private func duplicateAsRoutine() {
-        guard !duplicating, !groups.isEmpty else { return }
-        duplicating = true
+        guard !duplicating else { return }
+        // El guard mira el SEED, no `groups`: el seed descarta los ejercicios que ya no están en el
+        // catálogo, así que una sesión con grupos puede producir cero ejercicios. Antes eso sólo abría
+        // una hoja cancelable; ahora escribiría una rutina vacía a la base.
         let seed = duplicateSeed
+        guard !seed.isEmpty else { return }
+        duplicating = true
         let now = Int(Date().timeIntervalSince1970)
         let routine = Routine(name: duplicateName, createdTs: now, updatedTs: now, sortOrder: 0)
         let exercises: [RoutineExercise] = seed.enumerated().map { idx, item in

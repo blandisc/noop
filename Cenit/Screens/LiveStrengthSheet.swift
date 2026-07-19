@@ -348,7 +348,15 @@ struct LiveStrengthSheet: View {
                 exercise: routineREs[run.id] ?? syntheticRE(from: run, position: target.id),
                 exerciseName: run.name,
                 currentWeightKg: run.sets.first?.weightKg,
-                derivedIncrementKg: weightStepKg,
+                // El mínimo REAL según los discos que tienes, no el paso plano de la UI. Esta pantalla
+                // imprime «según tus discos: el mínimo es X» y, si dejas el default, guarda `nil`
+                // («usa el derivado»): con el paso plano la frase mentía Y se persistía un incremento
+                // que nunca elegiste. En imperial era más falso todavía — mandaba 2.2679 kg (5 lb),
+                // que no sale de ningún disco. El editor ya mandaba lo correcto; la sesión no, y el
+                // arreglo de `progressionSubtitle` sólo cubrió la superficie de LECTURA. (2026-07-19)
+                derivedIncrementKg: PlateMath.minimumIncrement(
+                    for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment),
+                    inventory: model.plates.inventory),
                 onBack: { progressionEdit = nil },
                 onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
                     persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
