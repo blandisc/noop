@@ -878,8 +878,13 @@ final class HealthKitBridge: ObservableObject {
         guard HKHealthStore.isHealthDataAvailable() else { return ("", "Apple Health no disponible.") }
         let seriesType = HKSeriesType.heartbeat()
         // Dedicated read consent, asked only when this dev button is tapped (keeps the normal connect
-        // prompt unchanged — heartbeat is never added to the shipped `readTypes`).
-        try? await store.requestAuthorization(toShare: [], read: [seriesType])
+        // prompt unchanged — heartbeat is never added to the shipped `readTypes`). HealthKit REQUIRES
+        // `heartRateVariabilitySDNN` to be requested ALONGSIDE `HeartbeatSeries` (beat-to-beat can derive
+        // HRV): asking for the series alone throws an NSInvalidArgumentException synchronously at the call
+        // site — an ObjC exception `try?` can't catch, so it crashed the app. Request both together.
+        var readScopes: Set<HKObjectType> = [seriesType]
+        if let hrv = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) { readScopes.insert(hrv) }
+        try? await store.requestAuthorization(toShare: [], read: readScopes)
 
         let end = Date()
         let start = Calendar.current.date(byAdding: .day, value: -daysBack, to: end)
