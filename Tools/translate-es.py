@@ -10,11 +10,21 @@ Format placeholders (%@, %lld, %%) are preserved. Pure symbol / placeholder-only
 strings are passed through unchanged. Re-runnable: existing `es` units are
 overwritten so this file stays the source of truth for the Spanish translation.
 """
+import importlib.util
 import json
 import re
 from pathlib import Path
 
 CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
+FINDER = Path(__file__).resolve().parent / "find-dead-strings.py"
+
+
+def load_finder():
+    """Import Tools/find-dead-strings.py (hyphenated, so not a normal module)."""
+    spec = importlib.util.spec_from_file_location("find_dead_strings", FINDER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
@@ -2291,9 +2301,20 @@ def main() -> int:
     # (String(localized:bundle:.main) in Packages/ emits no .stringsdata) and
     # platform-gated branches the current target never compiles. Create them so
     # the runtime lookup finds them.
+    #
+    # ...but only when a source file still references the string (FER-994 E1).
+    # This dictionary outlives the screens it was written for, so without the
+    # gate every re-run would resurrect the keys Tools/find-dead-strings.py just
+    # purged, silently undoing the purge.
+    finder = load_finder()
+    exact, normalized, raw, _files = finder.build_corpus(FINDER.parent.parent)
     created = 0
+    orphans: list[str] = []
     for key, es in ES.items():
         if key in strings:
+            continue
+        if finder.is_alive(key, exact, normalized, raw) is None:
+            orphans.append(key)
             continue
         strings[key] = {
             "extractionState": "manual",
@@ -2311,6 +2332,11 @@ def main() -> int:
         if k and "es" in v.get("localizations", {})
     )
     print(f"Spanish units written: {translated} (created {created} manual keys)")
+    if orphans:
+        print(
+            f"skipped {len(orphans)} dictionary entries whose string no source file "
+            "references (dead copy from retired screens; not resurrected)"
+        )
 
     # Placeholder parity between source and translation (the frame%@ key
     # intentionally drops its plural-suffix argument).
