@@ -71,20 +71,63 @@ final class HealthKitReadPredicateGuardTests: XCTestCase {
 
     // MARK: - Structural guard
 
+    /// Code with comments stripped and ALL whitespace removed.
+    ///
+    /// Both steps are load-bearing, and the second one was a real hole: counting the raw literal
+    /// `"HKQuery.predicateForSamples(withStart"` missed the identical call wrapped across two lines —
+    /// which is this file's own formatting style (see the `HKSampleQuery(...)` calls). A guard that a
+    /// line break defeats is not a guard. Normalising first makes the count formatting-independent.
+    private func normalisedCode(_ source: String) -> String {
+        source
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line -> Substring in
+                // Drop trailing `//` comments (and whole comment lines) so prose mentioning the API
+                // — including this test's own doc comments over in the bridge — never counts as code.
+                guard let slashes = line.range(of: "//") else { return line }
+                return line[line.startIndex..<slashes.lowerBound]
+            }
+            .joined()
+            .filter { !$0.isWhitespace }
+    }
+
     /// The one that actually holds the line: a raw `predicateForSamples` may appear EXACTLY once in
     /// the file — inside `readPredicate` itself. A second occurrence means someone added a read that
     /// bypasses the guard, and this test names it before it ships.
     func testNoRawDatePredicateOutsideTheHelper() throws {
-        let source = try bridgeSource
-        let occurrences = source.components(separatedBy: "HKQuery.predicateForSamples(withStart").count - 1
+        let code = normalisedCode(try bridgeSource)
+        let occurrences = code.components(separatedBy: "HKQuery.predicateForSamples(").count - 1
         XCTAssertEqual(occurrences, 1, """
             HealthKitBridge must build read predicates ONLY through `readPredicate(start:end:options:)`, \
             which excludes this app's own samples (FER-1004). Found \(occurrences) raw \
-            `HKQuery.predicateForSamples(withStart:` call(s); exactly 1 is allowed (the helper itself). \
+            `HKQuery.predicateForSamples(` call(s) in code; exactly 1 is allowed (the helper itself). \
             If you added a HealthKit read, route it through the helper.
+
+            NOTE this guard watches `predicateForSamples` only. Two reads sit outside it by design and \
+            are NOT covered: `mostRecentQuantity` (predicate: nil — body mass / height, which Cénit \
+            never writes) and the per-workout `predicateForObjects(from: w)` (already scoped by a \
+            workout the helper filtered). If Cénit ever starts mirroring body mass, the first one \
+            becomes a contamination path this test will not catch.
             """)
-        XCTAssertTrue(source.contains("nonisolated static func readPredicate(start: Date, end: Date"),
+        XCTAssertTrue(try bridgeSource.contains("nonisolated static func readPredicate(start: Date, end: Date"),
                       "`readPredicate` was renamed or removed — this guard is now blind. Update it.")
+    }
+
+    /// The guard must survive this file's own formatting. `HealthKitBridge` wraps long calls across
+    /// lines routinely, so a counter that only matches the single-line form would go blind exactly
+    /// where a real bypass is most likely to land. Proves the normalisation actually normalises.
+    func testGuardSeesAWrappedCallTheSameAsASingleLineOne() {
+        let singleLine = "let p = HKQuery.predicateForSamples(withStart: a, end: b, options: [])"
+        let wrapped = """
+            let p = HKQuery.predicateForSamples(
+                withStart: a, end: b, options: [])
+            """
+        let commentedOut = "// HKQuery.predicateForSamples(withStart: a, end: b, options: [])"
+
+        XCTAssertEqual(normalisedCode(singleLine).components(separatedBy: "HKQuery.predicateForSamples(").count - 1, 1)
+        XCTAssertEqual(normalisedCode(wrapped).components(separatedBy: "HKQuery.predicateForSamples(").count - 1, 1,
+                       "A wrapped call must count the same as a single-line one — that was the hole.")
+        XCTAssertEqual(normalisedCode(commentedOut).components(separatedBy: "HKQuery.predicateForSamples(").count - 1, 0,
+                       "Prose about the API must not count as a call.")
     }
 
     /// Every read site that previously built its own date predicate now goes through the helper.
