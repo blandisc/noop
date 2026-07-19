@@ -1641,19 +1641,10 @@ struct LiveStrengthSheet: View {
 
     /// The focus close «×» — ink-on-paper while capturing, crema-on-green while resting (FER-934).
     private func focusCloseButton(onGreen: Bool) -> some View {
-        Button { focusMode = false } label: {
-            StrandIcon.close.image
-                .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(onGreen ? theme.paper : theme.ink)
-                .frame(width: 38, height: 38)
-                .background(onGreen ? theme.paper.opacity(StrandOpacity.tintFillStrong) : theme.surface, in: Circle())
-                .overlay(Circle().strokeBorder(onGreen ? theme.paper.opacity(StrandOpacity.strokeSoft) : theme.hairlineStrong, lineWidth: 1))
-                // r19 (auditoría UI): target de 44pt — el círculo visual se queda en 38.
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Close focus mode"))
+        // El disco compartido, en su variante sobre acento (el descanso pinta la pantalla de verde
+        // debajo). NO cierra la sesión: sale del modo foco — por eso conserva su propio label.
+        BackButton(role: .close, surface: onGreen ? .accent : .paper, theme: theme) { focusMode = false }
+            .accessibilityLabel(Text("Close focus mode"))
     }
 
     /// The KG stepper card (extracted so the capture switch stays cheap to type-check).

@@ -83,6 +83,9 @@ struct ReceiptPrinterScreen: View {
         }
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
+        // El arrastre del ticket es VERTICAL, así que el guard de dominancia horizontal del gesto
+        // de borde los mantiene separados.
+        .edgeSwipeToExit(onClose)
         .task(id: sessionId) { await loadAndPrint() }
     }
 
@@ -96,14 +99,8 @@ struct ReceiptPrinterScreen: View {
             Spacer(minLength: 0)
         }
         .overlay(alignment: .topTrailing) {
-            Button(action: onClose) {
-                StrandIcon.close.image
-                    .font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.inkSecondary)
-                    .padding(12)
-            }
-            .accessibilityLabel(Text("Close"))
-            .padding(.trailing, 8)
+            BackButton(role: .close, theme: theme, action: onClose)
+                .padding(.trailing, 8)
         }
     }
 

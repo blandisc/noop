@@ -19,29 +19,51 @@ public struct BackButton: View {
         var label: LocalizedStringKey { self == .back ? "Back" : "Close" }
     }
 
+    /// Sobre qué fondo se dibuja. No es decoración: el disco de papel desaparece sobre un relleno de
+    /// color, así que sobre acento se invierte a crema translúcida (el descanso de la sesión pinta la
+    /// pantalla de verde debajo de este botón).
+    public enum Surface {
+        /// El papel normal de la app.
+        case paper
+        /// Un relleno de color saturado (el verde del descanso, FER-934).
+        case accent
+    }
+
     private let role: Role
+    private let surface: Surface
     private let theme: InstrumentoTheme
     private let action: () -> Void
 
-    public init(role: Role = .back, theme: InstrumentoTheme, action: @escaping () -> Void) {
-        self.role = role; self.theme = theme; self.action = action
+    public init(role: Role = .back, surface: Surface = .paper,
+                theme: InstrumentoTheme, action: @escaping () -> Void) {
+        self.role = role; self.surface = surface; self.theme = theme; self.action = action
     }
 
     public var body: some View {
         Button(action: action) {
             Image(systemName: role.symbol)
                 .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(glyphColor)
                 // El disco mide 40; el marco de 44 le da el área táctil mínima de HIG sin
                 // engordar el dibujo.
                 .frame(width: Self.disc, height: Self.disc)
-                .background(Circle().fill(theme.surface))
-                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .background(Circle().fill(fillColor))
+                .overlay(Circle().strokeBorder(strokeColor, lineWidth: 1))
                 .frame(width: Self.hitTarget, height: Self.hitTarget)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(role.label))
+    }
+
+    private var glyphColor: Color {
+        surface == .accent ? theme.paper : theme.ink
+    }
+    private var fillColor: Color {
+        surface == .accent ? theme.paper.opacity(StrandOpacity.tintFillStrong) : theme.surface
+    }
+    private var strokeColor: Color {
+        surface == .accent ? theme.paper.opacity(StrandOpacity.strokeSoft) : theme.hairlineStrong
     }
 
     private static let disc: CGFloat = 40
@@ -51,12 +73,23 @@ public struct BackButton: View {
 #if DEBUG
 #Preview("BackButton") {
     let t = InstrumentoTheme.base
-    HStack(spacing: 20) {
-        BackButton(role: .back, theme: t, action: {})
-        BackButton(role: .close, theme: t, action: {})
+    VStack(spacing: 0) {
+        HStack(spacing: 20) {
+            BackButton(role: .back, theme: t, action: {})
+            BackButton(role: .close, theme: t, action: {})
+        }
+        .frame(maxWidth: .infinity)
+        .padding(40)
+        .background(t.paper)
+        // Sobre acento: el mismo botón, invertido — así se ve durante el descanso de la sesión.
+        HStack(spacing: 20) {
+            BackButton(role: .back, surface: .accent, theme: t, action: {})
+            BackButton(role: .close, surface: .accent, theme: t, action: {})
+        }
+        .frame(maxWidth: .infinity)
+        .padding(40)
+        .background(t.verdict)
     }
-    .padding(40)
-    .background(t.paper)
     .instrumentoTheme(t)
 }
 #endif

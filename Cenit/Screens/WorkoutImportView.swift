@@ -100,19 +100,14 @@ struct WorkoutImportView: View {
         }
         .animation(StrandMotion.fade, value: saveError)
         .overlay(alignment: .topTrailing) {
-            Button {
+            BackButton(role: .close, theme: theme) {
                 if midWork { confirmDiscard = true } else { dismiss() }
-            } label: {
-                StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.inkSecondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Close"))
             .padding(.trailing, CenitMetrics.space2).padding(.top, CenitMetrics.space2)
         }
         .interactiveDismissDisabled(midWork)
+        // El gesto repite el guard del botón: a medias pregunta, nunca descarta el mapeo en silencio.
+        .edgeSwipeToExit { if midWork { confirmDiscard = true } else { dismiss() } }
         .instrumentoConfirm(
             isPresented: $confirmDiscard,
             title: String(localized: "Discard this import?"),
