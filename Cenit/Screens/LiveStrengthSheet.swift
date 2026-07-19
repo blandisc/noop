@@ -8,16 +8,10 @@ import WhoopProtocol
 import CenitStore
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).
-private func plateNumber(_ v: Double) -> String {
-    v == v.rounded() ? String(Int(v.rounded())) : String(format: "%.1f", v)
-}
-
-/// A weight in kilograms formatted for display in the user's unit, e.g. "82.5 kg" / "180 lb".
-private func massString(_ kg: Double, units: UnitSystem) -> String {
-    let v = units == .imperial ? UnitFormatter.kgToPounds(kg) : kg
-    return "\(plateNumber(v)) \(UnitFormatter.massUnit(units))"
-}
+// 2026-07-19: `plateNumber` y `massString` vivían aquí como copias privadas y se habían desfasado de
+// `StrengthDisplay`, que es lo que usa el editor: en imperial esta copia conservaba el decimal, así que
+// la MISMA serie se leía «182 lb» en editar y «181.9 lb» en la sesión. Ahora son métodos de la vista
+// (para tener `units` a la mano) y ambos enrutan por `StrengthDisplay`, la única fuente del formato.
 
 // MARK: - Guided strength session (FER-347, full-screen since FER-716)
 //
@@ -2431,12 +2425,15 @@ struct LiveStrengthSheet: View {
 
     /// «activada · +2,5 kg cada 2 ✓» / «desactivada» — the progression state, read from the backing
     /// routine (cached at open; the session run doesn't carry progression config).
+    /// 2026-07-19: era una segunda redacción del mismo resumen que `ProgressionChip.summary`, y además
+    /// caía a un 2.5 kg fijo donde el editor deriva el mínimo de TUS discos — así que en un gimnasio sin
+    /// discos de 1.25 las dos pantallas prometían aumentos distintos para el mismo ejercicio. Ahora la
+    /// frase la arma el componente; esta pantalla solo le antepone su «activada ·».
     private func progressionSubtitle(_ run: StrengthSessionModel.ExerciseRun) -> String {
-        guard let re = routineREs[run.id] else { return String(localized: "off") }
-        guard re.progressionEnabled else { return String(localized: "off") }
-        let inc = re.progressionIncrementKg ?? 2.5
-        return String(localized: "on") + " · +\(plateNumber(displayWeight(inc))) " +
-               UnitFormatter.massUnit(units) + " " + String(localized: "every \(re.progressionSessions)") + " ✓"
+        guard let re = routineREs[run.id], re.progressionEnabled else { return String(localized: "off") }
+        let derived = PlateMath.minimumIncrement(for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment),
+                                                 inventory: model.plates.inventory)
+        return String(localized: "on") + " · " + ProgressionChip.summary(re, system: units, derived: derived)
     }
 
     /// The always-on, tenue reorder affordance (Sesión v21): a «≡» handle on each exercise header. Dragging
@@ -3373,10 +3370,10 @@ struct LiveStrengthSheet: View {
         let workWeight: Double? = session.runs[ei].sets.first(where: { $0.kind == .work })?.weightKg
         let firstWeight: Double? = session.runs[ei].sets.first?.weightKg
         let top: Double = workWeight ?? firstWeight ?? 0
-        let factors: [Double] = [0.4, 0.6, 0.8]
+        let factors: [Double] = RoutineSetEditing.warmupFactors
         let ramp: [(weightKg: Double, reps: Int)] = factors.map { factor -> (weightKg: Double, reps: Int) in
             let weightKg: Double = top * factor
-            let reps: Int = 10
+            let reps: Int = RoutineSetEditing.warmupReps
             return (weightKg: weightKg, reps: reps)
         }
         withAnimation(StrandMotion.gentle) { session.insertWarmup(exercise: ei, sets: ramp) }
@@ -4375,6 +4372,16 @@ struct LiveStrengthSheet: View {
     // MARK: Units / formatting
 
     private func displayWeight(_ kg: Double) -> Double { imperial ? UnitFormatter.kgToPounds(kg) : kg }
+
+    /// Formatea un valor YA convertido (el patrón `plateNumber(displayWeight(x))` de toda esta pantalla).
+    /// Enruta por `StrengthDisplay`: la regla de formato vive ahí y solo ahí.
+    private func plateNumber(_ v: Double) -> String { StrengthDisplay.displayNumber(v, system: units) }
+
+    /// Un peso en kg, con su unidad («82.5 kg» / «182 lb»).
+    private func massString(_ kg: Double, units: UnitSystem) -> String {
+        StrengthDisplay.weight(kg, system: units)
+    }
+
     private func massText(_ kg: Double) -> String { massString(kg, units: units) }
 
     static func clock(_ seconds: Int) -> String { SessionClock.format(seconds) }

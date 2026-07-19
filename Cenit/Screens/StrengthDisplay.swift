@@ -98,13 +98,26 @@ enum StrengthDisplay {
 
     // MARK: - Weights (stored kg → user's unit)
 
+    /// Formatea un valor YA convertido a la unidad de destino. **La regla de formato vive aquí y solo
+    /// aquí** (2026-07-19): en imperial el peso se cuenta entero —82.5 kg son «182 lb», no «181.9»,
+    /// que es precisión falsa y además ninguna barra la puede armar—; en métrico, un decimal solo si
+    /// no es redondo.
+    ///
+    /// Existe separada de `weightNumber` porque varias superficies (celdas, discos, ±paso) ya traen el
+    /// valor convertido y solo necesitan el formato. Antes cada una traía su propia copia y la de la
+    /// sesión activa se quedó con el decimal: la MISMA serie se leía «182 lb» en editar y «181.9 lb»
+    /// en la sesión — el mismo número contradiciéndose entre dos pantallas.
+    static func displayNumber(_ value: Double, system: UnitSystem) -> String {
+        switch system {
+        case .imperial: return "\(Int(value.rounded()))"
+        case .metric:   return value == value.rounded() ? "\(Int(value))" : String(format: "%.1f", value)
+        }
+    }
+
     /// Just the number, in the user's unit, for a big tabular hero ("80", "176"). No decimals on whole
     /// kg; pounds round to whole.
     static func weightNumber(_ kg: Double, system: UnitSystem) -> String {
-        switch system {
-        case .imperial: return "\(Int(UnitFormatter.kgToPounds(kg).rounded()))"
-        case .metric:   return kg == kg.rounded() ? "\(Int(kg))" : String(format: "%.1f", kg)
-        }
+        displayNumber(system == .imperial ? UnitFormatter.kgToPounds(kg) : kg, system: system)
     }
 
     static func weightUnit(_ system: UnitSystem) -> String { UnitFormatter.massUnit(system) }

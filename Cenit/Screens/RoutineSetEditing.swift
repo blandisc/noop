@@ -18,6 +18,13 @@ struct ProgressionTarget: Identifiable, Hashable { let ei: Int; var id: Int { ei
 // MARK: - Per-set rest resolution (F0 model)
 
 enum RoutineSetEditing {
+    /// La forma de la rampa de calentamiento: tres series al 40 / 60 / 80 % del peso de trabajo, a 10
+    /// repeticiones. Es una regla del DOMINIO, no de una pantalla, y estaba escrita a mano en tres
+    /// lugares (editar rutina, sesión activa y el builder). Si algún día la rampa cambia —cuatro pasos,
+    /// otros porcentajes— debe cambiar UNA vez. (2026-07-19)
+    static let warmupFactors: [Double] = [0.4, 0.6, 0.8]
+    static let warmupReps = 10
+
     /// This set's effective rest: its own override if set, else the exercise's rest fields (the F0 fallback).
     static func effectiveRest(_ re: RoutineExercise, _ si: Int) -> RestConfig {
         if let r = re.sets[si].rest { return r }

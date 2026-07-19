@@ -871,12 +871,12 @@ struct RoutineEditorScreen: View {
     /// «Agregar calentamiento» (mock 4b): a 40·60·80 % ramp. Writes `warmupPercents` (the model's canonical
     /// record) AND materializes the three «C» rows the table shows, seeded from the top work weight when known.
     private func addWarmupRamp(_ idx: Int) {
-        let ramp: [Double] = [0.4, 0.6, 0.8]
+        let ramp = RoutineSetEditing.warmupFactors
         items[idx].re.warmupPercents = ramp
         let top = items[idx].re.sets.first { $0.kind == .work }?.weightKg
         let usesReps = showsReps(items[idx].exercise.type)
         let rows = ramp.enumerated().map { i, pct in
-            RoutineSet(position: i, kind: .warmup, reps: usesReps ? 10 : nil,
+            RoutineSet(position: i, kind: .warmup, reps: usesReps ? RoutineSetEditing.warmupReps : nil,
                        weightKg: top.map { $0 * pct })
         }
         withAnimation(.snappy) { items[idx].re.sets.insert(contentsOf: rows, at: 0) }

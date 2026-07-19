@@ -192,14 +192,11 @@ enum ReceiptMapping {
         return s
     }
 
+    // 2026-07-19: tercera copia del formateador de peso, también desfasada en imperial (conservaba el
+    // decimal donde `StrengthDisplay` redondea a entero). El recibo imprimía un número y las pantallas
+    // otro para la misma serie. Ahora enruta por la única fuente.
     private static func massString(_ kg: Double, system: UnitSystem) -> String {
-        let v = system == .imperial ? UnitFormatter.kgToPounds(kg) : kg
-        let num = plateNumber(v)
-        return "\(num) \(UnitFormatter.massUnit(system))"
-    }
-
-    private static func plateNumber(_ v: Double) -> String {
-        v == v.rounded() ? String(Int(v.rounded())) : String(format: "%.1f", v)
+        StrengthDisplay.weight(kg, system: system)
     }
 
     /// Grouped volume number only (no unit) — the ticket's "price" column.
