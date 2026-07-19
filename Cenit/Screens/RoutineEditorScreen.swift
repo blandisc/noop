@@ -265,7 +265,7 @@ struct RoutineEditorScreen: View {
         ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 let grouped = RoutineSetEditing.inSuperset(items.map(\.re), idx)
                 if firstOfGroup(idx) {
-                    Text("Superset").groteskOverline().foregroundStyle(theme.inkSecondary)
+                    SupersetTag()
                         .padding(.leading, 26)  // token-exempt: gutter del riel (Serie activa)
                         .plainRow(top: CenitMetrics.sectionGap, bottom: 0)
                 }
@@ -506,7 +506,7 @@ struct RoutineEditorScreen: View {
             }
             VStack(alignment: .leading, spacing: 8) {
                 if block.isSuperset {
-                    Text("Superset").instrumentoOverline().foregroundStyle(theme.inkSecondary)
+                    SupersetTag()
                 }
                 ForEach(block.items) { item in
                     HStack(spacing: 10) {

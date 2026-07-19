@@ -160,6 +160,22 @@ struct RestChip: View {
     }
 }
 
+// MARK: - «SUPERSERIE» — el rótulo del par
+//
+// Cada pantalla tenía la mitad de la razón (2026-07-19). El editor usaba `groteskOverline` pero en
+// `inkSecondary`; la sesión usaba `dataHrv` pero con `StrandFont.overline`, que DESIGN.md §8.7 marca
+// como legacy («ninguna pantalla nueva lo usa»). La unión correcta es la voz del editor con el color
+// de la sesión: **Grotesk en teal**. El teal no es decoración aquí — es la señal de superserie en todo
+// el flujo (el badge A1/A2, el riel, las leyendas), así que el `inkSecondary` del editor rompía esa
+// asociación justo donde más se necesita.
+struct SupersetTag: View {
+    @Environment(\.instrumentoTheme) private var theme
+
+    var body: some View {
+        Text("Superset").groteskOverline().foregroundStyle(theme.dataHrv)
+    }
+}
+
 // MARK: - «Quitar serie» — la pastilla que arma el long-press
 //
 // Vivía copiada en editar rutina y en la sesión activa con la MISMA anatomía (r21: glifo chico, caption

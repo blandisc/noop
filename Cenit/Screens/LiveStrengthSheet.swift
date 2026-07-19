@@ -637,10 +637,10 @@ struct LiveStrengthSheet: View {
             if clipTop {
                 VStack(spacing: 0) {
                     Color.clear
-                    Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                    Rectangle().fill(railTint.opacity(StrandOpacity.strokeSoft)).frame(width: 2)
                 }
             } else {
-                Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                Rectangle().fill(railTint.opacity(StrandOpacity.strokeSoft)).frame(width: 2)
             }
             Group {
                 if let badgeText {
@@ -704,8 +704,7 @@ struct LiveStrengthSheet: View {
     /// «SUPERSERIE» tag, teal, next to a run's name when it's part of a real superset span (FER-931).
     @ViewBuilder private func supersetTag(_ ei: Int) -> some View {
         if session.isInSuperset(ei) {
-            Text("SUPERSET").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(theme.dataHrv)
+            SupersetTag()
         }
     }
 
@@ -1414,7 +1413,7 @@ struct LiveStrengthSheet: View {
                 HStack(spacing: 14) {
                     SessionRunThumb(exerciseId: run.exerciseId, side: 56)
                         // r25 (owner): mismo marco de familia que la Biblioteca y la tarjeta activa.
-                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 56), style: .continuous)
                             .strokeBorder(categoryTint(run), lineWidth: 2))
                     VStack(alignment: .leading, spacing: 3) {
                         Text(run.name).font(InstrumentoType.grotesk(24, weight: .semibold))
@@ -2264,8 +2263,8 @@ struct LiveStrengthSheet: View {
                     .overlay(alignment: .leading) {
                         if showRail {
                             ZStack {
-                                Circle().fill(theme.paper).frame(width: 17, height: 17)
-                                Circle().fill(categoryTint(run)).frame(width: 11, height: 11)
+                                Circle().fill(theme.paper).frame(width: 15, height: 15)
+                                Circle().fill(categoryTint(run)).frame(width: 9, height: 9)
                             }
                             .offset(x: -33 - 8.5)
                             .allowsHitTesting(false)
@@ -2774,13 +2773,13 @@ struct LiveStrengthSheet: View {
         return HStack(spacing: 8) {   // = spacing de gridRow: header y datos comparten geometría
             // El badge vive en un frame de 44 (26 visual + aire): el header usa el MISMO ancho,
             // si no, todas las columnas arrancan corridas (bug de alineación, canvas 2026-07-16).
-            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
+            Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
             // FER-952 (modelo fantasma): la columna PREV murió — la última vez vive dentro de las
             // celdas como semilla tenue. El hueco flexible mantiene las columnas pegadas a la derecha.
             Spacer(minLength: 0)
             ForEach(titles.indices, id: \.self) { i in
                 let isRPE = hasRPEColumn(type) && i == titles.indices.last
-                Text(titles[i]).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(titles[i]).groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
                     .frame(width: isRPE ? rpeColumnWidth : cellWidth(type), alignment: .center)
             }
             Color.clear.frame(width: 44, height: 1)
