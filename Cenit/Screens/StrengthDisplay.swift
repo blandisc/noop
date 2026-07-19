@@ -110,14 +110,38 @@ enum StrengthDisplay {
     static func displayNumber(_ value: Double, system: UnitSystem) -> String {
         switch system {
         case .imperial: return "\(Int(value.rounded()))"
-        case .metric:   return value == value.rounded() ? "\(Int(value))" : String(format: "%.1f", value)
+        case .metric:   return isWhole(value) ? "\(Int(value.rounded()))" : String(format: "%.1f", value)
         }
     }
+
+    /// ¿El número es entero, ignorando el ruido del viaje kg↔lb?
+    ///
+    /// 5 lb guardadas como kg y convertidas de vuelta dan **4.999999…**, que no es igual a su propio
+    /// `rounded()`: sin esto, el paso «±5» se imprimía «±5.0».
+    ///
+    /// Es una COMPARACIÓN con tolerancia, no una normalización del valor — y esa distinción importa.
+    /// El primer intento redondeaba el número a un decimal antes de usarlo, y eso redondea DOS veces:
+    /// 100 kg son 220.462 lb, que snapeado da 220.5 y luego sube a **221** cuando lo correcto es 220.
+    /// Lo cazó `testImperialRoundsUpAndDownAtTheHalf`. La tolerancia sólo decide el FORMATO; el valor
+    /// que se redondea sigue siendo el original. (2026-07-19)
+    private static func isWhole(_ v: Double) -> Bool { abs(v - v.rounded()) < 0.005 }
 
     /// Just the number, in the user's unit, for a big tabular hero ("80", "176"). No decimals on whole
     /// kg; pounds round to whole.
     static func weightNumber(_ kg: Double, system: UnitSystem) -> String {
         displayNumber(system == .imperial ? UnitFormatter.kgToPounds(kg) : kg, system: system)
+    }
+
+    /// Un **incremento**, no un peso absoluto — y por eso NO usa la regla de arriba (2026-07-19).
+    ///
+    /// Redondear a entero es correcto para un peso que se carga en la barra («182 lb»: nadie arma
+    /// 181.9). Aplicado a un salto de progresión es falso: un incremento de 2.5 lb —el micro-disco más
+    /// común en un gimnasio imperial— se leería «+3 lb», que es 20 % más de lo que la app va a subir de
+    /// verdad. El error relativo de redondear crece cuanto más chico es el número, así que un
+    /// incremento conserva su decimal en las dos unidades.
+    static func incrementNumber(_ kg: Double, system: UnitSystem) -> String {
+        let v = system == .imperial ? UnitFormatter.kgToPounds(kg) : kg
+        return isWhole(v) ? "\(Int(v.rounded()))" : String(format: "%.1f", v)
     }
 
     static func weightUnit(_ system: UnitSystem) -> String { UnitFormatter.massUnit(system) }

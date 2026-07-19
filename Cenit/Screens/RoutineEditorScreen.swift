@@ -779,7 +779,11 @@ struct RoutineEditorScreen: View {
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
             .disabled(locked)
-            .frame(width: width, height: 44)
+            // `minHeight`, no `height` fijo: la fuente ahora escala con Dynamic Type (`relativeTo:`),
+            // así que una caja de alto fijo recortaría el número en los pasos grandes. Antes no pasaba
+            // porque la fuente era fija — subir el alto y hacerla escalar a la vez creó el riesgo, y lo
+            // señaló el gate de QA. 44 sigue siendo el piso táctil de la HIG.
+            .frame(minWidth: width, maxWidth: width, minHeight: 44)
             .overlay(alignment: .bottom) {
                 Rectangle().fill(focused ? theme.ink : theme.hairlineStrong)
                     .frame(height: focused ? 2 : 1)

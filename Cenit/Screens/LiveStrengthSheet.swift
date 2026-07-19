@@ -1583,13 +1583,13 @@ struct LiveStrengthSheet: View {
                                                 weightKg: session.currentSet?.weightKg ?? 0)
                 } label: {
                     // r14: fuera el glifo «⛓» (tofu en Grotesk) — la leyenda queda «±2,5 · discos».
-                    Text("±\(plateNumber(displayWeight(weightStepKg))) · " + String(localized: "plates"))
+                    Text("±\(StrengthDisplay.incrementNumber(weightStepKg, system: units)) · " + String(localized: "plates"))
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
                         .lineLimit(1)
                 }
                 .buttonStyle(.plain)
             } else {
-                Text("±\(plateNumber(displayWeight(weightStepKg)))")
+                Text("±\(StrengthDisplay.incrementNumber(weightStepKg, system: units))")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
         }

@@ -36,7 +36,7 @@ struct ProgressionChip: View {
     static func summary(_ re: RoutineExercise, system: UnitSystem, derived: Double) -> String {
         let inc = re.progressionIncrementKg ?? derived
         let unit = StrengthDisplay.weightUnit(system).lowercased()
-        return "+\(StrengthDisplay.weightNumber(inc, system: system)) \(unit) "
+        return "+\(StrengthDisplay.incrementNumber(inc, system: system)) \(unit) "
             + String(localized: "every \(re.progressionSessions)") + " ✓"
     }
 }
