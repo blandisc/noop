@@ -76,17 +76,31 @@ public enum SleepHKDecoder {
         .sorted { $0.start < $1.start }
         guard !spans.isEmpty else { return [] }
 
-        // Accumulate one bucket per night.
-        struct Bucket { var start: Int; var end: Int; var segs: [(Int, Int, String)] }
+        // Accumulate one bucket per night. `inBedStart/End` track the ENVELOPE separately from the
+        // session span: the span also grows with stage samples, so it cannot stand in for time in
+        // bed. Only real `inBed` (0) samples move it. (FER-1006)
+        struct Bucket {
+            var start: Int; var end: Int; var segs: [(Int, Int, String)]
+            var inBedStart: Int?; var inBedEnd: Int?
+        }
         var buckets: [Bucket] = []
+        func absorb(_ b: inout Bucket, _ span: Span) {
+            if let st = stage(forHKValue: span.hkValue) {
+                b.segs.append((span.start, span.end, st))
+            } else if span.hkValue == SleepHKEncoder.inBedValue {
+                b.inBedStart = min(b.inBedStart ?? span.start, span.start)
+                b.inBedEnd = max(b.inBedEnd ?? span.end, span.end)
+            }
+        }
         for span in spans {
             if var last = buckets.last, span.start - last.end <= sessionGapSeconds {
                 last.end = max(last.end, span.end)
-                if let st = stage(forHKValue: span.hkValue) { last.segs.append((span.start, span.end, st)) }
+                absorb(&last, span)
                 buckets[buckets.count - 1] = last
             } else {
-                var b = Bucket(start: span.start, end: span.end, segs: [])
-                if let st = stage(forHKValue: span.hkValue) { b.segs.append((span.start, span.end, st)) }
+                var b = Bucket(start: span.start, end: span.end, segs: [],
+                               inBedStart: nil, inBedEnd: nil)
+                absorb(&b, span)
                 buckets.append(b)
             }
         }
@@ -94,9 +108,30 @@ public enum SleepHKDecoder {
         return buckets.compactMap { b in
             guard !b.segs.isEmpty else { return nil }            // inBed-only → no hypnogram, drop
             let json = encodeSegments(b.segs.sorted { $0.0 < $1.0 })
-            return CachedSleepSession(startTs: b.start, endTs: b.end, efficiency: nil,
+            return CachedSleepSession(startTs: b.start, endTs: b.end,
+                                      efficiency: efficiency(of: b.segs,
+                                                             inBedStart: b.inBedStart,
+                                                             inBedEnd: b.inBedEnd),
                                       restingHr: nil, avgHrv: nil, stagesJSON: json)
         }
+    }
+
+    /// Sleep efficiency as a **0…1 fraction** — asleep time over time in bed. Matches the scale the
+    /// band writes and the one the scorer expects (`Baselines.metricCfg["efficiency"]` is
+    /// `minVal 0.2 … maxVal 1.0`; `RecoveryScorer.sleepPerfCenter` is `0.85`, not `85`). Writing
+    /// whole percent here would land 100× off and quietly saturate the sleep term. (FER-1006)
+    ///
+    /// Returns `nil` unless a real `inBed` envelope exists. That abstention is deliberate: without
+    /// `inBed`, the only denominator available is the stage timeline itself, which excludes the awake
+    /// time before falling asleep and after waking — so the ratio would be systematically inflated
+    /// and would feed `AppleRecoveryEstimator` as if it were the real thing. A missing driver is
+    /// honest; a biased one is not.
+    static func efficiency(of segs: [(Int, Int, String)],
+                           inBedStart: Int?, inBedEnd: Int?) -> Double? {
+        guard let s = inBedStart, let e = inBedEnd, e > s else { return nil }
+        let asleep = segs.filter { $0.2 != "wake" }.reduce(0) { $0 + ($1.1 - $1.0) }
+        guard asleep > 0 else { return nil }
+        return min(1.0, Double(asleep) / Double(e - s))
     }
 
     // MARK: - stagesJSON

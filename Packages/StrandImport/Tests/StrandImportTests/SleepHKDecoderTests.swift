@@ -147,4 +147,89 @@ final class SleepHKDecoderTests: XCTestCase {
         XCTAssertTrue(json!.contains("\"end\""))
         XCTAssertTrue(json!.contains("\"stage\":\"deep\""))
     }
+
+    // MARK: - Sleep efficiency (FER-1006)
+
+    /// 8 h in bed, 6 h asleep → 0.75. The `inBed` envelope is the denominator; the stage samples
+    /// sitting inside it are the numerator.
+    func testEfficiencyUsesTheInBedEnvelopeAsDenominator() {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 8 * 3600),
+            sample(SleepHKEncoder.asleepDeepValue, base + 1800, base + 1800 + 2 * 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base + 1800 + 2 * 3600, base + 1800 + 6 * 3600),
+        ]
+        let out = SleepHKDecoder.sessions(from: s)
+        XCTAssertEqual(out.count, 1)
+        XCTAssertEqual(try XCTUnwrap(out[0].efficiency), 0.75, accuracy: 0.001)
+    }
+
+    /// THE scale test. The scorer centres on `RecoveryScorer.sleepPerfCenter == 0.85` and
+    /// `Baselines.metricCfg["efficiency"]` runs `0.2…1.0`. Emitting whole percent would be 100× off
+    /// and would saturate the sleep term without ever looking wrong on screen — the detail view
+    /// normalises defensively (`stored <= 1.0 ? stored * 100 : stored`), so the UI would hide it.
+    func testEfficiencyIsAFractionNotWholePercent() throws {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 8 * 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base, base + 7 * 3600),
+        ]
+        let eff = try XCTUnwrap(SleepHKDecoder.sessions(from: s)[0].efficiency)
+        XCTAssertLessThanOrEqual(eff, 1.0, "Efficiency must be a 0…1 fraction, never whole percent.")
+        XCTAssertEqual(eff, 0.875, accuracy: 0.001)
+    }
+
+    /// No `inBed` sample → nil, NOT a ratio over the stage span. Without the envelope the only
+    /// denominator available excludes the awake time before sleep onset and after waking, so the
+    /// number would be systematically inflated. Abstaining is the honest answer.
+    func testEfficiencyIsNilWithoutAnInBedEnvelope() {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.asleepDeepValue, base, base + 2 * 3600),
+            sample(SleepHKEncoder.asleepREMValue, base + 2 * 3600, base + 4 * 3600),
+        ]
+        let out = SleepHKDecoder.sessions(from: s)
+        XCTAssertEqual(out.count, 1)
+        XCTAssertNil(out[0].efficiency, "No inBed envelope ⇒ no efficiency, rather than an inflated one.")
+    }
+
+    /// Awake spans inside the night are time in bed but NOT asleep — they must lower efficiency.
+    func testAwakeSegmentsDoNotCountAsAsleep() throws {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 4 * 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base, base + 2 * 3600),
+            sample(SleepHKEncoder.awakeValue, base + 2 * 3600, base + 3 * 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base + 3 * 3600, base + 4 * 3600),
+        ]
+        let eff = try XCTUnwrap(SleepHKDecoder.sessions(from: s)[0].efficiency)
+        XCTAssertEqual(eff, 0.75, accuracy: 0.001, "3 h asleep of 4 h in bed — the awake hour counts against.")
+    }
+
+    /// Stage samples that run past the reported `inBed` window (Apple's envelope is not always
+    /// exact) must not produce efficiency above 1.
+    func testEfficiencyIsClampedToOne() throws {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base, base + 2 * 3600),
+        ]
+        let eff = try XCTUnwrap(SleepHKDecoder.sessions(from: s)[0].efficiency)
+        XCTAssertEqual(eff, 1.0, accuracy: 0.001)
+    }
+
+    /// Regression: adding efficiency must not disturb the hypnogram. `inBed` still contributes no
+    /// segment and still extends the session span.
+    func testInBedStillProducesNoSegmentAndStillExtendsTheSpan() {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 8 * 3600),
+            sample(SleepHKEncoder.asleepDeepValue, base + 3600, base + 2 * 3600),
+        ]
+        let out = SleepHKDecoder.sessions(from: s)
+        XCTAssertEqual(segs(out[0].stagesJSON).count, 1, "inBed is an envelope, not a stage.")
+        XCTAssertEqual(segs(out[0].stagesJSON)[0].stage, "deep")
+        XCTAssertEqual(out[0].startTs, base)
+        XCTAssertEqual(out[0].endTs, base + 8 * 3600)
+    }
 }
