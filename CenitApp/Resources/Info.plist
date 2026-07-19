@@ -32,7 +32,7 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.healthcare-fitness</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Cénit connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device.</string>
+	<string>Cénit connects directly to your band over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device.</string>
 	<key>NSCalendarsUsageDescription</key>

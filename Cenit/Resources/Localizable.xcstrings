@@ -12534,19 +12534,19 @@
         }
       }
     },
-    "Compare needs at least two metrics with history. Import your strap export in Data Sources first." : {
+    "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Compare needs at least two metrics with history. Import your strap export in Data Sources first."
+            "value" : "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comparar necesita al menos dos métricas con historial. Primero importa la exportación de tu banda en Fuentes de datos."
+            "value" : "Comparar necesita al menos dos métricas con historial. Primero conecta Apple Salud en Fuentes de datos."
           }
         }
       }
@@ -21105,19 +21105,19 @@
         }
       }
     },
-    "Import your history first. A strap export in Data Sources fills every metric you can explore here in about a minute." : {
+    "No history yet. Connect Apple Health in Data Sources and it fills every metric you can explore here." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Import your history first. A strap export in Data Sources fills every metric you can explore here in about a minute."
+            "value" : "No history yet. Connect Apple Health in Data Sources and it fills every metric you can explore here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Primero importa tu historial. La exportación de tu banda en Fuentes de datos llena en un minuto todas las métricas que puedes explorar aquí."
+            "value" : "Aún no hay historial. Conecta Apple Salud en Fuentes de datos y se llenan todas las métricas que puedes explorar aquí."
           }
         }
       }
@@ -27288,19 +27288,19 @@
         }
       }
     },
-    "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs." : {
+    "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends, or wear your band to bed and open this again once it syncs." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
+            "value" : "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends, or wear your band to bed and open this again once it syncs."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay noches. Importa la exportación de tu banda, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice."
+            "value" : "Aún no hay noches. Conecta Apple Salud en Fuentes de datos para ver tus fases de sueño y tendencias, o duerme con tu banda y vuelve a abrir esto cuando sincronice."
           }
         }
       }

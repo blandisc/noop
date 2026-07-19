@@ -118,7 +118,7 @@ targets:
         # FER-721: required to start any Live Activity (the guided-session rest timer on the lock
         # screen + Dynamic Island). The extension that renders it is the CenitWidgets target below.
         NSSupportsLiveActivities: true
-        NSBluetoothAlwaysUsageDescription: "Cénit connects directly to your WHOOP strap over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device."
+        NSBluetoothAlwaysUsageDescription: "Cénit connects directly to your band over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device."
         NSHealthShareUsageDescription: "Cénit reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device."
         NSHealthUpdateUsageDescription: "Cénit writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it."
         NSPhotoLibraryAddUsageDescription: "Cénit saves the workout card you choose to share to your photo library. It only saves the image you explicitly ask it to."
