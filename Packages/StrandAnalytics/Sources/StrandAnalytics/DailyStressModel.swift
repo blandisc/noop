@@ -8,7 +8,7 @@ import CenitStore
 // presentation (band copy/colors, explanation copy, calm-time strings) stays in the app.
 //
 // Source of the daily 0–3 value, in priority order:
-//   1. The persisted `stress` metric series ("my-whoop") — if a day has a stored value we trust it.
+//   1. The persisted `stress` metric series ("strap") — if a day has a stored value we trust it.
 //   2. Otherwise DERIVE it from how today's resting HR / HRV sit against a personal 30-day baseline:
 //        zRHR = (todayRHR − meanRHR) / sdRHR        // positive when RHR is UP
 //        zHRV = (meanHRV − todayHRV) / sdHRV        // positive when HRV is DOWN

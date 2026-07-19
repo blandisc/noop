@@ -341,7 +341,7 @@ enum ScreenshotFixtures {
     private static func seedSessions(store: CenitStore, pushId: String, pullId: String, legsId: String) async {
         let cal = Calendar(identifier: .gregorian)
         /// Matches `AppModel.deviceId`, so `Repository.workoutRows` joins the journal row (zones/max HR).
-        let journalDeviceId = "my-whoop"
+        let journalDeviceId = "strap"
 
         /// One completed session — optionally MULTI-exercise (`extras`), with strain/HR/kcal/notes and,
         /// when `zones` is set, a time-overlapping journal `WorkoutRow` so the detail's HR-zones bar

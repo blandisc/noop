@@ -7,7 +7,7 @@ struct MetricDescriptor: Identifiable, Hashable {
     let title: String
     let category: String
     let unit: String
-    let source: String       // "my-whoop" or "apple-health"
+    let source: String       // "strap" or "apple-health"
     let icon: String
     let decimals: Int
     let higherIsBetter: Bool?
@@ -65,41 +65,41 @@ enum MetricCatalog {
         // ── Heart
         // Titles are wrapped in String(localized:) AT the literal so Xcode's
         // string extraction sees them; a plain String field never localizes.
-        d("avg_hr", String(localized: "Average Heart Rate"), "Heart", String(localized: "bpm"), "my-whoop", "heart", 0, nil),
-        d("max_hr", String(localized: "Max Heart Rate"), "Heart", String(localized: "bpm"), "my-whoop", "bolt.heart", 0, nil),
-        d("energy_kcal", String(localized: "Calories"), "Heart", "kcal", "my-whoop", "flame", 0, nil),
+        d("avg_hr", String(localized: "Average Heart Rate"), "Heart", String(localized: "bpm"), "strap", "heart", 0, nil),
+        d("max_hr", String(localized: "Max Heart Rate"), "Heart", String(localized: "bpm"), "strap", "bolt.heart", 0, nil),
+        d("energy_kcal", String(localized: "Calories"), "Heart", "kcal", "strap", "flame", 0, nil),
         d("vo2max", String(localized: "VO₂ Max"), "Heart", "", "apple-health", "lungs.fill", 1, true),
 
         // ── Recovery
-        d("recovery", String(localized: "Recovery"), "Recovery", "%", "my-whoop", "heart.circle", 0, true),
-        d("hrv", String(localized: "Heart Rate Variability"), "Recovery", "ms", "my-whoop", "waveform.path.ecg", 0, true),
-        d("rhr", String(localized: "Resting Heart Rate"), "Recovery", String(localized: "bpm"), "my-whoop", "heart", 0, false),
-        d("resp_rate", String(localized: "Respiratory Rate"), "Recovery", "rpm", "my-whoop", "lungs", 1, false),
-        d("spo2", String(localized: "Blood Oxygen"), "Recovery", "%", "my-whoop", "drop", 0, true),
-        d("skin_temp", String(localized: "Skin Temperature"), "Recovery", "°C", "my-whoop", "thermometer", 1, nil),
+        d("recovery", String(localized: "Recovery"), "Recovery", "%", "strap", "heart.circle", 0, true),
+        d("hrv", String(localized: "Heart Rate Variability"), "Recovery", "ms", "strap", "waveform.path.ecg", 0, true),
+        d("rhr", String(localized: "Resting Heart Rate"), "Recovery", String(localized: "bpm"), "strap", "heart", 0, false),
+        d("resp_rate", String(localized: "Respiratory Rate"), "Recovery", "rpm", "strap", "lungs", 1, false),
+        d("spo2", String(localized: "Blood Oxygen"), "Recovery", "%", "strap", "drop", 0, true),
+        d("skin_temp", String(localized: "Skin Temperature"), "Recovery", "°C", "strap", "thermometer", 1, nil),
 
         // ── Sleep
-        d("sleep_performance", String(localized: "Sleep Performance"), "Sleep", "%", "my-whoop", "moon.stars", 0, true),
-        d("in_bed_min", String(localized: "Time in Bed"), "Sleep", "min", "my-whoop", "bed.double", 0, nil),
-        d("sleep_total_min", String(localized: "Asleep Time"), "Sleep", "min", "my-whoop", "moon.zzz", 0, true),
-        d("hours_vs_needed_pct", String(localized: "Hours vs Needed"), "Sleep", "%", "my-whoop", "gauge.medium", 0, true),
-        d("sleep_consistency", String(localized: "Sleep Consistency"), "Sleep", "%", "my-whoop", "calendar", 0, true),
-        d("restorative_pct", String(localized: "Restorative Sleep"), "Sleep", "%", "my-whoop", "sparkles", 0, true),
-        d("restorative_min", String(localized: "Restorative Sleep"), "Sleep", "min", "my-whoop", "sparkles", 0, true),
-        d("sleep_efficiency", String(localized: "Sleep Efficiency"), "Sleep", "%", "my-whoop", "bed.double.fill", 0, true),
-        d("sleep_deep_min", String(localized: "Deep (SWS) Sleep"), "Sleep", "min", "my-whoop", "moon.fill", 0, true),
-        d("sleep_rem_min", String(localized: "REM Sleep"), "Sleep", "min", "my-whoop", "moon.haze", 0, true),
-        d("sleep_light_min", String(localized: "Light Sleep"), "Sleep", "min", "my-whoop", "moon", 0, nil),
-        d("sleep_need_min", String(localized: "Sleep Need"), "Sleep", "min", "my-whoop", "gauge", 0, nil),
-        d("sleep_debt_min", String(localized: "Sleep Debt"), "Sleep", "min", "my-whoop", "exclamationmark.circle", 0, false),
+        d("sleep_performance", String(localized: "Sleep Performance"), "Sleep", "%", "strap", "moon.stars", 0, true),
+        d("in_bed_min", String(localized: "Time in Bed"), "Sleep", "min", "strap", "bed.double", 0, nil),
+        d("sleep_total_min", String(localized: "Asleep Time"), "Sleep", "min", "strap", "moon.zzz", 0, true),
+        d("hours_vs_needed_pct", String(localized: "Hours vs Needed"), "Sleep", "%", "strap", "gauge.medium", 0, true),
+        d("sleep_consistency", String(localized: "Sleep Consistency"), "Sleep", "%", "strap", "calendar", 0, true),
+        d("restorative_pct", String(localized: "Restorative Sleep"), "Sleep", "%", "strap", "sparkles", 0, true),
+        d("restorative_min", String(localized: "Restorative Sleep"), "Sleep", "min", "strap", "sparkles", 0, true),
+        d("sleep_efficiency", String(localized: "Sleep Efficiency"), "Sleep", "%", "strap", "bed.double.fill", 0, true),
+        d("sleep_deep_min", String(localized: "Deep (SWS) Sleep"), "Sleep", "min", "strap", "moon.fill", 0, true),
+        d("sleep_rem_min", String(localized: "REM Sleep"), "Sleep", "min", "strap", "moon.haze", 0, true),
+        d("sleep_light_min", String(localized: "Light Sleep"), "Sleep", "min", "strap", "moon", 0, nil),
+        d("sleep_need_min", String(localized: "Sleep Need"), "Sleep", "min", "strap", "gauge", 0, nil),
+        d("sleep_debt_min", String(localized: "Sleep Debt"), "Sleep", "min", "strap", "exclamationmark.circle", 0, false),
 
         // ── Strain
-        d("strain", String(localized: "Day Strain"), "Strain", "/21", "my-whoop", "flame", 1, nil),
+        d("strain", String(localized: "Day Strain"), "Strain", "/21", "strap", "flame", 1, nil),
         d("steps", String(localized: "Steps"), "Strain", "", "apple-health", "figure.walk", 0, true),
-        d("hr_zones13_min", String(localized: "HR Zones 1–3"), "Strain", "min", "my-whoop", "heart", 0, nil),
-        d("hr_zones45_min", String(localized: "HR Zones 4–5"), "Strain", "min", "my-whoop", "heart.fill", 0, nil),
-        d("hr_zones_all_min", String(localized: "HR Zones (All)"), "Strain", "min", "my-whoop", "heart.text.square", 0, nil),
-        d("strength_min", String(localized: "Strength Activity Time"), "Strain", "min", "my-whoop", "dumbbell", 0, nil),
+        d("hr_zones13_min", String(localized: "HR Zones 1–3"), "Strain", "min", "strap", "heart", 0, nil),
+        d("hr_zones45_min", String(localized: "HR Zones 4–5"), "Strain", "min", "strap", "heart.fill", 0, nil),
+        d("hr_zones_all_min", String(localized: "HR Zones (All)"), "Strain", "min", "strap", "heart.text.square", 0, nil),
+        d("strength_min", String(localized: "Strength Activity Time"), "Strain", "min", "strap", "dumbbell", 0, nil),
         d("active_kcal", String(localized: "Active Energy"), "Strain", "kcal", "apple-health", "flame.fill", 0, nil),
 
         // ── Health / Body
@@ -107,7 +107,7 @@ enum MetricCatalog {
         d("body_fat", String(localized: "Body Fat"), "Health", "%", "apple-health", "percent", 1, false),
         d("lean_mass", String(localized: "Lean Body Mass"), "Health", "kg", "apple-health", "figure.arms.open", 1, true),
         d("bmi", String(localized: "BMI"), "Health", "", "apple-health", "figure", 1, nil),
-        d("stress", String(localized: "Day Stress"), "Health", "/3", "my-whoop", "gauge.with.dots.needle.50percent", 1, false),
+        d("stress", String(localized: "Day Stress"), "Health", "/3", "strap", "gauge.with.dots.needle.50percent", 1, false),
     ]
 
     static func inCategory(_ c: String) -> [MetricDescriptor] { all.filter { $0.category == c } }

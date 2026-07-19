@@ -2951,7 +2951,7 @@ struct TodayView: View {
         async let adRows     = repo.appleDailyRows()
         async let amRows     = repo.appleDailyMetricRows()
         // Stored daily "stress" series (0–3) — the model prefers it, else derives from RHR/HRV. (FER-180)
-        async let stressRows = repo.series(key: "stress", source: "my-whoop")
+        async let stressRows = repo.series(key: "stress", source: "strap")
         // Estimación de pasos WHOOP 4.0 (FER-663) — vacía salvo que el motor la haya calibrado y escrito.
         async let stepsEstRows = repo.computedSeries(key: "steps_est", days: 60)
 
@@ -3038,11 +3038,11 @@ struct TodayView: View {
 
     /// Builds the trailing 14-day trend from the DISPLAY dashboard rows (`repo.displayDays`) — the same
     /// layered source the Today tiles draw their values from (`resolveMeasured`/`baselineDays`): Apple Health is the base,
-    /// on-device computed scores (`my-whoop-noop`) fill the strap's days, imported strap rows win, and a
+    /// on-device computed scores (`strap-noop`) fill the strap's days, imported strap rows win, and a
     /// strap-covered day with a nil field back-fills from Apple Health so the line has no gap (FER-149).
-    /// Reading `repo.series(source: "my-whoop")` instead returned EMPTY for a BLE + Apple Health user,
+    /// Reading `repo.series(source: "strap")` instead returned EMPTY for a BLE + Apple Health user,
     /// because the computed recovery/HRV/RHR/strain/sleep live in the daily-metrics table under
-    /// `my-whoop-noop`, never in the `metricSeries` table that `series()` queries — that was the
+    /// `strap-noop`, never in the `metricSeries` table that `series()` queries — that was the
     /// empty-chart bug. Noon UTC anchors each day so points sit at consistent x-positions.
     private func loadTrend(pick: @escaping (DailyMetric) -> Double?, window: Int = 14) async -> [TrendPoint] {
         let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -(window - 1), to: Date()) ?? Date())

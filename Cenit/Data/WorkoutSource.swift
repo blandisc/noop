@@ -26,11 +26,13 @@ enum WorkoutFormat {
 ///   - "whoop"        — retired WHOOP CSV import (imported WHOOP session)
 ///   - "apple_health" / "apple-health" — AppleHealthImport
 ///   - "manual"       — AppModel.endWorkout (v1.67 live session) AND the retro add/edit sheet
-///   - "my-whoop-noop"— IntelligenceEngine detected bouts (source == the computed deviceId, i.e.
+///   - "strap-noop"   — IntelligenceEngine detected bouts (source == the computed deviceId, i.e.
 ///                       it ends in "-noop"). These are re-derived every analyzeRecent run.
 ///
-/// Classification order matters: "-noop" is checked BEFORE "whoop" because the computed id
-/// "my-whoop-noop" also contains the substring "whoop".
+/// Classification order matters: "-noop" is checked BEFORE "whoop" so a computed id can never fall
+/// through to the legacy-import branch. It was load-bearing while the computed id was "my-whoop-noop"
+/// (which contains "whoop"); since FER-993 relabelled the partition to "strap" it is defensive only,
+/// and it stays that way so the rule survives the next id change.
 enum WorkoutSource: Equatable {
     case whoop, apple, detected, manual
 
@@ -41,7 +43,7 @@ enum WorkoutSource: Equatable {
 
     static func classify(_ source: String) -> WorkoutSource {
         let s = source.lowercased()
-        if s.hasSuffix("-noop") { return .detected }   // BEFORE whoop: "my-whoop-noop" contains "whoop"
+        if s.hasSuffix("-noop") { return .detected }   // BEFORE whoop (see the ordering note above)
         if s == "manual" { return .manual }
         if s.contains("whoop") { return .whoop }
         return .apple

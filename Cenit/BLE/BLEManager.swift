@@ -299,7 +299,7 @@ public final class BLEManager: NSObject, ObservableObject {
         return ref.device + (wallNow - ref.wall)
     }
 
-    public init(state: LiveState, deviceId: String = "my-whoop") {
+    public init(state: LiveState, deviceId: String = "strap") {
         self.state = state
         self.deviceId = deviceId
         self.router = FrameRouter(state: state)
@@ -426,7 +426,7 @@ public final class BLEManager: NSObject, ObservableObject {
     }
 
     /// Designated initializer for testing and preview use: accepts a pre-built Collector.
-    init(state: LiveState, deviceId: String = "my-whoop", collector: Collector?) {
+    init(state: LiveState, deviceId: String = "strap", collector: Collector?) {
         self.state = state
         self.deviceId = deviceId
         self.router = FrameRouter(state: state)

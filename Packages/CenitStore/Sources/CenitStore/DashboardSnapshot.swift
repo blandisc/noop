@@ -13,8 +13,8 @@ import GRDB
 /// Parameters of the one-pass dashboard read. The two flags reproduce the source-mode gating
 /// Repository does at query time — an excluded source is not read at all.
 public struct DashboardReadRequest: Sendable {
-    public var strapDeviceId: String        // "my-whoop"
-    public var computedDeviceId: String     // "my-whoop-noop"
+    public var strapDeviceId: String        // "strap"
+    public var computedDeviceId: String     // "strap-noop"
     public var appleDeviceId: String        // "apple-health"
     public var fromDay: String              // YYYY-MM-DD window (dailyMetrics / appleDaily / metricSeries)
     public var toDay: String
