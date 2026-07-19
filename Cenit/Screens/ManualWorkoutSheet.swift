@@ -1,6 +1,7 @@
 import SwiftUI
 import StrandDesign
 import CenitStore
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Manual workout sheet — «Instrumento diurno» (FER-266)
 //
@@ -50,6 +51,8 @@ struct ManualWorkoutSheet: View {
         _kcalText = State(initialValue: e?.energyKcal.map { String(Int($0.rounded())) } ?? "")
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -101,6 +104,7 @@ struct ManualWorkoutSheet: View {
         .background(theme.paper.ignoresSafeArea())
         .presentationDragIndicator(.visible)
         .sheetPaper(theme)
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - Sections

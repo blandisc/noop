@@ -4,6 +4,7 @@ import StrandDesign
 import StrandTraining
 import CenitStore
 import Foundation
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Workouts — la bitácora de actividad en «Instrumento diurno» (FER-260)
 //
@@ -62,6 +63,8 @@ struct WorkoutsView: View {
         _sessionVolumes = State(initialValue: previewSessionVolumes)
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         Group {
             if !loaded {
@@ -118,6 +121,7 @@ struct WorkoutsView: View {
             loaded = true
             range = defaultRange(for: r)
         }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - Populated (Final skeleton)

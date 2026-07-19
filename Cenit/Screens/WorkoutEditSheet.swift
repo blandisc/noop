@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // WorkoutEditSheet.swift — edit a SAVED strength session (FER-556). Opened from
 // `WorkoutSessionDetailScreen`'s «Editar». Corrects the user-authored data: each set's weight/reps,
@@ -70,6 +71,8 @@ struct WorkoutEditSheet: View {
                             notes: session.notes ?? "", groups: g)
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         NavigationStack {
             listBody
@@ -134,6 +137,7 @@ struct WorkoutEditSheet: View {
             let all = await repo.allExercises()
             exercisesByID = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - List

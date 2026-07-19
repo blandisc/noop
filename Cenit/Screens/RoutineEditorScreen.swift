@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Rutina» — the ONE prescription editor (FER-839, handoff entrenamiento-v4 §2, screens 3a/4a/4b)
 //
@@ -86,6 +87,8 @@ struct RoutineEditorScreen: View {
         return session.routineId != nil && session.routineId == routine?.id
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -205,6 +208,7 @@ struct RoutineEditorScreen: View {
             await load()
             loaded = true
         }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - Origin chrome (mock 4a)

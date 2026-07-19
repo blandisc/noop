@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // RoutineBuilderScreen.swift — CREATE reusable routines (FER-346, inline rewrite FER-561; create-only
 // since FER-840). The Train hub opens this as a sheet to build a NEW routine from scratch or from a
@@ -64,6 +65,8 @@ struct RoutineBuilderScreen: View {
         _name = State(initialValue: seedName)
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         NavigationStack {
             Group {
@@ -170,6 +173,7 @@ struct RoutineBuilderScreen: View {
             }
         }
         .animation(StrandMotion.fade, value: saveError)
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - Empty
