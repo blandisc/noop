@@ -242,6 +242,10 @@ struct LiveStrengthSheet: View {
     // phase content + chrome + presenters + confirms — same render, smaller expressions for the checker.
     var body: some View {
         bodyWithConfirms
+        // FER-998: la sesión se presenta como `fullScreenCover`, así que no hereda el gesto de borde
+        // de iOS — se lo damos. Hace lo MISMO que el botón: minimiza. La sesión sigue viva; deslizar
+        // nunca la termina ni la descarta.
+        .edgeSwipeToExit { model.strengthSheetPresented = false }
         .enableInjection()
     }
 
@@ -1218,13 +1222,11 @@ struct LiveStrengthSheet: View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             // Nav row: minimize «‹» (session stays alive, the pill re-opens it) · live/paused pulse.
             HStack(spacing: 10) {
-                Button { model.strengthSheetPresented = false } label: {
-                    StrandIcon.back.image
-                        .font(StrandFont.glyph(.lead, weight: .semibold)).foregroundStyle(theme.ink)
-                        .frame(width: 44, height: 44).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Minimize session"))
+                // FER-998: el mismo disco que el resto de la app. El rol es `.back` (chevron) pero
+                // NO vuelve: minimiza — la sesión sigue viva y la píldora la reabre. Por eso el
+                // label de VoiceOver es suyo y no el «Atrás» del componente.
+                BackButton(role: .back, theme: theme) { model.strengthSheetPresented = false }
+                    .accessibilityLabel(Text("Minimize session"))
                 Spacer(minLength: 8)
                 HStack(spacing: 6) {
                     // Canvas pass 2026-07-15: recording-red and STILL — a state lamp, not a heartbeat
@@ -1236,7 +1238,7 @@ struct LiveStrengthSheet: View {
                 }
                 .accessibilityElement(children: .combine)
             }
-            .padding(.leading, -10)   // pull the 44pt chevron target back to the 24pt margin edge
+            .padding(.leading, -2)   // el disco de 40 vive en un marco de 44: solo 2pt de aire que recuperar
 
             // Title, underlined solid `ink` (not the dotted neutral rule reserved for table values).
             // Canvas pass 2026-07-15: sin subrayado — el peso de la tipografía basta (owner call).
@@ -1639,19 +1641,10 @@ struct LiveStrengthSheet: View {
 
     /// The focus close «×» — ink-on-paper while capturing, crema-on-green while resting (FER-934).
     private func focusCloseButton(onGreen: Bool) -> some View {
-        Button { focusMode = false } label: {
-            StrandIcon.close.image
-                .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(onGreen ? theme.paper : theme.ink)
-                .frame(width: 38, height: 38)
-                .background(onGreen ? theme.paper.opacity(StrandOpacity.tintFillStrong) : theme.surface, in: Circle())
-                .overlay(Circle().strokeBorder(onGreen ? theme.paper.opacity(StrandOpacity.strokeSoft) : theme.hairlineStrong, lineWidth: 1))
-                // r19 (auditoría UI): target de 44pt — el círculo visual se queda en 38.
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Close focus mode"))
+        // El disco compartido, en su variante sobre acento (el descanso pinta la pantalla de verde
+        // debajo). NO cierra la sesión: sale del modo foco — por eso conserva su propio label.
+        BackButton(role: .close, surface: onGreen ? .accent : .paper, theme: theme) { focusMode = false }
+            .accessibilityLabel(Text("Close focus mode"))
     }
 
     /// The KG stepper card (extracted so the capture switch stays cheap to type-check).
