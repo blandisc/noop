@@ -656,7 +656,7 @@ struct RoutineEditorScreen: View {
             rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
         }
         if RoutineSetEditing.inSuperset(res, idx) {
-            rows.append(.init(String(localized: "Break superset"), systemImage: "link") { breakSuperset(idx) })
+            rows.append(.init(String(localized: "Undo superset"), systemImage: "link") { breakSuperset(idx) })
         }
         if item.exercise.type == .weightReps {
             rows.append(.init(String(localized: "Progression"),
@@ -668,7 +668,7 @@ struct RoutineEditorScreen: View {
                 progressionTarget = ProgressionTarget(ei: idx)
             })
         }
-        rows.append(.init(String(localized: "Replace exercise"), systemImage: "arrow.triangle.2.circlepath") {
+        rows.append(.init(String(localized: "Change exercise"), systemImage: "arrow.triangle.2.circlepath") {
             replaceIndex = idx; showLibrary = true
         })
         rows.append(.init(String(localized: "Remove from routine"), systemImage: "trash", isDestructive: true) {
@@ -742,6 +742,14 @@ struct RoutineEditorScreen: View {
 
     /// The set numeral, plain ink («C» for a warm-up set, in tertiary). Handoff: no ring — a tinted
     /// ring per row is color-as-decoration (§8.4); the hue lives only in the meta dot and rails.
+    ///
+    /// **Diverge a propósito de `LiveStrengthSheet.badge`, y eso NO es deuda** (decisión Fer
+    /// 2026-07-19). Las dos pantallas citaban §8.4 y llegaban a lo opuesto: aquí sin anillo, allá con
+    /// anillo ámbar. Gana cada una en su contexto — planeando el martes en el sillón «cuál serie es» se
+    /// lee tranquilo y el anillo sería cromo; con la barra en la mano «cuál voy» tiene que gritar y el
+    /// anillo hace trabajo real. La auditoría de duplicación marcó esto como divergencia a corregir; se
+    /// revisó y se decidió CONSERVARLA. Si alguien vuelve a «unificarlas», que sea con este párrafo
+    /// enfrente. Nota gemela en `LiveStrengthSheet.badge`.
     private func numeralRing(idx: Int, si: Int) -> some View {
         let warmup = items[idx].re.sets[si].kind == .warmup
         return Text(RoutineSetEditing.setLabel(items[idx].re, si))
@@ -749,18 +757,34 @@ struct RoutineEditorScreen: View {
             .foregroundStyle(warmup ? theme.inkTertiary : theme.ink)
     }
 
+    /// La celda de captura — **papel pautado, no caja** (decisión Fer 2026-07-19).
+    ///
+    /// Traía relleno `surface` + borde `insetRadius`, mientras la sesión activa usa una regla inferior.
+    /// Dos gramáticas de formulario para el mismo dato. Gana la regla, por dos razones: DESIGN.md §8.7
+    /// reserva las cápsulas y cajas a las ACCIONES —una caja alrededor de un número es cromo— y la
+    /// metáfora del DNA es papel, donde un dato se escribe sobre una raya, no dentro de un cuadro. De
+    /// paso la celda sube de 32 a 44 pt: la caja estaba por debajo del mínimo de la HIG.
+    ///
+    /// El MECANISMO sigue siendo el teclado nativo aquí y `SessionKeypad` allá, y eso es diferencia real
+    /// de producto: en sesión hacen falta ± por discos y no perder media pantalla bajo el teclado. Ver
+    /// la nota al pie del PR sobre por qué el keypad no se portó en este paso.
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType, width: CGFloat) -> some View {
-        TextField("—", text: text)
+        let focused = focusedCell == id
+        return TextField("—", text: text)
             .keyboardType(keyboard)
             .multilineTextAlignment(.center)
-            // Handoff: the prescription's figures speak Grotesk (400 15), like every datum on paper.
-            .font(InstrumentoType.grotesk(15)).monospacedDigit()
+            // Misma voz y tamaño que la celda de la sesión: Grotesk numérico 16 medium, que además
+            // escala con Dynamic Type intermedio.
+            .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
             .disabled(locked)
-            .frame(width: width, height: 32)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+            .frame(width: width, height: 44)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(focused ? theme.ink : theme.hairlineStrong)
+                    .frame(height: focused ? 2 : 1)
+                    .padding(.bottom, 6)
+            }
     }
 
     /// The card's closing row (approved mock): TWIN pills of equal weight — «＋ Agregar serie» on the

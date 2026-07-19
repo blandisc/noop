@@ -3132,6 +3132,14 @@ struct LiveStrengthSheet: View {
     /// The set's number badge. FER-937: a warm-up set shows a «C» (calentamiento) in a tenue ring and does
     /// not consume a work-set number; work sets are numbered 1..n counting only `.work` rows, so a warm-up
     /// never pushes «serie 1» to «serie 3».
+    ///
+    /// **Diverge a propósito de `RoutineEditorScreen.numeralRing`, y eso NO es deuda** (decisión Fer
+    /// 2026-07-19). Allá el numeral va en tinta pelona citando §8.4 («un anillo tintado por fila es
+    /// color-como-decoración»); aquí lleva anillo ámbar y subrayado de tinta en la serie en curso. Las
+    /// dos cumplen la regla, porque el contexto cambia QUÉ es decoración: en el editor el anillo no
+    /// aporta —nada urge—, y en plena serie «cuál voy» es el dato más urgente de la pantalla, así que
+    /// el anillo deja de ser cromo y pasa a ser el dato. La auditoría de duplicación marcó esto como
+    /// divergencia a corregir; se revisó y se decidió CONSERVARLA. Nota gemela allá.
     private func badge(run: StrengthSessionModel.ExerciseRun, si: Int) -> some View {
         let isWarmup = run.sets[si].kind == .warmup
         let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }

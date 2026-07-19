@@ -370,41 +370,40 @@ struct RoutineBuilderScreen: View {
     }
 
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType) -> some View {
-        TextField("—", text: text)
+        // Papel pautado, no caja — misma decisión que el editor y la sesión (Fer 2026-07-19). Esta
+        // pantalla es una TERCERA copia de la tabla y se había quedado fuera de las curaciones
+        // recientes; ver la nota en `RoutineEditorScreen.cellField` para el porqué.
+        let focused = focusedCell == id
+        return TextField("—", text: text)
             .keyboardType(keyboard)
             .multilineTextAlignment(.center)
-            // Handoff: the prescription's figures speak Grotesk (400 15), like every datum on paper.
-            .font(InstrumentoType.grotesk(15)).monospacedDigit()
+            .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
-            .frame(width: 74, height: 32)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+            .frame(width: 74, height: 44)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(focused ? theme.ink : theme.hairlineStrong)
+                    .frame(height: focused ? 2 : 1)
+                    .padding(.bottom, 6)
+            }
     }
 
+    /// 2026-07-19: esta pantalla era una TERCERA copia de la tabla y se había quedado fuera de las dos
+    /// curaciones recientes — traía un botón de texto SF plano (exactamente el bug que `SetActionPills`
+    /// curó el 2026-07-18) y la puerta de contorno anterior a `AddExerciseNode`, con un comentario que
+    /// ya mentía («la misma puerta centrada que el editor unificado» — el editor ya no la tiene). Ahora
+    /// llama a los dos componentes compartidos como sus hermanas.
     private func addSetRow(_ idx: Int) -> some View {
-        Button { addSet(idx) } label: {
-            HStack(spacing: 8) {
-                StrandIcon.add.image
-                Text("Add set")
-            }
-            .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        SetActionPills(showWarmup: false, theme: theme,
+                       addSet: { addSet(idx) }, addWarmup: {})
     }
 
     private var addExerciseRow: some View {
-        // The same centered outline door as the unified editor (handoff spec).
-        Button { showLibrary = true } label: {
-            Label("Add exercise", systemImage: "plus")
-                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity).padding(.vertical, 13)  // token-exempt: 13 del handoff
-                .contentShape(Rectangle())
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
-                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        AddExerciseNode(theme: theme,
+                        threadTint: items.last.map { theme.movementFamilyTint(primaryMuscles: $0.exercise.primaryMuscles) } ?? theme.dataStrain,
+                        showThread: items.count > 1) {
+            showLibrary = true
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Cell bindings
@@ -450,7 +449,7 @@ struct RoutineBuilderScreen: View {
             rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
         }
         if inSuperset(idx) {
-            rows.append(.init(String(localized: "Break superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
+            rows.append(.init(String(localized: "Undo superset"), systemImage: "link.badge.plus") { breakSuperset(idx) })
         }
         // 2c (FER-D): the per-exercise progression plan. Weight-based exercises only —
         // bodyweight/time/distance have no load to progress.
