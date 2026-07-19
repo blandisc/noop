@@ -84,10 +84,7 @@ struct WorkoutEditSheet: View {
                     BackButton(role: .close, theme: theme) { cancel() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .font(StrandFont.headline)
-                        .foregroundStyle(canSave ? theme.ink : theme.inkTertiary)
-                        .disabled(!canSave)
+                    HeaderActionButton(Text("Save"), enabled: canSave, theme: theme) { save() }
                 }
             }
         }

@@ -77,7 +77,7 @@ struct RoutineBuilderScreen: View {
                     BackButton(role: .close, theme: theme) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }.foregroundStyle(canSave ? theme.ink : theme.inkTertiary).disabled(!canSave)
+                    HeaderActionButton(Text("Save"), enabled: canSave, theme: theme) { save() }
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
