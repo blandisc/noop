@@ -41,6 +41,12 @@ struct DataSourcesView: View {
     /// FER-742: opt-in — record the strength session on the paired Apple Watch (real HR + calories, closes
     /// the rings). Off by default; the row only appears when a watch is paired.
     @AppStorage(WorkoutMirroringBridge.mirrorToWatchKey) private var recordOnWatch = false
+    #if DEBUG
+    /// FER-1008 spike (dev-only, never in a store build): export Apple's nocturnal beat-to-beat R-R so a
+    /// nocturnal Apple RMSSD can be validated against the strap on paired nights.
+    @State private var exportingHeartbeats = false
+    @State private var heartbeatSummary: String?
+    #endif
     #endif
 
     // Backup & restore + automatic iCloud backup — migrated here from SettingsView for FER-337 so no
@@ -448,6 +454,28 @@ struct DataSourcesView: View {
                 .disabled(health.syncing)
             Spacer(minLength: 0)
         }
+
+        #if DEBUG
+        // DEV (FER-1008 spike): vuelca los latidos nocturnos que Apple guardó en HealthKit para medir un
+        // RMSSD de Apple contra la banda en noches pareadas. One-shot, pide su propio permiso, no toca la
+        // DB ni el sync. Gateado a DEBUG: nunca llega a una build de tienda.
+        VStack(alignment: .leading, spacing: 6) {
+            QuietButton(exportingHeartbeats ? "Exportando latidos…" : "Exportar latidos de Apple (dev)") {
+                Task {
+                    exportingHeartbeats = true
+                    let (csv, summary) = await health.exportAppleHeartbeatSeries()
+                    heartbeatSummary = summary
+                    exportingHeartbeats = false
+                    FileExport.exportText(csv, suggestedName: "apple-rr.csv")
+                }
+            }
+            .disabled(exportingHeartbeats)
+            if let s = heartbeatSummary {
+                Text(verbatim: s).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        #endif
 
         if health.syncing {
             appleHealthSyncProgress

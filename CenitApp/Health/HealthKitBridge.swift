@@ -865,6 +865,83 @@ final class HealthKitBridge: ObservableObject {
         }
     }
 
+    #if DEBUG
+    // MARK: - DEV · Apple heartbeat-series export (FER-1008 spike)
+
+    /// One-shot, on-device validation dump: the beat-to-beat (R-R) intervals Apple stored in HealthKit as
+    /// `HKHeartbeatSeriesSample`s over the last `daysBack` days, as CSV rows `ts,rrMs` (epoch seconds,
+    /// milliseconds) — the SAME shape as the strap's `rrInterval` — so a nocturnal Apple RMSSD can be
+    /// measured against the band's on paired nights. Opt-in: requests its own `HKSeriesType.heartbeat()`
+    /// read scope on demand and touches neither the store nor the normal sync. Returns the CSV plus a
+    /// per-night density summary — the whole open question is whether Apple samples densely enough at night.
+    func exportAppleHeartbeatSeries(daysBack: Int = 45) async -> (csv: String, summary: String) {
+        guard HKHealthStore.isHealthDataAvailable() else { return ("", "Apple Health no disponible.") }
+        let seriesType = HKSeriesType.heartbeat()
+        // Dedicated read consent, asked only when this dev button is tapped (keeps the normal connect
+        // prompt unchanged — heartbeat is never added to the shipped `readTypes`).
+        try? await store.requestAuthorization(toShare: [], read: [seriesType])
+
+        let end = Date()
+        let start = Calendar.current.date(byAdding: .day, value: -daysBack, to: end)
+            ?? end.addingTimeInterval(-Double(daysBack) * 86_400)
+        let predicate = Self.readPredicate(start: start, end: end)
+
+        // 1) The heartbeat-series samples in the window (each is a run of beats, e.g. one sleep segment).
+        let samples: [HKHeartbeatSeriesSample] = await withCheckedContinuation { cont in
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+            let q = HKSampleQuery(sampleType: seriesType, predicate: predicate,
+                                  limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, s, _ in
+                cont.resume(returning: (s as? [HKHeartbeatSeriesSample]) ?? [])
+            }
+            store.execute(q)
+        }
+
+        // 2) Stream each series into R-R intervals (skip gap-preceded beats + non-physiological values).
+        var rows: [(ts: Double, rrMs: Double)] = []
+        for sample in samples { rows.append(contentsOf: await beatToBeat(of: sample)) }
+        rows.sort { $0.ts < $1.ts }
+
+        // 3) CSV (ts,rrMs) — same columns as the strap `rrInterval` table, so the analysis runs unchanged.
+        var csv = "ts,rrMs\n"
+        csv.reserveCapacity(rows.count * 14 + 8)
+        for r in rows { csv += "\(Int(r.ts.rounded())),\(Int(r.rrMs.rounded()))\n" }
+
+        // 4) Per-night density summary (local civil day) so the answer is visible immediately.
+        var perNight: [String: Int] = [:]
+        for r in rows { perNight[Self.dayString(Date(timeIntervalSince1970: r.ts)), default: 0] += 1 }
+        let nights = perNight.keys.sorted()
+        let usable = perNight.values.filter { $0 >= 500 }.count
+        let median = perNight.isEmpty ? 0 : perNight.values.sorted()[perNight.count / 2]
+        var summary = "Series: \(samples.count) · intervalos R-R: \(rows.count)\n"
+        summary += "Noches con datos: \(nights.count) · con ≥500 intervalos: \(usable) · mediana \(median)/noche\n"
+        if let lo = nights.first, let hi = nights.last { summary += "Rango: \(lo) → \(hi)" }
+        if rows.isEmpty { summary += "\nApple no guardó latido-a-latido en esta ventana (o falta el permiso)." }
+        return (csv, summary)
+    }
+
+    /// Stream one `HKHeartbeatSeriesSample` into absolute-timestamped R-R intervals (ms). A beat flagged
+    /// `precededByGap` breaks the chain (its interval spans missing data), and only 300–2000 ms intervals
+    /// survive — the same physiological gate the offline analysis applies.
+    private func beatToBeat(of sample: HKHeartbeatSeriesSample) async -> [(ts: Double, rrMs: Double)] {
+        let base = sample.startDate.timeIntervalSince1970
+        return await withCheckedContinuation { (cont: CheckedContinuation<[(ts: Double, rrMs: Double)], Never>) in
+            var out: [(ts: Double, rrMs: Double)] = []
+            var prev: Double? = nil
+            let q = HKHeartbeatSeriesQuery(heartbeatSeries: sample) { _, timeSinceStart, precededByGap, done, error in
+                if error == nil {
+                    if let p = prev, !precededByGap {
+                        let rr = (timeSinceStart - p) * 1000.0
+                        if rr >= 300, rr <= 2000 { out.append((ts: base + timeSinceStart, rrMs: rr)) }
+                    }
+                    prev = timeSinceStart
+                }
+                if done { cont.resume(returning: out) }
+            }
+            store.execute(q)
+        }
+    }
+    #endif
+
     // MARK: - Workout helpers
 
     /// Raw `HKWorkout`s in [start, end] — shared by `mapWorkouts` and `collectWorkoutHeartRate`
