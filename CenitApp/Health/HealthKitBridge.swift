@@ -373,6 +373,28 @@ final class HealthKitBridge: ObservableObject {
         // (SleepHKDecoder, StrandImport); the idempotent upsert below keeps a re-sync from duplicating.
         let appleSleepSessions = SleepHKDecoder.sessions(from: await collectSleepSamples(start: start, end: end))
 
+        // FER-1006: the daily row's `efficiency` is READ OFF the decoded sessions rather than
+        // recomputed from `DayAgg`'s per-day minute sums. Two computations meant two denominators —
+        // the decoder divides by the session span, a minute-sum version divides by summed `inBed`
+        // spans — and they diverge whenever a night has more than one in-bed block. Both surface on
+        // the SAME screen (the per-night tile reads `CachedSleepSession.efficiency`, the trend reads
+        // `DailyMetric.efficiency`), so the user would have seen two different numbers for one night.
+        // One source, keyed by the same wake-day attribution `collectSleep` uses.
+        // Longest session wins a day that has several (a nap plus the night): the main night is the
+        // one whose efficiency the score should reflect, and a 20-minute nap at 96% must not
+        // outrank it just by landing first in the array.
+        var effByDay: [String: Double] = [:]
+        var effSpanByDay: [String: Int] = [:]
+        for s in appleSleepSessions {
+            guard let eff = s.efficiency else { continue }
+            let day = HealthKitBridge.dayString(Date(timeIntervalSince1970: TimeInterval(s.endTs)))
+            let span = s.endTs - s.startTs
+            if span > (effSpanByDay[day] ?? -1) {
+                effSpanByDay[day] = span
+                effByDay[day] = eff
+            }
+        }
+
         stage(14, "saving")
 
         // Build + upsert the store rows under the apple-health source.
@@ -393,7 +415,7 @@ final class HealthKitBridge: ObservableObject {
             return (Baselines.deviation(v, state: appleSkinBase).delta * 100.0).rounded() / 100.0
         }
         let dmRows = byDay.map { (day, a) in
-            DailyMetric(day: day, totalSleepMin: a.asleepMin, efficiency: a.sleepEfficiency,
+            DailyMetric(day: day, totalSleepMin: a.asleepMin, efficiency: effByDay[day],
                         deepMin: a.deepMin, remMin: a.remMin, lightMin: a.coreMin, disturbances: nil,
                         restingHr: a.restingHr.map { Int($0.rounded()) }, avgHrv: a.hrv,
                         recovery: nil, strain: nil, exerciseCount: nil,
@@ -679,25 +701,12 @@ final class HealthKitBridge: ObservableObject {
         var spo2: Double?; var respRate: Double?; var steps: Double?
         var activeKcal: Double?; var basalKcal: Double?; var vo2max: Double?
         var asleepMin: Double?; var deepMin: Double?; var remMin: Double?; var coreMin: Double?
-        /// FER-1006: time in bed — the denominator of sleep efficiency. NOT a stage and never folded
-        /// into `asleepMin`; nil when Apple wrote no `inBed` sample for the night.
+        /// FER-1006: time in bed, kept for the `in_bed_min` series key and the sync fingerprint.
+        /// NOT a stage and never folded into `asleepMin`. It is deliberately NOT the efficiency
+        /// denominator — see `dmRows`, which reads efficiency off the decoded sessions so there is
+        /// exactly one computation.
         var inBedMin: Double?
         var skinTempC: Double?   // FER-882: nightly mean absolute wrist temp (°C)
-
-        /// Sleep efficiency as a **0…1 fraction**, or nil without an `inBed` envelope.
-        ///
-        /// The scale is load-bearing and easy to get 100× wrong: `RecoveryScorer.sleepPerfCenter`
-        /// is `0.85` and `Baselines.metricCfg["efficiency"]` runs `0.2…1.0`. The Detalle de Sueño
-        /// normalises defensively (`stored <= 1.0 ? stored * 100 : stored`), so a whole-percent
-        /// value would look right on screen while saturating the scorer's sleep term.
-        ///
-        /// Abstains rather than approximates: with no `inBed`, the only denominator left is the
-        /// stage timeline, which omits the awake time before sleep onset and after waking — a
-        /// systematically inflated ratio feeding a health score. Mirrors `SleepHKDecoder.efficiency`.
-        var sleepEfficiency: Double? {
-            guard let bed = inBedMin, bed > 0, let asleep = asleepMin, asleep > 0 else { return nil }
-            return min(1.0, asleep / bed)
-        }
     }
 
     /// FER-872/881: a STABLE, order-independent fingerprint of the Apple rows a sync run would surface.

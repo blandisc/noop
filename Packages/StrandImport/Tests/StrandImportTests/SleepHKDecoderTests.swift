@@ -179,18 +179,40 @@ final class SleepHKDecoderTests: XCTestCase {
         XCTAssertEqual(eff, 0.875, accuracy: 0.001)
     }
 
-    /// No `inBed` sample → nil, NOT a ratio over the stage span. Without the envelope the only
-    /// denominator available excludes the awake time before sleep onset and after waking, so the
-    /// number would be systematically inflated. Abstaining is the honest answer.
-    func testEfficiencyIsNilWithoutAnInBedEnvelope() {
+    /// Without `inBed` the denominator falls back to the session span — which is EXACTLY what the
+    /// band does (`SleepStager.efficiency` divides by `end − start`; a strap has no `inBed` sample).
+    /// This is the coverage case that matters: `inBed` is not written by Apple Watch sleep tracking,
+    /// it comes from the iPhone's Sleep Schedule or third-party apps, so an Apple-Watch-only user can
+    /// have none. Requiring it would leave exactly those users capped at 2 of 3 recovery drivers.
+    func testEfficiencyFallsBackToTheSessionSpanLikeTheBandDoes() throws {
         let base = 1_700_000_000
         let s = [
             sample(SleepHKEncoder.asleepDeepValue, base, base + 2 * 3600),
-            sample(SleepHKEncoder.asleepREMValue, base + 2 * 3600, base + 4 * 3600),
+            sample(SleepHKEncoder.awakeValue, base + 2 * 3600, base + 3 * 3600),
+            sample(SleepHKEncoder.asleepREMValue, base + 3 * 3600, base + 4 * 3600),
         ]
         let out = SleepHKDecoder.sessions(from: s)
         XCTAssertEqual(out.count, 1)
-        XCTAssertNil(out[0].efficiency, "No inBed envelope ⇒ no efficiency, rather than an inflated one.")
+        let eff = try XCTUnwrap(out[0].efficiency, "No inBed must still yield efficiency — same construct as the band.")
+        XCTAssertEqual(eff, 0.75, accuracy: 0.001, "3 h asleep over a 4 h detected window.")
+    }
+
+    /// The construct is one definition, not two: a night WITH an `inBed` envelope and the same night
+    /// WITHOUT it differ only because the envelope legitimately widens the window. Both go through
+    /// `asleep / sessionSpan` — there is no separate inBed branch to drift out of sync.
+    func testInBedOnlyWidensTheWindowItIsNotASecondFormula() throws {
+        let base = 1_700_000_000
+        let stages = [
+            sample(SleepHKEncoder.asleepCoreValue, base + 1800, base + 1800 + 6 * 3600),
+        ]
+        let withoutEnvelope = try XCTUnwrap(SleepHKDecoder.sessions(from: stages)[0].efficiency)
+        let withEnvelope = try XCTUnwrap(
+            SleepHKDecoder.sessions(from: [sample(SleepHKEncoder.inBedValue, base, base + 8 * 3600)] + stages)[0].efficiency)
+
+        XCTAssertEqual(withoutEnvelope, 1.0, accuracy: 0.001, "Stages only ⇒ the window is the stage span.")
+        XCTAssertEqual(withEnvelope, 0.75, accuracy: 0.001, "inBed widens the window to 8 h ⇒ 6 h asleep = 0.75.")
+        XCTAssertLessThan(withEnvelope, withoutEnvelope,
+                          "Knowing time in bed can only lower efficiency — it never flatters it.")
     }
 
     /// Awake spans inside the night are time in bed but NOT asleep — they must lower efficiency.

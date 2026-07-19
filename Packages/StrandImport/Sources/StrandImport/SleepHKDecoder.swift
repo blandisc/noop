@@ -58,9 +58,11 @@ public enum SleepHKDecoder {
     /// A session is emitted only if it has at least one real stage segment
     /// (`stagesJSON` non-empty) — a span with only `inBed` (no Apple stage data,
     /// e.g. a manual "in bed" entry) is dropped, matching the hypnogram's
-    /// `intervals.count >= 2` gate. `restingHr` / `avgHrv` / `efficiency` are
-    /// left `nil` — Apple's sleepAnalysis carries no per-session HR/HRV, and the
-    /// daily HRV/RHR already land in `dailyMetric` via `collectSleep`'s siblings.
+    /// `intervals.count >= 2` gate. `restingHr` / `avgHrv` stay `nil` — Apple's
+    /// sleepAnalysis carries no per-session HR/HRV, and the daily HRV/RHR already
+    /// land in `dailyMetric` via `collectSleep`'s siblings. `efficiency` IS filled
+    /// as of FER-1006 (see `efficiency(of:sessionStart:sessionEnd:)`); it is the
+    /// single computation both the per-night tile and the daily row read.
     ///
     /// - Parameter sessionGapSeconds: max awake gap kept inside one session.
     public static func sessions(
@@ -76,31 +78,19 @@ public enum SleepHKDecoder {
         .sorted { $0.start < $1.start }
         guard !spans.isEmpty else { return [] }
 
-        // Accumulate one bucket per night. `inBedStart/End` track the ENVELOPE separately from the
-        // session span: the span also grows with stage samples, so it cannot stand in for time in
-        // bed. Only real `inBed` (0) samples move it. (FER-1006)
-        struct Bucket {
-            var start: Int; var end: Int; var segs: [(Int, Int, String)]
-            var inBedStart: Int?; var inBedEnd: Int?
-        }
+        // Accumulate one bucket per night. `inBed` needs no separate tracking: it contributes no
+        // segment but DOES extend the span below, so the efficiency denominator picks it up for
+        // free when Apple writes it. (FER-1006)
+        struct Bucket { var start: Int; var end: Int; var segs: [(Int, Int, String)] }
         var buckets: [Bucket] = []
-        func absorb(_ b: inout Bucket, _ span: Span) {
-            if let st = stage(forHKValue: span.hkValue) {
-                b.segs.append((span.start, span.end, st))
-            } else if span.hkValue == SleepHKEncoder.inBedValue {
-                b.inBedStart = min(b.inBedStart ?? span.start, span.start)
-                b.inBedEnd = max(b.inBedEnd ?? span.end, span.end)
-            }
-        }
         for span in spans {
             if var last = buckets.last, span.start - last.end <= sessionGapSeconds {
                 last.end = max(last.end, span.end)
-                absorb(&last, span)
+                if let st = stage(forHKValue: span.hkValue) { last.segs.append((span.start, span.end, st)) }
                 buckets[buckets.count - 1] = last
             } else {
-                var b = Bucket(start: span.start, end: span.end, segs: [],
-                               inBedStart: nil, inBedEnd: nil)
-                absorb(&b, span)
+                var b = Bucket(start: span.start, end: span.end, segs: [])
+                if let st = stage(forHKValue: span.hkValue) { b.segs.append((span.start, span.end, st)) }
                 buckets.append(b)
             }
         }
@@ -109,29 +99,42 @@ public enum SleepHKDecoder {
             guard !b.segs.isEmpty else { return nil }            // inBed-only → no hypnogram, drop
             let json = encodeSegments(b.segs.sorted { $0.0 < $1.0 })
             return CachedSleepSession(startTs: b.start, endTs: b.end,
-                                      efficiency: efficiency(of: b.segs,
-                                                             inBedStart: b.inBedStart,
-                                                             inBedEnd: b.inBedEnd),
+                                      efficiency: efficiency(of: b.segs, sessionStart: b.start,
+                                                             sessionEnd: b.end),
                                       restingHr: nil, avgHrv: nil, stagesJSON: json)
         }
     }
 
-    /// Sleep efficiency as a **0…1 fraction** — asleep time over time in bed. Matches the scale the
-    /// band writes and the one the scorer expects (`Baselines.metricCfg["efficiency"]` is
-    /// `minVal 0.2 … maxVal 1.0`; `RecoveryScorer.sleepPerfCenter` is `0.85`, not `85`). Writing
-    /// whole percent here would land 100× off and quietly saturate the sleep term. (FER-1006)
+    /// Sleep efficiency as a **0…1 fraction** — asleep time over the session window. (FER-1006)
     ///
-    /// Returns `nil` unless a real `inBed` envelope exists. That abstention is deliberate: without
-    /// `inBed`, the only denominator available is the stage timeline itself, which excludes the awake
-    /// time before falling asleep and after waking — so the ratio would be systematically inflated
-    /// and would feed `AppleRecoveryEstimator` as if it were the real thing. A missing driver is
-    /// honest; a biased one is not.
+    /// **The denominator is the session span, deliberately — it is the SAME construct the band
+    /// already ships.** `SleepStager.efficiency` computes `asleep / (end − start)` because a strap
+    /// has no `inBed` sample at all. Defining Apple's efficiency any other way would put two
+    /// different constructs in one column, which is the exact failure `SourceLens` exists to
+    /// prevent (FER-623/629/882).
+    ///
+    /// An earlier revision required a real `inBed` envelope and returned `nil` without one. That was
+    /// wrong twice over: it held Apple to a purity the band does not practise, and it would have
+    /// delivered nothing to the people it was for — `inBed` is not written by Apple Watch sleep
+    /// tracking. It comes from the iPhone's Sleep Schedule, third-party apps, or manual entry, so an
+    /// Apple-Watch-only user can have zero of them and would have stayed capped at 2 of 3 drivers
+    /// with this code running and doing nothing.
+    ///
+    /// `inBed` still matters and is still not lost: it EXTENDS the session span in `sessions(...)`
+    /// (`last.end = max(last.end, span.end)`), so when Apple does write it the denominator grows to
+    /// cover time in bed on its own. One definition, and the envelope is absorbed rather than
+    /// special-cased.
+    ///
+    /// Scale is load-bearing: `Baselines.metricCfg["efficiency"]` runs `0.2…1.0` and
+    /// `RecoveryScorer.sleepPerfCenter` is `0.85`, not `85`. Consumers read it RAW —
+    /// `AppleRecoveryEstimator:197` and `Repository:607` pass it straight through without
+    /// normalising — so whole percent would land 100× off and saturate the sleep term.
     static func efficiency(of segs: [(Int, Int, String)],
-                           inBedStart: Int?, inBedEnd: Int?) -> Double? {
-        guard let s = inBedStart, let e = inBedEnd, e > s else { return nil }
+                           sessionStart: Int, sessionEnd: Int) -> Double? {
+        guard sessionEnd > sessionStart else { return nil }
         let asleep = segs.filter { $0.2 != "wake" }.reduce(0) { $0 + ($1.1 - $1.0) }
         guard asleep > 0 else { return nil }
-        return min(1.0, Double(asleep) / Double(e - s))
+        return min(1.0, Double(asleep) / Double(sessionEnd - sessionStart))
     }
 
     // MARK: - stagesJSON
