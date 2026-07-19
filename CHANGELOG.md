@@ -8,11 +8,12 @@ approximate; Cénit is built from source — see the [README](README.md).
 
 - **Independent, and experimental.** Treat Cénit as a capable work-in-progress rather than a finished
   product.
-- **WHOOP 4.0 is the supported path.** It is tested and works end to end. WHOOP 5.0/MG is newer: live
-  heart rate works today, but deeper metrics (recovery, strain, sleep) for 5/MG are still being
-  figured out. Cénit always tells you what's live versus still building.
+- **The 4.0 strap is the supported path.** It is tested and works end to end. The 5/MG generation is
+  newer: live heart rate works today, but deeper metrics (recovery, strain, sleep) for 5/MG are still
+  being figured out. Cénit always tells you what's live versus still building.
 - **Your scores build over a few nights.** Live heart rate is instant; recovery, strain and sleep
-  sharpen as Cénit learns your baseline. Import your WHOOP export to backfill your history instantly.
+  sharpen as Cénit learns your baseline. Connect Apple Health in Data & sources and your baseline
+  starts ahead, using the history already on your phone.
 - **Everything stays on your device.** No account, no cloud, no sync.
 
 ---
@@ -23,6 +24,10 @@ approximate; Cénit is built from source — see the [README](README.md).
   **ES** — Cuatro pantallas vacías seguían diciéndote «importa la exportación de tu banda en Fuentes de datos» para llenar tu historial. Ese importador se eliminó hace unas versiones, así que la instrucción era imposible: te mandaba a un botón que ya no está. Ahora apuntan a lo que sí puedes hacer, conectar Apple Salud. Y el diálogo con el que iOS te pide permiso de Bluetooth nombraba la marca de la banda; ahora usa vocabulario neutro sin cambiar lo que promete: qué lee, y que nada sale de tu iPhone. Si ya le diste permiso, sigue dado — cambiar ese texto no lo revoca. Por dentro: la pantalla de Hoy dejó de hacer un trabajo que ya no alimentaba nada, incluida una escritura a la base de datos en cada refresco, para una función que está apagada.
   **EN** — Four empty states still told you to "import your strap export in Data Sources" to fill your history. That importer was removed a few versions ago, so the instruction was impossible: it pointed at a button that isn't there. They now point at something you can actually do, connecting Apple Health. And the dialog iOS shows to ask for Bluetooth permission named the band's brand; it now uses neutral wording without changing what it promises: what it reads, and that nothing leaves your iPhone. If you already granted it, it stays granted — changing that text doesn't revoke it. Under the hood: the Today screen stopped doing work that no longer fed anything, including a database write on every refresh, for a feature that is switched off.
   ([TodayView.swift](Cenit/Screens/TodayView.swift), [RootTabView.swift](CenitApp/App/RootTabView.swift), [project.yml](project.yml))
+- **El encabezado de este documento deja de prometer una importación que ya no existe / This document's header stops promising an import that no longer exists.**
+  **ES** — El bloque «What to expect» seguía diciendo «importa tu exportación de WHOOP para llenar tu historial al instante». Ese importador se retiró en FER-991, así que la promesa era falsa para cualquiera que llegara al repo. Ahora apunta a lo que sí existe: conectar Apple Salud en **Datos y fuentes**, que adelanta tu base con el historial que ya traes en el teléfono. De paso, ese mismo bloque dejó de nombrar la marca ajena para describir el hardware —dice **4.0** y **5/MG**, el mismo vocabulario neutro que FER-994 fijó dentro de la app—, porque es el texto que alguien lee al asomarse al proyecto. El descargo de no-afiliación del inicio **se conserva intacto, a propósito**: sigue siendo una advertencia verdadera mientras la app hable con la banda, y es justo lo que FER-994 también decidió no tocar. Solo documentación: ninguna pantalla y ningún número cambian.
+  **EN** — The "What to expect" block still said "import your WHOOP export to backfill your history instantly". That importer was retired in FER-991, so the promise was false to anyone landing on the repo. It now points at what does exist: connecting Apple Health in **Data & sources**, which starts your baseline ahead using the history already on your phone. While there, the same block stopped naming the other brand to describe the hardware — it says **4.0** and **5/MG**, the neutral vocabulary FER-994 settled on inside the app — since this is the text someone reads when they look at the project. The non-affiliation disclaimer at the top is **deliberately left intact**: it stays a true warning while the app talks to the strap, exactly what FER-994 also chose not to touch. Documentation only: no screen and no number changes.
+  ([CHANGELOG.md](CHANGELOG.md))
 
 - **Un momento marcado con la voz se guarda a la hora en que lo pediste / A moment marked by voice is saved at the time you asked for it.**
   **ES** — Si le pedías a Siri «marca un momento en Cénit» con el teléfono bloqueado, Cénit apuntaba la hora equivocada. El atajo dejaba el recado en una fila y el momento se sellaba hasta que abrías la app, así que un momento de las 7 de la mañana podía quedar registrado a mediodía — justo lo que un marcador con hora no debe hacer. Ahora la fila también guarda el instante en que lo pediste, y ese es el que se registra. Los momentos siguen quedando en orden aunque uno llegue tarde a la fila, y un recado que ya estaba en espera antes de esta actualización no se pierde.
