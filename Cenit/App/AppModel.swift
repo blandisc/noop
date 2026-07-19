@@ -2,7 +2,6 @@ import SwiftUI
 import Combine
 import Observation
 import UserNotifications
-import WhoopProtocol
 import BiometricStreams
 import CenitStore
 import StrandImport

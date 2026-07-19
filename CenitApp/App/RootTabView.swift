@@ -296,7 +296,10 @@ struct RootTabView: View {
             switch req {
             case .today:    selection = .today
             case .body:     selection = .body
-            case .coach:    selection = .coach
+            // FER-999: «coach» ya no se monta como pestaña (FER-992) — sin `lazyTab` en el TabView, asignar
+            // `selection = .coach` dejaría a SwiftUI en un estado sin tag (pestaña en blanco), igual que en la
+            // ruta DEBUG de abajo. La petición se ignora. Re-enable con la pestaña: case .coach: selection = .coach
+            case .coach:    break
             case .train:    selection = .train
             case .settings: selection = .settings
             }

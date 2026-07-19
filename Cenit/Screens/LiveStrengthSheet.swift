@@ -4,7 +4,6 @@ import UIKit
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
-import WhoopProtocol
 import CenitStore
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 

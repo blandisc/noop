@@ -4,7 +4,6 @@ import UIKit
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
-import WhoopProtocol
 import CenitStore
 
 /// The «Change {exercise}» sheet (FER-894 · «Cómo llego a Cambiar»): a search field over the library plus a

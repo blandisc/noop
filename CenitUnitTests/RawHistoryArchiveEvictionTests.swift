@@ -1,6 +1,5 @@
 import XCTest
 @testable import Cenit
-import WhoopProtocol
 
 /// FER-693 (#344): the reject archive has a byte cap. A full archive must not drop a rare never-seen
 /// layout version (WHOOP 4 v19, WHOOP 5 v20/v21) — the exact frames we keep the archive to study. Each

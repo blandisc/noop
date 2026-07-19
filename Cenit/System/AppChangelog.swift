@@ -66,7 +66,7 @@ enum AppChangelog {
         Expectation(
             icon: "hourglass",
             title: "Your scores build over a few nights",
-            body: "Live heart rate is instant. Recovery, strain and sleep sharpen as Cénit learns your baseline over your first nights of wear. Want your history now? Import your strap export in Data Sources and it backfills in about a minute."),
+            body: "Live heart rate is instant. Recovery, strain and sleep sharpen as Cénit learns your baseline over your first nights of wear. Want your history now? Connect Apple Health in Data Sources and it backfills what you already have."),
         Expectation(
             icon: "lock.shield",
             title: "Everything stays on your device",

@@ -1,6 +1,5 @@
 import Foundation
 import CenitStore
-import WhoopProtocol
 import BiometricStreams
 import StrandAnalytics
 

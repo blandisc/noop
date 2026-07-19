@@ -2,7 +2,6 @@
 import SwiftUI
 import StrandDesign
 import StrandAnalytics
-import WhoopProtocol
 import CenitStore
 
 // MARK: - Ajustes (the Settings tab root) — FER-337
