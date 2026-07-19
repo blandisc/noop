@@ -3,11 +3,20 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 
-// RoutineSetEditing.swift — the per-set rest logic + rest chip shared by the two inline set-table screens:
-// the routine builder (1d, `RoutineBuilderScreen`) and the unified «Rutina» editor (`RoutineEditorScreen`, FER-839).
-// Both edit the SAME model (`RoutineExercise` + its `RoutineSet`s) with the SAME F0 rest model, so the
-// resolution/apply/label helpers live here once. The set TABLE itself (numeral ring vs plain label, thumb,
-// column widths) stays per-screen because those renderings genuinely differ.
+// RoutineSetEditing.swift — la lógica de descanso por serie + los componentes que comparten las
+// pantallas de entrenamiento: el editor «Rutina» (`RoutineEditorScreen`, FER-839) y la sesión activa
+// (`LiveStrengthSheet`). Ambas trabajan sobre el MISMO modelo de descanso (F0), así que los helpers de
+// resolución/aplicación/etiqueta viven aquí una sola vez.
+//
+// Aquí viven también `RestChip`, `SupersetTag` y `DeleteSetPill` — las tres estaban duplicadas entre
+// esas dos pantallas y varias ya habían divergido (2026-07-19).
+//
+// El `RoutineBuilderScreen` que también compartía este archivo se retiró ese mismo día: era una SEGUNDA
+// pantalla de prescripción, su único flujo vivo («Duplicar como rutina») ya terminaba en el editor, y
+// mantenerla obligaba a curar cada componente dos veces.
+//
+// La TABLA de series sigue siendo de cada pantalla, y eso es a propósito: una prescribe y la otra
+// captura, así que difieren de verdad (ver la nota gemela sobre el numeral en ambas).
 
 /// Identifies the set whose rest the 1e editor is editing (exercise index + set index).
 struct RestEditTarget: Identifiable, Hashable { let ei: Int; let si: Int; var id: String { "\(ei)-\(si)" } }
