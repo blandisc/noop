@@ -24,21 +24,36 @@ public struct HeaderActionButton: View {
             label
                 .font(StrandFont.subhead.weight(.medium))
                 .foregroundStyle(enabled ? theme.ink : theme.inkTertiary)
-                .padding(.horizontal, 14)
-                .frame(height: Self.height)
-                .background(Capsule().fill(theme.surface))
-                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                .frame(minHeight: Self.hitTarget)
+                .headerCapsule(theme)
+                // El marco táctil lo pone el BOTÓN, no el cromo: la sesión activa mete sus cápsulas
+                // en una fila de 32 junto al reloj, y forzarles 44 desde el modificador le crecería
+                // el encabezado 12pt a una pantalla ya publicada.
+                .frame(minHeight: 44)
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
     }
+}
 
-    /// 32 es la altura de cápsula que la sesión ya usa en Pausar/Terminar; el marco de 44 le da el
-    /// área táctil de HIG sin engordar el dibujo (misma disciplina que `BackButton`).
-    private static let height: CGFloat = 32
-    private static let hitTarget: CGFloat = 44
+public extension View {
+    /// El cromo de la cápsula de encabezado — relleno, filo y altura del dibujo, en un solo lugar.
+    ///
+    /// Existe como modificador y no solo dentro de `HeaderActionButton` porque la sesión activa tiene
+    /// cuatro acciones (Reanudar, Pausar, Terminar, Descartar) cuyo contenido no es un rótulo simple:
+    /// un `Label` con icono, un glifo solo, dos voces tipográficas distintas. Todas comparten ESTE
+    /// cromo; lo que cambia es lo que va adentro.
+    ///
+    /// Dibuja 32 de alto y NO impone área táctil: quien lo use decide si envolverlo en un marco de
+    /// 44. `HeaderActionButton` lo hace; la sesión no puede, porque sus cápsulas comparten fila con
+    /// el reloj y crecerían el encabezado.
+    func headerCapsule(_ theme: InstrumentoTheme) -> some View {
+        self
+            .padding(.horizontal, 14)
+            .frame(height: 32)
+            .background(Capsule().fill(theme.surface))
+            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+    }
 }
 
 #if DEBUG
