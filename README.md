@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.svg" alt="Cénit — an on-device companion for WHOOP straps" width="860">
+  <img src="docs/assets/banner.svg" alt="Cénit — an on-device companion for your strap" width="860">
 </p>
 
 <h1 align="center">Cénit</h1>
@@ -10,7 +10,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-iOS%2017+-0C8F62?style=flat-square">
   <img alt="On-device" src="https://img.shields.io/badge/on--device-only-0C8F62?style=flat-square">
   <img alt="Account free" src="https://img.shields.io/badge/account-free-0C8F62?style=flat-square">
-  <img alt="WHOOP 4.0 and 5.0/MG" src="https://img.shields.io/badge/works%20with-WHOOP%204.0%20%26%205.0%2FMG-6F6857?style=flat-square">
+  <img alt="Works with 4.0 and 5.0/MG straps" src="https://img.shields.io/badge/works%20with-4.0%20%26%205.0%2FMG%20straps-6F6857?style=flat-square">
   <a href="LICENSE"><img alt="License: PolyForm Noncommercial 1.0.0" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-6F6857?style=flat-square"></a>
 </p>
 
@@ -42,14 +42,14 @@ media downloader (off by default — see [Privacy](#privacy)).
 
 ---
 
-Cénit is a standalone, fully **on-device** companion app for WHOOP straps (4.0 and
-5.0/MG). It pairs directly with the strap over Bluetooth, stores everything on your
-own iPhone in SQLite, imports your existing WHOOP and Apple Health history, and
-computes recovery, strain, HRV, and sleep **locally**, with no WHOOP account and
-no WHOOP cloud.
+Cénit is a standalone, fully **on-device** companion app for the strap on your
+wrist (4.0 and 5.0/MG). It pairs directly with the strap over Bluetooth, stores
+everything on your own iPhone in SQLite, imports your existing strap and Apple
+Health history, and computes recovery, strain, HRV, and sleep **locally**, with no
+account and no cloud.
 
 It is built on prior community reverse-engineering work and exists for one
-reason: to let someone who owns a WHOOP strap read **their own biometric data**
+reason: to let someone who owns a strap read **their own biometric data**
 from **their own device**, on a machine **they** control.
 
 > **Not affiliated with WHOOP.** Cénit is an independent, unofficial

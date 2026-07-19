@@ -1692,7 +1692,7 @@ struct MetricDetailScreen: View {
             Text("No VO₂max yet")
                 .font(InstrumentoType.groteskHeadline(17))
                 .foregroundStyle(theme.ink)
-            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap.")
+            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the strap.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)

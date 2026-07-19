@@ -87,7 +87,7 @@ enum RhythmCopy {
     }
     static var noDataTitle: String { String(localized: "No reading from last night.") }
     static var noDataBody: String { String(localized: "Sleep with your strap to see your rhythm here.") }
-    static var needsBandTitle: String { String(localized: "Ritmo needs a WHOOP band.") }
+    static var needsBandTitle: String { String(localized: "Ritmo needs a strap.") }
     static var needsBandBody: String {
         String(localized: "The beat-to-beat tacogram only comes from the band; it isn't available with Apple Health only.")
     }
@@ -142,7 +142,7 @@ enum RhythmCopy {
         "Couldn't read it clearly last night.",
         "There was too much movement or too little signal at rest. It's normal, try again tomorrow.",
         "No reading from last night.", "Sleep with your strap to see your rhythm here.",
-        "Ritmo needs a WHOOP band.",
+        "Ritmo needs a strap.",
         "The beat-to-beat tacogram only comes from the band; it isn't available with Apple Health only.",
         "Cloud shape (SD1:SD2)", "how round vs. elongated",
         "Short width (SD1)", "variation from one beat to the next",

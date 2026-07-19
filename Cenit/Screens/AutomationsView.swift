@@ -261,7 +261,7 @@ private struct AutomationsContent: View {
                             .labelsHidden().datePickerStyle(.compact).tint(theme.ink)
                     }
                     .frame(minHeight: 42).padding(.vertical, 4)
-                    Text("On WHOOP 5/MG this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.")
+                    Text("On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path.")
                         .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                         .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
                 }

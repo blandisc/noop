@@ -625,7 +625,7 @@ struct DataSourcesView: View {
     // MARK: - Sincronización de la banda (FER-83 diagnostic)
 
     private var bandSyncSection: some View {
-        section("WHOOP Strap") {
+        section("Strap") {
             // Three-state, consistent with the Live screen's connection pill — a connected-but-not-yet-
             // streaming strap (e.g. an experimental WHOOP 5/MG link) no longer reads as "Not connected"
             // on one screen and "Connected" on another (issue #8). Color rides the status datum (the dot
@@ -640,7 +640,7 @@ struct DataSourcesView: View {
                 Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)
-            Text("Pairs directly with your strap over Bluetooth: no WHOOP app, no cloud.")
+            Text("Pairs directly with your strap over Bluetooth: no other app, no cloud.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             divider
@@ -758,7 +758,7 @@ struct DataSourcesView: View {
             case .nothingNew:
                 return ("circle", "The band has nothing new.", theme.inkSecondary)
             case .notStoringClock:
-                return ("clock.badge.exclamationmark.fill", "The band lost its clock and isn’t saving. Cénit is re-setting it: keep it connected. If it doesn’t recover, run it through the WHOOP app.", theme.warning)
+                return ("clock.badge.exclamationmark.fill", "The band lost its clock and isn’t saving. Cénit is re-setting it: keep it connected. If it doesn’t recover, run it through the strap’s official app.", theme.warning)
             case .arrivesButNoDecode:
                 return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode: please report.", theme.warning)
             case .receivingAndStoring:
@@ -847,14 +847,14 @@ struct DataSourcesView: View {
     private func coverageSummaryString(whoop: Int, apple: Int) -> String {
         let total = whoop + apple
         if total == 0 { return String(localized: "No data in the last 30 days") }
-        if apple == 0 { return String(localized: "\(total) of 30 days from your WHOOP strap") }
+        if apple == 0 { return String(localized: "\(total) of 30 days from your strap") }
         if whoop == 0 { return String(localized: "\(total) of 30 days · Apple Health only") }
         return String(localized: "\(total) of 30 days · \(whoop) from the strap, \(apple) Apple Health only")
     }
 
     private func coverageA11yLabel(whoop: Int, apple: Int, empty: Int) -> String {
         let total = whoop + apple
-        return String(localized: "Data coverage for the last 30 days: \(total) days with data. \(whoop) days from the WHOOP strap, \(apple) days Apple Health only, \(empty) days with no data.")
+        return String(localized: "Data coverage for the last 30 days: \(total) days with data. \(whoop) days from the strap, \(apple) days Apple Health only, \(empty) days with no data.")
     }
 
     @ViewBuilder
@@ -867,7 +867,7 @@ struct DataSourcesView: View {
 
     @ViewBuilder
     private func coverageLegendItems(hasWhoop: Bool, hasApple: Bool) -> some View {
-        coverageLegendItem(color: theme.dataRecovery, label: "WHOOP strap", active: hasWhoop)
+        coverageLegendItem(color: theme.dataRecovery, label: "Strap", active: hasWhoop)
         coverageLegendItem(color: theme.dataSpO2, label: "Apple Health only", active: hasApple)
         coverageLegendItem(color: theme.hairlineStrong, label: "No data", active: true)
     }
@@ -904,7 +904,7 @@ struct DataSourcesView: View {
         VStack(alignment: .leading, spacing: 8) {
             if hasData {
                 if whoopDays > 0 {
-                    sourceRow(name: "WHOOP",
+                    sourceRow(name: "Strap",
                               count: String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"),
                               tint: theme.dataRecovery)
                 }
