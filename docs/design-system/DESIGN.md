@@ -348,6 +348,19 @@ Not tokens — how the tokens are allowed to combine. `/qa` checks screens again
    `surface` is the exception, used sparingly and never nested.
 4. **Moderate overline.** Labels are quiet (tertiary ink). They orient; they don't announce.
 
+**«Decoración» depende del contexto — y por eso la regla 2 puede dar resultados opuestos en dos
+pantallas sin que ninguna esté mal** (decisión Fer 2026-07-19). El caso que fijó el criterio: el
+numeral de serie va en **tinta pelona** al editar una rutina (`RoutineEditorScreen.numeralRing`) y con
+**anillo ámbar** en la sesión activa (`LiveStrengthSheet.badge`). Las dos citaban la regla 2 y llegaban
+a lo contrario. La lectura correcta es que el color «vive en el dato», y **qué cuenta como el dato
+cambia con el momento**: planeando el martes en el sillón, «cuál serie es» no urge y el anillo sería
+cromo; con la barra en la mano, «cuál voy» es el dato más urgente de la pantalla y el anillo deja de
+ser adorno.
+
+Cuando dos pantallas diverjan por esta razón, **escríbelo en el código de las dos** (nota gemela con el
+porqué). Una divergencia deliberada sin documentar es indistinguible de un copy-paste desfasado, y la
+siguiente auditoría de duplicación la va a «corregir».
+
 ### 8.5 Components & states
 
 | Component | Purpose | Key API |

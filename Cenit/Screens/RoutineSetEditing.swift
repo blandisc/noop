@@ -3,11 +3,20 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 
-// RoutineSetEditing.swift — the per-set rest logic + rest chip shared by the two inline set-table screens:
-// the routine builder (1d, `RoutineBuilderScreen`) and the unified «Rutina» editor (`RoutineEditorScreen`, FER-839).
-// Both edit the SAME model (`RoutineExercise` + its `RoutineSet`s) with the SAME F0 rest model, so the
-// resolution/apply/label helpers live here once. The set TABLE itself (numeral ring vs plain label, thumb,
-// column widths) stays per-screen because those renderings genuinely differ.
+// RoutineSetEditing.swift — la lógica de descanso por serie + los componentes que comparten las
+// pantallas de entrenamiento: el editor «Rutina» (`RoutineEditorScreen`, FER-839) y la sesión activa
+// (`LiveStrengthSheet`). Ambas trabajan sobre el MISMO modelo de descanso (F0), así que los helpers de
+// resolución/aplicación/etiqueta viven aquí una sola vez.
+//
+// Aquí viven también `RestChip`, `SupersetTag` y `DeleteSetPill` — las tres estaban duplicadas entre
+// esas dos pantallas y varias ya habían divergido (2026-07-19).
+//
+// El `RoutineBuilderScreen` que también compartía este archivo se retiró ese mismo día: era una SEGUNDA
+// pantalla de prescripción, su único flujo vivo («Duplicar como rutina») ya terminaba en el editor, y
+// mantenerla obligaba a curar cada componente dos veces.
+//
+// La TABLA de series sigue siendo de cada pantalla, y eso es a propósito: una prescribe y la otra
+// captura, así que difieren de verdad (ver la nota gemela sobre el numeral en ambas).
 
 /// Identifies the set whose rest the 1e editor is editing (exercise index + set index).
 struct RestEditTarget: Identifiable, Hashable { let ei: Int; let si: Int; var id: String { "\(ei)-\(si)" } }
@@ -18,6 +27,13 @@ struct ProgressionTarget: Identifiable, Hashable { let ei: Int; var id: Int { ei
 // MARK: - Per-set rest resolution (F0 model)
 
 enum RoutineSetEditing {
+    /// La forma de la rampa de calentamiento: tres series al 40 / 60 / 80 % del peso de trabajo, a 10
+    /// repeticiones. Es una regla del DOMINIO, no de una pantalla, y estaba escrita a mano en tres
+    /// lugares (editar rutina, sesión activa y el builder). Si algún día la rampa cambia —cuatro pasos,
+    /// otros porcentajes— debe cambiar UNA vez. (2026-07-19)
+    static let warmupFactors: [Double] = [0.4, 0.6, 0.8]
+    static let warmupReps = 10
+
     /// This set's effective rest: its own override if set, else the exercise's rest fields (the F0 fallback).
     static func effectiveRest(_ re: RoutineExercise, _ si: Int) -> RestConfig {
         if let r = re.sets[si].rest { return r }
@@ -143,7 +159,56 @@ struct RestChip: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Edit rest for this set"))
+        // 2026-07-19: la sesión activa reimplementaba este chip entero, con un comentario que ya
+        // afirmaba «MISMO chip que el editor» mientras el código los tenía separados. Al unificarlos se
+        // conservó la MEJOR accesibilidad de las dos —la de la sesión—: etiqueta y valor separados, para
+        // que VoiceOver anuncie el descanso al cambiar sin releer la acción. De paso se corrige el copy:
+        // FER-952 hizo el descanso por EJERCICIO, así que «de esta serie» llevaba meses mintiendo.
+        .accessibilityLabel(Text("Edit rest"))
+        .accessibilityValue(Text(RoutineSetEditing.restChipLabel(cfg)))
+    }
+}
+
+// MARK: - «SUPERSERIE» — el rótulo del par
+//
+// Cada pantalla tenía la mitad de la razón (2026-07-19). El editor usaba `groteskOverline` pero en
+// `inkSecondary`; la sesión usaba `dataHrv` pero con `StrandFont.overline`, que DESIGN.md §8.7 marca
+// como legacy («ninguna pantalla nueva lo usa»). La unión correcta es la voz del editor con el color
+// de la sesión: **Grotesk en teal**. El teal no es decoración aquí — es la señal de superserie en todo
+// el flujo (el badge A1/A2, el riel, las leyendas), así que el `inkSecondary` del editor rompía esa
+// asociación justo donde más se necesita.
+struct SupersetTag: View {
+    @Environment(\.instrumentoTheme) private var theme
+
+    var body: some View {
+        Text("Superset").groteskOverline().foregroundStyle(theme.dataHrv)
+    }
+}
+
+// MARK: - «Quitar serie» — la pastilla que arma el long-press
+//
+// Vivía copiada en editar rutina y en la sesión activa con la MISMA anatomía (r21: glifo chico, caption
+// plano, padding apretado, cápsula de contorno crítico). Solo difería el ACTO: el editor borra de la
+// prescripción, la sesión borra de la captura y además apaga el calentamiento persistente si esa era la
+// última «C». Se comparte la vista; el acto lo pone cada pantalla. (2026-07-19)
+struct DeleteSetPill: View {
+    @Environment(\.instrumentoTheme) private var theme
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "trash").font(StrandFont.glyph(.chevron))
+                Text("Delete set").font(StrandFont.caption)
+            }
+            .foregroundStyle(theme.critical)
+            .padding(.horizontal, 9).padding(.vertical, 5)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .transition(.opacity.combined(with: .scale(scale: 0.9)))
     }
 }
 #endif

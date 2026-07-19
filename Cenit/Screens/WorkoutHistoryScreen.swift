@@ -825,11 +825,13 @@ struct WorkoutSessionDetailScreen: View {
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     /// Drives «Duplicar como rutina» — a routine builder pre-filled with this session's exercises (2A).
-    @State private var showDuplicate = false
-    /// The routine the duplicate-builder just created; pushed onto «Rutina» when its sheet finishes
-    /// dismissing (pushing mid-dismiss stacks transitions, FER-171 lesson).
-    @State private var savedRoutineId: String? = nil
-
+    /// 2026-07-19: se retiró `RoutineBuilderScreen` — «Duplicar» ahora persiste la rutina y abre el
+    /// editor directo, así que ya no hay hoja intermedia que presentar. Queda el flag de «guardando»
+    /// para no disparar dos veces con un doble toque.
+    @State private var duplicating = false
+    /// El fallo al DUPLICAR va aparte de `saveError`: ese banner dice «no se pudo borrar», con copy
+    /// propio, y reusarlo aquí le mentiría al usuario sobre qué falló.
+    @State private var duplicateError = false
     /// Work sets grouped by exercise, in the order they were performed.
     @State private var groups: [(exerciseId: String, name: String, sets: [SetEntry])] = []
     /// Resolved exercises by id, so tapping a block opens its detail (FER-517).
@@ -971,15 +973,7 @@ struct WorkoutSessionDetailScreen: View {
                     .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
             }
         }
-        // «Duplicar como rutina» (2A): a routine builder pre-filled with this session's exercises. Saving
-        // creates a NEW routine (never touches this session) and opens it on «Rutina» once the sheet is
-        // down (FER-840). Theme/repo passed explicitly across the sheet.
-        .sheet(isPresented: $showDuplicate, onDismiss: {
-            if let id = savedRoutineId { savedRoutineId = nil; openRoutine?(id) }
-        }) {
-            RoutineBuilderScreen(seedName: duplicateName, seed: duplicateSeed) { id in savedRoutineId = id }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
-        }
+        .saveErrorToast(isPresented: $duplicateError)
         .task { await load() }
         .enableInjection()
     }
@@ -990,7 +984,7 @@ struct WorkoutSessionDetailScreen: View {
         VStack(spacing: 10) {
             StrandCTAButton("Repeat today") { repeatToday() }
                 .disabled(groups.isEmpty)
-            StrandCTAButton("Duplicate as routine", kind: .outline) { showDuplicate = true }
+            StrandCTAButton("Duplicate as routine", kind: .outline) { duplicateAsRoutine() }
                 .disabled(groups.isEmpty)
         }
     }
@@ -1023,6 +1017,36 @@ struct WorkoutSessionDetailScreen: View {
             )
             let pair: SeedItem = (re: re, exercise: ex)
             return pair
+        }
+    }
+
+    /// Crea la rutina con los ejercicios de esta sesión y la abre en «Rutina» para nombrarla y
+    /// ajustarla. Mismo camino que «＋ Nueva rutina» del hub (`createRoutineFromHub`): persistir y
+    /// empujar el editor, sin una segunda pantalla de prescripción de por medio.
+    private func duplicateAsRoutine() {
+        guard !duplicating else { return }
+        // El guard mira el SEED, no `groups`: el seed descarta los ejercicios que ya no están en el
+        // catálogo, así que una sesión con grupos puede producir cero ejercicios. Antes eso sólo abría
+        // una hoja cancelable; ahora escribiría una rutina vacía a la base.
+        let seed = duplicateSeed
+        guard !seed.isEmpty else { return }
+        duplicating = true
+        let now = Int(Date().timeIntervalSince1970)
+        let routine = Routine(name: duplicateName, createdTs: now, updatedTs: now, sortOrder: 0)
+        let exercises: [RoutineExercise] = seed.enumerated().map { idx, item in
+            var re = item.re
+            re.routineId = routine.id
+            re.position = idx
+            return re
+        }
+        Task {
+            defer { duplicating = false }
+            do {
+                try await repo.saveRoutine(routine, exercises: exercises)
+                openRoutine?(routine.id)
+            } catch {
+                duplicateError = true
+            }
         }
     }
 

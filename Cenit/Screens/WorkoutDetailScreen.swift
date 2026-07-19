@@ -5,6 +5,7 @@ import StrandAnalytics
 import StrandTraining
 import CenitStore
 import Foundation
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - WorkoutDetailScreen — el detalle de UNA sesión, en «Instrumento» (FER-261)
 //
@@ -60,6 +61,8 @@ struct WorkoutDetailScreen: View {
     /// join as the volume tile. `nil` (ad-hoc session, deleted routine, non-strength) falls back to the sport.
     @State private var routineTitle: String? = nil
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -121,6 +124,7 @@ struct WorkoutDetailScreen: View {
                 }
             }
         }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     private var blockDivider: some View { Rectangle().fill(theme.hairline).frame(height: 1) }

@@ -2,6 +2,7 @@
 import SwiftUI
 import StrandDesign
 import StrandTraining
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // WorkoutEditSheet.swift — edit a SAVED strength session (FER-556). Opened from
 // `WorkoutSessionDetailScreen`'s «Editar». Corrects the user-authored data: each set's weight/reps,
@@ -70,6 +71,8 @@ struct WorkoutEditSheet: View {
                             notes: session.notes ?? "", groups: g)
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         NavigationStack {
             listBody
@@ -136,6 +139,7 @@ struct WorkoutEditSheet: View {
             let all = await repo.allExercises()
             exercisesByID = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - List
@@ -444,9 +448,12 @@ struct WorkoutEditSheet: View {
         system == .imperial ? UnitFormatter.poundsToKg(shown) : shown
     }
 
+    /// 2026-07-19: era una CUARTA copia del formateador de peso, con la misma deriva que las otras tres
+    /// — conservaba el decimal en imperial, así que la misma serie se leía «181.9 lb» aquí y «182 lb» al
+    /// editar la rutina o al entrenarla. Enruta por `StrengthDisplay`, la única fuente de la regla.
     private func formatCell(_ v: Double, isInt: Bool) -> String {
         if isInt { return "\(Int(v.rounded()))" }
-        return v == v.rounded() ? "\(Int(v))" : String(format: "%.1f", v)
+        return StrengthDisplay.displayNumber(v, system: system)
     }
 
     private static func parseDouble(_ raw: String) -> Double? {
@@ -528,7 +535,7 @@ private struct ReassignTarget: Identifiable {
 
 private extension View {
     /// A list row that disappears into the paper: clear background, no separator, screen-margin insets —
-    /// so the `List` reproduces the «Instrumento» look (same recipe as `RoutineBuilderScreen`).
+    /// so the `List` reproduces the «Instrumento» look.
     func plainRow(_ insets: EdgeInsets) -> some View {
         self.listRowBackground(Color.clear)
             .listRowSeparator(.hidden)

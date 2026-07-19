@@ -246,6 +246,24 @@
             }
         }
     },
+    "Set" : {
+        "comment" : "Boton de la fila de acciones de un ejercicio: agrega una serie. El glifo + porta el verbo; el accessibilityLabel dice la accion completa.",
+        "extractionState" : "manual",
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Set"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Serie"
+                }
+            }
+        }
+    },
     "Square · steady focus" : {
         "localizations" : {
             "en" : {
@@ -322,6 +340,24 @@
                 "stringUnit" : {
                     "state" : "translated",
                     "value" : "Esperando R-R"
+                }
+            }
+        }
+    },
+    "Warm-up" : {
+        "comment" : "Boton de la fila de acciones de un ejercicio: inserta la rampa de calentamiento. El glifo + porta el verbo; el accessibilityLabel dice la accion completa.",
+        "extractionState" : "manual",
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Warm-up"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Calentamiento"
                 }
             }
         }

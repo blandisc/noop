@@ -2,6 +2,7 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Rest editor (1e, FER-716)
 //
@@ -72,6 +73,8 @@ struct RestEditorScreen: View {
                            peakHR: nil, restingHR: restingHR, maxHR: maxHR)
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -110,6 +113,7 @@ struct RestEditorScreen: View {
         // FER-988: el gesto de volver, vetado a favor de `onCancel` — la salida de esta pantalla
         // aplica/descarta según su modo, y un pop crudo se la saltaría. Inerte como hoja (`.close`).
         .keepsSwipeBack { onCancel(); return false }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     private var header: some View {

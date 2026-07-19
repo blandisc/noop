@@ -7,16 +7,10 @@ import StrandAnalytics
 import CenitStore
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// Plate weights read cleaner without a trailing «.0» (60, not 60.0) but keep a half-plate decimal (2.5).
-private func plateNumber(_ v: Double) -> String {
-    v == v.rounded() ? String(Int(v.rounded())) : String(format: "%.1f", v)
-}
-
-/// A weight in kilograms formatted for display in the user's unit, e.g. "82.5 kg" / "180 lb".
-private func massString(_ kg: Double, units: UnitSystem) -> String {
-    let v = units == .imperial ? UnitFormatter.kgToPounds(kg) : kg
-    return "\(plateNumber(v)) \(UnitFormatter.massUnit(units))"
-}
+// 2026-07-19: `plateNumber` y `massString` vivían aquí como copias privadas y se habían desfasado de
+// `StrengthDisplay`, que es lo que usa el editor: en imperial esta copia conservaba el decimal, así que
+// la MISMA serie se leía «182 lb» en editar y «181.9 lb» en la sesión. Ahora son métodos de la vista
+// (para tener `units` a la mano) y ambos enrutan por `StrengthDisplay`, la única fuente del formato.
 
 // MARK: - Guided strength session (FER-347, full-screen since FER-716)
 //
@@ -46,7 +40,6 @@ struct LiveStrengthSheet: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
-    @State private var confirmDiscard = false
     /// Which runs have their «por qué» raise card expanded (FER-E), by run id.
     @State private var whyRaiseOpen: Set<String> = []
     /// The cell the custom keypad is editing (FER-716) — one at a time, so a single working buffer is
@@ -285,10 +278,8 @@ struct LiveStrengthSheet: View {
             .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
             // FER-969: mid-session routine write failure (insert / superset / progression) — toast only;
             // the FINAL session save failure is the persistent `saveErrorBanner` above (X-01), not this.
-            .overlay(alignment: .top) {
-                bodySaveErrorToast
-            }
-            .animation(StrandMotion.fade, value: saveError)
+            // Componente compartido desde 2026-07-19 (era la misma copia en tres pantallas).
+            .saveErrorToast(isPresented: $saveError)
             // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
             // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
             .sheet(isPresented: $showLibraryPicker) {
@@ -297,23 +288,6 @@ struct LiveStrengthSheet: View {
             .onChange(of: session.phase) { _, phase in
                 if phase != .resting { restAnchorEi = nil }
             }
-    }
-
-    @ViewBuilder
-    private var bodySaveErrorToast: some View {
-        if saveError {
-            Text("Couldn't save. Try again.")
-                .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-                .foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .patternBlock(theme, bar: theme.critical)
-                .padding(.horizontal, 16)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .task {
-                    try? await Task.sleep(for: .seconds(4))
-                    saveError = false
-                }
-        }
     }
 
     @ViewBuilder
@@ -374,7 +348,15 @@ struct LiveStrengthSheet: View {
                 exercise: routineREs[run.id] ?? syntheticRE(from: run, position: target.id),
                 exerciseName: run.name,
                 currentWeightKg: run.sets.first?.weightKg,
-                derivedIncrementKg: weightStepKg,
+                // El mínimo REAL según los discos que tienes, no el paso plano de la UI. Esta pantalla
+                // imprime «según tus discos: el mínimo es X» y, si dejas el default, guarda `nil`
+                // («usa el derivado»): con el paso plano la frase mentía Y se persistía un incremento
+                // que nunca elegiste. En imperial era más falso todavía — mandaba 2.2679 kg (5 lb),
+                // que no sale de ningún disco. El editor ya mandaba lo correcto; la sesión no, y el
+                // arreglo de `progressionSubtitle` sólo cubrió la superficie de LECTURA. (2026-07-19)
+                derivedIncrementKg: PlateMath.minimumIncrement(
+                    for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment),
+                    inventory: model.plates.inventory),
                 onBack: { progressionEdit = nil },
                 onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
                     persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
@@ -473,16 +455,6 @@ struct LiveStrengthSheet: View {
                 // doneCount > 0) — el botón hacía lo contrario de lo que decía. Sin series: quedarse es
                 // la primaria y descartar la destructiva; guardar solo existe cuando hay qué guardar.
                 actions: bodyFinishConfirmActions
-            )
-            .instrumentoConfirm(
-                isPresented: $confirmDiscard,
-                title: String(localized: "Discard workout?"),
-                context: String(localized: "SESSION · IN PROGRESS"),
-                message: String(localized: "Everything you logged in this session will be deleted. This can't be undone."),
-                actions: [
-                    .init(String(localized: "Keep training"), role: .primary),
-                    .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
-                ]
             )
             // r21 (auditoría UX #5a): emparejar con un vecino que YA es de otra superserie deshace
             // aquella pareja — se confirma con su nombre en la mano, nunca en silencio.
@@ -615,7 +587,6 @@ struct LiveStrengthSheet: View {
                 // FER-952 (owner): the tail breathed 28+12+24 — tightened to the compact rhythm; the
                 // stats bar below already separates the list from the edge.
                 if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.gap) }
-                discardFooter.plainRow(top: 4, bottom: CenitMetrics.gap)
             }
         }
     }
@@ -677,10 +648,10 @@ struct LiveStrengthSheet: View {
             if clipTop {
                 VStack(spacing: 0) {
                     Color.clear
-                    Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                    Rectangle().fill(railTint.opacity(StrandOpacity.strokeSoft)).frame(width: 2)
                 }
             } else {
-                Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
+                Rectangle().fill(railTint.opacity(StrandOpacity.strokeSoft)).frame(width: 2)
             }
             Group {
                 if let badgeText {
@@ -744,8 +715,7 @@ struct LiveStrengthSheet: View {
     /// «SUPERSERIE» tag, teal, next to a run's name when it's part of a real superset span (FER-931).
     @ViewBuilder private func supersetTag(_ ei: Int) -> some View {
         if session.isInSuperset(ei) {
-            Text("SUPERSET").font(StrandFont.overline).tracking(StrandFont.overlineTracking)
-                .foregroundStyle(theme.dataHrv)
+            SupersetTag()
         }
     }
 
@@ -945,33 +915,20 @@ struct LiveStrengthSheet: View {
 
     /// The armed row's destructive affordance (r15) — a quiet critical-outline pill riding the
     /// lifted row's trailing edge (it covers the check so the only offered act is the deletion).
+    /// La pastilla es el `DeleteSetPill` compartido; el ACTO es de esta pantalla — borra la captura y,
+    /// si esa era la última «C» del ejercicio, apaga su calentamiento persistente (r22).
     private func deleteSetPill(ei: Int, si: Int) -> some View {
-        Button {
+        DeleteSetPill {
             let wasWarmup = session.runs.indices.contains(ei)
                 && session.runs[ei].sets.indices.contains(si)
                 && session.runs[ei].sets[si].kind == .warmup
             withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
-            // r22 (owner): quitar la ÚLTIMA «C» del ejercicio apaga su calentamiento persistente.
             if wasWarmup, session.runs.indices.contains(ei),
                !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
                 model.plates.setWarmupAlways(session.runs[ei].exerciseId, false)
             }
             armedDeleteSetId = nil
-        } label: {
-            // r21 (owner): más discreto — se comía la fila hacia la izquierda; glifo chico, texto
-            // caption plano, padding apretado.
-            HStack(spacing: 5) {
-                Image(systemName: "trash").font(StrandFont.glyph(.chevron))
-                Text("Delete set").font(StrandFont.caption)
-            }
-            .foregroundStyle(theme.critical)
-            .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(theme.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
-            .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
-        .transition(.opacity.combined(with: .scale(scale: 0.9)))
         .accessibilityLabel(Text("Delete set"))
     }
 
@@ -1041,42 +998,13 @@ struct LiveStrengthSheet: View {
         .accessibilityLabel(Text("Work sets"))
     }
 
-    /// The riel's terminal node — a dotted circle affordance that opens the existing ad-hoc add-exercise
-    /// flow (`showLibraryPicker` → `addExercises`). Positional insertion is a later child (FER-929 §1).
+    /// The riel's terminal node — the shared `AddExerciseNode` (see the component for the decisions
+    /// behind it). Opens the existing ad-hoc add-exercise flow (`showLibraryPicker` → `addExercises`);
+    /// positional insertion is a later child (FER-929 §1).
     private var addExerciseNode: some View {
-        Button { showLibraryPicker = true } label: {
-            HStack(spacing: 12) {
-                // Canvas pass: the «＋» is the rail's TERMINAL stop — the thread drops from the cell
-                // top and dies exactly at the ring's center; ring and thread share the same 14pt lane
-                // center so they can't drift apart.
-                ZStack {
-                    VStack(spacing: 0) {
-                        Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
-                            .opacity(showRail ? 1 : 0)
-                        Color.clear
-                    }
-                    Circle().fill(theme.paper)
-                        .overlay(Circle().strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])))
-                        .frame(width: 18, height: 18)
-                        .overlay(
-                            Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)  // token-exempt: tiny plus glyph sized to the 18pt dotted add-node
-                        )
-                }
-                .frame(width: 14)
-                // Más prominente (Fer 2026-07-16): mismo chip de ancho completo que el editor.
-                HStack(spacing: 8) {
-                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add exercise").font(InstrumentoType.grotesk(14, weight: .semibold))
-                }
-                .foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            }
-            .frame(minHeight: 44 + CenitMetrics.gap)   // the row's own breathing — not an inset hole
-            .contentShape(Rectangle())
+        AddExerciseNode(theme: theme, threadTint: railTint, showThread: showRail) {
+            showLibraryPicker = true
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Add exercise"))
     }
 
     /// The custom keypad bound to the active cell (FER-716).
@@ -1493,7 +1421,7 @@ struct LiveStrengthSheet: View {
                 HStack(spacing: 14) {
                     SessionRunThumb(exerciseId: run.exerciseId, side: 56)
                         // r25 (owner): mismo marco de familia que la Biblioteca y la tarjeta activa.
-                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 56), style: .continuous)
                             .strokeBorder(categoryTint(run), lineWidth: 2))
                     VStack(alignment: .leading, spacing: 3) {
                         Text(run.name).font(InstrumentoType.grotesk(24, weight: .semibold))
@@ -1663,13 +1591,13 @@ struct LiveStrengthSheet: View {
                                                 weightKg: session.currentSet?.weightKg ?? 0)
                 } label: {
                     // r14: fuera el glifo «⛓» (tofu en Grotesk) — la leyenda queda «±2,5 · discos».
-                    Text("±\(plateNumber(displayWeight(weightStepKg))) · " + String(localized: "plates"))
+                    Text("±\(StrengthDisplay.incrementNumber(weightStepKg, system: units)) · " + String(localized: "plates"))
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).underline()
                         .lineLimit(1)
                 }
                 .buttonStyle(.plain)
             } else {
-                Text("±\(plateNumber(displayWeight(weightStepKg)))")
+                Text("±\(StrengthDisplay.incrementNumber(weightStepKg, system: units))")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
         }
@@ -2334,8 +2262,8 @@ struct LiveStrengthSheet: View {
                     .overlay(alignment: .leading) {
                         if showRail {
                             ZStack {
-                                Circle().fill(theme.paper).frame(width: 17, height: 17)
-                                Circle().fill(categoryTint(run)).frame(width: 11, height: 11)
+                                Circle().fill(theme.paper).frame(width: 15, height: 15)
+                                Circle().fill(categoryTint(run)).frame(width: 9, height: 9)
                             }
                             .offset(x: -33 - 8.5)
                             .allowsHitTesting(false)
@@ -2495,12 +2423,15 @@ struct LiveStrengthSheet: View {
 
     /// «activada · +2,5 kg cada 2 ✓» / «desactivada» — the progression state, read from the backing
     /// routine (cached at open; the session run doesn't carry progression config).
+    /// 2026-07-19: era una segunda redacción del mismo resumen que `ProgressionChip.summary`, y además
+    /// caía a un 2.5 kg fijo donde el editor deriva el mínimo de TUS discos — así que en un gimnasio sin
+    /// discos de 1.25 las dos pantallas prometían aumentos distintos para el mismo ejercicio. Ahora la
+    /// frase la arma el componente; esta pantalla solo le antepone su «activada ·».
     private func progressionSubtitle(_ run: StrengthSessionModel.ExerciseRun) -> String {
-        guard let re = routineREs[run.id] else { return String(localized: "off") }
-        guard re.progressionEnabled else { return String(localized: "off") }
-        let inc = re.progressionIncrementKg ?? 2.5
-        return String(localized: "on") + " · +\(plateNumber(displayWeight(inc))) " +
-               UnitFormatter.massUnit(units) + " " + String(localized: "every \(re.progressionSessions)") + " ✓"
+        guard let re = routineREs[run.id], re.progressionEnabled else { return String(localized: "off") }
+        let derived = PlateMath.minimumIncrement(for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment),
+                                                 inventory: model.plates.inventory)
+        return String(localized: "on") + " · " + ProgressionChip.summary(re, system: units, derived: derived)
     }
 
     /// The always-on, tenue reorder affordance (Sesión v21): a «≡» handle on each exercise header. Dragging
@@ -2745,25 +2676,11 @@ struct LiveStrengthSheet: View {
     /// r15 (owner, propuesta B): chips «troquel» — papel hundido sobre la tarjeta (paper dentro de
     /// surface, borde hairlineStrong, esquina continua), el ÚNICO color vive en el icono y el valor
     /// va en tinta media. Misma familia que los discos troquel del hub.
+    /// El chip de descanso — el `RestChip` compartido. Hasta 2026-07-19 esto era una copia entera del
+    /// componente, con un comentario que ya afirmaba «MISMO chip que el editor»: el comentario decía la
+    /// intención y el código la contradecía. Ahora sí es el mismo.
     private func restChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        // MISMO chip que el editor (decisión Fer 2026-07-16): ♥ recovery cuando el descanso es por
-        // FC (con su valor), reloj ámbar cuando es por tiempo — una sola gramática en todo el flujo.
-        let cfg = run.effectiveRest(forSet: run.currentSet)
-        let isHR = cfg.mode == .heartRate
-        return Button { openRestEditor(ei: ei) } label: {
-            HStack(spacing: 6) {
-                (isHR ? StrandIcon.heart.image : StrandIcon.clock.image)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(isHR ? theme.dataRecovery : theme.dataStrain)
-                Text(RoutineSetEditing.restChipLabel(cfg))
-                    .font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.ink)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .troquelChip(theme)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Edit rest"))
-        .accessibilityValue(Text(RoutineSetEditing.restChipLabel(cfg)))
+        RestChip(cfg: run.effectiveRest(forSet: run.currentSet)) { openRestEditor(ei: ei) }
     }
 
     /// The «✎ Nota» chip (FER-932), next to the rest chip on the active exercise's header. Opens
@@ -2855,13 +2772,13 @@ struct LiveStrengthSheet: View {
         return HStack(spacing: 8) {   // = spacing de gridRow: header y datos comparten geometría
             // El badge vive en un frame de 44 (26 visual + aire): el header usa el MISMO ancho,
             // si no, todas las columnas arrancan corridas (bug de alineación, canvas 2026-07-16).
-            Text("SET").instrumentoOverline().foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
+            Text("SET").groteskOverline(small: true).foregroundStyle(theme.inkTertiary).frame(width: 44, alignment: .center)
             // FER-952 (modelo fantasma): la columna PREV murió — la última vez vive dentro de las
             // celdas como semilla tenue. El hueco flexible mantiene las columnas pegadas a la derecha.
             Spacer(minLength: 0)
             ForEach(titles.indices, id: \.self) { i in
                 let isRPE = hasRPEColumn(type) && i == titles.indices.last
-                Text(titles[i]).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(titles[i]).groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
                     .frame(width: isRPE ? rpeColumnWidth : cellWidth(type), alignment: .center)
             }
             Color.clear.frame(width: 44, height: 1)
@@ -3214,6 +3131,14 @@ struct LiveStrengthSheet: View {
     /// The set's number badge. FER-937: a warm-up set shows a «C» (calentamiento) in a tenue ring and does
     /// not consume a work-set number; work sets are numbered 1..n counting only `.work` rows, so a warm-up
     /// never pushes «serie 1» to «serie 3».
+    ///
+    /// **Diverge a propósito de `RoutineEditorScreen.numeralRing`, y eso NO es deuda** (decisión Fer
+    /// 2026-07-19). Allá el numeral va en tinta pelona citando §8.4 («un anillo tintado por fila es
+    /// color-como-decoración»); aquí lleva anillo ámbar y subrayado de tinta en la serie en curso. Las
+    /// dos cumplen la regla, porque el contexto cambia QUÉ es decoración: en el editor el anillo no
+    /// aporta —nada urge—, y en plena serie «cuál voy» es el dato más urgente de la pantalla, así que
+    /// el anillo deja de ser cromo y pasa a ser el dato. La auditoría de duplicación marcó esto como
+    /// divergencia a corregir; se revisó y se decidió CONSERVARLA. Nota gemela allá.
     private func badge(run: StrengthSessionModel.ExerciseRun, si: Int) -> some View {
         let isWarmup = run.sets[si].kind == .warmup
         let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
@@ -3451,10 +3376,10 @@ struct LiveStrengthSheet: View {
         let workWeight: Double? = session.runs[ei].sets.first(where: { $0.kind == .work })?.weightKg
         let firstWeight: Double? = session.runs[ei].sets.first?.weightKg
         let top: Double = workWeight ?? firstWeight ?? 0
-        let factors: [Double] = [0.4, 0.6, 0.8]
+        let factors: [Double] = RoutineSetEditing.warmupFactors
         let ramp: [(weightKg: Double, reps: Int)] = factors.map { factor -> (weightKg: Double, reps: Int) in
             let weightKg: Double = top * factor
-            let reps: Int = 10
+            let reps: Int = RoutineSetEditing.warmupReps
             return (weightKg: weightKg, reps: reps)
         }
         withAnimation(StrandMotion.gentle) { session.insertWarmup(exercise: ei, sets: ramp) }
@@ -3804,21 +3729,14 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    private var discardFooter: some View {
-        // Canvas pass 2026-07-15: dressed as the destructive sibling of the header's «Terminar» —
-        // same capsule grammar, red by border, never a fill (DNA: primary-by-border).
-        Button(role: .destructive) { confirmDiscard = true } label: {
-            Text("Discard workout").font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.critical)
-                .padding(.horizontal, 18).padding(.vertical, 9)
-                .background(theme.surface, in: Capsule())
-                .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, 6)
-        .accessibilityLabel(Text("Discard workout"))
-    }
+    // 2026-07-19 (decisión Fer): se retiró el `discardFooter` — la cápsula roja flotante al final del
+    // scroll. Era una SEGUNDA PUERTA al mismo cuarto: «Terminar» ya abre un diálogo con «Descartar
+    // entrenamiento» adentro, en los dos estados (`bodyFinishConfirmActions`). Y su cápsula roja de
+    // contorno era, literalmente, el botón del diálogo que abría — el vocabulario de «confirmar la
+    // destrucción» gastado en el control que solo invita, que es el mismo argumento que ya justificaba
+    // vestir «Terminar» de tinta y no de alarma. Una destructiva con una sola puerta es más segura que
+    // con dos. El «Descartar» gris del encabezado para la sesión vacía (`discardEmptySession`) NO se
+    // tocó: es otro estado y otro camino.
 
     // MARK: Inline helpers (formatting / focus / actions)
 
@@ -4460,6 +4378,16 @@ struct LiveStrengthSheet: View {
     // MARK: Units / formatting
 
     private func displayWeight(_ kg: Double) -> Double { imperial ? UnitFormatter.kgToPounds(kg) : kg }
+
+    /// Formatea un valor YA convertido (el patrón `plateNumber(displayWeight(x))` de toda esta pantalla).
+    /// Enruta por `StrengthDisplay`: la regla de formato vive ahí y solo ahí.
+    private func plateNumber(_ v: Double) -> String { StrengthDisplay.displayNumber(v, system: units) }
+
+    /// Un peso en kg, con su unidad («82.5 kg» / «182 lb»).
+    private func massString(_ kg: Double, units: UnitSystem) -> String {
+        StrengthDisplay.weight(kg, system: units)
+    }
+
     private func massText(_ kg: Double) -> String { massString(kg, units: units) }
 
     static func clock(_ seconds: Int) -> String { SessionClock.format(seconds) }

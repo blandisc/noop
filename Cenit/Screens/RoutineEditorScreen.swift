@@ -3,6 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Rutina» — the ONE prescription editor (FER-839, handoff entrenamiento-v4 §2, screens 3a/4a/4b)
 //
@@ -86,6 +87,8 @@ struct RoutineEditorScreen: View {
         return session.routineId != nil && session.routineId == routine?.id
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -99,23 +102,9 @@ struct RoutineEditorScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .onDisappear { if dirty, !isOrphan { persist() } }
-        // FER-969: save failure is an inline banner (same pattern as WorkoutEditSheet), not silent success.
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't save. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
-            }
-        }
-        .animation(StrandMotion.fade, value: saveError)
+        // FER-969: el fallo de escritura es un banner honesto, no éxito silencioso. Componente
+        // compartido desde 2026-07-19 (era la misma copia en tres pantallas).
+        .saveErrorToast(isPresented: $saveError)
         .toolbar(.hidden, for: .navigationBar)
         // FER-988: ocultar la barra mata el gesto de volver; esto lo devuelve. Con cambios sin
         // guardar vetamos el pop y corremos `back()` — el mismo autosave que corre el botón, en vez
@@ -205,6 +194,7 @@ struct RoutineEditorScreen: View {
             await load()
             loaded = true
         }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - Origin chrome (mock 4a)
@@ -275,7 +265,7 @@ struct RoutineEditorScreen: View {
         ForEach(Array(items.enumerated()), id: \.element.id) { idx, _ in
                 let grouped = RoutineSetEditing.inSuperset(items.map(\.re), idx)
                 if firstOfGroup(idx) {
-                    Text("Superset").groteskOverline().foregroundStyle(theme.inkSecondary)
+                    SupersetTag()
                         .padding(.leading, 26)  // token-exempt: gutter del riel (Serie activa)
                         .plainRow(top: CenitMetrics.sectionGap, bottom: 0)
                 }
@@ -422,22 +412,11 @@ struct RoutineEditorScreen: View {
         return setRow(idx: idx, si: si)
             .overlay(alignment: .trailing) {
                 if armedDeleteSetId == setId {
-                    Button {
+                    // La pastilla es el componente compartido; el ACTO es de esta pantalla (borra la
+                    // prescripción, no una captura).
+                    DeleteSetPill {
                         withAnimation(.snappy) { armedDeleteSetId = nil; deleteSet(idx: idx, si: si) }
-                    } label: {
-                        // Misma anatomía r21 que la Serie activa: glifo chico + caption, discreto.
-                        HStack(spacing: 5) {
-                            Image(systemName: "trash").font(StrandFont.glyph(.chevron))
-                            Text("Delete set").font(StrandFont.caption)
-                        }
-                        .foregroundStyle(theme.critical)
-                        .padding(.horizontal, 9).padding(.vertical, 5)
-                        .background(theme.surface, in: Capsule())
-                        .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
-                        .contentShape(Capsule())
                     }
-                    .buttonStyle(.plain)
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
             }
             .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
@@ -527,7 +506,7 @@ struct RoutineEditorScreen: View {
             }
             VStack(alignment: .leading, spacing: 8) {
                 if block.isSuperset {
-                    Text("Superset").instrumentoOverline().foregroundStyle(theme.inkSecondary)
+                    SupersetTag()
                 }
                 ForEach(block.items) { item in
                     HStack(spacing: 10) {
@@ -677,7 +656,7 @@ struct RoutineEditorScreen: View {
             rows.append(.init(String(localized: "Superset with next"), systemImage: "link") { supersetWithNext(idx) })
         }
         if RoutineSetEditing.inSuperset(res, idx) {
-            rows.append(.init(String(localized: "Break superset"), systemImage: "link") { breakSuperset(idx) })
+            rows.append(.init(String(localized: "Undo superset"), systemImage: "link") { breakSuperset(idx) })
         }
         if item.exercise.type == .weightReps {
             rows.append(.init(String(localized: "Progression"),
@@ -689,7 +668,7 @@ struct RoutineEditorScreen: View {
                 progressionTarget = ProgressionTarget(ei: idx)
             })
         }
-        rows.append(.init(String(localized: "Replace exercise"), systemImage: "arrow.triangle.2.circlepath") {
+        rows.append(.init(String(localized: "Change exercise"), systemImage: "arrow.triangle.2.circlepath") {
             replaceIndex = idx; showLibrary = true
         })
         rows.append(.init(String(localized: "Remove from routine"), systemImage: "trash", isDestructive: true) {
@@ -763,6 +742,14 @@ struct RoutineEditorScreen: View {
 
     /// The set numeral, plain ink («C» for a warm-up set, in tertiary). Handoff: no ring — a tinted
     /// ring per row is color-as-decoration (§8.4); the hue lives only in the meta dot and rails.
+    ///
+    /// **Diverge a propósito de `LiveStrengthSheet.badge`, y eso NO es deuda** (decisión Fer
+    /// 2026-07-19). Las dos pantallas citaban §8.4 y llegaban a lo opuesto: aquí sin anillo, allá con
+    /// anillo ámbar. Gana cada una en su contexto — planeando el martes en el sillón «cuál serie es» se
+    /// lee tranquilo y el anillo sería cromo; con la barra en la mano «cuál voy» tiene que gritar y el
+    /// anillo hace trabajo real. La auditoría de duplicación marcó esto como divergencia a corregir; se
+    /// revisó y se decidió CONSERVARLA. Si alguien vuelve a «unificarlas», que sea con este párrafo
+    /// enfrente. Nota gemela en `LiveStrengthSheet.badge`.
     private func numeralRing(idx: Int, si: Int) -> some View {
         let warmup = items[idx].re.sets[si].kind == .warmup
         return Text(RoutineSetEditing.setLabel(items[idx].re, si))
@@ -770,18 +757,38 @@ struct RoutineEditorScreen: View {
             .foregroundStyle(warmup ? theme.inkTertiary : theme.ink)
     }
 
+    /// La celda de captura — **papel pautado, no caja** (decisión Fer 2026-07-19).
+    ///
+    /// Traía relleno `surface` + borde `insetRadius`, mientras la sesión activa usa una regla inferior.
+    /// Dos gramáticas de formulario para el mismo dato. Gana la regla, por dos razones: DESIGN.md §8.7
+    /// reserva las cápsulas y cajas a las ACCIONES —una caja alrededor de un número es cromo— y la
+    /// metáfora del DNA es papel, donde un dato se escribe sobre una raya, no dentro de un cuadro. De
+    /// paso la celda sube de 32 a 44 pt: la caja estaba por debajo del mínimo de la HIG.
+    ///
+    /// El MECANISMO sigue siendo el teclado nativo aquí y `SessionKeypad` allá, y eso es diferencia real
+    /// de producto: en sesión hacen falta ± por discos y no perder media pantalla bajo el teclado. Ver
+    /// la nota al pie del PR sobre por qué el keypad no se portó en este paso.
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType, width: CGFloat) -> some View {
-        TextField("—", text: text)
+        let focused = focusedCell == id
+        return TextField("—", text: text)
             .keyboardType(keyboard)
             .multilineTextAlignment(.center)
-            // Handoff: the prescription's figures speak Grotesk (400 15), like every datum on paper.
-            .font(InstrumentoType.grotesk(15)).monospacedDigit()
+            // Misma voz y tamaño que la celda de la sesión: Grotesk numérico 16 medium, que además
+            // escala con Dynamic Type intermedio.
+            .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
             .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
             .disabled(locked)
-            .frame(width: width, height: 32)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+            // `minHeight`, no `height` fijo: la fuente ahora escala con Dynamic Type (`relativeTo:`),
+            // así que una caja de alto fijo recortaría el número en los pasos grandes. Antes no pasaba
+            // porque la fuente era fija — subir el alto y hacerla escalar a la vez creó el riesgo, y lo
+            // señaló el gate de QA. 44 sigue siendo el piso táctil de la HIG.
+            .frame(minWidth: width, maxWidth: width, minHeight: 44)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(focused ? theme.ink : theme.hairlineStrong)
+                    .frame(height: focused ? 2 : 1)
+                    .padding(.bottom, 6)
+            }
     }
 
     /// The card's closing row (approved mock): TWIN pills of equal weight — «＋ Agregar serie» on the
@@ -794,8 +801,8 @@ struct RoutineEditorScreen: View {
                        addSet: { addSet(idx) }, addWarmup: { addWarmupRamp(idx) })
     }
 
-    /// The rail's terminal node (Serie activa's grammar, FER-952): the thread drops from the last card
-    /// and dies exactly at a dotted ember ring with a «＋» — one more stop on the line, not a door.
+    /// The rail's terminal node — the shared `AddExerciseNode` (see the component for the decisions
+    /// behind it). The thread takes the last card's tint so the line arrives in its own color.
     private var addExerciseRow: some View {
         let lastTint: Color = {
             guard let last = items.last else { return theme.dataStrain }
@@ -803,37 +810,10 @@ struct RoutineEditorScreen: View {
             if RoutineSetEditing.inSuperset(res, items.count - 1) { return theme.dataHrv }
             return theme.movementFamilyTint(primaryMuscles: last.exercise.primaryMuscles)
         }()
-        return Button { replaceIndex = nil; showLibrary = true } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    VStack(spacing: 0) {
-                        Rectangle().fill(lastTint.opacity(StrandOpacity.strokeSoft)).frame(width: 2)
-                        Color.clear
-                    }
-                    Circle().fill(theme.paper)
-                        .overlay(Circle().strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])))
-                        .frame(width: 18, height: 18)
-                        .overlay(
-                            Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)  // token-exempt: tiny plus glyph sized to the 18pt dotted add-node
-                        )
-                }
-                .frame(width: 14)
-                .padding(.leading, 0)
-                // Más prominente (Fer 2026-07-16): chip de ancho completo, misma anatomía que
-                // «＋ Nueva rutina» del hub — antes era un renglón fantasma que nadie veía.
-                HStack(spacing: 8) {
-                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add exercise").font(StrandFont.subhead.weight(.semibold))
-                }
-                .foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            }
-            .frame(minHeight: 44 + CenitMetrics.gap)   // the row's own breathing — not an inset hole
-            .contentShape(Rectangle())
+        return AddExerciseNode(theme: theme, threadTint: lastTint) {
+            replaceIndex = nil
+            showLibrary = true
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Add exercise"))
     }
 
     // MARK: - Pinned CTA (`.today` only — start / resume the guided session)
@@ -919,12 +899,12 @@ struct RoutineEditorScreen: View {
     /// «Agregar calentamiento» (mock 4b): a 40·60·80 % ramp. Writes `warmupPercents` (the model's canonical
     /// record) AND materializes the three «C» rows the table shows, seeded from the top work weight when known.
     private func addWarmupRamp(_ idx: Int) {
-        let ramp: [Double] = [0.4, 0.6, 0.8]
+        let ramp = RoutineSetEditing.warmupFactors
         items[idx].re.warmupPercents = ramp
         let top = items[idx].re.sets.first { $0.kind == .work }?.weightKg
         let usesReps = showsReps(items[idx].exercise.type)
         let rows = ramp.enumerated().map { i, pct in
-            RoutineSet(position: i, kind: .warmup, reps: usesReps ? 10 : nil,
+            RoutineSet(position: i, kind: .warmup, reps: usesReps ? RoutineSetEditing.warmupReps : nil,
                        weightKg: top.map { $0 * pct })
         }
         withAnimation(.snappy) { items[idx].re.sets.insert(contentsOf: rows, at: 0) }

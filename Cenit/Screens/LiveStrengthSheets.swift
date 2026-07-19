@@ -5,6 +5,7 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 import CenitStore
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// The «Change {exercise}» sheet (FER-894 · «Cómo llego a Cambiar»): a search field over the library plus a
 /// shortlist of alternatives for the SAME primary muscle as the exercise being replaced. Picking «Use» swaps
@@ -40,6 +41,8 @@ struct RPESheet: View {
         _selected = State(initialValue: Self.scale.min(by: { abs($0 - raw) < abs($1 - raw) }) ?? 8)
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -56,6 +59,7 @@ struct RPESheet: View {
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, CenitMetrics.screenPadding)
         .background(theme.paper.ignoresSafeArea())
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     private var header: some View {
@@ -198,6 +202,8 @@ struct NoteSheet: View {
         _text = State(initialValue: initialScope == .exercise ? exerciseText : setText)
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
@@ -216,6 +222,7 @@ struct NoteSheet: View {
         .onChange(of: scope) { _, newScope in
             text = newScope == .exercise ? exerciseText : setText
         }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     private var header: some View {
@@ -318,6 +325,8 @@ struct ChangeExerciseSheet: View {
         return Array(all.filter { $0.id != run.exerciseId && StrengthDisplay.name($0).lowercased().contains(q) }.prefix(20))
     }
 
+    /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
+    @ObserveInjection private var inject
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -358,6 +367,7 @@ struct ChangeExerciseSheet: View {
             primaryMuscle = await currentTask?.primaryMuscles.first
             loaded = true
         }
+        .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     private var searchField: some View {
