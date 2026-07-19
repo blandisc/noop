@@ -147,4 +147,111 @@ final class SleepHKDecoderTests: XCTestCase {
         XCTAssertTrue(json!.contains("\"end\""))
         XCTAssertTrue(json!.contains("\"stage\":\"deep\""))
     }
+
+    // MARK: - Sleep efficiency (FER-1006)
+
+    /// 8 h in bed, 6 h asleep → 0.75. The `inBed` envelope is the denominator; the stage samples
+    /// sitting inside it are the numerator.
+    func testEfficiencyUsesTheInBedEnvelopeAsDenominator() {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 8 * 3600),
+            sample(SleepHKEncoder.asleepDeepValue, base + 1800, base + 1800 + 2 * 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base + 1800 + 2 * 3600, base + 1800 + 6 * 3600),
+        ]
+        let out = SleepHKDecoder.sessions(from: s)
+        XCTAssertEqual(out.count, 1)
+        XCTAssertEqual(try XCTUnwrap(out[0].efficiency), 0.75, accuracy: 0.001)
+    }
+
+    /// THE scale test. The scorer centres on `RecoveryScorer.sleepPerfCenter == 0.85` and
+    /// `Baselines.metricCfg["efficiency"]` runs `0.2…1.0`. Emitting whole percent would be 100× off
+    /// and would saturate the sleep term without ever looking wrong on screen — the detail view
+    /// normalises defensively (`stored <= 1.0 ? stored * 100 : stored`), so the UI would hide it.
+    func testEfficiencyIsAFractionNotWholePercent() throws {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 8 * 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base, base + 7 * 3600),
+        ]
+        let eff = try XCTUnwrap(SleepHKDecoder.sessions(from: s)[0].efficiency)
+        XCTAssertLessThanOrEqual(eff, 1.0, "Efficiency must be a 0…1 fraction, never whole percent.")
+        XCTAssertEqual(eff, 0.875, accuracy: 0.001)
+    }
+
+    /// Without `inBed` the denominator falls back to the session span — which is EXACTLY what the
+    /// band does (`SleepStager.efficiency` divides by `end − start`; a strap has no `inBed` sample).
+    /// This is the coverage case that matters: `inBed` is not written by Apple Watch sleep tracking,
+    /// it comes from the iPhone's Sleep Schedule or third-party apps, so an Apple-Watch-only user can
+    /// have none. Requiring it would leave exactly those users capped at 2 of 3 recovery drivers.
+    func testEfficiencyFallsBackToTheSessionSpanLikeTheBandDoes() throws {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.asleepDeepValue, base, base + 2 * 3600),
+            sample(SleepHKEncoder.awakeValue, base + 2 * 3600, base + 3 * 3600),
+            sample(SleepHKEncoder.asleepREMValue, base + 3 * 3600, base + 4 * 3600),
+        ]
+        let out = SleepHKDecoder.sessions(from: s)
+        XCTAssertEqual(out.count, 1)
+        let eff = try XCTUnwrap(out[0].efficiency, "No inBed must still yield efficiency — same construct as the band.")
+        XCTAssertEqual(eff, 0.75, accuracy: 0.001, "3 h asleep over a 4 h detected window.")
+    }
+
+    /// The construct is one definition, not two: a night WITH an `inBed` envelope and the same night
+    /// WITHOUT it differ only because the envelope legitimately widens the window. Both go through
+    /// `asleep / sessionSpan` — there is no separate inBed branch to drift out of sync.
+    func testInBedOnlyWidensTheWindowItIsNotASecondFormula() throws {
+        let base = 1_700_000_000
+        let stages = [
+            sample(SleepHKEncoder.asleepCoreValue, base + 1800, base + 1800 + 6 * 3600),
+        ]
+        let withoutEnvelope = try XCTUnwrap(SleepHKDecoder.sessions(from: stages)[0].efficiency)
+        let withEnvelope = try XCTUnwrap(
+            SleepHKDecoder.sessions(from: [sample(SleepHKEncoder.inBedValue, base, base + 8 * 3600)] + stages)[0].efficiency)
+
+        XCTAssertEqual(withoutEnvelope, 1.0, accuracy: 0.001, "Stages only ⇒ the window is the stage span.")
+        XCTAssertEqual(withEnvelope, 0.75, accuracy: 0.001, "inBed widens the window to 8 h ⇒ 6 h asleep = 0.75.")
+        XCTAssertLessThan(withEnvelope, withoutEnvelope,
+                          "Knowing time in bed can only lower efficiency — it never flatters it.")
+    }
+
+    /// Awake spans inside the night are time in bed but NOT asleep — they must lower efficiency.
+    func testAwakeSegmentsDoNotCountAsAsleep() throws {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 4 * 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base, base + 2 * 3600),
+            sample(SleepHKEncoder.awakeValue, base + 2 * 3600, base + 3 * 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base + 3 * 3600, base + 4 * 3600),
+        ]
+        let eff = try XCTUnwrap(SleepHKDecoder.sessions(from: s)[0].efficiency)
+        XCTAssertEqual(eff, 0.75, accuracy: 0.001, "3 h asleep of 4 h in bed — the awake hour counts against.")
+    }
+
+    /// Stage samples that run past the reported `inBed` window (Apple's envelope is not always
+    /// exact) must not produce efficiency above 1.
+    func testEfficiencyIsClampedToOne() throws {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 3600),
+            sample(SleepHKEncoder.asleepCoreValue, base, base + 2 * 3600),
+        ]
+        let eff = try XCTUnwrap(SleepHKDecoder.sessions(from: s)[0].efficiency)
+        XCTAssertEqual(eff, 1.0, accuracy: 0.001)
+    }
+
+    /// Regression: adding efficiency must not disturb the hypnogram. `inBed` still contributes no
+    /// segment and still extends the session span.
+    func testInBedStillProducesNoSegmentAndStillExtendsTheSpan() {
+        let base = 1_700_000_000
+        let s = [
+            sample(SleepHKEncoder.inBedValue, base, base + 8 * 3600),
+            sample(SleepHKEncoder.asleepDeepValue, base + 3600, base + 2 * 3600),
+        ]
+        let out = SleepHKDecoder.sessions(from: s)
+        XCTAssertEqual(segs(out[0].stagesJSON).count, 1, "inBed is an envelope, not a stage.")
+        XCTAssertEqual(segs(out[0].stagesJSON)[0].stage, "deep")
+        XCTAssertEqual(out[0].startTs, base)
+        XCTAssertEqual(out[0].endTs, base + 8 * 3600)
+    }
 }

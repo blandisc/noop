@@ -345,9 +345,10 @@ final class HealthKitBridge: ObservableObject {
 
         // Sleep minutes per day (asleep stages summed; attributed to wake day).
         stage(11, "sleep")
-        await collectSleep(start: start, end: end) { day, asleepMin, deepMin, remMin, coreMin in
+        await collectSleep(start: start, end: end) { day, asleepMin, deepMin, remMin, coreMin, inBedMin in
             var a = agg(day)
             a.asleepMin = asleepMin; a.deepMin = deepMin; a.remMin = remMin; a.coreMin = coreMin
+            a.inBedMin = inBedMin
             byDay[day] = a
         }
 
@@ -372,6 +373,28 @@ final class HealthKitBridge: ObservableObject {
         // (SleepHKDecoder, StrandImport); the idempotent upsert below keeps a re-sync from duplicating.
         let appleSleepSessions = SleepHKDecoder.sessions(from: await collectSleepSamples(start: start, end: end))
 
+        // FER-1006: the daily row's `efficiency` is READ OFF the decoded sessions rather than
+        // recomputed from `DayAgg`'s per-day minute sums. Two computations meant two denominators —
+        // the decoder divides by the session span, a minute-sum version divides by summed `inBed`
+        // spans — and they diverge whenever a night has more than one in-bed block. Both surface on
+        // the SAME screen (the per-night tile reads `CachedSleepSession.efficiency`, the trend reads
+        // `DailyMetric.efficiency`), so the user would have seen two different numbers for one night.
+        // One source, keyed by the same wake-day attribution `collectSleep` uses.
+        // Longest session wins a day that has several (a nap plus the night): the main night is the
+        // one whose efficiency the score should reflect, and a 20-minute nap at 96% must not
+        // outrank it just by landing first in the array.
+        var effByDay: [String: Double] = [:]
+        var effSpanByDay: [String: Int] = [:]
+        for s in appleSleepSessions {
+            guard let eff = s.efficiency else { continue }
+            let day = HealthKitBridge.dayString(Date(timeIntervalSince1970: TimeInterval(s.endTs)))
+            let span = s.endTs - s.startTs
+            if span > (effSpanByDay[day] ?? -1) {
+                effSpanByDay[day] = span
+                effByDay[day] = eff
+            }
+        }
+
         stage(14, "saving")
 
         // Build + upsert the store rows under the apple-health source.
@@ -392,7 +415,7 @@ final class HealthKitBridge: ObservableObject {
             return (Baselines.deviation(v, state: appleSkinBase).delta * 100.0).rounded() / 100.0
         }
         let dmRows = byDay.map { (day, a) in
-            DailyMetric(day: day, totalSleepMin: a.asleepMin, efficiency: nil,
+            DailyMetric(day: day, totalSleepMin: a.asleepMin, efficiency: effByDay[day],
                         deepMin: a.deepMin, remMin: a.remMin, lightMin: a.coreMin, disturbances: nil,
                         restingHr: a.restingHr.map { Int($0.rounded()) }, avgHrv: a.hrv,
                         recovery: nil, strain: nil, exerciseCount: nil,
@@ -418,6 +441,10 @@ final class HealthKitBridge: ObservableObject {
             add("basal_kcal", a.basalKcal)
             add("vo2max", a.vo2max)
             add("asleep_min", a.asleepMin)
+            // FER-1006: now that `inBed` survives `collectSleep`, emit the series key the XML
+            // importer already writes (`AppleHealthAggregator`) so the live-sync path stops being
+            // the only one missing it — the gap FER-1002 catalogued for `in_bed_min`.
+            add("in_bed_min", a.inBedMin)
             add("deep_min", a.deepMin)
             add("rem_min", a.remMin)
             add("core_min", a.coreMin)
@@ -674,6 +701,11 @@ final class HealthKitBridge: ObservableObject {
         var spo2: Double?; var respRate: Double?; var steps: Double?
         var activeKcal: Double?; var basalKcal: Double?; var vo2max: Double?
         var asleepMin: Double?; var deepMin: Double?; var remMin: Double?; var coreMin: Double?
+        /// FER-1006: time in bed, kept for the `in_bed_min` series key and the sync fingerprint.
+        /// NOT a stage and never folded into `asleepMin`. It is deliberately NOT the efficiency
+        /// denominator — see `dmRows`, which reads efficiency off the decoded sessions so there is
+        /// exactly one computation.
+        var inBedMin: Double?
         var skinTempC: Double?   // FER-882: nightly mean absolute wrist temp (°C)
     }
 
@@ -690,7 +722,11 @@ final class HealthKitBridge: ObservableObject {
         var s = ""
         for key in byDay.keys.sorted() {
             let a = byDay[key]!
-            s += "\(key):\(f(a.restingHr)),\(f(a.avgHr)),\(f(a.maxHr)),\(f(a.hrv)),\(f(a.spo2)),\(f(a.respRate)),\(f(a.steps)),\(f(a.activeKcal)),\(f(a.basalKcal)),\(f(a.vo2max)),\(f(a.asleepMin)),\(f(a.deepMin)),\(f(a.remMin)),\(f(a.coreMin)),\(f(a.skinTempC));"
+            // FER-1006: `inBedMin` rides in the fingerprint. Without it, a user whose Apple data is
+            // otherwise unchanged keeps matching the PREVIOUS signature, the FER-881 gate skips the
+            // dashboard rebuild, and the newly-available sleep efficiency never reaches the screen —
+            // the feature would ship and silently do nothing until some other value happened to move.
+            s += "\(key):\(f(a.restingHr)),\(f(a.avgHr)),\(f(a.maxHr)),\(f(a.hrv)),\(f(a.spo2)),\(f(a.respRate)),\(f(a.steps)),\(f(a.activeKcal)),\(f(a.basalKcal)),\(f(a.vo2max)),\(f(a.asleepMin)),\(f(a.deepMin)),\(f(a.remMin)),\(f(a.coreMin)),\(f(a.inBedMin)),\(f(a.skinTempC));"
         }
         s += "|W:"
         for w in workouts.sorted(by: { ($0.startTs, $0.endTs, $0.sport) < ($1.startTs, $1.endTs, $1.sport) }) {
@@ -762,16 +798,27 @@ final class HealthKitBridge: ObservableObject {
     }
 
     private func collectSleep(start: Date, end: Date,
-                              sink: @escaping (String, Double?, Double?, Double?, Double?) -> Void) async {
+                              sink: @escaping (String, Double?, Double?, Double?, Double?, Double?) -> Void) async {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
         let predicate = Self.readPredicate(start: start, end: end)
         // FER-978: same fix as `collect` — accumulate inside the HK handler, resume with a Sendable
         // per-day array, apply `sink` back on this @MainActor (no sink call from HK's queue).
-        typealias SleepDay = (day: String, asleep: Double?, deep: Double?, rem: Double?, core: Double?)
+        typealias SleepDay = (day: String, asleep: Double?, deep: Double?, rem: Double?, core: Double?,
+                              inBed: Double?)
         let days: [SleepDay] = await withCheckedContinuation { cont in
             let q = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
                 var asleep: [String: Double] = [:], deep: [String: Double] = [:]
                 var rem: [String: Double] = [:], core: [String: Double] = [:]
+                // FER-1006: `inBed` used to fall into `default: break` and be thrown away. It is the
+                // ONLY denominator sleep efficiency has — asleep over time in bed — so discarding it
+                // is what capped `AppleRecoveryEstimator` at 2 of 3 drivers (it builds its rows with
+                // `efficiency: nil`, and its sleep term is gated on `sleepPerf != nil`).
+                //
+                // Kept SEPARATE from the stage totals, never added to `asleep`: in bed is an
+                // envelope, not a stage. Apple usually writes one contiguous inBed block per night,
+                // so summing spans matches the envelope; overlapping blocks would over-count, which
+                // only ever lowers efficiency — it cannot invent a flattering number.
+                var inBed: [String: Double] = [:]
                 for case let s as HKCategorySample in samples ?? [] {
                     let mins = s.endDate.timeIntervalSince(s.startDate) / 60
                     let day = HealthKitBridge.dayString(s.endDate)
@@ -782,16 +829,21 @@ final class HealthKitBridge: ObservableObject {
                         rem[day, default: 0] += mins; asleep[day, default: 0] += mins
                     case HKCategoryValueSleepAnalysis.asleepCore.rawValue, HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue:
                         core[day, default: 0] += mins; asleep[day, default: 0] += mins
+                    case HKCategoryValueSleepAnalysis.inBed.rawValue:
+                        inBed[day, default: 0] += mins
                     default:
                         break
                     }
                 }
-                let out: [SleepDay] = Set(asleep.keys).map { (day: $0, asleep: asleep[$0], deep: deep[$0], rem: rem[$0], core: core[$0]) }
+                let out: [SleepDay] = Set(asleep.keys).map {
+                    (day: $0, asleep: asleep[$0], deep: deep[$0], rem: rem[$0], core: core[$0],
+                     inBed: inBed[$0])
+                }
                 cont.resume(returning: out)
             }
             store.execute(q)
         }
-        for d in days { sink(d.day, d.asleep, d.deep, d.rem, d.core) }
+        for d in days { sink(d.day, d.asleep, d.deep, d.rem, d.core, d.inBed) }
     }
 
     /// FER-486: the raw `sleepAnalysis` samples as platform-agnostic descriptors, so the pure
