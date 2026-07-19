@@ -1349,14 +1349,13 @@ struct LiveStrengthSheet: View {
     /// (surface + hairlineStrong), solo cambia el contenido. r24 (owner): altura FIJA en vez de
     /// padding vertical — Pausar (SF subhead) y Terminar (Grotesk) tienen métricas de fuente
     /// distintas y sus cápsulas salían de tamaños diferentes.
+    ///
+    /// El cromo ya no vive aquí: es `headerCapsule(_:)` de StrandDesign, el mismo que viste a la
+    /// acción con nombre de las barras (Guardar). Esto queda solo como el envoltorio de botón.
     private func headerCapsule<Content: View>(action: @escaping () -> Void,
                                               @ViewBuilder content: () -> Content) -> some View {
         Button(action: action) {
-            content()
-                .padding(.horizontal, 12)
-                .frame(height: 32)
-                .background(theme.surface, in: Capsule())
-                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            content().headerCapsule(theme)
         }
         .buttonStyle(.plain)
     }
