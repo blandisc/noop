@@ -411,26 +411,12 @@ struct WeeklyPlanEditorView: View {
             .accessibilityLabel(Text(verbatim: MuscleGroup.allCases
                 .map { String(localized: "\($0.label) \(vol[$0] ?? 0) sets") }
                 .joined(separator: ", ")))
-            // Handoff: the honest footnote on a thin filete — «Series planeadas. Core quedó corto…»
-            HStack(spacing: 7) {
-                Rectangle().fill(theme.inkTertiary).frame(width: 2, height: 10)  // token-exempt: filete de dato
-                Text(volumeNote(vol, maxV: maxV))
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            // 2026-07-19 (decisión Fer): se retiró la nota al pie («Series planeadas. Core quedó corto
+            // esta semana.»). El rótulo de sección ya dice «Volumen semanal por grupo» y las barras se
+            // explican solas, así que el caso normal era puro relleno. Con ella se fue el aviso de grupo
+            // rezagado; si se quiere de vuelta, que sea como marca EN la barra corta, no como prosa
+            // debajo de la gráfica.
         }
-    }
-
-    /// «Series planeadas.» plus, when one group falls clearly behind the rest (< ¼ of the top group),
-    /// the handoff's honest note naming it. Only the weakest group is named — a hint, not a scold.
-    private func volumeNote(_ vol: [MuscleGroup: Int], maxV: Int) -> String {
-        let threshold: Int = max(1, maxV) / 4
-        let short: (MuscleGroup, Int)? = MuscleGroup.allCases
-            .map { (g: MuscleGroup) -> (MuscleGroup, Int) in (g, vol[g] ?? 0) }
-            .filter { (pair: (MuscleGroup, Int)) -> Bool in pair.1 < threshold }
-            .min { (a: (MuscleGroup, Int), b: (MuscleGroup, Int)) -> Bool in a.1 < b.1 }
-        guard maxV > 0, let g = short else { return String(localized: "Planned sets.") }
-        return String(localized: "Planned sets. \(g.0.title) fell short this week.")   // title case: prose, not the bar label
     }
 
     // MARK: - Routines (flat list + create / import / templates / folders / library) — FER-890

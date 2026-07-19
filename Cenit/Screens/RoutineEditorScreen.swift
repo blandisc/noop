@@ -798,8 +798,8 @@ struct RoutineEditorScreen: View {
                        addSet: { addSet(idx) }, addWarmup: { addWarmupRamp(idx) })
     }
 
-    /// The rail's terminal node (Serie activa's grammar, FER-952): the thread drops from the last card
-    /// and dies exactly at a dotted ember ring with a «＋» — one more stop on the line, not a door.
+    /// The rail's terminal node — the shared `AddExerciseNode` (see the component for the decisions
+    /// behind it). The thread takes the last card's tint so the line arrives in its own color.
     private var addExerciseRow: some View {
         let lastTint: Color = {
             guard let last = items.last else { return theme.dataStrain }
@@ -807,37 +807,10 @@ struct RoutineEditorScreen: View {
             if RoutineSetEditing.inSuperset(res, items.count - 1) { return theme.dataHrv }
             return theme.movementFamilyTint(primaryMuscles: last.exercise.primaryMuscles)
         }()
-        return Button { replaceIndex = nil; showLibrary = true } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    VStack(spacing: 0) {
-                        Rectangle().fill(lastTint.opacity(StrandOpacity.strokeSoft)).frame(width: 2)
-                        Color.clear
-                    }
-                    Circle().fill(theme.paper)
-                        .overlay(Circle().strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])))
-                        .frame(width: 18, height: 18)
-                        .overlay(
-                            Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)  // token-exempt: tiny plus glyph sized to the 18pt dotted add-node
-                        )
-                }
-                .frame(width: 14)
-                .padding(.leading, 0)
-                // Más prominente (Fer 2026-07-16): chip de ancho completo, misma anatomía que
-                // «＋ Nueva rutina» del hub — antes era un renglón fantasma que nadie veía.
-                HStack(spacing: 8) {
-                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add exercise").font(StrandFont.subhead.weight(.semibold))
-                }
-                .foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            }
-            .frame(minHeight: 44 + CenitMetrics.gap)   // the row's own breathing — not an inset hole
-            .contentShape(Rectangle())
+        return AddExerciseNode(theme: theme, threadTint: lastTint) {
+            replaceIndex = nil
+            showLibrary = true
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Add exercise"))
     }
 
     // MARK: - Pinned CTA (`.today` only — start / resume the guided session)

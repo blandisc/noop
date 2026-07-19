@@ -47,7 +47,6 @@ struct LiveStrengthSheet: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmFinish = false
-    @State private var confirmDiscard = false
     /// Which runs have their «por qué» raise card expanded (FER-E), by run id.
     @State private var whyRaiseOpen: Set<String> = []
     /// The cell the custom keypad is editing (FER-716) — one at a time, so a single working buffer is
@@ -471,16 +470,6 @@ struct LiveStrengthSheet: View {
                 // la primaria y descartar la destructiva; guardar solo existe cuando hay qué guardar.
                 actions: bodyFinishConfirmActions
             )
-            .instrumentoConfirm(
-                isPresented: $confirmDiscard,
-                title: String(localized: "Discard workout?"),
-                context: String(localized: "SESSION · IN PROGRESS"),
-                message: String(localized: "Everything you logged in this session will be deleted. This can't be undone."),
-                actions: [
-                    .init(String(localized: "Keep training"), role: .primary),
-                    .init(String(localized: "Discard workout"), role: .destructive) { model.endStrengthSession(save: false) }
-                ]
-            )
             // r21 (auditoría UX #5a): emparejar con un vecino que YA es de otra superserie deshace
             // aquella pareja — se confirma con su nombre en la mano, nunca en silencio.
             .instrumentoConfirm(
@@ -612,7 +601,6 @@ struct LiveStrengthSheet: View {
                 // FER-952 (owner): the tail breathed 28+12+24 — tightened to the compact rhythm; the
                 // stats bar below already separates the list from the edge.
                 if session.isComplete, session.doneCount > 0 { completeFooter.plainRow(top: CenitMetrics.gap) }
-                discardFooter.plainRow(top: 4, bottom: CenitMetrics.gap)
             }
         }
     }
@@ -1038,42 +1026,13 @@ struct LiveStrengthSheet: View {
         .accessibilityLabel(Text("Work sets"))
     }
 
-    /// The riel's terminal node — a dotted circle affordance that opens the existing ad-hoc add-exercise
-    /// flow (`showLibraryPicker` → `addExercises`). Positional insertion is a later child (FER-929 §1).
+    /// The riel's terminal node — the shared `AddExerciseNode` (see the component for the decisions
+    /// behind it). Opens the existing ad-hoc add-exercise flow (`showLibraryPicker` → `addExercises`);
+    /// positional insertion is a later child (FER-929 §1).
     private var addExerciseNode: some View {
-        Button { showLibraryPicker = true } label: {
-            HStack(spacing: 12) {
-                // Canvas pass: the «＋» is the rail's TERMINAL stop — the thread drops from the cell
-                // top and dies exactly at the ring's center; ring and thread share the same 14pt lane
-                // center so they can't drift apart.
-                ZStack {
-                    VStack(spacing: 0) {
-                        Rectangle().fill(railTint.opacity(0.35)).frame(width: 2)  // token-exempt: decorative rail-thread alpha (structure, not datum)
-                            .opacity(showRail ? 1 : 0)
-                        Color.clear
-                    }
-                    Circle().fill(theme.paper)
-                        .overlay(Circle().strokeBorder(theme.dataStrain, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])))
-                        .frame(width: 18, height: 18)
-                        .overlay(
-                            Image(systemName: "plus").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.dataStrain)  // token-exempt: tiny plus glyph sized to the 18pt dotted add-node
-                        )
-                }
-                .frame(width: 14)
-                // Más prominente (Fer 2026-07-16): mismo chip de ancho completo que el editor.
-                HStack(spacing: 8) {
-                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Add exercise").font(InstrumentoType.grotesk(14, weight: .semibold))
-                }
-                .foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-            }
-            .frame(minHeight: 44 + CenitMetrics.gap)   // the row's own breathing — not an inset hole
-            .contentShape(Rectangle())
+        AddExerciseNode(theme: theme, threadTint: railTint, showThread: showRail) {
+            showLibraryPicker = true
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Add exercise"))
     }
 
     /// The custom keypad bound to the active cell (FER-716).
@@ -3813,21 +3772,14 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    private var discardFooter: some View {
-        // Canvas pass 2026-07-15: dressed as the destructive sibling of the header's «Terminar» —
-        // same capsule grammar, red by border, never a fill (DNA: primary-by-border).
-        Button(role: .destructive) { confirmDiscard = true } label: {
-            Text("Discard workout").font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.critical)
-                .padding(.horizontal, 18).padding(.vertical, 9)
-                .background(theme.surface, in: Capsule())
-                .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, 6)
-        .accessibilityLabel(Text("Discard workout"))
-    }
+    // 2026-07-19 (decisión Fer): se retiró el `discardFooter` — la cápsula roja flotante al final del
+    // scroll. Era una SEGUNDA PUERTA al mismo cuarto: «Terminar» ya abre un diálogo con «Descartar
+    // entrenamiento» adentro, en los dos estados (`bodyFinishConfirmActions`). Y su cápsula roja de
+    // contorno era, literalmente, el botón del diálogo que abría — el vocabulario de «confirmar la
+    // destrucción» gastado en el control que solo invita, que es el mismo argumento que ya justificaba
+    // vestir «Terminar» de tinta y no de alarma. Una destructiva con una sola puerta es más segura que
+    // con dos. El «Descartar» gris del encabezado para la sesión vacía (`discardEmptySession`) NO se
+    // tocó: es otro estado y otro camino.
 
     // MARK: Inline helpers (formatting / focus / actions)
 
