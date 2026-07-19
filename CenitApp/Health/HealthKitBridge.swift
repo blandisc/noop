@@ -703,12 +703,37 @@ final class HealthKitBridge: ObservableObject {
         return SHA256.hash(data: Data(s.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
+    /// FER-1004: the ONLY way this file may build a read predicate. Every HealthKit READ must
+    /// exclude this app's own samples, because Cénit MIRRORS its own derived metrics back INTO
+    /// Apple Health — `writeBack` saves resting HR / HRV / SpO2 / respiratory rate and the staged
+    /// hypnogram (:589-622), and `saveStrengthWorkout` saves an `HKWorkout` per strength session
+    /// (:516-544). Reading with a date-only predicate pulled those straight back in as if Apple
+    /// had measured them: a self-feeding loop that polluted the very Apple baselines
+    /// `AppleRecoveryEstimator` and `DailyStressModel` z-score against, and duplicated every
+    /// strength session as an "apple-health" workout row (`mapWorkouts` labels unconditionally).
+    ///
+    /// It is the same contamination class as FER-519/623/629/631/632/633/635/639/640/670/882 —
+    /// band numbers reaching an Apple baseline — but through the mirror instead of the merge.
+    /// Worse here, because `writeBack:596` mirrors the band's RMSSD under Apple's *SDNN*
+    /// identifier: the value read back was not just foreign, it was mislabelled.
+    ///
+    /// The WRITE path already scopes deletes to `HKSource.default()` (:523, :608, :664). Reads
+    /// need the INVERSE of that same predicate. `HealthKitReadPredicateGuardTests` fails the build
+    /// if a raw `predicateForSamples` reappears in this file outside this helper.
+    nonisolated static func readPredicate(start: Date, end: Date,
+                                          options: HKQueryOptions = []) -> NSPredicate {
+        let byDate = HKQuery.predicateForSamples(withStart: start, end: end, options: options)
+        let notOurs = NSCompoundPredicate(
+            notPredicateWithSubpredicate: HKQuery.predicateForObjects(from: HKSource.default()))
+        return NSCompoundPredicate(andPredicateWithSubpredicates: [byDate, notOurs])
+    }
+
     private func collect(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date,
                          op: HKStatisticsOptions, sink: @escaping (String, Double) -> Void) async {
         guard let type = HKQuantityType.quantityType(forIdentifier: id) else { return }
         let cal = Calendar.current
         let anchor = cal.startOfDay(for: start)
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        let predicate = Self.readPredicate(start: start, end: end, options: .strictStartDate)
         // FER-978: the HealthKit result handler runs on HK's OWN background queue, so calling the
         // caller's `sink` (which mutates main-actor state) from inside it was a real cross-actor
         // race `targeted` correctly flags. Collect into a Sendable `[(day, value)]` inside the
@@ -739,7 +764,7 @@ final class HealthKitBridge: ObservableObject {
     private func collectSleep(start: Date, end: Date,
                               sink: @escaping (String, Double?, Double?, Double?, Double?) -> Void) async {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return }
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let predicate = Self.readPredicate(start: start, end: end)
         // FER-978: same fix as `collect` — accumulate inside the HK handler, resume with a Sendable
         // per-day array, apply `sink` back on this @MainActor (no sink call from HK's queue).
         typealias SleepDay = (day: String, asleep: Double?, deep: Double?, rem: Double?, core: Double?)
@@ -775,7 +800,7 @@ final class HealthKitBridge: ObservableObject {
     /// producing the daily totals) — F3 is additive. No mapping/grouping here: this is the thin shell.
     private func collectSleepSamples(start: Date, end: Date) async -> [SleepHKSample] {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return [] }
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let predicate = Self.readPredicate(start: start, end: end)
         return await withCheckedContinuation { (cont: CheckedContinuation<[SleepHKSample], Never>) in
             let q = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
                 let out: [SleepHKSample] = (samples ?? []).compactMap { s in
@@ -793,7 +818,11 @@ final class HealthKitBridge: ObservableObject {
     /// Raw `HKWorkout`s in [start, end] — shared by `mapWorkouts` and `collectWorkoutHeartRate`
     /// so we don't re-query HealthKit for the same window. (FER-883)
     private func collectHKWorkouts(start: Date, end: Date) async -> [HKWorkout] {
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        // FER-1004: excludes our own `HKWorkout`s. `saveStrengthWorkout` mirrors every strength
+        // session here, and `mapWorkouts` labels whatever comes back `source: "apple-health"`
+        // unconditionally — so a date-only read re-imported each session as a second, Apple-branded
+        // copy of a workout StrandTraining already owns.
+        let predicate = Self.readPredicate(start: start, end: end, options: .strictStartDate)
         return await withCheckedContinuation { (cont: CheckedContinuation<[HKWorkout], Never>) in
             let q = HKSampleQuery(sampleType: HKObjectType.workoutType(),
                                   predicate: predicate,
