@@ -63,6 +63,12 @@ enum FileExport {
                 .connectedScenes.compactMap({ $0 as? UIWindowScene }).first,
               let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
                 ?? scene.windows.first?.rootViewController else { return }
+        // Present from the TOP-most presented controller, not the window's root. When the caller lives
+        // inside a sheet (e.g. Ajustes → Fuentes de datos), the root is already presenting that SwiftUI
+        // sheet, and presenting the share sheet on it throws "… which is already presenting …" and no
+        // menu appears. Walking the presentation chain presents on whatever is actually on screen.
+        var top: UIViewController = root
+        while let presented = top.presentedViewController { top = presented }
         let vc = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
         if !cleanup.isEmpty {
             vc.completionWithItemsHandler = { _, _, _, _ in
@@ -74,10 +80,10 @@ enum FileExport {
         }
         // iPad: anchor the popover to the screen centre to avoid a crash.
         if let pop = vc.popoverPresentationController {
-            pop.sourceView = root.view
-            pop.sourceRect = CGRect(x: root.view.bounds.midX, y: root.view.bounds.midY, width: 0, height: 0)
+            pop.sourceView = top.view
+            pop.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.midY, width: 0, height: 0)
             pop.permittedArrowDirections = []
         }
-        root.present(vc, animated: true)
+        top.present(vc, animated: true)
     }
 }
