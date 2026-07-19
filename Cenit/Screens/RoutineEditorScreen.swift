@@ -76,7 +76,31 @@ struct RoutineEditorScreen: View {
     @State private var routineTint: Color = .clear
     @State private var groupTitle: String = ""
     @State private var saveError = false
-    @FocusState private var focusedCell: String?
+
+    // MARK: Captura con el keypad de la sesión (2026-07-19)
+    //
+    // El editor usaba `TextField` + teclado nativo mientras la sesión activa usa `SessionKeypad`, y el
+    // dueño pidió una sola forma de teclear en las dos. Se adopta el keypad, no el teclado: el teclado
+    // del sistema se come media pantalla justo donde vive la tabla, y el keypad ya trae el paso ± que
+    // esta pantalla también quiere.
+    //
+    // El keypad NO reimplementa la máquina de estados de la sesión: los bindings `weightText`/`repsText`
+    // ya parsean y guardan (incluida la conversión imperial), así que las teclas sólo mueven un buffer
+    // de texto y lo empujan por ese binding. Lo que la sesión tiene y aquí no: «copiar la anterior» y la
+    // calculadora de discos, que son gestos de captura en vivo, no de prescripción.
+    /// La celda que se está tecleando; nil = keypad oculto.
+    @State private var activeCell: EditorCell?
+    /// El texto a medio teclear. `bufferTyped` distingue «lo que muestra el modelo» de «lo que el
+    /// usuario ya empezó a escribir», para que la primera tecla reemplace en vez de concatenar.
+    @State private var buffer: String = ""
+    @State private var bufferTyped = false
+
+    /// Identifica una celda de la tabla: qué ejercicio, qué serie y cuál de las dos columnas.
+    struct EditorCell: Hashable {
+        let idx: Int
+        let si: Int
+        let isWeight: Bool
+    }
 
     /// A live guided session locks every editing surface (cells, menus, swipes) — the prescription under
     /// a running session must not shift (handoff guard).
@@ -114,12 +138,9 @@ struct RoutineEditorScreen: View {
             back()
             return false
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { focusedCell = nil }.foregroundStyle(theme.ink)
-            }
-        }
+        // El keypad se monta al pie y reemplaza al teclado del sistema; su propia tecla «ocultar»
+        // sustituye a la barra «Done» que necesitaba el TextField.
+        .safeAreaInset(edge: .bottom, spacing: 0) { keypadInset }
         // 1e as a push: the shared rest editor edits one set's rest with a «this set / all sets» scope.
         // Changes land on the routine with the screen's own save flow, so the routine toggle is off.
         // Rest is per EXERCISE (FER-952): `setNumber: nil` hides the editor's set-scope section and
@@ -334,7 +355,7 @@ struct RoutineEditorScreen: View {
                 if !locked { exerciseMenu(idx) }
             }
             RestChip(cfg: exerciseRest(idx)) {
-                focusedCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
+                activeCell = nil; restTarget = RestEditTarget(ei: idx, si: 0)
             }
             .disabled(locked)
             .padding(.top, 9)  // token-exempt: ritmo interno del recibo (Serie activa)
@@ -649,7 +670,7 @@ struct RoutineEditorScreen: View {
             rows.append(.init(String(localized: "Move down"), systemImage: "arrow.down") { moveExercise(idx, to: idx + 1) })
         }
         rows.append(.init(String(localized: "Reorder exercises"), systemImage: "line.3.horizontal") {
-            focusedCell = nil
+            activeCell = nil
             withAnimation(.snappy) { reordering = true }
         })
         if idx < items.count - 1 && !RoutineSetEditing.sameGroup(res, idx, idx + 1) {
@@ -705,10 +726,10 @@ struct RoutineEditorScreen: View {
         return HStack(spacing: 8) {
             numeralRing(idx: idx, si: si).frame(width: 40)
             if showsWeight(type) {
-                cellField(weightText(idx: idx, si: si), id: "\(set.id)-w", keyboard: .decimalPad, width: 74)
+                cellField(EditorCell(idx: idx, si: si, isWeight: true), width: 74)
             }
             if showsReps(type) {
-                cellField(repsText(idx: idx, si: si), id: "\(set.id)-r", keyboard: .numberPad, width: 74)
+                cellField(EditorCell(idx: idx, si: si, isWeight: false), width: 74)
             }
             // «la última vez» — grey history from session seed, one entry per set position (r26:
             // measured datum → Grotesk tabular, the live session's previous-cell voice).
@@ -768,27 +789,109 @@ struct RoutineEditorScreen: View {
     /// El MECANISMO sigue siendo el teclado nativo aquí y `SessionKeypad` allá, y eso es diferencia real
     /// de producto: en sesión hacen falta ± por discos y no perder media pantalla bajo el teclado. Ver
     /// la nota al pie del PR sobre por qué el keypad no se portó en este paso.
-    private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType, width: CGFloat) -> some View {
-        let focused = focusedCell == id
-        return TextField("—", text: text)
-            .keyboardType(keyboard)
-            .multilineTextAlignment(.center)
-            // Misma voz y tamaño que la celda de la sesión: Grotesk numérico 16 medium, que además
-            // escala con Dynamic Type intermedio.
-            .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
-            .foregroundStyle(theme.ink)
-            .focused($focusedCell, equals: id)
-            .disabled(locked)
-            // `minHeight`, no `height` fijo: la fuente ahora escala con Dynamic Type (`relativeTo:`),
-            // así que una caja de alto fijo recortaría el número en los pasos grandes. Antes no pasaba
-            // porque la fuente era fija — subir el alto y hacerla escalar a la vez creó el riesgo, y lo
-            // señaló el gate de QA. 44 sigue siendo el piso táctil de la HIG.
-            .frame(minWidth: width, maxWidth: width, minHeight: 44)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(focused ? theme.ink : theme.hairlineStrong)
-                    .frame(height: focused ? 2 : 1)
-                    .padding(.bottom, 6)
+    private func cellField(_ cell: EditorCell, width: CGFloat) -> some View {
+        let shown = activeCell == cell && bufferTyped ? buffer : binding(for: cell).wrappedValue
+        return Button {
+            guard !locked else { return }
+            withAnimation(.snappy(duration: 0.22)) { activeCell = cell }
+            buffer = binding(for: cell).wrappedValue
+            bufferTyped = false
+        } label: {
+            HStack(spacing: 1) {
+                Text(shown.isEmpty ? "—" : shown)
+                    .foregroundStyle(shown.isEmpty ? theme.inkTertiary : theme.ink)
+                if activeCell == cell {
+                    Rectangle().fill(theme.ink).frame(width: 2, height: 18)   // caret
+                        .opacity(0.9)   // token-exempt: opacidad de caret >0.70, igual que la sesión
+                }
             }
+            .setCellChrome(width: width, focused: activeCell == cell)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(locked)
+    }
+
+    // MARK: - Keypad (la misma captura que la sesión activa)
+
+    private func binding(for cell: EditorCell) -> Binding<String> {
+        cell.isWeight ? weightText(idx: cell.idx, si: cell.si) : repsText(idx: cell.idx, si: cell.si)
+    }
+
+    /// El keypad montado al pie, atado a la celda activa. Se oculta solo cuando no hay celda.
+    @ViewBuilder private var keypadInset: some View {
+        if let cell = activeCell {
+            SessionKeypad(
+                theme: theme,
+                stepLabel: cell.isWeight ? (system == .imperial ? "±5" : "±2,5") : "±1",
+                // «Copiar la anterior» y los discos son gestos de captura EN VIVO: aquí se prescribe,
+                // y la app no debe inventarle al usuario un valor que no tecleó.
+                canCopyPrevious: false,
+                platesEnabled: false,
+                onDigit: { keypadInput(String($0)) },
+                onComma: { keypadComma() },
+                onBackspace: { keypadBackspace() },
+                onNext: { focusNextCell(after: cell) },
+                onCopyPrevious: {},
+                onStep: { keypadStep(cell) },
+                onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } }
+            )
+            .transition(.move(edge: .bottom))
+        }
+    }
+
+    private func keypadInput(_ digit: String) {
+        if !bufferTyped { buffer = ""; bufferTyped = true }
+        buffer += digit
+        commitBuffer()
+    }
+
+    private func keypadComma() {
+        guard let cell = activeCell, cell.isWeight else { return }   // las reps son enteras
+        if !bufferTyped { buffer = "0"; bufferTyped = true }
+        if !buffer.contains(",") && !buffer.contains(".") { buffer += "," }
+        commitBuffer()
+    }
+
+    private func keypadBackspace() {
+        if !bufferTyped { buffer = ""; bufferTyped = true }
+        if !buffer.isEmpty { buffer.removeLast() }
+        commitBuffer()
+    }
+
+    /// El ± suma un paso sobre el valor del MODELO (no sobre el buffer a medias), y resincroniza.
+    private func keypadStep(_ cell: EditorCell) {
+        guard items.indices.contains(cell.idx), items[cell.idx].re.sets.indices.contains(cell.si) else { return }
+        if cell.isWeight {
+            let stepKg = system == .imperial ? 5 * 0.45359237 : 2.5
+            let current = items[cell.idx].re.sets[cell.si].weightKg ?? 0
+            items[cell.idx].re.sets[cell.si].weightKg = current + stepKg
+        } else {
+            items[cell.idx].re.sets[cell.si].reps = (items[cell.idx].re.sets[cell.si].reps ?? 0) + 1
+        }
+        dirty = true
+        buffer = binding(for: cell).wrappedValue
+        bufferTyped = false
+    }
+
+    /// Empuja el buffer por el binding, que ya parsea y guarda (incluida la conversión imperial).
+    private func commitBuffer() {
+        guard let cell = activeCell else { return }
+        binding(for: cell).wrappedValue = buffer
+    }
+
+    /// Peso → reps de la misma serie → peso de la siguiente. Al final del ejercicio, cierra el keypad.
+    private func focusNextCell(after cell: EditorCell) {
+        guard items.indices.contains(cell.idx) else { activeCell = nil; return }
+        let type = items[cell.idx].exercise.type
+        let next: EditorCell? = {
+            if cell.isWeight, showsReps(type) { return EditorCell(idx: cell.idx, si: cell.si, isWeight: false) }
+            let nextSi = cell.si + 1
+            guard items[cell.idx].re.sets.indices.contains(nextSi) else { return nil }
+            return EditorCell(idx: cell.idx, si: nextSi, isWeight: showsWeight(type))
+        }()
+        withAnimation(.snappy(duration: 0.22)) { activeCell = next }
+        if let next { buffer = binding(for: next).wrappedValue; bufferTyped = false }
     }
 
     /// The card's closing row (approved mock): TWIN pills of equal weight — «＋ Agregar serie» on the

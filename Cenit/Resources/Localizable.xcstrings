@@ -10767,23 +10767,6 @@
         }
       }
     },
-    "Break superset" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Break superset"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deshacer superserie"
-          }
-        }
-      }
-    },
     "Breathe" : {
       "localizations" : {
         "en" : {
@@ -15357,17 +15340,6 @@
         }
       }
     },
-    "Discard workout?" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Descartar entrenamiento?"
-          }
-        }
-      }
-    },
     "Disconnect" : {
       "localizations" : {
         "en" : {
@@ -16352,23 +16324,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Editar descanso"
-          }
-        }
-      }
-    },
-    "Edit rest for this set" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit rest for this set"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar el descanso de esta serie"
           }
         }
       }
@@ -31274,28 +31229,6 @@
     "PLANEAR UN VIAJE" : {
 
     },
-    "Planned sets." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Series planeadas."
-          }
-        }
-      }
-    },
-    "Planned sets. %@ fell short this week." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Series planeadas. %@ quedó corto esta semana."
-          }
-        }
-      }
-    },
     "Plate calculator" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -33891,23 +33824,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Repetir hoy"
-          }
-        }
-      }
-    },
-    "Replace exercise" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replace exercise"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reemplazar ejercicio"
           }
         }
       }

@@ -169,6 +169,46 @@ struct RestChip: View {
     }
 }
 
+// MARK: - El cromo de una celda de captura — papel pautado
+//
+// La celda donde se teclea peso y reps existía en tres variantes que sólo diferían por deriva: caja con
+// relleno en el editor, regla en la sesión, y en `WorkoutEditSheet` una regla con **SF en vez de
+// Grotesk** (DESIGN.md §8.7 le da los numerales a Grotesk) y el subrayado enfocado en **ember** donde
+// las otras dos usan tinta. Ahora el cromo es uno.
+//
+// Es un modificador y no un componente porque el MECANISMO difiere de verdad y debe seguir difiriendo:
+// el editor y la hoja de corrección usan `TextField` con teclado nativo; la sesión activa usa
+// `SessionKeypad`, porque en pleno esfuerzo hacen falta ± por discos y no perder media pantalla bajo el
+// teclado. Compartir el aspecto no obliga a compartir la entrada. (2026-07-19)
+struct SetCellChrome: ViewModifier {
+    @Environment(\.instrumentoTheme) private var theme
+    let width: CGFloat
+    let focused: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .multilineTextAlignment(.center)
+            .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
+            .foregroundStyle(theme.ink)
+            // El ancho se fija (las columnas se alinean con su encabezado); el alto es MÍNIMO, porque
+            // la fuente escala con Dynamic Type y una caja fija recortaría el número.
+            .frame(width: width)
+            .frame(minHeight: 44)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(focused ? theme.ink : theme.hairlineStrong)
+                    .frame(height: focused ? 2 : 1)
+                    .padding(.bottom, 6)
+            }
+    }
+}
+
+extension View {
+    /// El cromo de una celda de captura: papel pautado, 44 pt de piso táctil. Ver `SetCellChrome`.
+    func setCellChrome(width: CGFloat, focused: Bool) -> some View {
+        modifier(SetCellChrome(width: width, focused: focused))
+    }
+}
+
 // MARK: - «SUPERSERIE» — el rótulo del par
 //
 // Cada pantalla tenía la mitad de la razón (2026-07-19). El editor usaba `groteskOverline` pero en

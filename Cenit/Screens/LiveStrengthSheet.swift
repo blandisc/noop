@@ -3212,7 +3212,13 @@ struct LiveStrengthSheet: View {
                         .opacity(0.9) // token-exempt: opacidad de caret >0.70
                 }
             }
-            .frame(width: (width ?? (reflow ? 64 : cellWidth(type))) * min(cellDynamicScale, 1.3), height: 44)
+            // `minHeight`, no alto fijo: la fuente escala con Dynamic Type (`relativeTo: .body`, arriba),
+            // así que una caja de alto fijo recorta el número en los pasos grandes. El ancho SÍ se fija
+            // —lo escala `cellDynamicScale`— porque las columnas tienen que seguir alineadas con su
+            // encabezado. Mismo arreglo que ya recibió la celda del editor en el PR #1062, que no alcanzó
+            // a esta por ser preexistente y no regresión. Lo señaló el gate de QA.
+            .frame(width: (width ?? (reflow ? 64 : cellWidth(type))) * min(cellDynamicScale, 1.3))
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
             .overlay(alignment: .bottom) {
                 Rectangle().fill(active ? theme.ink : theme.hairlineStrong)
