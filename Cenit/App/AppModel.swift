@@ -2,7 +2,6 @@ import SwiftUI
 import Combine
 import Observation
 import UserNotifications
-import WhoopProtocol
 import BiometricStreams
 import CenitStore
 import StrandImport
@@ -1668,9 +1667,15 @@ enum DataSourceImportKind {
         }
     }
 
-    /// Record a "moment" (double-tap marker) with a confirming buzz.
-    func markMoment() {
-        moments.append(Date())
+    /// Record a "moment" (double-tap marker) with a confirming buzz. `at` defaults to now for the
+    /// live marks (double-tap, in-app); a moment queued by an App Intent passes the instant the user
+    /// actually asked for it, which can be hours before the app becomes active and drains the queue.
+    func markMoment(at date: Date = Date()) {
+        moments.append(date)
+        // A drained intent can predate a moment marked live (BLE double-tap still fires while the app
+        // is backgrounded), so keep the array ascending — the 500-cap trim and "Recent moments" both
+        // read it as oldest-first.
+        moments.sort()
         if moments.count > 500 { moments.removeFirst(moments.count - 500) }
         UserDefaults.standard.set(moments.map(\.timeIntervalSince1970), forKey: "moments")
         buzz(loops: 1)

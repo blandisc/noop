@@ -3,7 +3,6 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 import CenitStore
-import WhoopProtocol
 import BiometricStreams
 import Foundation
 
@@ -249,7 +248,7 @@ struct SleepDetailScreen: View {
                     .instrumentoHero(46)
                     .foregroundStyle(theme.inkTertiary)
                 Text(model.loaded
-                     ? "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
+                     ? "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends, or wear your band to bed and open this again once it syncs."
                      : "Loading your sleep history…")
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.ink)

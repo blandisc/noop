@@ -4,7 +4,6 @@ import UIKit
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
-import WhoopProtocol
 import CenitStore
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
@@ -69,13 +68,9 @@ struct RPESheet: View {
                 // Canvas pass 2026-07-15: it's a TITLE, not a label — Grotesk bold with real air above.
                 Text("RPE").font(InstrumentoType.grotesk(22, weight: .bold)).foregroundStyle(theme.ink)
                 Spacer()
-                Button(action: onClose) {
-                    StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(theme.inkSecondary)
-                        .frame(width: 44, height: 44)   // toque 44 (HIG §8.7-4)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel(Text("Close"))
+                // Hoja de 560pt: se unifica el botón, pero NO gana gesto de borde — su gesto
+                // natural, y el que ya funciona, es arrastrar hacia abajo.
+                BackButton(role: .close, theme: theme, action: onClose)
             }
             Text("Set \(target.setNumber) · \(weightLabel) × \(target.reps) reps")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)

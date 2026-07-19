@@ -4,6 +4,380 @@
     "" : {
 
     },
+    "An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una exportación de Apple Health agrega FC, VFC, sueño, oxígeno en sangre, pasos y peso."
+          }
+        }
+      }
+    },
+    "Cardio" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cardio"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cardio"
+                }
+            }
+        }
+    },
+    "Create routine with %lld" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Create routine with %lld"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Crear rutina con %lld"
+                }
+            }
+        }
+    },
+    "Even breathing · ~5.5/min" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Even breathing · ~5.5/min"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Respiración pareja · ~5.5/min"
+                }
+            }
+        }
+    },
+    "HRV (RMSSD)" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "HRV (RMSSD)"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "HRV (RMSSD)"
+                }
+            }
+        }
+    },
+    "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar sobrescribe todo lo que hay ahora en Cénit. Tus datos anteriores se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que la importación surta efecto."
+          }
+        }
+      }
+    },
+    "Last %lld beats" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Last %lld beats"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Últimos %lld latidos"
+                }
+            }
+        }
+    },
+    "Long exhale · winds down" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Long exhale · winds down"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Exhalación larga · te baja"
+                }
+            }
+        }
+    },
+    "Pace" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Pace"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Ritmo"
+                }
+            }
+        }
+    },
+    "Pick at least one exercise" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Pick at least one exercise"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Elige al menos un ejercicio"
+                }
+            }
+        }
+    },
+    "Planned" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Planned"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Planeado"
+                }
+            }
+        }
+    },
+    "Remove from session" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Remove from session"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Quitar de la sesión"
+                }
+            }
+        }
+    },
+    "Rest done" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Rest done"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Descanso listo"
+                }
+            }
+        }
+    },
+    "Resting, almost done" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Resting, almost done"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Descansando, ya casi"
+                }
+            }
+        }
+    },
+    "See all sessions" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "See all sessions"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Ver todas las sesiones"
+                }
+            }
+        }
+    },
+    "Set" : {
+        "comment" : "Boton de la fila de acciones de un ejercicio: agrega una serie. El glifo + porta el verbo; el accessibilityLabel dice la accion completa.",
+        "extractionState" : "manual",
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Set"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Serie"
+                }
+            }
+        }
+    },
+    "Square · steady focus" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Square · steady focus"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cuadrada · foco estable"
+                }
+            }
+        }
+    },
+    "Strap not worn" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Strap not worn"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Banda sin puesta"
+                }
+            }
+        }
+    },
+    "Strength" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Strength"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Fuerza"
+                }
+            }
+        }
+    },
+    "Trained" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Trained"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Entrenado"
+                }
+            }
+        }
+    },
+    "Waiting for R-R" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Waiting for R-R"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Esperando R-R"
+                }
+            }
+        }
+    },
+    "Warm-up" : {
+        "comment" : "Boton de la fila de acciones de un ejercicio: inserta la rampa de calentamiento. El glifo + porta el verbo; el accessibilityLabel dice la accion completa.",
+        "extractionState" : "manual",
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Warm-up"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Calentamiento"
+                }
+            }
+        }
+    },
+    "YOUR PLAN" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "YOUR PLAN"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "TU PLAN"
+                }
+            }
+        }
+    },
     "\n" : {
 
     },
@@ -133,6 +507,38 @@
           }
         }
       }
+    },
+    "br/min" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "br/min"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "resp/min"
+                }
+            }
+        }
+    },
+    "muscleGroup.fullBody" : {
+        "localizations" : {
+            "en" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Full body"
+                }
+            },
+            "es" : {
+                "stringUnit" : {
+                    "state" : "translated",
+                    "value" : "Cuerpo completo"
+                }
+            }
+        }
     },
     "–" : {
       "extractionState" : "stale",
@@ -1164,6 +1570,18 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ days · %2$@ routines"
+          }
+        }
+      }
+    },
+    "%@ days · %@ sleeps stored" : {
+      "comment" : "A footnote that shows the number of days and sleep entries stored in the repository.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ days · %2$@ sleeps stored"
           }
         }
       }
@@ -5113,57 +5531,6 @@
         }
       }
     },
-    "5/MG probes" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "5/MG probes"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sondas 5/MG"
-          }
-        }
-      }
-    },
-    "5/MG probes, frames" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "5/MG probes, frames"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sondas 5/MG, tramas"
-          }
-        }
-      }
-    },
-    "5/MG protocol probes" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "5/MG protocol probes"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sondas de protocolo 5/MG"
-          }
-        }
-      }
-    },
     "6 m" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5436,23 +5803,6 @@
         }
       }
     },
-    "8 wk" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "8 wk"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "8 sem"
-          }
-        }
-      }
-    },
     "10–20 healthy" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5488,7 +5838,6 @@
       }
     },
     "14-day trend" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5686,26 +6035,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "365 DÍAS"
-          }
-        }
-      }
-    },
-    "A 4.0 strap sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una banda 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
-          }
-        }
-      }
-    },
-    "A 5.0/MG strap counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una banda 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
           }
         }
       }
@@ -6152,21 +6481,21 @@
       }
     },
     "A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un acompañante independiente para tu banda. Todo se queda en este dispositivo: tu historial, tu monitor en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental."
+        "localizations" : {
+          "en" : {
+            "stringUnit" : {
+              "state" : "translated",
+              "value" : "A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project."
+            }
+          },
+          "es" : {
+            "stringUnit" : {
+              "state" : "translated",
+              "value" : "Un acompañante independiente para tu banda. Todo se queda en este dispositivo: tu historial, tu monitor en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental."
+            }
           }
         }
-      }
-    },
+      },
     "A steadier bedtime tonight helps your rhythm." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6282,6 +6611,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Una comparación de bienestar, no una edad biológica ni un diagnóstico clínico. La HRV se estima desde PPG nocturno; la norma de referencia es conservadora."
+          }
+        }
+      }
+    },
+    "A 4.0 strap sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una banda 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
           }
         }
       }
@@ -7947,23 +8286,6 @@
         }
       }
     },
-    "An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "An Apple Health export adds HR, HRV, sleep, blood oxygen, steps and weight."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una exportación de Apple Health agrega FC, VFC, sueño, oxígeno en sangre, pasos y peso."
-          }
-        }
-      }
-    },
     "An estimate with a ±%@-year margin." : {
 
     },
@@ -8068,7 +8390,6 @@
       }
     },
     "API key" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10418,23 +10739,6 @@
         }
       }
     },
-    "br/min" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "br/min"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "resp/min"
-          }
-        }
-      }
-    },
     "Braking reserve" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11470,23 +11774,6 @@
         }
       }
     },
-    "Cardio" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cardio"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cardio"
-          }
-        }
-      }
-    },
     "Cardiovascular load scored 0–21. Each second of the day your heart rate is recorded, it's assigned to a zone (1–5). Higher zones carry more weight. The total is compressed logarithmically so 21 represents a theoretical maximum: a full day at peak intensity." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11599,23 +11886,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cénit %@ · todo se calcula en tu iPhone · sin cuenta · sin servidor"
-          }
-        }
-      }
-    },
-    "Cénit couldn't open your database." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cénit couldn't open your database."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cénit no pudo abrir tu base de datos."
           }
         }
       }
@@ -12120,7 +12390,6 @@
       }
     },
     "Coach" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12301,19 +12570,19 @@
         }
       }
     },
-    "Compare needs at least two metrics with history. Import your strap export in Data Sources first." : {
+    "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Compare needs at least two metrics with history. Import your strap export in Data Sources first."
+            "value" : "Compare needs at least two metrics with history. Connect Apple Health in Data Sources first."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comparar necesita al menos dos métricas con historial. Primero importa la exportación de tu banda en Fuentes de datos."
+            "value" : "Comparar necesita al menos dos métricas con historial. Primero conecta Apple Salud en Fuentes de datos."
           }
         }
       }
@@ -13261,6 +13530,142 @@
         }
       }
     },
+    "Restarts your calibration from today if your baseline went wrong (band change, an anomalous stretch)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restarts your calibration from today if your baseline went wrong (band change, an anomalous stretch)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reinicia tu calibraci\u00f3n desde hoy si tu base qued\u00f3 mal (cambio de banda, periodo an\u00f3malo)."
+          }
+        }
+      }
+    },
+    "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to C\u00e9nit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to C\u00e9nit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descarga la animaci\u00f3n de cada ejercicio desde el CDN de im\u00e1genes de ExerciseDB, un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin se\u00f1al despu\u00e9s. Esta es la \u00fanica excepci\u00f3n a la regla de C\u00e9nit de cero red: al bajar cada imagen tu IP es visible para ese servicio, como al cargar cualquier imagen en internet; ning\u00fan otro dato tuyo (ni el nombre del ejercicio) sale jam\u00e1s. Apagar esto detiene descargas futuras, no borra lo ya guardado."
+          }
+        }
+      }
+    },
+    "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecturas nuevas y aproximadas: reserva vagal nocturna, estabilidad t\u00e9rmica, respiraci\u00f3n de la noche y recuperaci\u00f3n post-sesi\u00f3n. Necesitan varios d\u00edas de uso para leerse bien."
+          }
+        }
+      }
+    },
+    "Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estima si tu cuerpo tiende a madrugar o a desvelarse, a partir de tu patr\u00f3n de actividad. Es una funci\u00f3n experimental y aproximada; necesita varios d\u00edas de uso para leerse bien."
+          }
+        }
+      }
+    },
+    "Recalibrate recovery" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recalibrate recovery"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recalibrar recuperaci\u00f3n"
+          }
+        }
+      }
+    },
+    "Experimental metrics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimental metrics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "M\u00e9tricas experimentales"
+          }
+        }
+      }
+    },
+    "DAY BY DAY" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DAY BY DAY"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D\u00cdA CON D\u00cdA"
+          }
+        }
+      }
+    },
+    "No reading yet today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reading yet today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A\u00fan no hay lectura de hoy"
+          }
+        }
+      }
+    },
     "Couldn't delete the workout. Try again." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -13413,6 +13818,40 @@
         }
       }
     },
+    "Cénit couldn't open your database." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit couldn't open your database."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no pudo abrir tu base de datos."
+          }
+        }
+      }
+    },
+    "Your data is still on this phone: retry, or restore from an iCloud Drive backup." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data is still on this phone: retry, or restore from an iCloud Drive backup."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus datos siguen en este teléfono: reintenta o restaura desde un respaldo de iCloud Drive."
+          }
+        }
+      }
+    },
     "Couldn't snapshot the database just now — will retry." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -13531,23 +13970,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Crear nuevo"
-          }
-        }
-      }
-    },
-    "Create routine with %lld" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create routine with %lld"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Crear rutina con %lld"
           }
         }
       }
@@ -13876,23 +14298,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Día %lld"
-          }
-        }
-      }
-    },
-    "DAY BY DAY" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DAY BY DAY"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DÍA CON DÍA"
           }
         }
       }
@@ -15396,23 +15801,6 @@
         }
       }
     },
-    "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to Cénit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Downloads each exercise's animation from ExerciseDB's image CDN, an external service. They're saved on your iPhone forever and work offline afterwards. This is the only exception to Cénit's zero-network rule: fetching each image exposes your IP to that service, like loading any image on the internet; no other data of yours (not even the exercise name) ever leaves. Turning this off stops future downloads; it doesn't delete what's already saved."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descarga la animación de cada ejercicio desde el CDN de imágenes de ExerciseDB, un servicio externo. Se guardan en tu iPhone para siempre y funcionan sin señal después. Esta es la única excepción a la regla de Cénit de cero red: al bajar cada imagen tu IP es visible para ese servicio, como al cargar cualquier imagen en internet; ningún otro dato tuyo (ni el nombre del ejercicio) sale jamás. Apagar esto detiene descargas futuras, no borra lo ya guardado."
-          }
-        }
-      }
-    },
     "Drag to change the order" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -15954,23 +16342,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Editar detalles…"
-          }
-        }
-      }
-    },
-    "Edit exercise" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit exercise"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar ejercicio"
           }
         }
       }
@@ -16797,40 +17168,6 @@
         }
       }
     },
-    "Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estima si tu cuerpo tiende a madrugar o a desvelarse, a partir de tu patrón de actividad. Es una función experimental y aproximada; necesita varios días de uso para leerse bien."
-          }
-        }
-      }
-    },
-    "Even breathing · ~5.5/min" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Even breathing · ~5.5/min"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Respiración pareja · ~5.5/min"
-          }
-        }
-      }
-    },
     "evenings" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -17335,23 +17672,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Experimental · No es un ECG ni un diagnóstico · No detecta enfermedades."
-          }
-        }
-      }
-    },
-    "Experimental metrics" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Experimental metrics"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Métricas experimentales"
           }
         }
       }
@@ -18089,7 +18409,6 @@
       }
     },
     "For tonight" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -20276,23 +20595,6 @@
         }
       }
     },
-    "HRV (RMSSD)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HRV (RMSSD)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HRV (RMSSD)"
-          }
-        }
-      }
-    },
     "HRV −%lld%%" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -20839,19 +21141,19 @@
         }
       }
     },
-    "Import your history first. A strap export in Data Sources fills every metric you can explore here in about a minute." : {
+    "No history yet. Connect Apple Health in Data Sources and it fills every metric you can explore here." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Import your history first. A strap export in Data Sources fills every metric you can explore here in about a minute."
+            "value" : "No history yet. Connect Apple Health in Data Sources and it fills every metric you can explore here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Primero importa tu historial. La exportación de tu banda en Fuentes de datos llena en un minuto todas las métricas que puedes explorar aquí."
+            "value" : "Aún no hay historial. Conecta Apple Salud en Fuentes de datos y se llenan todas las métricas que puedes explorar aquí."
           }
         }
       }
@@ -20869,23 +21171,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importar…"
-          }
-        }
-      }
-    },
-    "Imported" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Imported"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importado"
           }
         }
       }
@@ -20919,23 +21204,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importando Apple Salud…"
-          }
-        }
-      }
-    },
-    "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importing overwrites everything currently in Cénit. Your old data is kept in a side file just in case, and Cénit needs a relaunch for an import to take effect."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Importar sobrescribe todo lo que hay ahora en Cénit. Tus datos anteriores se guardan en un archivo aparte por si acaso, y Cénit necesita reiniciarse para que la importación surta efecto."
           }
         }
       }
@@ -22302,40 +22570,6 @@
         }
       }
     },
-    "Last %lld beats" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last %lld beats"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Últimos %lld latidos"
-          }
-        }
-      }
-    },
-    "last 6 months" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "last 6 months"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "últimos 6 meses"
-          }
-        }
-      }
-    },
     "last 7 days" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -23554,23 +23788,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "registradas de esta sesión."
-          }
-        }
-      }
-    },
-    "Long exhale · winds down" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Long exhale · winds down"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exhalación larga · te baja"
           }
         }
       }
@@ -25298,7 +25515,6 @@
       }
     },
     "Model" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -25939,23 +26155,6 @@
         }
       }
     },
-    "muscleGroup.fullBody" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Full body"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cuerpo completo"
-          }
-        }
-      }
-    },
     "muscleGroup.legs" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26018,7 +26217,6 @@
       }
     },
     "My routines" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -26396,23 +26594,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nueva sección"
-          }
-        }
-      }
-    },
-    "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New, approximate readings: nocturnal vagal reserve, thermal stability, night respiration and post-session recovery. They need several days of use to read well."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lecturas nuevas y aproximadas: reserva vagal nocturna, estabilidad térmica, respiración de la noche y recuperación post-sesión. Necesitan varios días de uso para leerse bien."
           }
         }
       }
@@ -27143,36 +27324,19 @@
         }
       }
     },
-    "No muscle · tap to complete" : {
+    "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends, or wear your band to bed and open this again once it syncs." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No muscle · tap to complete"
+            "value" : "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends, or wear your band to bed and open this again once it syncs."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin músculo · toca para completar"
-          }
-        }
-      }
-    },
-    "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no hay noches. Importa la exportación de tu banda, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice."
+            "value" : "Aún no hay noches. Conecta Apple Salud en Fuentes de datos para ver tus fases de sueño y tendencias, o duerme con tu banda y vuelve a abrir esto cuando sincronice."
           }
         }
       }
@@ -27389,23 +27553,6 @@
         }
       }
     },
-    "No reading yet today" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No reading yet today"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no hay lectura de hoy"
-          }
-        }
-      }
-    },
     "No readings in this range." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -27598,7 +27745,6 @@
       }
     },
     "No routines yet" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -27885,22 +28031,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ninguna ventana de anoche se pudo leer con claridad."
-          }
-        }
-      }
-    },
-    "no workouts yet" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "no workouts yet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sin entrenamientos aún"
           }
         }
       }
@@ -29048,23 +29178,6 @@
         }
       }
     },
-    "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En una banda 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. La banda 4.0 es la vía probada."
-          }
-        }
-      }
-    },
     "on a shifting schedule" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -29263,6 +29376,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "a prueba sobre tu %@"
+          }
+        }
+      }
+    },
+    "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En una banda 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. La banda 4.0 es la vía probada."
           }
         }
       }
@@ -30379,23 +30509,6 @@
         }
       }
     },
-    "Pace" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pace"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ritmo"
-          }
-        }
-      }
-    },
     "Pair here" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31090,23 +31203,6 @@
         }
       }
     },
-    "Pick at least one exercise" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick at least one exercise"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elige al menos un ejercicio"
-          }
-        }
-      }
-    },
     "Pick equipment" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -31177,23 +31273,6 @@
     },
     "PLANEAR UN VIAJE" : {
 
-    },
-    "Planned" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planned"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planeado"
-          }
-        }
-      }
     },
     "Planned sets." : {
       "extractionState" : "stale",
@@ -31339,6 +31418,9 @@
           }
         }
       }
+    },
+    "Pregúntale a tus datos" : {
+
     },
     "Presence automation: set a Focus, pause media, set away…" : {
       "extractionState" : "manual",
@@ -31778,7 +31860,6 @@
       }
     },
     "Provider" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -32610,22 +32691,8 @@
         }
       }
     },
-    "Recalibrate recovery" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recalibrate recovery"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recalibrar recuperación"
-          }
-        }
-      }
+    "Recalibrar recuperación" : {
+
     },
     "Received this sync" : {
       "extractionState" : "manual",
@@ -33705,23 +33772,6 @@
         }
       }
     },
-    "Remove from session" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove from session"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quitar de la sesión"
-          }
-        }
-      }
-    },
     "Rename" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -34347,23 +34397,6 @@
         }
       }
     },
-    "Rest done" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rest done"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descanso listo"
-          }
-        }
-      }
-    },
     "Rest down to" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -34428,23 +34461,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reiniciar"
-          }
-        }
-      }
-    },
-    "Restarts your calibration from today if your baseline went wrong (band change, an anomalous stretch)." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Restarts your calibration from today if your baseline went wrong (band change, an anomalous stretch)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reinicia tu calibración desde hoy si tu base quedó mal (cambio de banda, periodo anómalo)."
           }
         }
       }
@@ -34754,23 +34770,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "reserva vagal en reposo"
-          }
-        }
-      }
-    },
-    "Resting, almost done" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resting, almost done"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Descansando, ya casi"
           }
         }
       }
@@ -35705,23 +35704,6 @@
         }
       }
     },
-    "Save changes" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save changes"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardar cambios"
-          }
-        }
-      }
-    },
     "Save keeps this workout. Discard deletes everything you logged." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -36169,22 +36151,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ver todas las métricas"
-          }
-        }
-      }
-    },
-    "See all sessions" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See all sessions"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver todas las sesiones"
           }
         }
       }
@@ -36645,6 +36611,7 @@
       }
     },
     "Sessions" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -36775,24 +36742,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Después de una sesión así, sueles amanecer con un Charge unos %lld puntos más abajo, y vuelves a tu nivel en un día (n=%lld)."
-          }
-        }
-      }
-    },
-    "Set" : {
-      "comment" : "Boton de la fila de acciones de un ejercicio: agrega una serie. El glifo + porta el verbo; el accessibilityLabel dice la accion completa.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Set"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Serie"
           }
         }
       }
@@ -37128,7 +37077,6 @@
       }
     },
     "Share" : {
-      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -37559,6 +37507,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "HIIT háptico silencioso, la banda vibra en las transiciones"
+          }
+        }
+      }
+    },
+    "no workouts yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no workouts yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin entrenamientos aún"
           }
         }
       }
@@ -38391,23 +38355,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Deporte"
-          }
-        }
-      }
-    },
-    "Square · steady focus" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Square · steady focus"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cuadrada · foco estable"
           }
         }
       }
@@ -39301,23 +39248,6 @@
         }
       }
     },
-    "Strap · Apple Health · backup" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strap · Apple Health · backup"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda · Apple Salud · copia"
-          }
-        }
-      }
-    },
     "STRAP · CONNECTED" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39426,40 +39356,6 @@
         }
       }
     },
-    "Strap not worn" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strap not worn"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda sin puesta"
-          }
-        }
-      }
-    },
-    "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las bandas no salen en Ajustes › Bluetooth de tu iPhone, usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí."
-          }
-        }
-      }
-    },
     "STREAK" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39561,23 +39457,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "fuerza"
-          }
-        }
-      }
-    },
-    "Strength" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strength"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fuerza"
           }
         }
       }
@@ -39752,23 +39631,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sugerido para ti"
-          }
-        }
-      }
-    },
-    "Suggested from the name · change it if it's wrong." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suggested from the name · change it if it's wrong."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sugerido a partir del nombre · cámbialo si no es correcto."
           }
         }
       }
@@ -41396,23 +41258,6 @@
         }
       }
     },
-    "The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No la tiene tomada la app oficial de la banda. Solo un host a la vez: ciérrala o apaga su Bluetooth."
-          }
-        }
-      }
-    },
     "The temperature of your skin, read at your wrist while you sleep. It shifts with your circadian rhythm and recovery. What matters isn't the number itself, but how far it sits from your own baseline. A sustained rise can be an early sign of inflammation or a coming illness." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -41477,6 +41322,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "todo el cuerpo"
+          }
+        }
+      }
+    },
+    "The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No la tiene tomada la app oficial de la banda. Solo un host a la vez: ciérrala o apaga su Bluetooth."
           }
         }
       }
@@ -41899,23 +41761,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esta semana · en curso"
-          }
-        }
-      }
-    },
-    "This week in amber · strength volume, last 8 weeks" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This week in amber · strength volume, last 8 weeks"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta semana en ámbar · volumen de fuerza, últimas 8 semanas"
           }
         }
       }
@@ -42459,7 +42304,6 @@
       }
     },
     "Today's heart rate, 5-minute averages" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -43011,23 +42855,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "entrenadas"
-          }
-        }
-      }
-    },
-    "Trained" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trained"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entrenado"
           }
         }
       }
@@ -44343,23 +44170,6 @@
         }
       }
     },
-    "Volume by week" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volume by week"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volumen por semana"
-          }
-        }
-      }
-    },
     "Volume over the last 8 weeks" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -44482,6 +44292,89 @@
         }
       }
     },
+    "vs tu media" : {
+
+    },
+    "vs your average" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vs your average"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vs tu media"
+          }
+        }
+      }
+    },
+    "Volume by week" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume by week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volumen por semana"
+          }
+        }
+      }
+    },
+    "8 wk" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8 wk"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8 sem"
+          }
+        }
+      }
+    },
+    "This week in amber · strength volume, last 8 weeks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This week in amber · strength volume, last 8 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta semana en ámbar · volumen de fuerza, últimas 8 semanas"
+          }
+        }
+      }
+    },
+    "last 6 months" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "last 6 months"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "últimos 6 meses"
+          }
+        }
+      }
+    },
     "vs yesterday" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -44512,22 +44405,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "VS AYER"
-          }
-        }
-      }
-    },
-    "vs your average" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vs your average"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vs tu media"
           }
         }
       }
@@ -44660,23 +44537,6 @@
         }
       }
     },
-    "Waiting for R-R" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Waiting for R-R"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esperando R-R"
-          }
-        }
-      }
-    },
     "Wake at" : {
       "localizations" : {
         "en" : {
@@ -44706,24 +44566,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Despierta con un zumbido en la muñeca. Esto arma la alarma del propio firmware de la banda, así que suena aunque tu iPhone esté dormido o Cénit esté cerrado."
-          }
-        }
-      }
-    },
-    "Warm-up" : {
-      "comment" : "Boton de la fila de acciones de un ejercicio: inserta la rampa de calentamiento. El glifo + porta el verbo; el accessibilityLabel dice la accion completa.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Warm-up"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calentamiento"
           }
         }
       }
@@ -46237,6 +46079,91 @@
         }
       }
     },
+    "Strap · Apple Health · backup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strap · Apple Health · backup"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banda · Apple Salud · copia"
+          }
+        }
+      }
+    },
+    "5/MG probes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5/MG probes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sondas 5/MG"
+          }
+        }
+      }
+    },
+    "5/MG probes, frames" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5/MG probes, frames"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sondas 5/MG, tramas"
+          }
+        }
+      }
+    },
+    "5/MG protocol probes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5/MG protocol probes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sondas de protocolo 5/MG"
+          }
+        }
+      }
+    },
+    "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las bandas no salen en Ajustes › Bluetooth de tu iPhone, usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí."
+          }
+        }
+      }
+    },
     "why" : {
       "localizations" : {
         "en" : {
@@ -46523,23 +46450,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin"
-          }
-        }
-      }
-    },
-    "Without it the exercise won't count toward your muscle map or weekly volume." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Without it the exercise won't count toward your muscle map or weekly volume."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin él, el ejercicio no cuenta en tu mapa muscular ni en el volumen semanal."
           }
         }
       }
@@ -47339,6 +47249,57 @@
         }
       }
     },
+    "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
+          }
+        }
+      }
+    },
+    "Your data from last night is arriving. The first sync of the day can take a few minutes." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data from last night is arriving. The first sync of the day can take a few minutes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos."
+          }
+        }
+      }
+    },
+    "your " : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your "
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu "
+          }
+        }
+      }
+    },
     "Your " : {
       "extractionState" : "manual",
       "localizations" : {
@@ -47655,23 +47616,6 @@
         }
       }
     },
-    "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
-          }
-        }
-      }
-    },
     "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -47800,23 +47744,6 @@
         }
       }
     },
-    "Your data from last night is arriving. The first sync of the day can take a few minutes." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your data from last night is arriving. The first sync of the day can take a few minutes."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus datos de anoche están llegando. La primera sincronización del día puede tardar unos minutos."
-          }
-        }
-      }
-    },
     "Your data has been restored. Reopen Cénit for it to take effect." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -47847,23 +47774,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tus datos siempre se guardan igual; esto solo cambia cómo se muestran distancias, pesos, estaturas y temperaturas."
-          }
-        }
-      }
-    },
-    "Your data is still on this phone: retry, or restore from an iCloud Drive backup." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your data is still on this phone: retry, or restore from an iCloud Drive backup."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus datos siguen en este teléfono: reintenta o restaura desde un respaldo de iCloud Drive."
           }
         }
       }
@@ -48026,186 +47936,6 @@
         }
       }
     },
-    "Your heart came down faster than usual: strong recovery after this session." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your heart came down faster than usual: strong recovery after this session."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu corazón bajó más rápido que de costumbre: buena recuperación tras esta sesión."
-          }
-        }
-      }
-    },
-    "Your heart rate across the day, averaged in 5-minute buckets." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu frecuencia cardíaca a lo largo del día, promediada en intervalos de 5 minutos."
-          }
-        }
-      }
-    },
-    "Your heart rate across the day, in 5-minute averages. Your resting heart rate, the low while you sleep, is its own metric." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your heart rate across the day, in 5-minute averages. Your resting heart rate, the low while you sleep, is its own metric."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu frecuencia cardiaca a lo largo del día, en promedios de 5 minutos. Tu frecuencia en reposo, la más baja mientras duermes, es una métrica aparte."
-          }
-        }
-      }
-    },
-    "Your highest point today was at %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your highest point today was at %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu punto más alto de hoy fue a las %@"
-          }
-        }
-      }
-    },
-    "Your levels come from your own baseline: a few more nights and they'll appear." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your levels come from your own baseline: a few more nights and they'll appear."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus niveles salen de tu propia base, con unas noches más aparecen."
-          }
-        }
-      }
-    },
-    "Your normal range" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your normal range"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu rango normal"
-          }
-        }
-      }
-    },
-    "your normal range · %lld nights" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your normal range · %lld nights"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu rango normal · %lld noches"
-          }
-        }
-      }
-    },
-    "Your patterns" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your patterns"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus patrones"
-          }
-        }
-      }
-    },
-    "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu línea base personal: una media móvil de tus noches recientes (con más peso en las últimas) ± una banda de tu propia variación. Un valor fuera de la banda es atípico para ti, no para la población. Se vuelve confiable tras unas 14 noches. (Buchheit 2014)"
-          }
-        }
-      }
-    },
-    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu HRV, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
-          }
-        }
-      }
-    },
-    "your " : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your "
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "tu "
-          }
-        }
-      }
-    },
     "Your fitness age is above your age" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -48236,6 +47966,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu edad fitness es menor que tu edad"
+          }
+        }
+      }
+    },
+    "Your heart came down faster than usual: strong recovery after this session." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your heart came down faster than usual: strong recovery after this session."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu corazón bajó más rápido que de costumbre: buena recuperación tras esta sesión."
           }
         }
       }
@@ -48274,6 +48021,34 @@
         }
       }
     },
+    "Your heart rate across the day, averaged in 5-minute buckets." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu frecuencia cardíaca a lo largo del día, promediada en intervalos de 5 minutos."
+          }
+        }
+      }
+    },
+    "Your heart rate across the day, in 5-minute averages. Your resting heart rate, the low while you sleep, is its own metric." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your heart rate across the day, in 5-minute averages. Your resting heart rate, the low while you sleep, is its own metric."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu frecuencia cardiaca a lo largo del día, en promedios de 5 minutos. Tu frecuencia en reposo, la más baja mientras duermes, es una métrica aparte."
+          }
+        }
+      }
+    },
     "Your heart rate when your body is fully at rest: how hard your heart has to work doing nothing. Lower generally means a stronger, more efficient cardiovascular system. Cénit uses it as ~20% of your recovery score; a rise from your norm can signal fatigue or that something's coming on." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48287,6 +48062,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu frecuencia cardíaca cuando tu cuerpo está en reposo total: lo que le cuesta latir sin hacer nada. Más baja suele indicar un sistema cardiovascular más fuerte y eficiente. Cénit la usa como cerca del 20% de tu recuperación; una subida respecto a tu norma puede señalar fatiga o que algo se está gestando."
+          }
+        }
+      }
+    },
+    "Your highest point today was at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your highest point today was at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu punto más alto de hoy fue a las %@"
           }
         }
       }
@@ -48392,8 +48183,42 @@
         }
       }
     },
+    "Your sets are safe on this phone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sets are safe on this phone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus series están a salvo en este teléfono."
+          }
+        }
+      }
+    },
     "YOUR INVENTORY · PER SIDE" : {
 
+    },
+    "Your levels come from your own baseline: a few more nights and they'll appear." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your levels come from your own baseline: a few more nights and they'll appear."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus niveles salen de tu propia base, con unas noches más aparecen."
+          }
+        }
+      }
     },
     "Your month" : {
       "extractionState" : "stale",
@@ -48519,6 +48344,40 @@
         }
       }
     },
+    "Your normal range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your normal range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu rango normal"
+          }
+        }
+      }
+    },
+    "your normal range · %lld nights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your normal range · %lld nights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu rango normal · %lld noches"
+          }
+        }
+      }
+    },
     "Your own baseline sharpens each night · you're at %lld." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48553,6 +48412,40 @@
         }
       }
     },
+    "Your patterns" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your patterns"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus patrones"
+          }
+        }
+      }
+    },
+    "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your personal baseline: a moving average of your recent nights (weighted toward the latest) ± a band of your own variation. A value outside the band is unusual for you, not for the population. It becomes reliable after about 14 nights. (Buchheit 2014)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu línea base personal: una media móvil de tus noches recientes (con más peso en las últimas) ± una banda de tu propia variación. Un valor fuera de la banda es atípico para ti, no para la población. Se vuelve confiable tras unas 14 noches. (Buchheit 2014)"
+          }
+        }
+      }
+    },
     "Your phone reviews your nights and flags three things: what's out of the ordinary (an anomaly), what's trending (up or down), and which metrics move together.\n\nAll from your own data." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48577,23 +48470,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu plan"
-          }
-        }
-      }
-    },
-    "YOUR PLAN" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "YOUR PLAN"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "TU PLAN"
           }
         }
       }
@@ -48826,6 +48702,23 @@
         }
       }
     },
+    "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your recovery sums up how ready your body is today, from 0 to 100. It blends several signals from your night, your HRV above all, and compares them with your own average from recent weeks, not anyone else's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu recuperación resume qué tan listo está tu cuerpo hoy, del 0 al 100. Combina varias señales de tu noche, sobre todo tu HRV, y las compara con tu propio promedio de las últimas semanas, no con el de nadie más."
+          }
+        }
+      }
+    },
     "your rest" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48956,23 +48849,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tus sesiones aparecerán aquí, en el color de su rutina."
-          }
-        }
-      }
-    },
-    "Your sets are safe on this phone." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your sets are safe on this phone."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tus series están a salvo en este teléfono."
           }
         }
       }
@@ -49486,6 +49362,16 @@
         }
       }
     },
+    "A 5.0/MG strap counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una banda 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
+          }
+        }
+      }
+    },
     "Your workout" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -49776,6 +49662,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "σ"
+          }
+        }
+      }
+    },
+    "Edit exercise" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit exercise"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar ejercicio"
+          }
+        }
+      }
+    },
+    "Imported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importado"
+          }
+        }
+      }
+    },
+    "No muscle · tap to complete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No muscle · tap to complete"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin músculo · toca para completar"
+          }
+        }
+      }
+    },
+    "Save changes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save changes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar cambios"
+          }
+        }
+      }
+    },
+    "Suggested from the name · change it if it's wrong." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggested from the name · change it if it's wrong."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sugerido a partir del nombre · cámbialo si no es correcto."
+          }
+        }
+      }
+    },
+    "Without it the exercise won't count toward your muscle map or weekly volume." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without it the exercise won't count toward your muscle map or weekly volume."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin él, el ejercicio no cuenta en tu mapa muscular ni en el volumen semanal."
           }
         }
       }

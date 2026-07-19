@@ -201,10 +201,6 @@ struct TodayView: View {
     // conserva el resultado. Un seq nuevo (data nueva) o el rollover de día invalidan el memo.
     @State private var memoInsightsKey: String?
 
-    // El experimento N-of-1 en curso, espejo de Patrones (FER-615): la 2ª fuente del renglón «La conexión de
-    // hoy». Cargado en `loadAll` desde `Repository` (activeExperiment + experimentProgress); `nil` sin experimento.
-    @State private var activeExperiment: DailyBriefEngine.ActiveExperiment? = nil
-
     // Support sheet (donate + contact) — always reachable from the home toolbar.
     @State private var showingSupport = false
 
@@ -1645,13 +1641,6 @@ struct TodayView: View {
                                        recovery: repo.today?.recovery)
     }
 
-    /// «La conexión de hoy» (FER-614/615): la correlación significativa más relevante O el experimento N-of-1
-    /// en curso, elegido por la regla de prioridad determinista (`dayConnection`), o `nil` (la UI omite el
-    /// renglón). Misma fuente que Patrones, así el deep-link abre exactamente ese patrón / experimento.
-    private var dayConnection: DailyBrief.DayConnection? {
-        DailyBriefEngine.dayConnection(insights: insights, experiment: activeExperiment)
-    }
-
     /// El Daily Brief renderizado (handoff «Hoy» 2026-07): plano sobre el papel — encabezado con el
     /// punto AHORA, titular 22/700 en grotesk (abre el porqué), cuerpo, «La conexión de hoy» sobre
     /// `patternBlock`, las filas de acción y el CTA de entrenamiento. Las cinco reglas NO viven aquí
@@ -1678,8 +1667,10 @@ struct TodayView: View {
             Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // FER-992: «La conexión de hoy» + CTAs to Patrones off (helpers below stay for re-enable).
-            // Re-enable: if let conn = dayConnection { dayConnectionView(conn) }
+            // FER-992: «La conexión de hoy» + CTAs to Patrones off (`dayConnectionView` below stays for re-enable).
+            // FER-999: su fuente de datos (`dayConnection` + `activeExperiment` + `loadActiveExperiment`) se borró
+            // por estar 100% huérfana; `loadActiveExperiment` además escribía a la DB en cada `loadAll`. Re-enable =
+            // restaurarla desde el historial de git y volver a llamar `dayConnectionView(conn)` aquí.
 
             VStack(spacing: 0) {
                 ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
@@ -2983,24 +2974,6 @@ struct TodayView: View {
             insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))
             memoInsightsKey = insightsKey
         }
-        // El experimento N-of-1 en curso (FER-615): la 2ª fuente del mismo renglón.
-        await loadActiveExperiment()
-    }
-
-    /// Carga el experimento N-of-1 en curso como input plano para el motor (FER-615), espejo de `BucleView`:
-    /// cierra primero el experimento cuya ventana ya venció (idempotente) para no mostrar uno rancio, lee el
-    /// `activeExperiment` + su `experimentProgress` (día/check-in derivados del historial, sin migración) y
-    /// resuelve las etiquetas es-MX con el mismo `BucleFormat` que Patrones. `nil` sin experimento en curso.
-    private func loadActiveExperiment() async {
-        let todayKey = Repository.localDayKey(Date())
-        await repo.closeDueExperiment(today: todayKey)
-        guard let row = await repo.activeExperiment() else { activeExperiment = nil; return }
-        let progress = await repo.experimentProgress(row, today: todayKey)
-        activeExperiment = DailyBriefEngine.ActiveExperiment(
-            behaviorLabel: BucleFormat.behaviorLabel(row.behavior),
-            outcomeLabel: row.outcome,
-            dayNumber: progress.elapsedDay,
-            pendingCheckIn: progress.pendingCheckIn)
     }
 
     /// Carga los insumos del bloque «Hoy en tu plan» (FER-613): el split, la rutina de hoy y la racha de

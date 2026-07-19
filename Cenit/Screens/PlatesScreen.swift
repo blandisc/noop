@@ -56,6 +56,7 @@ struct PlatesScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
+        .edgeSwipeToExit(onClose)
     }
 
     // MARK: Header
@@ -64,11 +65,7 @@ struct PlatesScreen: View {
         HStack {
             Text(exerciseName.uppercased()).groteskOverline().foregroundStyle(theme.inkTertiary)
             Spacer()
-            Button(action: onClose) {
-                StrandIcon.close.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.inkSecondary)
-            }
-            .accessibilityLabel(Text("Close"))
+            BackButton(role: .close, theme: theme, action: onClose)
         }
     }
 

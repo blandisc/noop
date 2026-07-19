@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 import EventKit
-import WhoopProtocol
 import BiometricStreams
 import StrandAnalytics
 

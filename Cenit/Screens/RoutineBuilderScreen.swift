@@ -77,10 +77,10 @@ struct RoutineBuilderScreen: View {
             .toolbarBackground(theme.paper, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }.foregroundStyle(theme.inkSecondary)
+                    BackButton(role: .close, theme: theme) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }.foregroundStyle(canSave ? theme.ink : theme.inkTertiary).disabled(!canSave)
+                    HeaderActionButton(Text("Save"), enabled: canSave, theme: theme) { save() }
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()

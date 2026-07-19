@@ -102,7 +102,17 @@ struct WorkoutDetailScreen: View {
         .background(theme.paper.ignoresSafeArea())
         .navigationTitle(Text(routineTitle ?? WorkoutSource.displaySport(row.sport)))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .primaryAction) { actionMenu } }
+        // FER-998: el disco de papel en lugar del botón nativo. Ojo: `navigationBarBackButtonHidden`
+        // apaga el gesto de volver de iOS, así que `keepsSwipeBack` lo devuelve — sin él, unificar
+        // el botón ROMPERÍA un gesto que aquí ya funcionaba.
+        .navigationBarBackButtonHidden(true)
+        .keepsSwipeBack()
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                BackButton(role: .back, theme: theme) { dismiss() }
+            }
+            ToolbarItem(placement: .primaryAction) { actionMenu }
+        }
         .toolbarBackground(theme.paper, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .sheet(item: $editTarget) { target in

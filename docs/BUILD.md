@@ -105,7 +105,7 @@ xcodebuild \
 Notes on the build:
 
 - The Xcode **scheme is `Cenit`**, and the built product is **`Cenit.app`** — `project.yml` sets
-  `PRODUCT_NAME: Cenit` and bundle id `com.noopapp.noop`, with display name `Cénit`.
+  `PRODUCT_NAME: Cenit` and bundle id `com.feriracheta.noop`, with display name `Cénit`.
 - `CODE_SIGNING_ALLOWED=NO` skips signing for a fast local compile-and-verify loop (use a simulator
   destination such as `-destination 'platform=iOS Simulator,name=iPhone 16'` to run it). To install
   on a real iPhone you need a signed build (see below).
@@ -123,7 +123,7 @@ Apple ID is enough for a personal build:
 3. Plug in your iPhone, pick it as the run destination, and **Run** (⌘R).
 
 A free-account build is local-only and the provisioning profile expires after 7 days — re-run from
-Xcode to refresh it. The app keeps bundle id `com.noopapp.noop` and product name **Cénit**.
+Xcode to refresh it. The app keeps bundle id `com.feriracheta.noop` and product name **Cénit**.
 
 ### 4. Pairing & BLE on iOS
 

@@ -306,7 +306,7 @@ struct MetricDetailView: View {
                 hero(window: window)
                 if loaded && series.isEmpty {
                     // ONLY genuine empty state: no data in the entire history.
-                    ChartWell(theme).empty(text: "Import your history first. A strap export in Data Sources fills every metric you can explore here in about a minute.")
+                    ChartWell(theme).empty(text: "No history yet. Connect Apple Health in Data Sources and it fills every metric you can explore here.")
                 } else if !loaded {
                     ChartWell(theme).loading(height: 160)
                 } else {
