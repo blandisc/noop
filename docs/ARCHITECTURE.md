@@ -132,6 +132,15 @@ guards on the two haptic/hover-scrub spots). `CenitStore`/`WhoopProtocol`/`Stran
 install). **Never rename them** — the visual rebrand to Cénit is complete, but these ids stay frozen
 on purpose.
 
+The App Group in particular is declared **once**, in `AppGroup.suiteName` (`CenitShared/`, compiled into
+the app, the watch and the widget extension); every consumer reads it from there rather than repeating the
+literal. This matters because the failure is silent: `UserDefaults(suiteName:)` returns a *non-nil* store
+for a suite the target isn't entitled to — backed by a private plist, so even a write/read round-trip
+succeeds — so a second copy of the string can drift for a long time without anything breaking loudly.
+(It did: the constant said `group.com.noopapp.noop` while every entitlement said `…feriracheta…`.) The
+only reliable probe is `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)`, which returns
+nil on iOS when the entitlement is missing; `AppGroup.warnIfGroupUnprovisioned()` uses it at launch.
+
 ---
 
 ## 3. Package responsibilities and boundaries

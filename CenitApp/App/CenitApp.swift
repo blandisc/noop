@@ -34,9 +34,9 @@ struct CenitApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        // Debug-only canary: trips if the App Group entitlement is missing on this target before any
-        // silent no-op (e.g. Shortcuts' PendingIntents) can mask it. No-op in Release.
-        AppGroup.assertGroupProvisioned()
+        // Canary: reports a missing App Group entitlement before any silent no-op (e.g. Shortcuts'
+        // PendingIntents) can mask it. Logs a fault on device, asserts in the Simulator.
+        AppGroup.warnIfGroupUnprovisioned()
         configureInstrumentoControlAppearance()   // FER-408: warm the native segmented control once at launch
         // Inject/InjectionNext: carga el puente de recarga en caliente SOLO en Debug (inerte en Release).
         // Con InjectionNext.app abierta (y Xcode lanzado DESDE ella) corriendo en el Simulador, intercambia

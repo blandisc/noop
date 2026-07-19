@@ -13,7 +13,9 @@ import Foundation
 
 enum RestActivityBridge {
     /// The App Group both targets already share (see NOOP.entitlements / CenitWidgets.entitlements).
-    static let appGroup = "group.com.feriracheta.noop"
+    /// Read from `AppGroup` rather than repeated as a literal here — the two used to be independent
+    /// declarations and drifted apart, which nothing caught (an unentitled suite fails silently).
+    static let appGroup = AppGroup.suiteName
 
     /// The lock-screen actions the Live Activity can request. FER-789 adds `removeThirty` (−30 s),
     /// `completeSet` (register the upcoming set and rest again) and `finishWorkout` (register the last

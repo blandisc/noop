@@ -1,6 +1,6 @@
 name: Cenit
 options:
-  bundleIdPrefix: com.noopapp
+  bundleIdPrefix: com.feriracheta
   createIntermediateGroups: true
   groupSortPosition: top
   # Base/development language. The in-source UI strings are authored in English (US);
@@ -246,6 +246,10 @@ targets:
         excludes:
           - "Resources/Info.plist"
           - "Resources/CenitWidgets.entitlements"
+      # The App-Group suite name is declared ONCE in CenitShared/AppGroup.swift; `RestActivityBridge`
+      # reads it from there instead of repeating the literal (the two drifted apart before). Only this
+      # file is pulled in — the rest of CenitShared (watch mirroring) has no business in the widget.
+      - path: CenitShared/AppGroup.swift
     info:
       path: CenitWidgets/Resources/Info.plist
       properties:
