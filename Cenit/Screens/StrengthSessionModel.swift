@@ -4,7 +4,6 @@ import UIKit
 import StrandDesign
 import StrandTraining
 import StrandAnalytics
-import WhoopProtocol
 import BiometricStreams
 import CenitStore
 

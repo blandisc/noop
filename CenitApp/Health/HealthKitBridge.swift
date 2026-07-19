@@ -4,7 +4,6 @@ import CryptoKit
 import HealthKit
 import StrandAnalytics
 import StrandImport
-import WhoopProtocol
 import BiometricStreams
 import CenitStore
 

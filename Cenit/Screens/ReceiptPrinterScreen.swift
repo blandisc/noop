@@ -4,7 +4,6 @@ import UIKit
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
-import WhoopProtocol
 
 // ReceiptPrinterScreen.swift — full-screen thermal receipt printer for a finished strength session.
 // Presents via `.fullScreenCover` so the printer mouth reaches the true top of the screen.

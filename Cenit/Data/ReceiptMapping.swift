@@ -3,7 +3,6 @@ import Foundation
 import StrandDesign
 import StrandAnalytics
 import StrandTraining
-import WhoopProtocol
 import BiometricStreams
 
 // ReceiptMapping.swift — pure StrengthSummary → ThermalReceipt mapper for the workout receipt printer.
