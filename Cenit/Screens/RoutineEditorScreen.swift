@@ -102,23 +102,9 @@ struct RoutineEditorScreen: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .onDisappear { if dirty, !isOrphan { persist() } }
-        // FER-969: save failure is an inline banner (same pattern as WorkoutEditSheet), not silent success.
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't save. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
-            }
-        }
-        .animation(StrandMotion.fade, value: saveError)
+        // FER-969: el fallo de escritura es un banner honesto, no éxito silencioso. Componente
+        // compartido desde 2026-07-19 (era la misma copia en tres pantallas).
+        .saveErrorToast(isPresented: $saveError)
         .toolbar(.hidden, for: .navigationBar)
         // FER-988: ocultar la barra mata el gesto de volver; esto lo devuelve. Con cambios sin
         // guardar vetamos el pop y corremos `back()` — el mismo autosave que corre el botón, en vez
@@ -426,22 +412,11 @@ struct RoutineEditorScreen: View {
         return setRow(idx: idx, si: si)
             .overlay(alignment: .trailing) {
                 if armedDeleteSetId == setId {
-                    Button {
+                    // La pastilla es el componente compartido; el ACTO es de esta pantalla (borra la
+                    // prescripción, no una captura).
+                    DeleteSetPill {
                         withAnimation(.snappy) { armedDeleteSetId = nil; deleteSet(idx: idx, si: si) }
-                    } label: {
-                        // Misma anatomía r21 que la Serie activa: glifo chico + caption, discreto.
-                        HStack(spacing: 5) {
-                            Image(systemName: "trash").font(StrandFont.glyph(.chevron))
-                            Text("Delete set").font(StrandFont.caption)
-                        }
-                        .foregroundStyle(theme.critical)
-                        .padding(.horizontal, 9).padding(.vertical, 5)
-                        .background(theme.surface, in: Capsule())
-                        .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
-                        .contentShape(Capsule())
                     }
-                    .buttonStyle(.plain)
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
             }
             .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in

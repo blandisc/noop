@@ -353,24 +353,16 @@ struct ExerciseLibraryScreen: View {
     }
 
     private var addBar: some View {
-        Button { onAdd?(exercises.filter { selected.contains($0.id) }); dismiss() } label: {
-            // A ternary with an interpolated branch resolves to plain `String`, not `LocalizedStringKey` —
-            // wrap each branch in `String(localized:)` so both localize (and the count uses the catalog's
-            // es-MX plural template) instead of silently falling back to English.
-            Text(addBarLabel)
-                // La misma voz que `StrandCTAButton` («Empezar»): es la acción principal de la pantalla,
-                // así que habla en Grotesk como los demás CTAs y no en la SF de `headline`.
-                .font(InstrumentoType.grotesk(15, weight: .bold))
-                .foregroundStyle(selected.isEmpty ? theme.inkTertiary : (createFlow ? theme.paper : theme.ink))
-                // Rectángulo redondeado con `ctaRadius`, no cápsula: es la MISMA forma que
-                // `StrandCTAButton` («Empezar»), la gramática de CTA de la app.
-                .frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(createFlow && !selected.isEmpty ? AnyShapeStyle(theme.dataStrain) : AnyShapeStyle(theme.surface),
-                            in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
-                    .strokeBorder(createFlow && !selected.isEmpty ? .clear : theme.hairlineStrong, lineWidth: 1))
+        // Mismo componente que «＋ Nueva rutina» del hub (decisión Fer 2026-07-19): agregar a una lista
+        // se ve igual en toda la app. `prominent` solo en el flujo de CREACIÓN, donde el botón es la
+        // salida del flujo y no una acción más. `addBarLabel` ya resuelve el copy y los plurales.
+        InstrumentoAddButton(theme: theme,
+                             label: addBarLabel,
+                             prominent: createFlow,
+                             disabled: selected.isEmpty) {
+            onAdd?(exercises.filter { selected.contains($0.id) })
+            dismiss()
         }
-        .buttonStyle(.plain).disabled(selected.isEmpty)
         .padding(.horizontal, CenitMetrics.screenPadding)
         // Libra el dock, que se queda visible (decisión Fer): el `safeAreaInset` inferior comparte carril
         // con la barra de pestañas y el botón quedaba medio tapado. Sin banda de papel detrás — la lámina

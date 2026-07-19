@@ -143,7 +143,40 @@ struct RestChip: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Edit rest for this set"))
+        // 2026-07-19: la sesión activa reimplementaba este chip entero, con un comentario que ya
+        // afirmaba «MISMO chip que el editor» mientras el código los tenía separados. Al unificarlos se
+        // conservó la MEJOR accesibilidad de las dos —la de la sesión—: etiqueta y valor separados, para
+        // que VoiceOver anuncie el descanso al cambiar sin releer la acción. De paso se corrige el copy:
+        // FER-952 hizo el descanso por EJERCICIO, así que «de esta serie» llevaba meses mintiendo.
+        .accessibilityLabel(Text("Edit rest"))
+        .accessibilityValue(Text(RoutineSetEditing.restChipLabel(cfg)))
+    }
+}
+
+// MARK: - «Quitar serie» — la pastilla que arma el long-press
+//
+// Vivía copiada en editar rutina y en la sesión activa con la MISMA anatomía (r21: glifo chico, caption
+// plano, padding apretado, cápsula de contorno crítico). Solo difería el ACTO: el editor borra de la
+// prescripción, la sesión borra de la captura y además apaga el calentamiento persistente si esa era la
+// última «C». Se comparte la vista; el acto lo pone cada pantalla. (2026-07-19)
+struct DeleteSetPill: View {
+    @Environment(\.instrumentoTheme) private var theme
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: "trash").font(StrandFont.glyph(.chevron))
+                Text("Delete set").font(StrandFont.caption)
+            }
+            .foregroundStyle(theme.critical)
+            .padding(.horizontal, 9).padding(.vertical, 5)
+            .background(theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .transition(.opacity.combined(with: .scale(scale: 0.9)))
     }
 }
 #endif

@@ -281,10 +281,8 @@ struct LiveStrengthSheet: View {
             .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
             // FER-969: mid-session routine write failure (insert / superset / progression) — toast only;
             // the FINAL session save failure is the persistent `saveErrorBanner` above (X-01), not this.
-            .overlay(alignment: .top) {
-                bodySaveErrorToast
-            }
-            .animation(StrandMotion.fade, value: saveError)
+            // Componente compartido desde 2026-07-19 (era la misma copia en tres pantallas).
+            .saveErrorToast(isPresented: $saveError)
             // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
             // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
             .sheet(isPresented: $showLibraryPicker) {
@@ -293,23 +291,6 @@ struct LiveStrengthSheet: View {
             .onChange(of: session.phase) { _, phase in
                 if phase != .resting { restAnchorEi = nil }
             }
-    }
-
-    @ViewBuilder
-    private var bodySaveErrorToast: some View {
-        if saveError {
-            Text("Couldn't save. Try again.")
-                .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-                .foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .patternBlock(theme, bar: theme.critical)
-                .padding(.horizontal, 16)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .task {
-                    try? await Task.sleep(for: .seconds(4))
-                    saveError = false
-                }
-        }
     }
 
     @ViewBuilder
@@ -930,33 +911,20 @@ struct LiveStrengthSheet: View {
 
     /// The armed row's destructive affordance (r15) — a quiet critical-outline pill riding the
     /// lifted row's trailing edge (it covers the check so the only offered act is the deletion).
+    /// La pastilla es el `DeleteSetPill` compartido; el ACTO es de esta pantalla — borra la captura y,
+    /// si esa era la última «C» del ejercicio, apaga su calentamiento persistente (r22).
     private func deleteSetPill(ei: Int, si: Int) -> some View {
-        Button {
+        DeleteSetPill {
             let wasWarmup = session.runs.indices.contains(ei)
                 && session.runs[ei].sets.indices.contains(si)
                 && session.runs[ei].sets[si].kind == .warmup
             withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) }
-            // r22 (owner): quitar la ÚLTIMA «C» del ejercicio apaga su calentamiento persistente.
             if wasWarmup, session.runs.indices.contains(ei),
                !session.runs[ei].sets.contains(where: { $0.kind == .warmup }) {
                 model.plates.setWarmupAlways(session.runs[ei].exerciseId, false)
             }
             armedDeleteSetId = nil
-        } label: {
-            // r21 (owner): más discreto — se comía la fila hacia la izquierda; glifo chico, texto
-            // caption plano, padding apretado.
-            HStack(spacing: 5) {
-                Image(systemName: "trash").font(StrandFont.glyph(.chevron))
-                Text("Delete set").font(StrandFont.caption)
-            }
-            .foregroundStyle(theme.critical)
-            .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(theme.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
-            .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
-        .transition(.opacity.combined(with: .scale(scale: 0.9)))
         .accessibilityLabel(Text("Delete set"))
     }
 
@@ -2713,25 +2681,11 @@ struct LiveStrengthSheet: View {
     /// r15 (owner, propuesta B): chips «troquel» — papel hundido sobre la tarjeta (paper dentro de
     /// surface, borde hairlineStrong, esquina continua), el ÚNICO color vive en el icono y el valor
     /// va en tinta media. Misma familia que los discos troquel del hub.
+    /// El chip de descanso — el `RestChip` compartido. Hasta 2026-07-19 esto era una copia entera del
+    /// componente, con un comentario que ya afirmaba «MISMO chip que el editor»: el comentario decía la
+    /// intención y el código la contradecía. Ahora sí es el mismo.
     private func restChip(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        // MISMO chip que el editor (decisión Fer 2026-07-16): ♥ recovery cuando el descanso es por
-        // FC (con su valor), reloj ámbar cuando es por tiempo — una sola gramática en todo el flujo.
-        let cfg = run.effectiveRest(forSet: run.currentSet)
-        let isHR = cfg.mode == .heartRate
-        return Button { openRestEditor(ei: ei) } label: {
-            HStack(spacing: 6) {
-                (isHR ? StrandIcon.heart.image : StrandIcon.clock.image)
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(isHR ? theme.dataRecovery : theme.dataStrain)
-                Text(RoutineSetEditing.restChipLabel(cfg))
-                    .font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.ink)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-            }
-            .troquelChip(theme)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Edit rest"))
-        .accessibilityValue(Text(RoutineSetEditing.restChipLabel(cfg)))
+        RestChip(cfg: run.effectiveRest(forSet: run.currentSet)) { openRestEditor(ei: ei) }
     }
 
     /// The «✎ Nota» chip (FER-932), next to the rest chip on the active exercise's header. Opens
