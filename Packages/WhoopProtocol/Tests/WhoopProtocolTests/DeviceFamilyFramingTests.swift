@@ -129,6 +129,26 @@ final class DeviceFamilyFramingTests: XCTestCase {
         XCTAssertEqual(DeviceFamily.allCases, [.whoop4, .whoop5])
     }
 
+    // MARK: - FER-993 (D3): `estimatesSteps` is a lossless stand-in for the family
+
+    /// The intelligence layer no longer takes a `DeviceFamily` — it takes the single `estimatesSteps`
+    /// Bool, and derives its two 4.0-only band calibrations (skin-temp offset, motion window) from it.
+    /// That substitution is only behaviour-preserving while the bit is EXACTLY "this is a 4.0", so pin
+    /// it over `allCases`: the day a third family lands, this test fails and forces an explicit
+    /// decision instead of letting the new band silently inherit 4.0 calibration.
+    func testEstimatesStepsIsExactlyTheWhoop4Bit() {
+        XCTAssertTrue(DeviceFamily.whoop4.estimatesSteps)
+        XCTAssertFalse(DeviceFamily.whoop5.estimatesSteps)
+        // Total over every case: the Bool partitions the enum, so mapping family → Bool loses nothing.
+        for family in DeviceFamily.allCases {
+            XCTAssertEqual(family.estimatesSteps, family == .whoop4,
+                           "\(family) must keep estimatesSteps == (family == .whoop4)")
+        }
+        XCTAssertEqual(Set(DeviceFamily.allCases.map(\.estimatesSteps)), [true, false],
+                       "the bit must still SEPARATE the families; if it stops, the engine's band "
+                       + "calibration would collapse onto one value")
+    }
+
     // MARK: - Puffin packet type names
 
     func testPuffinTypeNamesAliased() {

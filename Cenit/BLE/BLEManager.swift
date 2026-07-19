@@ -299,7 +299,7 @@ public final class BLEManager: NSObject, ObservableObject {
         return ref.device + (wallNow - ref.wall)
     }
 
-    public init(state: LiveState, deviceId: String = "my-whoop") {
+    public init(state: LiveState, deviceId: String = "strap") {
         self.state = state
         self.deviceId = deviceId
         self.router = FrameRouter(state: state)
@@ -426,7 +426,7 @@ public final class BLEManager: NSObject, ObservableObject {
     }
 
     /// Designated initializer for testing and preview use: accepts a pre-built Collector.
-    init(state: LiveState, deviceId: String = "my-whoop", collector: Collector?) {
+    init(state: LiveState, deviceId: String = "strap", collector: Collector?) {
         self.state = state
         self.deviceId = deviceId
         self.router = FrameRouter(state: state)
@@ -1721,7 +1721,7 @@ extension BLEManager: @preconcurrency CBPeripheralDelegate {
             if selectedModel.deviceFamily == .whoop5, !didBond {
                 let d = error.localizedDescription.lowercased()
                 if d.contains("encryption") || d.contains("authentication") {
-                    state.pairingHint = String(localized: "Close the official WHOOP app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect.")
+                    state.pairingHint = String(localized: "Close the strap's official app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect.")
                     log("WHOOP 5/MG: bond refused — the strap is likely still paired to the WHOOP app. Put it in pairing mode (blue LEDs) with the WHOOP app closed, then reconnect.")
                 }
             }

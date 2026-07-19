@@ -253,7 +253,7 @@ private struct AjustesLanding: View {
                      a11y: "Maximum heart rate, \(maxHRDisplay)") { showMaxHR = true }
             // Pasos por banda: la 4.0 ESTIMA pasos del movimiento (FER-663); el 5/MG lee un contador
             // NATIVO que sobre-cuenta y se calibra con un divisor (FER-665). Cada banda ve solo la suya.
-            if WhoopModel.persisted.deviceFamily.estimatesSteps {
+            if WhoopModel.persisted.estimatesSteps {
                 divider
                 valueRow("Steps estimate", value: stepsCalDisplay,
                          a11y: "Steps estimate, \(stepsCalDisplay)") { showStepsCal = true }
@@ -337,7 +337,7 @@ private struct AjustesLanding: View {
                 navRow("Automations", subtitle: Text("Zone alerts, reminders")) { darkScreen = .automations }
             }
             section("Data") {
-                navRow("Data & sources", subtitle: Text("WHOOP · Apple Health · backup")) { darkScreen = .dataSources }
+                navRow("Data & sources", subtitle: Text("Strap · Apple Health · backup")) { darkScreen = .dataSources }
                 divider
                 recalibrateRow
             }
@@ -400,7 +400,7 @@ private struct AjustesLanding: View {
                 )
             }
             section("More") {
-                navRow("Advanced", subtitle: Text("WHOOP 5/MG probes, frames")) { showAdvanced = true }
+                navRow("Advanced", subtitle: Text("5/MG probes, frames")) { showAdvanced = true }
                 divider
                 navRow("About & support",
                        subtitle: Text("Version \(appVersion) · help · licenses")) { darkScreen = .support }
@@ -519,7 +519,7 @@ private struct AjustesLanding: View {
         if live.connected, let hint = live.pairingHint { return hint }
         if live.connected { return String(localized: "Connected. Finishing the secure pairing handshake…") }
         if live.bonded { return String(localized: "Previously paired but not currently connected. Re-scan to reconnect.") }
-        return String(localized: "No strap connected. Put your WHOOP nearby and tap Re-scan to pair.")
+        return String(localized: "No strap connected. Put your strap nearby and tap Re-scan to pair.")
     }
 
     // MARK: - Section scaffolding (Instrumento: overline + rows on paper, no card-in-card)
@@ -904,7 +904,7 @@ private struct StepsCalibrationSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text("A WHOOP 4.0 sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count.")
+            Text("A 4.0 strap sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -946,7 +946,7 @@ private struct StepTicksSheet: View {
                 .tint(theme.ink)
                 .accessibilityLabel(Text("Counter ticks per real step, \(String(format: "%.1f", profile.stepTicksPerStep))"))
 
-            Text("Your WHOOP 5.0/MG counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count.")
+            Text("A 5.0/MG strap counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -959,7 +959,7 @@ private struct StepTicksSheet: View {
 
 // MARK: - Advanced (A3: WHOOP 5/MG experimental, moved off «Tu banda»)
 
-/// «Avanzado» — the opt-in WHOOP 5/MG protocol probes + raw-frame capture (off by default), moved out
+/// «Avanzado» — the opt-in 5/MG protocol probes + raw-frame capture (off by default), moved out
 /// of «Tu banda» where they only mattered to a 5/MG owner. The frame Export… button lives here now,
 /// shown only when there are captured frames this session (HARD criterion: don't lose Export).
 private struct AdvancedSheet: View {
@@ -973,18 +973,18 @@ private struct AdvancedSheet: View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Advanced").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("WHOOP 5/MG probes").font(StrandFont.title1).foregroundStyle(theme.ink)
+                Text("5/MG probes").font(StrandFont.title1).foregroundStyle(theme.ink)
             }
-            Text("Experimental tools for the newer WHOOP 5 and MG straps. They have no effect on a WHOOP 4.0.")
+            Text("Experimental tools for the newer 5 and MG straps. They have no effect on a 4.0.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 12) {
                 Toggle(isOn: $puffinExperiments) {
-                    Text("WHOOP 5/MG protocol probes").font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text("5/MG protocol probes").font(StrandFont.body).foregroundStyle(theme.ink)
                 }
                 .toggleStyle(.instrumento)
-                Text("On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on WHOOP 4.0.")
+                Text("On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on a 4.0.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
 

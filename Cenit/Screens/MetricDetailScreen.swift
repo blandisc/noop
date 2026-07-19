@@ -21,7 +21,7 @@ import Foundation
 // WITHOUT a nested NavigationStack (a nested stack crossing the tab's path crashed SwiftUI — FER-171).
 //
 // Data: the three vitals come from `repo.displayDays` for a BLE user (computed scores live under
-// `my-whoop-noop`, so `series("my-whoop")` is empty) — the caller injects the loaders. The hero is the
+// `strap-noop`, so `series("strap")` is empty) — the caller injects the loaders. The hero is the
 // 7-day moving average (`SeriesShape.latestMovingAverage`), not today's single reading; today is shown
 // as secondary context.
 
@@ -1692,7 +1692,7 @@ struct MetricDetailScreen: View {
             Text("No VO₂max yet")
                 .font(InstrumentoType.groteskHeadline(17))
                 .foregroundStyle(theme.ink)
-            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap.")
+            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the strap.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)

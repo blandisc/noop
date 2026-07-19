@@ -34,7 +34,7 @@ import Foundation
 // Live / Data Sources).
 //
 // Values + sparklines read from `repo.displayDays` (the merged dashboard), NOT `series()`: the
-// on-device computed scores live in daily-metrics under `my-whoop-noop`, so `series("my-whoop")` is
+// on-device computed scores live in daily-metrics under `strap-noop`, so `series("strap")` is
 // empty for a BLE user — `displayDays` resolves for both import and strap users (FER-149).
 
 /// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands off
@@ -1288,7 +1288,7 @@ private struct CuerpoLanding: View {
         async let amRows     = repo.appleDailyMetricRows()
         async let wkRows     = repo.workoutRows()
         // Stored daily "stress" series (0–3) — the model prefers it, else derives from RHR/HRV.
-        async let stressRows = repo.series(key: "stress", source: "my-whoop")
+        async let stressRows = repo.series(key: "stress", source: "strap")
         let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
         let nowTs = Int(Date().timeIntervalSince1970)
         async let hrRows = repo.hrBuckets(from: startOfToday, to: nowTs, bucketSeconds: 300)

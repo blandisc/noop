@@ -10,11 +10,21 @@ Format placeholders (%@, %lld, %%) are preserved. Pure symbol / placeholder-only
 strings are passed through unchanged. Re-runnable: existing `es` units are
 overwritten so this file stays the source of truth for the Spanish translation.
 """
+import importlib.util
 import json
 import re
 from pathlib import Path
 
 CATALOG = Path("Cenit/Resources/Localizable.xcstrings")
+FINDER = Path(__file__).resolve().parent / "find-dead-strings.py"
+
+
+def load_finder():
+    """Import Tools/find-dead-strings.py (hyphenated, so not a normal module)."""
+    spec = importlib.util.spec_from_file_location("find_dead_strings", FINDER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 # English key -> Spanish value. Keys must match the catalog exactly.
 ES: dict[str, str] = {
@@ -481,8 +491,8 @@ ES: dict[str, str] = {
     'Your numbers, your strap, and how Cénit works. All on this iPhone.': 'Tus números, tu banda y cómo funciona Cénit. Todo en este iPhone.',
     'Your strap': 'Tu banda',
     'Strap log': 'Log de la banda',
-    'WHOOP 5/MG protocol probes': 'Sondas de protocolo WHOOP 5/MG',
-    'On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on WHOOP 4.0.': 'En una conexión 5/MG, Cénit manda una sonda tras el emparejamiento y registra lo que regresa. No afecta a la WHOOP 4.0.',
+    '5/MG protocol probes': 'Sondas de protocolo 5/MG',
+    'On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on a 4.0.': 'En una conexión 5/MG, Cénit manda una sonda tras el emparejamiento y registra lo que regresa. No afecta a la 4.0.',
     'Record 5/MG frames to a file': 'Grabar frames 5/MG en un archivo',
     'Units & format': 'Unidades y formato',
     'Data & sources': 'Datos y fuentes',
@@ -499,8 +509,7 @@ ES: dict[str, str] = {
     'Import': 'Importar',
     'Coverage': 'Cobertura',
     'Backup': 'Respaldo',
-    'WHOOP Strap': 'Banda WHOOP',
-    "Pairs directly with your strap over Bluetooth: no WHOOP app, no cloud.": "Se vincula directo con tu banda por Bluetooth, sin app de WHOOP, sin nube.",
+    "Pairs directly with your strap over Bluetooth: no other app, no cloud.": "Se vincula directo con tu banda por Bluetooth, sin otra app, sin nube.",
     "Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in: nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)": "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de exportación de arriba.)",
     'Nothing imported yet': 'Aún no importas nada',
     'On an iPhone: Health app, tap your photo, Export All Health Data, then import the .zip here in Data Sources.': 'En un iPhone: app Salud, toca tu foto, Exportar todos los datos de salud, y luego importa el .zip aquí en Datos y fuentes.',
@@ -591,10 +600,10 @@ ES: dict[str, str] = {
     "A higher VO₂max is associated with a lower risk of all-cause mortality. It's one of the best-evidenced predictors of long-term health.": 'Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas. Es uno de los predictores de salud a largo plazo mejor fundamentados.',
     'Mandsager 2018 (JAMA) · Kodama 2009': 'Mandsager 2018 (JAMA) · Kodama 2009',
     'No VO₂max yet': 'Aún no hay VO₂max',
-    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap.": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS, la banda WHOOP no lo registra.",
+    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the strap.": "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS, la banda no lo registra.",
     'ml/kg/min': 'ml/kg/min',
     "The most oxygen your body can use during hard exercise, per kilo of body weight. It's the single best measure of cardiorespiratory fitness, and one of the best-evidenced predictors of long-term health.": "El máximo de oxígeno que tu cuerpo puede usar en ejercicio intenso, por kilo de peso. Es la mejor medida de tu condición cardiorrespiratoria, y uno de los predictores de salud a largo plazo mejor fundamentados.",
-    "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the WHOOP strap.": "Lo mide tu Apple Watch en caminatas y carreras al aire libre, la banda WHOOP no lo registra.",
+    "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the strap.": "Lo mide tu Apple Watch en caminatas y carreras al aire libre, la banda no lo registra.",
     "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality: it's one of the best-evidenced markers of long-term health.": "Tu Apple Watch estima el VO₂max a partir de tu frecuencia cardiaca y tu ritmo en caminatas y carreras al aire libre con buena señal de GPS, así que se actualiza de vez en cuando, no a diario. Leemos dónde cae entre adultos sanos de tu edad y sexo (la mediana de referencia FRIEND) y lo traducimos en una banda sencilla. Un VO₂max más alto se asocia con menor riesgo de mortalidad por todas las causas, es uno de los marcadores de salud a largo plazo mejor fundamentados.",
     "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement: NOOP is not a medical device.": "Referencia: Kaminsky et al., Registro FRIEND (Mayo Clin Proc 2015). Asociación con longevidad: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Es una referencia poblacional aproximada, no una medición clínica, NOOP no es un dispositivo médico.",
     # FER-238 — Detalle de Esfuerzo (StrainDetailScreen)
@@ -628,7 +637,7 @@ ES: dict[str, str] = {
     "Recovering: train, but keep it controlled.": "Recuperándote, entrena, pero con cabeza.",
     "Low: prioritize rest today.": "Baja, hoy prioriza el descanso.",
     "Calibrating: we need a few more nights of your strap.": "Calibrando, necesitamos unas noches más con tu banda.",
-    "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources.": "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos.",
+    "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources.": "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa el historial de tu banda en Fuentes de datos.",
     'What explains your recovery': 'Qué explica tu recuperación',
     "HRV carries the most weight — it's the best window onto your autonomic nervous system. What matters is the average of your recent nights, not a single day. If a signal is missing on a given night, its weight is shared among the others. (Plews 2013; Buchheit 2014)": 'La HRV es la que más pesa: es la mejor ventana a tu sistema nervioso autónomo. Lo que importa es el promedio de tus últimas noches, no un día suelto. Si falta una señal en una noche, su peso se reparte entre las demás. (Plews 2013; Buchheit 2014)',
     'Information about what explains your recovery': 'Información sobre qué explica tu recuperación',
@@ -864,7 +873,6 @@ ES: dict[str, str] = {
     "OK": "OK",
     "HRV": "HRV",
     "Apple": "Apple",
-    "Whoop": "Whoop",
     "Apple Health": "Apple Health",
     "App": "App",
     "Stress · M": "Estrés · M",
@@ -1040,6 +1048,7 @@ ES: dict[str, str] = {
     "Connected": "Conectado",
     "Disconnect": "Desconectar",
     "Strap": "Banda",
+    "Imported": "Importado",
     "Strap bonded": "Banda vinculada",
     "Strap not connected": "Banda no conectada",
     "STRAP LOG": "REGISTRO DE LA BANDA",
@@ -1101,8 +1110,8 @@ ES: dict[str, str] = {
     "Normalized": "Normalizado",
     "Normalized overlay": "Superposición normalizada",
     "Nothing selected yet.": "Aún no hay nada seleccionado.",
-    "Compare needs at least two metrics with history. Import your WHOOP export in Data Sources first.": "Comparar necesita al menos dos métricas con historial. Primero importa tu exportación de WHOOP en Fuentes de datos.",
-    "Import your history first. A WHOOP export in Data Sources fills every metric you can explore here in about a minute.": "Primero importa tu historial. Una exportación de WHOOP en Fuentes de datos llena en un minuto todas las métricas que puedes explorar aquí.",
+    "Compare needs at least two metrics with history. Import your strap export in Data Sources first.": "Comparar necesita al menos dos métricas con historial. Primero importa la exportación de tu banda en Fuentes de datos.",
+    "Import your history first. A strap export in Data Sources fills every metric you can explore here in about a minute.": "Primero importa tu historial. La exportación de tu banda en Fuentes de datos llena en un minuto todas las métricas que puedes explorar aquí.",
     "Insights read your journal and outcomes. Import your WHOOP export, which includes your journal, in Data Sources to unlock them.": "Los hallazgos leen tu diario y tus resultados. Importa tu exportación de WHOOP, que incluye tu diario, en Fuentes de datos para desbloquearlos.",
     "Reading your journal and outcomes…": "Leyendo tu diario y tus resultados…",
     "Behaviour Effects": "Efectos de tus hábitos",
@@ -1270,7 +1279,7 @@ ES: dict[str, str] = {
     "Buzz strap": "Vibrar banda",
     "Buzzes your wrist": "Vibra en tu muñeca",
     "Buzz your strap when these apps notify you. Everything runs on this Mac.": "Haz vibrar tu banda cuando estas apps te notifiquen. Todo corre en esta Mac.",
-    "Send a haptic buzz to your WHOOP strap.": "Envía una vibración háptica a tu banda WHOOP.",
+    "Send a haptic buzz to your strap.": "Envía una vibración háptica a tu banda.",
     "Fire a single haptic pulse on the strap (requires a bonded connection)": "Dispara un solo pulso háptico en la banda (requiere conexión vinculada)",
     "Fire a test buzz now": "Probar la vibración ahora",
     "Fire a test haptic buzz on the strap (requires an active strap connection)": "Dispara una vibración háptica de prueba en la banda (requiere una conexión activa)",
@@ -1419,13 +1428,13 @@ ES: dict[str, str] = {
     "Battery": "Batería",
     "Last frame": "Último frame",
     "Last event": "Último evento",
-    "Close the official WHOOP app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect.": "Cierra la app oficial de WHOOP (o apaga el Bluetooth de ese teléfono), pon la banda en modo de emparejamiento (en una 5.0/MG, da toques firmes a la banda hasta que los LED parpadeen en azul) y vuelve a conectar.",
+    "Close the strap's official app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect.": "Cierra la app oficial de la banda (o apaga el Bluetooth de ese teléfono), pon la banda en modo de emparejamiento (en una 5.0/MG, da toques firmes a la banda hasta que los LED parpadeen en azul) y vuelve a conectar.",
 
     # Settings — strap status detail.
     "Your strap is paired and sending data. Open Live for a real-time heart rate.": "Tu banda está emparejada y enviando datos. Abre En vivo para ver la frecuencia cardiaca en tiempo real.",
     "Connected. Finishing the secure pairing handshake…": "Conectada. Terminando el emparejamiento seguro…",
     "Previously paired but not currently connected. Re-scan to reconnect.": "Se emparejó antes, pero no está conectada. Vuelve a escanear para reconectar.",
-    "No strap connected. Put your WHOOP nearby and tap Re-scan to pair.": "No hay banda conectada. Acerca tu WHOOP y toca Volver a escanear para emparejar.",
+    "No strap connected. Put your strap nearby and tap Re-scan to pair.": "No hay banda conectada. Acerca tu banda y toca Volver a escanear para emparejar.",
     "Strap connected": "Banda conectada",
     "Strap idle": "Banda inactiva",
     "Strap offline": "Banda desconectada",
@@ -1717,7 +1726,7 @@ ES: dict[str, str] = {
     "Accept & Continue": "Aceptar y continuar",
     "The full terms are in TERMS.md, shipped with NOOP. This is not legal advice.": "Los términos completos están en TERMS.md, incluido con NOOP. Esto no es asesoría legal.",
     # Firmware wake-up alarm note
-    "On WHOOP 5/MG this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path.": "En WHOOP 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. WHOOP 4 es la vía probada.",
+    "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path.": "En una banda 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. La banda 4.0 es la vía probada.",
     # Updates / CSV import notice
     "Get the latest release": "Obtener la última versión",
     "Opens the GitHub releases page in your browser. NOOP itself makes no network connections — the macOS sandbox has no network entitlement.": "Abre la página de versiones de GitHub en tu navegador. NOOP en sí no hace conexiones de red, el sandbox de macOS no tiene permiso de red.",
@@ -1871,7 +1880,7 @@ ES: dict[str, str] = {
     "Windred et al., Sleep 2024 (regularity); Miller et al., J Sports Sci 2020 (wrist staging vs PSG); Hirshkowitz et al., 2015 (sleep need).": "Windred et al., Sleep 2024 (regularidad); Miller et al., J Sports Sci 2020 (etapas en muñeca vs PSG); Hirshkowitz et al., 2015 (necesidad de sueño).",
     "Source · Apple Health": "Fuente · Apple Salud",
     "Source · your strap, on device": "Fuente · tu banda, en el dispositivo",
-    "No nights yet. Import your WHOOP export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs.": "Aún no hay noches. Importa tu exportación de WHOOP, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice.",
+    "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs.": "Aún no hay noches. Importa la exportación de tu banda, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice.",
     "Loading your sleep history…": "Cargando tu historial de sueño…",
     "Hours asleep per night, last 30 days": "Horas dormidas por noche, últimos 30 días",
     "%@ – %@ · %lld%% efficiency": "%@ – %@ · %lld%% de eficiencia",
@@ -1885,7 +1894,7 @@ ES: dict[str, str] = {
     "Your autonomic load for the day: how activated your body is. We take today's resting heart rate and HRV, compare each with your own 30-day baseline as a z-score, and map the combined shift onto a 0–3 scale through a logistic curve (0 calm · 1.5 your baseline · 3 highly activated). This number is your whole day against your baseline of the last ~30 days — a different lens from the day map below, which marks the moments you spiked. It's an estimate, not a diagnosis.": "Tu carga autonómica del día: qué tan activado está tu cuerpo. Tomamos tu frecuencia en reposo y tu HRV de hoy, comparamos cada una con tu propia base de 30 días como z-score, y mapeamos el desplazamiento combinado a una escala 0–3 con una curva logística (0 en calma · 1.5 tu base · 3 muy activado). Este número es tu día completo frente a tu base de los últimos ~30 días, una lente distinta a la del mapa del día de abajo, que marca los momentos en que te disparaste. Es una estimación, no un diagnóstico.",
     "Information about stress": "Información sobre el estrés",
     "/ 3": "/ 3",
-    "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.": "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV.",
+    "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources. Stress is read from your resting heart rate and HRV.": "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa el historial de tu banda en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV.",
     "Each point is your daily stress index. The bands behind it are the fixed Low / Moderate / High zones (0–1 / 1–2 / 2–3). The percentage compares this month's average with last month's; Average, Lowest and Highest come from the range you selected. What matters isn't a single day — it's several days in a row drifting into a higher band.": "Cada punto es tu índice de estrés diario. Las bandas detrás son las zonas fijas Bajo / Moderado / Alto (0–1 / 1–2 / 2–3). El porcentaje compara el promedio de este mes con el del mes pasado; Promedio, Mínimo y Máximo salen del rango que seleccionaste. Lo que importa no es un día suelto, son varios días seguidos subiendo de banda.",
     "Information about the stress trend": "Información sobre la tendencia del estrés",
     "Daily stress index, 0 to 3": "Índice de estrés diario, 0 a 3",
@@ -1998,7 +2007,7 @@ ES: dict[str, str] = {
     "Back to your base in ~%d days · %d sessions": "Vuelve a tu base en ~%d días · %d sesiones",
     "Still gathering how you wake after each sport.": "Aún estoy juntando cómo amaneces tras cada deporte.",
     "Your next-day Charge barely moves after the sports we can see so far.": "Tu Carga del día siguiente casi no se mueve tras los deportes que alcanzamos a ver.",
-    "Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty).": "Cada sesión es un entrenamiento de tu banda, Apple Salud o una entrada manual. El conteo y los totales siguen el rango que eliges arriba (se amplía si ese rango está vacío).",
+    "Each session is a workout from your strap, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty).": "Cada sesión es un entrenamiento de tu banda, Apple Salud o una entrada manual. El conteo y los totales siguen el rango que eliges arriba (se amplía si ese rango está vacío).",
     "How your Charge tends to look the morning after each sport, vs your rest days. Observed in your history, not a cause.": "Cómo suele verse tu Carga la mañana después de cada deporte, vs tus días de descanso. Observado en tu historial, no una causa.",
     # FER-666 «Ritmo» — pantalla experimental de regularidad latido-a-latido (no clínica).
     "Looked steady.": "Se vio estable.",
@@ -2027,7 +2036,7 @@ ES: dict[str, str] = {
     "There was too much movement or too little signal at rest. It's normal, try again tomorrow.": "Hubo mucho movimiento o poca señal en reposo. Es normal, vuelve a intentar mañana.",
     "No reading from last night.": "Sin lectura de anoche.",
     "Sleep with your strap to see your rhythm here.": "Duerme con tu strap para ver tu ritmo aquí.",
-    "Ritmo needs a WHOOP band.": "Ritmo necesita una banda WHOOP.",
+    "Ritmo needs a strap.": "Ritmo necesita una banda.",
     "The beat-to-beat tacogram only comes from the band; it isn't available with Apple Health only.": "El tacograma latido a latido solo viene de la banda; no está disponible con solo Apple Health.",
     "Cloud shape (SD1:SD2)": "Forma de la nube (SD1:SD2)",
     "how round vs. elongated": "qué tan redonda vs. alargada",
@@ -2230,12 +2239,12 @@ ES: dict[str, str] = {
         "Tu recuperación tras esta sesión se ve como tu normal.",
     # FER-879 — barrido de em-dashes app-wide: claves migradas desde el catálogo (es ya limpio en FER-706).
     "Wear it snug: the sensor needs skin contact.": "Póntela ajustada, el sensor necesita contacto con la piel.",
-    "WHOOP straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there.": "Las bandas no salen en Ajustes › Bluetooth de tu iPhone, usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí.",
+    "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there.": "Las bandas no salen en Ajustes › Bluetooth de tu iPhone, usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí.",
     "It's charged and worn: the sensor wakes with skin contact.": "Está cargada y puesta, el sensor despierta con la piel.",
     "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness: typing at a desk still counts as sitting.": "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca, teclear en el escritorio sigue contando como estar sentado.",
     "Silence the nudges during a window you choose: a meeting block, an evening wind-down.": "Silencia los avisos en una franja que elijas, un bloque de juntas, la calma de la noche.",
     "Candidate: no experiment yet": "Candidato, aún sin experimento",
-    "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported WHOOP history is untouched. This can't be undone.": "Esto borra todo lo que aportaste, tu diario y todos tus experimentos (con sus veredictos). Los patrones detectados de tu cuerpo se quedan, y tu historial importado de WHOOP no se toca. No se puede deshacer.",
+    "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported history is untouched. This can't be undone.": "Esto borra todo lo que aportaste, tu diario y todos tus experimentos (con sus veredictos). Los patrones detectados de tu cuerpo se quedan, y tu historial importado no se toca. No se puede deshacer.",
     "You don't have to wait: an experiment speeds up what I learn about you.": "No tienes que esperar, un experimento acelera lo que aprendo de ti.",
     "Nothing proven yet: your experiments will land here.": "Nada confirmado aún, tus experimentos caerán aquí.",
     "No Apple Health data imported yet: tap Sync now to pull your recent history.": "Aún no has importado datos de Apple Salud: toca Sincronizar ahora para traer tu historial reciente.",
@@ -2260,10 +2269,10 @@ ES: dict[str, str] = {
     "The ratio compares your average load over the last ~7 days against your last ~28: the acute:chronic workload ratio (ACWR). 1.0 means you trained exactly your usual; 0.8–1.3 reads as balanced (Gabbett 2016). It's a debated heuristic and does not predict injuries (Impellizzeri 2020).": "La razón compara tu carga promedio de los últimos ~7 días contra tus últimos ~28 (la razón de carga aguda:crónica, ACWR). 1.0 significa que entrenaste exactamente tu normal; 0.8–1.3 se lee como equilibrio (Gabbett 2016). Es una heurística debatida y no predice lesiones (Impellizzeri 2020).",
     "Confianza baja: noche corta": "Confianza baja, noche corta",
     "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor: así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza.": "Anoche dormiste menos de 6 h. Una noche corta deprime tu HRV e infla tu frecuencia en reposo aunque tu recuperación real sea mejor, así que hoy el número se lee con menos certeza. No es que estés peor: una noche corta se mide con menos confianza.",
-    "Scale 0–21, WHOOP-style: it grows logarithmically, not a physical unit.": "Escala 0–21, tipo WHOOP: crece de forma logarítmica, no es una unidad física.",
-    "Effort (0–21 scale) is computed only by your WHOOP: this session doesn't carry it.": "El esfuerzo (escala 0–21) solo lo calcula tu banda, esta sesión no lo trae.",
+    "Scale 0–21: it grows logarithmically, not a physical unit.": "Escala 0–21: crece de forma logarítmica, no es una unidad física.",
+    "Effort (0–21 scale) is computed only by your strap: this session doesn't carry it.": "El esfuerzo (escala 0–21) solo lo calcula tu banda, esta sesión no lo trae.",
     "%@ · sparse: widened to %@": "%@ · pocas, se amplió a %@",
-    "They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.": "Vienen de tu historial de WHOOP y Apple Salud. Impórtalos en Orígenes de datos, o agrega uno que registraste en otro lado.",
+    "They come from your strap and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.": "Vienen del historial de tu banda y Apple Salud. Impórtalos en Orígenes de datos, o agrega uno que registraste en otro lado.",
 }
 
 
@@ -2291,9 +2300,20 @@ def main() -> int:
     # (String(localized:bundle:.main) in Packages/ emits no .stringsdata) and
     # platform-gated branches the current target never compiles. Create them so
     # the runtime lookup finds them.
+    #
+    # ...but only when a source file still references the string (FER-994 E1).
+    # This dictionary outlives the screens it was written for, so without the
+    # gate every re-run would resurrect the keys Tools/find-dead-strings.py just
+    # purged, silently undoing the purge.
+    finder = load_finder()
+    exact, normalized, raw, _files = finder.build_corpus(FINDER.parent.parent)
     created = 0
+    orphans: list[str] = []
     for key, es in ES.items():
         if key in strings:
+            continue
+        if finder.is_alive(key, exact, normalized, raw) is None:
+            orphans.append(key)
             continue
         strings[key] = {
             "extractionState": "manual",
@@ -2311,6 +2331,11 @@ def main() -> int:
         if k and "es" in v.get("localizations", {})
     )
     print(f"Spanish units written: {translated} (created {created} manual keys)")
+    if orphans:
+        print(
+            f"skipped {len(orphans)} dictionary entries whose string no source file "
+            "references (dead copy from retired screens; not resurrected)"
+        )
 
     # Placeholder parity between source and translation (the frame%@ key
     # intentionally drops its plural-suffix argument).

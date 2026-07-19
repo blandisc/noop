@@ -159,7 +159,7 @@ struct CompareView: View {
                 metricSection
 
                 if selected.count < minSelection {
-                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: CenitMetrics.cardRadius, bordered: true).empty(text: "Compare needs at least two metrics with history. Import your WHOOP export in Data Sources first.")
+                    ChartWell(theme, icon: "arrow.left.arrow.right", cornerRadius: CenitMetrics.cardRadius, bordered: true).empty(text: "Compare needs at least two metrics with history. Import your strap export in Data Sources first.")
                 } else {
                     let series = activeSeries
                     if series.allSatisfy({ $0.rows.isEmpty }) {

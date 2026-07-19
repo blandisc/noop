@@ -185,7 +185,7 @@ private struct PatronesLanding: View {
             isPresented: $showResetConfirm,
             title: String(localized: "Start from scratch?"),
             context: String(localized: "PATTERNS · YOUR JOURNAL"),
-            message: String(localized: "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported WHOOP history is untouched. This can't be undone."),
+            message: String(localized: "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported history is untouched. This can't be undone."),
             actions: [
                 .init(String(localized: "Keep my journal"), role: .primary),
                 .init(String(localized: "Delete what I logged"), role: .destructive) {

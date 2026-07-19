@@ -30,7 +30,7 @@ enum DataSourceImportKind {
     static weak var shared: AppModel?
 
     /// Shared device id for both live capture (BLEManager) and imported history.
-    let deviceId = "my-whoop"
+    let deviceId = "strap"
     /// Source id for imported Apple Health data (stored beside Whoop for per-source pages + consensus).
     let appleDeviceId = "apple-health"
     /// Observable snapshot driven by the BLE engine (connection, HR, battery, log).
@@ -236,8 +236,8 @@ enum DataSourceImportKind {
     init() {
         let live: LiveState = LiveState()
         self.live = live
-        self.ble = BLEManager(state: live, deviceId: "my-whoop")
-        self.repo = Repository(deviceId: "my-whoop")
+        self.ble = BLEManager(state: live, deviceId: "strap")
+        self.repo = Repository(deviceId: "strap")
         self.repo.dataSourceMode = sources.mode      // FER-484: honor the persisted mode from launch
         self.repo.baselineEpoch = profile.baselineEpochOrNil   // FER-677: honor a persisted recalibration
         // FER-883: same HRmax as the live path. Inlined (not `effectiveHRmax`) — a computed property
@@ -249,9 +249,10 @@ enum DataSourceImportKind {
             : (age > 0 ? StrainScorer.tanakaHRmax(age: Double(age)) : nil)
         self.repo.strainHRmax = strainHRmax
         self.repo.strainSex = profile.sex
-        let deviceFamily: DeviceFamily = WhoopModel.persisted.deviceFamily
-        self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "my-whoop",
-                                               family: deviceFamily)
+        // FER-993 (D3): the engine takes the band capability bit, not the hardware-family type.
+        // FER-993 (D4): the strap partition is labelled 'strap' since v36.
+        self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "strap",
+                                               estimatesSteps: WhoopModel.persisted.estimatesSteps)
         // Smooth HR centrally so it's solid everywhere it's shown.
         live.pulse.$heartRate.sink { [weak self] (_: Int?) in self?.ingestHR() }.store(in: &hrCancellables)
         live.pulse.$rr.sink { [weak self] (_: [Int]) in self?.ingestHR() }.store(in: &hrCancellables)
@@ -324,7 +325,7 @@ enum DataSourceImportKind {
 
         // Turn the strap's offloaded raw data into dashboard scores on launch and every 15
         // minutes, so recovery / strain / sleep populate from the strap itself with no import.
-        // IntelligenceEngine computes, persists under "my-whoop-noop", and refreshes the dashboard.
+        // IntelligenceEngine computes, persists under "strap-noop", and refreshes the dashboard.
         startAnalysisLoop()
     }
 

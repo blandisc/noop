@@ -34,7 +34,7 @@ public actor CenitStore {
 
     /// Cache of the source-partition `deviceId` (TEXT) → integer surrogate (`deviceIdMap`) translation
     /// (v21). Actor-isolated so it needs no lock; populated lazily by `resolvedDeviceId`. Tiny (one entry
-    /// per source partition; today just "my-whoop").
+    /// per source partition; today just "strap").
     private var deviceIdCache: [String: Int64] = [:]
 
     private init(dbWriter: any DatabaseWriter) throws {

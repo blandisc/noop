@@ -18,8 +18,11 @@ final class WorkoutSourceTests: XCTestCase {
     // MARK: - classify
 
     func testClassifyOrdersNoopBeforeWhoop() {
-        // "my-whoop-noop" contains "whoop" — the -noop suffix MUST win, else a detected bout
-        // would be classified as an imported WHOOP row and become un-dismissable.
+        // The computed id today (FER-993 relabelled the partition to "strap").
+        XCTAssertEqual(WorkoutSource.classify("strap-noop"), .detected)
+        // Legacy: "my-whoop-noop" contains "whoop" — the -noop suffix MUST win, else a detected bout
+        // would be classified as an imported WHOOP row and become un-dismissable. Kept as a regression
+        // guard for any row written before the v36 relabel.
         XCTAssertEqual(WorkoutSource.classify("my-whoop-noop"), .detected)
         XCTAssertEqual(WorkoutSource.classify("whoop"), .whoop)
         XCTAssertEqual(WorkoutSource.classify("manual"), .manual)
@@ -55,8 +58,8 @@ final class WorkoutSourceTests: XCTestCase {
 
     func testIsDismissedOnlyHidesOverlappingDetectedRows() {
         let spans = WorkoutSource.parseDismissedSpans(["1000:2000"])
-        let detectedOverlap = row(start: 1500, end: 2500, sport: "detected", source: "my-whoop-noop")
-        let detectedClear = row(start: 3000, end: 4000, sport: "detected", source: "my-whoop-noop")
+        let detectedOverlap = row(start: 1500, end: 2500, sport: "detected", source: "strap-noop")
+        let detectedClear = row(start: 3000, end: 4000, sport: "detected", source: "strap-noop")
         let manualOverlap = row(start: 1500, end: 2500, sport: "Running", source: "manual")
         XCTAssertTrue(WorkoutSource.isDismissed(detectedOverlap, spans: spans))
         XCTAssertFalse(WorkoutSource.isDismissed(detectedClear, spans: spans))
@@ -67,12 +70,12 @@ final class WorkoutSourceTests: XCTestCase {
     func testIsDismissedSurvivesStartTsDrift() {
         // A re-detected bout whose boundary drifted a little still overlaps the dismissed span.
         let spans = WorkoutSource.parseDismissedSpans(["1000:2000"])
-        let drifted = row(start: 1040, end: 2030, sport: "detected", source: "my-whoop-noop")
+        let drifted = row(start: 1040, end: 2030, sport: "detected", source: "strap-noop")
         XCTAssertTrue(WorkoutSource.isDismissed(drifted, spans: spans))
     }
 
     func testDismissedTokenRoundTrips() {
-        let r = row(start: 1700000000, end: 1700003600, sport: "detected", source: "my-whoop-noop")
+        let r = row(start: 1700000000, end: 1700003600, sport: "detected", source: "strap-noop")
         let token = WorkoutSource.dismissedToken(for: r)
         XCTAssertEqual(token, "1700000000:1700003600")
         let spans = WorkoutSource.parseDismissedSpans([token])

@@ -94,7 +94,7 @@ struct StressDetailScreen: View {
                             .padding(.top, 2)
                     }
                 } else {
-                    heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV.")
+                    heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources. Stress is read from your resting heart rate and HRV.")
                         .padding(CenitMetrics.screenPadding)
                 }
             }

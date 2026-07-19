@@ -438,14 +438,14 @@ to the Explore / Compare / tile UI. The catalog is the contract.
    `Cenit/Data/MetricCatalog.swift` via the `d(...)` helper:
 
    ```swift
-   d("resp_rate", "Respiratory Rate", "Recovery", "rpm", "my-whoop", "lungs", 1, nil),
+   d("resp_rate", "Respiratory Rate", "Recovery", "rpm", "strap", "lungs", 1, nil),
    //  key          title                category     unit   source      sf-symbol   decimals  higherIsBetter
    ```
 
    - `key` — the exact `metricSeries` key the importer/analyzer writes.
    - `category` — one of `MetricCatalog.categories` (`Heart`, `Recovery`, `Sleep`, `Strain`,
      `Health`); add a new category only if it's genuinely needed.
-   - `source` — `"my-whoop"` (strap/CSV) or `"apple-health"`; drives the `SourceBadge`.
+   - `source` — `"strap"` (strap/CSV) or `"apple-health"`; drives the `SourceBadge`.
    - `higherIsBetter` — `true`/`false`/`nil`; controls delta tinting. Use `nil` when "better" is
      ambiguous (e.g. respiratory rate).
 
