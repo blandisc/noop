@@ -1290,7 +1290,7 @@ struct WorkoutSessionDetailScreen: View {
             // A superset tag when this exercise shares its routine's `supersetGroup` with an adjacent one
             // in performed order (v3 · 2A). The datum here is anatomical/structural, so it stays in ink.
             if isInSuperset(index) {
-                Text("Superset").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                SupersetTag()
                     .padding(.bottom, 4)
             }
             exerciseTitle(g)

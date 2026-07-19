@@ -769,26 +769,11 @@ struct RoutineEditorScreen: View {
     /// de producto: en sesión hacen falta ± por discos y no perder media pantalla bajo el teclado. Ver
     /// la nota al pie del PR sobre por qué el keypad no se portó en este paso.
     private func cellField(_ text: Binding<String>, id: String, keyboard: UIKeyboardType, width: CGFloat) -> some View {
-        let focused = focusedCell == id
-        return TextField("—", text: text)
+        TextField("—", text: text)
             .keyboardType(keyboard)
-            .multilineTextAlignment(.center)
-            // Misma voz y tamaño que la celda de la sesión: Grotesk numérico 16 medium, que además
-            // escala con Dynamic Type intermedio.
-            .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
-            .foregroundStyle(theme.ink)
             .focused($focusedCell, equals: id)
             .disabled(locked)
-            // `minHeight`, no `height` fijo: la fuente ahora escala con Dynamic Type (`relativeTo:`),
-            // así que una caja de alto fijo recortaría el número en los pasos grandes. Antes no pasaba
-            // porque la fuente era fija — subir el alto y hacerla escalar a la vez creó el riesgo, y lo
-            // señaló el gate de QA. 44 sigue siendo el piso táctil de la HIG.
-            .frame(minWidth: width, maxWidth: width, minHeight: 44)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(focused ? theme.ink : theme.hairlineStrong)
-                    .frame(height: focused ? 2 : 1)
-                    .padding(.bottom, 6)
-            }
+            .setCellChrome(width: width, focused: focusedCell == id)
     }
 
     /// The card's closing row (approved mock): TWIN pills of equal weight — «＋ Agregar serie» on the

@@ -317,17 +317,13 @@ struct WorkoutEditSheet: View {
                 if ref.field == .weight { groups[ref.g].sets[ref.s].weightKg = max(0, storedKg(fromDisplay: v)) }
                 else { groups[ref.g].sets[ref.s].reps = max(0, Int(v.rounded())) }
             })
+        // Cromo compartido (2026-07-19): esta celda era una TERCERA variante — SF en vez de Grotesk
+        // (§8.7 le da los numerales a Grotesk) y subrayado enfocado en ember donde el editor y la
+        // sesión usan tinta. El mecanismo (TextField + teclado nativo) no cambia.
         return TextField("", text: text)
             .keyboardType(isInt ? .numberPad : .decimalPad)
-            .multilineTextAlignment(.center)
-            .font(StrandFont.number(16, weight: .regular)).monospacedDigit()
-            .foregroundStyle(theme.ink)
             .focused($focused, equals: ref)
-            .frame(width: 64, height: 44)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(focused == ref ? theme.dataStrain : theme.hairlineStrong)
-                    .frame(height: focused == ref ? 2 : 1).padding(.bottom, 6)
-            }
+            .setCellChrome(width: 64, focused: focused == ref)
             .onChange(of: focused) { _, now in if now != ref { buffers[ref] = nil } }   // drop buffer on blur
     }
 
