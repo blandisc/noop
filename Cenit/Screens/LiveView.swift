@@ -683,7 +683,7 @@ struct LiveView: View {
                 Text("Connect your strap to see it live")
                     .font(StrandFont.title2).foregroundStyle(theme.ink)
                     .multilineTextAlignment(.center)
-                Text("The monitor beats in real time when your WHOOP is nearby and worn.")
+                Text("The monitor beats in real time when your strap is nearby and worn.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)

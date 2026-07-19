@@ -334,7 +334,7 @@ struct RecoveryDetailScreen: View {
         // Offline / no reading today but history exists: be honest the day's number is missing without
         // implying a brand-new user (the trend and calendar below are populated). (FER-225, QA O1)
         if !model.series.isEmpty { return "No reading from last night yet: your recent history is below." }
-        return "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources."
+        return "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources."
     }
 
     // MARK: - 2. Hoy, vs tu normal — atribución unificada por nivel (FER-642)

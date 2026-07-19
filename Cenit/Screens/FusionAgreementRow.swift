@@ -44,7 +44,7 @@ struct FusionAgreementRow: View {
 
     private func name(_ source: FusionSource) -> String {
         switch source {
-        case .whoopImport:  return String(localized: "WHOOP")
+        case .whoopImport:  return String(localized: "Imported")
         case .noopComputed: return String(localized: "Band")
         case .appleHealth:  return String(localized: "Apple Health")
         }

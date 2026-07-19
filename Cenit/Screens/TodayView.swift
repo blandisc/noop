@@ -2238,7 +2238,7 @@ struct TodayView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     Text(strapSeen
                          ? "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
-                         : "Connect Apple Health to start. Your WHOOP strap sharpens the reading.")
+                         : "Connect Apple Health to start. Your strap sharpens the reading.")
                         .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -2351,7 +2351,7 @@ struct TodayView: View {
                       title: "Connect Apple Health", subtitle: "the base of your data") { showDataSources = true }
             Divider().overlay(theme.hairline).padding(.leading, CenitMetrics.cardPadding)
             sourceRow(icon: "applewatch.side.right", tint: theme.inkTertiary,
-                      title: "Pair WHOOP strap", subtitle: "sharpens the signal · optional") { model.scan() }
+                      title: "Pair strap", subtitle: "sharpens the signal · optional") { model.scan() }
         }
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)

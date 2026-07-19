@@ -247,7 +247,7 @@ final class IntelligenceEngine: ObservableObject {
 
         results = out.computed
         note = out.computed.isEmpty
-            ? String(localized: "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required.")
+            ? String(localized: "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no cloud required.")
             : nil
 
         // Mirror the steps-calibration fit (or its progress) into ProfileStore, on the main actor.

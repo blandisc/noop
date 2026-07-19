@@ -6,13 +6,13 @@ identify the hardware the app interoperates with.
 
 Strand builds on prior community reverse-engineering and interoperability work:
 
-## WHOOP 4.0 protocol + Swift packages
+## 4.0 strap protocol + Swift packages
 - **`johnmiddleton12/my-whoop`** — the `WhoopProtocol` and `CenitStore` Swift packages
   (vendored under `Packages/`), the WHOOP 4.0 BLE framing/command/decode work, and the
   iOS collection logic that Strand's `WhoopBLE`/`Collect` layers are adapted from.
   See `DISCLAIMER.md` (carried over from that project).
 
-## WHOOP 5.0 / MG protocol
+## 5.0 / MG strap protocol
 - **`b-nnett/goose`** — the WHOOP 5.0 BLE reverse-engineering (service UUID family
   `fd4b0001-…`, CRC16-Modbus header, CLIENT_HELLO, and the "puffin" packet types)
   that Strand's `DeviceFamily` Whoop-5 path and `whoop5_protocol.json` are ported from.

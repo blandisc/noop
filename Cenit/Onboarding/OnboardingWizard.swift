@@ -371,7 +371,7 @@ private struct WhoopQuestionStep: View {
     var body: some View {
         StepShell {
             Overline(text: "Step 2 · Sharpen the signal")
-            Text("Do you have a WHOOP strap?")
+            Text("Do you have a strap?")
                 .font(StrandFont.title1)
                 .foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -382,7 +382,7 @@ private struct WhoopQuestionStep: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, CenitMetrics.gap)
             Spacer(minLength: CenitMetrics.sectionGap)
-            InkButton("Yes, I have a WHOOP") { onChoose(true) }
+            InkButton("Yes, I have one") { onChoose(true) }
             OutlineButton("I don't have one") { onChoose(false) }
         }
     }
@@ -505,12 +505,12 @@ private struct ScanStep: View {
             Text("Not showing up? That's normal.")
                 .font(StrandFont.headline)
                 .foregroundStyle(theme.ink)
-            Text("WHOOP straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there.")
+            Text("Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Checkline("It's charged and worn: the sensor wakes with skin contact.")
-            Checkline("The WHOOP app isn't holding it. Only one host at a time: close it or turn off its Bluetooth.")
+            Checkline("The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth.")
             Checkline("It's within a metre of your iPhone.")
         }
         .padding(CenitMetrics.cardPadding)

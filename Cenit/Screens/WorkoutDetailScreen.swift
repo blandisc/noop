@@ -303,9 +303,9 @@ struct WorkoutDetailScreen: View {
         // Keyed off the hero so the note never disagrees with the degraded value (a 0/absent strain reads
         // as "no effort number", not as a 0–21 reading).
         if case .strain = heroKind {
-            return "Scale 0–21, WHOOP-style: it grows logarithmically, not a physical unit."
+            return "Scale 0–21: it grows logarithmically, not a physical unit."
         }
-        return "Effort (0–21 scale) is computed only by your WHOOP: this session doesn't carry it."
+        return "Effort (0–21 scale) is computed only by your strap: this session doesn't carry it."
     }
 
     // MARK: - Acciones (menú ••• según fuente)

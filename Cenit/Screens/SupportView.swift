@@ -69,7 +69,7 @@ private struct SupportContent: View {
                 QuietButton("What's new") { showWhatsNew = true }
             }
 
-            Text("A standalone companion for your WHOOP. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project, not the WHOOP app.")
+            Text("A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

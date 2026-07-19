@@ -3500,13 +3500,13 @@
         }
       }
     },
-    "%lld of 30 days from your WHOOP strap" : {
+    "%lld of 30 days from your strap" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld of 30 days from your WHOOP strap"
+            "value" : "%lld of 30 days from your strap"
           }
         },
         "es" : {
@@ -6444,9 +6444,22 @@
         }
       }
     },
-    "A standalone companion for your WHOOP. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project, not the WHOOP app." : {
-
-    },
+    "A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project." : {
+        "localizations" : {
+          "en" : {
+            "stringUnit" : {
+              "state" : "translated",
+              "value" : "A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project."
+            }
+          },
+          "es" : {
+            "stringUnit" : {
+              "state" : "translated",
+              "value" : "Un acompañante independiente para tu banda. Todo se queda en este dispositivo: tu historial, tu monitor en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental."
+            }
+          }
+        }
+      },
     "A steadier bedtime tonight helps your rhythm." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6566,12 +6579,12 @@
         }
       }
     },
-    "A WHOOP 4.0 sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count." : {
+    "A 4.0 strap sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La WHOOP 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
+            "value" : "Una banda 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
           }
         }
       }
@@ -12289,19 +12302,19 @@
         }
       }
     },
-    "Close the official WHOOP app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect." : {
+    "Close the strap's official app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Close the official WHOOP app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect."
+            "value" : "Close the strap's official app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cierra la app oficial de WHOOP (o apaga el Bluetooth de ese teléfono), pon la banda en modo de emparejamiento (en una 5.0/MG, da toques firmes a la banda hasta que los LED parpadeen en azul) y vuelve a conectar."
+            "value" : "Cierra la app oficial de la banda (o apaga el Bluetooth de ese teléfono), pon la banda en modo de emparejamiento (en una 5.0/MG, da toques firmes a la banda hasta que los LED parpadeen en azul) y vuelve a conectar."
           }
         }
       }
@@ -12521,19 +12534,19 @@
         }
       }
     },
-    "Compare needs at least two metrics with history. Import your WHOOP export in Data Sources first." : {
+    "Compare needs at least two metrics with history. Import your strap export in Data Sources first." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Compare needs at least two metrics with history. Import your WHOOP export in Data Sources first."
+            "value" : "Compare needs at least two metrics with history. Import your strap export in Data Sources first."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comparar necesita al menos dos métricas con historial. Primero importa tu exportación de WHOOP en Fuentes de datos."
+            "value" : "Comparar necesita al menos dos métricas con historial. Primero importa la exportación de tu banda en Fuentes de datos."
           }
         }
       }
@@ -12961,13 +12974,13 @@
         }
       }
     },
-    "Connect Apple Health to start. Your WHOOP strap sharpens the reading." : {
+    "Connect Apple Health to start. Your strap sharpens the reading." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connect Apple Health to start. Your WHOOP strap sharpens the reading."
+            "value" : "Connect Apple Health to start. Your strap sharpens the reading."
           }
         },
         "es" : {
@@ -14155,13 +14168,13 @@
         }
       }
     },
-    "Data coverage for the last 30 days: %lld days with data. %lld days from the WHOOP strap, %lld days Apple Health only, %lld days with no data." : {
+    "Data coverage for the last 30 days: %lld days with data. %lld days from the strap, %lld days Apple Health only, %lld days with no data." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Data coverage for the last 30 days: %lld days with data. %lld days from the WHOOP strap, %lld days Apple Health only, %lld days with no data."
+            "value" : "Data coverage for the last 30 days: %lld days with data. %lld days from the strap, %lld days Apple Health only, %lld days with no data."
           }
         },
         "es" : {
@@ -15465,13 +15478,13 @@
         }
       }
     },
-    "Do you have a WHOOP strap?" : {
+    "Do you have a strap?" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Do you have a WHOOP strap?"
+            "value" : "Do you have a strap?"
           }
         },
         "es" : {
@@ -16107,13 +16120,13 @@
         }
       }
     },
-    "Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)." : {
+    "Each session is a workout from your strap, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)."
+            "value" : "Each session is a workout from your strap, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)."
           }
         },
         "es" : {
@@ -16496,13 +16509,13 @@
         }
       }
     },
-    "Effort (0–21 scale) is computed only by your WHOOP: this session doesn't carry it." : {
+    "Effort (0–21 scale) is computed only by your strap: this session doesn't carry it." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effort (0–21 scale) is computed only by your WHOOP: this session doesn't carry it."
+            "value" : "Effort (0–21 scale) is computed only by your strap: this session doesn't carry it."
           }
         },
         "es" : {
@@ -17627,19 +17640,19 @@
         }
       }
     },
-    "Experimental tools for the newer WHOOP 5 and MG straps. They have no effect on a WHOOP 4.0." : {
+    "Experimental tools for the newer 5 and MG straps. They have no effect on a 4.0." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Experimental tools for the newer WHOOP 5 and MG straps. They have no effect on a WHOOP 4.0."
+            "value" : "Experimental tools for the newer 5 and MG straps. They have no effect on a 4.0."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Herramientas experimentales para las bandas WHOOP 5 y MG nuevas. No afectan a la WHOOP 4.0."
+            "value" : "Herramientas experimentales para las bandas 5 y MG nuevas. No afectan a la 4.0."
           }
         }
       }
@@ -21092,19 +21105,19 @@
         }
       }
     },
-    "Import your history first. A WHOOP export in Data Sources fills every metric you can explore here in about a minute." : {
+    "Import your history first. A strap export in Data Sources fills every metric you can explore here in about a minute." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Import your history first. A WHOOP export in Data Sources fills every metric you can explore here in about a minute."
+            "value" : "Import your history first. A strap export in Data Sources fills every metric you can explore here in about a minute."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Primero importa tu historial. Una exportación de WHOOP en Fuentes de datos llena en un minuto todas las métricas que puedes explorar aquí."
+            "value" : "Primero importa tu historial. La exportación de tu banda en Fuentes de datos llena en un minuto todas las métricas que puedes explorar aquí."
           }
         }
       }
@@ -24856,19 +24869,19 @@
         }
       }
     },
-    "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the WHOOP strap." : {
+    "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the strap." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the WHOOP strap."
+            "value" : "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the strap."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lo mide tu Apple Watch en caminatas y carreras al aire libre, la banda WHOOP no lo registra."
+            "value" : "Lo mide tu Apple Watch en caminatas y carreras al aire libre, la banda no lo registra."
           }
         }
       }
@@ -27275,19 +27288,19 @@
         }
       }
     },
-    "No nights yet. Import your WHOOP export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs." : {
+    "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No nights yet. Import your WHOOP export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
+            "value" : "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay noches. Importa tu exportación de WHOOP, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice."
+            "value" : "Aún no hay noches. Importa la exportación de tu banda, o conecta Apple Salud, en Fuentes de datos para ver tus etapas y tendencias de sueño. O usa la banda al dormir y ábrelo de nuevo cuando la banda se sincronice."
           }
         }
       }
@@ -27582,19 +27595,19 @@
         }
       }
     },
-    "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources." : {
+    "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources."
+            "value" : "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos."
+            "value" : "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa el historial de tu banda en Fuentes de datos."
           }
         }
       }
@@ -27728,19 +27741,19 @@
         }
       }
     },
-    "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required." : {
+    "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no cloud required." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no WHOOP cloud required."
+            "value" : "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no cloud required."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay noches calificadas. Duerme con la banda puesta y Cénit conectado, y el motor calculará por sí mismo tu recuperación, esfuerzo y sueño, sin la nube de WHOOP."
+            "value" : "Aún no hay noches calificadas. Duerme con la banda puesta y Cénit conectado, y el motor calculará por sí mismo tu recuperación, esfuerzo y sueño, sin nube."
           }
         }
       }
@@ -27884,19 +27897,19 @@
         }
       }
     },
-    "No strap connected. Put your WHOOP nearby and tap Re-scan to pair." : {
+    "No strap connected. Put your strap nearby and tap Re-scan to pair." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No strap connected. Put your WHOOP nearby and tap Re-scan to pair."
+            "value" : "No strap connected. Put your strap nearby and tap Re-scan to pair."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No hay banda conectada. Acerca tu WHOOP y toca Volver a escanear para emparejar."
+            "value" : "No hay banda conectada. Acerca tu banda y toca Volver a escanear para emparejar."
           }
         }
       }
@@ -27918,19 +27931,19 @@
         }
       }
     },
-    "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV." : {
+    "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources. Stress is read from your resting heart rate and HRV." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your WHOOP history in Data Sources. Stress is read from your resting heart rate and HRV."
+            "value" : "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources. Stress is read from your resting heart rate and HRV."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa tu historial de WHOOP en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV."
+            "value" : "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa el historial de tu banda en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV."
           }
         }
       }
@@ -29112,19 +29125,19 @@
         }
       }
     },
-    "On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on WHOOP 4.0." : {
+    "On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on a 4.0." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on WHOOP 4.0."
+            "value" : "On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on a 4.0."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En una conexión 5/MG, Cénit manda una sonda tras el emparejamiento y registra lo que regresa. No afecta a la WHOOP 4.0."
+            "value" : "En una conexión 5/MG, Cénit manda una sonda tras el emparejamiento y registra lo que regresa. No afecta a la 4.0."
           }
         }
       }
@@ -29331,19 +29344,19 @@
         }
       }
     },
-    "On WHOOP 5/MG this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path." : {
+    "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "On WHOOP 5/MG this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. WHOOP 4 is the proven path."
+            "value" : "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En WHOOP 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. WHOOP 4 es la vía probada."
+            "value" : "En una banda 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. La banda 4.0 es la vía probada."
           }
         }
       }
@@ -30482,13 +30495,13 @@
         }
       }
     },
-    "Pair WHOOP strap" : {
+    "Pair strap" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pair WHOOP strap"
+            "value" : "Pair strap"
           }
         },
         "es" : {
@@ -30529,19 +30542,19 @@
         }
       }
     },
-    "Pairs directly with your strap over Bluetooth: no WHOOP app, no cloud." : {
+    "Pairs directly with your strap over Bluetooth: no other app, no cloud." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pairs directly with your strap over Bluetooth: no WHOOP app, no cloud."
+            "value" : "Pairs directly with your strap over Bluetooth: no other app, no cloud."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se vincula directo con tu banda por Bluetooth, sin app de WHOOP, sin nube."
+            "value" : "Se vincula directo con tu banda por Bluetooth, sin otra app, sin nube."
           }
         }
       }
@@ -35153,19 +35166,19 @@
         }
       }
     },
-    "Ritmo needs a WHOOP band." : {
+    "Ritmo needs a strap." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ritmo needs a WHOOP band."
+            "value" : "Ritmo needs a strap."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ritmo necesita una banda WHOOP."
+            "value" : "Ritmo necesita una banda."
           }
         }
       }
@@ -35823,19 +35836,19 @@
         }
       }
     },
-    "Scale 0–21, WHOOP-style: it grows logarithmically, not a physical unit." : {
+    "Scale 0–21: it grows logarithmically, not a physical unit." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scale 0–21, WHOOP-style: it grows logarithmically, not a physical unit."
+            "value" : "Scale 0–21: it grows logarithmically, not a physical unit."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Escala 0–21, tipo WHOOP: crece de forma logarítmica, no es una unidad física."
+            "value" : "Escala 0–21: crece de forma logarítmica, no es una unidad física."
           }
         }
       }
@@ -36362,15 +36375,15 @@
         }
       }
     },
-    "Send a haptic buzz to your WHOOP strap." : {
-      "comment" : "Intent to send a haptic buzz to the user's WHOOP strap.",
+    "Send a haptic buzz to your strap." : {
+      "comment" : "Intent to send a haptic buzz to the user's strap.",
       "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Envía una vibración háptica a tu banda WHOOP."
+            "value" : "Envía una vibración háptica a tu banda."
           }
         }
       }
@@ -40922,12 +40935,12 @@
         }
       }
     },
-    "The monitor beats in real time when your WHOOP is nearby and worn." : {
+    "The monitor beats in real time when your strap is nearby and worn." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The monitor beats in real time when your WHOOP is nearby and worn."
+            "value" : "The monitor beats in real time when your strap is nearby and worn."
           }
         },
         "es" : {
@@ -41277,19 +41290,19 @@
         }
       }
     },
-    "The WHOOP app isn't holding it. Only one host at a time: close it or turn off its Bluetooth." : {
+    "The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The WHOOP app isn't holding it. Only one host at a time: close it or turn off its Bluetooth."
+            "value" : "The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No la tiene tomada la app de WHOOP. Solo un host a la vez: ciérrala o apaga su Bluetooth."
+            "value" : "No la tiene tomada la app oficial de la banda. Solo un host a la vez: ciérrala o apaga su Bluetooth."
           }
         }
       }
@@ -41427,19 +41440,19 @@
         }
       }
     },
-    "They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere." : {
+    "They come from your strap and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere."
+            "value" : "They come from your strap and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vienen de tu historial de WHOOP y Apple Salud. Impórtalos en Orígenes de datos, o agrega uno que registraste en otro lado."
+            "value" : "Vienen del historial de tu banda y Apple Salud. Impórtalos en Orígenes de datos, o agrega uno que registraste en otro lado."
           }
         }
       }
@@ -41495,19 +41508,19 @@
         }
       }
     },
-    "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported WHOOP history is untouched. This can't be undone." : {
+    "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported history is untouched. This can't be undone." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported WHOOP history is untouched. This can't be undone."
+            "value" : "This erases everything you contributed: your day journal and all your experiments (with their verdicts). The patterns detected from your body stay, and your imported history is untouched. This can't be undone."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esto borra todo lo que aportaste, tu diario y todos tus experimentos (con sus veredictos). Los patrones detectados de tu cuerpo se quedan, y tu historial importado de WHOOP no se toca. No se puede deshacer."
+            "value" : "Esto borra todo lo que aportaste, tu diario y todos tus experimentos (con sus veredictos). Los patrones detectados de tu cuerpo se quedan, y tu historial importado no se toca. No se puede deshacer."
           }
         }
       }
@@ -46030,149 +46043,81 @@
         }
       }
     },
-    "Whoop" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Whoop"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Whoop"
-          }
-        }
-      }
-    },
-    "WHOOP" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WHOOP"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WHOOP"
-          }
-        }
-      }
-    },
-    "WHOOP · Apple Health · backup" : {
+    "Strap · Apple Health · backup" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WHOOP · Apple Health · backup"
+            "value" : "Strap · Apple Health · backup"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WHOOP · Apple Health · copia"
+            "value" : "Banda · Apple Salud · copia"
           }
         }
       }
     },
-    "WHOOP 5/MG probes" : {
+    "5/MG probes" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WHOOP 5/MG probes"
+            "value" : "5/MG probes"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sondas WHOOP 5/MG"
+            "value" : "Sondas 5/MG"
           }
         }
       }
     },
-    "WHOOP 5/MG probes, frames" : {
+    "5/MG probes, frames" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WHOOP 5/MG probes, frames"
+            "value" : "5/MG probes, frames"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sondas WHOOP 5/MG, tramas"
+            "value" : "Sondas 5/MG, tramas"
           }
         }
       }
     },
-    "WHOOP 5/MG protocol probes" : {
+    "5/MG protocol probes" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WHOOP 5/MG protocol probes"
+            "value" : "5/MG protocol probes"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sondas de protocolo WHOOP 5/MG"
+            "value" : "Sondas de protocolo 5/MG"
           }
         }
       }
     },
-    "WHOOP strap" : {
+    "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WHOOP strap"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda"
-          }
-        }
-      }
-    },
-    "WHOOP Strap" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WHOOP Strap"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda WHOOP"
-          }
-        }
-      }
-    },
-    "WHOOP straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WHOOP straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there."
+            "value" : "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there."
           }
         },
         "es" : {
@@ -46821,13 +46766,13 @@
         }
       }
     },
-    "Yes, I have a WHOOP" : {
+    "Yes, I have one" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Yes, I have a WHOOP"
+            "value" : "Yes, I have one"
           }
         },
         "es" : {
@@ -47381,19 +47326,19 @@
         }
       }
     },
-    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap." : {
+    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the strap." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the WHOOP strap."
+            "value" : "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the strap."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS, la banda WHOOP no lo registra."
+            "value" : "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS, la banda no lo registra."
           }
         }
       }
@@ -49381,12 +49326,12 @@
         }
       }
     },
-    "Your WHOOP 5.0/MG counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count." : {
+    "A 5.0/MG strap counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu WHOOP 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
+            "value" : "Una banda 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
           }
         }
       }
@@ -49698,6 +49643,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Editar ejercicio"
+          }
+        }
+      }
+    },
+    "Imported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importado"
           }
         }
       }

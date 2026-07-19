@@ -249,7 +249,7 @@ struct SleepDetailScreen: View {
                     .instrumentoHero(46)
                     .foregroundStyle(theme.inkTertiary)
                 Text(model.loaded
-                     ? "No nights yet. Import your WHOOP export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
+                     ? "No nights yet. Import your strap export, or connect Apple Health, in Data Sources to see your sleep stages and trends. Or wear the strap to bed and open it again after the strap syncs."
                      : "Loading your sleep history…")
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.ink)

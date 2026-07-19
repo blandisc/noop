@@ -110,7 +110,7 @@ struct RelojCorporalSheet: View {
             EmptyStateView(
                 systemImage: "applewatch.slash",
                 title: "Necesitas tu banda",
-                message: "Esta lectura se alimenta del patrón de actividad de tu banda WHOOP.")
+                message: "Esta lectura se alimenta del patrón de actividad de tu banda.")
                 .padding(.top, 40)
         case .notReadable:
             EmptyStateView(

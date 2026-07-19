@@ -362,7 +362,7 @@ struct WorkoutsView: View {
     /// Plain source label for `TarjetaSesion.chip` (same taxonomy as `workoutSourceBadge`, without tint).
     private func sourceChipKey(for source: String) -> LocalizedStringKey {
         switch WorkoutSource.classify(source) {
-        case .whoop:    return "Whoop"
+        case .whoop:    return "Strap"
         case .apple:    return "Apple"
         case .detected: return "Detected"
         case .manual:   return "Manual"
@@ -375,11 +375,11 @@ struct WorkoutsView: View {
         PieMetodo(theme: theme) {
             Metodo(title: String(localized: "How it's calculated"), theme: theme) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Each session is a workout from your WHOOP, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty).")
+                    Text("Each session is a workout from your strap, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty).")
                         .font(StrandFont.subhead)
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.")
+                    Text("They come from your strap and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.")
                         .font(StrandFont.caption)
                         .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -424,7 +424,7 @@ struct WorkoutsView: View {
                 .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
             Text("No workouts yet").font(InstrumentoType.groteskHeadline(22)).foregroundStyle(theme.ink)
                 .multilineTextAlignment(.center)
-            Text("They come from your WHOOP and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.")
+            Text("They come from your strap and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: 300)
