@@ -339,4 +339,26 @@ final class RepositoryMergeTests: XCTestCase {
         XCTAssertNotNil(low); XCTAssertNotNil(high)
         XCTAssertGreaterThan(low!, high!)
     }
+
+    /// R3 (FER-1008): the Repository→engine seam. `Repository.autonomicTrend` is a pure pass-through of
+    /// `AutonomicTrend.evaluate` over the persisted dense `apple_rmssd_night` rows — 14+ dense nights get
+    /// a real trend, fewer gets calibrating, and the wrapper adds NO logic of its own.
+    func testAutonomicTrendPureFromPersistedNights() {
+        func nights(_ n: Int) -> [(day: String, rmssdMs: Double)] {
+            (0..<n).map { (day: String(format: "2026-01-%02d", $0 + 1), rmssdMs: 50.0 + Double($0 % 5)) }
+        }
+        // 13 dense nights → still calibrating, no direction.
+        let calib = Repository.autonomicTrend(nights: nights(13), asOf: "2026-01-13", recentCutoff: "2026-01-11")
+        XCTAssertEqual(calib.confidence, .calibrating)
+        XCTAssertNil(calib.direction)
+
+        // 21 dense nights → solid, a real direction, and IDENTICAL to the engine (the wrapper only pins
+        // the seam; it must never diverge from AutonomicTrend.evaluate).
+        let ns = nights(21)
+        let viaRepo = Repository.autonomicTrend(nights: ns, asOf: "2026-01-21", recentCutoff: "2026-01-15")
+        let viaEngine = AutonomicTrend.evaluate(nights: ns, asOf: "2026-01-21", recentCutoff: "2026-01-15")
+        XCTAssertEqual(viaRepo.confidence, .solid)
+        XCTAssertNotNil(viaRepo.direction)
+        XCTAssertEqual(viaRepo, viaEngine)
+    }
 }
