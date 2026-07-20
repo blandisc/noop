@@ -8,7 +8,6 @@ extension AppModel {
         for entry in PendingIntents.drain() {
             switch entry.action {
             case .markMoment: markMoment(at: entry.date)
-            case .buzz:       buzz(loops: 1)
             }
         }
     }

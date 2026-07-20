@@ -25,7 +25,6 @@ import UIKit       // UIApplication.openSettingsURLString
 struct DataSourcesView: View {
     @Environment(AppModel.self) var model
     @EnvironmentObject var repo: Repository
-    @Environment(LiveState.self) var live
     @Environment(\.instrumentoTheme) private var theme
     @State private var showingImporter = false
     @State private var importTarget: ImportTarget = .appleHealth
@@ -77,7 +76,6 @@ struct DataSourcesView: View {
                 #endif
                 importSection
                 appleHealthSection
-                bandSyncSection
                 #if os(iOS)
                 coverageSection
                 backupSection
@@ -222,7 +220,7 @@ struct DataSourcesView: View {
                     connectAction
                 }
             case .whoopOnly:
-                if !live.bonded && repo.storedStrapDays.isEmpty {
+                if repo.storedStrapDays.isEmpty {
                     warningLine("No band data yet. Connect it in Live or import your history to see anything in this mode.")
                     QuietButton("Pair in Live") { dismiss() }.padding(.top, 8)
                 }
@@ -650,168 +648,6 @@ struct DataSourcesView: View {
     }
     #endif
 
-    // MARK: - Sincronización de la banda (FER-83 diagnostic)
-
-    private var bandSyncSection: some View {
-        section("Strap") {
-            // Three-state, consistent with the Live screen's connection pill — a connected-but-not-yet-
-            // streaming strap (e.g. an experimental WHOOP 5/MG link) no longer reads as "Not connected"
-            // on one screen and "Connected" on another (issue #8). Color rides the status datum (the dot
-            // + label); the supporting copy stays ink.
-            let (dot, label): (Color, LocalizedStringKey) =
-                live.bonded ? (theme.verdict, "Bonded: streaming.")
-                : live.connected ? (theme.warning, "Connected.")
-                : (theme.critical, "Not connected: open Live to pair.")
-            HStack(spacing: 10) {
-                Circle().fill(dot).frame(width: 8, height: 8)
-                Text(label).font(StrandFont.subhead).foregroundStyle(dot)
-                Spacer(minLength: 0)
-            }
-            .accessibilityElement(children: .combine)
-            Text("Pairs directly with your strap over Bluetooth: no other app, no cloud.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            divider
-            strapSyncDiagnostic
-        }
-    }
-
-    /// Sync diagnostic (FER-83): honest, read-only evidence that the band captured data and that NOOP
-    /// is receiving, decoding and storing it. Informs only — the one action is "Sync now" (a single
-    /// safe, reversible offload). State-driven: connect prompt / pairing prompt / live progress /
-    /// result (band range + per-sensor receipt + verdict) / error.
-    @ViewBuilder
-    private var strapSyncDiagnostic: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Sync diagnostic").instrumentoOverline()
-                .foregroundStyle(theme.inkTertiary)
-
-            if !live.connected {
-                Text("Connect your strap to run the sync diagnostic.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-            } else if !live.encryptedBond {
-                Text("Complete secure pairing first: the strap won’t offload its history until the encrypted bond is set.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-            } else {
-                strapRangeRow
-                syncNowButton
-                if live.backfilling {
-                    syncProgressRow
-                } else if let err = live.lastSyncError {
-                    Text(verbatim: err)
-                        .font(StrandFont.footnote).foregroundStyle(theme.warning)
-                } else if live.syncCompletedThisSession {
-                    syncReceiptList
-                    syncVerdictRow
-                }
-            }
-        }
-    }
-
-    /// "On the band" — the strap's own retained-history window (proof the sensor captured + still holds
-    /// it). "—" until a GET_DATA_RANGE response has been seen.
-    @ViewBuilder
-    private var strapRangeRow: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "externaldrive.fill")
-                .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
-            Text("On the band:").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            if let oldest = live.strapHistoryOldest, let newest = live.strapHistoryNewest {
-                Text(verbatim: "\(Self.dayFormatter.string(from: Date(timeIntervalSince1970: oldest))) → \(Self.dayFormatter.string(from: Date(timeIntervalSince1970: newest)))")
-                    .font(StrandFont.footnote).monospacedDigit()
-                    .foregroundStyle(theme.inkSecondary)
-            } else {
-                Text(verbatim: "—").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            }
-        }
-    }
-
-    private var syncNowButton: some View {
-        HStack(spacing: 12) {
-            QuietButton(live.backfilling ? "Syncing…" : "Sync now") { model.ble.syncNow() }
-                .disabled(live.backfilling)
-            Spacer(minLength: 0)
-        }
-    }
-
-    /// Live offload progress — a pulsing pill plus the running chunk count (the only honest progress
-    /// signal; the protocol never reveals the total pending, so a count, never a percent).
-    private var syncProgressRow: some View {
-        HStack(spacing: 10) {
-            StatePill("Syncing strap history…", tone: .accent, pulsing: true)
-            Text("\(live.syncChunksThisSession) pieces")
-                .font(StrandFont.footnote).monospacedDigit()
-                .foregroundStyle(theme.inkSecondary)
-        }
-    }
-
-    /// "Received this sync" — rows that decoded and landed, per sensor. The honest data receipt
-    /// (counts from StreamStore.insert, accumulated over the offload session).
-    @ViewBuilder
-    private var syncReceiptList: some View {
-        let r = live.syncReceipt
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Received this sync").instrumentoOverline()
-                .foregroundStyle(theme.inkTertiary)
-            VStack(spacing: 0) {
-                ForEach(Self.syncSensorRows(r), id: \.key) { row in
-                    HStack(spacing: 8) {
-                        Image(systemName: row.count > 0 ? "checkmark.circle.fill" : "minus.circle")
-                            .font(StrandFont.glyph(.chevron))
-                            .foregroundStyle(row.count > 0 ? theme.verdict : theme.inkTertiary)
-                        Text(LocalizedStringKey(row.key)).font(StrandFont.subhead)
-                            .foregroundStyle(row.count > 0 ? theme.inkSecondary : theme.inkTertiary)
-                        Spacer()
-                        Text(verbatim: row.count > 0 ? "\(row.count)" : "—")
-                            .font(StrandFont.footnote).monospacedDigit()
-                            .foregroundStyle(row.count > 0 ? theme.inkSecondary : theme.inkTertiary)
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-        }
-    }
-
-    /// The honest verdict, derived purely from what the offload session observed plus whether the band
-    /// reported a stored-history window. Branching lives in `LiveState.SyncVerdict.decide` (testable).
-    @ViewBuilder
-    private var syncVerdictRow: some View {
-        // The "On the band" window shows only when both markers are present — same signal here: a
-        // plausible GET_DATA_RANGE window means the band holds history, so a console-logs-only offload
-        // is a decode failure, not a lost clock (FER-152).
-        let reportsStoredHistory = live.strapHistoryOldest != nil && live.strapHistoryNewest != nil
-        let verdict = LiveState.SyncVerdict.decide(live.syncReceipt, reportsStoredHistory: reportsStoredHistory)
-        let (icon, text, tint): (String, LocalizedStringKey, Color) = {
-            switch verdict {
-            case .nothingNew:
-                return ("circle", "The band has nothing new.", theme.inkSecondary)
-            case .notStoringClock:
-                return ("clock.badge.exclamationmark.fill", "The band lost its clock and isn’t saving. Cénit is re-setting it: keep it connected. If it doesn’t recover, run it through the strap’s official app.", theme.warning)
-            case .arrivesButNoDecode:
-                return ("exclamationmark.triangle.fill", "Data arrives but doesn’t decode: please report.", theme.warning)
-            case .receivingAndStoring:
-                return ("checkmark.seal.fill", "Receiving and storing everything.", theme.verdict)
-            }
-        }()
-        HStack(spacing: 6) {
-            Image(systemName: icon).font(StrandFont.glyph(.chevron)).foregroundStyle(tint)
-            Text(text).font(StrandFont.subhead).foregroundStyle(tint)
-        }
-    }
-
-    /// The stored sensor streams the receipt reports, paired with their (localizable) English label keys
-    /// — `key` doubles as the stable ForEach id and the LocalizedStringKey lookup (FER-83). SpO₂ is
-    /// decoded but no longer persisted (FER-511), so it's omitted here rather than showing a fixed "0".
-    private static func syncSensorRows(_ r: LiveState.SyncReceipt) -> [(key: String, count: Int)] {
-        [("Heart rate", r.hr), ("R-R", r.rr),
-         ("Temperature", r.skinTemp), ("Respiration", r.resp), ("Movement", r.gravity)]
-    }
-
-    /// Medium-date formatter for the band's retained-history window (FER-83).
-    private static let dayFormatter: DateFormatter = {
-        let f = DateFormatter(); f.dateStyle = .medium; f.timeStyle = .none; return f
-    }()
-
     // MARK: - Cobertura (30-day grid + sources summary) — iOS
 
     #if os(iOS)
@@ -915,8 +751,8 @@ struct DataSourcesView: View {
     private var sourcesHasContent: Bool {
         let whoopDays = repo.storedStrapDays.count
         let hasData = whoopDays > 0 || repo.storedAppleOnlyDays.count > 0
-        let hasSync = live.lastSyncError != nil || live.lastSyncedAt != nil
-        return hasData || (!live.backfilling && hasSync)
+        // Strap last-sync footnote retired with the band (Ola 2); content = day counts only.
+        return hasData
     }
 
     /// The compact "Sources" rollup — one row per data source (color rides the source-count datum) plus
@@ -927,8 +763,6 @@ struct DataSourcesView: View {
         let whoopDays = repo.storedStrapDays.count
         let ahDays    = repo.storedAppleOnlyDays.count
         let hasData   = whoopDays > 0 || ahDays > 0
-        let hasSync   = live.lastSyncError != nil || live.lastSyncedAt != nil
-        let showsSync = !live.backfilling && hasSync
         VStack(alignment: .leading, spacing: 8) {
             if hasData {
                 if whoopDays > 0 {
@@ -942,17 +776,7 @@ struct DataSourcesView: View {
                               tint: theme.dataSpO2)
                 }
             }
-            if showsSync {
-                if hasData { divider }
-                TimelineView(.periodic(from: .now, by: 60)) { context in
-                    if let error = live.lastSyncError {
-                        Text(verbatim: error).font(StrandFont.footnote).foregroundStyle(theme.warning)
-                    } else if let at = live.lastSyncedAt {
-                        Text("History synced \(relativeAgo(at, now: context.date.timeIntervalSince1970))")
-                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    }
-                }
-            }
+            // TODO(/pm): sin banda, el footnote de «última sync de historia» perdió su fuente; ¿equivalente Apple?
         }
         .task {
             appleWorkouts = (await repo.workoutRows(respectingMode: false)).filter { $0.source == "apple-health" }.count

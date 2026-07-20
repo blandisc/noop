@@ -115,7 +115,6 @@ private struct EntrenarLanding: View {
     @State private var startWhenLoaded = false
     /// Presents the live-HR workout sheet from the «Formas de entrenar» → «En vivo» chip (same sheet the
     /// rest-day / other-ways screens use).
-    @State private var showLive = false
     /// The Constancia day currently popped open (tap-to-reveal what you trained that day).
     @State private var constancyPopup: ConstancyPopup? = nil
     /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
@@ -211,14 +210,6 @@ private struct EntrenarLanding: View {
         }
         // «En vivo» from the expanded «Más formas» pill — the live-HR free workout, same sheet the
         // rest-day / other-ways screens present (theme passed explicitly; it doesn't cross `.sheet`).
-        .sheet(isPresented: $showLive) {
-            LiveWorkoutSheet(theme: theme)
-                .environment(model)
-                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-        }
         // FER-950: disc said «Rápido»/«Movilidad» but AppModel only re-opens the live session — make
         // that resume path explicit (ConfirmCard), never clobber.
         .instrumentoConfirm(
@@ -845,9 +836,6 @@ private struct EntrenarLanding: View {
             FormOption(icon: "bolt.fill", label: "Quick",
                        hint: "Starts a quick strength session, no routine.",
                        tint: theme.dataStrain) { startQuickStrength() },
-            FormOption(icon: "dot.radiowaves.left.and.right", label: "Live",
-                       hint: "Starts a live workout with heart rate.",
-                       tint: theme.dataHeart) { startLive() },
             FormOption(icon: "timer", label: "Intervals",
                        hint: "Opens the interval timer.",
                        tint: theme.dataSleep) { openIntervals() },
@@ -939,10 +927,6 @@ private struct EntrenarLanding: View {
 
     /// «En vivo» from the expanded pill: start (or resume) the live HR workout and present its sheet — the
     /// same door `RestDayScreen`/`OtherWaysScreen` use, so it lands directly without the 3e chooser.
-    private func startLive() {
-        if model.activeWorkout == nil { model.startWorkout() }
-        showLive = true
-    }
 
     /// One «También en tu plan» routine: the whole row is a single tap target that opens the routine
     /// (FER-784). The trailing chevron carries THAT routine's tint (same color as the leading dot) — a
@@ -1492,7 +1476,6 @@ struct RestDayScreen: View {
 
     @State private var split: [Int: String] = [:]
     @State private var routineNames: [String: String] = [:]
-    @State private var showLive = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -1522,8 +1505,7 @@ struct RestDayScreen: View {
                     if alt != .softer { row("figure.cooldown", "Mobility · 20 min") { model.startMobilityOneOff() } }
                     if alt != .optionalLight { row("timer", "Intervals · 12 min") { openIntervals() } }
                     row("list.bullet", "Pick a routine") { openRoutines() }
-                    row("wind", "Breathe") { openBreathe() }
-                    row("dot.radiowaves.left.and.right", "Live", last: true) { startLive() }
+                    row("wind", "Breathe", last: true) { openBreathe() }
                 }
                 .padding(.top, 6)
 
@@ -1539,14 +1521,6 @@ struct RestDayScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .sheet(isPresented: $showLive) {
-            LiveWorkoutSheet(theme: theme)
-                .environment(model)
-                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-        }
         .task { await load() }
         .enableInjection()
     }
@@ -1599,10 +1573,6 @@ struct RestDayScreen: View {
         .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
     }
 
-    private func startLive() {
-        if model.activeWorkout == nil { model.startWorkout() }
-        showLive = true
-    }
 
     /// Tomorrow's routine name from the weekly split (nil = tomorrow is also a rest day).
     private var tomorrowRoutineName: String? {
@@ -1630,7 +1600,6 @@ struct OtherWaysScreen: View {
 
     @Environment(\.instrumentoTheme) private var theme
     @Environment(AppModel.self) private var model
-    @State private var showLive = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -1644,8 +1613,7 @@ struct OtherWaysScreen: View {
                 VStack(spacing: 0) {
                     bigRow("figure.cooldown", "Mobility", subtitle: String(localized: "Gentle · 20 min")) { model.startMobilityOneOff() }
                     bigRow("timer", "Intervals", subtitle: String(localized: "Bursts · 12 min")) { openIntervals() }
-                    bigRow("wind", "Breathe", subtitle: String(localized: "Slow it down")) { openBreathe() }
-                    bigRow("dot.radiowaves.left.and.right", "Live", subtitle: String(localized: "Beat by beat"), last: true) { startLive() }
+                    bigRow("wind", "Breathe", subtitle: String(localized: "Slow it down"), last: true) { openBreathe() }
                 }
                 .padding(.top, CenitMetrics.sectionGap)
 
@@ -1659,14 +1627,6 @@ struct OtherWaysScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
-        .sheet(isPresented: $showLive) {
-            LiveWorkoutSheet(theme: theme)
-                .environment(model)
-                .presentationDetents([.height(CenitMetrics.liveSheetHeight), .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-        }
         .enableInjection()
     }
 
@@ -1687,9 +1647,5 @@ struct OtherWaysScreen: View {
         .overlay(alignment: .bottom) { if !last { Divider().overlay(theme.hairline) } }
     }
 
-    private func startLive() {
-        if model.activeWorkout == nil { model.startWorkout() }
-        showLive = true
-    }
 }
 #endif

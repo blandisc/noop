@@ -1,24 +1,34 @@
 # Changelog
 
-All notable changes to Cénit. Cénit is an independent, experimental project — not the WHOOP app, and
-not affiliated with WHOOP. It reads a strap you own, on your own device, fully offline. Dates are
-approximate; Cénit is built from source — see the [README](README.md).
+All notable changes to Cénit. Cénit is an independent, experimental health app built on Apple
+Health: it reads your own data on your own iPhone, fully offline. Not affiliated with Apple.
+Dates are approximate; Cénit is built from source — see the [README](README.md).
 
 ## What to expect
 
 - **Independent, and experimental.** Treat Cénit as a capable work-in-progress rather than a finished
   product.
-- **The 4.0 strap is the supported path.** It is tested and works end to end. The 5/MG generation is
-  newer: live heart rate works today, but deeper metrics (recovery, strain, sleep) for 5/MG are still
-  being figured out. Cénit always tells you what's live versus still building.
-- **Your scores build over a few nights.** Live heart rate is instant; recovery, strain and sleep
-  sharpen as Cénit learns your baseline. Connect Apple Health in Data & sources and your baseline
-  starts ahead, using the history already on your phone.
+- **Apple Health is the data path.** Cénit reads the samples your devices already store — heart rate,
+  HRV, sleep, workouts — and computes everything on-device. Earlier versions also read a fitness
+  band directly; that path was retired, and any history it stored stays on your phone, untouched.
+- **Your trends build over a few nights.** The nightly reads are instant; your personal baseline
+  sharpens over the first weeks as Cénit learns what is normal for you, and it always tells you
+  whether it is still calibrating.
 - **Everything stays on your device.** No account, no cloud, no sync.
 
 ---
 
 ## Unreleased
+
+- **Tu recuperación ya no es un número inventado: es tu sueño, y tu HRV contra tu propia base / Your recovery is no longer a made-up number: it's your sleep, and your HRV against your own baseline.**
+  **ES** — En los días sin banda, Cénit mostraba una «recuperación estimada» 0–100 con una virgulilla (~75) — un número con aspecto de medición que en realidad era una aproximación. Se retiró. En su lugar, Hoy muestra lo que sí se puede afirmar con honestidad: **tu sueño de anoche como el número grande**, y una tarjeta nueva —**«cómo vienes»**— que lee la variabilidad de los latidos que tu reloj registra mientras duermes y te dice si viene **por debajo, en, o por encima de tu propio promedio**. Nunca un puntaje, nunca una comparación con nadie más. La tarjeta es honesta sobre cuánto te conoce: las primeras ~2 semanas muestra un aro de progreso («conociéndote · N de 21 noches»), luego «afinando», y solo desde la noche 21 te da la dirección con su banda de rango y la miniatura de los últimos 7 días. «Por encima» se dice en tono neutro a propósito: una HRV de sueño alta también puede ser fatiga, así que nunca se pinta como buena noticia. Validado con datos reales antes de publicarse: 46 de 46 noches con muestreo suficiente y una tendencia estable (no parpadea día a día).
+  **EN** — On band-less days, Cénit showed an "estimated recovery" 0–100 with a tilde (~75) — a number that looked like a measurement but was an approximation. It's retired. Instead, Today shows what can honestly be claimed: **last night's sleep as the big number**, and a new card — **"how you're coming in"** — that reads the beat-to-beat variability your watch records while you sleep and tells you whether it's running **below, in, or above your own average**. Never a score, never a comparison to anyone else. The card is honest about how well it knows you: the first ~2 weeks it shows a progress ring ("getting to know you · N of 21 nights"), then "tuning", and only from night 21 does it give a direction with its range band and a 7-day sparkline. "Above" is deliberately neutral: high sleeping HRV can also mean fatigue, so it's never painted as good news. Validated with real data before shipping: 46 of 46 nights sampled densely enough, and a trend that holds steady day to day.
+  ([AutonomicTrend.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/AutonomicTrend.swift), [NocturnalHRV.swift](Packages/StrandAnalytics/Sources/StrandAnalytics/NocturnalHRV.swift), [AutonomicTrendCard.swift](Cenit/Screens/AutonomicTrendCard.swift), [TodayView.swift](Cenit/Screens/TodayView.swift))
+
+- **Cénit es ahora una app de Apple Salud: la banda se retira, tu historial se queda / Cénit is now an Apple Health app: the band is retired, your history stays.**
+  **ES** — Cénit dejó de leer la banda. Todo lo que muestra sale de Apple Salud, en tu iPhone, sin cuenta y sin nube. Lo importante sobre tus datos viejos: **el historial que la banda dejó en tu teléfono no se toca** — queda guardado y tus respaldos lo conservan; simplemente ya no alimenta las pantallas. Con el cambio se retiran las superficies que solo tenían sentido con banda (el monitor en vivo, las automatizaciones, el emparejamiento en el arranque) y el permiso de Bluetooth desaparece: la app ya no lo necesita. La respiración guiada conserva su ritmo por tiempo, el temporizador de intervalos conserva su ritmo, y el pulso en vivo de tus entrenamientos de fuerza viene del espejo del Apple Watch.
+  **EN** — Cénit stopped reading the band. Everything it shows comes from Apple Health, on your iPhone, with no account and no cloud. The important part about your old data: **the history the band left on your phone is untouched** — it stays stored and your backups keep it; it simply no longer feeds the screens. With the change, the band-only surfaces retire (the live monitor, automations, pairing at startup) and the Bluetooth permission goes away: the app no longer needs it. Guided breathing keeps its timed pace, the interval timer keeps its rhythm, and live heart rate in strength sessions comes from the Apple Watch mirror.
+  ([SourceModeStore.swift](Cenit/Data/SourceModeStore.swift), [AppModel.swift](Cenit/App/AppModel.swift), [project.yml](project.yml))
 
 - **Tu recuperación pasa de dos señales a tres: el sueño por fin cuenta / Your recovery goes from two signals to three: sleep finally counts.**
   **ES** — Sin banda, Cénit calculaba tu recuperación con dos de sus tres motores. Faltaba el sueño, y no porque el dato no existiera: la **eficiencia** —cuánto de tu noche pasaste realmente dormido— nunca se calculaba para los días de Apple, así que el motor de sueño se quedaba sin insumo y el detalle de Recuperación decía honestamente «2 de 3 señales» sin poder decir 3 jamás. Ahora se calcula, y tu score usa las tres. Se calcula **igual que la calculaba la banda**: cuánto dormiste sobre la ventana de sueño detectada. Y si Apple además registró tu tiempo en cama —lo hace el horario de sueño del iPhone o apps como AutoSleep, no el reloj por sí solo—, esa ventana se ensancha para incluirlo, así que el número baja y se vuelve más exacto. Una sola definición para las dos fuentes: mezclar dos formas distintas de medir lo mismo en una sola gráfica es precisamente el error que esta app ya cometió antes y que se cuidó de no repetir. De paso, los minutos en cama ahora también quedan registrados como métrica propia; hasta hoy solo aparecían si importabas un archivo a mano.

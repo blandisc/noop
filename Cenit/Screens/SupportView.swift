@@ -7,7 +7,7 @@ import StrandDesign
 // The About screen, in the light «Instrumento diurno» language (warm paper, color only on the datum,
 // hierarchy by space — no card-in-card). FER-381 removed the check-for-updates flow, the crypto
 // donation section and the contact section per the owner's call: what's left is identity + version +
-// What's New (changelog) + mission + attributions + a single «not affiliated / not a medical device»
+// What's New (changelog) + mission + a single «not affiliated / not a medical device»
 // disclaimer. Logic unchanged; presentation only.
 
 /// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands to
@@ -36,8 +36,6 @@ private struct SupportContent: View {
                 .padding(.bottom, -8)
 
                 aboutSection
-                divider
-                builtOnSection
 
                 disclaimer
             }
@@ -53,8 +51,6 @@ private struct SupportContent: View {
         }
     }
 
-    private var divider: some View { Divider().overlay(theme.hairline) }
-
     // MARK: - About (identity + version + what's new + mission)
 
     private var aboutSection: some View {
@@ -69,34 +65,16 @@ private struct SupportContent: View {
                 QuietButton("What's new") { showWhatsNew = true }
             }
 
-            Text("A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project.")
+            Text("A health app built on Apple Health. Everything stays on this device: your history, your nights, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    // MARK: - Built on (attributions)
-
-    private var builtOnSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Built on").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text("This stands on community reverse-engineering. Huge thanks:")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            ForEach(ProjectInfo.attributions, id: \.repo) { a in
-                HStack(spacing: 8) {
-                    StrandIcon.disclosure.image.font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
-                        .foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
-                    Text(a.repo).font(StrandFont.mono(12)).foregroundStyle(theme.ink)
-                    Text("· \(a.note)").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                }
-            }
         }
     }
 
     // MARK: - Disclaimer (single, quiet, at the foot)
 
     private var disclaimer: some View {
-        Text("Not affiliated with, endorsed by, or connected to WHOOP. Interoperability software for hardware you own and your own data. Use it only with a device you own, and not in breach of any agreement that applies to you. Not a medical device.")
+        Text("Not a medical device.")
             .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 4)

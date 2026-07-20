@@ -43,7 +43,6 @@ private struct AppMapCell: View {
                 .environmentObject(HealthKitBridge(repo: model.repo,
                                                    appleDeviceId: "map-apple",
                                                    noopDeviceId: "map"))
-                .environment(model.live)
                 .preferredColorScheme(.light)
                 .frame(width: 393, height: 852)
                 .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
@@ -112,7 +111,6 @@ private struct EntrenarMapCell: View {
             .environmentObject(HealthKitBridge(repo: model.repo,
                                                appleDeviceId: "map-apple",
                                                noopDeviceId: "map"))
-            .environment(model.live)
             .environment(\.locale, .init(identifier: locale))
             .preferredColorScheme(.light)
             .frame(width: 393, height: 852)
@@ -256,7 +254,6 @@ private struct RoutineEditorMapCell: View {
                     .environment(model)
                     .environmentObject(TabRouter())
                     .environmentObject(media)
-                    .environment(model.live)
                     .preferredColorScheme(.light)
             }
         }
@@ -368,7 +365,6 @@ private struct NewRoutineFlowMapCell: View {
                     .environment(model)
                     .environmentObject(TabRouter())
                     .environmentObject(media)
-                    .environment(model.live)
                     .preferredColorScheme(.light)
             }
         }
@@ -437,7 +433,6 @@ private struct EntrenarFlowsMapCell: View {
         .environmentObject(TabRouter())
         .environmentObject(historyCoordinator)
         .environmentObject(HealthKitBridge(repo: model.repo, appleDeviceId: "map-apple", noopDeviceId: "map"))
-        .environment(model.live)
         .overlay(alignment: .bottom) {
             // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
             if model.strengthSession != nil && !model.strengthSheetPresented {
@@ -456,7 +451,6 @@ private struct EntrenarFlowsMapCell: View {
                     .environment(model)
                     .environmentObject(TabRouter())
                     .environmentObject(media)
-                    .environment(model.live)
                     .preferredColorScheme(.light)
             }
         }

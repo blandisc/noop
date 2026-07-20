@@ -31,24 +31,18 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.healthcare-fitness</string>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Cénit connects directly to your band over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device.</string>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Cénit reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device.</string>
+	<string>Cénit reads your own Apple Health data on-device: sleep, heart rate, heart-rate variability, workouts, and related samples, to show your days and nightly trends. Nothing leaves your device.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Cénit writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it.</string>
+	<string>Cénit saves your strength workouts into Apple Health, on-device and only when you allow it.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Cénit saves the workout card you choose to share to your photo library. It only saves the image you explicitly ask it to.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>bluetooth-central</string>
-	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

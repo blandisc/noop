@@ -42,7 +42,7 @@ struct AjustesView: View {
 /// A still-dark sibling screen, presented as a self-contained sheet pinned to `.dark`. Each goes light
 /// in its own issue (Datos y fuentes → FER-338, Automatizaciones → FER-69, Acerca de y soporte → FER-67).
 private enum AjustesDarkScreen: String, Identifiable {
-    case dataSources, automations, support
+    case dataSources, support
     var id: String { rawValue }
 }
 
@@ -79,7 +79,6 @@ private extension View {
 
 private struct AjustesLanding: View {
     @Environment(AppModel.self) var model
-    @Environment(LiveState.self) var live
     @EnvironmentObject var profile: ProfileStore
     // Read only to re-inject into the dark sibling sheets (a sheet starts a fresh environment branch).
     @EnvironmentObject private var repo: Repository
@@ -89,11 +88,6 @@ private struct AjustesLanding: View {
     @EnvironmentObject private var autoBackup: AutoBackup
     @Environment(\.instrumentoTheme) private var theme
 
-    /// Opt-in WHOOP 5/MG protocol experiments (off by default). See [PuffinExperiment].
-    @AppStorage(PuffinExperiment.defaultsKey) private var puffinExperiments = false
-    /// Opt-in WHOOP 5/MG raw-frame capture to a file (off by default). See [PuffinFrameRecorder].
-    @AppStorage(PuffinFrameRecorder.enabledKey) private var puffinCapture = false
-
     // Imperial/Metric display preference (D#103). Stored data is always SI; this only changes how
     // distances/weights/heights/temperatures are SHOWN — and lets the profile fields take imperial entry.
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -102,8 +96,6 @@ private struct AjustesLanding: View {
 
     // Sheet drivers.
     @State private var showUnits = false
-    @State private var showLog = false
-    @State private var showAdvanced = false
     @State private var showMaxHR = false
     @State private var showStepsCal = false
     @State private var showStepTicks = false
@@ -122,7 +114,6 @@ private struct AjustesLanding: View {
     @State private var confirmRecalibrate = false
     @State private var profileWheel: ProfileWheel? = nil
     @State private var darkScreen: AjustesDarkScreen? = nil
-    @State private var confirmDisconnect = false
 
     var body: some View {
         ScrollView {
@@ -130,9 +121,6 @@ private struct AjustesLanding: View {
                 header
 
                 profileSection
-                // FER-888 (W3): en modo Solo-Apple no hay banda, así que la sección «Tu strap»
-                // (batería/estado/bitácora) se oculta. Combinado/Solo-banda: idéntico.
-                if repo.dataSourceMode.usesWhoop { strapSection }
                 moreSection
 
                 footer
@@ -145,12 +133,6 @@ private struct AjustesLanding: View {
         .background(theme.paper.ignoresSafeArea())
         .sheet(isPresented: $showUnits) {
             UnidadesSheet().instrumentoTheme(theme)
-        }
-        .sheet(isPresented: $showLog) {
-            StrapLogSheet().instrumentoTheme(theme).environment(live)
-        }
-        .sheet(isPresented: $showAdvanced) {
-            AdvancedSheet().instrumentoTheme(theme).environment(live).environment(model)
         }
         .sheet(isPresented: $showCyclePhase) {
             CyclePhaseSheet().instrumentoTheme(theme).environmentObject(repo)
@@ -174,16 +156,6 @@ private struct AjustesLanding: View {
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
         }
         .sheet(item: $darkScreen) { screen in darkSheet(screen) }
-        .instrumentoConfirm(
-            isPresented: $confirmDisconnect,
-            title: String(localized: "Disconnect strap?"),
-            context: String(localized: "STRAP · CONNECTED"),
-            message: String(localized: "It will stop streaming until you re-scan. Your saved data isn't touched."),
-            actions: [
-                .init(String(localized: "Keep connected"), role: .primary),
-                .init(String(localized: "Disconnect"), role: .destructive) { model.disconnect() }
-            ]
-        )
     }
 
     // MARK: - Header (A6: gear icon + title, privacy chip)
@@ -250,17 +222,6 @@ private struct AjustesLanding: View {
             divider
             valueRow("Max heart rate", value: maxHRDisplay,
                      a11y: "Maximum heart rate, \(maxHRDisplay)") { showMaxHR = true }
-            // Pasos por banda: la 4.0 ESTIMA pasos del movimiento (FER-663); el 5/MG lee un contador
-            // NATIVO que sobre-cuenta y se calibra con un divisor (FER-665). Cada banda ve solo la suya.
-            if WhoopModel.persisted.estimatesSteps {
-                divider
-                valueRow("Steps estimate", value: stepsCalDisplay,
-                         a11y: "Steps estimate, \(stepsCalDisplay)") { showStepsCal = true }
-            } else {
-                divider
-                valueRow("Steps calibration", value: stepTicksDisplay,
-                         a11y: "Steps calibration, \(stepTicksDisplay)") { showStepTicks = true }
-            }
         }
     }
 
@@ -290,50 +251,12 @@ private struct AjustesLanding: View {
             : String(localized: "Off")
     }
 
-    // MARK: - Your strap (A4: status + action + log only; A7: disconnect demoted)
-
-    private var strapSection: some View {
-        section("Your strap") {
-            HStack(spacing: 10) {
-                Circle().fill(strapDotColor).frame(width: 8, height: 8)
-                Text(strapStatusTitle).font(StrandFont.subhead).foregroundStyle(strapDotColor)
-                Spacer(minLength: 8)
-                if let pct = live.batteryPct {
-                    Text(live.charging == true ? "\(Int(pct.rounded()))% · Charging" : "\(Int(pct.rounded()))%")
-                        .font(StrandFont.bodyNumber).foregroundStyle(theme.batteryColor(forLevel: pct))
-                }
-            }
-            .padding(.vertical, 6)
-            .accessibilityElement(children: .combine)
-
-            Text(strapStatusDetail).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 16) {
-                QuietButton("Re-scan") { model.scan() }
-                Button { confirmDisconnect = true } label: {
-                    Text("Disconnect").font(StrandFont.subhead)
-                        .foregroundStyle((!live.connected && !live.bonded) ? theme.inkDim : theme.inkTertiary)
-                }
-                .buttonStyle(.plain)
-                .disabled(!live.connected && !live.bonded)
-                Spacer(minLength: 0)
-            }
-            .padding(.top, 4)
-
-            divider
-            navRow("Strap log") { showLog = true }
-        }
-    }
-
     // MARK: - More (A5: grouped drill rows with overlines + subtitles)
 
     private var moreSection: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             section("App") {
                 navRow("Units & format", subtitle: unitsSubtitle) { showUnits = true }
-                divider
-                navRow("Automations", subtitle: Text("Zone alerts, reminders")) { darkScreen = .automations }
             }
             section("Data") {
                 navRow("Data & sources", subtitle: Text("Strap · Apple Health · backup")) { darkScreen = .dataSources }
@@ -399,8 +322,6 @@ private struct AjustesLanding: View {
                 )
             }
             section("More") {
-                navRow("Advanced", subtitle: Text("5/MG probes, frames")) { showAdvanced = true }
-                divider
                 navRow("About & support",
                        subtitle: Text("Version \(appVersion) · help · licenses")) { darkScreen = .support }
             }
@@ -498,29 +419,6 @@ private struct AjustesLanding: View {
         return sys + Text(verbatim: " · \(temp)")
     }
 
-    // MARK: - Strap status helpers (mirror SettingsView)
-
-    private var strapStatusTitle: String {
-        if live.bonded && live.connected { return String(localized: "Bonded · streaming") }
-        if live.connected { return String(localized: "Connected") }
-        if live.bonded { return String(localized: "Bonded · idle") }
-        return String(localized: "Disconnected")
-    }
-    private var strapDotColor: Color {
-        if live.connected { return theme.dataRecovery }
-        if live.bonded { return theme.warning }
-        return theme.critical
-    }
-    private var strapStatusDetail: String {
-        if live.bonded && live.connected {
-            return String(localized: "Your strap is paired and sending data. Open Live for a real-time heart rate.")
-        }
-        if live.connected, let hint = live.pairingHint { return hint }
-        if live.connected { return String(localized: "Connected. Finishing the secure pairing handshake…") }
-        if live.bonded { return String(localized: "Previously paired but not currently connected. Re-scan to reconnect.") }
-        return String(localized: "No strap connected. Put your strap nearby and tap Re-scan to pair.")
-    }
-
     // MARK: - Section scaffolding (Instrumento: overline + rows on paper, no card-in-card)
 
     @ViewBuilder
@@ -609,7 +507,6 @@ private struct AjustesLanding: View {
             .instrumentoTheme(theme)
             .environment(model)
             .environmentObject(repo)
-            .environment(live)
             .environmentObject(health)
             .environmentObject(behavior)
             .environmentObject(autoBackup)
@@ -630,32 +527,8 @@ private struct AjustesLanding: View {
             .instrumentoTheme(theme)
             .environment(model)
             .environmentObject(repo)
-            .environment(live)
             .environmentObject(health)
             .environmentObject(behavior)
-            .environmentObject(autoBackup)
-            .preferredColorScheme(.light)
-        case .automations:
-            // Light «Instrumento» now that AutomationsView is reskinned (FER-69); un-pinned from `.dark`
-            // in FER-381 (it had stayed dark-pinned, so the light screen showed dark chrome). Theme
-            // injected at the root (it doesn't cross the `.sheet` boundary, FER-162).
-            NavigationStack {
-                AutomationsView()
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(theme.paper, for: .navigationBar)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { darkScreen = nil }.foregroundStyle(theme.ink)
-                        }
-                    }
-            }
-            .instrumentoTheme(theme)
-            .environment(model)
-            .environmentObject(repo)
-            .environment(live)
-            .environmentObject(health)
-            .environmentObject(behavior)
-            .environmentObject(inactivity)
             .environmentObject(autoBackup)
             .preferredColorScheme(.light)
         }
@@ -956,67 +829,6 @@ private struct StepTicksSheet: View {
     }
 }
 
-// MARK: - Advanced (A3: WHOOP 5/MG experimental, moved off «Tu banda»)
-
-/// «Avanzado» — the opt-in 5/MG protocol probes + raw-frame capture (off by default), moved out
-/// of «Tu banda» where they only mattered to a 5/MG owner. The frame Export… button lives here now,
-/// shown only when there are captured frames this session (HARD criterion: don't lose Export).
-private struct AdvancedSheet: View {
-    @Environment(\.instrumentoTheme) private var theme
-    @Environment(LiveState.self) private var live
-    @Environment(AppModel.self) private var model
-    @AppStorage(PuffinExperiment.defaultsKey) private var puffinExperiments = false
-    @AppStorage(PuffinFrameRecorder.enabledKey) private var puffinCapture = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Advanced").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("5/MG probes").font(StrandFont.title1).foregroundStyle(theme.ink)
-            }
-            Text("Experimental tools for the newer 5 and MG straps. They have no effect on a 4.0.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(alignment: .leading, spacing: 12) {
-                Toggle(isOn: $puffinExperiments) {
-                    Text("5/MG protocol probes").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                Text("On a 5/MG connection Cénit sends a probe after the handshake and logs what comes back. No effect on a 4.0.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Divider().overlay(theme.hairline)
-
-                Toggle(isOn: $puffinCapture) {
-                    Text("Record 5/MG frames to a file").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                if live.puffinCaptureCount > 0 {
-                    HStack(spacing: 10) {
-                        Text("\(live.puffinCaptureCount) frame\(live.puffinCaptureCount == 1 ? "" : "s") captured this session.")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                        Spacer(minLength: 0)
-                        QuietButton("Export…") { exportPuffinCaptures() }
-                    }
-                    .padding(.top, 2)
-                }
-            }
-        }
-        .padding(CenitMetrics.screenPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.paper.ignoresSafeArea())
-        .fittedSheet()
-    }
-
-    private func exportPuffinCaptures() {
-        model.ble.flushPuffinCaptures()
-        guard let src = live.puffinCaptureURL else { return }
-        FileExport.exportFile(at: src)
-    }
-}
-
 // MARK: - Units & format (light sheet)
 
 /// «Unidades y formato» — the display-only unit prefs, migrated from `SettingsView.unitsCard` into a
@@ -1066,94 +878,4 @@ private struct UnidadesSheet: View {
     }
 }
 
-// MARK: - Strap log (light sheet)
-
-/// «Log de la banda» — the raw BLE session log (`live.log`) with Copy / Save, migrated from
-/// `SettingsView.strapLogSection`. The diagnostic trail you attach to a bug report. The HARD criterion
-/// of FER-337: this stays reachable, here under «Tu strap».
-private struct StrapLogSheet: View {
-    @Environment(\.instrumentoTheme) private var theme
-    @Environment(LiveState.self) var live
-    @State private var saveError = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Your strap").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Text("Strap log").font(StrandFont.title1).foregroundStyle(theme.ink)
-            }
-            Text("Your strap's connection trail. Attach it to a bug report if something looks off.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if live.log.isEmpty {
-                Text("No activity yet. The log fills in as your strap connects.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Spacer(minLength: 0)
-            } else {
-                HStack(spacing: 10) {
-                    QuietButton("Copy") { copyStrapLog() }
-                    QuietButton("Save…") { saveStrapLog() }
-                    Spacer(minLength: 0)
-                }
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 2) {
-                            ForEach(live.log) { line in
-                                Text(line.text).font(StrandFont.mono)
-                                    .foregroundStyle(theme.inkSecondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .id(line.id)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .onChange(of: live.log.count) {
-                        if let lastLine = live.log.last {
-                            proxy.scrollTo(lastLine.id, anchor: .bottom)
-                        }
-                    }
-                }
-            }
-        }
-        .padding(CenitMetrics.screenPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(theme.paper.ignoresSafeArea())
-        // FER-969 / X-05b: export write failure — banner (same pattern as WorkoutEditSheet).
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't export the file. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
-            }
-        }
-        .animation(StrandMotion.fade, value: saveError)
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-    }
-
-    private func strapLogText() -> String {
-        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-        let osName = "iOS"
-        let header = "Cénit strap log: \(osName)\nApp: \(v)\n\(osName): "
-            + ProcessInfo.processInfo.operatingSystemVersionString + "\n"
-            + String(repeating: "-", count: 40) + "\n"
-        return header + live.log.map(\.text).joined(separator: "\n")
-    }
-    private func copyStrapLog() { PlatformPasteboard.copy(strapLogText()) }
-    private func saveStrapLog() {
-        if !FileExport.exportText(strapLogText(), suggestedName: "noop-strap-log.txt") {
-            saveError = true
-        }
-    }
-}
 #endif

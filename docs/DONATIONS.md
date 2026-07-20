@@ -2,14 +2,14 @@
 
 **Cénit is free, and it stays free. Nothing here is a paywall.**
 
-Cénit is a standalone, fully offline companion app for WHOOP straps (4.0 and
-5.0). It pairs directly with the strap over Bluetooth, stores everything on your
-own device in SQLite, imports your existing WHOOP CSV and Apple Health history,
-and computes recovery, strain, HRV, and sleep locally, with no WHOOP account and
-no cloud. That includes every feature: live data, breathing
-biofeedback, the haptic interval timer, automations, importing your whole
-history, and all of the analytics. There is no "pro" tier, no trial, no locked
-screen, and no nag. The app never asks you to pay to do anything.
+Cénit is a standalone, fully offline health app built on Apple Health. It reads
+the health samples your devices already store on your iPhone, keeps everything
+on your own device in SQLite, imports your existing Apple Health history, and
+computes your nightly trends, HRV, strain, and sleep locally — no account and
+no cloud. That includes every feature: the daily read, breathing biofeedback,
+the haptic interval timer, importing your whole history, and all of the
+analytics. There is no "pro" tier, no trial, no locked screen, and no nag. The
+app never asks you to pay to do anything.
 
 This page exists only because people kept asking how to chip in. If it's useful
 to you and you *want* to, you can. If you don't, nothing changes, and you'll
@@ -25,11 +25,10 @@ only way to contribute, on purpose:** staying anonymous rules out PayPal,
 Patreon, or anything with a name attached. That's not a hurdle — it's quick,
 global, and private for both of us.
 
-> **Not affiliated with WHOOP.** Cénit is an independent, unofficial
-> interoperability project. It is not affiliated with, endorsed by, or connected
-> to WHOOP, Inc. "WHOOP" is used only to identify the hardware Cénit talks to.
-> **Cénit is not a medical device** — derived metrics are approximations, not
-> clinical data. See [`../DISCLAIMER.md`](../DISCLAIMER.md).
+> **Independent project.** Cénit is not affiliated with, endorsed by, or
+> connected to Apple Inc.; "Apple Health" and "HealthKit" identify the on-device
+> framework it reads from. **Cénit is not a medical device** — derived metrics
+> are approximations, not clinical data. See [`../DISCLAIMER.md`](../DISCLAIMER.md).
 
 ---
 
@@ -133,18 +132,17 @@ If you'd rather contribute without money, that's just as welcome: open an issue,
 file a bug, send a pull request, or help test on hardware you own. That kind of
 help moves the project forward as much as anything.
 
-**Questions, feedback, or bug reports:** [thenoopapp@gmail.com](mailto:thenoopapp@gmail.com)
+**Questions, feedback, or bug reports:** [contacto@cenit.app](mailto:contacto@cenit.app)
+<!-- TODO(owner): correo real antes de subir a tienda -->
+
 
 ---
 
 ## A note on the project
 
-Cénit is built on prior community reverse-engineering — chiefly
-[`johnmiddleton12/my-whoop`](https://github.com/johnmiddleton12/my-whoop) (WHOOP
-4.0 protocol) and [`b-nnett/goose`](https://github.com/b-nnett/goose) (WHOOP 5.0
-protocol). It exists so that someone who owns a WHOOP strap can read their own
-biometric data from their own device, on a machine they control. Keeping it free
-and unpaywalled is the whole point. Donations help, but the project's promise —
-your strap, your data, your machine — never has a price tag attached.
+Cénit exists so that you can read your own biometric data on a device you
+control, offline. Keeping it free and unpaywalled is the whole point. Donations
+help, but the project's promise — your data, your machine — never has a price
+tag attached.
 
 Thank you for even reading this far.

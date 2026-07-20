@@ -5,47 +5,56 @@ applied to the parts of the codebase that touch untrusted input. It is written
 against the actual source tree; file paths and identifiers below are real and can
 be checked.
 
-> **Not affiliated with WHOOP. Not a medical device.** Cénit is an independent,
-> unofficial, local-first companion app. It interoperates with a WHOOP strap that
-> **you own**, reading **your own** biometric data from **your own** device. It is
-> not affiliated with, endorsed by, or connected to WHOOP, Inc. All computed
-> outputs (recovery, strain, HRV, sleep, SpO₂, skin temperature, respiratory rate)
-> are approximations and are not clinically validated. See `DISCLAIMER.md` and
-> `ATTRIBUTION.md` at the repo root.
+> **Not a medical device.** Cénit is an independent, local-first health app built
+> on Apple Health: it reads **your own** biometric data from **your own** iPhone,
+> on-device, with your HealthKit permission. It is not affiliated with, endorsed
+> by, or connected to Apple Inc. All computed outputs (HRV, sleep, strain, SpO₂,
+> skin temperature, respiratory rate) are approximations and are not clinically
+> validated. See `DISCLAIMER.md` and `ATTRIBUTION.md` at the repo root.
 
 ---
 
 ## 1. Design principle: offline by default
 
-Cénit is **offline by default**. The biometric pipeline — strap → on-device decode →
-local SQLite — has no network layer at all: no phone-home, no analytics, no accounts,
-no login, no cloud sync, and no telemetry. Everything Cénit computes about you lives in a
-single SQLite file on your own device.
+Cénit is **offline by construction**. It is Apple Health-only: metrics are computed
+on-device from HealthKit data plus optional file imports, and stored in a single local
+SQLite file. There is no server, no account, no login, no cloud sync, and no telemetry
+anywhere in the app.
 
-There is exactly **one** opt-in exception: the **AI Coach** (§1.1a). It is off until you
-turn it on with your own API key; when you ask it a question it sends a short text
-summary of your recent metrics to the provider you choose. Nothing else in the app ever
-touches the network, and your raw data never does.
+There are exactly **two** opt-in exceptions, both off until you turn them on: the
+**AI Coach** (§1.1a) and **exercise media download** (§1.1b). The AI Coach sends a short
+text summary of your recent metrics to the AI provider you choose, only when you ask it a
+question. Exercise media download fetches an instructional image/GIF for an exercise from
+a fixed third-party CDN, only when you enable it and only for exercises you view. Nothing
+else in the app ever touches the network, and your raw biometric data never does.
 
 Data enters Cénit two ways:
 
 | Path | Transport | Direction |
 |------|-----------|-----------|
-| Live collection | Bluetooth LE, strap → device | Read-only from the strap |
+| Apple Health | HealthKit, on-device | Read-only from Health |
 | File import | User-selected files on disk | Read-only from disk |
 
-The only outbound path is the opt-in AI Coach; the biometric pipeline produces no network
-traffic of any kind.
+Cénit previously connected directly to a WHOOP strap over Bluetooth to collect this data
+live. That live BLE collection path has been retired: Cénit no longer pairs with,
+connects to, or reads from a WHOOP strap. Any strap-sourced rows collected by earlier
+versions remain in the local database as historical data — nothing re-reads,
+re-validates, or adds to them, and, like everything else in the database, they never
+leave the device.
 
-### 1.1 Network code: only the optional AI Coach
+The only outbound paths are the two opt-in exceptions above; the rest of the app,
+including the entire biometric pipeline, produces no network traffic of any kind.
+
+### 1.1 Network code: only the two opt-in features
 
 The biometric pipeline and all five Swift packages
 (`WhoopProtocol`, `CenitStore`, `StrandAnalytics`, `StrandImport`, `StrandDesign`)
 contain **no** use of `URLSession`, `URLRequest`, `NWConnection`, `dataTask`, or any
 other networking API. The **only** networking anywhere in the app is the AI Coach
-(`Cenit/AI/AICoach.swift`), described in
-§1.1a. The package manifests reference dependency *download* URLs that Swift Package
-Manager resolves at build time, never at runtime:
+(`Cenit/AI/AICoach.swift`, §1.1a) and exercise media download
+(`Cenit/Media/MediaDownloadCoordinator.swift`, §1.1b). The package manifests reference
+dependency *download* URLs that Swift Package Manager resolves at build time, never at
+runtime:
 
 ```
 Packages/CenitStore/Package.swift   → https://github.com/groue/GRDB.swift.git
@@ -72,7 +81,28 @@ feature that uses the network, and only on your terms:
   provider you picked, under your own account. Cénit runs no server in between and keeps
   no copy.
 
-If you never enable the AI Coach, Cénit makes zero network connections.
+### 1.1b Exercise media download (optional, off by default)
+
+The exercise catalog can show an instructional image/GIF per exercise. Fetching it is
+off by default and entirely optional:
+
+- **Off until you enable it.** The toggle lives in Settings
+  (`noop.exerciseMediaEnabled`, default `false`). With it off, `MediaDownloadCoordinator`
+  never constructs a request — the zero-request guarantee is structural, not just a
+  convention at the call sites.
+- **What is sent.** Once enabled, viewing (or bulk-downloading) an exercise's media is a
+  plain `GET` of that exercise's fixed image URL on the ExerciseDB CDN
+  (`static.exercisedb.dev`), baked into the local catalog at build time — no runtime
+  search, no API key, no account.
+- **What is NOT sent.** No biometric data, no account or device identifiers, no query —
+  just a request for a specific, pre-known static asset.
+- **Cached locally.** Downloaded media is cached on-device
+  (`Cenit/Media/MediaCache.swift`) so the same exercise is fetched at most once; disabling
+  the toggle stops new downloads but does not delete what's cached (a separate
+  "delete all cached media" action does).
+
+If you never enable the AI Coach or exercise media download, Cénit makes zero network
+connections.
 
 ### 1.2 The iOS app's entitlements
 
@@ -200,6 +230,28 @@ hello-token or serial hex (the handshake lines log *that* a step happened, not i
 secret payload). The one mild identifier is the strap's advertised name (e.g.
 `WHOOP 5AG…`), which the user chooses to include when they tap Share.
 
+### 2.5 Backups
+
+Cénit's database can be backed up two ways, both entirely local to devices and storage
+you already control — Cénit's own code never uploads a backup anywhere itself:
+
+- **Manual export / import** (`Cenit/Data/DataBackup.swift`). Export checkpoints the WAL
+  and copies the single `whoop.sqlite` file to a location you pick through the system
+  document picker (Files, iCloud Drive, AirDrop, etc.). Import validates the chosen file
+  (checks the SQLite magic header), snapshots your current database to a rollback
+  sidecar first, then swaps the new file in atomically — a failure mid-import leaves the
+  original database, including its WAL, fully intact.
+- **Automatic backup** (`Cenit/Data/DataBackup.swift`, `AutoBackup`). Optional and off
+  until you pick a destination folder (typically in your own iCloud Drive). Cénit
+  remembers that folder via a **security-scoped bookmark** — the standard iOS mechanism
+  for retaining permission to a user-picked location without a broader filesystem
+  entitlement — and drops a fresh copy there roughly once a day, right after a sync.
+  Turning it off stops future copies; it does not delete what's already there.
+
+In both cases the destination is a folder the OS lets you pick; whether that folder
+itself syncs off-device (e.g. because it's in iCloud Drive) is between you and Apple's
+iCloud, outside anything Cénit does.
+
 ---
 
 ## 3. Threat model
@@ -213,6 +265,11 @@ What is explicitly **out of scope**: Cénit cannot defend the data against an at
 who already controls your unlocked user session (see §2.2), and it makes no claim of
 cryptographic authentication of the strap — BLE pairing/bonding security is provided
 by the OS Bluetooth stack and the device, not by Cénit.
+
+The BLE-ingestion hardening in §3.1 documents the `WhoopProtocol` decode layer as it was
+built, and is retained here for accuracy about that code; it is no longer an active
+attack surface in the shipped app, since Cénit no longer opens a live connection to a
+WHOOP strap (§1).
 
 ### 3.1 Threat A: a malicious or malfunctioning BLE peer
 
@@ -350,8 +407,9 @@ bundle of CSV files, but the same defensive posture applies.
 - **No cloud, no sync, no remote backup.** Your data never leaves the machine via
   Cénit.
 - **No advertising identifiers, no tracking.**
-- **No WHOOP account or API credentials.** Cénit talks only to the strap over local
-  BLE; it does not authenticate against, or pull from, any WHOOP server.
+- **No WHOOP account or API credentials, and no live connection to a WHOOP strap.**
+  Cénit is Apple Health-only; it does not authenticate against, or pull from, any WHOOP
+  server, and no longer opens a Bluetooth connection to a strap at all.
 
 ---
 
@@ -359,7 +417,7 @@ bundle of CSV files, but the same defensive posture applies.
 
 | Surface | Risk | Mitigation | Where |
 |---------|------|------------|-------|
-| Process | Data exfiltration / network egress | Only the opt-in AI Coach networks (your key, to your chosen provider, a text summary — §1.1a) — nothing else makes a network call, and nothing is sent until you ask | `Cenit/AI/AICoach.swift` |
+| Process | Data exfiltration / network egress | Only two opt-in features network: the AI Coach (your key, to your chosen provider, a text summary — §1.1a) and exercise media download (a GET to a fixed CDN, only when enabled — §1.1b); nothing else makes a network call | `Cenit/AI/AICoach.swift`, `Cenit/Media/MediaDownloadCoordinator.swift` |
 | Filesystem | Broad disk access | iOS app sandbox; imports read only the files you pick via the document picker; data stays in the app's private container | `CenitApp/Resources/NOOP.entitlements`, `Cenit/Collect/StorePaths.swift` |
 | BLE frames | Malformed / adversarial packets | CRC8 + CRC32 (+ CRC16 for v5) gating; reject on failure | `WhoopProtocol/Framing.swift`, `Cenit/BLE/FrameRouter.swift` |
 | BLE frames | Out-of-bounds reads from short/lying length | `nil`-returning bounds-checked readers; slice clamping; min-length guards | `WhoopProtocol/Interpreter.swift` |

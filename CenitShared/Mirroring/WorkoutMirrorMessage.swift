@@ -64,6 +64,11 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// workout's history detail (`WorkoutSessionDetailScreen`) for this session. The wrist summary stays
     /// minimal; the rich receipt lives on the phone.
     case openReceipt(sessionId: String)
+
+    /// watch → iPhone: the watch's own live heart rate during the mirrored session (FER-1003 amputation —
+    /// there's no band anymore, so the wrist's own HKWorkoutSession becomes the strength sheet's only
+    /// live-HR source). Best-effort, same HealthKit mirror channel as `.rest`/`.capture`.
+    case watchPulse(bpm: Int)
 }
 
 /// The capture-phase context the iPhone mirrors to the wrist between rests (FER-809), so the watch's live

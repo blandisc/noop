@@ -7,11 +7,6 @@ enum ProjectInfo {
     static let tagline = "Your body. Your data. Your machine. Local-first, no cloud."
     static let version = "0.1.0"
     /// Public contact for questions, feedback, bug reports. Baked into every platform.
-    static let contactEmail = "thenoopapp@gmail.com"
-
-    /// Open-source reverse-engineering this is built on.
-    static let attributions: [(repo: String, note: String)] = [
-        ("johnmiddleton12/my-whoop", "4.0 strap BLE protocol"),
-        ("b-nnett/goose", "5.0 strap BLE protocol"),
-    ]
+    static let contactEmail = "contacto@cenit.app" // TODO(owner): correo real antes de subir a tienda
 }
+

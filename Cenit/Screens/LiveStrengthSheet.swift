@@ -1210,16 +1210,14 @@ struct LiveStrengthSheet: View {
                         .accessibilityAddTraits(.updatesFrequently)
                 }
                 // BPM fused to the clock — the app's one always-on pulse. Hidden (not dashed) with no strap.
-                PulseReader(model.live.pulse) { p in
-                    if let bpm = p.smoothedBpm {
-                        HStack(spacing: 6) {
-                            BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
-                            // r26 (owner): valor VIVO → Grotesk tabular, como todo dato medido.
-                            Text("\(bpm)").font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.dataHeart)
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel(Text("Heart rate \(bpm)"))
+                if let bpm = model.watchBpm {
+                    HStack(spacing: 6) {
+                        BpmPulseDot(color: theme.dataHeart, animated: !reduceMotion)
+                        // r26 (owner): valor VIVO → Grotesk tabular, como todo dato medido.
+                        Text("\(bpm)").font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.dataHeart)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(Text("Heart rate \(bpm)"))
                 }
                 // r20 (auditoría UX #6a): el progreso estaba por TRIPLICADO (texto + filete + barra
                 // inferior) — fuera el textual; el filete de abajo y los contadores ya lo cuentan.
@@ -1859,20 +1857,18 @@ struct LiveStrengthSheet: View {
             }
 
             if focusRestWantsHR, let started = session.restStartedAt {
-                PulseReader(model.live.pulse) { p in
-                    TimelineView(.periodic(from: started, by: 1)) { ctx in
-                        // r20 (auditoría UX #1): mismo congelamiento que la tarjeta inline.
-                        let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
-                        let elapsed = max(0, Int(tick.timeIntervalSince(started)))
-                        let v = RestReadinessRule.evaluate(
-                            currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
-                            elapsedS: elapsed, targetHR: session.currentRestTarget)
-                        let noSignal = v.state == .noSignal
-                        if !noSignal {
-                            focusRestHRHero(elapsed: elapsed, readiness: v)
-                        } else {
-                            focusRestTimeHero(end: session.restEndsAt, now: tick, noStrapFallback: noSignal)
-                        }
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    // r20 (auditoría UX #1): mismo congelamiento que la tarjeta inline.
+                    let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
+                    let elapsed = max(0, Int(tick.timeIntervalSince(started)))
+                    let v = RestReadinessRule.evaluate(
+                        currentHR: model.watchBpm, worn: model.watchBpm != nil, restingHR: restingBaseline,
+                        elapsedS: elapsed, targetHR: session.currentRestTarget)
+                    let noSignal = v.state == .noSignal
+                    if !noSignal {
+                        focusRestHRHero(elapsed: elapsed, readiness: v)
+                    } else {
+                        focusRestTimeHero(end: session.restEndsAt, now: tick, noStrapFallback: noSignal)
                     }
                 }
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
@@ -2883,9 +2879,7 @@ struct LiveStrengthSheet: View {
             }
             // The live intensity scale: the whole Z1–Z5 ramp with the current zone lit, «N% of your max»
             // beneath (FER-894 · Estados 2). Only appears with a strap reading — no dashes, no empty ramp.
-            PulseReader(model.live.pulse) { p in
-                if let hr = p.smoothedBpm { hrZoneRampRow(hr) }
-            }
+            if let hr = model.watchBpm { hrZoneRampRow(hr) }
             if run.type == .distance { distanceStepperRow(set.distanceM ?? 0) }
         }
         .frame(minHeight: run.type == .distance ? 150 : 118)
@@ -2976,26 +2970,23 @@ struct LiveStrengthSheet: View {
         let hrMode = session.currentRestMode == .heartRate
         VStack(alignment: .leading, spacing: 12) {
             if hrMode, let started = session.restStartedAt {
-                // PulseReader: the by-HR rest card follows the live pulse per beat (the TimelineView
-                // alone would cap it at 1 s), and the haptic trigger keeps its per-beat evaluation (FER-755).
-                PulseReader(model.live.pulse) { p in
-                    TimelineView(.periodic(from: started, by: 1)) { ctx in
-                        // r20 (auditoría UX #1): en pausa el reloj visible se CONGELA al instante de
-                        // pausedAt — el modelo ya pausaba, pero la tarjeta seguía drenando a 0:00 y
-                        // al reanudar el conteo rebotaba. El instrumento no miente en pausa.
-                        let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
-                        let elapsed = max(0, Int(tick.timeIntervalSince(started)))
-                        let v = RestReadinessRule.evaluate(
-                            currentHR: p.smoothedBpm, worn: model.live.worn, restingHR: restingBaseline,
-                            elapsedS: elapsed, targetHR: session.currentRestTarget)
-                        if v.state == .noSignal {
-                            restCardTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
-                        } else {
-                            restCardHRBody(elapsed: elapsed, readiness: v)
-                        }
+                // FER-1003: watch live HR (model.watchBpm) replaces band pulse reader.
+                TimelineView(.periodic(from: started, by: 1)) { ctx in
+                    // r20 (auditoría UX #1): en pausa el reloj visible se CONGELA al instante de
+                    // pausedAt — el modelo ya pausaba, pero la tarjeta seguía drenando a 0:00 y
+                    // al reanudar el conteo rebotaba. El instrumento no miente en pausa.
+                    let tick = session.paused ? (session.pausedAt ?? ctx.date) : ctx.date
+                    let elapsed = max(0, Int(tick.timeIntervalSince(started)))
+                    let v = RestReadinessRule.evaluate(
+                        currentHR: model.watchBpm, worn: model.watchBpm != nil, restingHR: restingBaseline,
+                        elapsedS: elapsed, targetHR: session.currentRestTarget)
+                    if v.state == .noSignal {
+                        restCardTimeBody(end: session.restEndsAt, now: tick, noStrapFallback: true)
+                    } else {
+                        restCardHRBody(elapsed: elapsed, readiness: v)
                     }
-                    .sensoryFeedback(.success, trigger: p.smoothedBpm != nil && session.currentRestTarget != nil)
                 }
+                .sensoryFeedback(.success, trigger: model.watchBpm != nil && session.currentRestTarget != nil)
             } else if let end = session.restEndsAt, let started = session.restStartedAt {
                 TimelineView(.periodic(from: started, by: 1)) { ctx in
                     restCardTimeBody(end: end,

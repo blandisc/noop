@@ -17,7 +17,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// flat ring. All timer logic and haptics are unchanged.
 struct IntervalTimerView: View {
     @Environment(AppModel.self) private var model
-    @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
     // MARK: Config (persisted only in-view)
@@ -178,11 +177,6 @@ struct IntervalTimerView: View {
 
     private var statusRow: some View {
         HStack(spacing: 10) {
-            if live.bonded {
-                pill("Buzz cues on", dotColor: theme.dataRecovery)
-            } else {
-                pill("Connect strap for buzz cues", dotColor: theme.warning)
-            }
             Spacer()
             if running {
                 pill("Running", dotColor: theme.dataStrain)
@@ -267,14 +261,6 @@ struct IntervalTimerView: View {
                 .frame(maxWidth: .infinity)
 
                 controls
-
-                if !live.bonded {
-                    Label("Bond your strap on the Live screen to feel the transitions hands-free.",
-                          systemImage: "wave.3.right")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
             }
         }
     }
@@ -523,7 +509,6 @@ struct IntervalTimerView: View {
     /// Fire a strap buzz (no-op when not bonded — `buzz` already guards, but we
     /// also skip the call entirely so this stays a pure visual tool when unbonded).
     private func buzz(loops: UInt8) {
-        guard live.bonded else { return }
         model.buzz(loops: loops)
     }
 
@@ -541,7 +526,6 @@ struct IntervalTimerView: View {
 #Preview("Interval Timer · Instrumento") {
     IntervalTimerView()
         .environment(AppModel.preview)
-        .environment(LiveState())
         .frame(width: 720, height: 900)
 }
 #endif

@@ -110,7 +110,6 @@ private struct PullSyncHint: View {
 
 struct TodayView: View {
     @EnvironmentObject var repo: Repository
-    @Environment(LiveState.self) var live
 
     #if os(iOS)
     // iOS-only: the root app state, so the first-launch empty state's "Scan for strap" CTA can kick
@@ -120,9 +119,6 @@ struct TodayView: View {
     /// El tema activo de «Instrumento diurno» (FER-135). El `iosBody` lo ancla al papel de día con
     /// `.instrumentoTheme(.base)`; cada sub-vista lo lee de aquí para colorear en TINTA del tema.
     @Environment(\.instrumentoTheme) private var theme
-    /// Presents the live beat-to-beat monitor (LiveView) over Today when the calibration card's
-    /// "See it beat by beat" affordance is tapped.
-    @State private var showLiveMonitor = false
     /// Live Apple Health bridge (iOS only). Today reads `health.auth` to nudge the user to connect
     /// Apple Salud when the measured Key Metrics are empty; `showDataSources` presents Data Sources
     /// so they can connect in one tap instead of hunting through the More tab. (FER-94)
@@ -475,9 +471,7 @@ struct TodayView: View {
             if !usesWhoop {
                 return "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
             }
-            return strapSeen
-                ? "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here."
-                : "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here."
+            return "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here."
         }
     }
 
@@ -514,15 +508,11 @@ struct TodayView: View {
     var body: some View {
         platformBody
             .task(id: repo.refreshSeq) { await loadAll() }
-            .task(id: live.hrFlushSeq) {
-                guard live.hrFlushSeq > 0 else { return }
+            .task(id: repo.refreshSeq) {
                 let start = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
                 let now   = Int(Date().timeIntervalSince1970)
                 let rows  = await repo.hrBuckets(from: start, to: now, bucketSeconds: 300)
                 hrPoints  = rows.map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
-                // Keep the Day Strain tile rising in lockstep with fresh HR — same live cadence as the
-                // heartbeat trace, so the tile == the Detalle curve's endpoint at all times (FER-650).
-                await model.refreshLiveDayStrain()
             }
             // «Hoy» nunca pedía la carga del strap por su cuenta: dependía del sondeo del keep-alive
             // (cada ~60 s, y SUSPENDIDO durante el offload), así que tras el sync matutino la batería
@@ -530,7 +520,6 @@ struct TodayView: View {
             // enlace queda libre —recién conectado o terminó el backfill—, respetando no picar al strap
             // a mitad del offload (la WHOOP 4.0 la trae por GET_BATTERY_LEVEL, el mismo comando que ya
             // usan el keep-alive y Live; no se agrega ninguno nuevo al set seguro).
-            .task(id: "\(live.connected)|\(live.backfilling)") { refreshStrapBatteryIfIdle() }
             .toolbar {
                 ToolbarItem {
                     Button { showingSupport = true } label: {
@@ -845,15 +834,6 @@ struct TodayView: View {
         // las hojas de métrica. La hoja abre a la altura del contenido — el detente lo fija `LiveView`
         // midiéndose (FER-196). El tema «Instrumento» se pasa explícito (no se propaga por el entorno
         // fresco del sheet) y la hoja se presenta en claro con el papel del tema; cierra con swipe.
-        .sheet(isPresented: $showLiveMonitor) {
-            LiveView(theme: theme, monitorOnly: true)
-                .environment(model)
-                .environment(live)
-                .environmentObject(repo)
-                .presentationDragIndicator(.visible)
-                .presentationBackground(theme.paper)
-                .preferredColorScheme(.light)
-        }
         .sheet(isPresented: $showDataSources) {
             // Present Data Sources directly so the Key Metrics nudge connects Apple Health in one tap,
             // without sending the user to dig through the More tab. Reskinned to the light «Instrumento»
@@ -875,7 +855,6 @@ struct TodayView: View {
             .instrumentoTheme(theme)
             .environment(model)
             .environmentObject(repo)
-            .environment(live)
             .environmentObject(health)
             .preferredColorScheme(.light)
         }
@@ -906,7 +885,6 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                     headerBlock
                     HealthAlertBanner()
-                    todayStatusBanner
                     heroBlock
                     autonomicTrendCardBlock
                 }
@@ -986,7 +964,7 @@ struct TodayView: View {
     ///   handshake de reconexión auto-dispara el sync (`requestSync(.connect)`), sin orquestarlo a mano.
     /// - Sin banda conocida → solo el `repo.refresh()` de abajo (recálculo local), sin escaneo ni error.
     /// `lastSyncedAt` es la señal honesta de "hay/hubo banda" (solo se fija tras un offload completo y
-    /// persiste entre lanzamientos); `selectedWhoopModel` no sirve aquí (su default pasa el onboarding
+    /// persiste entre lanzamientos); `selectedStrapModel` no sirve aquí (su default pasa el onboarding
     /// aunque el usuario no tenga banda).
     /// El `repo.refresh()` final asegura que la pantalla refleje lo último (los scores se recalculan
     /// solos vía `repo.refreshSeq` → `.task(id:)`). El `sleep` corto conserva el «soltar pronto» (~1.2 s)
@@ -994,13 +972,7 @@ struct TodayView: View {
     @MainActor
     private func pullToSync() async {
         syncHaptic += 1                       // dispara la háptica `.medium` al provocar el gesto
-        if live.connected {
-            model.ble.syncNow()               // conectada → offload manual inmediato
-        } else if live.lastSyncedAt != nil {
-            model.scan()                      // banda conocida pero desconectada → reconecta; al
-                                              // conectar, el handshake sincroniza solo
-        }
-        // Sin banda conocida (`lastSyncedAt == nil`) no se escanea: cae directo al refresh local.
+        // Ola 2: no band — pull-to-refresh only re-runs local recompute (Apple Health is passive).
         try? await Task.sleep(for: .seconds(1.2))
         await repo.refresh()
         // FER-293: el usuario ya ejecutó un pull-to-sync → ya aprendió el gesto; retira el microcopy y el
@@ -1055,12 +1027,8 @@ struct TodayView: View {
 
     /// Pide una lectura de batería del strap SOLO cuando el enlace está libre (conectado y sin offload
     /// en curso) — nunca a mitad del backfill, igual que el keep-alive evita picar al strap entonces
-    /// (`guard !backfilling`, BLEManager). `refreshBattery()` es agnóstico al modelo (4.0 → comando
+    /// (`guard !backfilling`, the BLE engine). `refreshBattery()` es agnóstico al modelo (4.0 → comando
     /// GET_BATTERY_LEVEL; 5/MG → lectura 0x2A19) y no introduce ningún comando nuevo.
-    @MainActor private func refreshStrapBatteryIfIdle() {
-        guard live.connected, !live.backfilling else { return }
-        model.getBattery()
-    }
 
     /// Recovery score driving the hero numeral (0–100). nil while calibrating.
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
@@ -1154,28 +1122,10 @@ struct TodayView: View {
                     .font(InstrumentoType.grotesk(11, weight: .semibold))
                     .tracking(2)
                     .foregroundStyle(theme.inkSecondary)
-                if let pct = live.batteryPct, repo.dataSourceMode.usesWhoop {
-                    Rectangle().fill(theme.hairlineStrong)
-                        .frame(width: 1, height: 11)
-                        .accessibilityHidden(true)
-                    HStack(spacing: 4) {
-                        Image(systemName: batteryIcon(pct: pct, charging: live.charging == true))
-                            .font(StrandFont.overline)
-                            .foregroundStyle(theme.batteryColor(forLevel: pct))
-                        Text("\(Int(pct.rounded()))%")
-                            .font(InstrumentoType.grotesk(11, weight: .medium).monospacedDigit())
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                    .accessibilityLabel(live.charging == true
-                        ? Text("Strap battery: \(Int(pct.rounded()))%, charging")
-                        : Text("Strap battery: \(Int(pct.rounded()))%"))
-                }
                 Spacer(minLength: CenitMetrics.space2)
                 // FER-888 (W3): BPM en vivo / «sin señal» / sello del dial 24h son de la banda.
                 // En modo Solo-Apple no aplican; en Combinado/Solo-banda quedan idénticos.
                 if repo.dataSourceMode.usesWhoop {
-                    if liveBpm != nil { bpmButton }
-                    else if bandDisconnectedDaytime { noSignalHeader }
                     // FER-972 P-09: sello dueño de su lectura de progreso (no invalida el árbol).
                     PullIndicator(
                         pullProgress: pullProgressModel,
@@ -1195,64 +1145,18 @@ struct TodayView: View {
 
     /// El BPM del header: punto latiente (solo late con señal EN VIVO) + «62 BPM». Tocarlo abre la
     /// hoja Latidos (el monitor latido a latido), como el resto de los datos de Hoy.
-    private var bpmButton: some View {
-        Button { showLiveMonitor = true } label: {
-            // PulseReader: only this label re-evaluates per heartbeat; TodayView's body no longer
-            // ticks at beat rate (FER-755). Presence (`liveBpm != nil`) is checked by the container,
-            // which re-runs on LiveState's nil↔value transitions (`hrStreaming`).
-            PulseReader(live.pulse) { p in
-                let liveNow = p.heartRate != nil && live.worn
-                let shown = liveNow ? p.heartRate : hrPoints.last.map { Int($0.value.rounded()) }
-                HStack(spacing: CenitMetrics.space1 + 1) {
-                    BreathingDot(color: liveNow ? theme.dataHeart : theme.inkTertiary,
-                                 radius: 3, breathes: liveNow)
-                    Text(verbatim: "\(shown ?? 0) BPM")
-                        .font(InstrumentoType.grotesk(11, weight: .semibold).monospacedDigit())
-                        .tracking(1)
-                        .foregroundStyle(theme.ink)
-                }
-                .frame(minHeight: 34)
-                .contentShape(Rectangle())
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(isLiveHR ? "Frecuencia cardiaca en vivo" : "Frecuencia cardiaca"))
-        .accessibilityValue(Text(liveBpm.map { "\($0) bpm" } ?? ""))
-        .accessibilityHint(Text("Opens the beat-by-beat monitor"))
-    }
 
     /// El header cuando la banda se desconectó de día (FER-711): en lugar del BPM vivo, un punto gris
     /// quieto + «SIN SEÑAL». El punto NO late (no hay señal), a diferencia del BPM.
-    private var noSignalHeader: some View {
-        HStack(spacing: CenitMetrics.space1 + 1) {
-            BreathingDot(color: theme.inkMuted, radius: 3, breathes: false)
-            Text("NO SIGNAL")
-                .font(InstrumentoType.grotesk(11, weight: .semibold))
-                .tracking(1)
-                .foregroundStyle(theme.inkTertiary)
-        }
-        .frame(minHeight: 34)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Band with no signal"))
-    }
 
     /// La línea de estado bajo el header: «Sincronizando con tu banda…» durante el sync (con el conteo
     /// de paquetes si ya fluyen), o la frescura «última lectura hace N min» en reposo. Nada sin banda vista.
+    // TODO(/pm): la línea de frescura "última lectura hace N min" perdió su fuente (banda); ¿equivalente con Apple Health?
     @ViewBuilder private var syncStatusLine: some View {
         if isSyncing {
-            Text(live.syncChunksThisSession > 0
-                 ? "Syncing with your band… \(live.syncChunksThisSession) packets"
-                 : "Syncing with your band…")
+            Text("Syncing…")
                 .font(StrandFont.caption).monospacedDigit()
                 .foregroundStyle(theme.verdict)
-        } else if let at = live.lastSyncedAt {
-            // FER-878: la frescura del header pasa al sello de origen estándar (`OriginStamp`, el mismo
-            // que el pie de Tendencias): punto 6 px de banda + «Medido por tu banda · hace N». La lectura
-            // en reposo vino del último offload de la banda, así que el origen es `.band`.
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                let secondsAgo = Swift.max(context.date.timeIntervalSince1970 - at, 1)
-                OriginStamp(origin: .band, when: Self.compactAgo(secondsAgo), theme: theme)
-            }
         }
     }
 
@@ -1271,34 +1175,12 @@ struct TodayView: View {
 
     /// La banda se vio antes, ahora está desconectada, es de día y no está sincronizando. Apaga el BPM
     /// del header («SIN SEÑAL») y enciende el banner de banda desconectada.
-    private var bandDisconnectedDaytime: Bool {
-        strapSeen && !live.connected && !isSyncing && isDaytime
-    }
 
     /// Días enteros desde el último sync COMPLETO, o nil si nunca hubo. Puro diff de fechas (no math).
-    private var daysSinceLastSync: Int? {
-        guard let at = live.lastSyncedAt else { return nil }
-        return Int((Date().timeIntervalSince1970 - at) / 86_400)
-    }
 
     /// El banner de estado activo (mayor prioridad primero), o nada. Presentacional: cada rama arma un
     /// `TodayBanner` con copy es-MX. Orden = urgencia descendente (batería antes que hueco de base).
-    @ViewBuilder private var todayStatusBanner: some View {
-        if let pct = live.batteryPct, pct <= Self.criticalBatteryPct, live.charging != true {
-            TodayBanner(label: "Critical battery", dot: theme.critical,
-                        title: "Band at \(Int(pct.rounded()))%",
-                        subtitle: "charge it before bed or you lose the night")
-        } else if bandDisconnectedDaytime {
-            TodayBanner(label: "Band disconnected during the day", dot: theme.inkMuted,
-                        title: "No signal from your band",
-                        subtitle: "today's verdict doesn't change, the night needs it",
-                        cta: "Connect →", ctaColor: theme.verdict) { triggerPullSync() }
-        } else if let d = daysSinceLastSync, d >= 6 {
-            TodayBanner(label: "Aged baseline · 6+ days without band", dot: theme.warning,
-                        title: "Your baseline has a \(d)-day gap",
-                        subtitle: "this week the verdict carries «~» again")
-        }
-    }
+    // TODO(/pm): sin banda, Hoy no tiene banners de estado propios (bateria/desconexión/antigüedad eran de la banda); ¿banners Apple-equivalentes?
 
     // MARK: - Héroe unificado «Instrumento diurno» (FER-160)
     //
@@ -1333,13 +1215,11 @@ struct TodayView: View {
         // narran el header + el sello; la base Apple, el chip de procedencia). Mismo corte y prioridad que
         // antes —solo que ahora ambos ramales caen en `.waiting` en vez de en dos casos propios.
         if isSyncing || hasImportedBaseline { return .waiting }
-        let strapSeen = live.lastSyncedAt != nil || liveBpm != nil
-        if strapSeen && ownNights < Baselines.minNightsSeed { return .calibrating(nights: ownNights) }
+        // TODO(/pm): revisar si "nunca conectó Apple Health" debería ser un estado distinto de "calibrando"
+        if ownNights < Baselines.minNightsSeed { return .calibrating(nights: ownNights) }
         return .waiting
     }
 
-    /// Whether a strap has ever been seen (drives the foot affordance: Scan before, live pulse after).
-    private var strapSeen: Bool { live.lastSyncedAt != nil || liveBpm != nil }
 
     @ViewBuilder private var heroBlock: some View {
         switch heroState {
@@ -1535,7 +1415,7 @@ struct TodayView: View {
             } else {
                 Text("No reading")
                     .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-                Text(strapSeen ? "arrives with the morning sync" : "connect your band or Apple Health")
+                Text("connect your band or Apple Health")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -1626,9 +1506,7 @@ struct TodayView: View {
             Text("No reading for today yet")
                 .font(StrandFont.title2).fontWeight(.semibold).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(strapSeen
-                 ? "Your verdict arrives with the first morning sync, once you sync the night."
-                 : "Connect your band or Apple Health and your verdict will read every morning.")
+            Text("Connect your band or Apple Health and your verdict will read every morning.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             if let y = yesterdayVerdict { yesterdayLine(y) }
@@ -2229,7 +2107,8 @@ struct TodayView: View {
     /// pull-to-sync manual. Fuente única para las señales del héroe (estado, dial, numeral, pista).
     /// La pista del pull (FER-293) y el sello armado viven en `PullSyncHint` / `PullIndicator`
     /// (FER-972 P-09): leen el progreso en su propio body para no invalidar Hoy por frame.
-    private var isSyncing: Bool { live.backfilling || live.draining || pullSyncing }
+    // TODO(/pm): sin banda, "sincronizando" solo refleja el pull-to-refresh del usuario, no un fetch real de Apple Health en curso.
+    private var isSyncing: Bool { pullSyncing }
 
     /// La overline del héroe (dos líneas, MAYÚSCULAS trackeadas): qué es el numeral, honesto por estado.
     private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
@@ -2279,12 +2158,10 @@ struct TodayView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     // FER-467: el pulso vivo se mudó al encabezado de Métricas (página 2); aquí solo el titular.
-                    Text(strapSeen ? "No reading for today yet" : "No reading yet")
+                    Text("No reading yet")
                         .font(StrandFont.headline).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(strapSeen
-                         ? "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
-                         : "Connect Apple Health to start. Your strap sharpens the reading.")
+                    Text("Connect Apple Health to start. Your strap sharpens the reading.")
                         .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -2357,36 +2234,18 @@ struct TodayView: View {
     /// limpio: número + veredicto. En veredicto / espera-con-strap el pie del héroe no muestra nada.
     @ViewBuilder private func heroFooter(_ s: HeroState) -> some View {
         switch s {
-        case .verdict, .loading:
-            // En espera sin fuentes el CTA vive en la tarjeta de fuentes (`emptySourcesCard`), no en
-            // el pie del héroe. (FER-364)
+        case .verdict, .loading, .waiting:
+            // En espera el CTA vive en la tarjeta de fuentes (`emptySourcesCard`), no en el pie del
+            // héroe. (FER-364; el CTA «Buscar banda» se retiró con la banda, FER-1003.)
             EmptyView()
         case .calibrating:
             appleHealthShortcut { showDataSources = true }
-        case .waiting:
-            // Modificador «base Apple» (ex-`.importedBaseline`) sin banda vista → CTA «Buscar banda».
-            // Descargando o espera pura → vacío (el CTA de espera vive en `emptySourcesCard`).
-            if hasImportedBaseline && !strapSeen { scanButton }
         }
-    }
-
-    /// El único CTA del estado de espera sin strap: texto en el papel sobre el verde del veredicto.
-    private var scanButton: some View {
-        Button { model.scan() } label: {
-            Text("Find your strap")
-                .font(StrandFont.headline)
-                .foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, CenitMetrics.gap)
-                .background(theme.verdict, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .padding(.top, CenitMetrics.space1)
     }
 
     /// Cero fuentes: ni strap visto, ni datos de Apple Health, ni permiso de Health concedido. (FER-364)
     private var noSources: Bool {
-        !strapSeen && repo.appleHealthDays.isEmpty && health.auth != .authorized
+        repo.appleHealthDays.isEmpty && health.auth != .authorized
     }
 
     /// La tarjeta de «conecta tus fuentes» del estado vacío: Apple Health como base, la banda como capa
@@ -2395,9 +2254,6 @@ struct TodayView: View {
         VStack(spacing: 0) {
             sourceRow(icon: "heart.fill", tint: theme.dataSpO2,
                       title: "Connect Apple Health", subtitle: "the base of your data") { showDataSources = true }
-            Divider().overlay(theme.hairline).padding(.leading, CenitMetrics.cardPadding)
-            sourceRow(icon: "applewatch.side.right", tint: theme.inkTertiary,
-                      title: "Pair strap", subtitle: "sharpens the signal · optional") { model.scan() }
         }
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
@@ -2950,17 +2806,7 @@ struct TodayView: View {
         memoReadiness ?? ReadinessEngine.evaluate(days: verdictDays(band: bandDays), today: Repository.localDayKey(Date()))
     }
 
-    /// True only when the strap is worn AND streaming live HR — gates the beating animation so a
-    /// last-known reading never pretends to be a live pulse.
-    private var isLiveHR: Bool { live.heartRate != nil && live.worn }
 
-    /// bpm for the pill: the live strap value when worn, else today's last 5-minute HR bucket.
-    /// Returns nil when there is no recent HR at all, so the pill hides rather than show a zero.
-    private var liveBpm: Int? {
-        if isLiveHR, let hr = live.heartRate { return hr }
-        if let last = hrPoints.last?.value { return Int(last.rounded()) }
-        return nil
-    }
 
     /// Today's mean HR (nil when there are no readings) — the value on the "Heart Rate" Key-Metrics
     /// row. The day's average summarizes the day without echoing the live bpm that lives in the hero.
@@ -3018,9 +2864,7 @@ struct TodayView: View {
         stress = StressModel(days: repo.displayDays, stored: await stressRows,
                              todayKey: Repository.localDayKey(Date()), appleDays: repo.appleHealthDays)
         await loadTrainingPlan()
-        // Esfuerzo del día en curso (FER-650): recomputa el valor VIVO en cada refresh del dashboard, para
-        // que el tile refleje la carga hasta ahora incluso sin abrir el Detalle.
-        await model.refreshLiveDayStrain()
+        // Ola 2: live day-strain fold retired with the band; settled daily strain via repo.today is enough.
         // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones. Memoizado
         // por (refreshSeq, díaLocal) — FER-872: si el mismo seq re-dispara `loadAll`, no repite la
         // correlación+FDR (que ya corre off-main dentro de `generate`).
@@ -3178,7 +3022,7 @@ struct TodayView: View {
     private func loadStrainCurve() async -> [TrendPoint] {
         // Single canonical derivation + builder (FER-650): AppModel owns the params, window and midnight
         // anchor so the tile, the hero and this curve can never disagree. It also publishes
-        // `model.liveDayStrain` (= the last point) as a side effect.
+        // `the live day-strain value` (= the last point) as a side effect.
         await model.strainCurveTrendPoints()
     }
     #endif

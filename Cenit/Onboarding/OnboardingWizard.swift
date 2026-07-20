@@ -12,11 +12,9 @@ import UIKit
 // Health is the BASE everyone connects; the WHOOP strap is an OPTIONAL layer on top.
 // No dead ends: skipping Health and having no strap still lands you in the app.
 //
-// Flow (additive, ~6 screens):
+// Flow (Apple-only after Ola 2 amputation):
 //   welcome        — Cénit + "tus datos, nada en la nube" (one honest line)
 //   appleHealth    — connect the base (with "Not now"); 5 states
-//   whoopQuestion  — ¿tienes un WHOOP?  Sí → pairing · No → straight to profile
-//   prepare/scan/bonded — pairing (only on the "Sí" branch)
 //   profile        — age / sex / weight / height
 //   importData     — optional history import
 //   done           — "Enter Cénit" → onFinished()
@@ -35,16 +33,12 @@ public struct OnboardingWizard: View {
     }
 
     private enum Step: Int, CaseIterable {
-        case welcome, appleHealth, whoopQuestion, prepare, scan, bonded, profile, importData, done
+        case welcome, appleHealth, profile, importData, done
         var isFirst: Bool { self == .welcome }
         var isLast: Bool { self == .done }
-        /// Pairing steps live only on the "I have a WHOOP" branch.
-        var isPairing: Bool { self == .prepare || self == .scan || self == .bonded }
     }
 
     @State private var step: Step = .welcome
-    /// Set by the whoopQuestion branch; drives whether pairing steps are visited.
-    @State private var hasWhoop = true
 
     public var body: some View {
         ZStack {
@@ -59,10 +53,6 @@ public struct OnboardingWizard: View {
                     switch step {
                     case .welcome:       WelcomeStep(onContinue: advance)
                     case .appleHealth:   AppleHealthStep(onContinue: advance)
-                    case .whoopQuestion: WhoopQuestionStep(onChoose: choose)
-                    case .prepare:       PrepareStep(onContinue: advance)
-                    case .scan:          ScanStep(onContinue: advance)
-                    case .bonded:        BondedStep(onContinue: advance)
                     case .profile:       ProfileStep(onContinue: advance)
                     case .importData:    ImportStep(onContinue: advance)
                     case .done:          DoneStep(onFinish: onFinished)
@@ -78,13 +68,6 @@ public struct OnboardingWizard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .instrumentoTheme(.base)
         .preferredColorScheme(.light)
-        // Isolated live observation — slides Scan → celebration on bond without
-        // subscribing the whole wizard to per-tick updates.
-        .background(BondWatcher(onBonded: handleBond))
-    }
-
-    private func handleBond() {
-        if step == .scan { withAnimation(StrandMotion.hero) { step = .bonded } }
     }
 
     // MARK: Top bar (just a quiet Back affordance)
@@ -110,29 +93,16 @@ public struct OnboardingWizard: View {
         }
     }
 
-    // MARK: Navigation (skips pairing when there's no WHOOP)
+    // MARK: Navigation
 
     private func advance() {
-        var next = Step(rawValue: step.rawValue + 1)
-        if !hasWhoop {
-            while let n = next, n.isPairing { next = Step(rawValue: n.rawValue + 1) }
-        }
-        guard let n = next else { onFinished(); return }
+        guard let n = Step(rawValue: step.rawValue + 1) else { onFinished(); return }
         withAnimation(StrandMotion.gentle) { step = n }
     }
 
     private func back() {
-        var prev = Step(rawValue: step.rawValue - 1)
-        if !hasWhoop {
-            while let p = prev, p.isPairing { prev = Step(rawValue: p.rawValue - 1) }
-        }
-        guard let p = prev else { return }
+        guard let p = Step(rawValue: step.rawValue - 1) else { return }
         withAnimation(StrandMotion.gentle) { step = p }
-    }
-
-    private func choose(_ value: Bool) {
-        hasWhoop = value
-        advance()
     }
 
     private var stepTransition: AnyTransition {
@@ -143,15 +113,6 @@ public struct OnboardingWizard: View {
     }
 }
 
-/// Hidden, isolated observer — fires `onBonded` when the strap bonds, keeping the
-/// main wizard body out of the per-tick re-render path.
-private struct BondWatcher: View {
-    @Environment(LiveState.self) private var live
-    let onBonded: () -> Void
-    var body: some View {
-        Color.clear.onChange(of: live.bonded) { _, newValue in if newValue { onBonded() } }
-    }
-}
 
 // MARK: - Shared shell
 
@@ -360,217 +321,6 @@ private struct CenteredState<Buttons: View>: View {
             Spacer(minLength: CenitMetrics.sectionGap)
             VStack(spacing: CenitMetrics.gap) { buttons() }
         }
-    }
-}
-
-// MARK: - Step · ¿Tienes un WHOOP?
-
-private struct WhoopQuestionStep: View {
-    let onChoose: (Bool) -> Void
-    @Environment(\.instrumentoTheme) private var theme
-    var body: some View {
-        StepShell {
-            Overline(text: "Step 2 · Sharpen the signal")
-            Text("Do you have a strap?")
-                .font(StrandFont.title1)
-                .foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.space2)
-            Text("It sits on top of Apple Health and sharpens the signal: continuous HRV and strap-grade recovery.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.gap)
-            Spacer(minLength: CenitMetrics.sectionGap)
-            InkButton("Yes, I have one") { onChoose(true) }
-            OutlineButton("I don't have one") { onChoose(false) }
-        }
-    }
-}
-
-// MARK: - Step · Prepare (wear + charge + Bluetooth priming)
-
-private struct PrepareStep: View {
-    let onContinue: () -> Void
-    @Environment(\.instrumentoTheme) private var theme
-    var body: some View {
-        StepShell {
-            Overline(text: "Step 3 · Your strap")
-            Text("Get your strap ready")
-                .font(StrandFont.title1)
-                .foregroundStyle(theme.ink)
-                .padding(.top, CenitMetrics.space2)
-            Text("A moment before connecting.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
-                .padding(.top, CenitMetrics.space2)
-
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Checkline("Wear it snug: the sensor needs skin contact.")
-                Checkline("Make sure it has charge.")
-                Checkline("Keep your iPhone's Bluetooth on.")
-            }
-            .padding(.top, CenitMetrics.sectionGap)
-
-            Rectangle().fill(theme.hairline).frame(height: 1)
-                .padding(.top, CenitMetrics.sectionGap)
-            HStack(alignment: .top, spacing: CenitMetrics.space2) {
-                Image(systemName: "wave.3.right")
-                    .font(StrandFont.glyph(.chevron))
-                    .foregroundStyle(theme.inkTertiary)
-                    .accessibilityHidden(true)
-                Text("In a moment your iPhone will ask for Bluetooth permission. Choose Allow so Cénit can find your strap. The connection is direct: nothing goes through the cloud.")
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, CenitMetrics.gap)
-
-            Spacer(minLength: CenitMetrics.sectionGap)
-            InkButton("Find my strap", action: onContinue)
-        }
-    }
-}
-
-// MARK: - Step · Scan (sober, no radar)
-
-private struct ScanStep: View {
-    let onContinue: () -> Void
-    @Environment(AppModel.self) private var model
-    @Environment(LiveState.self) private var live
-    @Environment(\.instrumentoTheme) private var theme
-
-    @State private var scanning = false
-    @State private var showHelp = false
-    @State private var autoScanStarted = false
-
-    @AppStorage("selectedWhoopModel") private var selectedModelRaw = WhoopModel.whoop4.rawValue
-    private var selectedModel: WhoopModel { WhoopModel(rawValue: selectedModelRaw) ?? .whoop4 }
-
-    var body: some View {
-        StepShell {
-            Overline(text: "Step 3 · Connect")
-            Text("Looking for your strap…")
-                .font(StrandFont.title1)
-                .foregroundStyle(theme.ink)
-                .padding(.top, CenitMetrics.space2)
-            statusLine
-                .padding(.top, CenitMetrics.gap)
-
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-                Text("Which strap?").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                Picker("Which strap?", selection: Binding(
-                    get: { selectedModel },
-                    set: { restartScan(for: $0) }
-                )) {
-                    ForEach(WhoopModel.allCases, id: \.self) { m in
-                        Text(m.displayName).tag(m)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-            .padding(.top, CenitMetrics.sectionGap)
-
-            if showHelp { reassurance.padding(.top, CenitMetrics.gap) }
-
-            Spacer(minLength: CenitMetrics.sectionGap)
-            OutlineButton(scanning ? "Searching…" : "Search again") { startScan() }
-                .disabled(scanning)
-            OutlineButton("Continue without pairing", action: onContinue)
-        }
-        .onAppear(perform: startAutoScanIfNeeded)
-        .onDisappear { scanning = false }
-    }
-
-    @ViewBuilder
-    private var statusLine: some View {
-        if live.bonded {
-            Label("Connected", systemImage: "checkmark.circle.fill")
-                .font(StrandFont.subhead).foregroundStyle(theme.verdict)
-        } else if live.connected {
-            Label("Connecting…", systemImage: "dot.radiowaves.left.and.right")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-        } else if scanning {
-            Label("Searching…", systemImage: "dot.radiowaves.left.and.right")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-        } else {
-            Label("Ready to search", systemImage: "magnifyingglass")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-        }
-    }
-
-    private var reassurance: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            Text("Not showing up? That's normal.")
-                .font(StrandFont.headline)
-                .foregroundStyle(theme.ink)
-            Text("Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Checkline("It's charged and worn: the sensor wakes with skin contact.")
-            Checkline("The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth.")
-            Checkline("It's within a metre of your iPhone.")
-        }
-        .padding(CenitMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
-    }
-
-    private func startScan(model scanModel: WhoopModel? = nil) {
-        let modelToScan = scanModel ?? selectedModel
-        scanning = true
-        showHelp = false
-        model.scan(model: modelToScan)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
-            if !live.bonded {
-                scanning = false
-                withAnimation(StrandMotion.gentle) { showHelp = true }
-            }
-        }
-    }
-
-    private func restartScan(for newModel: WhoopModel) {
-        selectedModelRaw = newModel.rawValue
-        guard !live.bonded else { return }
-        model.disconnect()
-        startScan(model: newModel)
-    }
-
-    private func startAutoScanIfNeeded() {
-        guard !autoScanStarted, !live.bonded, !live.connected else { return }
-        autoScanStarted = true
-        startScan()
-    }
-}
-
-// MARK: - Step · Bonded (sober celebration)
-
-private struct BondedStep: View {
-    let onContinue: () -> Void
-    @Environment(LiveState.self) private var live
-    @Environment(\.instrumentoTheme) private var theme
-    var body: some View {
-        CenteredState(
-            glyph: "checkmark.circle.fill",
-            glyphColor: theme.verdict,
-            title: "Done. You're connected.",
-            titleColor: theme.ink,
-            message: batteryLine
-        ) {
-            InkButton("Continue", action: onContinue)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Connected")
-    }
-    private var batteryLine: LocalizedStringKey {
-        if let pct = live.batteryPct {
-            return "Your strap is connected · \(Int(pct))% battery."
-        }
-        return "Your strap is connected and ready."
     }
 }
 
@@ -862,7 +612,6 @@ private struct OnboardingPreview: View {
     var body: some View {
         OnboardingWizard(onFinished: {})
             .environment(model)
-            .environment(model.live)
             .environmentObject(model.profile)
             .frame(width: 390, height: 780)
     }

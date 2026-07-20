@@ -44,9 +44,7 @@ enum ScreenshotFixtures {
         // is «··» (never a fake number). Seed a short strap history with usable HRV and NO recovery on
         // any row (recovery stays nil until the baseline seeds), and mark the strap as seen.
         if state == "calibrating" {
-            // FER-924: anclado a −125 s para que la línea de frescura muestre «hace 2 min» estable
-            // (granularidad de minuto) — con `now` mostraba «hace 4 s» y variaba por corrida.
-            model.live.lastSyncedAt = Date().timeIntervalSince1970 - 125   // strapSeen == true
+            // Ola 2: strap-seen fixture no longer applicable (no strap live state); calibrating is driven by night count alone.
             let nights = 2
             var days: [DailyMetric] = []
             for ago in stride(from: nights, through: 0, by: -1) {
@@ -76,12 +74,9 @@ enum ScreenshotFixtures {
             return
         }
 
-        // FER · downloading («Downloading / your night is on its way»): un offload en curso
-        // (`live.backfilling`) sin recovery de HOY todavía → `heroState` cae en `.waiting` con el
-        // modificador de descarga. Sembramos noches PREVIAS con recovery (para que `fullyLoaded` publique)
-        // pero NINGUNA fila de hoy, y prendemos el flag de backfill.
+        // FER · downloading: sin banda, no hay backfill flag. Sembramos noches PREVIAS con recovery
+        // (para que `fullyLoaded` publique) pero NINGUNA fila de hoy → heroState cae en `.waiting`.
         if state == "downloading" {
-            model.live.backfilling = true
             var days: [DailyMetric] = []
             for ago in stride(from: 6, through: 1, by: -1) {   // ayer … −6, sin hoy
                 let dayKey = Repository.localDayKey(cal.date(byAdding: .day, value: -ago, to: today)!)
