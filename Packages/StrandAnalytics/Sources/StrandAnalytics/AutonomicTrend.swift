@@ -27,14 +27,15 @@ public enum AutonomicTrend {
         public let z7d: Double?
         /// Per-night past-only z, oldest → newest; [] unless .solid.
         public let spark: [Double]
-        /// asOf night density: true = dense; nil = no dense night for asOf. (The `false` "night
-        /// existed but was thin" case is unknowable from dense-only input; the wiring layer (R3)
-        /// refines it to false from the persisted clean/pairs series.)
-        public let lastNightDense: Bool?
+        /// True iff the asOf night is among the dense input nights. The engine only sees dense
+        /// nights, so it cannot tell a THIN night (sampled but < 60 clean / < 30 pairs) from a
+        /// MISSING one — both read false here. R3 owns the product 3-state (dense / thin / missing),
+        /// computed from the persisted clean+pairs series; never infer "thin night" from this Bool.
+        public let asOfWasDense: Bool
 
         public init(direction: Direction?, confidence: ScoreConfidence, nightsUsable: Int,
                     nightsToTrend: Int, recentDenseNights: Int, z7d: Double?,
-                    spark: [Double], lastNightDense: Bool?) {
+                    spark: [Double], asOfWasDense: Bool) {
             self.direction = direction
             self.confidence = confidence
             self.nightsUsable = nightsUsable
@@ -42,7 +43,7 @@ public enum AutonomicTrend {
             self.recentDenseNights = recentDenseNights
             self.z7d = z7d
             self.spark = spark
-            self.lastNightDense = lastNightDense
+            self.asOfWasDense = asOfWasDense
         }
     }
 
@@ -72,20 +73,20 @@ public enum AutonomicTrend {
           : nightsUsable >= minNightsTrend ? .building
           : .calibrating
         let nightsToTrend = max(0, minNightsTrend - nightsUsable)
-        let lastDense: Bool? = usable.contains { $0.day == asOf } ? true : nil
+        let asOfDense = usable.contains { $0.day == asOf }
 
         // CALIBRATING: not enough total dense nights, or too few recent.
         if nightsUsable < minNightsTrend || recentDense < recentMinDenseNights {
             return Read(direction: nil, confidence: confidence, nightsUsable: nightsUsable,
                         nightsToTrend: nightsToTrend, recentDenseNights: recentDense,
-                        z7d: nil, spark: [], lastNightDense: lastDense)
+                        z7d: nil, spark: [], asOfWasDense: asOfDense)
         }
 
         // BUILDING: enough to trust the count but not yet the SWC geometry → force inBase.
         if nightsUsable < minNightsSWCSolid {
             return Read(direction: .inBase, confidence: .building, nightsUsable: nightsUsable,
                         nightsToTrend: nightsToTrend, recentDenseNights: recentDense,
-                        z7d: nil, spark: [], lastNightDense: lastDense)
+                        z7d: nil, spark: [], asOfWasDense: asOfDense)
         }
 
         // SOLID.
@@ -109,6 +110,6 @@ public enum AutonomicTrend {
 
         return Read(direction: dir, confidence: .solid, nightsUsable: nightsUsable,
                     nightsToTrend: nightsToTrend, recentDenseNights: recentDense,
-                    z7d: z7d, spark: spark, lastNightDense: lastDense)
+                    z7d: z7d, spark: spark, asOfWasDense: asOfDense)
     }
 }

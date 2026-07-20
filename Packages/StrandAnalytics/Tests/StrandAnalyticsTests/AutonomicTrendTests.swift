@@ -82,16 +82,16 @@ final class AutonomicTrendTests: XCTestCase {
         XCTAssertEqual(r.nightsUsable, 14)
     }
 
-    func testLastNightDense() {
+    func testAsOfWasDense() {
         let ns = janDays(from: 1, count: 14, value: 50)
         let withAsOf = AutonomicTrend.evaluate(nights: nights(ns), asOf: "2026-01-14",
                                                recentCutoff: "2026-01-12")
-        XCTAssertEqual(withAsOf.lastNightDense, true)
+        XCTAssertTrue(withAsOf.asOfWasDense)
 
         let withoutAsOf = AutonomicTrend.evaluate(nights: nights(ns), asOf: "2026-01-20",
                                                   recentCutoff: "2026-01-12")
-        // no dense night on asOf → nil
-        XCTAssertNil(withoutAsOf.lastNightDense)
+        // asOf not among the dense input nights → false (engine cannot tell thin from missing)
+        XCTAssertFalse(withoutAsOf.asOfWasDense)
     }
 
     func testPastOnlyZGolden() {
