@@ -738,9 +738,9 @@ final class Repository: ObservableObject {
         return out
     }
 
-    /// Gravity (accelerometer) samples for the strap in `[from, to]`. Feeds the night-rhythm
-    /// motion gate (`NightRhythmAssembler`), which needs per-window stillness to discard
-    /// movement-contaminated windows. Range-scanned like `rrIntervals` over `(deviceId, ts)`. (FER-666)
+    /// Gravity (accelerometer) samples for the strap in `[from, to]`. Read by `IntelligenceEngine`'s
+    /// motion gate for per-window stillness. Range-scanned like `rrIntervals` over `(deviceId, ts)`.
+    /// (FER-666; the strap partition — and this read — are dormant under the Apple-only pin.)
     func gravitySamples(from: Int, to: Int, limit: Int = 200_000) async -> [GravitySample] {
         guard let store = await ensureStore() else { return [] }
         return (try? await store.gravitySamples(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []
