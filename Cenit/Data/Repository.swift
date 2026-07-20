@@ -15,7 +15,7 @@ struct ImportedSleepFigures: Equatable {
 }
 
 /// Read model over the on-device CenitStore. Opens its own handle (WAL + busy-timeout makes the
-/// two-handle BLEManager+Repository pattern safe) and publishes the dashboard caches the screens bind to.
+/// single-writer pattern safe: HealthKitBridge/imports write via repo.storeHandle()) and publishes the dashboard caches the screens bind to.
 @MainActor
 final class Repository: ObservableObject {
     let deviceId: String

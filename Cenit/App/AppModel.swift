@@ -1,13 +1,12 @@
 import SwiftUI
+import StrandDesign
 import Combine
 import Observation
-import UserNotifications
 import BiometricStreams
 import CenitStore
 import StrandImport
 import StrandAnalytics
 import StrandTraining
-import StrandDesign
 
 /// Data source currently running an import from the Data Sources screen.
 enum DataSourceImportKind {
@@ -38,7 +37,6 @@ enum DataSourceImportKind {
     /// Behaviour settings: double-tap action, wear automation, zone coaching, smart alarm, illness watch.
     let behavior = BehaviorStore()
     /// Inactivity reminder settings + its restart-safe de-dup state (FER-664).
-    let inactivity = InactivityPrefs()
     /// The Bucle's goal (metric + optional date) — a single user preference, UserDefaults-backed (FER-311).
     let goal = GoalStore()
     /// The user's barbell + owned plate denominations, for the session's «⛓ discos» calculator (FER-720).
@@ -133,17 +131,6 @@ enum DataSourceImportKind {
     /// tick skips the heavy pass while a backfill/import is writing (FER-177).
     private var analysisTask: Task<Void, Never>?
 
-    /// Debounced on-device recompute fired by a *completed* backfill (FER-406). The morning catch-up
-    /// lands last night's data in a burst (~6 drain completions in <60 s); each completion
-    /// cancel-and-reschedules this Task so the heavy `analyzeRecent()` pass runs ONCE, after the burst
-    /// settles — never per-completion. It fires on completion (not during offload) and re-checks the
-    /// FER-177 guard before running, so it never contends with a live BLE write on the main actor.
-    /// Cancelled alongside `analysisTask` on background/teardown.
-    private var backfillRecomputeTask: Task<Void, Never>?
-
-    /// Debounce window after a completed backfill before the recompute runs. ~3 s lets the drain
-    /// chain's `backfilling` false→true→false flapping settle so the guard sees a quiet strap.
-    private static let backfillRecomputeDebounceNanos: UInt64 = 3_000_000_000
 
     /// True while any data-source import is writing to the local store.
     var hasActiveImport: Bool { activeImportSource != nil }
@@ -289,8 +276,6 @@ enum DataSourceImportKind {
     func stopAnalysisLoop() {
         analysisTask?.cancel()
         analysisTask = nil
-        backfillRecomputeTask?.cancel()
-        backfillRecomputeTask = nil
     }
 
     // MARK: - One-time day-key re-bucket (FER-226)
@@ -398,20 +383,6 @@ enum DataSourceImportKind {
         }
     }
 
-    /// Switch the data-source mode (combined / WHOOP-only / Apple-Health-only), persist it, and re-read
-    /// the dashboard + baseline through the new filter. Non-destructive: every source stays stored and
-    /// capture keeps running; only what's READ changes, so switching back to `.combined` restores the
-    /// prior view with no re-import (FER-484). The UI selector (F2) will call this.
-    func setDataSourceMode(_ m: DataSourceMode) {
-        guard m != sources.mode else { return }
-        sources.mode = m
-        repo.dataSourceMode = m
-        repo.strainHRmax = effectiveHRmax; repo.strainSex = profile.sex   // FER-883: refresh HRmax when entering Apple mode
-        Task { @MainActor in
-            await repo.refresh()
-            await intelligence.analyzeRecent(force: true)
-        }
-    }
 
     // MARK: - Baseline recalibration («Recalibrar recuperación», FER-677)
 
@@ -437,49 +408,6 @@ enum DataSourceImportKind {
             await repo.refresh()
             await intelligence.analyzeRecent(force: true)
         }
-    }
-
-    private func refreshAfterCompletedBackfill() async {
-                // Full refresh, not a 120-day window: a windowed publish here used to clobber the dashboard
-        // down to 120 days (truncating Tendencias 1A until the next full pass) and let the recompute
-        // below fold baselines over it. With the off-main assembly the full pass no longer punishes
-        // the main actor, so the shortcut lost its reason to exist.
-        await repo.refresh()
-        // The completed sync just landed last night's raw data — but reloading the cache only re-reads
-        // it; the on-device scores still need recomputing. The 15-min loop is the only other recompute
-        // path and it skips while a backfill is writing (FER-177), so during the morning catch-up the
-        // verdict/sleep/strain could lag minutes behind the data. Schedule a debounced recompute here so
-        // it runs reliably once the sync settles, coalescing the burst of completions into one pass.
-        scheduleRecomputeAfterBackfill()
-    }
-
-    /// Cancel-and-reschedule the debounced recompute after a completed backfill (FER-406). Each
-    /// completion in the morning burst replaces the prior pending Task, so `analyzeRecent()` runs ONCE
-    /// after the burst settles rather than per-completion. The run re-checks the FER-177 guard so it
-    /// never competes with a live BLE/import write on the main actor; `analyzeRecent()` itself refreshes
-    /// the dashboard at the end of a non-empty pass, so the verdict appears with no manual refresh.
-    private func scheduleRecomputeAfterBackfill(retriesLeft: Int = 3) {
-        backfillRecomputeTask?.cancel()
-        backfillRecomputeTask = Self.debounced(after: Self.backfillRecomputeDebounceNanos) { [weak self] in
-            await self?.runRecomputeAfterBackfill(retriesLeft: retriesLeft)
-        }
-    }
-
-    /// Run the on-device recompute, but only while the strap/import is quiet (the FER-177 guard) — the
-    /// heavy pass must not contend with a live offload writing rows on the main actor. `analyzeRecent`
-    /// has its own re-entrancy guard and idempotent-skip, so an overlap with the 15-min tick is safe.
-    /// If a backfill re-started INSIDE the debounce window (the drain chain re-arms `backfilling` within
-    /// the same morning catch-up), the guard is closed at fire time. Rather than strand the recompute
-    /// until the next completion or the 15-min tick — the very "stays empty for minutes" symptom this
-    /// fixes — reschedule a bounded few times; a fresh completion resets the budget, and once it's spent
-    /// the periodic loop remains the backstop.
-    private func runRecomputeAfterBackfill(retriesLeft: Int) async {
-        guard Self.mayRecomputeAfterBackfill(backfilling: false,
-                                             hasActiveImport: hasActiveImport) else {
-            if retriesLeft > 0 { scheduleRecomputeAfterBackfill(retriesLeft: retriesLeft - 1) }
-            return
-        }
-        await intelligence.analyzeRecent()
     }
 
     /// Whether a completed-backfill recompute may run now. Mirrors the 15-min loop's guard (FER-177):
@@ -1228,16 +1156,6 @@ enum DataSourceImportKind {
     }
 
 
-    /// Append the current smoothed `bpm` to the active strength session's HR buffer (FER-399), so finishing
-    /// can derive avgHr/strain + a Keytel calorie estimate. In-memory only; a no-op when no strength session
-    /// is running, the receipt is already shown, or there's no fresh HR. Same main-actor cadence as
-    /// never touches a band stream (band retired Ola 2).
-    private func captureStrengthSample() {
-        // FER-823: drop HR captured while paused from the session's scoring set — the band keeps streaming
-        // for the live readout (`bpm`), but paused beats must not inflate strain/energy.
-        guard let s = strengthSession, s.summary == nil, !s.paused, let hr = bpm else { return }
-        s.hrSamples.append(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr))
-    }
 
 
     // MARK: - Day Strain display (settled only — live fold retired with the band, Ola 2)
@@ -1288,31 +1206,6 @@ enum DataSourceImportKind {
         // no strap to buzz
     }
 
-    /// Mirror the inactivity-reminder wrist buzz as a local notification, so the "time to move" nudge
-    /// still surfaces on the phone if the wrist buzz is missed (FER-664). Called from the BLE offload
-    /// hook after `SedentaryDetector` decided to buzz; `minutes` = the seated bout the detector reported.
-    /// Delivery is authorized-only (no second system prompt), mirroring `IllnessNotifier`. Gated on the
-    /// feature toggle so turning the reminder off silences the notification too. iOS-only.
-    static func postInactivity(minutes: Int) {
-        #if os(iOS)
-        guard InactivityPrefs.isEnabled() else { return }
-        let body = minutes > 0
-            ? String(localized: "You've been seated about \(minutes) min. Time to move.")
-            : String(localized: "Time to move: you've been seated a while.")
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            guard settings.authorizationStatus == .authorized else { return }
-            let content = UNMutableNotificationContent()
-            content.title = String(localized: "Move reminder")
-            content.body = body
-            content.sound = .default
-            // A fixed identifier means a fresh nudge replaces the prior one rather than stacking.
-            // Re-fetch `.current()` inside the @Sendable completion instead of capturing the outer
-            // (non-Sendable) instance — same singleton, no cross-actor capture warning.
-            UNUserNotificationCenter.current().add(
-                UNNotificationRequest(identifier: "inactivity-nudge", content: content, trigger: nil))
-        }
-        #endif
-    }
 
 
     // MARK: - Moments

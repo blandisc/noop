@@ -84,7 +84,6 @@ private struct AjustesLanding: View {
     @EnvironmentObject private var repo: Repository
     @EnvironmentObject private var health: HealthKitBridge
     @EnvironmentObject private var behavior: BehaviorStore
-    @EnvironmentObject private var inactivity: InactivityPrefs
     @EnvironmentObject private var autoBackup: AutoBackup
     @Environment(\.instrumentoTheme) private var theme
 
