@@ -473,7 +473,11 @@ final class HealthKitBridge: ObservableObject {
                 try await store.insert(Streams(hr: workoutHrSamples), deviceId: appleDeviceId)
             }
             try await store.upsertSleepSessions(appleSleepSessions, deviceId: appleDeviceId)   // FER-486 (F3): per-night stage timeline
-            try await writeBack(whoopStore: store)
+            // B (FER-1003): el write-back a Apple Health de métricas DERIVADAS de la banda (RHR/HRV/SpO2/
+            // resp/sueño de la partición -noop) se APAGA. Apple-only, esas filas son viejas y stale, y
+            // escribirlas contaminaría Salud (mezcla el RMSSD de banda bajo el SDNN de Apple). El HKWorkout
+            // de fuerza (saveStrengthWorkoutIfEnabled) es independiente y se CONSERVA. La función writeBack
+            // queda muerta aquí; se borra con Cenit/Collect en la ola de código.
             lastSync = Date()
             lastError = nil
             if trigger == .foreground { didFullForegroundSyncThisSession = true }

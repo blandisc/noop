@@ -8,12 +8,14 @@ import StrandAnalytics
 /// never what gets written. Default `.combined`, so existing users keep the historical behavior.
 @MainActor
 final class SourceModeStore: ObservableObject {
-    @Published var mode: DataSourceMode { didSet { d.set(mode.rawValue, forKey: K.mode) } }
-
-    private let d = UserDefaults.standard
-    private enum K { static let mode = "sources.dataSourceMode" }
-
-    init() {
-        mode = DataSourceMode(rawValue: d.string(forKey: K.mode) ?? "") ?? .combined
+    /// B (FER-1003): PINEADO a `.appleHealthOnly`. Cénit es Apple-only — el app ya no lee la banda. Se
+    /// ignora el valor persistido y cualquier intento de cambiarlo (el picker de fuentes se retira en la
+    /// ola de superficies). La partición de banda (`strap` / `strap-noop`) queda DORMIDA en la DB, excluida
+    /// por el modo, NUNCA borrada — así un backup/restore preserva la historia y no hay «recovery zombi»
+    /// (los días viejos de banda no le ganan al Apple porque `DataSourcePolicy` los saca del merge).
+    @Published var mode: DataSourceMode = .appleHealthOnly {
+        didSet { if mode != .appleHealthOnly { mode = .appleHealthOnly } }   // rechaza cualquier cambio
     }
+
+    init() {}   // deliberadamente ignora el `sources.dataSourceMode` persistido: el modo es constante
 }
