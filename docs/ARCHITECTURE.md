@@ -481,7 +481,7 @@ UI doesn't re-render on every beat.
 
 ## 7. Storage model (CenitStore / SQLite)
 
-GRDB drives a migrator (the migrator currently reaches `v35`; see `Database.swift` — the source of
+GRDB drives a migrator (the migrator currently reaches `v36`; see `Database.swift` — the source of
 truth is the migration list, not a constant). The schema groups into four
 concerns:
 
@@ -550,6 +550,16 @@ FER-972 (P-05) adds two more per-night scalars under the same `-noop` source: `n
 (distal warming onset→plateau, °C). The nightly pass persists them next to `hrv_lf`; the Sleep /
 Skin-temp detail loaders read the points and lazily write-through any night the engine window didn't
 cover, so opening those sheets no longer re-reads ~0.5–1 M raw sample rows.
+
+FER-1008 (the Apple-only recovery redesign) adds a **separate** computed partition, `apple-health-noop`,
+holding the nightly nocturnal-HRV scalars: `apple_rmssd_night` (the night's segmented RMSSD, ms — written
+only when the night is dense), plus `apple_rr_clean_night` and `apple_rr_pairs_night` (the density counts,
+written for every processed night). `HealthKitBridge.ingestNocturnalHRV` writes them from the Apple
+heartbeat series; `Repository.autonomicTrend` reads `apple_rmssd_night` back to compute the categorical
+`AutonomicTrend` (`NocturnalHRV` → `AutonomicTrend`, both pure in `StrandAnalytics`). This partition is
+**deliberately distinct** from both the strap's `-noop` and raw `apple-health`: the Apple RMSSD-per-night
+baseline is a construct of its own and must never be pooled with the band's RMSSD or with Apple's SDNN
+(three separate baselines — the "own baseline per construct" invariant, FER-629).
 
 **Circadian phase** — `circadianPhase(deviceId, day, tempMinHour, acrophaseHours, offsetMinutes,
 confidence, daysObserved, bedtimeHour, wakeHour, computedAt)`, PK `(deviceId, day)`: one structured

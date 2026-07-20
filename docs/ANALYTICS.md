@@ -154,6 +154,33 @@ HRVAnalyzer.analyze(rawRR: [Double]) -> HRVResult
 
 ---
 
+## `NocturnalHRV` + `AutonomicTrend` — nocturnal autonomic trend (Apple-only)
+
+Source: `NocturnalHRV.swift`, `AutonomicTrend.swift` (both `StrandAnalytics`, pure). The Apple-only recovery redesign (FER-1008): instead of a 0–100 recovery score, Cénit reads the **direction** of the user's recent nocturnal HRV against **their own settled baseline** — never a number, never a clinical claim.
+
+### Source and its honesty caveats
+
+The input is Apple Watch **opportunistic wrist PPG** (`HKHeartbeatSeriesSample`), not ECG. Two caveats are load-bearing (and encoded in the claims allow-list below):
+
+- **Wrist PPG RMSSD is the worst case.** Pulse-rate variability from PPG diverges from ECG HRV, and RMSSD (the shortest-term index) is the most affected — Schäfer & Vagedes (2013), *"How accurate is pulse rate variability as an estimate of heart rate variability?"*.
+- **Opportunistic, non-contiguous sampling.** Apple samples in short bursts through the night, not one contiguous supine recording. Munoz et al. (2015) validated ultra-short RMSSD for **supine, contiguous** windows — explicitly *not* this regime. So the value is a within-subject **trend signal**, never an absolute measurement.
+
+### `NocturnalHRV.night` — one honest RMSSD per night, or nothing
+
+`HRVAnalyzer.rmssdSegmented` computes RMSSD (Task Force 1996) **segmented by time**: a successive pair `(i−1 → i)` counts only if both NN ∈ `[300, 2000]` ms **and** they are temporally adjacent (`0 < Δt < 3 s`, `ts` in fractional epoch seconds). A pair that straddles a recording gap, or that touches an out-of-range artifact, is excluded — **never bridged across** (bridging would inflate the pair count on the dirtiest nights and corrupt the density gate below). The divisor is the number of **valid pairs**, not `N−1`. Malik ectopic rejection is deliberately **not** applied here (sparse wrist data; a second local-median filter would eat real beats).
+
+`night(...)` clips the intervals to the **union of the night's asleep segments**, then emits an RMSSD only when the night is dense on both counts — `nClean ≥ 60` in-range intervals **and** `nPairs ≥ 30` successive pairs **and** `rmssd > 0`. Otherwise it emits nothing (the night is dropped, not faked). These counts are **product-calibration gates, not clinical thresholds**.
+
+### `AutonomicTrend.evaluate` — direction vs. the user's own baseline
+
+Over the dense `apple_rmssd_night` values (oldest→newest), it computes the **geometric mean** of the recent 7-day window (nightly RMSSD is ~log-normal — Plews et al. 2013, who monitor **lnRMSSD**) and z-scores it against the user's **past-only** personal baseline (`Baselines.foldHistory`, log domain), so a night's baseline never includes that night. The output is a 3-way `Direction` — `below` / `inBase` / `above` — with a **dead-zone of ±0.5σ** (`|z| < 0.5 ⇒ inBase`). That dead-zone is a **product knob**, *not* a Plews-derived smallest-worthwhile-change. Confidence is gated by dense-night count: `calibrating < 14`, `building < 21`, `solid ≥ 21` (the `solid` gate ≈ 4 weeks, matching Plews' baseline-settling time; the 14 mirrors `Baselines.minNightsTrust`). "Above" is stated **neutrally** — a high sleeping HRV can equally signal fatigue, so the screen never colors it as good.
+
+### Claims allow-list (PR-blocking)
+
+This surface is deliberately constrained. **Forbidden** in copy / metrics / artifacts: any "61%" / "% of variance", CCC, "equivalent to / like WHOOP", any 0–100 recovery number, a precise daily figure, "deep sleep / vagal tone" attributions the beats don't support. **Allowed**: "your sleeping HRV vs. your 7-day average", the categorical direction, "estimated / trend", and confidence expressed as a number of nights. No clinical claims.
+
+---
+
 ## `RecoveryScorer` — transparent 0–100 recovery composite
 
 Source: `RecoveryScorer.swift`. A **z-score + logistic** composite. It is explicitly **approximate** — HRV-dominant and baseline-normalized — and makes no claim to reproduce WHOOP's proprietary recovery model.
