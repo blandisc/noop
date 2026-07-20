@@ -510,7 +510,7 @@ final class IntelligenceEngine: ObservableObject {
         // FER-519: HRV is NOT seeded from Apple either. Apple's HRV is SDNN; the band's is RMSSD — different
         // constructs with no published conversion and a scale gap of UNCERTAIN direction (Shaffer &
         // Ginsberg 2017; Task Force 1996), so SDNN must never enter the RMSSD baseline. Apple's HRV path
-        // is the SEPARATE SDNN-vs-own-SDNN estimator (AppleRecoveryEstimator, FER-153), not this prior.
+        // was a separate SDNN-vs-own-SDNN path (retired with FER-153's estimator), not this prior.
         // (efficiency/skin-temp are NOT seeded either: Apple writes efficiency = nil and carries no skin
         // temp, so those terms keep their honest population-center cold-start.)
         // FER-484: the Apple prior only applies when Apple Health is in use; whoopOnly gates it off.

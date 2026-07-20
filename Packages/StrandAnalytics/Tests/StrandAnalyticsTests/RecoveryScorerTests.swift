@@ -319,10 +319,10 @@ final class RecoveryScorerTests: XCTestCase {
     // MARK: - RHR sentinel is inert without a baseline (FER-698 follow-up)
 
     /// When `rhrBaseline` is nil the RHR term is skipped entirely, so the value passed as
-    /// `rhr` must not touch the score. AppleRecoveryEstimator relies on exactly this: it
-    /// passes a sentinel (`?? .nan`) for nights without a resting-HR baseline. This pins the
-    /// invariant so a future refactor that starts reading `rhr` outside the baseline gate
-    /// (which would let 0/NaN bpm leak into the composite) fails here.
+    /// `rhr` must not touch the score. Callers may pass a sentinel (`?? .nan`) for nights
+    /// without a resting-HR baseline. This pins the invariant so a future refactor that starts
+    /// reading `rhr` outside the baseline gate (which would let 0/NaN bpm leak into the
+    /// composite) fails here.
     func testRHRSentinelInertWhenBaselineNil() {
         let hrvB = baseline(mean: 50, sigma: 6)
         let withZeroRHR = RecoveryScorer.recovery(

@@ -1296,7 +1296,7 @@ enum DataSourceImportKind {
         // would collapse illness to <2 signals and never fire; instead we score Apple's OWN RHR/SDNN against
         // an APPLE-ISOLATED baseline (`SourceLens.maskForBaseline(keep:.apple)`). A within-source z-score is
         // valid regardless of Apple's absolute RHR offset or SDNN≠RMSSD — it measures the deviation from the
-        // user's own Apple norm, exactly as `AppleRecoveryEstimator` already scores Apple SDNN (FER-153).
+        // user's own Apple norm (within-source SDNN z-score; same frame as retired FER-153 estimates).
         // Skin temp is likewise source-routed (FER-882: each instrument has its own absolute-°C baseline).
         // Respiration IS the same physical metric across sources (both measured during sleep, breaths/min)
         // and keeps the full merged history. `appleHealthDays == []` ⇒ identity (a strap-only user → no change).
