@@ -27,7 +27,7 @@ final class IntelligenceEngine: ObservableObject {
     /// from motion (the 4.0), false for the one with a native counter (5/MG). The engine no longer
     /// knows the hardware-family type at all: that type carries the GATT UUIDs and the CLIENT_HELLO
     /// bytes, and stays behind the BLE boundary (WhoopProtocol). The app hands this bit in via
-    /// `WhoopModel.estimatesSteps`, which still derives it from the protocol layer's own
+    /// the retired band setting (AppModel now passes estimatesSteps: false; kept for the dormant
     /// `estimatesSteps` rule — one source of truth, flowing one direction (BLE → intelligence).
     /// Internal (not private) only so the D3 regression test can pin the default; never written after
     /// `init`.
