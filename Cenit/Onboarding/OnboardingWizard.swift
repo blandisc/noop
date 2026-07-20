@@ -9,8 +9,8 @@ import UIKit
 // MARK: - OnboardingWizard  ·  «Instrumento diurno» (light)
 //
 // First-run setup, rebuilt light (FER-358, which absorbed the F2 re-skin). Apple
-// Health is the BASE everyone connects; the WHOOP strap is an OPTIONAL layer on top.
-// No dead ends: skipping Health and having no strap still lands you in the app.
+// Health is the BASE everyone connects (FER-1003: Apple-only, no band step).
+// No dead ends: skipping Health still lands you in the app.
 //
 // Flow (Apple-only after Ola 2 amputation):
 //   welcome        — Cénit + "tus datos, nada en la nube" (one honest line)

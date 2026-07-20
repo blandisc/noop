@@ -38,6 +38,12 @@ extension AppModel {
             await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
             await self.compactDatabaseAfterSpo2PurgeIfNeeded() // FER-511: one-time VACUUM after the spo2 purge (flag-gated)
             await self.compactDatabaseAfterRebuildIfNeeded()   // FER-513: one-time VACUUM after the v21 rebuild (flag-gated)
+            // FER-1022: under the Apple-only pin, `IntelligenceEngine.analyzeRecent` is a constant no-op
+            // (its `usesWhoop` guard never opens). The launch sequence above is the real work and has run;
+            // fresh Apple data refreshes the dashboard through `HealthKitBridge.sync`, not this loop. So
+            // stop here rather than wake every 15 min to do nothing. (If the band pin is ever lifted this
+            // guard falls through and the periodic recompute resumes unchanged.)
+            guard self.sources.mode.usesWhoop else { return }
             // Si hoy aún no tiene veredicto (mañana post-medianoche: la fila no existe o su recovery es
             // nil), no hagas esperar el primer análisis los 6 s del offload: los crudos YA almacenados
             // pueden producirlo ahora. El sleep de abajo queda solo como cortesía al primer offload BLE.
