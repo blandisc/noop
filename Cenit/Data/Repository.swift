@@ -36,6 +36,10 @@ final class Repository: ObservableObject {
     /// streams by IntelligenceEngine). Merged UNDER the imported `deviceId` rows at read time, so a
     /// real WHOOP import always wins and the strap-only user still gets a populated dashboard.
     private var computedDeviceId: String { deviceId + "-noop" }
+    /// The Apple-derived nocturnal-HRV partition (R2/R3, FER-1008): a SEPARATE metricSeries deviceId from
+    /// the strap's `computedDeviceId` and from raw `apple-health`, so the Apple RMSSD-per-night base is
+    /// never mixed with the band's or with SDNN. Fixed string (not derived from `deviceId`).
+    static let appleComputedDeviceId = "apple-health-noop"
     private var store: CenitStore?
     /// In-flight store creation, memoized so concurrent first-callers (the launch refresh and
     /// TodayView's parallel queries) share ONE open+migrate instead of racing `ensureStore`'s
@@ -87,6 +91,11 @@ final class Repository: ObservableObject {
         /// baseline. HRV/RHR/resp/stages never appear here — `FusionResolver` refuses them (SourceLens
         /// governs those, FER-629).
         var fusion: [String: [String: FusedMetricPoint]] = [:]
+        /// R3 (FER-1008): the nocturnal autonomic trend (below/inBase/above vs the user's OWN settled
+        /// baseline), computed ONLY from Apple's `apple-health-noop` RMSSD-per-night partition — never
+        /// from the band, never folded into `days`/any baseline. nil in whoopOnly or before enough dense
+        /// nights. Surfaced via `todayAutonomicTrend`; the screen (R4) reads it.
+        var autonomicTrend: AutonomicTrend.Read? = nil
         var loaded = false
         /// True once a FULL refresh pass (whole stored history) has published. The launch first-paint
         /// pass (~90 days) publishes `loaded == true` with this still false. RULE: anything that
@@ -172,6 +181,18 @@ final class Repository: ObservableObject {
         // stay band-measured (every recovery statistic over history is computed off those, never the estimate).
         if row.recovery == nil, let est = dashboard.recoveryEstimates[key] { return row.withRecovery(est.score) }
         return row
+    }
+
+    /// R3 (FER-1008): today's autonomic trend read (or nil while calibrating / in whoopOnly). Pure
+    /// pass-through of the value `performRefresh` computed off the `apple-health-noop` nightly RMSSD.
+    var todayAutonomicTrend: AutonomicTrend.Read? { dashboard.autonomicTrend }
+
+    /// Pure wrapper over the StrandAnalytics engine, kept `nonisolated static` so the refresh can call it
+    /// off the main actor and so tests pin the Repository→engine seam without a store. `nights` are the
+    /// dense `apple_rmssd_night` rows (oldest→newest); `asOf`/`recentCutoff` are local day keys.
+    nonisolated static func autonomicTrend(nights: [(day: String, rmssdMs: Double)],
+                                           asOf: String, recentCutoff: String) -> AutonomicTrend.Read {
+        AutonomicTrend.evaluate(nights: nights, asOf: asOf, recentCutoff: recentCutoff)
     }
     /// The trailing 7 CALENDAR days ending today (for the week strip), oldest→newest — not the last 7
     /// stored rows, which on a stale import were old data. ISO yyyy-MM-dd compares chronologically.
@@ -419,6 +440,17 @@ final class Repository: ObservableObject {
         next.loaded = true
         next.fullyLoaded = full
         next.seq = dashboard.seq + 1
+        // R3 (FER-1008): the nocturnal autonomic trend rides ONLY on Apple's `apple-health-noop`
+        // RMSSD-per-night partition — computed here (needs `now` + the store) and injected into the
+        // freshly-assembled dashboard. Band path stays bit-identical; in whoopOnly (no Apple) it's nil.
+        if dataSourceMode.usesAppleHealth {
+            let nightRows = (try? await store.metricSeries(deviceId: Self.appleComputedDeviceId,
+                                                           key: "apple_rmssd_night", from: fromDay, to: toDay)) ?? []
+            let asOf = Self.localDayKey(now)
+            let recentCutoff = Self.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now)
+            next.autonomicTrend = Self.autonomicTrend(nights: nightRows.map { (day: $0.day, rmssdMs: $0.value) },
+                                                      asOf: asOf, recentCutoff: recentCutoff)
+        }
         // One assignment → one objectWillChange for the whole refresh (was four).
         self.dashboard = next
         #if DEBUG
