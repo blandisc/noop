@@ -943,11 +943,29 @@ final class HealthKitBridge: ObservableObject {
             HKCategoryValueSleepAnalysis.asleepCore.rawValue,
             HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
         ]
+        // D2: agrupar los tramos asleep en SESIONES (corte por hueco ≥ 1 h) y atribuir CADA sesión a su
+        // wake-day (el día en que TERMINA), no por-muestra. Así una noche que cruza medianoche queda como
+        // UNA noche en un solo día civil, en vez de partirse en dos (que double-contaría a un madrugador o
+        // perdería la noche si ninguna mitad llega al gate de densidad). Es el wake-day que pide el paquete
+        // («dayKey = localDayKey(session.end); unir TODO asleep del wake-day»), no el sample.end.
+        let asleep = sleepSamples
+            .filter { asleepValues.contains($0.hkValue) }
+            .map { (start: $0.start.timeIntervalSince1970, end: $0.end.timeIntervalSince1970) }
+            .sorted { $0.start < $1.start }
         var intervalsByDay: [String: [(start: Double, end: Double)]] = [:]
-        for s in sleepSamples where asleepValues.contains(s.hkValue) {
-            let day = HealthKitBridge.dayString(s.end)
-            intervalsByDay[day, default: []].append((s.start.timeIntervalSince1970, s.end.timeIntervalSince1970))
+        var session: [(start: Double, end: Double)] = []
+        var sessionMaxEnd = 0.0
+        func flushSession() {
+            guard !session.isEmpty else { return }
+            let day = HealthKitBridge.dayString(Date(timeIntervalSince1970: sessionMaxEnd))
+            intervalsByDay[day, default: []].append(contentsOf: session)
+            session = []; sessionMaxEnd = 0.0
         }
+        for iv in asleep {
+            if !session.isEmpty, iv.start - sessionMaxEnd >= 3600 { flushSession() }   // hueco ≥ 1 h → nueva sesión
+            session.append(iv); sessionMaxEnd = max(sessionMaxEnd, iv.end)
+        }
+        flushSession()
         func merged(_ xs: [(start: Double, end: Double)]) -> [(start: Double, end: Double)] {
             let sorted = xs.sorted { $0.start < $1.start }
             var out: [(start: Double, end: Double)] = []
