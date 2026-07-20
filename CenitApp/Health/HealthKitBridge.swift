@@ -495,16 +495,19 @@ final class HealthKitBridge: ObservableObject {
                 changed = (signature != lastAppleWriteSignature)
             }
             lastAppleWriteSignature = signature
-            if changed {
-                await repo.refresh()   // surface the freshly-synced Apple Health days in the dashboard
+            // R2/D1: ingerir el RMSSD nocturno ANTES del refresh, para que la tendencia lo lea recién
+            // escrito. Si se ingiere después (o el refresh se salta por `!changed`), el primer sync computa
+            // la tendencia sobre la partición VACÍA → «0 de 21 noches» + un banner falso de «pocas muestras»
+            // hasta el siguiente refresh o relaunch. Aditivo, partición propia; se salta en whoopOnly.
+            var ingestedNocturnal = false
+            if repo.dataSourceMode != .whoopOnly {
+                ingestedNocturnal = await ingestNocturnalHRV()
+            }
+            if changed || ingestedNocturnal {
+                await repo.refresh()   // surface the freshly-synced Apple Health days + la tendencia al día
             }
             coverage = try? await store.appleHealthCoverage(deviceId: appleDeviceId)
             refreshPermissions()   // a denied scope may have changed between runs
-            // R2: aditivo, partición propia (apple-health-noop) — nunca toca byDay/DailyMetric/la banda.
-            // Se salta en whoopOnly, igual que el stage 13 salta el HR de workouts de Apple.
-            if repo.dataSourceMode != .whoopOnly {
-                await ingestNocturnalHRV()
-            }
             return Set(byDay.keys)   // FER-226: the local days written this run (for the re-bucket prune)
         } catch {
             lastError = "Apple Health sync failed: \(error.localizedDescription)"
@@ -882,7 +885,10 @@ final class HealthKitBridge: ObservableObject {
     /// (`apple-health-noop`) vía `metricSeries` — aditivo, nunca toca `byDay`/`DailyMetric`/el camino de
     /// la banda. No-op silencioso (0 filas, sin crash) si falta el permiso de la serie de latidos o si
     /// Apple simplemente no tiene datos beat-to-beat en la ventana.
-    private func ingestNocturnalHRV() async {
+    /// Devuelve `true` si escribió alguna fila (para que el caller refresque la tendencia). `false` si no
+    /// hubo permiso/datos/noches — el caller entonces no necesita re-refrescar por esto.
+    @discardableResult
+    private func ingestNocturnalHRV() async -> Bool {
         // A) Re-auth una sola vez: una conexión de Apple Health ya existente NO re-prompea solo porque
         // `readTypes` ganó un tipo nuevo (HealthKit solo re-prompea por scopes que nunca vio), así que
         // usuarios conectados antes de este cambio necesitan un request explícito, una sola vez.
@@ -897,11 +903,11 @@ final class HealthKitBridge: ObservableObject {
         // B) Piso incremental sobre la partición propia: today-45d, o (última noche escrita - 2 días),
         // lo que sea MÁS TARDE — el margen de 2 días re-cubre una noche que Apple terminó de escribir
         // tarde, sin reprocesar los 45 días completos en cada sync.
-        guard let dbStore = await repo.storeHandle() else { return }
+        guard let dbStore = await repo.storeHandle() else { return false }
         let deviceId = "apple-health-noop"
         let today = Date()
         let cal = Calendar.current
-        guard let floor45 = cal.date(byAdding: .day, value: -45, to: cal.startOfDay(for: today)) else { return }
+        guard let floor45 = cal.date(byAdding: .day, value: -45, to: cal.startOfDay(for: today)) else { return false }
         var windowStartDate = floor45
         let latestDay = try? await dbStore.metricDays(deviceId: deviceId, key: "apple_rr_clean_night")?.latest
         if let latestDay, let latestDate = HealthKitBridge.date(from: latestDay) {
@@ -920,7 +926,7 @@ final class HealthKitBridge: ObservableObject {
             }
             store.execute(q)
         }
-        guard !samples.isEmpty else { return }   // sin permiso o sin datos → 0 filas, sin crash
+        guard !samples.isEmpty else { return false }   // sin permiso o sin datos → 0 filas, sin crash
 
         // D) Latidos → [TimedNN]. Sin gate de rango aquí — NocturnalHRV/HRVAnalyzer lo aplican después.
         var beats: [TimedNN] = []
@@ -968,8 +974,9 @@ final class HealthKitBridge: ObservableObject {
             rows.append(MetricPoint(day: day, key: "apple_rr_clean_night", value: Double(result.nClean)))
             rows.append(MetricPoint(day: day, key: "apple_rr_pairs_night", value: Double(result.nPairs)))
         }
-        guard !rows.isEmpty else { return }
+        guard !rows.isEmpty else { return false }
         _ = try? await dbStore.upsertMetricSeries(rows, deviceId: deviceId)
+        return true
     }
 
     #if DEBUG
