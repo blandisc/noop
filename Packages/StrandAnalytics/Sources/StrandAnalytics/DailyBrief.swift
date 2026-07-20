@@ -55,7 +55,7 @@ public struct DailyBrief: Sendable, Equatable {
 
     /// La viñeta de HRV ESTIMADA para un día sin banda (FER-623): la HRV de hoy vino de Apple Salud (SDNN),
     /// así que el veredicto —que mide solo contra la base de banda (RMSSD)— no trae señal de HRV. En su lugar
-    /// el día se clasifica contra su PROPIA base SDNN (el mismo patrón `AppleRecoveryEstimator`) y se inyecta
+    /// el día se clasifica contra su PROPIA base SDNN y se inyecta
     /// aquí, marcada «estimado» por la UI. `nil` cuando hoy es de banda o la base SDNN aún no es usable
     /// (cold-start: no se inventa σ). El z (σ, crudo, sobre la base = `+`) y el flag los calcula la capa de
     /// app reusando `ReadinessEngine` sobre la historia enmascarada a Apple — cero matemática nueva.

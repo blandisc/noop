@@ -220,7 +220,7 @@ public enum RecoveryScorer {
         // RHR term: lower is better → (μ − x) / σ.
         // INVARIANT: callers pass a real bpm here ONLY when they also pass an rhrBaseline;
         // when the baseline is nil the RHR term is skipped entirely, so `rhr` is never read
-        // (some callers pass a sentinel then — e.g. AppleRecoveryEstimator's `?? .nan`). This
+        // (some callers pass a sentinel then — e.g. `?? .nan`). This
         // precondition forces that invariant: if a future refactor ever reads `rhr` under a
         // present baseline while feeding a non-physiological value, it fails loudly here
         // instead of seeding a silently inflated score.

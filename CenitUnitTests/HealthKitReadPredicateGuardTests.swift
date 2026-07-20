@@ -10,7 +10,7 @@ import HealthKit
 /// pulls those samples straight back in as if Apple had measured them.
 ///
 /// Two things went wrong when it did:
-///   1. The Apple baselines that `AppleRecoveryEstimator` and `DailyStressModel` z-score against
+///   1. The Apple baselines that `DailyStressModel` z-scores against
 ///      were fed the band's own numbers — and `writeBack` mirrors the band's RMSSD under Apple's
 ///      *SDNN* identifier, so the value coming back was mislabelled on top of being foreign. Same
 ///      contamination class as FER-519/623/629/631/632/633/635/639/640/670/882, reached through

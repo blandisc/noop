@@ -4,7 +4,7 @@ import XCTest
 // BaselineRecalibrationTests.swift — «Recalibrar recuperación» (FER-677).
 //
 // The one-level undo lives in ProfileStore (the engine-side epoch cut is pinned by
-// StrandAnalytics' BaselinesTests/AppleRecoveryEstimatorTests). Here we pin that recalibrate
+// StrandAnalytics' BaselinesTests). Here we pin that recalibrate
 // stashes exactly one previous epoch and undo restores it — no stack, no data loss.
 
 @MainActor

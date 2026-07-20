@@ -99,11 +99,6 @@ struct RecoveryDetailScreen: View {
                     // Level 1 · the answer: what's pushing it, then what changed since yesterday.
                     if let impact = model.impact, !impact.signals.isEmpty {
                         seccion(String(localized: "Today, vs your normal")) { levelAttributionCard(impact) }
-                    } else if model.isEstimated {
-                        // Apple-only day: the band-baseline points decomposition is nil (dishonest to
-                        // fake). The coverage attribution stands in — direction per signal vs your own
-                        // Apple norm, never a point magnitude.
-                        seccion(String(localized: "Today, vs your normal")) { estimatedAttributionCard }
                     }
                     if let change = model.change {
                         seccion(String(localized: "What changed since yesterday")) { changeSinceYesterdayContent(change) }
@@ -178,9 +173,6 @@ struct RecoveryDetailScreen: View {
             },
             verdict: {
                 HeroVeredictoBicolor(word: heroVerdictWord, clause: heroVerdictClause, theme: theme)
-            },
-            trailing: {
-                if model.isEstimated { estimatedNoteOnField }
             }
         )
     }
@@ -199,7 +191,6 @@ struct RecoveryDetailScreen: View {
                 Text(verbatim: "—")
                     .instrumentoHero(46)
                     .foregroundStyle(theme.inkTertiary)
-                if model.isEstimated, model.score != nil { estimatedNote }
                 Text(heroReading)
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.ink)
@@ -235,80 +226,9 @@ struct RecoveryDetailScreen: View {
         }
     }
 
-    /// The «estimado» marker restyled for the inverted field (paper inks). Same facts as
-    /// `estimatedNote`; only the surface changed. (FER-153)
-    private var estimatedNoteOnField: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
-                Image(systemName: "applewatch")
-                    .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .accessibilityHidden(true)
-                Text(Self.confidenceLabel(model.confidence))
-                    .font(StrandFont.caption)
-            }
-            .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-            if let coverage = Self.coverageLabel(model.presentPrimaryDrivers) {
-                Text(coverage)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.paper.opacity(OnFieldOpacity.secondary))
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// The hero ⓘ copy: the standard recovery explanation, plus — for an Apple estimate — the honest
-    /// caveat that it comes from Apple's SDNN against your own Apple norm, a lower grade than the band. (FER-153)
+    /// The hero ⓘ copy: recovery blends HRV, resting HR, sleep and breathing vs your baseline.
     private var heroExplanation: LocalizedStringKey {
-        // FER-545: el caveat del estimado vive ahora en `WhyVerdictSheet` (un solo hogar); aquí se referencia
-        // para no duplicar el texto SDNN-vs-RMSSD.
-        if model.isColdStartEstimate { return WhyVerdictSheet.estimatedCaveat(coldStart: true) }
-        if model.isEstimated { return WhyVerdictSheet.estimatedCaveat(coldStart: false) }
         return "Recovery blends several signals from your nervous system, your HRV above all, plus resting heart rate, sleep and breathing, and compares them with your own baseline from recent weeks. It's an estimate of how ready your body is today, not a diagnosis. (Buchheit 2014)"
-    }
-
-    /// The «estimado · confianza X» marker + coverage («N de 3 señales») + one honest line, shown only for
-    /// an Apple-Health estimate. Coverage says WHY the number is conservative (how many primary drivers
-    /// backed it, FER-700); confidence says how settled the baseline is — two different honest facts. Token-only.
-    private var estimatedNote: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
-                Image(systemName: "applewatch")
-                    .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .accessibilityHidden(true)
-                Text(Self.confidenceLabel(model.confidence))
-                    .font(StrandFont.caption)
-            }
-            .foregroundStyle(theme.inkSecondary)
-            if let coverage = Self.coverageLabel(model.presentPrimaryDrivers) {
-                Text(coverage)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-            }
-            Text("From your Apple Watch (HRV SDNN), a lower grade than your band.")
-                .font(StrandFont.footnote)
-                .foregroundStyle(theme.inkTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// «Estimated · {alta|media|baja} confidence» as one localizable phrase per grade (English source;
-    /// es/de in the String Catalog). Shared with the Hoy hero marker. (FER-153)
-    static func confidenceLabel(_ c: ScoreConfidence?) -> LocalizedStringKey {
-        switch c {
-        case .solid:                return "Estimated · high confidence"
-        case .building:             return "Estimated · medium confidence"
-        case .calibrating, .none:   return "Estimated · low confidence"
-        }
-    }
-
-    /// «Estimado — N de 3 señales»: how many of the 3 primary drivers (HRV, resting HR, sleep) backed an
-    /// Apple estimate (FER-700), so the user sees WHY the number is conservative. English source; es/de in
-    /// the String Catalog. Shared with the Hoy hero marker. nil when the day isn't an estimate (a band day
-    /// with full coverage shows no count).
-    static func coverageLabel(_ present: Int?) -> LocalizedStringKey? {
-        guard let present else { return nil }
-        return "Estimated: \(present) of \(AppleRecoveryEstimator.DayEstimate.totalPrimaryDrivers) signals"
     }
 
     /// The score's band color: green ≥67 → verdict, yellow 34–67 → warning, red <34 → critical. The hero
@@ -466,113 +386,6 @@ struct RecoveryDetailScreen: View {
         if s.z >= 1 { return "Above your base" }
         if s.z <= -1 { return "Below your base" }
         return "In your base"
-    }
-
-    // MARK: - 2-estimado. Hoy, vs tu normal (por cobertura) — el stand-in cuando el día es un estimado de Apple
-    //
-    // On an Apple-only day the band-baseline points decomposition (`RecoveryImpact`) is nil ON PURPOSE:
-    // decomposing an SDNN estimate into precise per-signal points would overstate its precision. But the
-    // estimator DOES know, honestly, where each present signal sat vs the user's OWN Apple norm — that's how
-    // it built the score. So instead of hiding the section, we show COVERAGE: one row per primary driver —
-    // present ones carry a direction (Apple-vs-own-Apple-norm) and its valence color; absent ones show,
-    // attenuated, WHY they didn't back the number (the same story as «N de 3 señales»). No point magnitude.
-
-    /// The three primary drivers, in fixed display order (HRV first — it's the required, dominant signal).
-    private static let estimatedDriverOrder = ["hrv", "rhr", "sleep"]
-
-    /// The estimated coverage-attribution card, shown in place of `levelAttributionCard` on an Apple-only
-    /// day. Always present (that's the point) — every primary driver gets a row, present or not. Same
-    /// facts as before; the franja + surface card replaced the `DetailBlock` scaffold. (FER-857)
-    private var estimatedAttributionCard: some View {
-        let byKey = Dictionary(model.estimatedDirections.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
-        return VStack(alignment: .leading, spacing: 16) {
-            Text("Where the signals Apple recorded sat vs your usual. Today's number is an estimate, so there's no point-by-point breakdown.")
-                .font(StrandFont.body)
-                .foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            VStack(alignment: .leading, spacing: 14) {
-                ForEach(Self.estimatedDriverOrder, id: \.self) { key in
-                    if let dir = byKey[key] {
-                        estimatedSignalRow(dir)
-                    } else {
-                        estimatedAbsentRow(key)
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.card, theme: theme)
-    }
-
-    /// A present signal: overline label · position-vs-usual word (valence hue) · a direction arrow. Position
-    /// is the RAW direction (arrow + word); the color reads `helps`, so a resting HR «Above your usual» reads
-    /// amber even though it points up — matching the band block's word/valence split. No σ, no points.
-    private func estimatedSignalRow(_ dir: AppleRecoveryEstimator.SignalDirection) -> some View {
-        // Sleep has no personal Apple norm (its position is vs a fixed population center), so it shows as
-        // PRESENCE-ONLY — «Recorded», no above/below — and the «vs your usual» claim is never overstated for
-        // it. HRV / resting HR are measured against your own Apple baseline, so they carry a direction. (CSO)
-        let color: Color = dir.position == .inRange ? theme.inkSecondary : (dir.helps ? theme.verdict : theme.warning)
-        return HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(Self.driverLabel(dir.key)).groteskOverline().foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 8)
-            if dir.hasPersonalNorm {
-                Text(Self.estimatedPositionWord(dir.position))
-                    .font(StrandFont.captionNumber)
-                    .foregroundStyle(color)
-                Image(systemName: Self.estimatedPositionSymbol(dir.position))
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(color)
-                    .accessibilityHidden(true)
-            } else {
-                Text("Recorded")
-                    .font(StrandFont.captionNumber)
-                    .foregroundStyle(theme.inkSecondary)
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// An absent primary driver: the label + the honest reason it didn't back the estimate, attenuated. This
-    /// is «N de 3 señales» told row-by-row, so the user sees WHY the number is conservative.
-    private func estimatedAbsentRow(_ key: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(Self.driverLabel(key)).groteskOverline().foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 8)
-            Text(Self.estimatedAbsentReason(key))
-                .font(StrandFont.captionNumber)
-                .foregroundStyle(theme.inkTertiary)
-        }
-        .opacity(0.55)  // token-exempt: fila atenuada (señal estimada ausente)
-        .accessibilityElement(children: .combine)
-    }
-
-    /// The position-vs-usual word for an estimated signal (raw physical direction; the row color carries
-    /// whether that helps). English source; es/de in the String Catalog.
-    private static func estimatedPositionWord(_ p: AppleRecoveryEstimator.SignalDirection.Position) -> LocalizedStringKey {
-        switch p {
-        case .above:   return "Above your usual"
-        case .below:   return "Below your usual"
-        case .inRange: return "Around your usual"
-        }
-    }
-
-    private static func estimatedPositionSymbol(_ p: AppleRecoveryEstimator.SignalDirection.Position) -> String {
-        switch p {
-        case .above:   return "arrow.up.right"
-        case .below:   return "arrow.down.right"
-        case .inRange: return "arrow.right"
-        }
-    }
-
-    /// Why a primary driver didn't back the estimate. HRV is required (never absent), so it falls to a
-    /// generic line. English source; es/de in the String Catalog.
-    private static func estimatedAbsentReason(_ key: String) -> LocalizedStringKey {
-        switch key {
-        case "rhr":   return "No resting HR last night"
-        case "sleep": return "No sleep data last night"
-        default:      return "Not recorded last night"
-        }
     }
 
     // MARK: - 2b. Qué cambió vs ayer — el movimiento día-a-día (FER-642, motor RecoveryChange)
@@ -993,54 +806,25 @@ struct RecoveryDetailModel {
     /// Tomorrow's one-day recovery projection (estimate + range + direction), or nil while there isn't
     /// enough base (< ~2 weeks of valid days) — then the block shows its "still calibrating" state. (FER-277)
     let forecast: RecoveryForecast.Result?
-    /// FER-153: true when today's surfaced recovery is an Apple-Health ESTIMATE (a band-less night scored
-    /// from SDNN vs the user's own Apple norm) — the hero labels it «estimado» + grade so it never reads
-    /// identical to a band recovery.
-    let isEstimated: Bool
-    /// The estimate's confidence grade (nil unless `isEstimated`).
-    let confidence: ScoreConfidence?
-    /// FER-700: how many of the 3 primary drivers (HRV, resting HR, sleep) backed the estimate — the
-    /// coverage the FER-698 shrinkage keys on. nil unless `isEstimated`. Surfaced as «N de 3 señales»
-    /// so the user sees WHY the number is conservative, not just a shrunk score.
-    let presentPrimaryDrivers: Int?
-    /// The present primary drivers' directions vs the user's own Apple norm (HRV first) for an estimate —
-    /// powers the coverage-attribution block that stands in for `impact` on an Apple-only day. Empty unless
-    /// `isEstimated`. Deliberately position-only (no point magnitude): decomposing an SDNN estimate into the
-    /// band path's precise per-signal points would overstate its precision (why `RecoveryImpact` returns nil).
-    let estimatedDirections: [AppleRecoveryEstimator.SignalDirection]
 
     /// True when there's a score or any stored recovery history to draw (the rich path); false → empty.
     var hasData: Bool { score != nil || !series.isEmpty }
 
-    /// FER-529: an estimate shown WHILE THE BAND IS WORN but its RMSSD baseline isn't seeded yet
-    /// (cold-start), vs a band-less Apple night (`isAppleHealth`). Drives reason-aware copy — «while your
-    /// band is still calibrating» instead of «on a night your band didn't record».
-    var isColdStartEstimate: Bool { isEstimated && !isAppleHealth }
-
     // MARK: - Build
 
     /// Runs `build` off the MainActor (FER-954, same seam as `SleepDetailModel.buildDetached` /
-    /// FER-953): snapshots the inputs from `repo` on the MainActor (value-type copies + the small
-    /// `repo.recovery*(key)` reads, incl. the FER-153 estimate flags — Hoy, Cuerpo and Entrenar all
-    /// open the recovery detail through this), then hops the pure derivation to a background
-    /// executor; only the finished model returns to main. Supersedes the synchronous `build(repo:)`.
+    /// FER-953): snapshots the inputs from `repo` on the MainActor (value-type copies), then hops the pure
+    /// derivation to a background executor; only the finished model returns to main. Supersedes the
+    /// synchronous `build(repo:)`. Hoy, Cuerpo and Entrenar all open the recovery detail through this.
     @MainActor
     static func buildDetached(repo: Repository) async -> RecoveryDetailModel {
         let key = Repository.localDayKey(Date())
         let days = repo.days, today = repo.today, appleHealthDays = repo.appleHealthDays
         let loaded = repo.loaded, importedSleep = repo.importedSleep
-        let isEstimated = repo.isRecoveryEstimated(key)
-        let confidence = repo.recoveryConfidence(key)
-        let presentPrimaryDrivers = repo.recoveryPrimaryDrivers(key)
-        let estimatedDirections = repo.recoveryEstimateDirections(key)
         return await Task.detached(priority: .userInitiated) {
             build(days: days, today: today, todayKey: key,
                   appleHealthDays: appleHealthDays, loaded: loaded,
-                  importedSleep: importedSleep,
-                  isEstimated: isEstimated,
-                  confidence: confidence,
-                  presentPrimaryDrivers: presentPrimaryDrivers,
-                  estimatedDirections: estimatedDirections)
+                  importedSleep: importedSleep)
         }.value
     }
 
@@ -1057,11 +841,7 @@ struct RecoveryDetailModel {
                       todayKey: String,
                       appleHealthDays: Set<String>,
                       loaded: Bool,
-                      importedSleep: [String: ImportedSleepFigures] = [:],
-                      isEstimated: Bool = false,
-                      confidence: ScoreConfidence? = nil,
-                      presentPrimaryDrivers: Int? = nil,
-                      estimatedDirections: [AppleRecoveryEstimator.SignalDirection] = []) -> RecoveryDetailModel {
+                      importedSleep: [String: ImportedSleepFigures] = [:]) -> RecoveryDetailModel {
         let hasRecovery = today?.recovery != nil
         let score = today?.recovery.map { Int($0.rounded()) }
         let calibration = RecoveryScorer.calibrationNights(
@@ -1076,8 +856,8 @@ struct RecoveryDetailModel {
         // baseline contaminated with Apple SDNN/offsets, so the σ the user saw (e.g. HRV −0.72σ, RHR
         // «normal») diverged from the score's own (−3.56σ, +3.05σ). `maskForBaseline` (FER-631) is the
         // column-level equivalent of the scorer's row drop — pinned to the same z by test. On an Apple-only
-        // day today's own row is masked too (the band didn't measure it; the estimate carries its own
-        // caveat), so no band σ is invented for a reading the band never took.
+        // day today's own row is masked too (the band didn't measure it), so no band σ is invented for a
+        // reading the band never took.
         let bandDays = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleHealthDays)
         let readiness = ReadinessEngine.evaluate(days: bandDays, today: todayKey)
         let load: LoadState? = readiness.acwr.map { acwr in
@@ -1135,11 +915,7 @@ struct RecoveryDetailModel {
             load: load,
             loaded: loaded,
             isAppleHealth: appleHealthDays.contains(todayKey),
-            forecast: forecast,
-            isEstimated: isEstimated,
-            confidence: confidence,
-            presentPrimaryDrivers: presentPrimaryDrivers,
-            estimatedDirections: estimatedDirections)
+            forecast: forecast)
     }
 
     /// The trailing 90 calendar days as `RecoveryDay`, one per day (score nil where there's no reading), so
@@ -1180,9 +956,7 @@ private func sampleRecoverySeries(days: Int = 120) -> [(day: String, value: Doub
 }
 
 private func sampleModel(score: Int?, calibration: Int?,
-                         isEstimated: Bool = false, confidence: ScoreConfidence? = nil,
-                         presentPrimaryDrivers: Int? = nil,
-                         estimatedDirections: [AppleRecoveryEstimator.SignalDirection] = []) -> RecoveryDetailModel {
+                         isAppleHealth: Bool = false) -> RecoveryDetailModel {
     let series: [(day: String, value: Double)] = score == nil && calibration != nil ? [] : sampleRecoverySeries()
     let cal: Calendar = Calendar(identifier: .gregorian)
     let today: Date = cal.startOfDay(for: Date())
@@ -1194,9 +968,7 @@ private func sampleModel(score: Int?, calibration: Int?,
         let scoreVal: Double? = (off % 16 == 0) ? nil : Swift.max(8.0, Swift.min(98.0, v))
         return RecoveryDay(date: date, score: scoreVal)
     }
-    // An Apple estimate has no band-baseline decomposition (mirrors reality: `RecoveryImpact` returns nil),
-    // so the estimated coverage block stands in for the points block.
-    let impact: RecoveryImpact.Result? = (isEstimated || (score == nil && calibration != nil)) ? nil
+    let impact: RecoveryImpact.Result? = (score == nil && calibration != nil) ? nil
         : RecoveryImpact.Result(signals: [
             .init(key: "hrv",      z: 1.4,  orientedZ: 1.4,  weight: 0.60 / 1.10),
             .init(key: "rhr",      z: -0.6, orientedZ: 0.6,  weight: 0.20 / 1.10),
@@ -1220,12 +992,8 @@ private func sampleModel(score: Int?, calibration: Int?,
         heat: calibration != nil ? [] : heat,
         load: calibration != nil ? nil : .init(acwr: 1.05, monotony: 1.4, bandLabel: "In balance", bandFlag: .good),
         loaded: true,
-        isAppleHealth: isEstimated,
-        forecast: RecoveryForecast.compute(recovery: recoveryVals),
-        isEstimated: isEstimated,
-        confidence: confidence,
-        presentPrimaryDrivers: presentPrimaryDrivers,
-        estimatedDirections: estimatedDirections)
+        isAppleHealth: isAppleHealth,
+        forecast: RecoveryForecast.compute(recovery: recoveryVals))
 }
 
 #Preview("Recovery detail: con datos") {
@@ -1244,20 +1012,7 @@ private func sampleModel(score: Int?, calibration: Int?,
     Color.clear.sheet(isPresented: .constant(true)) {
         RecoveryDetailScreen(model: RecoveryDetailModel(
             score: nil, calibration: nil, nightsNeeded: 4, impact: nil, change: nil,
-            series: [], heat: [], load: nil, loaded: true, isAppleHealth: false, forecast: nil,
-            isEstimated: false, confidence: nil, presentPrimaryDrivers: nil, estimatedDirections: []))
-    }
-}
-
-#Preview("Recovery detail: estimado (Apple)") {
-    Color.clear.sheet(isPresented: .constant(true)) {
-        RecoveryDetailScreen(model: sampleModel(score: 64, calibration: nil,
-                                                isEstimated: true, confidence: .building,
-                                                presentPrimaryDrivers: 2,
-                                                estimatedDirections: [
-                                                    .init(key: "hrv", position: .above, helps: true),
-                                                    .init(key: "rhr", position: .above, helps: false),
-                                                ]))
+            series: [], heat: [], load: nil, loaded: true, isAppleHealth: false, forecast: nil))
     }
 }
 #endif

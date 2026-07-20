@@ -100,7 +100,6 @@ private struct AjustesLanding: View {
     @State private var showStepTicks = false
     @State private var showCyclePhase = false
     @AppStorage(CyclePhaseExperiment.enabledKey) private var cyclePhaseOn = false
-    @State private var showRitmo = false
     @State private var showReloj = false
     /// Opt-in experimental body-clock reading (off by default). FER-712.
     @AppStorage("noop.relojCorporalEnabled") private var relojCorporalEnabled = false
@@ -144,9 +143,6 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showStepTicks) {
             StepTicksSheet().instrumentoTheme(theme).environmentObject(profile)
-        }
-        .sheet(isPresented: $showRitmo) {
-            RitmoView().instrumentoTheme(theme).environmentObject(repo)
         }
         .sheet(isPresented: $showReloj) {
             RelojCorporalSheet().instrumentoTheme(theme).environmentObject(repo)
@@ -263,8 +259,6 @@ private struct AjustesLanding: View {
                 recalibrateRow
             }
             section("Experimental") {
-                navRow("Ritmo", subtitle: Text("Your rhythm, beat to beat")) { showRitmo = true }
-                divider
                 navRow("Cycle phase",
                        subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
                 divider

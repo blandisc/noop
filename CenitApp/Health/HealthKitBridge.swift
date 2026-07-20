@@ -760,7 +760,7 @@ final class HealthKitBridge: ObservableObject {
     /// hypnogram (:589-622), and `saveStrengthWorkout` saves an `HKWorkout` per strength session
     /// (:516-544). Reading with a date-only predicate pulled those straight back in as if Apple
     /// had measured them: a self-feeding loop that polluted the very Apple baselines
-    /// `AppleRecoveryEstimator` and `DailyStressModel` z-score against, and duplicated every
+    /// `DailyStressModel` z-scores against, and duplicated every
     /// strength session as an "apple-health" workout row (`mapWorkouts` labels unconditionally).
     ///
     /// It is the same contamination class as FER-519/623/629/631/632/633/635/639/640/670/882 —
@@ -826,8 +826,8 @@ final class HealthKitBridge: ObservableObject {
                 var rem: [String: Double] = [:], core: [String: Double] = [:]
                 // FER-1006: `inBed` used to fall into `default: break` and be thrown away. It is the
                 // ONLY denominator sleep efficiency has — asleep over time in bed — so discarding it
-                // is what capped `AppleRecoveryEstimator` at 2 of 3 drivers (it builds its rows with
-                // `efficiency: nil`, and its sleep term is gated on `sleepPerf != nil`).
+                // is what left recovery sleep-perf nil (rows with `efficiency: nil`, and the sleep
+                // term is gated on `sleepPerf != nil`).
                 //
                 // Kept SEPARATE from the stage totals, never added to `asleep`: in bed is an
                 // envelope, not a stage. Apple usually writes one contiguous inBed block per night,

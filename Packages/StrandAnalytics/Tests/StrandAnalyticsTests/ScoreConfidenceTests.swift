@@ -24,16 +24,6 @@ final class ScoreConfidenceTests: XCTestCase {
         XCTAssertEqual(ScoreConfidence.charge(hrvBaselineNights: 0), .calibrating)
     }
 
-    /// `charge` must reproduce AppleRecoveryEstimator's former inline ladder exactly
-    /// (same 14/7 knobs) — the adoption is behaviour-preserving.
-    func testChargeMatchesEstimatorAdoption() {
-        for n in 0...30 {
-            XCTAssertEqual(AppleRecoveryEstimator.confidence(hrvBaselineNights: n),
-                           ScoreConfidence.charge(hrvBaselineNights: n,
-                                                  solidNights: 14, buildingNights: 7))
-        }
-    }
-
     // MARK: - effort (Strain)
 
     /// A day of samples every `stepS` seconds from `startS` for `count` samples.

@@ -20,8 +20,8 @@ public enum ScoreConfidence: String, Equatable, Sendable, Codable {
 
     /// One tier lower, floored at `.calibrating` (solid → building → calibrating).
     /// Used to down-grade a result when one input is thin even though the baseline
-    /// is otherwise trusted (e.g. AppleRecoveryEstimator: trusted baseline but poor
-    /// overnight coverage). Keeps the ladder ordered without a numeric raw value.
+    /// is otherwise trusted (e.g. trusted baseline but poor overnight coverage).
+    /// Keeps the ladder ordered without a numeric raw value.
     public var lowered: ScoreConfidence {
         switch self {
         case .solid:       return .building
@@ -42,7 +42,7 @@ public enum ScoreConfidence: String, Equatable, Sendable, Codable {
     /// estimate. Coverage is already a hard gate upstream (short nights are omitted,
     /// not downgraded), so this only tracks how settled the baseline is.
     /// `solidNights`/`buildingNights` are the caller's baseline-trust knobs (14 / 7
-    /// in `AppleRecoveryEstimator`, matching `Baselines.minNightsTrust`).
+    /// by default, matching `Baselines.minNightsTrust`).
     public static func charge(hrvBaselineNights nValid: Int,
                               solidNights: Int = 14,
                               buildingNights: Int = 7) -> ScoreConfidence {

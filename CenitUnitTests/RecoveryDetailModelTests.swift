@@ -86,7 +86,7 @@ final class RecoveryDetailModelTests: XCTestCase {
     }
 
     /// On an Apple-only day today's own row is dropped whole-row — the band never took that reading — so no
-    /// band decomposition is invented (the estimate carries its own caveat elsewhere). `impact` is nil.
+    /// band decomposition is invented. `impact` is nil.
     func testAppleOnlyDayHasNoImpact() {
         var (days, appleDays) = interleavedHistory()
         let todayKey = "2026-06-29"
@@ -95,7 +95,7 @@ final class RecoveryDetailModelTests: XCTestCase {
         days.append(today)
 
         let model = RecoveryDetailModel.build(days: days, today: today, todayKey: todayKey,
-                                              appleHealthDays: appleDays, loaded: true, isEstimated: true)
+                                              appleHealthDays: appleDays, loaded: true)
         XCTAssertNil(model.impact, "no band impact is invented on an Apple-only day")
     }
 

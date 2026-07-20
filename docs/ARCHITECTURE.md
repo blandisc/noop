@@ -15,78 +15,64 @@ own: WHOOP CSV exports and Apple Health exports.
 
 ## 1. The big picture
 
-The system is a one-directional pipeline. Bytes arrive from the strap (or from an import file), get
-decoded into typed rows, land durably in SQLite, are read back through a thin repository, are turned
-into daily metrics by pure analytics functions, and finally render in SwiftUI. Nothing is ever sent
-off-device.
+The system is a one-directional pipeline. Health data arrives from Apple Health (live sync) or from
+a user-owned import file, lands durably in SQLite, is read back through a thin repository, is turned
+into daily metrics by pure analytics functions, and finally renders in SwiftUI. Nothing is ever sent
+off-device. The app is **Apple-only** (FER-1003): it no longer pairs with or reads a WHOOP strap.
 
 ```
                           ┌─────────────────────────────────────────────────────────┐
-   WHOOP strap (4.0/5.0)  │                     Cénit (on-device)                     │
-   ────────────────────   │                                                          │
-        BLE GATT           │   CoreBluetooth          WhoopProtocol (pure decode)    │
-   ┌──────────────┐  notify│  ┌────────────┐  bytes  ┌──────────────────────────┐    │
-   │ custom svc   ├────────┼─▶│ BLEManager │────────▶│ Reassembler              │    │
-   │ 6108…/fd4b…  │  write │  │ (CoreBT    │  frames │  → parseFrame            │    │
-   │ HR 0x2A37    │◀───────┼──│  delegate) │         │  → extract[Historical]…  │    │
-   │ batt 0x2A19  │  cmds  │  └─────┬──────┘         └────────────┬─────────────┘    │
-   └──────────────┘        │        │                             │ Streams          │
-                           │        │ complete frame              ▼                  │
-                           │        ▼                  ┌──────────────────────┐      │
-                           │  ┌───────────┐  live      │  CenitStore (actor)  │      │
-                           │  │FrameRouter│──events────▶│  GRDB / SQLite       │      │
-                           │  │ LiveState │  HR/RR/UI  │  decoded streams +   │      │
-                           │  └───────────┘            │  metric caches +     │      │
-                           │        │                  │  raw outbox          │      │
-                           │   live │ ┌─────────┐ hist └─────────┬────────────┘      │
-                           │        └▶│Collector│ ┌──────────┐   │ reads             │
-                           │          └─────────┘ │Backfiller│   ▼                   │
-                           │   imports            └──────────┘ ┌────────────┐        │
-   files ──────────────────┼─▶ StrandImport ──────────────────▶│ Repository │        │
-   export.zip / *.csv      │   (CSV + Apple Health)            └─────┬──────┘        │
-                           │                                         ▼               │
-                           │                      StrandAnalytics ──▶ SwiftUI screens│
-                           │                      (HRV/recovery/    (StrandDesign)   │
-                           │                       strain/sleep)                     │
-                           └─────────────────────────────────────────────────────────┘
+                          │                     Cénit (on-device)                     │
+   Apple Health           │                                                          │
+   ────────────           │   HealthKitBridge                                        │
+   HK samples ────────────┼─▶ (CenitApp/Health) ──────────┐                          │
+   heartbeat series       │   foreground delta (FER-872)   │                          │
+                          │   nocturnal RMSSD (FER-1008)   │                          │
+                          │                                ▼                          │
+   files                  │                     ┌──────────────────────┐              │
+   export.zip / *.csv ────┼─▶ StrandImport ────▶│  CenitStore (actor)  │              │
+   export.xml             │   (CSV + Apple      │  GRDB / SQLite       │              │
+                          │    Health parse)    │  decoded streams +   │              │
+                          │                     │  metric caches +     │              │
+                          │                     │  raw outbox          │              │
+                          │                     └─────────┬────────────┘              │
+                          │                               │ reads                     │
+                          │                               ▼                           │
+                          │                      ┌────────────────┐                   │
+                          │                      │   Repository   │                   │
+                          │                      │ DataSourcePolicy│                   │
+                          │                      └───────┬────────┘                   │
+                          │                              ▼                            │
+                          │               StrandAnalytics ──▶ SwiftUI screens         │
+                          │               (HRV/recovery/      (StrandDesign)          │
+                          │                strain/sleep)                              │
+                          └─────────────────────────────────────────────────────────┘
 ```
 
-The same `CenitStore` SQLite file is the single convergence point for three independent producers:
-the **live** BLE path, the **historical** BLE offload path, and the **import** path. All readers go
-through `Repository`.
+The same `CenitStore` SQLite file is the single convergence point for HealthKit sync and file
+imports. All readers go through `Repository`. Old band partitions (`"strap"` / `"strap-noop"`)
+remain **dormant** in SQLite — excluded at read time by `DataSourcePolicy` under the pinned
+`.appleHealthOnly` mode (`SourceModeStore`), **never deleted** (so a backup/restore keeps history
+and dormant band rows cannot win over Apple in the merge).
 
 ---
 
 ## 2. Repository layout
 
 ```
-Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compiled by the iOS target
+Cenit/                         App-layer (Data/Screens/System/…) compiled by the iOS target
 ├── App/                        App state (the iOS app scene lives in CenitApp/)
-│   ├── AppModel.swift          @MainActor root state — owns BLE, Repository, profiles
+│   ├── AppModel.swift          @MainActor root state — owns Repository, profiles, strength session, Watch mirror
 │   └── ContentView.swift
-├── BLE/                        CoreBluetooth + the live/decode seam
-│   ├── BLEManager.swift        CBCentral/CBPeripheral delegate, scan→bond→stream
-│   ├── FrameRouter.swift       pure decode→LiveState router (no CoreBluetooth)
-│   ├── LiveState.swift         @MainActor observable connection/biometric snapshot
-│   ├── Commands.swift          WhoopCommand enum (command bytes + frame builders)
-│   ├── StandardHeartRate.swift 0x2A37 BLE-standard HR/RR parser (pure)
-│   ├── BackfillPolicy.swift    rate-limiter for historical offload triggers
-│   └── StuckStrapDetector.swift safety-net liveness watchdog
-├── Collect/                    Persistence orchestration (BLE → store)
-│   ├── Collector.swift         buffers live frames → decoded-first persistence
-│   ├── Backfiller.swift        historical-offload state machine (safe-trim)
-│   ├── ClockCorrelation.swift  device-epoch ↔ wall-clock correlation (pure)
-│   ├── ClockPolicy.swift       when to (re)issue SET_CLOCK by drift (needs GET_CLOCK — moot on the 4.0)
-│   ├── StorePaths.swift        on-disk SQLite location (App Support/OpenWhoop)
-│   ├── PrunePolicy.swift       raw-outbox retention (24h / 50MB)
-│   └── RawCaptureWindow.swift  bounded on-demand raw-capture window
-├── Data/                       Read model + import glue
+├── Data/                       Read model + import glue + on-disk paths
 │   ├── Repository.swift        @MainActor read model over CenitStore
+│   ├── StorePaths.swift        on-disk SQLite location (App Support/OpenWhoop)
+│   ├── SourceModeStore.swift   data-source mode (pinned `.appleHealthOnly`, FER-1003)
 │   ├── WhoopImporter.swift     CSV result → store rows
 │   ├── AppleHealthImport.swift Apple Health result → store rows
 │   ├── Profile.swift           user profile (age/sex/body/HRmax)
 │   └── BehaviorStore.swift     toggles for automations/coaching
-├── Screens/                    SwiftUI feature screens (Today, Live, Sleep, Trends…)
+├── Screens/                    SwiftUI feature screens (Today, Sleep, Trends, Train…)
 ├── AI/                         opt-in BYO-key coach (`AICoach.swift`; off by default)
 ├── Media/                      opt-in exercise-media cache/download (off by default)
 ├── LiveActivity/               Live Activity / rest-timer presentation glue
@@ -95,8 +81,8 @@ Cenit/                         App-layer (BLE/Collect/Data/Screens/System) compi
 
 Packages/                       Cross-platform Swift packages (base `.iOS(.v16)` / `.macOS(.v13)`;
 │                               StrandDesign is `.iOS(.v17)` / `.macOS(.v14)` + `.watchOS(.v10)`)
-├── BiometricStreams/           neutral vocabulary of decoded rows (`Streams`, `ParsedValue`) — no deps
-├── WhoopProtocol/              BLE frame parsing, CRC, command/event/packet decode
+├── BiometricStreams/           neutral vocabulary of decoded rows (`Streams`, `ParsedValue`) — no deps; still linked into the app (CenitStore/StrandAnalytics depend on it)
+├── WhoopProtocol/              BLE frame parsing, CRC, command/event/packet decode — monorepo only (research/CLI/tests); NOT linked into the app binary (FER-1003)
 ├── CenitStore/                 GRDB/SQLite persistence (actor)
 ├── StrandTraining/             strength domain types + bundled exercise catalog (free-exercise-db, FER-923; pure, no DB)
 ├── StrandAnalytics/            HRV/recovery/strain/sleep/correlation math
@@ -113,22 +99,25 @@ CenitWatch/                     watchOS 10 companion app (single target, FER-740
 ```
 
 The app target is **`Cenit`** (Swift module `Cenit`, product `Cenit.app`): its shell (scene, HealthKit,
-widgets, intents) lives in **`CenitApp/`**, and it compiles the app-layer under **`Cenit/`** (CoreBluetooth,
-the live/decode seam, screens, data). The user-visible name stays **Cénit** (`CFBundleDisplayName`); the
-visible rebrand to "Cénit" is tracked separately. The macOS app and its `Strand`/`StrandTests` targets were
-retired (FER-143) and the dead `#if os(macOS)`/`AppKit` branches removed (FER-144); the app-layer unit tests
-run as **`CenitUnitTests`** in the simulator. The packages keep their `Strand*`/`Whoop*` names. The
-core/data/analytics packages declare `.iOS(.v16)`/`.macOS(.v13)`, guarding UI-framework calls behind
-`#if canImport(UIKit)` / `#if canImport(AppKit)`. **`StrandTraining`** keeps that base (`.iOS(.v16)`/
-`.macOS(.v13)`) and also declares **`.watchOS(.v10)`** (FER-740). **`StrandDesign` is higher:**
-`.iOS(.v17)` / `.macOS(.v14)` / `.watchOS(.v10)` so the watch app can paint with the design tokens —
-both are pure (Foundation-only / SwiftUI behind `#if canImport(UIKit|AppKit)`, with `#if os(iOS)`
-guards on the two haptic/hover-scrub spots). `CenitStore`/`WhoopProtocol`/`StrandAnalytics`/
-`StrandImport` are **not** watchOS-bound: no DB, BLE, or analytics runs on the wrist.
+widgets, intents) lives in **`CenitApp/`**, and it compiles the app-layer under **`Cenit/`** (screens,
+data, media). **`WhoopProtocol` is not a target dependency** of the shipping binary (`project.yml`:
+linked packages are `BiometricStreams`, `CenitStore`, `StrandAnalytics`, `StrandImport`, `StrandDesign`,
+`StrandTraining`, `Inject` — no `WhoopProtocol`). The user-visible name stays **Cénit**
+(`CFBundleDisplayName`); the visible rebrand to "Cénit" is tracked separately. The macOS app and its
+`Strand`/`StrandTests` targets were retired (FER-143) and the dead `#if os(macOS)`/`AppKit` branches
+removed (FER-144); the app-layer unit tests run as **`CenitUnitTests`** in the simulator. The packages
+keep their `Strand*`/`Whoop*` names. The core/data/analytics packages declare `.iOS(.v16)`/`.macOS(.v13)`,
+guarding UI-framework calls behind `#if canImport(UIKit)` / `#if canImport(AppKit)`. **`StrandTraining`**
+keeps that base (`.iOS(.v16)`/`.macOS(.v13)`) and also declares **`.watchOS(.v10)`** (FER-740).
+**`StrandDesign` is higher:** `.iOS(.v17)` / `.macOS(.v14)` / `.watchOS(.v10)` so the watch app can paint
+with the design tokens — both are pure (Foundation-only / SwiftUI behind `#if canImport(UIKit|AppKit)`,
+with `#if os(iOS)` guards on the two haptic/hover-scrub spots). `CenitStore`/`WhoopProtocol`/
+`StrandAnalytics`/`StrandImport` are **not** watchOS-bound: no DB or analytics runs on the wrist
+(`WhoopProtocol` remains in the monorepo for research/CLI/tests only).
 
 **Frozen identifiers from the NOOP legacy.** Bundle id `com.feriracheta.noop`, App Group
 `group.com.feriracheta.noop` (entitlements / `project.yml`), on-disk folder `OpenWhoop/`
-(`Cenit/Collect/StorePaths.swift`), and `noop.*` UserDefaults keys are load-bearing (data, pairing,
+(`Cenit/Data/StorePaths.swift`), and `noop.*` UserDefaults keys are load-bearing (data,
 install). **Never rename them** — the visual rebrand to Cénit is complete, but these ids stay frozen
 on purpose.
 
@@ -177,8 +166,8 @@ StrandImport ───────▶ CenitStore + StrandTraining + ZIPFoundatio
 
 | Package | Responsibility | Key types / functions | Notable boundary |
 |---|---|---|---|
-| **BiometricStreams** | The neutral vocabulary of decoded biometric rows — the durable shapes everything downstream stores, computes over and serializes. Source-agnostic: nothing here names a frame, a byte, or a strap. | `HRSample`, `RRInterval`, `StreamEvent`, `BatterySample`, `SpO2Sample`, `SkinTempSample`, `RespSample`, `GravitySample`, `StepSample`, `Streams` (+ `.empty`), `ParsedValue` | **Root of the graph — zero dependencies, Foundation only.** No CoreBluetooth/UIKit/AppKit/GRDB, and no CRC/UUID/CLIENT_HELLO/schema. (FER-993 · D2) |
-| **WhoopProtocol** | The reverse-engineering core: turn raw BLE bytes into typed rows. Framing, CRC, fragment reassembly, schema-driven field decode, stream extraction, historical-chunk classification. | `Reassembler`, `verifyFrame`, `parseFrame` → `ParsedFrame`, `extractStreams`, `extractHistoricalStreams`, `classifyHistoricalMeta`, `DeviceFamily`, `crc8`/`crc16Modbus`/`crc32` | **No CoreBluetooth.** Exposes GATT UUIDs as `String`; the app wraps them in `CBUUID`. Depends on `BiometricStreams` (it *produces* `Streams`); never the reverse. |
+| **BiometricStreams** | The neutral vocabulary of decoded biometric rows — the durable shapes everything downstream stores, computes over and serializes. Source-agnostic: nothing here names a frame, a byte, or a strap. | `HRSample`, `RRInterval`, `StreamEvent`, `BatterySample`, `SpO2Sample`, `SkinTempSample`, `RespSample`, `GravitySample`, `StepSample`, `Streams` (+ `.empty`), `ParsedValue` | **Root of the graph — zero dependencies, Foundation only.** No CoreBluetooth/UIKit/AppKit/GRDB, and no CRC/UUID/CLIENT_HELLO/schema. (FER-993 · D2). **Still linked into the app binary** — `CenitStore` and `StrandAnalytics` depend on it (`project.yml` lists `BiometricStreams` under the `Cenit` target). |
+| **WhoopProtocol** | The reverse-engineering core: turn raw BLE bytes into typed rows. Framing, CRC, fragment reassembly, schema-driven field decode, stream extraction, historical-chunk classification. | `Reassembler`, `verifyFrame`, `parseFrame` → `ParsedFrame`, `extractStreams`, `extractHistoricalStreams`, `classifyHistoricalMeta`, `DeviceFamily`, `crc8`/`crc16Modbus`/`crc32` | **No CoreBluetooth.** Exposes GATT UUIDs as `String`. Depends on `BiometricStreams` (it *produces* `Streams`); never the reverse. **Not linked into the app binary** since the band amputation (FER-1003 / Frente B) — remains in the monorepo for research, CLI, and standalone package tests only (`project.yml` packages comment + `Cenit` target `dependencies` omit it). |
 | **CenitStore** | Durable on-device persistence built on GRDB/SQLite. Migrations, decoded streams, metric caches, generic metric series, raw outbox, cursors. | `actor CenitStore`, `makeMigrator()`, `insert(_:deviceId:)`, `dailyMetrics`, `sleepSessions`, `metricSeries`, `pruneRaw`, `ClockRef`, `RawBatchMeta` | An **`actor`** — all writes/reads run off the main thread on its serial executor. |
 | **StrandAnalytics** | All physiological math, as pure functions over inputs. HRV, recovery, strain, sleep staging, workout detection, baselines, HR zones, correlation/comparison. | `AnalyticsEngine.analyzeDay(...)` → `DayResult`, `HRVAnalyzer`, `RecoveryScorer`, `StrainScorer`, `SleepStager`, `WorkoutDetector`, `Baselines`, `CorrelationEngine`, `DailyBriefEngine`, `WeeklySplit` (split → today's routine / day states / consistency streak, FER-531) | **Pure** — never touches the database. Produces `DailyMetric`/`CachedSleepSession` shapes for the store. |
 | **StrandImport** | Parse data the user already owns: WHOOP CSV exports and Apple Health exports (`export.xml`, streaming). | `ImportCoordinator.detectAndImport`, `WhoopExportImporter`, `AppleHealthImporter`, `AppleHealthAggregator`, `SleepHKEncoder`/`SleepHKDecoder` | **Parsing only** — returns normalized model arrays; the app maps them into the store. |
@@ -208,171 +197,53 @@ points between generations; everything downstream of `parseFrame` is generation-
 
 ## 4. The actor / concurrency model
 
-Concurrency is deliberately split between two isolation domains plus a serial drain:
+Concurrency is deliberately split between the store actor and the main-actor app surface:
 
 | Component | Isolation | Why |
 |---|---|---|
-| `CenitStore` | **`actor`** | GRDB calls block; the actor moves that blocking off the main thread and keeps **writes** serialized (a single writer per handle). The **BLE handle stays a `DatabaseQueue`**; the **Repository handle opens a `DatabasePool`** (FER-970 · R-04) so the nonisolated bulk read (`dashboardSnapshot`) runs on WAL reader connections and never queues behind a long engine/import write. |
-| `AppModel`, `LiveState`, `Repository`, `BLEManager`, `FrameRouter`, `Collector`, `Backfiller` | **`@MainActor`** | These observe/mutate published UI state. CoreBluetooth's central is created on `queue: .main`, so delegate callbacks already arrive on the main actor — no hopping needed to update `LiveState`. |
-| Historical frame drain | **serial Task queue** | `BLEManager.routeBackfillFrame` appends frames synchronously (delegate order) and a single drain `Task` awaits `Backfiller.ingest` one frame at a time, so `HISTORY_START → data → HISTORY_END` chunk assembly can never be reordered. |
+| `CenitStore` | **`actor`** | GRDB calls block; the actor moves that blocking off the main thread and keeps **writes** serialized (a single writer per handle). `Repository` opens the handle as a **`DatabasePool` (max 2 readers)** (FER-970 · R-04) so the nonisolated bulk read (`dashboardSnapshot`) runs on WAL reader connections and never queues behind a long engine/import write. |
+| `AppModel`, `Repository`, `HealthKitBridge`, other bridges | **`@MainActor`** | These observe/mutate published UI state and orchestrate reads/writes through the single store handle. |
 
-The key invariant: **frames are buffered synchronously in delegate-callback order**, and only the
-slow work (decode + `await store.insert`) crosses out of the main actor. `Collector.flush()` and
-`Backfiller.finishChunk()` both *snapshot-and-clear* their buffer before the first `await`, so
-concurrent ingests accumulate cleanly into the next batch.
+There is **one** `CenitStore` handle in the shipping app: `Repository.ensureStore()` creates
+`CenitStore(path:backend: .pool(maxReaders: 2))` and exposes it as `storeHandle()`. HealthKit sync
+(`HealthKitBridge`) and the import glue (`WhoopImporter` / `AppleHealthImport`) all write through
+that handle via `repo.storeHandle()` — no second BLE-side `DatabaseQueue` remains (`Cenit/BLE/` and
+`Cenit/Collect/` were deleted in FER-1003).
 
-Two refinements keep that main-actor work small (FER-183). **Each inbound frame is parsed once** in
-the BLE delegate loop — the single `ParsedFrame` is reused by the live `FrameRouter`, the GET_CLOCK
-read, the clock-correlation and the live-gesture gate, instead of re-parsing the same bytes 2–3×.
-And `Collector.flush()` runs its CPU-pure decode (`parseFrame` + `extractStreams`) in a
-**`Task.detached`**, off the main actor, before the `await store.insert`; `Streams`/`ParsedFrame`
-are `Sendable`, so the result crosses back safely. This is sound because `WhoopProtocol`'s schema is
-now loaded **once into immutable shared state** (`CompiledProtocol.shared`, a `static let`) instead
-of lazily mutated globals — so `parseFrame` is race-free even when first called concurrently from the
-main actor and a detached task.
-
-> **In flight (FER-173):** the BLE delegate itself still runs on the main actor (the central is
-> created on `queue: .main`), which is why the `CBCentralManagerDelegate`/`CBPeripheralDelegate`
-> conformances still carry a "crosses into main actor-isolated code" warning. Moving the central onto
-> a dedicated serial `DispatchQueue` and the delegate off the main actor — so BLE I/O no longer
-> competes with SwiftUI for the main thread — is tracked separately and must be verified on real
-> hardware.
-
-Two SQLite handles are open simultaneously — one inside `BLEManager`'s `Collector`/`Backfiller`, one
-inside `Repository`. This is safe because `CenitStore` enables **WAL journal mode** and a **5-second
-busy timeout** (`PRAGMA journal_mode = WAL`, `config.busyMode = .timeout(5)`), so the writer and the
-reader never deadlock on contention.
-
-The Repository handle additionally opens as a **`DatabasePool` (max 2 readers)** since FER-970 (R-04):
-its dashboard snapshot read is `nonisolated` and served by a WAL reader connection, so it does not
-wait behind a long write on the same handle (IntelligenceEngine upserts, imports). All writes on both
-handles remain actor-serialized; write-mode PRAGMAs are guarded to writer connections
-(`!db.configuration.readonly`), and `wal_checkpoint(TRUNCATE)` / `VACUUM` use barrier writes.
+`CenitStore` still enables **WAL journal mode** and a **5-second busy timeout**
+(`PRAGMA journal_mode = WAL`, `config.busyMode = .timeout(5)`), so concurrent readers on the pool and
+the actor-serialized writer never deadlock on contention. Write-mode PRAGMAs are guarded to writer
+connections (`!db.configuration.readonly`), and `wal_checkpoint(TRUNCATE)` / `VACUUM` use barrier
+writes. The pool exists so the nonisolated dashboard snapshot does not wait behind a long write on
+the same handle (IntelligenceEngine upserts, imports, HealthKit pulls).
 
 ---
 
-## 5. Live path vs. historical path
+## 5. Apple Health ingestion / imports
 
-The two BLE data paths diverge at one branch in `BLEManager.peripheral(_:didUpdateValueFor:)`. After
-the `Reassembler` yields a complete frame, `FrameRouter.handle(frame:)` always runs (it drives the
-live UI state), and then:
+Primary ingestion is Apple Health plus optional file imports — not a BLE strap pipeline.
 
-```swift
-if backfilling {
-    if BLEManager.isOffloadFrame(frame) {   // types 47/48/49/50 only
-        armBackfillTimeout()
-        routeBackfillFrame(frame)           // serial drain → Backfiller
-    }                                       // live type-40/43 flood is dropped during offload
-} else {
-    collector?.ingest(frame)                // live → Collector
-}
-```
+**Foreground HealthKit sync (FER-872).** `CenitApp` calls `await health.sync(trigger: .foreground)`
+when the scene becomes active (`CenitApp.swift`). `HealthKitBridge.sync` pulls HealthKit samples into
+`CenitStore` through `repo.storeHandle()`. The first foreground sync of a process session uses the full
+window; subsequent foreground syncs use a **delta window** from `lastSync` plus a few days of
+back-margin (`deltaBackMarginDays`), and skip a redundant dashboard rebuild when the pulled Apple rows
+fingerprint unchanged. Manual / onboarding / re-bucket callers keep `.manual` (full window).
 
-### Live path (real-time)
+**Nocturnal beat-to-beat RMSSD (FER-1008).** During sync, `HealthKitBridge.ingestNocturnalHRV` reads
+Apple heartbeat series for recent nights, runs pure `NocturnalHRV` (`StrandAnalytics`), and writes
+`apple_rmssd_night` / density counts under the **`apple-health-noop`** partition (`metricSeries`).
+`Repository.autonomicTrend` reads those points for the categorical `AutonomicTrend` on Today. See §7
+"Generic metric series" for the partition invariants.
 
-1. **CoreBluetooth notify** on the data/cmd/event characteristics, or on standard HR `0x2A37`.
-2. **`Reassembler.feed`** accumulates BLE fragments into complete `0xAA…CRC32` frames.
-3. **`FrameRouter.handle`** runs `parseFrame`, rejects bad-CRC frames, and updates `LiveState`
-   (`heartRate`, `rr`, `lastEvent`, `worn`, …). `EVENT` packets fire physical-input hooks
-   (double-tap, wrist on/off) and a rate-limited catch-up sync trigger.
-4. **`Collector.ingest`** buffers the frame. Once a `ClockRef` exists (from `GET_CLOCK`
-   correlation), it flushes on cadence (`maxFrames: 64` or `maxInterval: 30s`):
-   `parseFrame → extractStreams(clockRef) → store.insert` (**decoded first, durable**) →
-   optionally `enqueueRawBatch` (raw, transient).
-5. Standard `0x2A37` HR/RR is recorded **continuously and independently** via
-   `Collector.ingestStandardHR` — it carries a wall-clock timestamp so it needs no clock
-   correlation and keeps recording regardless of which screen is open.
+**File imports.** `StrandImport` remains parse-only; the app's `WhoopImporter` / `AppleHealthImport`
+map results into the same store (see §8). Under the pinned `.appleHealthOnly` mode, `DataSourcePolicy`
+filters reads so dormant `strap` / `strap-noop` rows never enter the dashboard merge.
 
-Live `REALTIME_DATA` (type 40) timestamps are a **device monotonic epoch**; `extractStreams` maps
-them to wall time with the linear `(device, wall)` offset captured at connect by
-`ClockCorrelation`/`GET_CLOCK`.
-
-### Historical path (offload / backfill)
-
-The strap holds a ~14-day on-device biometric store. Cénit re-offloads it the way the official client
-syncs — once per connect and then every `backfillIntervalSeconds` (900s) while connected+bonded — so
-the periodic **type-47 historical offload is the primary metric source**, not the live stream.
-
-1. `requestSync(_:)` gates every kick on connection state **and** `BackfillPolicy` (the rate
-   limiter, persisted across relaunch) — except the `.drain` trigger, which bypasses the limiter on
-   purpose (see step 5). On a go it calls `beginBackfill()`, which sends
-   `SEND_HISTORICAL_DATA` and arms **two** timers: an *idle watchdog* (`backfillIdleTimeoutSeconds`,
-   60s, re-armed on every offload frame) and an *absolute session cap*
-   (`backfillAbsoluteTimeoutSeconds`, 300s, armed **once**, never re-armed by frames).
-2. The strap streams `HISTORY_START → type-47 records → HISTORY_END (acked) … → HISTORY_COMPLETE` —
-   except some WHOOP 4.0 firmware (e.g. FW 1.542.0.0) **never sends `HISTORY_COMPLETE`** (FER-201), so
-   completion can't rely on that frame alone (see step 4).
-3. `Backfiller.ingest` is a state machine driven by `classifyHistoricalMeta`. On each `HISTORY_END`
-   it commits one chunk with a strict **local safe-trim invariant**:
-
-   ```
-   decode chunk  →  await store.insert (decoded durable)
-                 →  await store.enqueueRawBatch (only if research toggle on)
-                 →  await store.setCursor("strap_trim", …)
-                 →  ackTrim (.withResponse confirmed ack to strap)
-   ```
-
-   A chunk is forgotten by the strap **only after** decoded data is locally durable and the ack is
-   link-layer confirmed. If the idle watchdog fires (strap went silent) — or the absolute cap fires
-   (strap keeps streaming offload frames but never signals `HISTORY_COMPLETE`, the WHOOP 4.0 wedge in
-   FER-152/FER-174) — the session tears down, nothing in-flight is acked, and the durable `strap_trim`
-   cursor lets the next session resume exactly where it left off. The absolute cap is the ultimate
-   backstop that guarantees the "Sincronizando…" pill can never pin forever.
-4. **Completion is positive, not just a timeout (FER-201).** A session ends as **success** two ways:
-   the strap's own `HISTORY_COMPLETE`, or — for firmware that never sends it — `CaughtUpDetector`
-   (`WhoopProtocol`, sibling of `RtcHealthPolicy`) judging the backlog drained from a sustained run of
-   small `HISTORY_END` chunks (the offload has shrunk to the live ~1 Hz drip). `Backfiller` feeds it the
-   per-END type-47 count **after** the safe-trim ack, flips `isBackfilling`/`didCatchUp`, and
-   `BLEManager.afterBackfillIngest` tears down with `reason: "caught-up"` → `.completed` (stamps
-   `lastSyncedAt`, green receipt). Completing on the heuristic is self-healing for *recorded* data: the
-   durable `strap_trim` cursor + periodic re-sync drain any remainder next tick, so safe-trim loses nothing
-   the band actually banked.
-
-   **RTC-lost guard (FER-93).** A power-reset WHOOP 4.0 loses its volatile RTC and stops persisting biometry
-   to flash, narrating `CONSOLE_LOGS` (type-50) with zero type-47 instead — so there's a real on-band gap no
-   re-sync can fill (that night was never recorded; the safety net is the Apple-Health backfill, FER-153).
-   `RtcHealthPolicy` (`WhoopProtocol`, sibling of `CaughtUpDetector`) judges this from the session's frame
-   tallies (no `GET_CLOCK`, which this firmware never answers). When it reads "lost", `BLEManager`: (a) does
-   **not** stamp a successful sync even on a clean `caught-up`/`HISTORY_COMPLETE` close — a
-   narrating-not-saving END is excluded from `CaughtUpDetector`, so the offload can't complete "green"; and
-   (b) re-asserts `SET_CLOCK` + the `SET_CONFIG` data-stream burst at the **start** of the next session
-   (never mid-offload, which would stop the strap streaming), throttled per connect by `ClockReassertPolicy`
-   (`WhoopProtocol`) so a never-latching band can't loop. Success is read the only way this firmware allows:
-   type-47 flowing again.
-5. **Auto-continue until drained (FER-287, ground-truth gate FER-480).** One session hands over only a
-   few-hundred-frame batch, so a night's ~19,400-frame backlog (1 Hz × hours, phone disconnected) would
-   otherwise need *dozens* of manual "Sync" taps — only `.manual` skips the rate-limiter. When a session
-   closes **cleanly** (`HISTORY_COMPLETE` or caught-up) and **ground truth says backlog remains** — the
-   strap's `GET_DATA_RANGE` newest banked record is still ahead of our persisted frontier (max HR ts) by
-   more than `behindGapSeconds`, **or** the session persisted real sensor rows (the #451 stale-epoch
-   fallback) — **and** the `strap_trim` cursor advanced this session (anti-spin), `BLEManager` immediately
-   re-fires another session via the `.drain` trigger — skipping the limiter — and repeats until the strap
-   is **caught up** (not ahead, or `CaughtUpDetector`) or the `maxChain` cap. `DrainContinuationPolicy`
-   (`WhoopProtocol`, sibling of `CaughtUpDetector`) is the pure decision — FER-480 replaced its original
-   frame-count heuristic with this ground-truth signal, retiring the unanchored `largeSessionFrames`
-   guess; a non-clean close (idle timeout / session cap) **never** chains, so an unhealthy link falls
-   back to the rate-limited path. The frontier is read async (via the Collector) after the session, so the
-   decision runs in the post-session `Task`; a `state.draining` latch bridges that hop so the «Descargando
-   la noche…» hero (FER-286) stays steady between chained sessions. Each chained session re-arms its own
-   watchdog + 300 s cap, so the backstops are unchanged. `.drain` re-uses `SEND_HISTORICAL_DATA` (no new
-   outbound bytes) and never touches `strap_trim`, so it changes only *when* the next session fires, never
-   data integrity.
-
-Type-47 records carry their **own real-unix timestamps**, so the historical path does *not* depend on
-`GET_CLOCK`; if the clock correlation hasn't landed yet, `Backfiller` falls back to an identity
-`ClockRef` and the offset math becomes a no-op.
-
-### Why they differ
-
-| Aspect | Live path | Historical path |
-|---|---|---|
-| Producer | `Collector` | `Backfiller` |
-| Trigger | Continuous notify | `SEND_HISTORICAL_DATA`, rate-limited |
-| Frame types | 40/43 (REALTIME) + 0x2A37 | 47/48/49/50 (HISTORICAL/EVENT/META/LOGS) |
-| Timestamp source | Device epoch → wall via `ClockRef` | Real unix in the record |
-| Durability unit | Cadence flush (64 frames / 30s) | One `HISTORY_END` chunk, trim-acked |
-| Decode fn | `extractStreams` | `extractHistoricalStreams` |
-| Role | Live HR/UI + opt-in detail | **Primary** metric source |
+**Historical note.** The former live BLE path, historical offload/safe-trim, and connection lifecycle
+(`Cenit/BLE/`, `Cenit/Collect/`, `WhoopProtocol` in the app binary) were removed in the band amputation
+(FER-1003). Protocol reverse-engineering notes remain at [`docs/PROTOCOL.md`](PROTOCOL.md) and
+[`docs/BLE_REVERSE_ENGINEERING.md`](BLE_REVERSE_ENGINEERING.md).
 
 ### Watch-mirrored strength sessions (FER-740, F1.1 of the Apple Watch epic FER-391)
 
@@ -443,39 +314,6 @@ is a single slot, overwritten per rest and cleared when the rest/session ends an
 **"no thumbnail" state is first-class** (exercise media is opt-in, §"Network exceptions") — the card omits the
 circle, never a placeholder. No network is introduced; the provider only copies a file the opt-in media
 download already fetched.
-
----
-
-## 6. The BLE connection lifecycle
-
-`BLEManager` is the only CoreBluetooth surface. The connection handshake runs **exactly once per
-connection** (guarded by `connectHandshakeDone`, because `didWriteValueFor` re-fires on every
-confirmed write):
-
-```
-scan(customService) ─▶ didDiscover ─▶ connect ─▶ didDiscoverServices
-   ─▶ discover characteristics ─▶ BOND (one confirmed GET_BATTERY_LEVEL write to …0002)
-   ─▶ subscribe notify on cmd/event/data + 0x2A37 + 0x2A19
-   ─▶ didWriteValueFor (bond ack) ─┬─ HELLO → SET_CLOCK → GET_CLOCK
-                                   ├─ stop type-43 realtime flood, GET_DATA_RANGE
-                                   ├─ requestSync(.connect)  (deferred ~1.5s)
-                                   ├─ startBackfillTimer()   (re-offload every 900s)
-                                   └─ startKeepAlive()       (re-arm realtime, poll battery, watchdog)
-```
-
-Supporting machinery, all on the main run loop:
-
-- **Keep-alive (30s):** re-arms the realtime stream if wanted, polls battery, and — if **no
-  notification has arrived for >120s** — bounces the link; the auto-rescan on disconnect re-bonds and
-  resumes streaming.
-- **Stuck-strap watchdog:** after each offload, `StuckStrapDetector` compares the strap's newest
-  record (`GET_DATA_RANGE`) against Cénit's data frontier (`latestHRSampleTs`). Strap-ahead **and**
-  frontier-frozen ⇒ a reboot hint banner; off-wrist / caught-up is *not* flagged.
-- **Auto-reconnect:** an unintentional disconnect flushes the `Collector` and rescans after 3s.
-
-`LiveState` is the published bridge: `BLEManager` and `FrameRouter` write it; SwiftUI observes it.
-The app shell isolates the ~1 Hz HR/frame churn into a small status view so the rest of the
-UI doesn't re-render on every beat.
 
 ---
 
@@ -645,18 +483,14 @@ or Apple-Health-only) draws the same per-epoch hypnogram as a strap night. The r
 band win per night by interval overlap. No migration — the `sleepSession` table already partitions by
 `deviceId`.
 
-The **recovery** counterpart for a band-less night is an **estimate computed read-time** (FER-153), not a
-stored value: `Repository.refresh` runs `AppleRecoveryEstimator` over the `apple-health` daily rows
-(`appleRecoveryEstimates`, band-less nights only — the band wins wherever it has the night). The estimate is
-**deliberately kept out of
-`days`/`displayDays`** (`appleRecoveryEstimates` returns a `[day: estimate]` map on `DashboardData`, it is
-NOT folded into the merge) — so **every recovery statistic over history stays band-measured**: the recovery
-baseline, the rest-day baseline (`activityCosts`), the Coach's correlations/forecast (`InsightEngine`), the
-strain↔recovery driver (`WhatMovesStrainEngine`), the metric-explorer/compare sweeps, the AI-coach average —
-none can mix in an estimate, with no per-consumer carve-outs to maintain. The estimate surfaces for display
-on **`repo.today` only** (a single-day override: today's row gets the estimate when the band didn't cover the
-night), which is what the ring, the verdict and the recovery-detail hero read. `isEstimated` /
-`recoveryConfidence` are derived from the same map; no column, no migration.
+The **recovery** counterpart for a band-less night used to be an **estimate computed read-time**
+(FER-153): `AppleRecoveryEstimator` over `apple-health` daily rows, kept out of
+`days`/`displayDays` and surfaced only on today's display. **That production path is retired**
+(Frente A · R4, FER-1008): `Repository.assembleDashboard` hardcodes `recoveryEstimates` to `[:]`, so
+`isRecoveryEstimated` is always false and the `~N` estimated-recovery UI cascade no longer renders.
+Today shows sleep + the autonomic trend (`AutonomicTrend` from nocturnal Apple RMSSD) instead. The
+`AppleRecoveryEstimator` type, its tests, and `Repository.appleRecoveryEstimates(...)` were **deleted**
+in the Frente D dead-code sweep (FER-1003). No column, no migration.
 
 ---
 
@@ -681,14 +515,11 @@ night), which is what the ring, the verdict and the recovery-detail hero read. `
   UserDefaults, with one level of undo via `previousBaselineEpoch`) cuts every nightly baseline fold:
   `Baselines.foldHistory(_:epoch:cfg:)` drops nights with `day < epoch` before the replay (delegating to
   the value-only fold, so all its invariants hold). `IntelligenceEngine` applies it to all five baselines
-  (HRV/RHR/resp/temp/efficiency) and pass-1, and `AppleRecoveryEstimator.estimate(nights:epoch:)` applies
-  it to the estimated path — so recovery re-anchors from the epoch on both the strap and Apple sides. It is
+  (HRV/RHR/resp/temp/efficiency) and pass-1 — so recovery re-anchors from the epoch. It is
   a user setting, not derived data: **no GRDB schema**. `nil`/`""` epoch = no cut (byte-identical to before).
-- **`AppleRecoveryEstimator`** (FER-153) scores an **estimated** recovery for a night that did not come
-  from the band, from Apple Health's **SDNN** against the user's **own** Apple SDNN baseline — SDNN-vs-SDNN,
-  **never converted to RMSSD** — reusing the same `RecoveryScorer` model. A separate baseline, never mixed
-  with the strap's RMSSD; SDNN is a different construct (total vs vagal variability) and ultra-short/all-day,
-  so the result is labelled «estimado» with a `ScoreConfidence` grade, never equated to a band recovery
+- **`AppleRecoveryEstimator`** (FER-153) scored an **estimated** recovery (the `~N`) for band-less nights
+  from Apple's SDNN. **Retired and deleted** (Frente A R4 retired the UI; Frente D deleted the type) —
+  replaced by sleep-as-hero + the categorical `AutonomicTrend` read, which never shows a 0–100 recovery
   (Task Force 1996; Shaffer & Ginsberg 2017). Pure + DB-free; surfaced read-time (see §8), not persisted.
 - **`CyclePhaseEngine`** (FER-672) estimates the current menstrual-cycle phase (follicular-lean vs
   luteal-lean) from the nightly `skinTempDevC` Cénit already persists (+ resting HR corroboration; HRV as
@@ -781,12 +612,22 @@ backfilled streams, or imported data interchangeably. **All derived values are a
 
 ## 10. Presentation (the app + StrandDesign)
 
-The `Cenit` app shell (under `CenitApp/App/`) builds a single `AppModel`, injects it plus
-`LiveState`, `Repository`, `ProfileStore`, `BehaviorStore`, and `GoalStore` (the Bucle's goal — a single
-metric+date preference in `UserDefaults`, not a DB table, FER-311) into the environment, and presents the
-shared screens under `Cenit/Screens/` (Today, Live, Breathe, Intervals, Compare, Sleep, Trends,
-Workouts, Health, Apple Health, Data Sources, Automations, Settings, Support).
-The home / lock-screen widgets live in `CenitWidgets/`.
+The `Cenit` app shell (under `CenitApp/App/`) builds a single `AppModel`, injects it (`.environment`)
+plus `Repository`, `ProfileStore`, `BehaviorStore`, `GoalStore` (the Bucle's goal — a single
+metric+date preference in `UserDefaults`, not a DB table, FER-311), `HealthKitBridge`, `AutoBackup`,
+`TabRouter`, and `MediaDownloadCoordinator` as environment objects (`CenitApp.swift`), and presents the
+shared screens under `Cenit/Screens/` (Today, Breathe, Intervals, Compare, Sleep, Trends,
+Workouts, Health, Apple Health, Data Sources, Settings, Support). There is no `LiveState` injection
+(the BLE connection snapshot type was removed with `Cenit/BLE/`), and no separately reachable
+Automations screen. The home / lock-screen widgets live in `CenitWidgets/`.
+
+**Dormant / retired surfaces (post band amputation).** (a) `IntelligenceEngine.analyzeRecent` is a
+no-op under the pinned `.appleHealthOnly` mode: it `guard`s on `mode.usesWhoop` and returns early
+(`IntelligenceEngine.swift`), so the ~15-minute strap-night scoring loop does not run today.
+(b) The `~N` estimated-recovery display is **retired from the production dashboard path** (Frente A ·
+R4, FER-1008): `assembleDashboard` leaves `recoveryEstimates` empty, so the estimated badge/numeral
+cascade does not render. `AppleRecoveryEstimator` and `Repository.appleRecoveryEstimates(...)` still
+exist in source as unused leftovers pending a Frente D dead-code sweep — they are not deleted.
 
 Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on data change, not on the
 ~1 Hz stream). The launch refresh runs in **two passes**: a ~90-day *first-paint* pass that publishes
