@@ -5,7 +5,7 @@ final class NocturnalHRVTests: XCTestCase {
 
     /// N contiguous intervals (ts = 0,1,2,…), all in range, gap 1s.
     private func contiguous(_ n: Int, nnMs: Double = 800) -> [TimedNN] {
-        (0..<n).map { TimedNN(ts: $0, nnMs: nnMs) }
+        (0..<n).map { TimedNN(ts: Double($0), nnMs: nnMs) }
     }
 
     /// Build intervals with controlled nClean and nPairs.
@@ -17,13 +17,13 @@ final class NocturnalHRVTests: XCTestCase {
         var result: [TimedNN] = []
         var ts = 0
         for _ in 0..<pairs {
-            result.append(TimedNN(ts: ts, nnMs: nnMs))
-            result.append(TimedNN(ts: ts + 1, nnMs: nnMs + 20)) // nonzero Δ so rmssd > 0
+            result.append(TimedNN(ts: Double(ts), nnMs: nnMs))
+            result.append(TimedNN(ts: Double(ts + 1), nnMs: nnMs + 20)) // nonzero Δ so rmssd > 0
             ts += 10 // gap ≥ 3 between groups
         }
         let singles = clean - pairs * 2
         for _ in 0..<singles {
-            result.append(TimedNN(ts: ts, nnMs: nnMs))
+            result.append(TimedNN(ts: Double(ts), nnMs: nnMs))
             ts += 10
         }
         return result
@@ -89,7 +89,7 @@ final class NocturnalHRVTests: XCTestCase {
         // 50 in-range + 20 out-of-range interleaved
         for i in 0..<70 {
             let ms = i < 50 ? 800.0 : 2500.0
-            intervals.append(TimedNN(ts: i, nnMs: ms))
+            intervals.append(TimedNN(ts: Double(i), nnMs: ms))
         }
         // make first 50 vary for nonzero rmssd potential
         intervals = intervals.enumerated().map { i, t in

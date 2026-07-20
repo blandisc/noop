@@ -27,9 +27,11 @@ import BiometricStreams
 /// Foundation-only; used by the segmented nocturnal RMSSD path where the temporal gap
 /// between successive intervals decides whether a pair is truly beat-to-beat.
 public struct TimedNN: Equatable, Sendable {
-    public let ts: Int         // epoch SECONDS
+    public let ts: Double       // epoch seconds — FRACTIONAL. Apple's beat reader is sub-second; truncating
+                                // to whole seconds would collapse two <1 s-apart beats onto the same tick
+                                // (dt = 0) and silently drop valid successive pairs, HR-dependently.
     public let nnMs: Double     // NN interval in milliseconds
-    public init(ts: Int, nnMs: Double) { self.ts = ts; self.nnMs = nnMs }
+    public init(ts: Double, nnMs: Double) { self.ts = ts; self.nnMs = nnMs }
 }
 
 public enum HRVAnalyzer {
@@ -116,7 +118,7 @@ public enum HRVAnalyzer {
             let prev = sorted[i - 1]
             let cur = sorted[i]
             let dt = cur.ts - prev.ts
-            guard dt > 0 && dt < gapSeconds else { continue }
+            guard dt > 0 && dt < Double(gapSeconds) else { continue }
             guard prev.nnMs >= rrMinMs && prev.nnMs <= rrMaxMs else { continue }
             guard cur.nnMs >= rrMinMs && cur.nnMs <= rrMaxMs else { continue }
             let d = cur.nnMs - prev.nnMs

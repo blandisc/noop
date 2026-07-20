@@ -4,7 +4,7 @@ import XCTest
 final class RMSSDSegmentedTests: XCTestCase {
 
     private func nn(_ pairs: [(Int, Double)]) -> [TimedNN] {
-        pairs.map { TimedNN(ts: $0.0, nnMs: $0.1) }
+        pairs.map { TimedNN(ts: Double($0.0), nnMs: $0.1) }
     }
 
     func testContiguousFourBeatsGolden() {

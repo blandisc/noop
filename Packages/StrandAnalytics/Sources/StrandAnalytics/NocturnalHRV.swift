@@ -47,7 +47,7 @@ public enum NocturnalHRV {
     /// `HRVAnalyzer.rmssdSegmented` over the SAME windowed intervals (which enforces the range
     /// per-pair, so out-of-range beats are excluded but never bridged across). dense ⇔
     /// nClean ≥ minCleanBeats && nPairs ≥ minSuccessivePairs && rmssd > 0.
-    public static func night(intervals: [TimedNN], windowStart: Int?, windowEnd: Int?) -> NightResult {
+    public static func night(intervals: [TimedNN], windowStart: Double?, windowEnd: Double?) -> NightResult {
         let windowed = intervals.filter { s in
             if let a = windowStart, s.ts < a { return false }
             if let b = windowEnd, s.ts > b { return false }
