@@ -15,7 +15,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// **daily tracker** (FER-372): the day's adherence **%** is the one dominant numeral (the lone datum,
 /// in `dataRecovery` green), with a 7-day sparkline and a tri-state checklist (Followed / Swapped /
 /// Skipped) per meal. The star capture path is **bring-your-own-LLM**: copy a prompt, paste it into
-/// your own AI with your plan (PDF/photo), and bring the `noop.diet.v1` file back. NOOP never calls the
+/// your own AI with your plan (PDF/photo), and bring the `noop.diet.v1` file back. Cénit never calls the
 /// network — the user runs the LLM step (`DietPlanImporter` from FER-370 validates the result).
 struct DietCaptureView: View {
 
@@ -392,7 +392,7 @@ struct DietCaptureView: View {
                     }
                 }
             }
-            Text("Only what your plan declared. NOOP doesn't count calories.")
+            Text("Only what your plan declared. Cénit doesn't count calories.")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
     }
@@ -934,7 +934,7 @@ struct DietCaptureView: View {
         case .notJSON:
             return "We couldn't read that as a plan file. Paste the full result your AI gave you, or upload the .json."
         case .unsupportedSchema:
-            return "That file isn't a NOOP diet plan. Make sure you used the prompt above."
+            return "That file isn't a Cénit diet plan. Make sure you used the prompt above."
         case .unsupportedIdioma:
             return "The plan's language isn't supported: it must be Spanish or English."
         case .unsupportedCiclo:

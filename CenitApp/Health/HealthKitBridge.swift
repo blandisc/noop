@@ -11,7 +11,7 @@ import CenitStore
 ///
 /// iOS has HealthKit (macOS does not), so the iOS target can do far more than parse a static export:
 /// it reads the user's own Health data live and maps it onto the **same** `CenitStore` rows the
-/// macOS importer produces (under the `apple-health` source id), and it writes NOOP-computed metrics
+/// macOS importer produces (under the `apple-health` source id), and it writes Cénit-computed metrics
 /// back into Apple Health. Everything stays on-device and strictly opt-in.
 @MainActor
 final class HealthKitBridge: ObservableObject {

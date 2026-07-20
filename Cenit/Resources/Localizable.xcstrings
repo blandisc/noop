@@ -9829,19 +9829,19 @@
         }
       }
     },
-    "Baseline-relative skin temperature as an early illness signal (cf. Oura ~+0.5 °C). A wrist trend, not a clinical thermometer. NOOP is not a medical device." : {
+    "Baseline-relative skin temperature as an early illness signal (cf. Oura ~+0.5 °C). A wrist trend, not a clinical thermometer. Cénit is not a medical device." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Baseline-relative skin temperature as an early illness signal (cf. Oura ~+0.5 °C). A wrist trend, not a clinical thermometer. NOOP is not a medical device."
+            "value" : "Baseline-relative skin temperature as an early illness signal (cf. Oura ~+0.5 °C). A wrist trend, not a clinical thermometer. Cénit is not a medical device."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temperatura de piel relativa a tu base como señal temprana de enfermedad (cf. Oura ~+0.5 °C). Una tendencia de muñeca, no un termómetro clínico. NOOP no es un dispositivo médico."
+            "value" : "Temperatura de piel relativa a tu base como señal temprana de enfermedad (cf. Oura ~+0.5 °C). Una tendencia de muñeca, no un termómetro clínico. Cénit no es un dispositivo médico."
           }
         }
       }
@@ -28056,57 +28056,6 @@
         }
       }
     },
-    "NOOP" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NOOP"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NOOP"
-          }
-        }
-      }
-    },
-    "NOOP %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NOOP %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NOOP %@"
-          }
-        }
-      }
-    },
-    "NOOP-computed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "NOOP-computed"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calculado por NOOP"
-          }
-        }
-      }
-    },
     "Normal" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -28171,22 +28120,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Normalizado"
-          }
-        }
-      }
-    },
-    "Not affiliated with, endorsed by, or connected to WHOOP. Interoperability software for hardware you own and your own data. Use it only with a device you own, and not in breach of any agreement that applies to you. Not a medical device." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not affiliated with, endorsed by, or connected to WHOOP. Interoperability software for hardware you own and your own data. Use it only with a device you own, and not in breach of any agreement that applies to you. Not a medical device."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin afiliación, respaldo ni conexión con WHOOP. Software de interoperabilidad para hardware que posees y tus propios datos. Úsalo solo con un dispositivo de tu propiedad y sin infringir ningún acuerdo que te aplique. No es un dispositivo médico."
           }
         }
       }
@@ -29679,19 +29612,19 @@
         }
       }
     },
-    "Only what your plan declared. NOOP doesn't count calories." : {
+    "Only what your plan declared. Cénit doesn't count calories." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Only what your plan declared. NOOP doesn't count calories."
+            "value" : "Only what your plan declared. Cénit doesn't count calories."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Solo lo que tu plan declaró. NOOP no cuenta calorías."
+            "value" : "Solo lo que tu plan declaró. Cénit no cuenta calorías."
           }
         }
       }
@@ -33366,19 +33299,19 @@
         }
       }
     },
-    "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement: NOOP is not a medical device." : {
+    "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement: Cénit is not a medical device." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement: NOOP is not a medical device."
+            "value" : "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement: Cénit is not a medical device."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Referencia: Kaminsky et al., Registro FRIEND (Mayo Clin Proc 2015). Asociación con longevidad: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Es una referencia poblacional aproximada, no una medición clínica, NOOP no es un dispositivo médico."
+            "value" : "Referencia: Kaminsky et al., Registro FRIEND (Mayo Clin Proc 2015). Asociación con longevidad: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). Es una referencia poblacional aproximada, no una medición clínica, Cénit no es un dispositivo médico."
           }
         }
       }
@@ -40459,19 +40392,19 @@
         }
       }
     },
-    "That file isn't a NOOP diet plan. Make sure you used the prompt above." : {
+    "That file isn't a Cénit diet plan. Make sure you used the prompt above." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "That file isn't a NOOP diet plan. Make sure you used the prompt above."
+            "value" : "That file isn't a Cénit diet plan. Make sure you used the prompt above."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ese archivo no es un plan de dieta de NOOP. Asegúrate de haber usado el prompt de arriba."
+            "value" : "Ese archivo no es un plan de dieta de Cénit. Asegúrate de haber usado el prompt de arriba."
           }
         }
       }
@@ -46627,19 +46560,19 @@
         }
       }
     },
-    "Wrist optical sensors are less accurate than medical pulse oximeters: read this as a trend, not a clinical measurement. NOOP is not a medical device." : {
+    "Wrist optical sensors are less accurate than medical pulse oximeters: read this as a trend, not a clinical measurement. Cénit is not a medical device." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wrist optical sensors are less accurate than medical pulse oximeters: read this as a trend, not a clinical measurement. NOOP is not a medical device."
+            "value" : "Wrist optical sensors are less accurate than medical pulse oximeters: read this as a trend, not a clinical measurement. Cénit is not a medical device."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los sensores ópticos de muñeca son menos precisos que un oxímetro médico, léelo como tendencia, no como una medición clínica. NOOP no es un dispositivo médico."
+            "value" : "Los sensores ópticos de muñeca son menos precisos que un oxímetro médico, léelo como tendencia, no como una medición clínica. Cénit no es un dispositivo médico."
           }
         }
       }
