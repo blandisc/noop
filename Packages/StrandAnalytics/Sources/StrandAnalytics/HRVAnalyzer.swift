@@ -23,6 +23,15 @@ import BiometricStreams
 // beat-to-beat jumps before computing HRV — at the cost of not modelling the
 // missed/extra-beat insertion that Kubios does.
 
+/// A single NN (normal-to-normal) interval stamped with the epoch SECOND it ends on.
+/// Foundation-only; used by the segmented nocturnal RMSSD path where the temporal gap
+/// between successive intervals decides whether a pair is truly beat-to-beat.
+public struct TimedNN: Equatable, Sendable {
+    public let ts: Int         // epoch SECONDS
+    public let nnMs: Double     // NN interval in milliseconds
+    public init(ts: Int, nnMs: Double) { self.ts = ts; self.nnMs = nnMs }
+}
+
 public enum HRVAnalyzer {
 
     /// Minimum plausible RR interval (ms) — 300 ms ≈ 200 bpm.
@@ -83,6 +92,39 @@ public enum HRVAnalyzer {
             sumSq += d * d
         }
         return (sumSq / Double(nn.count - 1)).squareRoot()
+    }
+
+    /// Segmented RMSSD (Task Force 1996) that only counts a successive pair (i-1 → i)
+    /// when it is genuinely beat-to-beat: the two NN intervals are adjacent in time
+    /// (0 < ts[i] − ts[i-1] < gapSeconds) AND both lie in the plausible range
+    /// [rrMinMs, rrMaxMs]. A pair that crosses a recording gap, or that touches an
+    /// out-of-range (artefact) interval, is NOT beat-to-beat and is excluded — it is
+    /// never bridged across (we do not remove the artefact and pair its neighbours).
+    /// The divisor is the number of VALID pairs (not n−1), so a night stitched from many
+    /// short asleep segments is scored only on its real successive differences. Malik
+    /// ectopic rejection is deliberately NOT applied on the nocturnal path (sparse wrist
+    /// PPG; a second local-median filter would eat real beats). Returns nil rmssd when
+    /// fewer than 1 valid pair. Input is sorted by ts ascending (ties broken by nnMs, so
+    /// the result is deterministic) before segmenting; a tie in ts yields Δ = 0 and is
+    /// excluded (0 < Δ required).
+    public static func rmssdSegmented(_ nn: [TimedNN], gapSeconds: Int = 3) -> (rmssd: Double?, nPairs: Int) {
+        guard nn.count >= 2 else { return (nil, 0) }
+        let sorted = nn.sorted { $0.ts != $1.ts ? $0.ts < $1.ts : $0.nnMs < $1.nnMs }
+        var sumSq = 0.0
+        var nPairs = 0
+        for i in 1..<sorted.count {
+            let prev = sorted[i - 1]
+            let cur = sorted[i]
+            let dt = cur.ts - prev.ts
+            guard dt > 0 && dt < gapSeconds else { continue }
+            guard prev.nnMs >= rrMinMs && prev.nnMs <= rrMaxMs else { continue }
+            guard cur.nnMs >= rrMinMs && cur.nnMs <= rrMaxMs else { continue }
+            let d = cur.nnMs - prev.nnMs
+            sumSq += d * d
+            nPairs += 1
+        }
+        guard nPairs >= 1 else { return (nil, nPairs) }
+        return ((sumSq / Double(nPairs)).squareRoot(), nPairs)
     }
 
     /// Sample standard deviation (ddof = 1) of NN intervals (ms). Returns nil for
