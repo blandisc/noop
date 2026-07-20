@@ -49,8 +49,9 @@ public enum AutonomicTrend {
 
     /// Trend gate: dense nights needed before any direction is shown. == Baselines.minNightsTrust.
     public static let minNightsTrend: Int = 14
-    /// Solid gate: dense nights before the direction/band/sparkline appear. Plews (2013) observes
-    /// ~4 weeks for a settled lnRMSSD baseline; 21 is a conservative product knob.
+    /// Solid gate: dense nights before the direction/band/sparkline appear. 21 (~3 weeks) is a
+    /// conservative product knob, consistent with Plews/Buchheit multi-week lnRMSSD monitoring
+    /// guidance (Plews et al. 2013, Sports Med 43(9):773–781) — not a precise settling time.
     public static let minNightsSWCSolid: Int = 21
     /// Minimum dense nights inside the recent window for a read (else calibrating).
     public static let recentMinDenseNights: Int = 3
@@ -60,9 +61,15 @@ public enum AutonomicTrend {
 
     public static func evaluate(nights: [(day: String, rmssdMs: Double)],
                                 asOf: String, recentCutoff: String) -> Read {
-        // Deterministic ordering; never look past asOf.
+        // Deterministic ordering; never look past asOf. Plausibility gate (FER-1003 science gate): drop
+        // nights whose RMSSD is outside the baseline's own [minVal, maxVal]. The EWMA base already
+        // skip-and-holds these; gating `usable` here makes the recent geometric mean, the sparkline, AND
+        // the night counts symmetric with the base — closing the asymmetry where an in-DB artifact night
+        // (e.g. persisted before `NocturnalHRV.night` grew the same gate) poisoned the recent value while
+        // the base correctly ignored it. Defense-in-depth; one source of truth (Baselines.hrvCfg).
+        let plausible = Baselines.hrvCfg.minVal...Baselines.hrvCfg.maxVal
         let usable = nights
-            .filter { $0.day <= asOf }
+            .filter { $0.day <= asOf && plausible.contains($0.rmssdMs) }
             .sorted { $0.day != $1.day ? $0.day < $1.day : $0.rmssdMs < $1.rmssdMs }
 
         let nightsUsable = usable.count
