@@ -181,7 +181,6 @@ private struct CuerpoLandingEngines: Sendable {
 
 private struct CuerpoLanding: View {
     @EnvironmentObject var repo: Repository
-    @Environment(LiveState.self) var live
     @Environment(AppModel.self) var model
     @EnvironmentObject var health: HealthKitBridge
     @EnvironmentObject var tabRouter: TabRouter
@@ -359,7 +358,6 @@ private struct CuerpoLanding: View {
             CompareView()
                 .instrumentoTheme(theme)
                 .environmentObject(repo)
-                .environment(live)
                 .environment(model)
                 .environmentObject(health)
         }
@@ -379,7 +377,6 @@ private struct CuerpoLanding: View {
             }
             .instrumentoTheme(theme)
             .environmentObject(repo)
-            .environment(live)
             .environment(model)
             .environmentObject(health)
         }
@@ -418,7 +415,6 @@ private struct CuerpoLanding: View {
         .background(theme.paper.ignoresSafeArea())
         .instrumentoTheme(theme)
         .environmentObject(repo)
-        .environment(live)
         .environment(model)
         .environmentObject(health)
         .modifier(EdgeSwipeBack(enabled: workoutsPath.isEmpty, onClose: dismissDetail))
@@ -1264,7 +1260,6 @@ private struct CuerpoLanding: View {
         }
         .instrumentoTheme(theme)
         .environmentObject(repo)
-        .environment(live)
         .environment(model)
         .environmentObject(health)
         .preferredColorScheme(.light)
@@ -1308,8 +1303,7 @@ private struct CuerpoLanding: View {
         hrPoints = await hrRows.map {
             TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm)
         }
-        // Esfuerzo del día en curso (FER-650): valor VIVO para el stat, en lockstep con la curva del Detalle.
-        await model.refreshLiveDayStrain()
+        // Ola 2: live day-strain fold retired with the band; settled daily strain via repo.today is enough.
         // displayDays = Apple-health fallback (FER-149); local todayKey ignores a UTC "tomorrow" row (FER-226).
         let stored = await stressRows
         stressSeries = stored   // for the Stress stat's sparkline (FER-566)
@@ -1669,12 +1663,10 @@ private struct CuerpoLanding: View {
     //
     // Nota: los otros tres previews que FER-985 listaba como caros (TodayView, OnboardingWizard,
     // IntervalTimerView) ya NO aparecen sobre el umbral de 100 ms; bajaron solos con FER-981/984.
-    let live = LiveState()
     let appModel = AppModel.preview
     let health = HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview")
     return CuerpoView()
         .environmentObject(repo)
-        .environment(live)
         .environment(appModel)
         .environmentObject(health)
         .frame(width: 390, height: 900)

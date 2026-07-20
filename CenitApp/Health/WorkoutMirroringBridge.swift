@@ -57,6 +57,8 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     var onPairingChanged: ((_ paired: Bool, _ appInstalled: Bool) -> Void)?
     /// The live mirror status changed during a session → the sheet's tertiary watch line.
     var onSessionStatusChanged: ((WatchSessionStatus) -> Void)?
+    /// FER-1003: the watch's own live heart rate during the mirrored session (replaces the band-sourced bpm).
+    var onWatchPulseChanged: ((Int?) -> Void)?
 
     /// How many times we've asked the watch to mirror THIS session — the retry cap is one (2 total).
     private var mirrorAttempts = 0
@@ -272,6 +274,8 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
             onWatchAction?(sessionId, .adjustRest(deltaS: deltaS))
         case let .openReceipt(sessionId):
             onOpenReceipt?(sessionId)
+        case let .watchPulse(bpm):
+            onWatchPulseChanged?(bpm)
         case .start, .rest, .restEnded, .capture, .plan:
             break   // iPhone → watch only
         }

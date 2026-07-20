@@ -31,7 +31,7 @@ struct RootTabView: View {
         // Reachable via DEBUG screenshot-nav (pushed onto the Ajustes stack). Explore/Compare/Workouts
         // also still open from Cuerpo's footer; the rest open as sheets from the Ajustes root (FER-337).
         case explore, compare, workouts
-        case applehealth, datasources, automations, support
+        case applehealth, datasources, support
     }
 
     /// Whether Today is the active tab — published up to ContentView, which owns the color scheme
@@ -373,7 +373,7 @@ struct RootTabView: View {
         case .library, .workoutHistory, .breathe, .intervals, .dieta, .weeklyPlan, .misRutinas,
              .restDay, .otherWays, .routineToday:
             return .train
-        case .explore, .compare, .workouts, .applehealth, .datasources, .automations, .support:
+        case .explore, .compare, .workouts, .applehealth, .datasources, .support:
             return .settings
         }
     }
@@ -458,7 +458,6 @@ struct RootTabView: View {
         case .workouts:     WorkoutsView()
         case .applehealth:  AppleHealthView()
         case .datasources:  DataSourcesView()
-        case .automations:  AutomationsView()
         case .support:      SupportView()
         }
     }

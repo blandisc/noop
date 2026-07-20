@@ -32,7 +32,6 @@ private struct SerieActivaPreviewCell: View {
                     // Sin este coordinador, abrir «Agregar ejercicio» (ExerciseLibraryScreen lo exige
                     // como @EnvironmentObject) CRASHEA el preview — el app real lo inyecta en Root.
                     .environmentObject(MediaDownloadCoordinator())
-                    .environment(model.live)
                     .environment(\.locale, Locale(identifier: "es-MX"))
                     .preferredColorScheme(.light)
                     .frame(width: 393, height: 852)

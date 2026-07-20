@@ -6,7 +6,7 @@ import AppIntents
 /// into the running `AppModel` directly (BLE only lives in the foreground app), so they enqueue here
 /// and the app drains the queue when it next becomes active.
 enum PendingIntents {
-    enum Action: String { case markMoment, buzz }
+    enum Action: String { case markMoment }
 
     /// A queued action plus the instant it was requested. The queue can sit for hours — an intent
     /// run from the lock screen only drains when the app next becomes active — so the request time
@@ -65,17 +65,6 @@ struct MarkMomentIntent: AppIntent {
     }
 }
 
-/// Send a confirming haptic buzz to the strap. Opens the app so the live BLE link can deliver it.
-struct BuzzStrapIntent: AppIntent {
-    static var title: LocalizedStringResource = "Buzz Strap"
-    static var description = IntentDescription("Send a haptic buzz to your strap.")
-    static var openAppWhenRun = true
-
-    func perform() async throws -> some IntentResult {
-        PendingIntents.append(.buzz)
-        return .result()
-    }
-}
 
 /// Surfaces NOOP's intents to Siri, Spotlight, and the Shortcuts gallery without any user setup.
 struct CenitShortcuts: AppShortcutsProvider {
@@ -84,10 +73,6 @@ struct CenitShortcuts: AppShortcutsProvider {
                     phrases: ["Mark a moment in \(.applicationName)"],
                     shortTitle: "Mark a Moment",
                     systemImageName: "mappin.and.ellipse")
-        AppShortcut(intent: BuzzStrapIntent(),
-                    phrases: ["Buzz my \(.applicationName) strap"],
-                    shortTitle: "Buzz Strap",
-                    systemImageName: "waveform.path")
     }
 }
 #endif

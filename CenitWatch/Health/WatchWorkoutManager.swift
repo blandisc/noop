@@ -365,8 +365,8 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             externalUUID = ext
             Task { await endSession(endedAt: endedAt, save: save) }
         case .watchDidSaveWorkout, .watchWillNotSave,
-             .completeSet, .skipRest, .adjustRest, .openReceipt:
-            break   // watch → iPhone only (FER-808/810)
+             .completeSet, .skipRest, .adjustRest, .openReceipt, .watchPulse:
+            break   // watch → iPhone only (FER-808/810/1003)
         }
     }
 
@@ -430,7 +430,13 @@ extension WatchWorkoutManager: HKLiveWorkoutBuilderDelegate {
         let statistics = workoutBuilder.statistics(for: HKQuantityType(.heartRate))
         let unit = HKUnit.count().unitDivided(by: .minute())
         let bpm = statistics?.mostRecentQuantity()?.doubleValue(for: unit) ?? 0
-        Task { @MainActor in if bpm > 0 { self.heartRate = Int(bpm.rounded()) } }
+        Task { @MainActor in
+            guard bpm > 0 else { return }
+            let value = Int(bpm.rounded())
+            self.heartRate = value
+            // FER-1003: mirror live HR to the iPhone — strength sheet's only live-HR source without a band.
+            self.send(.watchPulse(bpm: value))
+        }
     }
 }
 

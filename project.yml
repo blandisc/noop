@@ -45,11 +45,10 @@ settings:
       ONLY_ACTIVE_ARCH: NO
 packages:
   # BiometricStreams — vocabulario neutro de filas biométricas (FER-993 · D2). Raíz del grafo:
-  # no depende de nadie; WhoopProtocol depende de él, nunca al revés.
+  # no depende de nadie. (WhoopProtocol vive en el monorepo para investigación/CLI, pero desde
+  # el Frente B [FER-1003] NO se linkea al binario: el app es Apple-only.)
   BiometricStreams:
     path: Packages/BiometricStreams
-  WhoopProtocol:
-    path: Packages/WhoopProtocol
   CenitStore:
     path: Packages/CenitStore
   StrandAnalytics:
@@ -113,14 +112,11 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        UIBackgroundModes:
-          - bluetooth-central
         # FER-721: required to start any Live Activity (the guided-session rest timer on the lock
         # screen + Dynamic Island). The extension that renders it is the CenitWidgets target below.
         NSSupportsLiveActivities: true
-        NSBluetoothAlwaysUsageDescription: "Cénit connects directly to your band over Bluetooth to read heart rate, R-R intervals, battery, and sensor data locally on your iPhone. Nothing leaves your device."
-        NSHealthShareUsageDescription: "Cénit reads your own Apple Health data on-device to compute recovery, strain, and sleep. Nothing leaves your device."
-        NSHealthUpdateUsageDescription: "Cénit writes the metrics it computes from your strap back into Apple Health, on-device and only when you allow it."
+        NSHealthShareUsageDescription: "Cénit reads your own Apple Health data on-device: sleep, heart rate, heart-rate variability, workouts, and related samples, to show your days and nightly trends. Nothing leaves your device."
+        NSHealthUpdateUsageDescription: "Cénit saves your strength workouts into Apple Health, on-device and only when you allow it."
         NSPhotoLibraryAddUsageDescription: "Cénit saves the workout card you choose to share to your photo library. It only saves the image you explicitly ask it to."
         NSCalendarsFullAccessUsageDescription: "Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device."
         NSCalendarsUsageDescription: "Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device."
@@ -169,7 +165,6 @@ targets:
           EMIT_FRONTEND_COMMAND_LINES: YES
     dependencies:
       - package: BiometricStreams
-      - package: WhoopProtocol
       - package: CenitStore
       - package: StrandAnalytics
       - package: StrandImport
@@ -309,8 +304,6 @@ targets:
       # contra los modulos pero NO linkea su copia — los simbolos los da el
       # host (Cenit.app), si no Xcode truena por duplicacion de codigo.
       - package: BiometricStreams
-        link: false
-      - package: WhoopProtocol
         link: false
       - package: CenitStore
         link: false

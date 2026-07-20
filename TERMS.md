@@ -1,6 +1,6 @@
 # Cénit — Terms of Use & Acknowledgment
 
-**Version 1.0**
+**Version 2.0**
 
 > **This is not legal advice.** This document was drafted with the help of an AI tool, not a lawyer.
 > It is offered honestly and in good faith, but the Cénit maintainers are not lawyers and nothing here
@@ -16,46 +16,40 @@ remove it.
 
 ## 1. What Cénit is — and who provides it
 
-Cénit is a free, independent, **non-commercial** application for iOS that pairs directly
-with a WHOOP® strap you own over Bluetooth and stores your data **only on your own device**. There is
-no Cénit server, no Cénit account, and no telemetry — the maintainers cannot see your data and never
-receive it.
+Cénit is a free, independent, **non-commercial** application for iOS that reads your health and
+fitness data from **Apple Health**, on your own device, and stores everything **only on your own
+device**. There is no Cénit server, no Cénit account, and no telemetry — the maintainers cannot see
+your data and never receive it.
 
 Cénit is published anonymously by an unpaid hobbyist maintainer and contributors, referred to
 throughout as **"the maintainers."** No personal identity is asserted or implied. "You" means the
 individual or entity using Cénit.
 
-## 2. Independent — not affiliated with WHOOP
+## 2. Independent — not affiliated with Apple
 
 Cénit is an **independent, unofficial project. It is not affiliated with, endorsed by, sponsored by,
-or connected to WHOOP, Inc. in any way.** "WHOOP" is a trademark of WHOOP, Inc., used here only
-**descriptively (nominative fair use)** to identify the third-party hardware Cénit interoperates with —
-never to suggest origin, sponsorship, or endorsement, and never as Cénit's own brand. All other
-trademarks belong to their respective owners.
+or connected to Apple Inc. in any way.** "Apple Health" and "HealthKit" are trademarks of Apple Inc.,
+used here only **descriptively (nominative fair use)** to identify the on-device framework Cénit reads
+data from — never to suggest origin, sponsorship, or endorsement, and never as Cénit's own brand. All
+other trademarks belong to their respective owners.
 
-## 3. Use at your own risk — and the WHOOP Terms of Service
+## 3. Use at your own risk
 
-You may use Cénit **only with a WHOOP device you own**, to read **your own data.**
+You may use Cénit to read **your own data** — the health samples your devices already store in Apple
+Health on **your own iPhone**. Cénit reads them locally, with your explicit HealthKit permission,
+which you can revoke at any time in the Health app.
 
-**Using Cénit may breach WHOOP's Terms of Service.** Whether to use Cénit, and any consequences for
-your WHOOP account, subscription, device, or warranty, are **your responsibility and your decision
-alone.** Cénit does not require or encourage you to break any agreement you have entered into; how you
-use hardware you own is up to you. You are responsible for reviewing the agreements and laws that
-apply to you, and for your own compliance with them.
-
-You accept that Cénit is **experimental software that talks to your device's firmware over an
-unofficial, reverse-engineered protocol.** As with any such tool, there is a residual risk to the
-device, its data, and its connection to official services. **You assume that risk.**
+You accept that Cénit is **experimental software.** Its numbers are derived on-device from published,
+approximate methods; they can be wrong, incomplete, or change between versions. **You assume that
+risk**, and you are responsible for reviewing the agreements and laws that apply to you and for your
+own compliance with them.
 
 ## 4. No proprietary material
 
-Cénit contains **only original work** plus **uncopyrightable factual notes** about how data appears on
-the wire, observed by the author from a device the author owns. Cénit does **not** contain, bundle,
-mirror, link to, or redistribute any WHOOP application, firmware, decompiled or disassembled code,
-source, logos, artwork, credentials, or server endpoints, and does **not** circumvent any access
-control, DRM, paywall, or login. Any reverse engineering is undertaken **solely to achieve
-interoperability** of an independently created program, to the extent permitted by the laws that
-apply to you.
+Cénit contains **only original work.** It does **not** contain, bundle, mirror, link to, or
+redistribute any third-party application, firmware, decompiled or disassembled code, source, logos,
+artwork, credentials, or server endpoints, and does **not** circumvent any access control, DRM,
+paywall, or login. It reads health data exclusively through Apple's public HealthKit APIs.
 
 ## 5. Not a medical device
 
@@ -94,14 +88,7 @@ that you are using Cénit with your own device and your own data, at your own ri
 not hold the maintainers responsible** to any greater extent than §6 allows. If these terms change
 in a way that materially affects your rights, Cénit will ask you to acknowledge the new version.
 
-## 8. A request to WHOOP personnel (not a binding condition)
-
-If you are employed by, or acting on behalf of, WHOOP, Inc., we politely ask that you **do not use
-this software.** This is a good-faith request, not a contractual condition, and it does not change
-anyone's legal rights. Cénit exists to let people read their own device's data on their own device;
-it is not intended to compete with, substitute for, or harm WHOOP's products or services.
-
-## 9. Changes, governing law, and severance
+## 8. Changes, governing law, and severance
 
 The maintainers may update these terms; the current version ships with the app and is shown on first
 launch (and again if it materially changes). Continuing to use Cénit after a change means you accept

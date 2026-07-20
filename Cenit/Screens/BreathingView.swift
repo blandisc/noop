@@ -19,7 +19,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 struct BreathingView: View {
 
     @Environment(AppModel.self) private var model
-    @Environment(LiveState.self) private var live
     @Environment(\.instrumentoTheme) private var theme
 
     // MARK: Pace presets
@@ -107,7 +106,6 @@ struct BreathingView: View {
                 controlRow
                 readoutRow
                 coherenceCard
-                if !live.bonded { hapticHint }
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 18)
@@ -124,11 +122,6 @@ struct BreathingView: View {
         .onReceive(secondTimer) { _ in
             guard running else { return }
             sessionSeconds += 1
-        }
-        // Pull new R-R intervals into the rolling buffer as they arrive. onReceive (not onChange):
-        // the body no longer re-renders per beat, so a render-driven onChange would starve (FER-755).
-        .onReceive(live.pulse.$rr.dropFirst()) { rr in
-            ingest(rr)
         }
         // Changing pace mid-session re-arms the current phase cleanly.
         .onChange(of: pace) {
@@ -157,12 +150,6 @@ struct BreathingView: View {
         HStack(spacing: 10) {
             pill(running ? "Session live" : "Ready",
                  dotColor: running ? theme.dataRecovery : nil)
-
-            if live.bonded {
-                pill("Haptics on", dotColor: theme.dataRecovery)
-            } else {
-                pill("Visual only", dotColor: theme.warning)
-            }
 
             Spacer()
 
@@ -365,21 +352,7 @@ struct BreathingView: View {
                     )
                     .frame(width: diameter, height: diameter)
 
-                // Centre readout — live HR is the measured datum, so it carries color.
-                // PulseReader: only this readout re-evaluates per heartbeat (FER-755).
-                PulseReader(live.pulse) { p in
-                    VStack(spacing: 2) {
-                        Text(p.smoothedBpm.map(String.init) ?? "—")
-                            .font(InstrumentoType.groteskHeroNumeral(40))
-                            .foregroundStyle(p.smoothedBpm == nil ? theme.inkTertiary : theme.dataHeart)
-                            .contentTransition(.numericText())
-                            .animation(.snappy, value: p.smoothedBpm)
-                        Text("BPM")
-                            .font(StrandFont.footnote)
-                            .tracking(0.8)
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                }
+                // Ola 2: no live HR source for solo breathing (band gone; Watch mirror is strength-only).
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
@@ -418,9 +391,6 @@ struct BreathingView: View {
                         .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(.plain)
-            .disabled(!live.bonded)
-            .opacity(live.bonded ? 1 : 0.5)
-            .help("Fire a single haptic pulse on the strap (requires a bonded connection)")
         }
     }
 
@@ -428,14 +398,6 @@ struct BreathingView: View {
 
     private var readoutRow: some View {
         HStack(spacing: CenitMetrics.gap) {
-            PulseReader(live.pulse) { p in
-                readoutTile(label: "Heart rate",
-                            value: p.smoothedBpm.map { "\($0)" } ?? "—",
-                            unit: "bpm",
-                            accent: theme.dataHeart,
-                            caption: live.worn ? String(localized: "Live") : String(localized: "Strap not worn"))
-            }
-
             readoutTile(label: "HRV (RMSSD)",
                         value: rmssd.map { String(format: "%.0f", $0) } ?? "—",
                         unit: "ms",
@@ -486,6 +448,7 @@ struct BreathingView: View {
 
     // MARK: - Coherence estimate
 
+    // TODO(/pm): sin banda, esta tarjeta nunca deja de decir "Waiting for R-R" — ¿ocultarla?
     private var coherenceCard: some View {
         card {
             VStack(alignment: .leading, spacing: 10) {
@@ -541,21 +504,6 @@ struct BreathingView: View {
         }
     }
 
-    // MARK: - Haptic hint
-
-    private var hapticHint: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "applewatch.radiowaves.left.and.right")
-                .foregroundStyle(theme.warning)
-            Text("Connect your strap for haptic guidance: you'll feel one pulse on the inhale, two on the exhale, so you can breathe with your eyes closed.")
-                .font(StrandFont.footnote)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-        }
-        .padding(14)
-        .instrumentoCard(.card, theme: theme, fill: theme.tint(theme.warning), stroke: theme.softStroke(theme.warning))
-    }
 
     // MARK: - Session control
 
@@ -599,16 +547,6 @@ struct BreathingView: View {
 
     // MARK: - HRV (RMSSD)
 
-    /// Append newly-arrived R-R intervals, keep a rolling window, recompute RMSSD.
-    private func ingest(_ rr: [Int]) {
-        guard !rr.isEmpty else { return }
-        // The published `rr` is the latest set of intervals; append the tail and trim.
-        rrBuffer.append(contentsOf: rr)
-        if rrBuffer.count > rrWindow {
-            rrBuffer.removeFirst(rrBuffer.count - rrWindow)
-        }
-        rmssd = computeRMSSD(rrBuffer)
-    }
 
     /// RMSSD = sqrt(mean of squared successive differences) over the R-R series.
     private func computeRMSSD(_ intervals: [Int]) -> Double? {

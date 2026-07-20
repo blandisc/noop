@@ -14,31 +14,23 @@ enum DataSourceImportKind {
     case appleHealth
 }
 
-/// Root app state: owns the live BLE connection state and the CoreBluetooth engine.
-/// More subsystems (Repository, AnalyticsEngine, ImportCoordinator) get wired in here
-/// in later milestones.
+/// Root app state: owns the on-device repository, profile, strength session, and Watch mirror.
+/// Strap BLE ownership was amputated in Ola 2 (Apple-only).
 @MainActor
-// FER-984: `@Observable` (no `ObservableObject`) → SwiftUI rastrea lecturas por-propiedad, así que un
-// cambio a UNA propiedad (p.ej. `liveDayStrain` por `hrFlushSeq`) solo re-evalúa las vistas que LEEN esa
-// propiedad, no las 16 pantallas que observan el modelo. Mismo patrón que `LiveState` (FER-874). Sin `$`
-// publishers: los pocos bindings (`$…strengthSheetPresented`) van por `@Bindable` en el consumidor.
+// FER-984: `@Observable` (no `ObservableObject`) → SwiftUI rastrea lecturas por-propiedad.
+// Sin `$` publishers: los pocos bindings (`$…strengthSheetPresented`) van por `@Bindable` en el consumidor.
 @Observable final class AppModel {
-    /// The live instance, so an AppIntent (Shortcuts) can reach the bonded strap rather than spinning
-    /// up a dead second AppModel (which would start a duplicate BLE engine and never buzz). Set in
-    /// init(); `weak` so an intent fired while NOOP is closed sees nil and asks the user to open it. (#42)
+    /// The live instance for App Intents (Shortcuts). Set in init(); `weak` so an intent fired while
+    /// Cénit is closed sees nil and asks the user to open it. (#42)
     static weak var shared: AppModel?
 
-    /// Shared device id for both live capture (BLEManager) and imported history.
+    /// Shared device id for imported history / on-device store partition.
     let deviceId = "strap"
-    /// Source id for imported Apple Health data (stored beside Whoop for per-source pages + consensus).
+    /// Source id for imported Apple Health data (stored beside legacy strap rows for per-source pages + consensus).
     let appleDeviceId = "apple-health"
-    /// Observable snapshot driven by the BLE engine (connection, HR, battery, log).
-    let live: LiveState
     /// Owns the rest Live Activity (FER-721): started/updated/ended from the guided session's rest state,
     /// and the bridge for its «+30 s»/«Saltar» lock-screen actions.
     let restActivity = RestActivityController()
-    /// CoreBluetooth engine — scans, connects, bonds, streams.
-    let ble: BLEManager
     /// Read model over the on-device store (dashboard + detail screens).
     let repo: Repository
     /// User profile (age/sex/body/HR-max) for zones, calories, baselines.
@@ -74,6 +66,9 @@ enum DataSourceImportKind {
     var watchSessionStatus: WatchSessionStatus = .inactive
     var watchPaired = false
     var watchAppInstalled = false
+    /// FER-1003: the Apple Watch's own live heart rate during a mirrored strength session — replaces the
+    /// band-sourced `bpm` now that there's no strap. nil with no watch mirroring / no reading yet.
+    var watchBpm: Int?
 
     /// Session ids for which the watch already saved the real `HKWorkout`. The one-workout invariant
     /// gate (`WorkoutSaveGate`) reads this so the iPhone omits its own save. Ephemeral — the workout is
@@ -85,15 +80,9 @@ enum DataSourceImportKind {
     /// Timestamps of moments marked via a double-tap (persisted).
     var moments: [Date] = []
 
-    /// An in-progress manually-tracked workout (requested by users who want to start a session
-    /// themselves rather than rely on auto-detection). Holds the start time + the live HR collected
-    /// since; on End the window is scored via `StrainScorer` and saved as a `WorkoutRow` (source
-    /// "manual"), which then shows in the Workouts view. The day's strain already counts this HR (it's
-    /// the same live stream the store persists), so this is a per-session annotation, not a double-count.
-    var activeWorkout: ActiveWorkout?
     /// The guided strength session in progress (FER-347), or nil. Lives here (global) so closing its sheet
     /// or switching tabs never loses it — the Train hub re-presents it. Saved as a `StrengthSession` + its
-    /// `SetEntry` rows on Finish. Independent of the live HR workout above.
+    /// `SetEntry` rows on Finish.
     var strengthSession: StrengthSessionModel? { didSet { bindRestActivity() } }
     /// Subscription to the active session's changes — drives the rest Live Activity's reconcile loop.
     private var restActivityCancellable: AnyCancellable?
@@ -111,35 +100,8 @@ enum DataSourceImportKind {
     /// Whether the guided-session sheet is currently shown. False while a session runs but the sheet is
     /// dismissed (the hub then offers «Resume»). Set true on start/resume, false on swipe-dismiss/finish.
     var strengthSheetPresented = false
-    /// The just-ended workout, for a brief inline confirmation in the Train hub (cleared on the next start).
-    var lastWorkout: WorkoutRow?
-    /// True when the just-ended session was discarded because no HR ever arrived (<2 samples), so the
-    /// Train hub can show an honest "not saved" notice instead of silently dropping it (FER-197).
-    /// Cleared on the next start and on acknowledge.
-    var lastWorkoutDiscarded = false
-
-    /// A manual workout in progress. `samples` accumulate from the smoothed live `bpm`; `liveStrain`
-    /// is recomputed as the window grows so the active card can show strain building in real time.
-    struct ActiveWorkout: Equatable {
-        let start: Date
-        var samples: [HRSample] = []
-        var liveStrain: Double = 0
-        var avgHr: Int = 0
-        var peakHr: Int = 0
-        // FER-870: running sums so each 1 Hz sample extends the average/strain in O(1)+O(300) instead
-        // of re-summing and re-sorting the whole growing buffer. `strainState` folds the same Edwards
-        // TRIMP `StrainScorer.strain` computes, so `strain` == the from-scratch value at every sample.
-        var hrSum: Int = 0
-        var strainState: StrainScorer.CumulativeStrainState?
-    }
     /// Illness/strain early-warning (recent RHR up + HRV down + skin-temp up vs baseline). nil = clear.
     var healthAlert: String?
-    private var lastDoubleTapAt: Date = .distantPast
-    private var lastCoachZone: Int = -1
-    // Stress-nudge state: rolling R-R buffer + a slow HRV baseline + a rate limiter.
-    private var rrBuf: [Int] = []
-    private var hrvBaseline: Double = 0
-    private var lastStressBuzzAt: Date = .distantPast
 
     /// Import source currently writing to the local store, if any.
     private var activeImportSource: DataSourceImportKind?
@@ -202,40 +164,12 @@ enum DataSourceImportKind {
         }
     }
 
-    /// Smoothed, display-ready live heart rate — median over a short window, spike-filtered.
-    /// Every screen should show THIS, not the raw per-beat value (which swings with HRV).
-    /// Stored on `live.pulse` (FER-755) so the ~1 Hz publish invalidates only the views that
-    /// display it (via PulseReader), not every screen observing AppModel.
-    var bpm: Int? {
-        get { live.pulse.smoothedBpm }
-        set { live.pulse.smoothedBpm = newValue }
-    }
-    /// The in-progress day's LIVE Day Strain (0–21): today's HR (local civil day → now) run through the
-    /// SAME canonical parameters the intraday curve uses, so it equals the curve's LAST point by
-    /// construction (FER-650). This is the DISPLAY value for the CURRENT day on the Hoy tile and the
-    /// Detalle hero — one derivation, three surfaces. The settled `repo.today.strain` is left untouched
-    /// (it still feeds recovery/readiness baselines). nil until first computed, or when there's too little
-    /// activity today to score. Refreshed by `refreshLiveDayStrain()` on each dashboard/HR-flush tick.
-    private(set) var liveDayStrain: Double?
-    // FER-870: incremental cache for the in-progress day's strain curve. Each HR flush folds ONLY the
-    // samples newer than `liveStrainState.lastTs` (TRIMP is additive) off the main actor, instead of
-    // re-reading ~86k rows and re-sorting every gap from scratch. Reset when the civil day rolls over,
-    // the data source switches, or a scoring parameter changes (`liveStrainDayStart`/`liveStrainSource`
-    // + the state's own parameter check) — the only cases where the batch recompute would differ.
-    private var liveStrainState: StrainScorer.CumulativeStrainState?
-    private var liveStrainDayStart: Int?
-    private var liveStrainSource: DataSourceMode?
-    /// Generation counter for in-flight live-strain folds: only the most recently STARTED fold may
-    /// commit its extended state, so a slow older fold can never double-count or clobber a newer one
-    /// (same discipline as `Repository.refreshGen`). @MainActor-confined ⇒ no races.
-    private var liveStrainGen = 0
-    private var hrWindow: [(t: Date, v: Double)] = []
+    /// Display-ready heart rate placeholder (was band-smoothed). Always nil without a strap stream;
+    /// strength sheet live HR uses `watchBpm` instead (FER-1003).
+    var bpm: Int?
     private var hrCancellables = Set<AnyCancellable>()
 
     init() {
-        let live: LiveState = LiveState()
-        self.live = live
-        self.ble = BLEManager(state: live, deviceId: "strap")
         self.repo = Repository(deviceId: "strap")
         self.repo.dataSourceMode = sources.mode      // FER-484: honor the persisted mode from launch
         self.repo.baselineEpoch = profile.baselineEpochOrNil   // FER-677: honor a persisted recalibration
@@ -248,19 +182,9 @@ enum DataSourceImportKind {
             : (age > 0 ? StrainScorer.tanakaHRmax(age: Double(age)) : nil)
         self.repo.strainHRmax = strainHRmax
         self.repo.strainSex = profile.sex
-        // FER-993 (D3): the engine takes the band capability bit, not the hardware-family type.
-        // FER-993 (D4): the strap partition is labelled 'strap' since v36.
+        // Ola 2: Apple-only — no WHOOP hardware step estimation.
         self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "strap",
-                                               estimatesSteps: WhoopModel.persisted.estimatesSteps)
-        // Smooth HR centrally so it's solid everywhere it's shown.
-        live.pulse.$heartRate.sink { [weak self] (_: Int?) in self?.ingestHR() }.store(in: &hrCancellables)
-        live.pulse.$rr.sink { [weak self] (_: [Int]) in self?.ingestHR() }.store(in: &hrCancellables)
-
-        // Physical-input + wear hooks (fired live by FrameRouter).
-        live.onDoubleTap = { [weak self] in self?.handleDoubleTap() }
-        live.onWristChange = { [weak self] (worn: Bool) in self?.handleWristChange(worn) }
-        // HR-zone haptic coaching watches the smoothed bpm.
-        live.pulse.$smoothedBpm.sink { [weak self] (hr: Int?) in self?.coachZone(hr) }.store(in: &hrCancellables)
+                                               estimatesSteps: false)
         // FER-721: the lock-screen actions come back through the controller; apply them to the live session.
         restActivity.onAction = { [weak self] (action: RestActivityBridge.Action) in self?.applyRestAction(action) }
         // FER-806: the Activity now lives the WHOLE session, so we must NOT kill it unconditionally at
@@ -284,21 +208,6 @@ enum DataSourceImportKind {
             }
             .sink { [weak self] (days: [DailyMetric]) in self?.evaluateIllness(days) }
             .store(in: &hrCancellables)
-        // Re-arm the strap's firmware alarm whenever it (re)bonds. A smart-alarm time changed while the
-        // strap was away never reached it — the send is gated on bond — so the strap kept the OLD time
-        // and fired at it (#59). FER-874: LiveState is `@Observable` (no `$` publishers), so this is now a
-        // callback fired from `bonded`'s didSet; the `!= oldValue` guard there is the old `removeDuplicates`.
-        // Gated on enabled so a disabled alarm doesn't disarm on every reconnect.
-        live.onBondedChange = { [weak self] bonded in
-            guard let self, bonded, self.behavior.smartAlarmEnabled else { return }
-            self.applySmartAlarm()
-        }
-        // A completed backfill has just written strap history. Refresh the dashboard cache, but leave
-        // heavyweight analysis to its own guarded/background-friendly path. FER-874: callback from
-        // `lastSyncedAt`'s didSet (non-nil + distinct), replacing the old `$lastSyncedAt` Combine sink.
-        live.onSyncCompleted = { [weak self] _ in
-            Task { [weak self] in await self?.refreshAfterCompletedBackfill() }
-        }
 
         moments = (UserDefaults.standard.array(forKey: "moments") as? [Double] ?? [])
             .map { Date(timeIntervalSince1970: $0) }
@@ -360,13 +269,13 @@ enum DataSourceImportKind {
             // nil), no hagas esperar el primer análisis los 6 s del offload: los crudos YA almacenados
             // pueden producirlo ahora. El sleep de abajo queda solo como cortesía al primer offload BLE.
             if self.repo.today?.recovery == nil,
-               Self.mayRecomputeAfterBackfill(backfilling: self.live.backfilling,
+               Self.mayRecomputeAfterBackfill(backfilling: false,
                                               hasActiveImport: self.hasActiveImport) {
                 await self.intelligence.analyzeRecent()
             }
             try? await Task.sleep(nanoseconds: 6_000_000_000)  // give the first offload a moment
             while !Task.isCancelled {
-                if Self.mayRecomputeAfterBackfill(backfilling: self.live.backfilling,
+                if Self.mayRecomputeAfterBackfill(backfilling: false,
                                                   hasActiveImport: self.hasActiveImport) {
                     await self.intelligence.analyzeRecent()
                 }
@@ -531,8 +440,7 @@ enum DataSourceImportKind {
     }
 
     private func refreshAfterCompletedBackfill() async {
-        live.append(log: "Backfill: refreshing dashboard cache from completed sync")
-        // Full refresh, not a 120-day window: a windowed publish here used to clobber the dashboard
+                // Full refresh, not a 120-day window: a windowed publish here used to clobber the dashboard
         // down to 120 days (truncating Tendencias 1A until the next full pass) and let the recompute
         // below fold baselines over it. With the off-main assembly the full pass no longer punishes
         // the main actor, so the shortcut lost its reason to exist.
@@ -566,7 +474,7 @@ enum DataSourceImportKind {
     /// fixes — reschedule a bounded few times; a fresh completion resets the budget, and once it's spent
     /// the periodic loop remains the backstop.
     private func runRecomputeAfterBackfill(retriesLeft: Int) async {
-        guard Self.mayRecomputeAfterBackfill(backfilling: live.backfilling,
+        guard Self.mayRecomputeAfterBackfill(backfilling: false,
                                              hasActiveImport: hasActiveImport) else {
             if retriesLeft > 0 { scheduleRecomputeAfterBackfill(retriesLeft: retriesLeft - 1) }
             return
@@ -594,29 +502,6 @@ enum DataSourceImportKind {
         }
     }
 
-    /// Fold a fresh reading into the smoothing window and republish a stable bpm.
-    /// Prefers the strap's reported HR; falls back to 60000/R-R. Clamps to a plausible
-    /// 30–220 range (rejects 0 / garbage spikes) and publishes the window MEDIAN.
-    private func ingestHR() {
-        var inst: Double?
-        if let hr = live.heartRate, hr >= 30, hr <= 220 {
-            inst = Double(hr)
-        } else if let rr = live.rr.last, rr > 0 {
-            let v = 60_000.0 / Double(rr)
-            if v >= 30, v <= 220 { inst = v }
-        }
-        guard let inst else { return }
-        let now = Date()
-        hrWindow.append((now, inst))
-        hrWindow.removeAll { now.timeIntervalSince($0.t) > 10 }   // ~10s window
-        if hrWindow.count > 40 { hrWindow.removeFirst(hrWindow.count - 40) }
-        let vals = hrWindow.map(\.v).sorted()
-        bpm = vals.isEmpty ? nil : Int(vals[vals.count / 2].rounded())
-        captureWorkoutSample()
-        captureStrengthSample()
-        evaluateStress()
-        reconcileRestActivity()   // FER-721: push the fresh pulse to the rest Live Activity (HR-throttled)
-    }
 
     // MARK: - Rest Live Activity (FER-721)
 
@@ -722,8 +607,9 @@ enum DataSourceImportKind {
         if let s = strengthSession, s.summary == nil, !s.paused, s.phase == .resting,
            s.currentRestMode == .heartRate, let started = s.restStartedAt {
             let elapsed = max(0, Int(Date().timeIntervalSince(started)))
-            let hr = (live.connected && live.worn) ? bpm : nil
-            let v = RestReadinessRule.evaluate(currentHR: hr, worn: live.worn,
+            // no band → no live HR to feed HR-guided rest anymore (Watch→phone HR is separate: watchBpm)
+            let hr: Int? = nil
+            let v = RestReadinessRule.evaluate(currentHR: hr, worn: false,
                                                restingHR: restingHrBaseline, elapsedS: elapsed,
                                                targetHR: s.currentRestTarget)
             if v.ready, v.reason == .hrRecovered {
@@ -792,8 +678,8 @@ enum DataSourceImportKind {
         // «al volver» / «peso × reps» detail: weight×reps exercises show the load; time/distance carry none.
         let usesWeightReps = run.type == .weightReps || run.type == .bodyweight
         let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
-        // No band (disconnected / off-wrist) → no pulse: the surfaces then show only the timer/hero.
-        let bandBpm: Int? = (live.connected && live.worn) ? bpm : nil
+        // no band → no live HR to push outward; wrist uses its own HKWorkoutSession HR
+        let bandBpm: Int? = nil
         // FER-789 — rest phase drives the card's primary action + context line: the routine's last pending
         // set → «Terminar entreno» (flag); an exercise's last set → «Sigue: {next}»; otherwise the check.
         let restPhase: RestPhase = s.pendingCount <= 1 ? .lastSetOfRoutine
@@ -833,7 +719,8 @@ enum DataSourceImportKind {
             ?? .metric
         let usesWeightReps = run.type == .weightReps || run.type == .bodyweight
         let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
-        let bandBpm: Int? = (live.connected && live.worn) ? bpm : nil
+        // no band → no live HR to push outward
+        let bandBpm: Int? = nil
         return WorkoutCaptureSnapshot(
             sessionId: s.id, routineName: s.routineName,
             setNumber: run.currentSet + 1, setTotal: run.sets.count,
@@ -931,45 +818,6 @@ enum DataSourceImportKind {
                                                   strain: s.strain, avgHr: s.avgHr, routineName: name)
     }
 
-    // MARK: - Manual workout tracking
-
-    /// Begin a manually-tracked workout. The active card on Live then shows elapsed time, live HR and
-    /// strain building; End scores + saves it. Confirms with a single buzz.
-    func startWorkout() {
-        guard activeWorkout == nil else { return }
-        lastWorkout = nil
-        lastWorkoutDiscarded = false
-        activeWorkout = ActiveWorkout(start: Date())
-        buzz(loops: 1)
-    }
-
-    /// Finish the active workout: score the captured HR window and save it as a `WorkoutRow`. A session
-    /// with too few samples (never streamed HR) is discarded quietly. Double-buzz confirms the save.
-    func endWorkout() {
-        guard let w = activeWorkout else { return }
-        activeWorkout = nil
-        let samples = w.samples
-        guard samples.count >= 2 else { lastWorkout = nil; lastWorkoutDiscarded = true; return }
-        let end = Date()
-        let avg = Int((Double(samples.map(\.bpm).reduce(0, +)) / Double(samples.count)).rounded())
-        let peak = samples.map(\.bpm).max() ?? 0
-        let strain = StrainScorer.strain(samples, maxHR: Double(profile.hrMax), sex: profile.sex)
-        let row = WorkoutRow(
-            startTs: Int(w.start.timeIntervalSince1970), endTs: Int(end.timeIntervalSince1970),
-            sport: "Workout", source: "manual", durationS: end.timeIntervalSince(w.start),
-            energyKcal: nil, avgHr: avg, maxHr: peak, strain: strain,
-            distanceM: nil, zonesJSON: nil, notes: nil)
-        lastWorkout = row
-        lastWorkoutDiscarded = false
-        buzz(loops: 2)
-        Task { [weak self] in
-            guard let self else { return }
-            if let store = await self.repo.storeHandle() {
-                _ = try? await store.upsertWorkouts([row], deviceId: self.deviceId)
-                await self.repo.refresh()
-            }
-        }
-    }
 
     // MARK: - Guided strength session (FER-347)
 
@@ -1379,17 +1227,11 @@ enum DataSourceImportKind {
                                comparison: comparison, exercises: exerciseLines)
     }
 
-    /// Dismiss the just-ended confirmation / discard notice shown in the Train hub once the user has
-    /// seen it (FER-197) — the hub auto-acknowledges after a few seconds so the row returns to idle.
-    func acknowledgeLastWorkout() {
-        lastWorkout = nil
-        lastWorkoutDiscarded = false
-    }
 
     /// Append the current smoothed `bpm` to the active strength session's HR buffer (FER-399), so finishing
     /// can derive avgHr/strain + a Keytel calorie estimate. In-memory only; a no-op when no strength session
     /// is running, the receipt is already shown, or there's no fresh HR. Same main-actor cadence as
-    /// `captureWorkoutSample` — never touches the BLE drain.
+    /// never touches a band stream (band retired Ola 2).
     private func captureStrengthSample() {
         // FER-823: drop HR captured while paused from the session's scoring set — the band keeps streaming
         // for the live readout (`bpm`), but paused beats must not inflate strain/energy.
@@ -1397,215 +1239,53 @@ enum DataSourceImportKind {
         s.hrSamples.append(HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr))
     }
 
-    /// Append the current smoothed `bpm` to the active workout and extend its running strain. Called
-    /// from `ingestHR` on every fresh sample; a no-op when no workout is running. FER-870: the average
-    /// and strain extend from running state (`hrSum` + `strainState`) instead of re-summing and
-    /// re-sorting the whole growing buffer each sample — same values, O(1)+O(300) per sample.
-    private func captureWorkoutSample() {
-        guard var w = activeWorkout, let hr = bpm else { return }
-        let sample = HRSample(ts: Int(Date().timeIntervalSince1970), bpm: hr)
-        w.samples.append(sample)
-        w.peakHr = max(w.peakHr, hr)
-        w.hrSum += hr
-        w.avgHr = Int((Double(w.hrSum) / Double(w.samples.count)).rounded())
-        if w.strainState == nil {
-            w.strainState = StrainScorer.CumulativeStrainState(maxHR: Double(profile.hrMax), sex: profile.sex)
-        }
-        w.strainState?.extend(with: [sample])
-        w.liveStrain = w.strainState?.strain ?? 0
-        activeWorkout = w
-    }
 
-    // MARK: - Live Day Strain (in-progress day) — FER-650
+    // MARK: - Day Strain display (settled only — live fold retired with the band, Ola 2)
 
-    /// The ONE canonical derivation of the in-progress day's accumulated strain, shared by the Hoy tile,
-    /// the Detalle hero and the intraday curve (FER-650). Reads today's HR (local civil day → now) and runs
-    /// `StrainScorer.cumulativeStrain` with the SAME parameters the daily engine uses, so the curve's last
-    /// point is — by construction — the value the tile and hero show:
-    ///   • **HRmax:** the UNROUNDED effective max the engine uses (`hrMaxOverride ?? Tanaka(age)`), NOT the
-    ///     rounded `profile.hrMax` (rounding is display-only) — the divergence FER-650 traced.
-    ///   • **Resting HR:** today's single resting HR (`repo.today.restingHr`), one source for all surfaces.
-    ///   • **Window:** local midnight → now, so just past midnight it reads TODAY's (near-empty) samples,
-    ///     never yesterday's (preserves FER-341).
-    /// Publishes `liveDayStrain` (= the last cumulative point) as a side effect so the tile stays in lockstep
-    /// with the curve. Returns [] under the same guard as the daily score: no settled score for today yet
-    /// (the engine hasn't acknowledged the civil day), too few readings, or invalid HRR. PAST days are never
-    /// read here — this only ever scores today's window, so settled history is untouched.
     /// The user's effective HRmax: an explicit override, else Tanaka(age), else nil (unknown age).
-    /// ONE definition shared by the strap live-strain path (`liveDayStrainCurve`) and the Apple
-    /// estimated «Carga del día» (pushed to `repo.strainHRmax`), so the number never jumps band↔Apple
-    /// for the same person on the same day (FER-883, /cso finding 1).
+    /// ONE definition shared by the Apple estimated «Carga del día» (pushed to `repo.strainHRmax`),
+    /// so the number never jumps for the same person on the same day (FER-883, /cso finding 1).
     var effectiveHRmax: Double? {
         profile.hrMaxOverride > 0
             ? Double(profile.hrMaxOverride)
             : (profile.age > 0 ? StrainScorer.tanakaHRmax(age: Double(profile.age)) : nil)
     }
 
-    @discardableResult
-    func liveDayStrainCurve() async -> [StrainScorer.CumulativeStrainPoint] {
-        guard repo.today?.strain != nil else { liveDayStrain = nil; return [] }
-        let startOfToday = Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970)
-        let nowTs = Int(Date().timeIntervalSince1970)
-        let restHR = repo.today?.restingHr.map(Double.init) ?? StrainScorer.defaultRestingHR
-        let effMax: Double? = effectiveHRmax
-        let source = repo.dataSourceMode
-
-        // FER-870: reuse the cached incremental state unless the civil day rolled over, the data source
-        // switched, or a scoring parameter changed — any of which would make the batch recompute differ,
-        // so we discard and re-seed from midnight. Otherwise we only ever fold the NEW samples.
-        let cached = liveStrainState
-        let reusable = cached.map {
-            liveStrainDayStart == startOfToday && liveStrainSource == source
-                && $0.hasSameParameters(bucketSeconds: 900, maxHR: effMax, restingHR: restHR,
-                                        method: .edwards, sex: profile.sex,
-                                        denominator: StrainScorer.strainDenominator)
-        } ?? false
-        let base = reusable ? cached! : StrainScorer.CumulativeStrainState(
-            maxHR: effMax, restingHR: restHR, sex: profile.sex)
-        if !reusable {
-            liveStrainDayStart = startOfToday
-            liveStrainSource = source
-            liveStrainState = base   // publish the empty re-seed immediately so a stale day never lingers
-        }
-
-        // Only the samples newer than what we've already folded. On a fresh seed that's midnight → now.
-        let from = (base.lastTs ?? (startOfToday - 1)) + 1
-        let newSamples = await repo.hrSamples(from: from, to: nowTs, limit: 100_000)
-
-        liveStrainGen &+= 1
-        let gen = liveStrainGen
-        // Fold OFF the main actor: the accumulate + O(300) median never touches the UI thread.
-        let (extended, curve): (StrainScorer.CumulativeStrainState, [StrainScorer.CumulativeStrainPoint]) =
-            await Task.detached(priority: .utility) {
-                let next = base.extended(with: newSamples)
-                return (next, next.curve)
-            }.value
-
-        // Commit only if we're still the newest fold (a newer flush that started while we were folding
-        // reads from the same base and supersedes us — no double-count, no clobber).
-        guard gen == liveStrainGen else { return curve }
-        liveStrainState = extended
-        liveDayStrain = curve.last?.strain
-        return curve
-    }
-
-    /// Refresh only the published `liveDayStrain` value (drops the curve) — the tile's cheap path, called on
-    /// each dashboard refresh / live-HR flush so the Hoy tile rises in lockstep with the Detalle curve.
-    func refreshLiveDayStrain() async { _ = await liveDayStrainCurve() }
-
-    /// The value the CURRENT day's strain shows on the Hoy/Cuerpo tiles: the live derivation when it's
-    /// computed, else the settled `repo.today.strain` (before the first live pass, or too little activity).
-    /// One accessor so both tiles share the exact same fallback (FER-650).
+    /// The value the CURRENT day's strain shows on the Hoy/Cuerpo tiles: settled daily score only
+    /// (live band-fold removed in Ola 2).
     var displayedDayStrain: Double? {
-        liveDayStrain ?? repo.today?.strain ?? repo.estimatedStrain(repo.today?.day ?? Repository.localDayKey(Date()))
+        repo.today?.strain ?? repo.estimatedStrain(repo.today?.day ?? Repository.localDayKey(Date()))
     }
 
-    /// The in-progress day's intraday strain curve as chart points, with the local-midnight anchor prepended
-    /// (so the line reads "from 00:00" even if the strap wasn't worn until later). The ONE builder both the
-    /// Hoy and Cuerpo detail sheets draw, over `liveDayStrainCurve()` — its last point is the tile/hero value
-    /// by construction (FER-650). [] when there's no score / too little activity today.
+    // TODO(/pm): sin banda no hay curva intradía de carga; ¿mostrar solo el punto final del día?
     func strainCurveTrendPoints() async -> [TrendPoint] {
-        let curve = await liveDayStrainCurve()
-        guard !curve.isEmpty else { return [] }
-        let midnight = TrendPoint(date: Calendar.current.startOfDay(for: Date()), value: 0)
-        return [midnight] + curve.map { TrendPoint(date: $0.date, value: $0.strain) }
+        return []
     }
 
-    /// Drop the smoothing window and blank the hero number so a resume / re-attach shows "—"
-    /// until a genuinely fresh sample arrives, instead of republishing the stale pre-gap median.
-    /// Called when the first realtime consumer arms the stream (see `acquireRealtimeHR`), NOT on the
-    /// 30s keep-alive re-arm — so steady-state smoothing is untouched. Fixes #46 (HR jumped to a stale ~100 on
-    /// reopen, then "slowly came back down" as fresh low samples refilled the window).
     func resetSmoothing() {
-        hrWindow.removeAll()
         bpm = nil
     }
 
-    /// Experimental resting stress nudge: track RMSSD vs a slow baseline; when HRV drops well below
-    /// baseline while HR is calm (not exercising), buzz once — rate-limited to once / 15 min. Off by
-    /// default; conservative so it rarely false-fires.
-    private func evaluateStress() {
-        guard behavior.stressNudge, live.bonded, live.worn else { return }
-        let fresh = live.rr.filter { $0 > 300 && $0 < 2000 }   // plausible R-R (30–200 bpm)
-        guard !fresh.isEmpty else { return }
-        rrBuf.append(contentsOf: fresh)
-        if rrBuf.count > 60 { rrBuf.removeFirst(rrBuf.count - 60) }
-        guard rrBuf.count >= 20 else { return }
-        let rmssd = AppModel.rmssd(rrBuf)
-        guard rmssd > 0 else { return }
-        hrvBaseline = hrvBaseline == 0 ? rmssd : hrvBaseline * 0.98 + rmssd * 0.02   // slow EMA
-        guard let hr = bpm, hr >= 55, hr <= 100 else { return }   // resting band — not a workout
-        let now = Date()
-        if rmssd < hrvBaseline * 0.6, now.timeIntervalSince(lastStressBuzzAt) > 900 {
-            lastStressBuzzAt = now
-            buzz(loops: 1)
-            live.append(log: "Stress nudge: take a paced breath")
-        }
-    }
 
-    static func rmssd(_ rr: [Int]) -> Double {
-        guard rr.count >= 2 else { return 0 }
-        var sum = 0.0, n = 0
-        for i in 1..<rr.count { let d = Double(rr[i] - rr[i - 1]); sum += d * d; n += 1 }
-        return n > 0 ? (sum / Double(n)).squareRoot() : 0
-    }
-
-    /// Start scanning for the strap. When no model is given, use the one the user
-    /// picked (persisted under "selectedWhoopModel"), so every scan entry point —
-    /// Live, onboarding, the menu bar, Settings — honours the same choice.
-    func scan(model: WhoopModel? = nil) {
-        let chosen = model
-            ?? UserDefaults.standard.string(forKey: "selectedWhoopModel").flatMap(WhoopModel.init(rawValue:))
-            ?? .whoop4
-        ble.connect(model: chosen)
-    }
-    func disconnect() { ble.disconnect() }
-
-    /// Drop the current strap and clear bond state so a newly-picked strap model connects fresh
-    /// (lets a user with both a WHOOP 4 and a 5/MG switch between them).
-    func prepareStrapSwitch() { ble.prepareForModelSwitch() }
-
-    /// Live-HR consumers that want the heavy R10/R11 realtime stream (the Live tab, a guided strength
-    /// session). The stream is armed while ANY consumer wants it and stopped only when the LAST one
-    /// leaves — so leaving Live mid-session doesn't kill the session's HR, and ending a session doesn't
-    /// kill Live's (FER-498). The keep-alive re-arm goes through `ble.startRealtime()` directly (NOT
-    /// here), so steady-state — and the marginal-radio fallback (#80) it honors — is untouched.
+    /// Realtime HR consumer ref-count (band stream removed in Ola 2). Kept so strength start/end call sites still compile.
     private var realtimeConsumers: Set<String> = []
 
-    /// A consumer (`"live"`, `"strength"`) wants live HR. ALWAYS (re)arms the realtime stream and blanks
-    /// the stale smoothing window (#46) — not just on the first consumer (FER-498). This matters because
-    /// the consumer set can desync from the actual stream: SwiftUI's `onDisappear` for Live isn't reliable
-    /// (tabs/sheets), so `"live"` can linger; meanwhile the stream may already be OFF (a disconnect, an
-    /// offload that stopped the R10/R11 flood, or a marginal-radio fallback). If we armed only `wasIdle`,
-    /// a strength session opened in that state would never re-arm — leaving a FROZEN `bpm` and zero capture
-    /// (the receipt then reads "no heart rate"). Re-arming every time is safe and idempotent — it's exactly
-    /// what Live already did on each `onAppear`/connection change. The ref-count governs only the STOP.
     func acquireRealtimeHR(_ consumer: String) {
         realtimeConsumers.insert(consumer)
         resetSmoothing()
-        ble.startRealtime()
     }
 
-    /// A consumer is done with live HR. Stops the realtime stream once the LAST consumer leaves (the
-    /// lightweight 0x2A37 HR keeps recording regardless). Idempotent per consumer.
     func releaseRealtimeHR(_ consumer: String) {
-        guard realtimeConsumers.remove(consumer) != nil, realtimeConsumers.isEmpty else { return }
-        ble.stopRealtime()
+        _ = realtimeConsumers.remove(consumer)
     }
-    /// Ask the strap for a fresh battery reading.
-    func getBattery() { ble.refreshBattery() }
 
-    /// Fire a haptic buzz on the strap. patternId=2 is the graduated buzz confirmed on-device;
-    /// `loops` sets the length. Used by the in-app test button and (later) notification alerts.
-    /// Requires a bonded connection — no-op otherwise (the command characteristic is gated on bond).
+    // TODO(/pm): sin banda, buzz() no hace nada — ¿reemplazar con háptica del teléfono (UIImpactFeedbackGenerator) o del Watch en vez de dejarlo mudo?
     func buzz(loops: UInt8 = 2) {
-        ble.send(.runHapticsPattern, payload: [2, loops, 0, 0, 0])
+        // no strap to buzz
     }
 
-    /// Fire a specific preset haptic pattern (patternId 0–6 on Harvard; loops sets length).
-    /// Used by the notification-pattern picker and coaching features.
     func buzz(pattern: UInt8, loops: UInt8 = 1) {
-        ble.send(.runHapticsPattern, payload: [pattern, loops, 0, 0, 0])
+        // no strap to buzz
     }
 
     /// Mirror the inactivity-reminder wrist buzz as a local notification, so the "time to move" nudge
@@ -1634,73 +1314,17 @@ enum DataSourceImportKind {
         #endif
     }
 
-    /// Arm (or clear) the strap's firmware alarm from the smart-alarm settings. The firmware alarm
-    /// fires even if the Mac is asleep / NOOP is closed. No-op until bonded (send is gated on bond).
-    func applySmartAlarm() {
-        guard behavior.smartAlarmEnabled else { ble.disableStrapAlarm(); return }
-        let cal = Calendar.current
-        let now = Date()
-        var next = cal.date(bySettingHour: behavior.smartAlarmMinutes / 60,
-                            minute: behavior.smartAlarmMinutes % 60, second: 0, of: now) ?? now
-        if next <= now { next = cal.date(byAdding: .day, value: 1, to: next) ?? next }
-        ble.armStrapAlarm(at: next)
-    }
 
-    // MARK: - Physical inputs / wear automation
+    // MARK: - Moments
 
-    private func handleDoubleTap() {
-        let now = Date()
-        guard now.timeIntervalSince(lastDoubleTapAt) > 1.2 else { return }   // debounce repeats
-        lastDoubleTapAt = now
-        live.append(log: "Double-tap → \(behavior.doubleTapAction.label)")
-        runStrapAction(behavior.doubleTapAction, shortcut: behavior.doubleTapShortcut)
-    }
-
-    /// Run a configured strap action. In-app actions (buzz/moment) stay on-device; shortcuts go
-    /// through StrapActions.
-    func runStrapAction(_ kind: StrapActionKind, shortcut: String) {
-        switch kind {
-        case .none: break
-        case .buzzBack: buzz(loops: 1)
-        case .markMoment: markMoment()
-        case .runShortcut: StrapActions.runShortcut(shortcut)
-        }
-    }
-
-    /// Record a "moment" (double-tap marker) with a confirming buzz. `at` defaults to now for the
-    /// live marks (double-tap, in-app); a moment queued by an App Intent passes the instant the user
-    /// actually asked for it, which can be hours before the app becomes active and drains the queue.
+    /// Record a "moment" with a confirming buzz (now a no-op haptic). `at` defaults to now; a moment
+    /// queued by an App Intent passes the instant the user actually asked for it.
     func markMoment(at date: Date = Date()) {
         moments.append(date)
-        // A drained intent can predate a moment marked live (BLE double-tap still fires while the app
-        // is backgrounded), so keep the array ascending — the 500-cap trim and "Recent moments" both
-        // read it as oldest-first.
         moments.sort()
         if moments.count > 500 { moments.removeFirst(moments.count - 500) }
         UserDefaults.standard.set(moments.map(\.timeIntervalSince1970), forKey: "moments")
         buzz(loops: 1)
-        live.append(log: "Moment marked")
-    }
-
-    private func handleWristChange(_ worn: Bool) {
-        if worn {
-            if !behavior.wristOnShortcut.isEmpty { StrapActions.runShortcut(behavior.wristOnShortcut) }
-        } else {
-            if !behavior.wristOffShortcut.isEmpty { StrapActions.runShortcut(behavior.wristOffShortcut) }
-        }
-    }
-
-    /// HR-zone haptic coaching: buzz when crossing into the top zone (ease off) or back to recovery.
-    private func coachZone(_ hr: Int?) {
-        guard behavior.zoneCoaching, live.bonded, live.worn, let hr, hr >= 30 else { return }
-        let maxHR = Double(profile.hrMax)
-        guard maxHR > 0 else { return }
-        let pct = Double(hr) / maxHR
-        let zone = pct >= 0.9 ? 5 : pct >= 0.8 ? 4 : pct >= 0.7 ? 3 : pct >= 0.6 ? 2 : 1
-        defer { lastCoachZone = zone }
-        guard lastCoachZone != -1, zone != lastCoachZone else { return }
-        if zone == 5, lastCoachZone < 5 { buzz(loops: 3) }          // entered max — ease off
-        else if zone <= 1, lastCoachZone > 1 { buzz(loops: 1) }     // recovered
     }
 
     /// Illness/strain early-warning (FER-667): compare the last ~2 days against a ~28-day baseline

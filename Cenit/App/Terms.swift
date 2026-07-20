@@ -5,17 +5,17 @@ import Foundation
 /// acknowledgment; leave it for typo fixes. Mirrored on Android by `NoopPrefs.TERMS_VERSION`. The
 /// full text lives in `TERMS.md`, shipped with NOOP.
 enum Terms {
-    static let currentVersion = "1.0"
+    static let currentVersion = "2.0"
 
     /// The load-bearing points the user must accept on first launch — the plain-English summary of
     /// `TERMS.md` §1–§6. Kept identical to the Android `Terms.points`. Each is (headline, body).
     static let points: [(String, String)] = [
-        ("Independent: not affiliated with WHOOP",
-         "Cénit is an unofficial project, not affiliated with, endorsed by, or sponsored by WHOOP, Inc. \"WHOOP\" is their trademark, used only to name the hardware Cénit works with."),
-        ("Using Cénit may breach WHOOP's Terms of Service",
-         "Use it only with a device you own, to read your own data. Whether to use it, and any effect on your WHOOP account, subscription, device, or warranty, is your decision, and your risk alone."),
-        ("Experimental: at your own risk",
-         "Cénit talks to your strap's firmware over an unofficial, reverse-engineered protocol. There is a residual risk to the device, its data, and its connection to official services. You assume that risk."),
+        ("Reads your data from Apple Health, on your device",
+         "Cénit reads your health and fitness data directly from Apple Health, on your iPhone — no separate hardware pairing required."),
+        ("Offline and local — no account, no server",
+         "Every metric is processed and stored only on your device. There is no Cénit server, no Cénit account, and no telemetry — the maintainers cannot see your data and never receive it."),
+        ("General wellness only — not a medical device",
+         "Cénit is not a medical device and provides no medical advice. Don't use it to diagnose, treat, or make any health decision — always consult a qualified professional."),
         ("Not a medical device, not medical advice",
          "Every metric is an unvalidated approximation. Don't use Cénit to diagnose, treat, or make any health decision. Always consult a qualified professional."),
         ("No warranty; liability limited",

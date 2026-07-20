@@ -82,6 +82,7 @@ struct CenitApp: App {
             model?.watchAppInstalled = installed
         }
         mirroring.onSessionStatusChanged = { [weak model] status in model?.watchSessionStatus = status }
+        mirroring.onWatchPulseChanged = { [weak model] bpm in model?.watchBpm = bpm }
         model.mirroringBridge = mirroring
         _mirroring = StateObject(wrappedValue: mirroring)
     }
@@ -94,7 +95,6 @@ struct CenitApp: App {
                 // break the dense glanceable layouts). Sheets inherit this clamp.
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .environment(model)
-                .environment(model.live)
                 .environmentObject(model.repo)
                 .environmentObject(model.profile)
                 .environmentObject(model.behavior)

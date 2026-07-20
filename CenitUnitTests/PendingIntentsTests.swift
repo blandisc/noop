@@ -38,14 +38,16 @@ final class PendingIntentsTests: XCTestCase {
     }
 
     func testDrainPreservesQueueOrderAndPerEntryTimestamps() {
-        let buzzAt = queuedAt.addingTimeInterval(90)
+        // Dos entradas del mismo tipo con timestamps distintos: el orden y el timestamp POR ENTRADA
+        // siguen fijados. (El case `.buzz` se retiró con la banda, FER-1003.)
+        let secondAt = queuedAt.addingTimeInterval(90)
         PendingIntents.append(.markMoment, at: queuedAt)
-        PendingIntents.append(.buzz, at: buzzAt)
+        PendingIntents.append(.markMoment, at: secondAt)
 
         let drained = PendingIntents.drain()
 
-        XCTAssertEqual(drained.map(\.action), [.markMoment, .buzz])
-        XCTAssertEqual(drained.map(\.date), [queuedAt, buzzAt])
+        XCTAssertEqual(drained.map(\.action), [.markMoment, .markMoment])
+        XCTAssertEqual(drained.map(\.date), [queuedAt, secondAt])
     }
 
     func testDrainEmptiesTheQueue() {
