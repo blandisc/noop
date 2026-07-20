@@ -130,6 +130,7 @@ struct TodayView: View {
     /// Tab switcher — the «Explóralo en el Coach» handoff from the Detalle de Estrés (FER-452, mirrors Cuerpo).
     @EnvironmentObject var tabRouter: TabRouter
     @State private var showDataSources = false
+    @State private var showAutonomicDetail = false
     /// Cuenta cada pull-to-refresh para disparar la háptica declarativa (`.sensoryFeedback`) al
     /// provocar el gesto de sincronización (FER-204).
     @State private var syncHaptic = 0
@@ -878,6 +879,12 @@ struct TodayView: View {
             .environmentObject(health)
             .preferredColorScheme(.light)
         }
+        .sheet(isPresented: $showAutonomicDetail) {
+            AutonomicTrendDetailSheet(theme: theme)
+                .presentationDragIndicator(.visible)
+                .presentationBackground(theme.paper)
+                .preferredColorScheme(.light)
+        }
     }
 
     /// El `ScrollView` de Hoy + el rastreo del tirón del pull-to-refresh propio (FER-222). El offset del
@@ -901,6 +908,7 @@ struct TodayView: View {
                     HealthAlertBanner()
                     todayStatusBanner
                     heroBlock
+                    autonomicTrendCardBlock
                 }
                 sectionTabs
                     .padding(.top, CenitMetrics.space1)   // FER-878 follow-up: cromo apretado para caber sin scroll
@@ -1333,13 +1341,65 @@ struct TodayView: View {
     /// Whether a strap has ever been seen (drives the foot affordance: Scan before, live pulse after).
     private var strapSeen: Bool { live.lastSyncedAt != nil || liveBpm != nil }
 
+    @ViewBuilder private var heroBlock: some View {
+        switch heroState {
+        case .verdict, .loading:
+            verdictHero
+        case .calibrating:
+            appleTrendHero
+        case .waiting:
+            appleTrendHero
+        }
+    }
+
+    /// R4 (FER-1008): el héroe del path Apple-only — el SUEÑO es el número dominante (el 0–100 estilo-WHOOP
+    /// se retiró). Toca → detalle de sueño.
+    @ViewBuilder private var appleTrendHero: some View {
+        let sleepMin = resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.value
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+            Text("SUEÑO DE ANOCHE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            if let sleepMin, sleepMin > 0 {
+                let h = Int(sleepMin) / 60, m = Int(sleepMin) % 60
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text("\(h)").font(StrandFont.number(64)).foregroundStyle(theme.ink)
+                    Text("h ").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
+                    Text("\(m)").font(StrandFont.number(64)).foregroundStyle(theme.ink)
+                    Text("m").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
+                }
+                .lineLimit(1).minimumScaleFactor(0.6)
+                Text(sleepMin >= 420 ? "Dormiste bien" : "Sueño corto")
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            } else {
+                Text("—").font(StrandFont.number(64)).foregroundStyle(theme.inkTertiary)
+                Text("Sin registro de sueño anoche").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }.map { Int($0.value.rounded()) }) }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// R4 (FER-1008): la tarjeta «cómo vienes» — solo en el path Apple-only (sin recuperación de banda) y
+    /// cuando hay una lectura de tendencia. En banda con veredicto no aparece (el veredicto es el héroe).
+    @ViewBuilder private var autonomicTrendCardBlock: some View {
+        if repo.today?.recovery == nil, let trend = repo.todayAutonomicTrend {
+            AutonomicTrendCard(
+                read: trend,
+                showLowSampleBanner: (resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.value ?? 0) > 0 && trend.asOfWasDense == false,
+                onTap: { showAutonomicDetail = true }
+            )
+            .padding(.top, CenitMetrics.space2)
+        }
+    }
+
     /// El héroe del handoff «Hoy» 2026-07 (FER-709; numeral 102 pt): en el color del veredicto +
     /// la columna derecha (overline, palabra-veredicto con subrayado punteado + ⓘ que abre la hoja
     /// Recuperación, y el delta «+3 vs tu promedio»). El dial de 240 pt y el numeral concéntrico SE
     /// RETIRAN (decisión del dueño; `DiurnalDial` grande sigue en el paquete hasta F3) — el 24 h vive
     /// ahora en el sello del header. El numeral nunca miente: `··` calibrando, `—` sin datos, `~N`
     /// estimado.
-    @ViewBuilder private var heroBlock: some View {
+    @ViewBuilder private var verdictHero: some View {
         let state = heroState
         let animatingHero = !reduceMotion
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
@@ -1368,11 +1428,6 @@ struct TodayView: View {
                 // (28 del numeral − ~3 del propio overline) para que su tope case con el tope del número.
                 .alignmentGuide(.top) { $0[.top] - Self.heroColumnTopDrop }
                 Spacer(minLength: 0)
-            }
-            // FER-545: sello «estimado · confianza» cuando el veredicto de hoy es un estimado de Apple
-            // (noche sin banda) — el veredicto estimado nunca se ve idéntico al de banda.
-            if state == .verdict, repo.isRecoveryEstimated(Repository.localDayKey(Date())) {
-                estimatedTodayMarker
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

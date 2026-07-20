@@ -495,17 +495,13 @@ final class Repository: ObservableObject {
         for p in inputs.debt { fig[p.day, default: ImportedSleepFigures()].debtMin = p.value }
 
         let merged = Self.mergeDaily(imported: inputs.imported, computed: inputs.computed, apple: inputs.apple)
-        // FER-153 (Capa 2) + FER-529 (F4b): the ESTIMATED recovery for any day whose MEASURED recovery is
-        // nil — a band-less Apple night (FER-153) OR a cold-start night where the band is worn but its RMSSD
-        // baseline isn't seeded yet (FER-529). Computed read-time (no migration/persistence). Eligibility
-        // mirrors the `repo.today` selector EXACTLY (`recovery == nil`), so an estimate exists ⟺ it would be
-        // surfaced — `isRecoveryEstimated` never lies, and the band wins the instant it can compute. It is
-        // NOT folded into the merge — `days`/`displayDays` stay band-measured, so no recovery statistic over
-        // history can mix in an estimate; it surfaces only via `repo.today` (single day). `whoopOnly` →
-        // `apple == []` → empty. `mergeDaily` is the unchanged band/Apple merge.
-        let daysNeedingEstimate = Set(merged.days.filter { $0.recovery == nil }.map(\.day))
-        let estimates = Self.appleRecoveryEstimates(apple: inputs.apple, eligibleDays: daysNeedingEstimate,
-                                                    epoch: inputs.baselineEpoch)
+        // R4 (FER-1008): la «recuperación estimada» estilo-WHOOP (el `~N`) se RETIRA. Un día sin recovery
+        // MEDIDA de banda ya no recibe un 0–100 estimado; en su lugar Hoy muestra sueño + la tendencia
+        // autonómica (AutonomicTrend). `recoveryEstimates` queda vacío, así que `isRecoveryEstimated` es
+        // siempre false y toda la cadena del `~N` (sello «estimado», numeral con `~`, viñeta HRV del brief,
+        // marker) deja de renderizar por cascada. `appleRecoveryEstimates` (abajo) queda sin callers de
+        // producción — candidato a borrar en el barrido de código muerto del Frente D.
+        let estimates: [String: AppleRecoveryEstimator.DayEstimate] = [:]
         // FER-883: ESTIMATED strain for days whose MEASURED strain is nil (band-less Apple day).
         // Mirrors recovery: never folded into days/displayDays; surfaced only via estimatedStrain.
         let daysNeedingStrainEstimate = Set(merged.days.filter { $0.strain == nil }.map(\.day))
