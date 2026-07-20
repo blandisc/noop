@@ -193,7 +193,7 @@ struct DataSourcesView: View {
     @ViewBuilder
     private var appleHealthLiveBody: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in: nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)")
+            Text("Sync the last few weeks, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps. Nothing leaves your iPhone; your strength workouts are saved back to Apple Health when you allow it. (For a one-time bulk history, use the export import above.)")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 

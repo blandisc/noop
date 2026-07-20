@@ -3,19 +3,16 @@ import Foundation
 import StrandDesign
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-/// HRV haptic breathing biofeedback trainer — Strand's flagship novel feature.
+/// Haptic-paced breathing trainer — a timed breath pacer with a felt cue.
 ///
-/// The strap both *measures* HRV (via R-R intervals) and *buzzes* (haptic strap
-/// motor), so we can pace the user's breath with a felt cue and watch their HRV
-/// respond in real time. Pick a pace, hit start, close your eyes: one buzz on the
-/// inhale, two on the exhale. Live HR + a rolling RMSSD (an honest estimate) show
-/// the autonomic response building as the session deepens.
+/// Pick a pace, hit start, close your eyes, and follow the breath orb: a timer drives
+/// inhale/exhale, one cue on the inhale, two on the exhale. (Live HRV/RMSSD biofeedback
+/// was retired with the band — FER-1003 — since solo breathing has no live R-R source;
+/// the pace readout, driven by the pacer itself, is what remains.)
 ///
-/// «Instrumento diurno» (FER-342): warm paper, ink labels, color only in the
-/// measured datum — live HR in `dataHeart`, HRV in `dataHrv`. The breath orb keeps
-/// the screen's signature motion but in a calm physiological glow, not saturated
-/// chrome. All session logic (paces, timers, RMSSD) is unchanged from the dark
-/// original; only the view layer was repainted.
+/// «Instrumento diurno» (FER-342): warm paper, ink labels, color only in the measured
+/// datum. The breath orb keeps the screen's signature motion in a calm physiological
+/// glow, not saturated chrome.
 struct BreathingView: View {
 
     @Environment(AppModel.self) private var model
@@ -84,17 +81,12 @@ struct BreathingView: View {
     @State private var sessionSeconds: Int = 0
     @State private var breathCount: Int = 0
 
-    /// Rolling buffer of the most recent R-R intervals (ms) for RMSSD.
-    @State private var rrBuffer: [Int] = []
-    @State private var rmssd: Double? = nil
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
     /// Phase driver (fast, smooth) and a once-per-second session tick.
     private let phaseTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
     private let secondTimer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
-
-    private let rrWindow = 30
 
     var body: some View {
         ScrollView {
@@ -105,7 +97,6 @@ struct BreathingView: View {
                 orbCard
                 controlRow
                 readoutRow
-                coherenceCard
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, 18)
@@ -396,22 +387,16 @@ struct BreathingView: View {
 
     // MARK: - Readouts
 
+    // FER-1003: the live HRV/RMSSD readout and the coherence-estimate card were retired with the band —
+    // solo breathing has no live R-R source (the Watch mirror is strength-only), so both were permanently
+    // stuck at "—" / "No data". Only the pace readout, driven by the pacer itself, remains.
     private var readoutRow: some View {
-        HStack(spacing: CenitMetrics.gap) {
-            readoutTile(label: "HRV (RMSSD)",
-                        value: rmssd.map { String(format: "%.0f", $0) } ?? "—",
-                        unit: "ms",
-                        accent: theme.dataHrv,
-                        caption: rrBuffer.isEmpty
-                                 ? String(localized: "Waiting for R-R")
-                                 : String(localized: "Last \(rrBuffer.count) beats"))
-
-            readoutTile(label: "Pace",
-                        value: String(format: "%.1f", pace.bpm),
-                        unit: "br/min",
-                        accent: theme.ink,
-                        caption: String(format: "%.0f / %.0fs", pace.inhale, pace.exhale))
-        }
+        readoutTile(label: "Pace",
+                    value: String(format: "%.1f", pace.bpm),
+                    unit: "br/min",
+                    accent: theme.ink,
+                    caption: String(format: "%.0f / %.0fs", pace.inhale, pace.exhale))
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// `label` y `unit` son `LocalizedStringKey`: como `String` planos, `Text(label)` los pintaba tal cual
@@ -444,64 +429,6 @@ struct BreathingView: View {
             }
         }
         .frame(height: CenitMetrics.tileHeight)
-    }
-
-    // MARK: - Coherence estimate
-
-    // TODO(/pm): sin banda, esta tarjeta nunca deja de decir "Waiting for R-R" — ¿ocultarla?
-    private var coherenceCard: some View {
-        card {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text("Coherence estimate").groteskOverline().foregroundStyle(theme.inkTertiary)
-                    Spacer()
-                    pill(LocalizedStringKey(coherenceLabel), dotColor: coherenceDotColor)
-                }
-
-                // A simple normalized bar — RMSSD mapped 0…120ms → 0…1.
-                GeometryReader { geo in
-                    let frac = coherenceFraction
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(theme.hairline)
-                        Capsule()
-                            .fill(theme.dataHrv)
-                            .frame(width: max(6, geo.size.width * frac))
-                            .animation(.easeInOut(duration: 0.5), value: frac)
-                    }
-                }
-                .frame(height: 10)
-
-                Text("Estimate only: a higher RMSSD while paced usually means your parasympathetic \"rest\" branch is engaging. It is not a clinical reading; trends over a session matter more than any single number.")
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    /// RMSSD normalized to a 0…1 bar (0…120 ms full scale).
-    private var coherenceFraction: CGFloat {
-        guard let r = rmssd else { return 0 }
-        return CGFloat(min(max(r / 120.0, 0), 1))
-    }
-
-    private var coherenceLabel: String {
-        guard let r = rmssd else { return String(localized: "No data") }
-        switch r {
-        case ..<20:  return String(localized: "Building")
-        case ..<45:  return String(localized: "Settling")
-        case ..<80:  return String(localized: "Coherent")
-        default:     return String(localized: "Deep calm")
-        }
-    }
-
-    private var coherenceDotColor: Color? {
-        guard let r = rmssd else { return nil }
-        switch r {
-        case ..<20:  return theme.warning
-        case ..<45:  return theme.inkTertiary
-        default:     return theme.dataRecovery
-        }
     }
 
 

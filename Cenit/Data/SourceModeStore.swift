@@ -2,10 +2,9 @@ import Foundation
 import Combine
 import StrandAnalytics
 
-/// The data-source mode (combined / WHOOP-only / Apple-Health-only) — a single user preference,
-/// UserDefaults-backed (single-user, on-device), mirroring `ProfileStore` / `BehaviorStore` / `GoalStore`.
-/// Capture is independent of this (FER-484): the mode only filters what the dashboard and baseline READ,
-/// never what gets written. Default `.combined`, so existing users keep the historical behavior.
+/// The data-source mode. Historically a user preference (combined / WHOOP-only / Apple-Health-only)
+/// that filtered what the dashboard and baseline READ, never what got written (FER-484). Since the band
+/// amputation (FER-1003) it is PINNED to `.appleHealthOnly` — see the property below.
 @MainActor
 final class SourceModeStore: ObservableObject {
     /// B (FER-1003): PINEADO a `.appleHealthOnly`. Cénit es Apple-only — el app ya no lee la banda. Se

@@ -442,7 +442,7 @@ struct TodayView: View {
             if !usesWhoop {
                 return "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
             }
-            return "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here."
+            return "Connect Apple Health and, with your night's sleep, your day's reading starts to show here."
         }
     }
 
@@ -1468,11 +1468,11 @@ struct TodayView: View {
             Text("No reading for today yet")
                 .font(StrandFont.title2).fontWeight(.semibold).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Connect your band or Apple Health and your verdict will read every morning.")
+            Text("Connect Apple Health and your reading will refresh every morning.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             if let y = yesterdayVerdict { yesterdayLine(y) }
-            heroFooter(state)   // conserva el CTA «Buscar strap» en base-Apple sin banda; vacío en espera
+            heroFooter(state)   // FER-1003: solo el atajo de Apple Salud en calibración; vacío en espera
             metricsBridge
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2215,7 +2215,7 @@ struct TodayView: View {
     /// Enmarca el conteo como las noches que tu PROPIA base necesita, nunca «tu veredicto».
     private func calibrationDetailCopy(nights: Int) -> LocalizedStringKey {
         let total = Baselines.minNightsSeed
-        if nights == 0 { return "Wear the strap tonight: the first of \(total) nights your own baseline needs." }
+        if nights == 0 { return "Wear your Apple Watch to sleep tonight: the first of \(total) nights your own baseline needs." }
         if nights >= total { return "All \(total) nights are in. Computing your first verdict." }
         return "Your own baseline sharpens each night · you're at \(nights)."
     }

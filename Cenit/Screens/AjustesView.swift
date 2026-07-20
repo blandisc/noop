@@ -254,9 +254,26 @@ private struct AjustesLanding: View {
                 navRow("Units & format", subtitle: unitsSubtitle) { showUnits = true }
             }
             section("Data") {
-                navRow("Data & sources", subtitle: Text("Strap · Apple Health · backup")) { darkScreen = .dataSources }
+                navRow("Data & sources", subtitle: Text("Apple Health · backup")) { darkScreen = .dataSources }
                 divider
                 recalibrateRow
+            }
+            section("Salud") {
+                // FER-1021: el interruptor de «vigilar enfermedad» vivía en la difunta AutomationsView
+                // (retirada con la banda). El motor sigue vivo y ruteado a Apple (temp de muñeca + FC en
+                // reposo nocturna, FER-884); esto le repone el acceso para que la feature sea alcanzable.
+                Toggle(isOn: $behavior.illnessWatch) {
+                    Text("Vigilar señales de enfermedad").font(StrandFont.body).foregroundStyle(theme.ink)
+                }
+                .toggleStyle(.instrumento)
+                .frame(minHeight: 44)
+                .onChange(of: behavior.illnessWatch) { _, on in
+                    if on { IllnessNotifier.requestAuthorization() }
+                    model.reevaluateIllness()
+                }
+                Text("Cruza tu temperatura de muñeca y tu pulso en reposo nocturno para avisarte temprano de una posible enfermedad. Aproximado, no es un diagnóstico; necesita unas dos semanas de datos.")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             section("Experimental") {
                 navRow("Cycle phase",

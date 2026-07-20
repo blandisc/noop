@@ -3,7 +3,7 @@ import Foundation
 /// The Terms of Use the first-run gate presents. Bump `currentVersion` when the terms MATERIALLY
 /// change (risk / liability / medical / affiliation wording) to re-prompt every user for a fresh
 /// acknowledgment; leave it for typo fixes. Mirrored on Android by `NoopPrefs.TERMS_VERSION`. The
-/// full text lives in `TERMS.md`, shipped with NOOP.
+/// full text lives in `TERMS.md`, shipped with Cénit.
 enum Terms {
     static let currentVersion = "2.0"
 
@@ -15,9 +15,7 @@ enum Terms {
         ("Offline and local — no account, no server",
          "Every metric is processed and stored only on your device. There is no Cénit server, no Cénit account, and no telemetry — the maintainers cannot see your data and never receive it."),
         ("General wellness only — not a medical device",
-         "Cénit is not a medical device and provides no medical advice. Don't use it to diagnose, treat, or make any health decision — always consult a qualified professional."),
-        ("Not a medical device, not medical advice",
-         "Every metric is an unvalidated approximation. Don't use Cénit to diagnose, treat, or make any health decision. Always consult a qualified professional."),
+         "Cénit is not a medical device and provides no medical advice. Every metric is an unvalidated approximation — don't use Cénit to diagnose, treat, or make any health decision. Always consult a qualified professional."),
         ("No warranty; liability limited",
          "Cénit is free and provided \"as is\", with no warranty. Liability is limited to the maximum extent the law that applies to you allows, and nothing here removes protections your local law won't let us remove."),
     ]
