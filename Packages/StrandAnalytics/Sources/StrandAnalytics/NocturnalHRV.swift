@@ -57,7 +57,13 @@ public enum NocturnalHRV {
             if s.nnMs >= HRVAnalyzer.rrMinMs && s.nnMs <= HRVAnalyzer.rrMaxMs { acc += 1 }
         }
         let (rmssd, nPairs) = HRVAnalyzer.rmssdSegmented(windowed, gapSeconds: 3)
-        let dense = nClean >= minCleanBeats && nPairs >= minSuccessivePairs && (rmssd ?? 0) > 0
+        // Plausibility backstop (FER-1003 science gate): the per-pair artifact filter inside
+        // `rmssdSegmented` catches single bad beats, but reject the whole night if its RMSSD still lands
+        // outside the baseline's own [minVal, maxVal] (many moderate artifacts summing past maxVal). Same
+        // ms gate the EWMA base skip-and-holds, from ONE source of truth (Baselines.hrvCfg), not a
+        // duplicated 5/250. An implausible night is treated exactly like a thin one: not dense, not emitted.
+        let plausible = (rmssd ?? 0) >= Baselines.hrvCfg.minVal && (rmssd ?? 0) <= Baselines.hrvCfg.maxVal
+        let dense = nClean >= minCleanBeats && nPairs >= minSuccessivePairs && (rmssd ?? 0) > 0 && plausible
         return NightResult(rmssdMs: dense ? rmssd : nil, nClean: nClean, nPairs: nPairs)
     }
 }

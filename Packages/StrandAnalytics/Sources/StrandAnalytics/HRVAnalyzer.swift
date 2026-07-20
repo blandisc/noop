@@ -50,6 +50,20 @@ public enum HRVAnalyzer {
     /// Malik moving-window implementations.
     public static let ectopicWindowRadius: Int = 2
 
+    /// Successive-difference artifact threshold for the SEGMENTED nocturnal path (FER-1003 science
+    /// gate). A beat-to-beat change exceeding this fraction of the shorter interval is rejected as an
+    /// artifact — a wrist-PPG missed/extra beat or ectopic — before it can dominate the L2 RMSSD sum.
+    /// The segmented path runs on gappy, non-contiguous wrist beats where a 5-beat local-median (Malik)
+    /// is unreliable, so this pairwise successive-difference rule is its artifact defense (Task Force
+    /// 1996 requires artifact editing BEFORE RMSSD; RMSSD is L2, so one huge Δ dominates a whole night).
+    /// Same 0.20 as `ectopicThreshold` by design — a >20% successive jump (>~240 ms at a bradycardic
+    /// 1200 ms RR) is beyond physiological RSA even in sleep — but a DISTINCT filter (pairwise, not
+    /// median). RELATIVE (not an absolute ms cap) so genuine high-RSA bradycardic nights are preserved.
+    /// Validated on 46 real nights (R0 harness): idle on clean nights (ΔRMSSD=0 where no pair is
+    /// rejected), corrects the ~7 artifact-flipped directions; 15% over-rejects (eats real RSA), 25%
+    /// is ~equivalent. Rejected pairs are dropped, never bridged.
+    public static let maxSuccessiveDeltaFraction: Double = 0.20
+
     /// Result of an HRV computation over a window.
     public struct HRVResult: Equatable, Sendable {
         /// RMSSD in milliseconds, or nil when too few valid beats.
@@ -109,7 +123,8 @@ public enum HRVAnalyzer {
     /// fewer than 1 valid pair. Input is sorted by ts ascending (ties broken by nnMs, so
     /// the result is deterministic) before segmenting; a tie in ts yields Δ = 0 and is
     /// excluded (0 < Δ required).
-    public static func rmssdSegmented(_ nn: [TimedNN], gapSeconds: Int = 3) -> (rmssd: Double?, nPairs: Int) {
+    public static func rmssdSegmented(_ nn: [TimedNN], gapSeconds: Int = 3,
+                                      deltaFraction: Double = maxSuccessiveDeltaFraction) -> (rmssd: Double?, nPairs: Int) {
         guard nn.count >= 2 else { return (nil, 0) }
         let sorted = nn.sorted { $0.ts != $1.ts ? $0.ts < $1.ts : $0.nnMs < $1.nnMs }
         var sumSq = 0.0
@@ -122,6 +137,12 @@ public enum HRVAnalyzer {
             guard prev.nnMs >= rrMinMs && prev.nnMs <= rrMaxMs else { continue }
             guard cur.nnMs >= rrMinMs && cur.nnMs <= rrMaxMs else { continue }
             let d = cur.nnMs - prev.nnMs
+            // Artifact rejection (see `maxSuccessiveDeltaFraction`): a wrist-PPG missed/extra beat puts
+            // one huge in-range Δ into this L2 sum and inflates the whole night's RMSSD. Reject the pair
+            // when the beat-to-beat change exceeds `deltaFraction` of the shorter interval. Both pairs
+            // touching an artifact beat exceed it, so the artifact's influence is dropped entirely; the
+            // pair is not counted (it is not a valid successive pair) and never bridged.
+            guard abs(d) <= deltaFraction * Swift.min(prev.nnMs, cur.nnMs) else { continue }
             sumSq += d * d
             nPairs += 1
         }

@@ -391,7 +391,7 @@ public enum Baselines {
         let n = trailing.count
         // Center space: ln(value) for a log-domain metric (HRV), the raw value otherwise.
         // The center maps back to display units via exp() so HRV's baseline is the
-        // geometric mean (Plews 2013), not the up-biased arithmetic mean.
+        // geometric mean (Plews et al. 2013, Sports Med 43(9):773–781), not the up-biased arithmetic mean.
         let centers = trailing.map { toCenter($0, logDomain: cfg.logDomain) }
         let mean = centers.reduce(0, +) / Double(n)
 
