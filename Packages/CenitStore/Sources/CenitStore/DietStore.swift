@@ -122,6 +122,16 @@ extension CenitStore {
         }
     }
 
+    // MARK: - Delete
+
+    /// Delete EVERY diet-adherence mark for `deviceId`. The «empezar de cero» reset uses this so
+    /// contributed patrones leave no residual adherence rows. Other partitions are untouched.
+    public func deleteAllDietAdherence(deviceId: String) async throws {
+        try syncWrite { db in
+            try db.execute(sql: "DELETE FROM dietAdherence WHERE deviceId = ?", arguments: [deviceId])
+        }
+    }
+
     // MARK: - Row mapping
 
     private static func dietPlanRow(_ row: Row) -> DietPlanRow {

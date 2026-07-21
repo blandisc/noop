@@ -155,4 +155,34 @@ final class MetricSeriesStoreTests: XCTestCase {
         let span = try await store.metricDays(deviceId: "devA", key: "missing")
         XCTAssertNil(span)
     }
+
+    // MARK: - delete by partition + key
+
+    func testDeleteMetricSeriesClearsKeyPartitionOnly() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.upsertMetricSeries([
+            MetricPoint(day: "2026-05-01", key: "diet-adherence", value: 80),
+            MetricPoint(day: "2026-05-02", key: "diet-adherence", value: 90),
+            MetricPoint(day: "2026-05-01", key: "recovery", value: 70),
+        ], deviceId: "devA")
+        try await store.upsertMetricSeries([
+            MetricPoint(day: "2026-05-01", key: "diet-adherence", value: 50),
+        ], deviceId: "devB")
+
+        try await store.deleteMetricSeries(deviceId: "devA", key: "diet-adherence")
+
+        let gone = try await store.metricSeries(deviceId: "devA", key: "diet-adherence",
+                                                from: "2026-05-01", to: "2026-05-31")
+        XCTAssertTrue(gone.isEmpty, "target (deviceId, key) must be fully deleted")
+
+        let keptKey = try await store.metricSeries(deviceId: "devA", key: "recovery",
+                                                   from: "2026-05-01", to: "2026-05-31")
+        XCTAssertEqual(keptKey.count, 1, "other keys on same device must remain")
+        XCTAssertEqual(keptKey[0].value, 70)
+
+        let keptDev = try await store.metricSeries(deviceId: "devB", key: "diet-adherence",
+                                                   from: "2026-05-01", to: "2026-05-31")
+        XCTAssertEqual(keptDev.count, 1, "same key on other device must remain")
+        XCTAssertEqual(keptDev[0].value, 50)
+    }
 }

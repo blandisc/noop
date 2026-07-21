@@ -60,6 +60,19 @@ extension CenitStore {
         }
     }
 
+    // MARK: - Delete
+
+    /// Delete EVERY point for (`deviceId`, `key`). Exact equality only — no ranges, no LIKE.
+    /// The «empezar de cero» reset uses this for residual keys such as `diet-adherence` that
+    /// journal/experiment wipes leave behind. Other keys and partitions are untouched.
+    public func deleteMetricSeries(deviceId: String, key: String) async throws {
+        try syncWrite { db in
+            try db.execute(sql: """
+                DELETE FROM metricSeries WHERE deviceId = ? AND key = ?
+                """, arguments: [deviceId, key])
+        }
+    }
+
     // MARK: - Reads
 
     /// Points for a single `key` on days in [from, to] (lexicographic YYYY-MM-DD compare),

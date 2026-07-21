@@ -92,4 +92,35 @@ final class DietStoreTests: XCTestCase {
         let nextDay = try await store.dietAdherence(deviceId: dev, day: "2026-06-21")
         XCTAssertTrue(nextDay.isEmpty)
     }
+
+    // MARK: - Delete
+
+    func testDeleteAllDietAdherenceClearsPartitionOnly() async throws {
+        let store = try await CenitStore.inMemory()
+        let dayA = "2026-06-20"
+        let dayB = "2026-06-21"
+        let other = "dev-other"
+
+        // Target partition: multiple days/meals.
+        try await store.upsertDietAdherence(
+            DietAdherenceRow(day: dayA, mealId: "desayuno", status: .cumpli), deviceId: dev)
+        try await store.upsertDietAdherence(
+            DietAdherenceRow(day: dayA, mealId: "comida", status: .salte), deviceId: dev)
+        try await store.upsertDietAdherence(
+            DietAdherenceRow(day: dayB, mealId: "cena", status: .sustitui), deviceId: dev)
+        // Other partition must survive.
+        try await store.upsertDietAdherence(
+            DietAdherenceRow(day: dayA, mealId: "desayuno", status: .cumpli), deviceId: other)
+
+        try await store.deleteAllDietAdherence(deviceId: dev)
+
+        let a1 = try await store.dietAdherence(deviceId: dev, day: dayA)
+        let a2 = try await store.dietAdherence(deviceId: dev, day: dayB)
+        XCTAssertTrue(a1.isEmpty, "all adherence for target device must be gone")
+        XCTAssertTrue(a2.isEmpty, "all days for target device must be gone")
+
+        let otherRows = try await store.dietAdherence(deviceId: other, day: dayA)
+        XCTAssertEqual(otherRows.count, 1, "other device partition must not be touched")
+        XCTAssertEqual(otherRows.first?.mealId, "desayuno")
+    }
 }
