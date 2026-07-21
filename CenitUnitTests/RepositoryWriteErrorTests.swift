@@ -70,23 +70,27 @@ final class RepositoryWriteErrorTests: XCTestCase {
             [MetricPoint(day: "2026-07-01", key: Repository.dietAdherenceKey, value: 80)],
             deviceId: jid)
 
-        // Sanity: seed landed.
-        XCTAssertEqual(try await store.journalEntries(deviceId: jid, from: "2026-01-01", to: "2026-12-31").count, 1)
-        XCTAssertEqual(try await store.experiments(deviceId: jid).count, 1)
-        XCTAssertEqual(try await store.dietAdherence(deviceId: jid, day: "2026-07-01").count, 1)
-        XCTAssertEqual(try await store.metricSeries(deviceId: jid, key: Repository.dietAdherenceKey,
-                                                    from: "2026-01-01", to: "2026-12-31").count, 1)
+        // Sanity: seed landed. (awaits bound first: XCTAssert autoclosures aren't async)
+        var journalCount = try await store.journalEntries(deviceId: jid, from: "2026-01-01", to: "2026-12-31").count
+        var expCount = try await store.experiments(deviceId: jid).count
+        var dietCount = try await store.dietAdherence(deviceId: jid, day: "2026-07-01").count
+        var seriesCount = try await store.metricSeries(deviceId: jid, key: Repository.dietAdherenceKey,
+                                                       from: "2026-01-01", to: "2026-12-31").count
+        XCTAssertEqual(journalCount, 1)
+        XCTAssertEqual(expCount, 1)
+        XCTAssertEqual(dietCount, 1)
+        XCTAssertEqual(seriesCount, 1)
 
         try await repo.resetContributedPatrones()
 
-        XCTAssertEqual(try await store.journalEntries(deviceId: jid, from: "2026-01-01", to: "2026-12-31").count, 0,
-                       "native journal must be wiped")
-        XCTAssertEqual(try await store.experiments(deviceId: jid).count, 0,
-                       "experiments must be wiped")
-        XCTAssertEqual(try await store.dietAdherence(deviceId: jid, day: "2026-07-01").count, 0,
-                       "diet adherence marks must be wiped")
-        XCTAssertEqual(try await store.metricSeries(deviceId: jid, key: Repository.dietAdherenceKey,
-                                                    from: "2026-01-01", to: "2026-12-31").count, 0,
-                       "diet-adherence metric series must be wiped")
+        journalCount = try await store.journalEntries(deviceId: jid, from: "2026-01-01", to: "2026-12-31").count
+        expCount = try await store.experiments(deviceId: jid).count
+        dietCount = try await store.dietAdherence(deviceId: jid, day: "2026-07-01").count
+        seriesCount = try await store.metricSeries(deviceId: jid, key: Repository.dietAdherenceKey,
+                                                   from: "2026-01-01", to: "2026-12-31").count
+        XCTAssertEqual(journalCount, 0, "native journal must be wiped")
+        XCTAssertEqual(expCount, 0, "experiments must be wiped")
+        XCTAssertEqual(dietCount, 0, "diet adherence marks must be wiped")
+        XCTAssertEqual(seriesCount, 0, "diet-adherence metric series must be wiped")
     }
 }
