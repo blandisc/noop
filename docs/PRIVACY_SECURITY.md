@@ -34,12 +34,12 @@ Data enters Cénit two ways:
 | Apple Health | HealthKit, on-device | Read-only from Health |
 | File import | User-selected files on disk | Read-only from disk |
 
-Cénit previously connected directly to a WHOOP strap over Bluetooth to collect this data
-live. That live BLE collection path has been retired: Cénit no longer pairs with,
-connects to, or reads from a WHOOP strap. Any strap-sourced rows collected by earlier
-versions remain in the local database as historical data — nothing re-reads,
-re-validates, or adds to them, and, like everything else in the database, they never
-leave the device.
+Earlier versions of Cénit could collect data from a fitness band over Bluetooth. That path
+has been fully retired and removed: Cénit no longer pairs with, connects to, or reads from
+any band, and the former protocol package no longer exists in the repo. Any band-sourced
+rows collected by earlier versions remain in the local database as historical data — nothing
+re-reads, re-validates, or adds to them, and, like everything else in the database, they
+never leave the device.
 
 The only outbound path is the opt-in exception above; the rest of the app,
 including the entire biometric pipeline, produces no network traffic of any kind.
@@ -49,11 +49,10 @@ including the entire biometric pipeline, produces no network traffic of any kind
 The biometric pipeline and the shipping packages
 (`BiometricStreams`, `CenitStore`, `StrandAnalytics`, `StrandTraining`, `StrandImport`,
 `StrandDesign`) contain **no** use of `URLSession`, `URLRequest`, `NWConnection`,
-`dataTask`, or any other networking API. (`WhoopProtocol` is research-only and is not
-linked into the app.) The **only** networking anywhere in the app is exercise media
-download (`Cenit/Media/MediaDownloadCoordinator.swift`, §1.1b). The package manifests
-reference dependency *download* URLs that Swift Package Manager resolves at build time,
-never at runtime:
+`dataTask`, or any other networking API. The **only** networking anywhere in the app is
+exercise media download (`Cenit/Media/MediaDownloadCoordinator.swift`, §1.1b). The package
+manifests reference dependency *download* URLs that Swift Package Manager resolves at build
+time, never at runtime:
 
 ```
 Packages/CenitStore/Package.swift   → https://github.com/groue/GRDB.swift.git
@@ -139,7 +138,7 @@ It holds exactly the kinds of data you would expect from the features:
 - **Derived/cached metrics**: `sleepSession`, `dailyMetric`, `workout`, `journal`,
   `appleDaily`, and the generic long-format `metricSeries`.
 - **A transient raw outbox** (`rawBatch`): compressed raw BLE frames, **prunable**.
-- **Device records** (`device`): strap id, MAC, name, first/last-seen timestamps.
+- **Device records** (`device`): device id (historical), MAC, name, first/last-seen timestamps.
 
 The database is opened in WAL journal mode with `synchronous = NORMAL` and a busy
 timeout, tuned for bulk import/backfill writes
@@ -222,65 +221,15 @@ iCloud, outside anything Cénit does.
 
 Cénit parses **untrusted input** from files chosen for import (and HealthKit samples
 from the OS). Imports are treated as hostile and validated before anything reaches the
-database. Apple Health and historical WHOOP export files in particular can be very large
-(multi-hundred-MB to multi-GB), so resource exhaustion is part of the model.
+database. Apple Health export files in particular can be very large (multi-hundred-MB to
+multi-GB), so resource exhaustion is part of the model.
 
 What is explicitly **out of scope**: Cénit cannot defend the data against an attacker
 who already controls your unlocked user session (see §2.2).
 
-### 3.1 Threat A: research-only BLE decode (not linked into the app)
+### 3.1 Threat A: a malicious import file (zip bombs, XML bombs, huge exports)
 
-The protocol core (`Packages/WhoopProtocol/`) is **research-only** and is **not** linked
-into the shipping binary (FER-1003). Its CRC-gated parsing and bounds-checked readers are
-retained for CLI/tests accuracy; they are not an active attack surface in the app.
-
-**CRC-gated parsing (research package).** Every frame is checked against its checksums
-before decode continues. `Framing.swift` implements three checksums verbatim from the
-wire formats:
-
-- `crc8` (poly 0x07) over the length header,
-- `crc32` (zlib/reflected) over the inner payload,
-- `crc16Modbus` for the WHOOP 5.0 header (ported from the `goose` work).
-
-`verifyFrame(_:)` (and the family-aware `verifyFrame(_:family:)`) only return
-`ok == true` when the header CRC **and** the payload CRC32 both validate:
-
-```swift
-let ok = crc8OK && (crc32OK ?? false)
-```
-
-The former app-layer frame router that refused bad frames is **deleted** (FER-1003).
-
-**Bounds-checked decoding.** Field reads never index past the end of the buffer. The
-low-level readers in `Interpreter.swift` return `nil` instead of trapping when a read
-would run off the end of the frame:
-
-```swift
-@inline(__always) private func readU16(_ f: [UInt8], _ off: Int) -> Int? {
-    off + 2 <= f.count ? Int(f[off]) | (Int(f[off + 1]) << 8) : nil
-}
-```
-
-Schema-driven field extraction skips any field whose offset is out of range
-(`guard let val = readDType(frame, fld.off, dtype) else { continue }`), and the
-`FieldBuilder` clamps every slice to the real buffer length
-(`let end = min(off + length, frame.count)`). The WHOOP 5.0 path adds explicit
-minimum-length and `payloadEnd <= frame.count` guards before slicing the payload or
-trailer. A short or lying length field therefore yields a partial parse, never an
-out-of-bounds read.
-
-**Sane-value gating at the application edge.** Even a CRC-valid frame is range-checked
-before it updates the UI/state. The realtime handler discards implausible heart rates
-(`hr >= 30, hr <= 220`) and only overwrites R-R intervals when the frame actually
-carries them — so a single bad-but-valid packet can't wipe good state.
-
-**Reassembly is bounded by the declared length.** The `Reassembler` resynchronizes on
-the `0xAA` start-of-frame byte, discards leading garbage, and only emits a frame once
-`length + 4` bytes are present — it does not unboundedly buffer arbitrary data.
-
-### 3.2 Threat B: a malicious import file (zip bombs, XML bombs, huge exports)
-
-Both importers live in `Packages/StrandImport/` and assume the file is hostile.
+The Apple Health importer lives in `Packages/StrandImport/` and assumes the file is hostile.
 
 **Apple Health (`AppleHealthImporter.swift`).** Apple Health exports routinely exceed
 1 GB, and a malicious one could be far worse.
@@ -312,35 +261,6 @@ Both importers live in `Packages/StrandImport/` and assume the file is hostile.
   condition rather than crashing.
 - **Temp files are cleaned up** via `defer { try? FileManager.default.removeItem(at: tmp) }`.
 
-**WHOOP CSV export (`WhoopExportImporter.swift`).** The WHOOP data export is a small
-bundle of CSV files, but the same defensive posture applies.
-
-- **Per-entry size ceiling.** Each CSV is capped at 256 MB
-  (`maxEntryBytes = 256 << 20`). Folder imports skip any file larger than the cap;
-  zip imports reject entries whose *declared* uncompressed size exceeds it **and**
-  enforce a running byte budget during extraction, so a ZIP64 header that lies about
-  its size is still stopped mid-stream:
-
-  ```swift
-  let declared = Int(exactly: entry.uncompressedSize) ?? Int.max
-  if declared > Self.maxEntryBytes { continue }
-  ...
-  if written > Self.maxEntryBytes { throw CancellationError() }
-  ```
-
-- **CRC32 verification on extraction.** `archive.extract()` verifies each entry's
-  CRC32 (ZIPFoundation's `skipCRC32` defaults to `false`) and throws on a mismatch or
-  truncation. A corrupt/truncated/oversized entry is skipped entirely rather than
-  partially imported — no half-rows reach the database.
-- **Filename allow-list.** Only four known CSV names
-  (`physiological_cycles.csv`, `sleeps.csv`, `workouts.csv`, `journal_entries.csv`)
-  are ever read; everything else in the archive is ignored. Matching is by filename,
-  case-insensitively, so the parser never executes or interprets arbitrary archive
-  members.
-- **Tolerant, header-name-driven parsing.** Columns are matched by normalized header
-  name (not position), every column is optional, BOMs are stripped, and rows with no
-  usable timestamp are dropped. Malformed input degrades to fewer rows, not a crash.
-
 ---
 
 ## 4. What Cénit does *not* collect or transmit
@@ -363,14 +283,9 @@ bundle of CSV files, but the same defensive posture applies.
 |---------|------|------------|-------|
 | Process | Data exfiltration / network egress | Only one opt-in feature networks: exercise media download (a GET to a fixed CDN, only when enabled — §1.1b); nothing else makes a network call | `Cenit/Media/MediaDownloadCoordinator.swift` |
 | Filesystem | Broad disk access | iOS app sandbox; imports read only the files you pick via the document picker; data stays in the app's private container | `CenitApp/Resources/NOOP.entitlements`, `Cenit/Data/StorePaths.swift` |
-| Protocol research | Malformed / adversarial packets (CLI/tests only) | CRC8 + CRC32 (+ CRC16 for v5) gating; reject on failure | `WhoopProtocol/Framing.swift` (not linked to app) |
-| Protocol research | Out-of-bounds reads from short/lying length | `nil`-returning bounds-checked readers; slice clamping; min-length guards | `WhoopProtocol/Interpreter.swift` |
-| Protocol research | Garbage / partial fragments | SOF-resync reassembler bounded by declared length | `WhoopProtocol/Framing.swift` (`Reassembler`) |
 | App state | Implausible-but-valid values | Range gates (e.g. HR 30–220) at HealthKit / import boundaries | `HealthKitBridge`, import glue |
 | Health import | XML bomb / multi-GB DOM blowup | Streaming SAX over `InputStream`; per-element autorelease pool | `StrandImport/AppleHealthImporter.swift` |
 | Health import | Zip bomb | 8 GB decompressed ceiling, chunked to disk, hard abort | `StrandImport/AppleHealthImporter.swift` |
-| CSV import | Zip bomb / oversized entries | 256 MB per-entry cap (declared + running budget); CRC32 verify | `StrandImport/WhoopExportImporter.swift` |
-| CSV import | Arbitrary archive members | Filename allow-list; tolerant optional-column parsing | `StrandImport/WhoopExportImporter.swift` |
 | Data at rest | Device theft / offline access | Relies on iOS Data Protection (passcode-tied) + app sandbox; SQLCipher available as an option | `CenitStore/CenitStore.swift` |
 
 ---
@@ -388,15 +303,6 @@ good faith.
 
 ## 7. Credits
 
-The protocol and persistence work Cénit builds on is community reverse-engineering of
-hardware the user owns, used for interoperability:
-
-- **`johnmiddleton12/my-whoop`** — the WHOOP 4.0 BLE framing/command/decode work and
-  the collection logic the `WhoopProtocol` / `CenitStore` packages and the app's
-  collection layer are adapted from.
-- **`b-nnett/goose`** — the WHOOP 5.0 protocol (the `fd4b0001-…` service family, the
-  CRC16-Modbus header, and the "puffin" packet types) the v5 decode path is ported
-  from.
 - **`groue/GRDB.swift`** — the SQLite persistence layer.
 - **`weichsel/ZIPFoundation`** — the archive reader used by the importers.
 

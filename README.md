@@ -41,24 +41,15 @@ exercise media downloader (off by default — see [Privacy](#privacy)).
 ---
 
 Cénit is a standalone, fully **on-device** health app built on **Apple Health**.
-It syncs HealthKit samples into a local SQLite database on your iPhone, imports
-optional file exports (including historical WHOOP CSV if you still have one),
-and computes recovery, strain, HRV, and sleep **locally**, with no account and
-no cloud.
-
-**WHOOP band support was retired** (FER-1003): the app no longer pairs over BLE
-or reads a strap. Historical band data already imported stays in SQLite.
-The BLE wire protocol lives as research-only code in
-[`Packages/WhoopProtocol`](Packages/WhoopProtocol) and is **not** linked into
-the app binary. See [`docs/PROTOCOL.md`](docs/PROTOCOL.md) for the historical
-protocol reference.
+It syncs HealthKit samples into a local SQLite database on your iPhone, can
+import an Apple Health export, and computes recovery, strain, HRV, and sleep
+**locally**, with no account and no cloud. Historical band data from older
+installs is preserved in SQLite but dormant.
 
 > **Not affiliated with WHOOP.** Cénit is an independent project. It is not
-> affiliated with, endorsed by, or connected to WHOOP, Inc. Historical
-> references to "WHOOP" name hardware the app once interoperated with, or
-> import formats it can still read. **Cénit is not a medical device**; every
-> derived metric is an approximation, not clinical data. See
-> [`DISCLAIMER.md`](DISCLAIMER.md).
+> affiliated with, endorsed by, or connected to WHOOP, Inc. **Cénit is not a
+> medical device**; every derived metric is an approximation, not clinical
+> data. See [`DISCLAIMER.md`](DISCLAIMER.md).
 
 ---
 
@@ -88,9 +79,8 @@ Your biometrics are yours. Cénit is built on that premise:
 - **Account-free and on-device.** Cénit never creates an account and never phones
   home. Health data stays in the app sandbox.
 - **Bring your history.** Already have years of data in Apple Health? Sync it
-  once and it's permanently on your machine. You can still import a historical
-  WHOOP CSV export if you have one; dormant band rows are kept but no longer
-  drive the live dashboard.
+  once and it's permanently on your machine. You can also import an Apple Health
+  `export.xml` from **Settings → Data Sources**.
 - **Transparent math.** Recovery, strain, HRV, and sleep are recomputed on-device
   from documented, citable methods (Task Force 1996 HRV, Karvonen %HRR, Edwards /
   Banister TRIMP, Tanaka HRmax, and so on). The algorithms are approximations of —
@@ -105,11 +95,11 @@ The app is organized into **five tabs**.
 
 | Tab | What's there |
 |---|---|
-| **Today** | The home dashboard. One dominant number — your **recovery** — and **today's verdict** (Primed / Balanced / Strained / Run down) on a 24-hour dial, with the drivers behind it. Below: a grid of stat tiles (day strain, sleep, HRV, heart rate, resting HR, blood oxygen, steps, stress) each with a 14-day sparkline, recent workouts, and a data-sources footer. Pull down to sync Apple Health and recompute. |
+| **Today** | The home dashboard: a 24-hour dial with drivers, plus a grid of stat tiles (day strain, sleep, HRV, heart rate, resting HR, blood oxygen, steps, stress) each with a 14-day sparkline, recent workouts, and a data-sources footer. Pull down to sync Apple Health and recompute. |
 | **Body** | Your biometrics in depth. A unified **metric-detail** surface with dedicated reads for recovery, strain, **sleep** (hypnogram, stage breakdown, efficiency, schedule regularity), stress, skin temperature, **fitness age**, plus HRV, resting HR, SpO₂, respiratory rate and steps — and long-range **trends** across all of them. Apple Health is the live source. |
 | **Coach** | A single screen built as a loop — **Discover → Test → Act → Learn**. At the top, your **decision for today** (what to do) with recovery as the evidence. Below: **Ask your data** — free-text questions answered **on-device** (see [the Coach](#the-coach--ask-your-data-on-device)); **What works for you** — the habits most associated with your best recovery, as a causal registry; **Findings** — anomalies, trends and correlations the on-device engine surfaces; **Log your day** — a Yes/No journal that feeds your levers; and **N-of-1 experiments** — test one lever for 7 days and get an honest verdict (held up / didn't / not enough signal). |
 | **Train** | Strength sessions (with Apple Watch mirror when available), **Breathe** (guided breathing with on-device HRV readouts), and **Intervals** (HIIT timer with glanceable UI). Live heart rate during strength can come from the Watch mirror (`watchBpm`). |
-| **Settings** | Profile, preferences, and the in-app **What's new** changelog. A **More** area holds the power-user screens: **Metric Explorer** (interrogate any single metric over time), **Compare** (plot two metrics together), **Workouts** (detected sessions with strain + HR detail), **Data Sources** (Apple Health sync status plus one-tap import of an Apple Health export or a historical WHOOP CSV) and **Automations** (opt-in HealthKit write-back). |
+| **Settings** | Profile, preferences, and the in-app **What's new** changelog. A **More** area holds the power-user screens: **Metric Explorer** (interrogate any single metric over time), **Compare** (plot two metrics together), **Workouts** (detected sessions with strain + HR detail), **Data Sources** (Apple Health sync status plus one-tap import of an Apple Health export) and **Automations** (opt-in HealthKit write-back). |
 
 There is also a first-run **onboarding wizard** that sets expectations
 (independent/experimental, Apple Health, on-device only), Home-screen /
@@ -140,14 +130,6 @@ Cénit is **iOS-only** today — earlier macOS and Android experiments have been
 retired. The packages stay portable so a future port is technically possible;
 none is in development right now.
 
-### Band support (retired)
-
-Direct WHOOP strap pairing was **removed** (FER-1003). The app is Apple Health–only.
-Historical band rows already in SQLite are preserved but dormant at read time.
-Protocol research remains in [`Packages/WhoopProtocol`](Packages/WhoopProtocol)
-and the historical docs [`docs/PROTOCOL.md`](docs/PROTOCOL.md) /
-[`docs/BLE_REVERSE_ENGINEERING.md`](docs/BLE_REVERSE_ENGINEERING.md).
-
 ### What to expect when you start
 
 Cénit computes your scores on your own device, so like any recovery app it
@@ -158,8 +140,8 @@ needs a little data before everything fills in:
 - **Strain and sleep** appear once HealthKit has enough recent history.
 - **Recovery** needs a few nights for the app to learn your personal baseline,
   then sharpens each night.
-- **In a hurry?** Import an Apple Health `export.xml` (or a historical WHOOP
-  CSV) in **Settings → Data Sources** and your full history fills in about a minute.
+- **In a hurry?** Import an Apple Health `export.xml` in **Settings → Data
+  Sources** and your full history fills in about a minute.
 
 ---
 
@@ -176,26 +158,17 @@ CenitApp/              iOS app shell — HealthKit, widgets, intents
 CenitWidgets/          WidgetKit extension (Home / Lock-screen widget)
 CenitShared/           code shared between the app and the widgets
 Packages/
-  BiometricStreams/     neutral vocabulary of decoded biometric rows (pure, zero deps)
-  WhoopProtocol/        BLE frame parsing / CRC / decode — research only; NOT linked into the app (FER-1003)
+  BiometricStreams/     neutral vocabulary of biometric rows (pure, zero deps)
   CenitStore/           GRDB/SQLite persistence (versioned migrations)
   StrandAnalytics/      HRV / recovery / strain / sleep / correlation math + Coach grounding (pure, DB-free)
   StrandTraining/       strength domain (catalog, sets/reps, routines)
-  StrandImport/         WHOOP CSV + Apple Health importers
+  StrandImport/         Apple Health importers
   StrandDesign/         SwiftUI design system (palette, components, charts)
 Tools/                  developer scripts (localization, screen captures, design lint)
 ```
 
-> The packages keep their original `Whoop*` / `Strand*` names from earlier eras;
-> the app layer is `Cenit/` (display name **Cénit**).
-
-### `WhoopProtocol` — research-only (not linked to the app)
-
-Platform-pure (no CoreBluetooth import) so it runs in tests and CLI tools
-unchanged. It decodes the on-wire frame format for both historical strap
-generations. **The shipping app does not depend on this package** (FER-1003);
-it remains in the monorepo for reverse-engineering and CLI work. See
-[`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+> The packages keep their original `Strand*` names from earlier eras; the app
+> layer is `Cenit/` (display name **Cénit**).
 
 ### `CenitStore` — local SQLite via GRDB
 
@@ -214,7 +187,7 @@ CREATE TABLE respSample    (deviceId TEXT, ts INTEGER, raw INTEGER, PRIMARY KEY(
 
 Later migrations add server-derived metric caches (`sleepSession`, `dailyMetric`),
 the journal and workout tables, a generic long-format `metricSeries` store (v9),
-WHOOP 5 step counting (v10–v11), and the **N-of-1 `experiment`** table (v12).
+step counting (v10–v11), and the **N-of-1 `experiment`** table (v12).
 
 ### `StrandAnalytics` — transparent, on-device math
 
@@ -234,10 +207,6 @@ model):
 
 ### `StrandImport` — bring your own history
 
-- **WHOOP CSV export** (`WhoopExportImporter.swift`): header-name-driven, tolerant
-  parser for `physiological_cycles.csv`, `sleeps.csv`, `workouts.csv`, and
-  `journal_entries.csv`, from a folder or `.zip`. The same schema covers WHOOP 4 /
-  5 / MG.
 - **Apple Health export** (`AppleHealthImporter.swift`): a **streaming** SAX parser
   (`XMLParser`) for `export.xml` (which can exceed 1 GB), with correlation-dedupe,
   unit normalization (e.g. SpO₂ fraction → %), and sleep-stage mapping.
@@ -259,7 +228,7 @@ on-device Coach is built with Apple's **FoundationModels** framework, so buildin
 it needs **Xcode 26** and it only runs on an iPhone with **iOS 26 + Apple
 Intelligence**; on anything older the Coach compiles out and falls back to
 "Essential mode". To explore without a full HealthKit history, import an Apple
-Health export (or a historical WHOOP CSV) instead.
+Health export instead.
 
 The Xcode project is generated from [`project.yml`](project.yml) with
 [XcodeGen](https://github.com/yonaskolb/XcodeGen).
@@ -289,7 +258,7 @@ Notes:
 To explore without an Xcode project, the packages build on their own:
 
 ```bash
-cd Packages/WhoopProtocol && swift build && swift test
+cd Packages/StrandAnalytics && swift build && swift test
 ```
 
 See [`docs/BUILD.md`](docs/BUILD.md) for the full build guide.
@@ -301,9 +270,8 @@ See [`docs/BUILD.md`](docs/BUILD.md) for the full build guide.
 ```
 Apple Health (HealthKit) ──▶ HealthKitBridge ──────────┐
                                                        ▼
-WHOOP CSV (historical) ─┐                    CenitStore (local SQLite)
-Apple Health export.xml ├─▶ StrandImport ─────────────▶│
-                        ─┘                             │
+Apple Health export.xml ──▶ StrandImport ──▶ CenitStore (local SQLite)
+                                                       │
                                                        ▼
                                          StrandAnalytics (recovery/strain/
                                          HRV/sleep, on-device)
@@ -312,8 +280,7 @@ Apple Health export.xml ├─▶ StrandImport ───────────
                                          Cenit (SwiftUI) + StrandDesign
 ```
 
-Every arrow stays on your machine. The former BLE strap path was removed
-(FER-1003); `Packages/WhoopProtocol` is research-only and is not in this graph.
+Every arrow stays on your machine.
 
 ---
 
@@ -340,14 +307,8 @@ See [`docs/PRIVACY_SECURITY.md`](docs/PRIVACY_SECURITY.md).
 
 ## Attribution
 
-Cénit stands on community reverse-engineering and interoperability work. With
-thanks:
+With thanks:
 
-- **`johnmiddleton12/my-whoop`** — the WHOOP 4.0 BLE protocol; the `WhoopProtocol`
-  and `CenitStore` packages and the collection logic are adapted from this work.
-- **`b-nnett/goose`** — the WHOOP 5.0 / MG BLE reverse-engineering (the `fd4b0001-…`
-  service family, CRC16-Modbus header, and "puffin" packet types) that Cénit's
-  WHOOP 5.0 path is ported from.
 - **`groue/GRDB.swift`** — SQLite persistence.
 - **`weichsel/ZIPFoundation`** — export unzipping.
 
@@ -358,10 +319,8 @@ no DRM circumvention. Full detail in [`ATTRIBUTION.md`](ATTRIBUTION.md).
 
 ## Disclaimer
 
-Cénit is an independent, unofficial, non-commercial interoperability project. It is
-**not affiliated with, endorsed by, or connected to WHOOP, Inc.** All references to
-"WHOOP" are nominative — used only to identify the third-party hardware Cénit
-interoperates with.
+Cénit is an independent, unofficial, non-commercial project. It is **not
+affiliated with, endorsed by, or connected to WHOOP, Inc.**
 
 **Cénit is not a medical device.** Heart rate, HRV, recovery, strain, sleep stages,
 SpO₂, respiratory rate, and skin temperature are **approximations** computed from
@@ -395,7 +354,6 @@ under the same terms — see [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md).
 
 - [`docs/BUILD.md`](docs/BUILD.md) — full build & install guide.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the system map (pipeline, package boundaries, actor model, storage schema).
-- [`docs/PROTOCOL.md`](docs/PROTOCOL.md) — historical WHOOP BLE protocol facts (research; band retired).
 - [`docs/PRIVACY_SECURITY.md`](docs/PRIVACY_SECURITY.md) — exactly what stays on-device.
 - [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) — repository layout, build/test, design-system rules.
 - [`CHANGELOG.md`](CHANGELOG.md) — release history and what to expect (also shown in-app under **What's new**).
