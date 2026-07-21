@@ -13,9 +13,9 @@
 ## How it was tested
 
 <!--
-For anything on the BLE path, say what you tested on real hardware and which
-strap (4.0 / 5.0 / MG). For protocol or analytics changes, point to the test
-that covers it. "Builds and unit tests pass" alone is not enough for BLE work.
+For analytics changes, point to the test that covers it and cite the method.
+For research changes under Packages/WhoopProtocol that alter outbound bytes,
+say what you tested on real hardware. For UI, confirm StrandDesign tokens only.
 -->
 
 ## Checklist

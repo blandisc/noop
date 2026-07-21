@@ -1,15 +1,14 @@
 # Cénit — Feature Guide
 
-Cénit is a standalone, fully **offline** companion app for WHOOP straps (4.0 and 5.0). It pairs
-directly with the strap over Bluetooth Low Energy — **no WHOOP account, no
-cloud** — stores everything on-device in SQLite, imports your WHOOP and Apple Health exports,
-and computes recovery, strain, HRV and sleep locally. Cénit is the iOS app (`Cenit`); its UI and
-collection code live in the shared app layer under `Cenit/`, on top of the cross-platform Swift
-packages.
+Cénit is a standalone, fully **offline** health app on **Apple Health** — **no account, no
+cloud** — stores everything on-device in SQLite, imports your Apple Health (and optional historical
+WHOOP CSV) exports, and computes recovery, strain, HRV and sleep locally. Direct WHOOP band
+pairing was retired (FER-1003). Cénit is the iOS app (`Cenit`); its UI and data layer live under
+`Cenit/`, on top of the cross-platform Swift packages.
 
-> **Not affiliated with WHOOP.** Cénit is independent interoperability software for *your own*
-> device and *your own* data. "WHOOP" is used only to identify the hardware Cénit talks to.
-> **Cénit is not a medical device** — every metric (HR, HRV, recovery, strain, sleep, SpO₂,
+> **Not affiliated with WHOOP.** Cénit is independent software for *your own* data. Historical
+> "WHOOP" references name hardware the app once interoperated with, or import formats it can still
+> read. **Cénit is not a medical device** — every metric (HR, HRV, recovery, strain, sleep, SpO₂,
 > respiration, skin temperature) is an approximation, not a clinical reading, and must not be
 > used to diagnose, treat or make health decisions.
 

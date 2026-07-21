@@ -1,18 +1,18 @@
 # Contributing to Cénit
 
-Cénit is a standalone, fully **offline** companion app for WHOOP straps (4.0 and 5.0). It pairs
-directly with the strap over Bluetooth Low Energy, stores everything on-device in SQLite, imports
-WHOOP CSV exports and Apple Health exports, and computes recovery / strain / HRV / sleep locally —
-no cloud, no account. This document explains how the repository is laid out, how to
-build and test it, the conventions every change is expected to follow, and the safety rules that are
-non-negotiable (especially on the Bluetooth path).
+Cénit is a standalone, fully **offline** health app on **Apple Health**. It syncs HealthKit into
+on-device SQLite, can import Apple Health exports and historical WHOOP CSV exports, and computes
+recovery / strain / HRV / sleep locally — no cloud, no account. Direct WHOOP band pairing was
+**retired** (FER-1003); protocol research lives in `Packages/WhoopProtocol` and is not linked into
+the app. This document explains how the repository is laid out, how to build and test it, and the
+conventions every change is expected to follow.
 
-> **Not affiliated with WHOOP, and not a medical device.** "WHOOP" is used only to identify the
-> hardware this software interoperates with. Cénit reads **your own data** off **your own device**;
-> it contains no WHOOP code, firmware, or assets and performs no DRM circumvention. Every derived
-> metric (HR, HRV, recovery, strain, sleep, SpO₂, temperature) is an **approximation** and is **not**
-> clinically validated. See [`../DISCLAIMER.md`](../DISCLAIMER.md) and
-> [`../ATTRIBUTION.md`](../ATTRIBUTION.md).
+> **Not affiliated with WHOOP, and not a medical device.** Historical "WHOOP" references name
+> hardware the app once interoperated with, or import formats it can still read. Cénit reads
+> **your own data** on **your own device**; it contains no WHOOP code, firmware, or assets and
+> performs no DRM circumvention. Every derived metric (HR, HRV, recovery, strain, sleep, SpO₂,
+> temperature) is an **approximation** and is **not** clinically validated. See
+> [`../DISCLAIMER.md`](../DISCLAIMER.md) and [`../ATTRIBUTION.md`](../ATTRIBUTION.md).
 
 ---
 
@@ -23,15 +23,14 @@ non-negotiable (especially on the Bluetooth path).
 - [Build & test](#build--test)
 - [The design system is the law](#the-design-system-is-the-law)
 - [Coding conventions](#coding-conventions)
-- [The BLE safety contract](#the-ble-safety-contract-read-this-before-touching-bluetooth)
 - [How to add things safely](#how-to-add-things-safely)
   - [Add a new metric](#add-a-new-metric)
   - [Add a new screen](#add-a-new-screen)
-  - [Add a new BLE command](#add-a-new-ble-command)
   - [Add a database column or table](#add-a-database-column-or-table)
 - [Tests & fixtures](#tests--fixtures)
 - [Commit & PR conventions](#commit--pr-conventions)
 - [Roadmap](#roadmap)
+- [Appendix: historical BLE safety (band retired, FER-1003)](#appendix-historical-ble-safety-band-retired-fer-1003--applies-only-to-packageswhoopprotocol)
 
 ---
 
@@ -40,18 +39,19 @@ non-negotiable (especially on the Bluetooth path).
 A few principles run through the whole codebase. Internalize them before opening a PR.
 
 1. **Offline by design.** There is no server, no telemetry, no account, no network call. A change
-   that phones home — for any reason — does not belong here. Strap data, imports, and computed
-   metrics live in a local SQLite database and never leave the device.
-2. **Interoperability, not impersonation.** Cénit talks to a strap the user already owns. It does not
-   log into a WHOOP account, bypass a paywall, or ship WHOOP's proprietary code/firmware/assets/logos.
-   Keep contributions on the right side of that line, and keep all WHOOP references *nominative*
-   (used only to name the hardware).
-3. **Never destructive on the wire.** The strap is real hardware on the user's wrist. The app only
-   ever sends a curated, reversible command set. See
-   [The BLE safety contract](#the-ble-safety-contract-read-this-before-touching-bluetooth).
+   that phones home — for any reason — does not belong here. Health data, imports, and computed
+   metrics live in a local SQLite database and never leave the device. (The one opt-in exception is
+   exercise-media download in `Cenit/Media/`, off by default.)
+2. **Apple Health first.** The shipping app is Apple-only (FER-1003). It does not pair with a WHOOP
+   strap. Keep WHOOP references *nominative* where they still appear (historical imports, research
+   package, attribution).
+3. **Never destructive on the wire (research only).** Product BLE was removed. If you work on
+   `Packages/WhoopProtocol` for research/CLI, keep the historical safe-command discipline — see the
+   [appendix](#appendix-historical-ble-safety-band-retired-fer-1003--applies-only-to-packageswhoopprotocol)
+   and [`PROTOCOL.md`](PROTOCOL.md).
 4. **Transparent math.** Analytics are approximations of published methods, documented file by file.
    No black boxes, no claims of clinical accuracy, no reproduction of any proprietary model.
-5. **Credit upstream.** The protocol work is built on prior community reverse-engineering —
+5. **Credit upstream.** Protocol research builds on prior community reverse-engineering —
    `johnmiddleton12/my-whoop` (WHOOP 4.0) and `b-nnett/goose` (WHOOP 5.0). Preserve those credits in
    code comments and in [`../ATTRIBUTION.md`](../ATTRIBUTION.md).
 
@@ -68,9 +68,12 @@ Cenit/
 ├── project.yml                 # XcodeGen project definition — source of truth for the project
 ├── Cenit.xcodeproj/           # Generated by `xcodegen generate` — do NOT hand-edit (gitignored)
 ├── Cenit/                     # SwiftUI app layer (built by Cenit; module/product: Cenit, display name Cénit)
-│   ├── BLE/                    # CoreBluetooth manager, frame router, command set, live state
-│   ├── Collect/                # Backfiller, Collector, clock correlation, prune/store paths
-│   ├── Data/                   # Repository, importers, MetricCatalog, profile
+│   ├── App/                    # AppModel and root app state
+│   ├── Data/                   # Repository, StorePaths, MetricCatalog, profile, import glue
+│   ├── LiveActivity/           # Live Activity / rest-timer presentation glue
+│   ├── Media/                  # opt-in exercise-media cache/download (off by default)
+│   ├── Onboarding/             # first-run / restore / terms flows
+│   ├── Resources/              # app-layer resources
 │   ├── Screens/                # SwiftUI screens (Today, Sleep, Trends, MetricExplorer, …)
 │   └── System/                 # ProjectInfo and app-layer helpers
 ├── CenitApp/                   # iOS app shell (scene, HealthKit, resources)
@@ -80,40 +83,39 @@ Cenit/
 ├── CenitUnitTests/             # app-layer unit tests (simulator)
 ├── CenitUITests/               # UI tests
 ├── Packages/
-│   ├── WhoopProtocol/          # BLE frame parsing, CRC, command/event/packet decode
+│   ├── BiometricStreams/       # neutral vocabulary of decoded biometric rows (root, zero deps)
+│   ├── WhoopProtocol/          # BLE frame parsing, CRC, decode — research only; NOT linked to app
 │   │                           #   (also builds the `whoop-decode` CLI — runs on Linux)
 │   ├── CenitStore/             # GRDB/SQLite persistence (migrations, streams, caches)
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
 │   ├── StrandTraining/         # strength domain types, catalog, sets/reps rules (pure)
 │   ├── StrandImport/           # WHOOP CSV + Apple Health importers
 │   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
-├── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
-├── tools/
-│   └── linux-capture/          # Headless Linux capture workbench (Python/bleak + whoop-decode)
-└── Fixtures/                   # Sample WHOOP export used by tests
+└── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
+                                #   includes tools/linux-capture for protocol RE (research only)
 ```
 
 ### Where logic belongs
 
 | If your change is about… | It belongs in… | Notes |
 |---|---|---|
-| Decoding strap bytes, CRC, framing, packet/event types | `Packages/WhoopProtocol` | **Platform-pure — no CoreBluetooth.** Runs in tests/CLI unchanged. |
-| Persisting decoded data, migrations, caches, reads | `Packages/CenitStore` | GRDB/SQLite only. |
+| Decoding strap bytes, CRC, framing, packet/event types | `Packages/WhoopProtocol` | **Research only — not linked into the app.** Platform-pure, no CoreBluetooth. |
+| Persisting data, migrations, caches, reads | `Packages/CenitStore` | GRDB/SQLite only. |
 | Computing recovery / strain / HRV / sleep / correlations | `Packages/StrandAnalytics` | Pure, database-free analyzers. |
 | Strength domain types & rules (exercise catalog, sets/reps modeling, progression) | `Packages/StrandTraining` | Pure domain; live session state & persistence → app layer (`Cenit/`). |
 | Parsing WHOOP CSV or Apple Health `export.xml` | `Packages/StrandImport` | Header-name-driven CSV; streaming SAX XML. |
 | Colors, fonts, motion, cards, charts | `Packages/StrandDesign` | No external UI deps; bridges AppKit/UIKit. |
-| CoreBluetooth, bonding, offload, live state | `Cenit/BLE`, `Cenit/Collect` | App layer — wraps the pure packages. |
+| HealthKit sync, import glue, repository | `CenitApp/Health`, `Cenit/Data` | App layer. |
 | A screen or navigation destination | `Cenit/Screens`, `Cenit/System` | App layer. |
-| Capturing strap frames on Linux for protocol RE | `tools/linux-capture` | Python/bleak capture → `whoop-decode`; no Mac/CoreBluetooth. See its [README](../tools/linux-capture/README.md). |
+| Capturing strap frames on Linux for protocol RE | `Tools/linux-capture` | Research only. Python/bleak capture → `whoop-decode`. |
 
-**Rule of thumb:** the more "wire-level" or "math-level" a change is, the deeper into `Packages/` it
-should live, and the more it should be covered by a `swift test` suite that runs without an app, a
-strap, or CoreBluetooth.
+**Rule of thumb:** the more "math-level" or "storage-level" a change is, the deeper into `Packages/` it
+should live, and the more it should be covered by a `swift test` suite that runs without an app or
+HealthKit hardware.
 
 ### Cross-platform discipline
 
-Every package declares **both** `.iOS(.v16)` and `.macOS(.v13)` so the protocol, storage, analytics,
+Every package declares **both** `.iOS(.v16)` and `.macOS(.v13)` so storage, analytics,
 import, and design layers compile and run unmodified on iOS (and stay portable to other platforms).
 Any framework-specific code must be guarded:
 
@@ -128,15 +130,15 @@ let ui = UIColor(self)
 ```
 
 Do **not** add `import AppKit`/`import UIKit`/`import CoreBluetooth` to any file under `Packages/` —
-that is what breaks the cross-platform contract. CoreBluetooth lives only in the app layer's
-`Cenit/BLE`.
+that is what breaks the cross-platform contract. The shipping app has no CoreBluetooth path
+(FER-1003).
 
 ---
 
 ## Build & test
 
 This is a condensed reference; [`BUILD.md`](BUILD.md) is the full guide (signing, installing
-on-device, pairing, re-importing into the on-device DB).
+on-device, re-importing into the on-device DB).
 
 ### Prerequisites
 
@@ -348,78 +350,9 @@ from the Swift by `swift run StrandDesignTokens` — never hand-edit them; run t
   `CBCentralManager` is created on `.main` so delegate callbacks land on the main actor. Don't move
   CoreBluetooth work off-main without a very good reason.
 - **No anonymous magic.** Reach for an existing constant/enum (`CenitMetrics`, `StrandPalette`,
-  `WhoopCommand`, `MetricCatalog`) before introducing a literal.
-- **Validate before you trust.** Any data coming off the wire is gated on its checksum *and*
-  range-checked before it can drive state (see `FrameRouter.handle` rejecting `crcOK == false` and
-  clamping HR to 30…220). New inbound paths follow the same pattern.
-
----
-
-## The BLE safety contract (read this before touching Bluetooth)
-
-The strap is real hardware on someone's wrist. The Bluetooth path is the highest-stakes code in the
-repo, and it has a small number of **hard rules**. A PR that violates any of them will not be merged.
-
-### 1. Never add destructive commands
-
-The app's outbound command set lives in `Cenit/BLE/Commands.swift` as `WhoopCommand`. It is
-**intentionally a curated subset** of the strap's command space. The file says so explicitly:
-
-```swift
-/// Curated, SAFE WHOOP command set for *sending* to the strap.
-///
-/// This is intentionally a *subset*: destructive / dangerous commands
-/// (reboot, firmware load, force-trim, ship-mode, power-cycle, fuel-gauge reset, BLE DFU)
-/// are deliberately EXCLUDED so the in-app command sender can never brick or wipe the device.
-```
-
-Every command currently in the enum is **safe and reversible** — toggle realtime HR, read clock /
-battery / version / data range, run/stop a haptic pattern, arm/read/cancel the firmware alarm,
-enter/exit high-frequency sync, start/stop raw data. **Do not add reboot, firmware/DFU,
-ship-mode/power-cycle, force-trim, fuel-gauge reset, or any command that can brick, wipe, or
-permanently alter the device.** If you believe a non-trivial command is genuinely needed, open an
-issue first, justify why it's reversible, and document its payload and on-device verification before
-any code.
-
-### 2. CRC-gate everything
-
-Frames are only acted on after both CRCs pass. Outbound frames are built with the correct CRCs;
-inbound frames are rejected if their checksum fails.
-
-- **Outbound:** `WhoopCommand.frame(seq:payload:)` builds
-  `[0xAA][len u16 LE][crc8(len)][type=35][seq][cmd][payload…][crc32 LE]`, computing `crc8` over the
-  length bytes and the zlib `crc32` over the inner bytes. The WHOOP 4.0 and 5.0 envelopes differ
-  (WHOOP 4 uses a CRC8 header; WHOOP 5 / the "goose" path uses a CRC16-Modbus header) — see
-  `Packages/WhoopProtocol/Sources/WhoopProtocol/Framing.swift` (`verifyFrame`, `verifyFrame(_:family:)`).
-- **Inbound:** `FrameRouter.handle(frame:)` decodes with `parseFrame` and **rejects any frame whose
-  `crcOK == false`** before it can touch `LiveState`. Bad bytes never drive state. New inbound paths
-  must do the same.
-
-Never short-circuit a CRC check "to make a capture work". If a real frame fails CRC, the bug is in
-the framing/decoding, not in the check.
-
-### 3. Keep the BLE path stable
-
-The connect/bond/offload state machine in `Cenit/BLE/BLEManager.swift` (plus `Cenit/Collect/`) is
-load-bearing and was hardened against real failure modes that are documented in the comments
-(racing `SEND_HISTORICAL` ahead of the handshake, straps left parked in high-freq sync, a type-43
-realtime-raw flood that dominated flash). Treat it as stable infrastructure:
-
-- **Don't reorder the connect handshake.** Offload is deliberately gated on
-  `connectHandshakeDone`; `SET_CLOCK` (cmd 10) must precede arming the firmware alarm so the strap
-  RTC is UTC-correct.
-- **Don't `ENTER` high-frequency sync.** The app no longer enters it and sends `exitHighFreqSync`
-  defensively on connect to release straps parked there by older builds.
-- **Prefer `.withoutResponse` writes** (the `send(_:payload:writeType:)` default); use
-  `.withResponse` only where an ack is genuinely required (e.g. `historicalDataResult`), matching the
-  existing call sites.
-- **Verify on real hardware.** Anything that changes what bytes go out, or when, must be tested
-  against an actual strap and the result noted in the PR. The existing comments do exactly this
-  (e.g. "Verified on-device: 2.1/s → 0/s, and it persists across reconnect").
-
-> The decode core (`WhoopProtocol`) and the router (`FrameRouter`) are pure and unit-tested, so you
-> can iterate on parsing and routing logic with `swift test` and captured frames *without* a strap.
-> Reserve on-device testing for the connection/command behavior that genuinely needs it.
+  `MetricCatalog`) before introducing a literal.
+- **Validate before you trust.** HealthKit and import values that drive UI/state should be
+  range-checked at the boundary (e.g. HR 30…220). New inbound paths follow the same pattern.
 
 ---
 
@@ -469,25 +402,9 @@ to the Explore / Compare / tile UI. The catalog is the contract.
    - add an SF Symbol in the `icon` switch,
    - add the `case` to the view-builder switch that maps the destination → your `View`.
 3. **Keep state where it belongs.** Read through `AppModel` / `Repository`; don't reach into
-   CoreBluetooth or SQLite directly from a view.
+   SQLite directly from a view.
 4. **Optional features default OFF.** Anything that fires a notification or automates behavior is
    opt-in and toggleable, matching the existing screens.
-
-### Add a new BLE command
-
-Only after re-reading [The BLE safety contract](#the-ble-safety-contract-read-this-before-touching-bluetooth).
-
-1. **Confirm it is safe and reversible.** If it can brick, wipe, reflash, ship-mode, or permanently
-   alter the strap, it does not go in. No exceptions.
-2. **Add the case to `WhoopCommand`** in `Cenit/BLE/Commands.swift` with its on-wire raw value, a
-   `label`, and a comment documenting the payload, what it does, why it's safe/reversible, and how it
-   was verified on-device.
-3. **Add a payload builder if needed** (cf. `setAlarmPayload(epochSec:)`), keeping the byte layout
-   documented.
-4. **Send it through the existing path** — `BLEManager.send(_:payload:writeType:)` — which frames the
-   command (correct CRC8 + CRC32) and writes to the command characteristic. Don't build raw writes
-   by hand.
-5. **Verify on a real strap** and record the result in the PR.
 
 ### Add a database column or table
 
@@ -510,11 +427,11 @@ Schema lives in `Packages/CenitStore/Sources/CenitStore/Database.swift` as a **v
   Coverage already includes framing/CRC parity, reassembly, schema, stream decode, store
   insert/read/migration/prune, the analyzers (HRV, recovery, strain, sleep, correlation, baselines,
   workout detection), and the CSV / Apple Health importers (including real-export tests).
-- **`Fixtures/`** holds a sample WHOOP export for the import tests; `StrandImport` test resources are
-  bundled via the package's `Package.swift`.
-- **Prefer pure tests.** Because `WhoopProtocol`, `StrandAnalytics`, and `FrameRouter` are
-  framework-free, you can (and should) cover new decode/routing/math with captured frames and
-  fixtures rather than requiring a strap.
+- **Import fixtures** live in package test resources (`StrandImport` via its `Package.swift`) and
+  under `docs/fixtures/` for UI captures.
+- **Prefer pure tests.** Because `StrandAnalytics` (and research `WhoopProtocol`) are
+  framework-free, you can (and should) cover new math/decode with fixtures rather than requiring
+  hardware.
 - The **app test target** is the app-layer integration suite (run via `xcodebuild … test`).
 
 ### Screen captures (`docs/fixtures/`)
@@ -566,8 +483,9 @@ Also note `app.tabBars` is **empty**: the native bar is hidden app-wide in favou
   fine to commit.
 - **One concern per PR.** Keep a protocol change, a schema migration, and a UI change in separate
   commits/PRs where practical.
-- **Show your verification.** For anything on the BLE path, state what you tested on real hardware.
-  For analytics, cite the method and add a test. For UI, confirm it uses only `StrandDesign` tokens.
+- **Show your verification.** For analytics, cite the method and add a test. For UI, confirm it uses
+  only `StrandDesign` tokens. For research changes under `Packages/WhoopProtocol` that alter
+  outbound bytes, state what you tested on real hardware (see the appendix).
 - **Anonymous, project-voice.** Documentation and comments are written in a neutral, third-person
   project voice. Keep upstream credits (`my-whoop`, `goose`, `GRDB.swift`, `ZIPFoundation`) intact.
 - **No proprietary material.** Don't add WHOOP firmware, decompiled app code, logos, or assets, and
@@ -600,25 +518,47 @@ Contributions toward these are welcome — open an issue to coordinate first.
 These are scoped but intentionally not built yet. They're listed so contributors know the direction
 (and the open questions) before investing time:
 
-- **Live PPG scope.** Surface the strap's raw optical (PPG) stream as a live waveform/diagnostic
-  view. The raw-data plumbing exists (`startRawData`/`stopRawData`, the type-43 realtime-raw control,
-  `enableOpticalData`), but a stable, useful live scope is deferred.
-- **Steps via IMU.** Derive step count on-device from the strap's accelerometer/IMU
-  (`toggleIMUMode`) instead of relying on the imported Apple Health `steps` series.
-- **Notification-watcher helper.** A small, opt-in helper to mirror selected system notifications to a
-  haptic cue on the strap. Strictly local, off by default, and bounded — no general-purpose
-  notification scraping.
 - **Local AI coach.** An **on-device**, offline assistant that reasons over your own series (recovery
   / strain / sleep / HRV trends) to produce plain-language guidance. Hard requirement: it must stay
   local and offline — no cloud inference, no data leaving the device — consistent with Cénit's
   offline-by-design principle. Any output remains an approximation and is not medical advice.
+- **Deeper Watch physiology.** Live HR already mirrors from the Watch (`watchBpm`); folding more
+  Watch-side physiology into recovery/strain is open product work.
 
-> Roadmap items don't change the ground rules. Everything above still holds: offline-only, no
-> destructive BLE commands, CRC-gated, design-system-only UI, transparent and clearly-non-clinical
-> math, and credit to the upstream reverse-engineering work.
+> Roadmap items don't change the ground rules. Everything above still holds: offline-only,
+> design-system-only UI, transparent and clearly-non-clinical math, and credit to the upstream
+> reverse-engineering work preserved in research docs.
 
 ---
 
-*Cénit is an independent, unofficial, non-commercial interoperability project, not affiliated with,
-endorsed by, or connected to WHOOP, Inc., and is not a medical device. See
+## Appendix: historical BLE safety (band retired, FER-1003) — applies only to Packages/WhoopProtocol
+
+> **Histórico.** The shipping app no longer pairs with a WHOOP band. App-layer BLE transport
+> and the in-app command sender were **deleted** in FER-1003. This appendix applies **only** if
+> you touch research/CLI code under `Packages/WhoopProtocol`. For the wire protocol itself, see
+> [`PROTOCOL.md`](PROTOCOL.md) and [`BLE_REVERSE_ENGINEERING.md`](BLE_REVERSE_ENGINEERING.md).
+
+### Never add destructive commands
+
+Outbound command builders for research/CLI must stay a **curated, reversible subset**. Do **not**
+add reboot, firmware/DFU, ship-mode/power-cycle, force-trim, fuel-gauge reset, or any command that
+can brick, wipe, or permanently alter a device. If a non-trivial command is needed for research,
+open an issue first, justify reversibility, and document payload + on-device verification.
+
+### CRC-gate everything
+
+Frames are only acted on after checksums pass. See
+`Packages/WhoopProtocol/Sources/WhoopProtocol/Framing.swift` (`verifyFrame`, CRC8 / CRC16-Modbus /
+CRC32). Never short-circuit a CRC check "to make a capture work".
+
+### Verify hardware changes on real straps
+
+Anything under `Packages/WhoopProtocol` that changes what bytes would go out on the wire must be
+tested against an actual strap and noted in the PR. Pure decode/parse work can (and should) use
+captured frames and `swift test` without hardware.
+
+---
+
+*Cénit is an independent, unofficial, non-commercial project, not affiliated with, endorsed by, or
+connected to WHOOP, Inc., and is not a medical device. See
 [`../DISCLAIMER.md`](../DISCLAIMER.md).*

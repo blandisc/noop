@@ -1,16 +1,16 @@
 # Contributing to Cénit
 
 Thanks for your interest in contributing. Cénit is a standalone, fully **offline**
-companion app for WHOOP 4.0 and 5.0 / MG straps — it pairs over Bluetooth, stores
-everything on-device in SQLite, and computes recovery / strain / HRV / sleep
-locally. No servers, no accounts, no data leaving the device — with exactly two
-narrow, opt-in, off-by-default exceptions: the bring-your-own-key AI Coach, and
-the exercise media downloader (thumbnails/loops cached from ExerciseDB, FER-722).
-Both are documented in [`README.md`](README.md#privacy).
+health app on **Apple Health** — it syncs HealthKit into on-device SQLite and
+computes recovery / strain / HRV / sleep locally. No servers, no accounts, no
+data leaving the device — with exactly one narrow, opt-in, off-by-default
+exception: the exercise media downloader (thumbnails/loops cached from
+ExerciseDB, FER-722). Documented in [`README.md`](README.md#privacy). WHOOP band
+support was retired (FER-1003); historical imports are preserved.
 
 This file is a quick orientation. The **full contributing guide** —
-repository layout, the design-system rules, the BLE safety contract, how to add a
-metric / screen / command / migration, and the commit conventions — lives in
+repository layout, the design-system rules, how to add a metric / screen /
+migration, and the commit conventions — lives in
 [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md). Read that before opening a
 non-trivial PR.
 
@@ -23,19 +23,20 @@ non-trivial PR.
 
 The codebase is reusable Swift packages (`Packages/`) plus a thin iOS app layer
 (`Cenit/`, built by the `Cenit` target). The fastest feedback loop is the
-packages — they build and test on their own, no Xcode project and no strap needed.
+packages — they build and test on their own, no Xcode project needed.
 
 ### Swift packages
 
 ```bash
 # Test just the package you touched (substitute the name):
-cd Packages/WhoopProtocol && swift build && swift test
+cd Packages/StrandAnalytics && swift build && swift test
 ```
 
-The five packages are `WhoopProtocol` (BLE framing / decode), `CenitStore`
-(SQLite persistence), `StrandAnalytics` (recovery / strain / HRV / sleep math),
-`StrandImport` (WHOOP CSV + Apple Health importers), and `StrandDesign` (the
-SwiftUI design system).
+The seven packages are `BiometricStreams` (neutral biometric row vocabulary),
+`WhoopProtocol` (BLE framing / decode — research only, not linked to the app),
+`CenitStore` (SQLite persistence), `StrandAnalytics` (recovery / strain / HRV /
+sleep math), `StrandTraining` (strength domain), `StrandImport` (WHOOP CSV +
+Apple Health importers), and `StrandDesign` (the SwiftUI design system).
 
 ### iOS app
 

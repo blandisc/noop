@@ -27,9 +27,10 @@ settings:
     # docs/design-system/I18N.md §2.1. Re-enable once the Xcode bug is resolved (FER-568).
     SWIFT_EMIT_LOC_STRINGS: NO
     # FER-978 (was FER-973 · A-03): the app target checks the code that OPTED INTO concurrency
-    # (actors, @MainActor, Sendable) — where the app's real risk lives (BLE delegate contract
-    # FER-173, the Task.detached snapshots) — without the full `complete` avalanche. The 112 warnings
-    # the first flip surfaced were triaged: real cross-actor captures fixed, expected escapes annotated.
+    # (actors, @MainActor, Sendable) — where the app's real risk lives (HealthKit bridges,
+    # Task.detached snapshots; historical BLE delegate FER-173 is gone with the band) — without
+    # the full `complete` avalanche. The 112 warnings the first flip surfaced were triaged:
+    # real cross-actor captures fixed, expected escapes annotated.
     SWIFT_STRICT_CONCURRENCY: targeted
     DEVELOPMENT_TEAM: "B7KRCF776Z"
     CODE_SIGN_STYLE: Automatic
@@ -67,9 +68,10 @@ packages:
     from: "1.6.0"
 targets:
   # ---------------------------------------------------------------------------
-  # iOS app target (module/product Cenit). Reuses the five shared packages and the
-  # app-layer under Cenit/ (the SwiftUI screens, BLE engine, collector, data layer);
+  # iOS app target (module/product Cenit). Reuses the shared packages and the
+  # app-layer under Cenit/ (SwiftUI screens, data layer, media, onboarding);
   # the iOS app shell + HealthKit + widgets/intents live under CenitApp/.
+  # Apple Health only — no BLE / WhoopProtocol link (FER-1003).
   Cenit:
     type: application
     platform: iOS

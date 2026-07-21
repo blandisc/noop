@@ -474,8 +474,9 @@ no migradas conservan la voz de §8.3 hasta que les toque.
 - **Banner de estado (`TodayBanner`).** Tarjeta estándar reutilizable montada bajo el header, sobre
   el día normal: punto de estado (7 px), título 13/600 en `ink`, subtítulo 11.5 en `inkTertiary`,
   CTA opcional 11/600 grotesk en color. Se dibuja SOLO el de mayor prioridad, desde señales que ya
-  existen: **batería crítica** (`critical`), **banda desconectada de día** (`inkMuted`, además apaga
-  el BPM del header → «SIN SEÑAL») y **línea base envejecida** (`warning`). Los banners que exigen
+  existen: **batería crítica** (`critical`), ~~**banda desconectada de día**~~ (*retirado*, FER-1003 —
+  la app ya no empareja banda; no apaga el BPM del header por desconexión) y **línea base envejecida**
+  (`warning`). Los banners que exigen
   detección/matemática nueva —siesta (re-score del numeral), zona horaria (exención de regularidad)
   y permisos parciales de Apple— se difieren (FER-734/735/738); la tarjeta ya soporta su forma.
 - **Reglas × banners.** La gráfica de las cinco reglas SIEMPRE cuadra con el numeral: Σ marcas

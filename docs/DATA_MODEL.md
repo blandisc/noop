@@ -1,15 +1,13 @@
 # Cénit — On-Device Data Model
 
-Cénit is a standalone, fully offline companion app for WHOOP straps (4.0 and 5.0). It talks to
-the user's own strap directly over Bluetooth Low Energy — no WHOOP cloud or account
-is involved, and stores everything it decodes locally in a single SQLite database.
-This document describes that on-device database: every table, its columns, natural keys, indexes,
-and the migration history that produced the current schema.
+Cénit is a standalone, fully offline health app on **Apple Health**. It stores HealthKit syncs,
+file imports, and on-device computed metrics in a single local SQLite database. Direct WHOOP band
+pairing was retired (FER-1003); historical band partitions may still exist in older DBs as
+dormant rows. This document describes that on-device database: every table, its columns, natural
+keys, indexes, and the migration history that produced the current schema.
 
-> **Scope note.** Interacting with the strap here means interoperating with the user's *own*
-> device and the data it has already recorded. Cénit is **not affiliated with, endorsed by, or
-> connected to WHOOP**, and it is **not a medical device** — none of the stored values are
-> intended for diagnosis or treatment.
+> **Scope note.** Cénit is **not affiliated with, endorsed by, or connected to WHOOP**, and it is
+> **not a medical device** — none of the stored values are intended for diagnosis or treatment.
 
 ---
 
@@ -22,14 +20,14 @@ every package in the repo, it declares both platforms — `.iOS(.v16)` and `.mac
 storage code back the `Cenit` app from a single cross-platform core.
 
 The app target opens the database at a fixed, per-user location
-(`Cenit/Collect/StorePaths.swift`):
+(`Cenit/Data/StorePaths.swift`):
 
 ```
 <Application Support>/OpenWhoop/whoop.sqlite
 ```
 
 ```swift
-// Cenit/Collect/StorePaths.swift
+// Cenit/Data/StorePaths.swift
 static func defaultDatabasePath() throws -> String {
     let fm = FileManager.default
     let base = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
@@ -51,7 +49,7 @@ single `DatabaseQueue` and applies these PRAGMAs before any query runs:
 
 | PRAGMA | Value | Why |
 | --- | --- | --- |
-| `journal_mode` | `WAL` | Two handles to the same file (the BLE collector and the metrics repository) can read/write without deadlocking. |
+| `journal_mode` | `WAL` | Concurrent readers (pool) and the actor-serialized writer can read/write without deadlocking. |
 | `synchronous` | `NORMAL` | Durable pairing with WAL — only an OS crash or power loss can lose the last transaction. |
 | `cache_size` | `-16000` | ~16 MB page cache for multi-thousand-row import/backfill writes. |
 | `mmap_size` | `268435456` | 256 MB memory-mapped I/O. |
@@ -70,9 +68,9 @@ The schema falls into four groups:
 
 | Group | Tables | Origin |
 | --- | --- | --- |
-| **Device registry** | `device` | BLE pairing |
-| **Decoded streams** (durable) | `hrSample`, `rrInterval`, `event`, `battery`, `spo2Sample`, `skinTempSample`, `respSample`, `gravitySample` | Decoded from strap frames on-device |
-| **Raw outbox** (transient) | `rawBatch` | Compressed raw BLE frames, prunable |
+| **Device registry** | `device` | Legacy device registry (historical band / import partitions) |
+| **Decoded streams** (durable) | `hrSample`, `rrInterval`, `event`, `battery`, `spo2Sample`, `skinTempSample`, `respSample`, `gravitySample` | Historical band decode and/or HealthKit-derived samples |
+| **Raw outbox** (transient) | `rawBatch` | Compressed raw frames (legacy band path), prunable |
 | **Bookkeeping** | `cursors` | Highwater / read cursors |
 | **Metric caches** | `sleepSession`, `dailyMetric`, `journal`, `workout`, `appleDaily`, `metricSeries` | Derived metrics + CSV / Apple-Health imports |
 | **Experiments** *(v12)* | `experiment` | N-of-1 experiments (FER-307) |

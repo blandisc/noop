@@ -1,14 +1,12 @@
 import Foundation
 import GRDB
 
-// MARK: - Offline cache of SERVER-computed metrics (Task 3.1 → M0.4)
-// This file is purely a local cache of values computed by the server — the phone does NO metric
-// computation here. DailyMetric and CachedSleepSession mirror the server's daily_metrics /
-// sleep_sessions tables and are cached locally so History = union(phone-collected raw streams,
-// server-computed derived metrics). ServerSync.pull() populates this cache; MetricsRepository
-// reads it for the view layer.
+// MARK: - Local cache of on-device computed metrics
+// DailyMetric and CachedSleepSession are durable local caches of values computed ON-DEVICE by
+// StrandAnalytics (and import glue). Nothing is pulled from a remote service — History is the
+// union of raw streams + these derived metric caches, all written and read on the phone.
 
-/// One cached sleep session pulled from the server's /v1/sleep. Natural key (deviceId, startTs).
+/// One cached sleep session. Natural key (deviceId, startTs).
 /// `stagesJSON` is the verbatim JSON array of stage segments ([{start,end,stage}]) — stored as a
 /// string so the cache stays schema-agnostic about the staging shape.
 public struct CachedSleepSession: Equatable, Codable, Sendable {
@@ -26,7 +24,7 @@ public struct CachedSleepSession: Equatable, Codable, Sendable {
     }
 }
 
-/// One cached daily-metrics row pulled from the server's /v1/daily. Natural key (deviceId, day).
+/// One cached daily-metrics row. Natural key (deviceId, day).
 public struct DailyMetric: Equatable, Codable, Sendable {
     public let day: String           // YYYY-MM-DD
     public let totalSleepMin: Double?
