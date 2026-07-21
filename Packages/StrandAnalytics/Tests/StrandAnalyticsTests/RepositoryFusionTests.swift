@@ -1,13 +1,11 @@
 import XCTest
-import CenitStore
-import StrandAnalytics
-@testable import Cenit
+import StrandModels
+@testable import StrandAnalytics
 
-/// Pins the FER-670 fusion builder: `Repository.fusionByDay` produces a per-day compare point for the
+/// Pins the FER-670 fusion builder: `SourceFusion.fusionByDay` produces a per-day compare point for the
 /// three single-construct metrics ONLY (steps / sleep total / active kcal), only on days where ≥2
 /// sources reported, and never for the cross-source vitals (SourceLens territory, FER-629). Display
 /// transparency only — the merge/baseline paths never read it.
-@MainActor
 final class RepositoryFusionTests: XCTestCase {
 
     private func dm(_ day: String, sleep: Double? = nil, hrv: Double? = nil,
@@ -23,7 +21,7 @@ final class RepositoryFusionTests: XCTestCase {
     }
 
     func testSleepConflictBandVsApple() {
-        let f = Repository.fusionByDay(imported: [dm("2026-07-04", sleep: 432)],
+        let f = SourceFusion.fusionByDay(imported: [dm("2026-07-04", sleep: 432)],
                                        computed: [],
                                        apple: [dm("2026-07-04", sleep: 120)],
                                        appleAgg: [], stepsEst: [:])
@@ -34,7 +32,7 @@ final class RepositoryFusionTests: XCTestCase {
     }
 
     func testStepsAppleCountVsStrapCounter() {
-        let f = Repository.fusionByDay(imported: [], computed: [dm("2026-07-04", steps: 8420)],
+        let f = SourceFusion.fusionByDay(imported: [], computed: [dm("2026-07-04", steps: 8420)],
                                        apple: [],
                                        appleAgg: [agg("2026-07-04", steps: 8100)], stepsEst: [:])
         let p = f["2026-07-04"]?["steps"]
@@ -45,7 +43,7 @@ final class RepositoryFusionTests: XCTestCase {
 
     func testStepsEstFillsWhenNoRealCounter() {
         // WHOOP 4.0: no strap counter — the on-device estimate is the strap-side input.
-        let f = Repository.fusionByDay(imported: [], computed: [dm("2026-07-04")],
+        let f = SourceFusion.fusionByDay(imported: [], computed: [dm("2026-07-04")],
                                        apple: [],
                                        appleAgg: [agg("2026-07-04", steps: 8000)],
                                        stepsEst: ["2026-07-04": 14000])
@@ -53,7 +51,7 @@ final class RepositoryFusionTests: XCTestCase {
     }
 
     func testKcalUsesAppleAggregateAndStrapEstimate() {
-        let f = Repository.fusionByDay(imported: [], computed: [dm("2026-07-04", kcal: 431)],
+        let f = SourceFusion.fusionByDay(imported: [], computed: [dm("2026-07-04", kcal: 431)],
                                        apple: [],
                                        appleAgg: [agg("2026-07-04", kcal: 512)], stepsEst: [:])
         let p = f["2026-07-04"]?["active_kcal"]
@@ -62,14 +60,14 @@ final class RepositoryFusionTests: XCTestCase {
     }
 
     func testSingleSourceDaysProduceNoEntry() {
-        let f = Repository.fusionByDay(imported: [dm("2026-07-04", sleep: 432)],
+        let f = SourceFusion.fusionByDay(imported: [dm("2026-07-04", sleep: 432)],
                                        computed: [], apple: [], appleAgg: [], stepsEst: [:])
         XCTAssertNil(f["2026-07-04"])                       // nothing to cross-check → no row shown
     }
 
     func testCrossSourceVitalsNeverFused() {
         // Both sources carry HRV — the fusion map must NOT grow an hrv key (SourceLens governs it).
-        let f = Repository.fusionByDay(imported: [dm("2026-07-04", hrv: 50)],
+        let f = SourceFusion.fusionByDay(imported: [dm("2026-07-04", hrv: 50)],
                                        computed: [],
                                        apple: [dm("2026-07-04", hrv: 90)],
                                        appleAgg: [], stepsEst: [:])
