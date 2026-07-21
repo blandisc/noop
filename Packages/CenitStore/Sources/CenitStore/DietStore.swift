@@ -1,5 +1,6 @@
 import Foundation
 import GRDB
+import StrandModels
 
 // MARK: - v14 cache: prescribed-diet plan + daily adherence (FER-370)
 //
@@ -14,14 +15,8 @@ import GRDB
 // thread). MVP is one active plan at a time — `activeDietPlan` returns the most recently created
 // one; the table keeps the full history.
 
-/// Whether a planned meal was followed on a given day. Tri-state, mirroring the journal's
-/// yes/no/skip. `sustitui` (an equivalent substitution) counts as adherent — the % rule lives in
-/// StrandAnalytics (FER-372); this enum only records the raw status.
-public enum DietMealStatus: String, Sendable, Equatable, Codable, CaseIterable {
-    case cumpli      // ate it as planned
-    case sustitui    // substituted with an equivalent
-    case salte       // skipped
-}
+// Value type lives in StrandModels; re-exported here so existing CenitStore consumers are unchanged.
+public typealias DietMealStatus = StrandModels.DietMealStatus
 
 /// One persisted diet plan. Natural key `id` (app-generated UUID). `payloadJSON` is the canonical
 /// `noop.diet.v1` document; the other columns are denormalized from it for listing.
