@@ -831,86 +831,125 @@ struct LiveStrengthSheet: View {
     /// off the THUMBNAIL itself (overlay, vertically centered by alignment — zero math to drift).
     /// Card, thread and dot are one layout tree, so they can only move together. Swipe-to-delete
     /// needed List rows, so deleting a set is a long-press context menu (previewing JUST that row).
+    /// Split into typed sub-builders so the type-checker doesn't thrash on one giant expression.
     private func activeExerciseBlock(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        activeExerciseContent(run, ei: ei)
+            .background(activeExerciseCardFill)
+            // r16/r18: the thread is a BACKGROUND of the card (behind the dot), 19pt into the gutter
+            // (26 − 7), spanning exactly the card's height — in the r18 stack layout the card IS the
+            // row, so the segment butts its neighbors seam-to-seam (no overshoot: doubled 35%-alpha
+            // overlap darkened the lane). The FIRST exercise's birth-at-the-dot is a thumb-anchored
+            // eraser in `exerciseHeader`.
+            .background(alignment: .topLeading) { activeExerciseRail }
+            .padding(.leading, 26)
+            .plainRow()
+            .id("session-exercise-\(ei)")
+            // r24 (owner): la bolita/tarjeta activa hace CROSSFADE al cambiar de ejercicio — antes el
+            // bloque nuevo aparecía en seco mientras el viejo se comprimía; el fade cuenta la
+            // continuidad del foco sobre el riel (comparte el reloj gentle del acordeón).
+            .transition(.opacity)
+    }
+
+    private func activeExerciseContent(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         VStack(spacing: 0) {
             exerciseHeader(run, ei: ei, first: true)
                 .padding(.top, 12).padding(.horizontal, CenitMetrics.receiptPadding).padding(.bottom, 8)
-            ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
-                // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows
-                // from the numbered work sets — drawn on the first work row after a warm-up.
-                let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
-                VStack(spacing: 0) {
-                    // El descanso vive DENTRO del bloque, pegado a su fila (r7/r12).
-                    if restSlotIndex(run, ei: ei) == si { restInlineSlice(run) }
-                    if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
-                    // r15 (owner): borrar es interacción PROPIA — el contextMenu del sistema es
-                    // por CELDA (todos los long-press caían en la fila 1) y su lift fotografiaba
-                    // la tarjeta entera. Ahora la fila armada brinca EN SU LUGAR sobre la tarjeta
-                    // (scale + hover, mismo lenguaje que la tarjeta de descanso) y ofrece la
-                    // pastilla «Quitar serie»; cualquier otro toque la desarma.
-                    setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
-                        .scaleEffect(armedDeleteSetId == set.id ? 1.03 : 1)
-                        .shadow(color: .black.opacity(armedDeleteSetId == set.id ? 0.10 : 0),  // token-exempt: sombra transitoria de lift (hover), no superficie
-                                radius: 10, y: 4)
-                        .overlay(alignment: .trailing) {
-                            if armedDeleteSetId == set.id { deleteSetPill(ei: ei, si: si) }
-                        }
-                        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-                            withAnimation(StrandMotion.gentle) { armedDeleteSetId = set.id }
-                        })
-                        .simultaneousGesture(TapGesture().onEnded {
-                            if armedDeleteSetId != nil {
-                                withAnimation(StrandMotion.gentle) { armedDeleteSetId = nil }
-                            }
-                        })
-                        .accessibilityActions {
-                            Button("Delete set") { withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) } }
-                        }
-                }
-                .padding(.horizontal, CenitMetrics.receiptPadding)
-                .zIndex(armedDeleteSetId == set.id ? 2 : 0)
-            }
+            activeExerciseSets(run, ei: ei)
             // «Add set» closes the card — the handoff's ember pill, inside (FER-935 kin).
             // El descanso tras la ÚLTIMA serie vive aquí (r7/r12).
-            VStack(spacing: 0) {
-                if session.phase == .resting, ei == accordionIndex, session.summary == nil,
-                   restSlotIndex(run, ei: ei) == nil {
-                    restInlineSlice(run)
+            activeExerciseFooter(run, ei: ei)
+        }
+    }
+
+    @ViewBuilder
+    private func activeExerciseSets(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        ForEach(Array(run.sets.enumerated()), id: \.element.id) { si, set in
+            activeExerciseSetSlice(run: run, ei: ei, si: si, set: set)
+        }
+    }
+
+    @ViewBuilder
+    private func activeExerciseSetSlice(
+        run: StrengthSessionModel.ExerciseRun,
+        ei: Int,
+        si: Int,
+        set: StrengthSessionModel.WorkingSet
+    ) -> some View {
+        // FER-937: a «SERIES DE TRABAJO» rule separates the collapsible warm-up «C» rows
+        // from the numbered work sets — drawn on the first work row after a warm-up.
+        let afterWarmup = set.kind == .work && si > 0 && run.sets[si - 1].kind == .warmup
+        VStack(spacing: 0) {
+            // El descanso vive DENTRO del bloque, pegado a su fila (r7/r12).
+            if restSlotIndex(run, ei: ei) == si { restInlineSlice(run) }
+            if afterWarmup { workSetsDivider.padding(.top, 12).padding(.bottom, 6) }
+            // r15 (owner): borrar es interacción PROPIA — el contextMenu del sistema es
+            // por CELDA (todos los long-press caían en la fila 1) y su lift fotografiaba
+            // la tarjeta entera. Ahora la fila armada brinca EN SU LUGAR sobre la tarjeta
+            // (scale + hover, mismo lenguaje que la tarjeta de descanso) y ofrece la
+            // pastilla «Quitar serie»; cualquier otro toque la desarma.
+            armedSetRow(ei: ei, si: si, run: run, set: set)
+        }
+        .padding(.horizontal, CenitMetrics.receiptPadding)
+        .zIndex(armedDeleteSetId == set.id ? 2 : 0)
+    }
+
+    private func armedSetRow(
+        ei: Int,
+        si: Int,
+        run: StrengthSessionModel.ExerciseRun,
+        set: StrengthSessionModel.WorkingSet
+    ) -> some View {
+        setRow(ei: ei, si: si, run: run, set: set, last: si == run.sets.count - 1)
+            .scaleEffect(armedDeleteSetId == set.id ? 1.03 : 1)
+            .shadow(color: .black.opacity(armedDeleteSetId == set.id ? 0.10 : 0),  // token-exempt: sombra transitoria de lift (hover), no superficie
+                    radius: 10, y: 4)
+            .overlay(alignment: .trailing) {
+                if armedDeleteSetId == set.id { deleteSetPill(ei: ei, si: si) }
+            }
+            .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                withAnimation(StrandMotion.gentle) { armedDeleteSetId = set.id }
+            })
+            .simultaneousGesture(TapGesture().onEnded {
+                if armedDeleteSetId != nil {
+                    withAnimation(StrandMotion.gentle) { armedDeleteSetId = nil }
                 }
-                addSetButton(ei)
+            })
+            .accessibilityActions {
+                Button("Delete set") { withAnimation(.snappy) { session.removeSet(exercise: ei, set: si) } }
             }
-            // r22 (simetría): la tarjeta cerraba con 8 abajo vs 12 arriba — parejo con el tope.
-            .padding(.horizontal, CenitMetrics.receiptPadding)
-            .padding(.top, 8).padding(.bottom, 12)
-        }
-        .background(
-            // «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra. One simple
-            // shape replaces the r8d per-slice UnevenRoundedRectangle + internal-edge mask.
-            RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .fill(theme.surface)
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 1))
-        )
-        // r16/r18: the thread is a BACKGROUND of the card (behind the dot), 19pt into the gutter
-        // (26 − 7), spanning exactly the card's height — in the r18 stack layout the card IS the
-        // row, so the segment butts its neighbors seam-to-seam (no overshoot: doubled 35%-alpha
-        // overlap darkened the lane). The FIRST exercise's birth-at-the-dot is a thumb-anchored
-        // eraser in `exerciseHeader`.
-        .background(alignment: .topLeading) {
-            if showRail {
-                Rectangle().fill(railTint.opacity(StrandOpacity.strokeSoft))
-                    .frame(width: 2)
-                    .offset(x: -20)
-                    .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func activeExerciseFooter(_ run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
+        VStack(spacing: 0) {
+            if session.phase == .resting, ei == accordionIndex, session.summary == nil,
+               restSlotIndex(run, ei: ei) == nil {
+                restInlineSlice(run)
             }
+            addSetButton(ei)
         }
-        .padding(.leading, 26)
-        .plainRow()
-        .id("session-exercise-\(ei)")
-        // r24 (owner): la bolita/tarjeta activa hace CROSSFADE al cambiar de ejercicio — antes el
-        // bloque nuevo aparecía en seco mientras el viejo se comprimía; el fade cuenta la
-        // continuidad del foco sobre el riel (comparte el reloj gentle del acordeón).
-        .transition(.opacity)
+        // r22 (simetría): la tarjeta cerraba con 8 abajo vs 12 arriba — parejo con el tope.
+        .padding(.horizontal, CenitMetrics.receiptPadding)
+        .padding(.top, 8).padding(.bottom, 12)
+    }
+
+    /// «Recibo» (owner r6): superficie PLANA — borde hairline, cero sombra. One simple
+    /// shape replaces the r8d per-slice UnevenRoundedRectangle + internal-edge mask.
+    private var activeExerciseCardFill: some View {
+        RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+            .fill(theme.surface)
+            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
+                .strokeBorder(theme.hairline, lineWidth: 1))
+    }
+
+    @ViewBuilder
+    private var activeExerciseRail: some View {
+        if showRail {
+            Rectangle().fill(railTint.opacity(StrandOpacity.strokeSoft))
+                .frame(width: 2)
+                .offset(x: -20)
+                .allowsHitTesting(false)
+        }
     }
 
     /// The armed row's destructive affordance (r15) — a quiet critical-outline pill riding the
