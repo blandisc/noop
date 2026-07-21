@@ -137,11 +137,12 @@ Each package has a narrow contract. The dependency graph is acyclic and the leaf
 ```
 StrandDesign        (no deps — pure SwiftUI)
 StrandTraining      (no deps — pure domain types + bundled exercise catalog)
+StrandModels        (no deps — shared daily-metric value types: DailyMetric, CachedSleepSession, DietMealStatus)
 
 BiometricStreams    (no deps — the ROOT: the neutral vocabulary of decoded biometric rows)
 
 WhoopProtocol ──────▶ BiometricStreams
-CenitStore ─────────▶ BiometricStreams + StrandTraining + GRDB.swift
+CenitStore ─────────▶ BiometricStreams + StrandModels + StrandTraining + GRDB.swift
 StrandAnalytics ────▶ BiometricStreams + CenitStore   (NO StrandTraining dep: the strength engines —
                                                        MuscleFatigueMap FER-350, the 1RM estimator FER-346,
                                                        WeeklySplit FER-531 — take plain primitives the app
@@ -163,6 +164,7 @@ StrandImport ───────▶ CenitStore + StrandTraining + ZIPFoundatio
 
 | Package | Responsibility | Key types / functions | Notable boundary |
 |---|---|---|---|
+| **StrandModels** | Shared daily-metric value types used by both persistence and analytics — the durable shapes of cached scores, sleep sessions, and diet adherence status. | `DailyMetric` (+ `FieldUpdate`/`with(...)`), `CachedSleepSession`, `DietMealStatus` | **Leaf — zero dependencies, Foundation only.** No GRDB/UIKit. `CenitStore` depends on it and re-exports the names via `public typealias` (L3-C1a); StrandAnalytics will depend on it directly in a later cut. |
 | **BiometricStreams** | The neutral vocabulary of decoded biometric rows — the durable shapes everything downstream stores, computes over and serializes. Source-agnostic: nothing here names a frame, a byte, or a strap. | `HRSample`, `RRInterval`, `StreamEvent`, `BatterySample`, `SpO2Sample`, `SkinTempSample`, `RespSample`, `GravitySample`, `StepSample`, `Streams` (+ `.empty`), `ParsedValue` | **Root of the graph — zero dependencies, Foundation only.** No CoreBluetooth/UIKit/AppKit/GRDB, and no CRC/UUID/CLIENT_HELLO/schema. (FER-993 · D2). **Still linked into the app binary** — `CenitStore` and `StrandAnalytics` depend on it (`project.yml` lists `BiometricStreams` under the `Cenit` target). |
 | **WhoopProtocol** | The reverse-engineering core: turn raw BLE bytes into typed rows. Framing, CRC, fragment reassembly, schema-driven field decode, stream extraction, historical-chunk classification. | `Reassembler`, `verifyFrame`, `parseFrame` → `ParsedFrame`, `extractStreams`, `extractHistoricalStreams`, `classifyHistoricalMeta`, `DeviceFamily`, `crc8`/`crc16Modbus`/`crc32` | **No CoreBluetooth.** Exposes GATT UUIDs as `String`. Depends on `BiometricStreams` (it *produces* `Streams`); never the reverse. **Not linked into the app binary** since the band amputation (FER-1003 / Frente B) — remains in the monorepo for research, CLI, and standalone package tests only (`project.yml` packages comment + `Cenit` target `dependencies` omit it). |
 | **CenitStore** | Durable on-device persistence built on GRDB/SQLite. Migrations, decoded streams, metric caches, generic metric series, raw outbox, cursors. | `actor CenitStore`, `makeMigrator()`, `insert(_:deviceId:)`, `dailyMetrics`, `sleepSessions`, `metricSeries`, `pruneRaw`, `ClockRef`, `RawBatchMeta` | An **`actor`** — all writes/reads run off the main thread on its serial executor. |
