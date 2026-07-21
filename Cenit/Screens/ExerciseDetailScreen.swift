@@ -64,6 +64,8 @@ struct ExerciseDetailScreen: View {
     /// Whether this exercise currently carries a user type override (→ show «revert to default»).
     @State private var hasTypeOverride = false
     @State private var showTypeMenu = false
+    /// Write failure on type override / revert (FER-969 pattern).
+    @State private var saveError = false
     private var effectiveType: ExerciseType { shownType ?? exercise.type }
 
     /// A per-day metric the progress views derive from the raw history.
@@ -97,6 +99,7 @@ struct ExerciseDetailScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        .saveErrorToast(isPresented: $saveError)
         .task(id: exercise.id) {
             async let h = repo.exerciseHistory(exerciseId: exercise.id)
             async let ov = repo.exerciseTypeOverride(exercise.id)
@@ -405,18 +408,35 @@ struct ExerciseDetailScreen: View {
     /// Override this exercise's measurement type (works for catalog and custom). The header + control
     /// update immediately; downstream readers pick it up via the resolver on their next load.
     private func setType(_ t: ExerciseType) {
+        let previous = shownType
+        let previousOverride = hasTypeOverride
         shownType = t
         hasTypeOverride = true
-        Task { await repo.setExerciseTypeOverride(exercise.id, type: t) }
+        Task {
+            do {
+                try await repo.setExerciseTypeOverride(exercise.id, type: t)
+            } catch {
+                shownType = previous
+                hasTypeOverride = previousOverride
+                saveError = true
+            }
+        }
     }
 
     /// Drop the override → re-resolve the catalog/custom default and show it.
     private func revertType() {
+        let previous = shownType
         hasTypeOverride = false
         Task {
-            await repo.clearExerciseTypeOverride(exercise.id)
-            let resolved = await repo.resolvedExercise(exercise.id)
-            await MainActor.run { shownType = resolved?.type }
+            do {
+                try await repo.clearExerciseTypeOverride(exercise.id)
+                let resolved = await repo.resolvedExercise(exercise.id)
+                await MainActor.run { shownType = resolved?.type }
+            } catch {
+                hasTypeOverride = true
+                shownType = previous
+                saveError = true
+            }
         }
     }
 

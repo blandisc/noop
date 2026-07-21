@@ -30,21 +30,21 @@ extension Repository {
     }
 
     /// Pinpoint-update one routine exercise's rest config (FER-540) — for editing rest mid-session
-    /// without rewriting the whole routine. No-op when the store can't be opened.
+    /// without rewriting the whole routine. No-op when the store can't be opened; throws on write failure.
     func updateRoutineExerciseRest(routineExerciseId reId: String, routineId: String,
                                    mode: RestMode, seconds: Int,
-                                   reference: HRRestReference, value: Double) async {
+                                   reference: HRRestReference, value: Double) async throws {
         guard let store = await storeHandle() else { return }
-        try? await store.updateRoutineExerciseRest(
+        try await store.updateRoutineExerciseRest(
             routineExerciseId: reId, routineId: routineId, mode: mode, seconds: seconds,
             reference: reference, value: value, updatedTs: Int(Date().timeIntervalSince1970))
     }
 
     /// Pinpoint-update one planned set's rest override (FER-715, per-set scope) — `rest == nil` clears it
-    /// back to inheriting the exercise. No-op when the store can't be opened.
-    func updateRoutineSetRest(routineSetId: String, routineId: String, rest: RestConfig?) async {
+    /// back to inheriting the exercise. No-op when the store can't be opened; throws on write failure.
+    func updateRoutineSetRest(routineSetId: String, routineId: String, rest: RestConfig?) async throws {
         guard let store = await storeHandle() else { return }
-        try? await store.updateRoutineSetRest(
+        try await store.updateRoutineSetRest(
             routineSetId: routineSetId, routineId: routineId, rest: rest,
             updatedTs: Int(Date().timeIntervalSince1970))
     }
@@ -134,15 +134,17 @@ extension Repository {
     }
 
     /// Override an exercise's measurement type (catalog or custom).
-    func setExerciseTypeOverride(_ exerciseId: String, type: ExerciseType) async {
+    /// No-op when the store can't be opened; throws on write failure.
+    func setExerciseTypeOverride(_ exerciseId: String, type: ExerciseType) async throws {
         guard let store = await storeHandle() else { return }
-        try? await store.setExerciseTypeOverride(exerciseId, type: type, ts: Int(Date().timeIntervalSince1970))
+        try await store.setExerciseTypeOverride(exerciseId, type: type, ts: Int(Date().timeIntervalSince1970))
     }
 
     /// Drop an exercise's type override → it reverts to its catalog/custom default.
-    func clearExerciseTypeOverride(_ exerciseId: String) async {
+    /// No-op when the store can't be opened; throws on write failure.
+    func clearExerciseTypeOverride(_ exerciseId: String) async throws {
         guard let store = await storeHandle() else { return }
-        try? await store.clearExerciseTypeOverride(exerciseId)
+        try await store.clearExerciseTypeOverride(exerciseId)
     }
 
     // MARK: - Learned exercise aliases (import matching memory — FER-523)
@@ -154,10 +156,11 @@ extension Repository {
     }
 
     /// Remember an import mapping so the same name resolves on its own next time.
-    func saveLearnedExerciseAlias(name: String, exerciseId: String) async {
+    /// No-op when the store can't be opened; throws on write failure.
+    func saveLearnedExerciseAlias(name: String, exerciseId: String) async throws {
         guard let store = await storeHandle() else { return }
-        try? await store.saveLearnedExerciseAlias(name: name, exerciseId: exerciseId,
-                                                  ts: Int(Date().timeIntervalSince1970))
+        try await store.saveLearnedExerciseAlias(name: name, exerciseId: exerciseId,
+                                                 ts: Int(Date().timeIntervalSince1970))
     }
 
     // MARK: - Sessions (the completed-workout history)

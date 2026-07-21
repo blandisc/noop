@@ -669,9 +669,14 @@ struct WorkoutImportView: View {
                 }
             }
             // Remember the confirmed mappings only now (FER-536) — so Undo before saving leaves no learned
-            // alias behind. Omitted names are never remembered.
+            // alias behind. Omitted names are never remembered. Routines already landed; a failed alias
+            // still advances to .done but surfaces the toast so the user knows the memory didn't stick.
             for (key, ex) in resolutionSnapshot where !omittedSnapshot.contains(key) {
-                await repo.saveLearnedExerciseAlias(name: key, exerciseId: ex.id)
+                do {
+                    try await repo.saveLearnedExerciseAlias(name: key, exerciseId: ex.id)
+                } catch {
+                    saveError = true
+                }
             }
             createdCount = created
             phase = .done

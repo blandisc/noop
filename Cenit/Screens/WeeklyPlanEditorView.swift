@@ -796,11 +796,15 @@ struct WeeklyPlanEditorView: View {
         newFolderName = ""; pendingMove = nil
         guard !name.isEmpty else { return }
         Task {
-            guard let store = await repo.storeHandle() else { return }
+            guard let store = await repo.storeHandle() else { saveError = true; return }
             let folder = RoutineFolder(name: name, sortOrder: folders.count)
-            try? await store.saveFolder(folder)
-            if let toMove { try? await store.setRoutineFolder(routineId: toMove.id, folderId: folder.id) }
-            await load()
+            do {
+                try await store.saveFolder(folder)
+                if let toMove { try await store.setRoutineFolder(routineId: toMove.id, folderId: folder.id) }
+                await load()
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -812,19 +816,27 @@ struct WeeklyPlanEditorView: View {
         renameFolder = nil
         guard !name.isEmpty else { return }
         Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.saveFolder(RoutineFolder(id: f.id, name: name, sortOrder: f.sortOrder))
-            await load()
+            guard let store = await repo.storeHandle() else { saveError = true; return }
+            do {
+                try await store.saveFolder(RoutineFolder(id: f.id, name: name, sortOrder: f.sortOrder))
+                await load()
+            } catch {
+                saveError = true
+            }
         }
     }
 
     private func deleteFolder(_ f: RoutineFolder) {
         let members = routines.filter { $0.folderId == f.id }.map(\.id)
         Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.deleteFolder(id: f.id)
-            await load()
-            withAnimation { pendingFolderUndo = DeletedFolder(folder: f, memberIds: members) }
+            guard let store = await repo.storeHandle() else { saveError = true; return }
+            do {
+                try await store.deleteFolder(id: f.id)
+                await load()
+                withAnimation { pendingFolderUndo = DeletedFolder(folder: f, memberIds: members) }
+            } catch {
+                saveError = true
+            }
         }
     }
     /// M5 (decisión Fer): borrar carpeta era destructivo inmediato — mismo contrato de undo 4 s
@@ -837,11 +849,15 @@ struct WeeklyPlanEditorView: View {
 
     private func undoDeleteFolder(_ d: DeletedFolder) {
         Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.saveFolder(d.folder)
-            for rid in d.memberIds { try? await store.setRoutineFolder(routineId: rid, folderId: d.folder.id) }
-            await load()
-            withAnimation { pendingFolderUndo = nil }
+            guard let store = await repo.storeHandle() else { saveError = true; return }
+            do {
+                try await store.saveFolder(d.folder)
+                for rid in d.memberIds { try await store.setRoutineFolder(routineId: rid, folderId: d.folder.id) }
+                await load()
+                withAnimation { pendingFolderUndo = nil }
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -868,9 +884,13 @@ struct WeeklyPlanEditorView: View {
 
     private func move(_ r: Routine, to folderId: String?) {
         Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.setRoutineFolder(routineId: r.id, folderId: folderId)
-            await load()
+            guard let store = await repo.storeHandle() else { saveError = true; return }
+            do {
+                try await store.setRoutineFolder(routineId: r.id, folderId: folderId)
+                await load()
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -1006,9 +1026,13 @@ struct WeeklyPlanEditorView: View {
 
     private func clear(_ wd: Int) {
         Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.clearRoutineSchedule(weekday: wd)
-            await reloadSchedule()
+            guard let store = await repo.storeHandle() else { saveError = true; return }
+            do {
+                try await store.clearRoutineSchedule(weekday: wd)
+                await reloadSchedule()
+            } catch {
+                saveError = true
+            }
         }
     }
 }
