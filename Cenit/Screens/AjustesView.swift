@@ -98,9 +98,6 @@ private struct AjustesLanding: View {
     @State private var showMaxHR = false
     @State private var showCyclePhase = false
     @AppStorage(CyclePhaseExperiment.enabledKey) private var cyclePhaseOn = false
-    @State private var showReloj = false
-    /// Opt-in experimental body-clock reading (off by default). FER-712.
-    @AppStorage("noop.relojCorporalEnabled") private var relojCorporalEnabled = false
     @AppStorage(WhitespaceMetricsExperiment.enabledKey) private var whitespaceMetrics = false
     /// FER-722: opt-in exercise media download (default off — the first/only exception to offline
     /// for exercise thumbs/loops, gated end-to-end by `MediaDownloadCoordinator`).
@@ -135,9 +132,6 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showMaxHR) {
             MaxHRSheet().instrumentoTheme(theme).environmentObject(profile)
-        }
-        .sheet(isPresented: $showReloj) {
-            RelojCorporalSheet().instrumentoTheme(theme).environmentObject(repo)
         }
         .sheet(item: $profileWheel) { wheel in
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
@@ -275,19 +269,6 @@ private struct AjustesLanding: View {
                            subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
                     divider
                 }
-                Toggle(isOn: $relojCorporalEnabled) {
-                    Text("Lectura del reloj corporal").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                .frame(minHeight: 44)
-                Text("Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if relojCorporalEnabled {
-                    divider
-                    navRow("Ver tu reloj corporal") { showReloj = true }
-                }
-                divider
                 Toggle(isOn: $whitespaceMetrics) {
                     Text("Experimental metrics").font(StrandFont.body).foregroundStyle(theme.ink)
                 }
