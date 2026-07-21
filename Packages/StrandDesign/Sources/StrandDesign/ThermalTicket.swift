@@ -189,28 +189,34 @@ public struct BarcodeGlyph: View {
 public struct ThermalDialGlyph: View {
     public var diameter: CGFloat
     public init(diameter: CGFloat = 22) { self.diameter = diameter }
+
+    /// Drawing lives in a free-standing typed function so `body` only has a one-line Canvas
+    /// call (not the full GraphicsContext expression tree as part of View type-checking).
     public var body: some View {
-        Canvas { (ctx: inout GraphicsContext, size: CGSize) in
-            let c: CGPoint = CGPoint(x: size.width / 2, y: size.height / 2)
-            let r: CGFloat = min(size.width, size.height) / 2 - 2
-            let ring: CGRect = CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)
-            ctx.stroke(Path(ellipseIn: ring),
-                       with: .color(ThermalPalette.ink), lineWidth: 1.4)
-            for a in stride(from: 0.0, to: 360.0, by: 90.0) {
-                let rad: Double = a * .pi / 180.0
-                let p1: CGPoint = CGPoint(x: c.x + cos(rad) * (r - 2.5), y: c.y + sin(rad) * (r - 2.5))
-                let p2: CGPoint = CGPoint(x: c.x + cos(rad) * r, y: c.y + sin(rad) * r)
-                var m: Path = Path(); m.move(to: p1); m.addLine(to: p2)
-                ctx.stroke(m, with: .color(ThermalPalette.ink), lineWidth: 1)
-            }
-            let na: Double = -45.0 * .pi / 180.0                          // «now» at upper-right
-            let np: CGPoint = CGPoint(x: c.x + cos(na) * r, y: c.y + sin(na) * r)
-            let dot: CGRect = CGRect(x: np.x - 2, y: np.y - 2, width: 4, height: 4)
-            ctx.fill(Path(ellipseIn: dot),
-                     with: .color(ThermalPalette.ink))
+        Canvas { ctx, size in Self.paint(&ctx, size) }
+            .frame(width: diameter, height: diameter)
+            .accessibilityHidden(true)
+    }
+
+    private static func paint(_ ctx: inout GraphicsContext, _ size: CGSize) {
+        let c: CGPoint = CGPoint(x: size.width / 2, y: size.height / 2)
+        let r: CGFloat = min(size.width, size.height) / 2 - 2
+        let ring: CGRect = CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)
+        ctx.stroke(Path(ellipseIn: ring),
+                   with: .color(ThermalPalette.ink), lineWidth: 1.4)
+        // Angles as CGFloat so cos/sin resolve to CoreGraphics (not Darwin Double).
+        for a in stride(from: CGFloat(0), to: CGFloat(360), by: CGFloat(90)) {
+            let rad: CGFloat = a * .pi / 180
+            let p1: CGPoint = CGPoint(x: c.x + cos(rad) * (r - 2.5), y: c.y + sin(rad) * (r - 2.5))
+            let p2: CGPoint = CGPoint(x: c.x + cos(rad) * r, y: c.y + sin(rad) * r)
+            var m: Path = Path(); m.move(to: p1); m.addLine(to: p2)
+            ctx.stroke(m, with: .color(ThermalPalette.ink), lineWidth: 1)
         }
-        .frame(width: diameter, height: diameter)
-        .accessibilityHidden(true)
+        let na: CGFloat = -45 * .pi / 180                          // «now» at upper-right
+        let np: CGPoint = CGPoint(x: c.x + cos(na) * r, y: c.y + sin(na) * r)
+        let dot: CGRect = CGRect(x: np.x - 2, y: np.y - 2, width: 4, height: 4)
+        ctx.fill(Path(ellipseIn: dot),
+                 with: .color(ThermalPalette.ink))
     }
 }
 
@@ -314,6 +320,20 @@ public struct ThermalTicketView: View {
     }
 
     public var body: some View {
+        ticketStack
+            .foregroundStyle(ThermalPalette.ink)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 18)
+            .padding(.top, 18)
+            .padding(.bottom, 22)
+            .frame(width: width)
+            .background(ThermalPalette.paper)
+            .overlay(headBanding)                       // faint thermal texture, kept subtle
+            .clipShape(shape)
+            .shadow(color: .black.opacity(0.14), radius: 11, x: 0, y: 8)
+    }
+
+    private var ticketStack: some View {
         VStack(spacing: 0) {
             ticketHeader
 
@@ -332,16 +352,6 @@ public struct ThermalTicketView: View {
 
             ticketFooter
         }
-        .foregroundStyle(ThermalPalette.ink)
-        .multilineTextAlignment(.center)
-        .padding(.horizontal, 18)
-        .padding(.top, 18)
-        .padding(.bottom, 22)
-        .frame(width: width)
-        .background(ThermalPalette.paper)
-        .overlay(headBanding)                       // faint thermal texture, kept subtle
-        .clipShape(shape)
-        .shadow(color: .black.opacity(0.14), radius: 11, x: 0, y: 8)
     }
 
     @ViewBuilder private func itemRow(_ item: ThermalReceipt.Item) -> some View {
