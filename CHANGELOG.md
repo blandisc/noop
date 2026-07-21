@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El pulso vivo del Apple Watch aparece en la píldora de sesión y termina descansos por FC con el teléfono bloqueado; los temporizadores vibran con el teléfono.** La FC viva unificada es `watchBpm` (ya no el `bpm` muerto de la banda); el auto-skip de descanso por recuperación cardiaca (FER-758) vuelve a funcionar; `buzz()` usa háptica del iPhone; el copy deja de prometer que «la banda vibrará».
+
 - **Limpieza de restos de banda en Ajustes y Respirar.** Se borran hojas de calibración de pasos inalcanzables, preferencias de double-tap / muñeca / coaching / alarma inteligente sin lectores, y un helper de RMSSD muerto en respiración guiada. Sin cambio de comportamiento en superficies vivas.
 
 - **La Carga del día estimada ya no relee años de pulso de Apple Salud en cada refresco — solo el día de hoy.**

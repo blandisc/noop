@@ -5,11 +5,11 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// Silent haptic HIIT interval timer.
 ///
-/// Train hands-free: the strap buzzes every transition so you never have to look
+/// Train hands-free: the phone buzzes every transition so you never have to look
 /// at the screen. Strong triple-buzz at the start of each WORK block, a short
 /// single buzz into REST, a 3-2-1 tick on the last seconds of every phase, and a
-/// long 5-loop buzz when the whole session finishes. With no strap bonded it still
-/// works as a big glanceable visual timer (just without haptics).
+/// long 5-loop buzz when the whole session finishes. On macOS (no UIKit haptics)
+/// it still works as a big glanceable visual timer.
 ///
 /// «Instrumento diurno» (FER-342): warm paper, the countdown is the dominant
 /// numeral in ink (a mechanical reading), the phase (WORK/REST/DONE) and the ring
@@ -122,7 +122,7 @@ struct IntervalTimerView: View {
             Text("Interval Timer")
                 .font(InstrumentoType.grotesk(28, weight: .bold, relativeTo: .title))
                 .foregroundStyle(theme.ink)
-            Text("Silent haptic HIIT: the strap buzzes the transitions")
+            Text("Silent haptic HIIT: your phone buzzes the transitions")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
         }
@@ -506,8 +506,7 @@ struct IntervalTimerView: View {
         elapsed = 0
     }
 
-    /// Fire a strap buzz (no-op when not bonded — `buzz` already guards, but we
-    /// also skip the call entirely so this stays a pure visual tool when unbonded).
+    /// Fire phone haptic via `AppModel.buzz` (no-op on platforms without UIKit).
     private func buzz(loops: UInt8) {
         model.buzz(loops: loops)
     }

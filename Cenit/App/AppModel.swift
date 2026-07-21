@@ -7,6 +7,9 @@ import CenitStore
 import StrandImport
 import StrandAnalytics
 import StrandTraining
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Root app state: owns the on-device repository, profile, strength session, and Watch mirror.
 /// Strap BLE ownership was amputated in Ola 2 (Apple-only).
@@ -139,9 +142,6 @@ import StrandTraining
     /// True while any data-source import is writing to the local store.
     var hasActiveImport: Bool { activeImportSource != nil }
 
-    /// Display-ready heart rate placeholder (was band-smoothed). Always nil without a strap stream;
-    /// strength sheet live HR uses `watchBpm` instead (FER-1003).
-    var bpm: Int?
     private var hrCancellables = Set<AnyCancellable>()
 
     init() {
@@ -267,9 +267,8 @@ import StrandTraining
         return []
     }
 
-    func resetSmoothing() {
-        bpm = nil
-    }
+    /// Cleared band-era HR smoother; kept as a no-op so strength start/end call sites still compile.
+    func resetSmoothing() {}
 
     /// Realtime HR consumer ref-count (band stream removed in Ola 2). Kept so strength start/end call sites still compile.
     private var realtimeConsumers: Set<String> = []
@@ -283,18 +282,40 @@ import StrandTraining
         _ = realtimeConsumers.remove(consumer)
     }
 
-    // TODO(/pm): sin banda, buzz() no hace nada — ¿reemplazar con háptica del teléfono (UIImpactFeedbackGenerator) o del Watch en vez de dejarlo mudo?
+    /// Phone haptics for timer / rest / moment cues (replaces the retired strap motor, FER-1003).
+    /// `loops` ≥ 3 use a heavier impact; ≥ 5 also fire a success notification for the long completion cue.
     func buzz(loops: UInt8 = 2) {
-        // no strap to buzz
+        #if canImport(UIKit)
+        let count = max(1, min(Int(loops), 8))
+        if count >= 5 {
+            let note = UINotificationFeedbackGenerator()
+            note.prepare()
+            note.notificationOccurred(.success)
+        }
+        let style: UIImpactFeedbackGenerator.FeedbackStyle = count >= 3 ? .heavy : .medium
+        let impact = UIImpactFeedbackGenerator(style: style)
+        impact.prepare()
+        for i in 0..<count {
+            if i == 0 {
+                impact.impactOccurred(intensity: 1.0)
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12 * Double(i)) {
+                    impact.impactOccurred(intensity: 1.0)
+                }
+            }
+        }
+        #endif
     }
 
+    /// Pattern was a strap motor id; on phone, loops alone drive the haptic.
     func buzz(pattern: UInt8, loops: UInt8 = 1) {
-        // no strap to buzz
+        _ = pattern
+        buzz(loops: loops)
     }
 
     // MARK: - Moments
 
-    /// Record a "moment" with a confirming buzz (now a no-op haptic). `at` defaults to now; a moment
+    /// Record a "moment" with a confirming phone haptic. `at` defaults to now; a moment
     /// queued by an App Intent passes the instant the user actually asked for it.
     func markMoment(at date: Date = Date()) {
         moments.append(date)
