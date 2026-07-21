@@ -54,8 +54,8 @@ public enum InsightEngine {
 
     /// Everything the detectors need, all already read from the store by the caller.
     /// Most fields default to empty so a caller (or a test) supplies only what it has.
-    /// (Not `Sendable`: `DailyMetric` / `CachedSleepSession` from CenitStore aren't, and
-    /// the engine is a synchronous pure function — it never crosses an actor boundary.)
+    /// (`DailyMetric` / `CachedSleepSession` from CenitStore *are* `Sendable`; the engine is
+    /// still a synchronous pure function and does not cross an actor boundary on its own.)
     public struct Inputs {
         /// Daily rows; any order (the engine sorts).
         public var days: [DailyMetric]

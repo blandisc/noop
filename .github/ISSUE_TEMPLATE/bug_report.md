@@ -5,9 +5,9 @@ labels: bug
 ---
 
 <!--
-NOOP is offline and on-device: there are no servers or accounts to check.
-Please leave out anything that identifies you — a strap serial, an account
-email, or a raw export — none of it is needed to reproduce a bug.
+Cénit is offline and on-device: there are no servers or accounts to check.
+Please leave out anything that identifies you — an account email, or a raw
+export — none of it is needed to reproduce a bug.
 -->
 
 ## What happens
@@ -26,12 +26,11 @@ What you expected to happen instead.
 
 ## Environment
 
-- NOOP version (Settings → About, or the release tag):
+- Cénit version (Settings → About, or the release tag):
 - Platform: iOS — and its version:
-- WHOOP strap model: 4.0 / 5.0 / MG / not using a strap (imported data only):
-- Data source: live BLE / WHOOP CSV import / Apple Health import:
+- Data source: Apple Health (live HealthKit) / Apple Health export import / historical WHOOP CSV import:
 
 ## Logs or screenshots
 
-If you have them, paste the relevant strap-log lines or a screenshot. Redact
+If you have them, paste the relevant log lines or a screenshot. Redact
 anything you'd rather not share — partial logs are still useful.

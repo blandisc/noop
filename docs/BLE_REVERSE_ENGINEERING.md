@@ -1,17 +1,19 @@
 # BLE Reverse Engineering
 
-How Cénit talks to a WHOOP strap directly over Bluetooth Low Energy — no WHOOP cloud and no account.
-This document explains how the strap's private GATT protocol was understood, how the
-frame format and checksums work, how WHOOP 4.0 ("Harvard") and WHOOP 5.0 ("puffin") differ, what each
-data stream contains, and how to extend the decoder for new packet types or sensors.
+> ⚠️ **Histórico** — la banda fue retirada del producto (FER-1003). Este documento describe el
+> protocolo con fines de investigación; el código vive en `Packages/WhoopProtocol` y **NO** se
+> linkea a la app. El transporte CoreBluetooth de la app (`Cenit/BLE/*`) fue **borrado**.
 
-> **Interoperability, not impersonation.** Cénit is a companion app for a strap *you own*. It reads the
-> data *your* device already records and stores it locally on *your* machine. Nothing here replicates,
-> circumvents, or interoperates with WHOOP's servers.
+How the WHOOP strap's private GATT protocol was understood — no WHOOP cloud and no account.
+This document explains the frame format and checksums, how WHOOP 4.0 ("Harvard") and WHOOP 5.0
+("puffin") differ, what each data stream contains, and how to extend the decoder for new packet
+types or sensors.
+
+> **Interoperability, not impersonation.** This is reverse-engineering for a strap *you own*. Nothing
+> here replicates, circumvents, or interoperates with WHOOP's servers.
 >
-> **Not affiliated with WHOOP. Not a medical device.** "WHOOP" is used only to identify the hardware
-> this app interoperates with. The decoded values are raw or locally-computed estimates and must not be
-> used for any medical purpose.
+> **Not affiliated with WHOOP. Not a medical device.** "WHOOP" is used only to identify the hardware.
+> The decoded values are raw or locally-computed estimates and must not be used for any medical purpose.
 
 ---
 
@@ -35,8 +37,8 @@ on-device verification notes embedded in `Resources/whoop_protocol.json`).
 
 ## Where the code lives
 
-The reverse-engineering logic is split between a platform-pure Swift package and the app's BLE
-engine:
+All reverse-engineering logic that still ships in the monorepo lives in the platform-pure
+`WhoopProtocol` package (**not** linked into the app binary):
 
 | File | Role |
 |---|---|
@@ -45,14 +47,14 @@ engine:
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/Interpreter.swift` | `parseFrame` — envelope → annotated fields + a flat `parsed` dict. |
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/PostHooks.swift` | Per-type decoders for irregular layouts (raw IMU/optical, type-47 DSP record, events, metadata). |
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/Streams.swift` / `HistoricalStreams.swift` | Parsed frames → durable rows (`HRSample`, `SpO2Sample`, …). |
+| `Packages/WhoopProtocol/Sources/WhoopProtocol/StandardHeartRate.swift` | `0x2A37` HR/R-R parser. |
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/Resources/whoop_protocol.json` | The data-driven schema: packet types, enums, field offsets, sensor scales. |
-| `Cenit/BLE/BLEManager.swift` | CoreBluetooth engine: scan → connect → **bond** → subscribe → reassemble → route. |
-| `Cenit/BLE/Commands.swift` | The curated, **safe** command set (`WhoopCommand`) and the frame builder. |
-| `Cenit/BLE/FrameRouter.swift` | Pure decode → live UI state (HR, events, double-tap, wrist on/off). |
+| ~~`Cenit/BLE/BLEManager.swift`~~ | **deleted** (FER-1003) — former CoreBluetooth engine. |
+| ~~`Cenit/BLE/Commands.swift`~~ | **deleted** — former safe `WhoopCommand` set. |
+| ~~`Cenit/BLE/FrameRouter.swift`~~ | **deleted** — former decode → live UI state. |
 
 The `WhoopProtocol` package never imports CoreBluetooth — it exposes UUIDs as plain strings so the
-protocol code runs unchanged in tests and CLI tools. Only `BLEManager` turns those strings into
-`CBUUID`s.
+protocol code runs unchanged in tests and CLI tools.
 
 ---
 

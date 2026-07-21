@@ -1,6 +1,6 @@
-# Cénit (Cénit)
+# Cénit (NOOP)
 
-Companion offline y on-device para straps WHOOP: captura biometría por BLE, la guarda local y computa recuperación/esfuerzo/HRV/sueño en el dispositivo. Este glosario cubre el lenguaje del dominio, empezando por el motor de coaching proactivo (en diseño).
+Companion offline y on-device sobre **Apple Health**: sincroniza HealthKit, guarda todo en SQLite local y computa recuperación/esfuerzo/HRV/sueño en el dispositivo. El soporte de banda WHOOP fue retirado (FER-1003); los datos históricos importados se conservan. Este glosario cubre el lenguaje del dominio, empezando por el motor de coaching proactivo (en diseño).
 
 ## Language
 

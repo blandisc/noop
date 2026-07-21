@@ -21,12 +21,11 @@ on-device from HealthKit data plus optional file imports, and stored in a single
 SQLite file. There is no server, no account, no login, no cloud sync, and no telemetry
 anywhere in the app.
 
-There are exactly **two** opt-in exceptions, both off until you turn them on: the
-**AI Coach** (§1.1a) and **exercise media download** (§1.1b). The AI Coach sends a short
-text summary of your recent metrics to the AI provider you choose, only when you ask it a
-question. Exercise media download fetches an instructional image/GIF for an exercise from
-a fixed third-party CDN, only when you enable it and only for exercises you view. Nothing
-else in the app ever touches the network, and your raw biometric data never does.
+There is exactly **one** opt-in network exception, off until you turn it on:
+**exercise media download** (§1.1b). It fetches an instructional image/GIF for an
+exercise from a fixed third-party CDN, only when you enable it and only for exercises
+you view. Nothing else in the app ever touches the network, and your raw biometric
+data never does. (The former BYO-key external AI Coach was removed.)
 
 Data enters Cénit two ways:
 
@@ -42,19 +41,19 @@ versions remain in the local database as historical data — nothing re-reads,
 re-validates, or adds to them, and, like everything else in the database, they never
 leave the device.
 
-The only outbound paths are the two opt-in exceptions above; the rest of the app,
+The only outbound path is the opt-in exception above; the rest of the app,
 including the entire biometric pipeline, produces no network traffic of any kind.
 
-### 1.1 Network code: only the two opt-in features
+### 1.1 Network code: only the one opt-in feature
 
-The biometric pipeline and all five Swift packages
-(`WhoopProtocol`, `CenitStore`, `StrandAnalytics`, `StrandImport`, `StrandDesign`)
-contain **no** use of `URLSession`, `URLRequest`, `NWConnection`, `dataTask`, or any
-other networking API. The **only** networking anywhere in the app is the AI Coach
-(`Cenit/AI/AICoach.swift`, §1.1a) and exercise media download
-(`Cenit/Media/MediaDownloadCoordinator.swift`, §1.1b). The package manifests reference
-dependency *download* URLs that Swift Package Manager resolves at build time, never at
-runtime:
+The biometric pipeline and the shipping packages
+(`BiometricStreams`, `CenitStore`, `StrandAnalytics`, `StrandTraining`, `StrandImport`,
+`StrandDesign`) contain **no** use of `URLSession`, `URLRequest`, `NWConnection`,
+`dataTask`, or any other networking API. (`WhoopProtocol` is research-only and is not
+linked into the app.) The **only** networking anywhere in the app is exercise media
+download (`Cenit/Media/MediaDownloadCoordinator.swift`, §1.1b). The package manifests
+reference dependency *download* URLs that Swift Package Manager resolves at build time,
+never at runtime:
 
 ```
 Packages/CenitStore/Package.swift   → https://github.com/groue/GRDB.swift.git
@@ -63,23 +62,6 @@ Packages/StrandImport/Package.swift → https://github.com/weichsel/ZIPFoundatio
 
 GRDB.swift is the SQLite layer; ZIPFoundation is the archive reader used by the
 importers. Neither opens a socket.
-
-### 1.1a The AI Coach (optional, off by default, bring your own key)
-
-The AI Coach lets you ask questions about your data in plain language. It is the one
-feature that uses the network, and only on your terms:
-
-- **Off until you enable it.** You enter your own API key for the provider you choose
-  (OpenAI or Anthropic). No key, no network calls, ever.
-- **What is sent.** When you ask a question, Cénit builds a compact **text** summary of
-  your recent metrics (recovery, strain, sleep, HRV, resting HR over ~14 days, plus
-  30-day averages and recent workouts) and sends it, with your question, directly to
-  that provider's API (`api.openai.com` / `api.anthropic.com`).
-- **What is NOT sent.** No raw biometric streams, no Bluetooth data, no account or
-  device identifiers — only the summary text and your question.
-- **Your key, your relationship.** The request goes from your device straight to the
-  provider you picked, under your own account. Cénit runs no server in between and keeps
-  no copy.
 
 ### 1.1b Exercise media download (optional, off by default)
 
@@ -101,8 +83,7 @@ off by default and entirely optional:
   the toggle stops new downloads but does not delete what's cached (a separate
   "delete all cached media" action does).
 
-If you never enable the AI Coach or exercise media download, Cénit makes zero network
-connections.
+If you never enable exercise media download, Cénit makes zero network connections.
 
 ### 1.2 The iOS app's entitlements
 
@@ -119,17 +100,15 @@ The iOS app ships with a deliberately minimal entitlement set
   The Clinical/Verifiable Health Records key is intentionally **omitted** — Cénit never
   reads clinical records.
 - **`application-groups`** — a shared container so the app and its widgets read the same
-  tiny snapshot. BLE access is granted by the `NSBluetoothAlwaysUsageDescription` prompt
-  plus the `bluetooth-central` background mode (declared in `project.yml`), not an
-  entitlement key.
+  tiny snapshot.
 
 Notably **absent**: any **networking entitlement or code**. iOS does not gate outbound
 network behind a sandbox entitlement the way the macOS App Sandbox did, so the offline
-guarantee here is **structural in the code, not the OS**: the biometric pipeline and all
-five packages contain no networking API at all (§1.1), and the only code that can ever
-open a socket is the opt-in AI Coach (§1.1a) — with your own key, to your chosen provider,
-sending only a short text summary. The app also has no broad-filesystem access: it reads
-only the import files you explicitly pick, plus its own container.
+guarantee here is **structural in the code, not the OS**: the biometric pipeline and
+shipping packages contain no networking API at all (§1.1), and the only code that can
+ever open a socket is the opt-in exercise media downloader (§1.1b). The app also has no
+broad-filesystem access: it reads only the import files you explicitly pick, plus its own
+container.
 
 This is the structural guarantee behind "offline by design": the privacy property holds
 because there is no network code to begin with, not merely by convention.
@@ -141,7 +120,7 @@ because there is no network code to begin with, not merely by convention.
 ### 2.1 Where the data lives
 
 All durable data is stored in a single GRDB/SQLite database. The app
-opens it at (`Cenit/Collect/StorePaths.swift`):
+opens it at (`Cenit/Data/StorePaths.swift`):
 
 ```
 <Application Support>/OpenWhoop/whoop.sqlite
@@ -209,26 +188,11 @@ schema scaffolding inherited from the upstream collection library; in Cénit's o
 configuration nothing uploads, and the raw buffer is purely a local replay/recovery
 aid.)
 
-### 2.4 Diagnostics: the strap connection log
+### 2.4 Diagnostics
 
-When a strap won't connect or behaves oddly, the single most useful thing a user can
-send is the connection log. Cénit keeps one so it can be shared **without** needing a
-developer setup (this is what made issues #17/#18 reportable), and the same
-log doubles as the primary tool for **debugging and protocol development**.
-
-**What it is.** The BLE client (`Cenit/BLE/BLEManager.swift`) keeps an **in-memory ring
-buffer** of the connection's control flow: scan results (strap
-advertised name + RSSI), the bond/handshake state machine, command names with their
-outbound payload **hex**, and offload progress (trim cursors, chunk acks). It is held
-in RAM only; the "Share strap log" button writes it to a private app-cache file at
-share time and hands that file to the OS share sheet. Nothing is uploaded by Cénit.
-
-**What it does *not* contain.** No account credentials (there is no account), no
-decoded biometric *values* (heart-rate numbers, R-R intervals, SpO₂, skin-temp are not
-written to the log — only control-plane command names and frame-routing), and no
-hello-token or serial hex (the handshake lines log *that* a step happened, not its
-secret payload). The one mild identifier is the strap's advertised name (e.g.
-`WHOOP 5AG…`), which the user chooses to include when they tap Share.
+There is no live strap connection log in the shipping app (band pairing was retired,
+FER-1003). Diagnostics for HealthKit sync and imports stay on-device; nothing is
+uploaded by Cénit.
 
 ### 2.5 Backups
 
@@ -256,31 +220,23 @@ iCloud, outside anything Cénit does.
 
 ## 3. Threat model
 
-Cénit parses two classes of **untrusted input**: bytes arriving over Bluetooth, and
-files chosen for import. Both are treated as hostile and validated before anything
-reaches the database. Apple Health and WHOOP files in particular can be very large
+Cénit parses **untrusted input** from files chosen for import (and HealthKit samples
+from the OS). Imports are treated as hostile and validated before anything reaches the
+database. Apple Health and historical WHOOP export files in particular can be very large
 (multi-hundred-MB to multi-GB), so resource exhaustion is part of the model.
 
 What is explicitly **out of scope**: Cénit cannot defend the data against an attacker
-who already controls your unlocked user session (see §2.2), and it makes no claim of
-cryptographic authentication of the strap — BLE pairing/bonding security is provided
-by the OS Bluetooth stack and the device, not by Cénit.
+who already controls your unlocked user session (see §2.2).
 
-The BLE-ingestion hardening in §3.1 documents the `WhoopProtocol` decode layer as it was
-built, and is retained here for accuracy about that code; it is no longer an active
-attack surface in the shipped app, since Cénit no longer opens a live connection to a
-WHOOP strap (§1).
+### 3.1 Threat A: research-only BLE decode (not linked into the app)
 
-### 3.1 Threat A: a malicious or malfunctioning BLE peer
+The protocol core (`Packages/WhoopProtocol/`) is **research-only** and is **not** linked
+into the shipping binary (FER-1003). Its CRC-gated parsing and bounds-checked readers are
+retained for CLI/tests accuracy; they are not an active attack surface in the app.
 
-A device advertising as a strap (or a glitching real strap) could send malformed,
-truncated, oversized, or adversarial frames. The protocol core
-(`Packages/WhoopProtocol/`) is the reverse-engineering layer and is the first line of
-defense.
-
-**CRC-gated parsing.** Every frame is checked against its checksums before it is
-allowed to drive any application state. `Framing.swift` implements three checksums
-verbatim from the wire formats:
+**CRC-gated parsing (research package).** Every frame is checked against its checksums
+before decode continues. `Framing.swift` implements three checksums verbatim from the
+wire formats:
 
 - `crc8` (poly 0x07) over the length header,
 - `crc32` (zlib/reflected) over the inner payload,
@@ -293,19 +249,7 @@ verbatim from the wire formats:
 let ok = crc8OK && (crc32OK ?? false)
 ```
 
-The live BLE path then refuses anything that fails. In
-`Cenit/BLE/FrameRouter.swift`:
-
-```swift
-let parsed = parseFrame(frame)
-guard parsed.ok else { return }
-// Reject frames that failed their checksum — never let bad bytes drive state.
-if parsed.crcOK == false { return }
-```
-
-The same gate guards clock correlation (`Cenit/Collect/ClockCorrelation.swift`
-requires `parsed.ok, parsed.crcOK != false`), so a corrupt frame can neither update
-the displayed metrics nor poison the device-clock model.
+The former app-layer frame router that refused bad frames is **deleted** (FER-1003).
 
 **Bounds-checked decoding.** Field reads never index past the end of the buffer. The
 low-level readers in `Interpreter.swift` return `nil` instead of trapping when a read
@@ -417,18 +361,17 @@ bundle of CSV files, but the same defensive posture applies.
 
 | Surface | Risk | Mitigation | Where |
 |---------|------|------------|-------|
-| Process | Data exfiltration / network egress | Only two opt-in features network: the AI Coach (your key, to your chosen provider, a text summary — §1.1a) and exercise media download (a GET to a fixed CDN, only when enabled — §1.1b); nothing else makes a network call | `Cenit/AI/AICoach.swift`, `Cenit/Media/MediaDownloadCoordinator.swift` |
-| Filesystem | Broad disk access | iOS app sandbox; imports read only the files you pick via the document picker; data stays in the app's private container | `CenitApp/Resources/NOOP.entitlements`, `Cenit/Collect/StorePaths.swift` |
-| BLE frames | Malformed / adversarial packets | CRC8 + CRC32 (+ CRC16 for v5) gating; reject on failure | `WhoopProtocol/Framing.swift`, `Cenit/BLE/FrameRouter.swift` |
-| BLE frames | Out-of-bounds reads from short/lying length | `nil`-returning bounds-checked readers; slice clamping; min-length guards | `WhoopProtocol/Interpreter.swift` |
-| BLE frames | Garbage / partial fragments | SOF-resync reassembler bounded by declared length | `WhoopProtocol/Framing.swift` (`Reassembler`) |
-| App state | Implausible-but-valid values | Range gates (e.g. HR 30–220) at the state edge | `Cenit/BLE/FrameRouter.swift` |
+| Process | Data exfiltration / network egress | Only one opt-in feature networks: exercise media download (a GET to a fixed CDN, only when enabled — §1.1b); nothing else makes a network call | `Cenit/Media/MediaDownloadCoordinator.swift` |
+| Filesystem | Broad disk access | iOS app sandbox; imports read only the files you pick via the document picker; data stays in the app's private container | `CenitApp/Resources/NOOP.entitlements`, `Cenit/Data/StorePaths.swift` |
+| Protocol research | Malformed / adversarial packets (CLI/tests only) | CRC8 + CRC32 (+ CRC16 for v5) gating; reject on failure | `WhoopProtocol/Framing.swift` (not linked to app) |
+| Protocol research | Out-of-bounds reads from short/lying length | `nil`-returning bounds-checked readers; slice clamping; min-length guards | `WhoopProtocol/Interpreter.swift` |
+| Protocol research | Garbage / partial fragments | SOF-resync reassembler bounded by declared length | `WhoopProtocol/Framing.swift` (`Reassembler`) |
+| App state | Implausible-but-valid values | Range gates (e.g. HR 30–220) at HealthKit / import boundaries | `HealthKitBridge`, import glue |
 | Health import | XML bomb / multi-GB DOM blowup | Streaming SAX over `InputStream`; per-element autorelease pool | `StrandImport/AppleHealthImporter.swift` |
 | Health import | Zip bomb | 8 GB decompressed ceiling, chunked to disk, hard abort | `StrandImport/AppleHealthImporter.swift` |
 | CSV import | Zip bomb / oversized entries | 256 MB per-entry cap (declared + running budget); CRC32 verify | `StrandImport/WhoopExportImporter.swift` |
 | CSV import | Arbitrary archive members | Filename allow-list; tolerant optional-column parsing | `StrandImport/WhoopExportImporter.swift` |
 | Data at rest | Device theft / offline access | Relies on iOS Data Protection (passcode-tied) + app sandbox; SQLCipher available as an option | `CenitStore/CenitStore.swift` |
-| Diagnostics log | Strap connection log leaking secrets | In-app ring buffer only; no biometric values / tokens logged (§2.4) | `Cenit/BLE/BLEManager.swift` |
 
 ---
 

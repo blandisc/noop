@@ -1,10 +1,10 @@
 # Cénit Analytics
 
-On-device analytics for **Cénit** — a standalone, fully offline companion app for WHOOP straps (4.0 and 5.0). Cénit talks to *your own* strap over Bluetooth, stores everything locally in SQLite, and computes recovery, strain, HRV, and sleep on-device. There is no cloud and no account involved in any of the math described here.
+On-device analytics for **Cénit** — a standalone, fully offline health app on **Apple Health**. Cénit stores samples locally in SQLite and computes recovery, strain, HRV, and sleep on-device. There is no cloud and no account involved in any of the math described here. Direct WHOOP band pairing was retired (FER-1003); analyzers still accept the same stream shapes for historical/imported data.
 
-> **Not affiliated with WHOOP.** Cénit interoperates with hardware and data you already own. The metrics below are **approximations** of common exercise-physiology and HRV methods, derived from published literature — they are **not** reproductions of any proprietary scoring model, and they are **not a medical device**. Nothing here is medical advice.
+> **Not affiliated with WHOOP.** Cénit works with data you already own. The metrics below are **approximations** of common exercise-physiology and HRV methods, derived from published literature — they are **not** reproductions of any proprietary scoring model, and they are **not a medical device**. Nothing here is medical advice.
 
-All analytics live in the cross-platform `StrandAnalytics` Swift package. Every entry point is a **pure, deterministic, DB-free** function over its inputs — no I/O, no global state, no network. Persistence and BLE are wired in elsewhere (`CenitStore`, the app target). This makes the whole package straightforward to unit-test against fixed vectors.
+All analytics live in the cross-platform `StrandAnalytics` Swift package. Every entry point is a **pure, deterministic, DB-free** function over its inputs — no I/O, no global state, no network. Persistence is wired in elsewhere (`CenitStore`, the app target). This makes the whole package straightforward to unit-test against fixed vectors.
 
 - Package: `Packages/StrandAnalytics/Sources/StrandAnalytics/`
 - Top-level index: `StrandAnalytics.swift` (`StrandAnalytics.version == "0.1.0"`)

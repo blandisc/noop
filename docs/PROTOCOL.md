@@ -1,24 +1,25 @@
 # WHOOP BLE Protocol
 
-This document specifies the Bluetooth Low Energy (BLE) wire protocol that Cénit uses to talk
+> ⚠️ **Histórico** — la banda fue retirada del producto (FER-1003). Este documento describe el
+> protocolo con fines de investigación; el código vive en `Packages/WhoopProtocol` y **NO** se
+> linkea a la app. El transporte CoreBluetooth de la app (`Cenit/BLE/*`, `Cenit/Collect/*`) fue
+> **borrado**.
+
+This document specifies the Bluetooth Low Energy (BLE) wire protocol for talking
 **directly to a WHOOP strap you own** (4.0 and 5.0/MG). It is a reverse-engineering reference:
 frame envelope, checksums, packet/command/event enumerations, the bond handshake, and the
 historical-data offload state machine.
 
-Cénit is a standalone, fully offline companion. It pairs over BLE, decodes the strap's own
-streams on-device, and stores everything locally in SQLite. There is no cloud or account
-involved in any of the exchanges described here.
-
 > **Interoperability & safety note.** This describes interoperation with the user's *own*
 > device and the data it already holds. Cénit is **not affiliated with, authorized by, or
 > endorsed by WHOOP**, and it is **not a medical device** — nothing here is intended for
-> diagnosis or treatment. The command set Cénit sends is deliberately a *safe subset*;
+> diagnosis or treatment. The historical command set was deliberately a *safe subset*;
 > destructive opcodes are documented only so they can be explicitly avoided
 > (see [Destructive commands — do not send](#destructive-commands--do-not-send)).
 
 The protocol decoder is platform-pure Swift in the `WhoopProtocol` package
 (`Packages/WhoopProtocol/`); it never imports CoreBluetooth, so it runs unchanged in tests and
-CLI tools. The CoreBluetooth transport lives in the app target (Cenit) under `Cenit/BLE/`.
+CLI tools. There is no app-layer BLE transport in the shipping product.
 
 This work builds on two community reverse-engineering efforts:
 
@@ -69,13 +70,13 @@ The 5.0 transport ("puffin") adds a fifth characteristic (`…0007`). UUID strin
 | Battery | `180F` | Battery Level | `2A19` | single byte = battery percent |
 
 The `0x2A37` channel is the BLE-standard Heart Rate Measurement and is parsed by the pure
-`StandardHeartRate.parse(_:)` (`Cenit/BLE/StandardHeartRate.swift`): flag byte, 8- or 16-bit
-HR, optional Energy-Expended skip, then R-R intervals in 1/1024 s converted to milliseconds.
-Cénit treats this as the *reliable* HR/R-R source (the custom `REALTIME_DATA` stream usually
-reports `rr_count = 0`). `0x2A19` is read as a raw percent (`state.setBattery(Double(pct))`).
+`StandardHeartRate.parse(_:)` (`Packages/WhoopProtocol/.../StandardHeartRate.swift`): flag byte,
+8- or 16-bit HR, optional Energy-Expended skip, then R-R intervals in 1/1024 s converted to
+milliseconds. Historically this was the *reliable* HR/R-R source (the custom `REALTIME_DATA`
+stream usually reports `rr_count = 0`). `0x2A19` is a raw battery percent.
 
 `DeviceFamily` keeps CoreBluetooth out of the protocol package: it exposes UUIDs as **strings**;
-the app layer wraps them in `CBUUID(string:)`.
+a transport layer would wrap them in `CBUUID(string:)` (the former app transport is deleted).
 
 ---
 
@@ -110,8 +111,9 @@ total frame size = length + 4
 - **`crc32`** — standard zlib CRC-32 (reflected, poly `0xEDB88320`), `u32` little-endian,
   computed over the **inner bytes** `frame[4 .. length)`.
 
-Reference: `verifyFrame(_:)` and `crc8(_:)` / `crc32(_:)` in `Framing.swift`, and the
-outbound builder `WhoopCommand.frame(seq:payload:)` in `Cenit/BLE/Commands.swift`.
+Reference: `verifyFrame(_:)` and `crc8(_:)` / `crc32(_:)` in `Framing.swift`. The former app
+outbound builder `WhoopCommand.frame(seq:payload:)` lived in `Cenit/BLE/Commands.swift`
+(**deleted**, FER-1003); research/CLI tests build the same envelope via package helpers.
 
 ```swift
 // Framing.swift — WHOOP 4.0 validation (abridged)
@@ -316,9 +318,10 @@ link) are then started. The `GET_CLOCK` response is decoded by `ClockCorrelation
 
 ## 6. CommandNumber (sending) — the safe subset
 
-Cénit exposes a curated, **safe** command set in `WhoopCommand` (`Cenit/BLE/Commands.swift`).
-The raw value is the on-wire command byte at `[6]` (inside a type-35 `COMMAND` frame). Commands
-are built by `WhoopCommand.frame(seq:payload:)` and written to `…0002`.
+Historically Cénit exposed a curated, **safe** command set in `WhoopCommand`
+(`Cenit/BLE/Commands.swift`, **deleted** in FER-1003). The raw value is the on-wire command
+byte at `[6]` (inside a type-35 `COMMAND` frame). Commands were built by
+`WhoopCommand.frame(seq:payload:)` and written to `…0002`.
 
 ```swift
 public func frame(seq: UInt8, payload: [UInt8] = [0x00]) -> [UInt8] {
@@ -531,11 +534,11 @@ inherit a base layout and override only what changed. The streamed decode that f
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/PostHooks.swift` | per-type irregular-field decoders |
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/HistoricalMeta.swift` | `classifyHistoricalMeta` (START/END/COMPLETE) |
 | `Packages/WhoopProtocol/Sources/WhoopProtocol/Resources/whoop_protocol.json` | canonical enums + packet layouts |
-| `Cenit/BLE/BLEManager.swift` | CoreBluetooth transport, bond, connect lifecycle, backfill orchestration |
-| `Cenit/BLE/Commands.swift` | safe `WhoopCommand` set + outbound frame builder |
-| `Cenit/BLE/FrameRouter.swift` | decode → `LiveState` (UI) |
-| `Cenit/BLE/StandardHeartRate.swift` | `0x2A37` HR/R-R parser |
-| `Cenit/Collect/Backfiller.swift` | historical-offload state machine + safe-trim invariant |
+| `Packages/WhoopProtocol/Sources/WhoopProtocol/StandardHeartRate.swift` | `0x2A37` HR/R-R parser |
+| ~~`Cenit/BLE/BLEManager.swift`~~ | **deleted** (FER-1003) — former CoreBluetooth transport |
+| ~~`Cenit/BLE/Commands.swift`~~ | **deleted** — former safe `WhoopCommand` set |
+| ~~`Cenit/BLE/FrameRouter.swift`~~ | **deleted** — former decode → `LiveState` |
+| ~~`Cenit/Collect/Backfiller.swift`~~ | **deleted** — former historical-offload state machine |
 
 ---
 

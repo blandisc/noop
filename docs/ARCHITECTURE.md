@@ -1,13 +1,12 @@
 # Cénit — System Architecture
 
-Cénit is a standalone, fully **offline** companion app for WHOOP straps (4.0, 5.0, and MG). It talks
-directly to the strap over Bluetooth Low Energy, stores everything on-device in SQLite, and computes
-recovery, strain, HRV, and sleep locally. There is no WHOOP cloud, no account —
-the app interoperates with **your own device and your own data**. It can also import data you already
-own: WHOOP CSV exports and Apple Health exports.
+Cénit is a standalone, fully **offline** health app on **Apple Health**. It syncs HealthKit into
+on-device SQLite and computes recovery, strain, HRV, and sleep locally — no cloud, no account. It
+can also import data you already own (Apple Health exports and historical WHOOP CSV). Direct WHOOP
+band pairing was **retired** (FER-1003); protocol research remains in `Packages/WhoopProtocol`
+(not linked into the app).
 
-> **Not affiliated with WHOOP.** Cénit is an independent, interoperability project built on
-> community reverse-engineering of the strap's Bluetooth protocol. It is **not a medical device**
+> **Not affiliated with WHOOP.** Cénit is an independent project. It is **not a medical device**
 > and produces **approximate** physiological estimates that must not be used for diagnosis or
 > treatment. See [`DISCLAIMER.md`](../DISCLAIMER.md) and [`ATTRIBUTION.md`](../ATTRIBUTION.md).
 
@@ -68,12 +67,10 @@ Cenit/                         App-layer (Data/Screens/System/…) compiled by t
 │   ├── Repository.swift        @MainActor read model over CenitStore
 │   ├── StorePaths.swift        on-disk SQLite location (App Support/OpenWhoop)
 │   ├── SourceModeStore.swift   data-source mode (pinned `.appleHealthOnly`, FER-1003)
-│   ├── WhoopImporter.swift     CSV result → store rows
-│   ├── AppleHealthImport.swift Apple Health result → store rows
+│   ├── AppleHealthImport.swift Apple Health / file-import result → store rows
 │   ├── Profile.swift           user profile (age/sex/body/HRmax)
 │   └── BehaviorStore.swift     toggles for automations/coaching
 ├── Screens/                    SwiftUI feature screens (Today, Sleep, Trends, Train…)
-├── AI/                         opt-in BYO-key coach (`AICoach.swift`; off by default)
 ├── Media/                      opt-in exercise-media cache/download (off by default)
 ├── LiveActivity/               Live Activity / rest-timer presentation glue
 ├── Onboarding/                 first-run / restore / terms flows
@@ -206,9 +203,9 @@ Concurrency is deliberately split between the store actor and the main-actor app
 
 There is **one** `CenitStore` handle in the shipping app: `Repository.ensureStore()` creates
 `CenitStore(path:backend: .pool(maxReaders: 2))` and exposes it as `storeHandle()`. HealthKit sync
-(`HealthKitBridge`) and the import glue (`WhoopImporter` / `AppleHealthImport`) all write through
-that handle via `repo.storeHandle()` — no second BLE-side `DatabaseQueue` remains (`Cenit/BLE/` and
-`Cenit/Collect/` were deleted in FER-1003).
+(`HealthKitBridge`) and the import glue (`AppleHealthImport` and related file-import mappers) all
+write through that handle via `repo.storeHandle()` — no second BLE-side `DatabaseQueue` remains
+(app-layer BLE was deleted in FER-1003).
 
 `CenitStore` still enables **WAL journal mode** and a **5-second busy timeout**
 (`PRAGMA journal_mode = WAL`, `config.busyMode = .timeout(5)`), so concurrent readers on the pool and
@@ -236,13 +233,14 @@ Apple heartbeat series for recent nights, runs pure `NocturnalHRV` (`StrandAnaly
 `Repository.autonomicTrend` reads those points for the categorical `AutonomicTrend` on Today. See §7
 "Generic metric series" for the partition invariants.
 
-**File imports.** `StrandImport` remains parse-only; the app's `WhoopImporter` / `AppleHealthImport`
-map results into the same store (see §8). Under the pinned `.appleHealthOnly` mode, `DataSourcePolicy`
-filters reads so dormant `strap` / `strap-noop` rows never enter the dashboard merge.
+**File imports.** `StrandImport` remains parse-only; the app's `AppleHealthImport` (and related
+mappers for historical WHOOP CSV) write results into the same store (see §8). Under the pinned
+`.appleHealthOnly` mode, `DataSourcePolicy` filters reads so dormant `strap` / `strap-noop` rows
+never enter the dashboard merge.
 
 **Historical note.** The former live BLE path, historical offload/safe-trim, and connection lifecycle
-(`Cenit/BLE/`, `Cenit/Collect/`, `WhoopProtocol` in the app binary) were removed in the band amputation
-(FER-1003). Protocol reverse-engineering notes remain at [`docs/PROTOCOL.md`](PROTOCOL.md) and
+were removed in the band amputation (FER-1003). Protocol reverse-engineering notes remain at
+[`docs/PROTOCOL.md`](PROTOCOL.md) and
 [`docs/BLE_REVERSE_ENGINEERING.md`](BLE_REVERSE_ENGINEERING.md).
 
 ### Watch-mirrored strength sessions (FER-740, F1.1 of the Apple Watch epic FER-391)
@@ -260,9 +258,9 @@ HealthKit/watch step (decoded-first, unchanged). The **one-`HKWorkout` invariant
 deterministic shared key `HKMetadataKeyExternalUUID = "noop:strength:<sessionId>"`: whichever device writes,
 the write is idempotent (delete-by-key then save). The iPhone omits its own `saveStrengthWorkoutIfEnabled`
 **only** on a positive `watchDidSaveWorkout` ack (`WorkoutSaveGate`); otherwise it saves, so a missing/absent
-watch is regression-free. Heart rate for the iPhone's own strain still comes from the WHOOP strap over BLE
-**on the iPhone** — the watch is a control + display surface in F1.1, and adopting its physiology into the
-recovery/strain engine is Phase 2.
+watch is regression-free. Live heart rate on the strength sheet comes from the **Apple Watch mirror**
+(`AppModel.watchBpm`, FER-1003) — the watch is both control surface and live-HR source for in-session
+UI; folding more Watch physiology into the recovery/strain engine remains open product work.
 
 The in-progress session is **durable across a crash/kill of the iPhone** (FER-798): a Codable
 `StrengthSessionSnapshot` (defined in `StrandTraining`) is written to `CenitStore`'s singleton
@@ -438,7 +436,7 @@ off the launch path; `auto_vacuum=INCREMENTAL` (FER-511) keeps later deletes rec
 strap history (`strap`, already local-of-cycle). The local day is derived by shifting the instant by the
 device's UTC offset and formatting in UTC — the pure `AnalyticsEngine.dayString(_:tzOffsetSeconds:)` /
 `localMidnight(_:tzOffsetSeconds:)` (offset passed explicitly so the math stays testable), the same
-trick `WhoopImporter` uses with `tzOffsetMin`. Consumers pick "today" by the matching local key
+trick file-import glue uses with `tzOffsetMin`. Consumers pick "today" by the matching local key
 (`Repository.localDayKey`); `IntelligenceEngine` sums steps/calories over `[localMidnight, +24h)`.
 This is what makes the evening's strain/steps/HRV/sleep count for the correct day in a UTC− zone
 instead of rolling into a "future-in-local" row (FER-226; consumer shielding in FER-224 / FER-228).
@@ -454,19 +452,19 @@ future-in-local rows; days whose raw was already pruned keep their date (accepte
 
 ## 8. Imports (StrandImport)
 
-Imports converge on the *same* store as the BLE paths, so history lights up instantly:
+Imports converge on the *same* store as HealthKit sync, so history lights up instantly:
 
 ```
 URL (export.zip / *.csv / export.xml / folder)
   └─▶ ImportCoordinator.detectKind  → .whoopExport | .appleHealth
-        ├─ WhoopExportImporter   → cycles/sleeps/workouts/journal  → WhoopImporter      → store rows
+        ├─ WhoopExportImporter   → cycles/sleeps/workouts/journal  → app import glue → store rows
         └─ AppleHealthImporter   → streamed export.xml (aggregated) → AppleHealthImport  → store rows
 ```
 
-`StrandImport` is **parse-only**; the app's `WhoopImporter`/`AppleHealthImport` glue maps the
-normalized results into `dailyMetric`, `sleepSession`, `workout`, `appleDaily`, and `metricSeries`
-rows, then calls `Repository.refresh()`. Apple Health's `export.xml` is parsed with a streaming
-reader so multi-hundred-MB files don't blow up memory.
+`StrandImport` is **parse-only**; the app's `AppleHealthImport` (and related mappers for historical
+WHOOP CSV) glue maps the normalized results into `dailyMetric`, `sleepSession`, `workout`,
+`appleDaily`, and `metricSeries` rows, then calls `Repository.refresh()`. Apple Health's
+`export.xml` is parsed with a streaming reader so multi-hundred-MB files don't blow up memory.
 
 The prescribed-diet path is a third producer on the same parse-only principle: `DietPlanImporter`
 validates a `noop.diet.v1` payload — from the BYO-LLM "copy prompt" flow, a future on-device parse,
@@ -618,16 +616,21 @@ metric+date preference in `UserDefaults`, not a DB table, FER-311), `HealthKitBr
 `TabRouter`, and `MediaDownloadCoordinator` as environment objects (`CenitApp.swift`), and presents the
 shared screens under `Cenit/Screens/` (Today, Breathe, Intervals, Compare, Sleep, Trends,
 Workouts, Health, Apple Health, Data Sources, Settings, Support). There is no `LiveState` injection
-(the BLE connection snapshot type was removed with `Cenit/BLE/`), and no separately reachable
+(the BLE connection snapshot type was removed with the band amputation), and no separately reachable
 Automations screen. The home / lock-screen widgets live in `CenitWidgets/`.
+
+**Inject (hot-reload).** The app target links the third-party `Inject` package (`project.yml`) for
+Debug UI hot-reload with InjectionIII / InjectionNext. In **Release** the library is a **no-op**
+(no interposable hooks); verify with `otool -L` on a Release binary if you need to confirm the
+dependency is present but inert.
 
 **Dormant / retired surfaces (post band amputation).** (a) `IntelligenceEngine.analyzeRecent` is a
 no-op under the pinned `.appleHealthOnly` mode: it `guard`s on `mode.usesWhoop` and returns early
 (`IntelligenceEngine.swift`), so the ~15-minute strap-night scoring loop does not run today.
 (b) The `~N` estimated-recovery display is **retired from the production dashboard path** (Frente A ·
 R4, FER-1008): `assembleDashboard` leaves `recoveryEstimates` empty, so the estimated badge/numeral
-cascade does not render. `AppleRecoveryEstimator` and `Repository.appleRecoveryEstimates(...)` still
-exist in source as unused leftovers pending a Frente D dead-code sweep — they are not deleted.
+cascade does not render. `AppleRecoveryEstimator` and `Repository.appleRecoveryEstimates(...)` were
+**deleted** (Frente D / FER-1003) — they no longer exist in source.
 
 Screens bind to `Repository`'s published `days`/`sleeps` caches (refreshed on data change, not on the
 ~1 Hz stream). The launch refresh runs in **two passes**: a ~90-day *first-paint* pass that publishes
@@ -669,12 +672,10 @@ computed locally.
 
 ### Network exceptions (opt-in, off by default)
 
-Cénit is offline by construction (§11.1) with exactly **two** deliberate, user-controlled exceptions,
-both living in `Cenit/` (never in `Packages/`, which stays 100% offline so `swift test` over packages
+Cénit is offline by construction (§11.1) with exactly **one** deliberate, user-controlled exception,
+living in `Cenit/` (never in `Packages/`, which stays 100% offline so `swift test` over packages
 is hermetic in CI):
 
-- **AI Coach** (`Cenit/AI/AICoach.swift`) — bring-your-own-key LLM chat; nothing leaves the device
-  until the user pastes their own provider key and asks a question.
 - **Exercise media** (`Cenit/Media/`, FER-722/786) — opt-in thumb/video-loop cache from ExerciseDB,
   gated by `noop.exerciseMediaEnabled` (default off). `MediaDownloadCoordinator` is the single point
   where the toggle is read; both its entry points (`bulkDownloadThumbsIfNeeded`, `loopIfNeeded(for:)`)
@@ -687,6 +688,8 @@ is hermetic in CI):
   the FER-779 catalog) off the public CDN `static.exercisedb.dev` — **no runtime name lookup, no API
   key** (the old `ExerciseDBClient`/RapidAPI path and its `EDBApiKey` were retired). An exercise with
   no `gifUrl` is a miss → the YouTube hand-off fallback stays.
+
+(The former BYO-key external AI Coach was removed with the band-era cleanup.)
 
 ### The «Instrumento diurno» theme (single warm day paper)
 
