@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 // MARK: - Sleep Regularity Index (SRI) — FER-214
 //

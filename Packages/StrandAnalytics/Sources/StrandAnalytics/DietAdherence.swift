@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 /// Diet-plan adherence (FER-372).
 ///

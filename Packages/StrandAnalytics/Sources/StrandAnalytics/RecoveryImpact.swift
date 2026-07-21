@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 /// «Qué la movió hoy» — the per-signal decomposition of TODAY's recovery score (FER-628).
 ///

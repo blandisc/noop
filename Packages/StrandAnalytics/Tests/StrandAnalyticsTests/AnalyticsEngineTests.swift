@@ -1,7 +1,7 @@
 import XCTest
 @testable import StrandAnalytics
 import BiometricStreams
-import CenitStore
+import StrandModels
 
 final class AnalyticsEngineTests: XCTestCase {
 

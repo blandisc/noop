@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 // InsightEngine.swift — the single, pure, deterministic source of on-device findings.
 //

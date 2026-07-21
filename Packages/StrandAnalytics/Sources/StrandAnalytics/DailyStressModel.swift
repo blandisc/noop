@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 // MARK: - Daily stress model (transparent autonomic-load proxy)
 //

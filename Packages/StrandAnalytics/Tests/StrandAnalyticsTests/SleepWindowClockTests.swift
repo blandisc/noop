@@ -1,5 +1,5 @@
 import XCTest
-import CenitStore
+import StrandModels
 @testable import StrandAnalytics
 
 /// FER-154 — `SleepWindowClock.recent` turns the most recent sleep session into local

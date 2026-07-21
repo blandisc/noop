@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 /// «Qué cambió vs ayer» — the day-over-day movement of the recovery score, attributed to the 1–2
 /// signals whose CONTRIBUTION to the score moved the most between yesterday and today (FER-642).

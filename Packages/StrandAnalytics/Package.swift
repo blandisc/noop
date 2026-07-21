@@ -7,12 +7,12 @@ let package = Package(
     products: [.library(name: "StrandAnalytics", type: .static, targets: ["StrandAnalytics"])],
     dependencies: [
         .package(path: "../BiometricStreams"),
-        .package(path: "../CenitStore"),
+        .package(path: "../StrandModels"),
     ],
     targets: [
         .target(
             name: "StrandAnalytics",
-            dependencies: ["BiometricStreams", "CenitStore"],
+            dependencies: ["BiometricStreams", "StrandModels"],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(

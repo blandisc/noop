@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 // MARK: - Sleep window as clock hours (FER-154)
 //

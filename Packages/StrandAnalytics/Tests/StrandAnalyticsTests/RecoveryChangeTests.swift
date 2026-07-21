@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import CenitStore
+import StrandModels
 
 /// FER-642 — «Qué cambió vs ayer»: the day-over-day movement of the recovery score, attributed to the
 /// 1–2 signals whose CONTRIBUTION moved the most. The `deltaScore` must be exactly (today shown −

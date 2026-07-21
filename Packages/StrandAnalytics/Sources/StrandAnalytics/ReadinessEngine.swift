@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 /// On-device "Readiness" intelligence.
 ///
