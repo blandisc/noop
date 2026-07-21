@@ -49,7 +49,7 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform
 
 **Build hygiene:** every worktree build mints its own ~1 GB DerivedData folder (`Cenit-<hash>`) that outlives the worktree — they accumulate into tens of GB and the disk pressure slows every build on this Mac. Before a full app build, run `Tools/prune-deriveddata.sh` (deletes only folders whose checkout no longer exists; safe with Xcode open). When your session ends, leave no `.build/` or generated `Cenit.xcodeproj` behind in a worktree that's done. If you ran anything on the iOS Simulator (`xcodebuild test` with a Simulator destination, `simctl boot/launch`), shut it down when you're done: `xcrun simctl shutdown all` — a booted simulator keeps running headless (~8 GB of RAM) indefinitely, even with Simulator.app closed, and starves the next Xcode build into an OOM.
 
-CI has **six workflows**: `swift-packages` (package build/test on `Packages/**` changes), `ios-app` (label-gated full app build), `design-lint`, `design-tokens`, `i18n-guard`, and `release`. (If `swift`/`xcodebuild` fail while fetching SwiftPM dependencies, a local `GIT_CONFIG` override is the known workaround.)
+CI has **six workflows**: `swift-packages` (package build/test on `Packages/**` changes), `ios-app` (full app compile: **nightly over `iOS`**, plus on any PR carrying the `ci-app` label — **the label is MANDATORY on heavy-lane PRs** that touch `Cenit/**`/`CenitApp/**`; light-lane PRs may rely on the nightly), `design-lint`, `design-tokens`, `i18n-guard`, and `release`. (If `swift`/`xcodebuild` fail while fetching SwiftPM dependencies, a local `GIT_CONFIG` override is the known workaround.)
 
 ## Rules that will get a change rejected
 
