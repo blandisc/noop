@@ -41,6 +41,7 @@ struct WorkoutDetailScreen: View {
     /// The add/edit sheet target (edit this manual row, or a manual copy of an imported one). nil = closed.
     @State private var editTarget: EditTarget?
     @State private var showActionMenu = false
+    @State private var saveError = false
     private struct EditTarget: Identifiable { let row: WorkoutRow; let id = UUID() }
 
     /// HRR-60s opt-in (FER-848): the block only exists behind the experimental-metrics toggle.
@@ -118,12 +119,17 @@ struct WorkoutDetailScreen: View {
         .sheet(item: $editTarget) { target in
             ManualWorkoutSheet(editing: target.row, theme: theme) { saved, replacing in
                 Task {
-                    await repo.saveManualWorkout(saved, replacing: replacing)
-                    await onChange()
-                    dismiss()
+                    do {
+                        try await repo.saveManualWorkout(saved, replacing: replacing)
+                        await onChange()
+                        dismiss()
+                    } catch {
+                        saveError = true
+                    }
                 }
             }
         }
+        .saveErrorToast(isPresented: $saveError)
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
@@ -340,18 +346,18 @@ struct WorkoutDetailScreen: View {
             return [
                 .init(String(localized: "Re-label as"), systemImage: "tag",
                       children: WorkoutSource.relabelSports.map { sport in
-                          PaperMenuItem(sport) { mutate { await repo.relabelDetected(row, sport: sport) } }
+                          PaperMenuItem(sport) { mutate { try await repo.relabelDetected(row, sport: sport) } }
                       }),
                 .init(String(localized: "Edit details…"), systemImage: "pencil") { editTarget = EditTarget(row: row) },
                 .init(String(localized: "Dismiss (not a workout)"), systemImage: "xmark.circle", isDestructive: true) {
-                    mutate { await repo.dismissDetected(row) }
+                    mutate { try await repo.dismissDetected(row) }
                 }
             ]
         case .manual:
             return [
                 .init(String(localized: "Edit…"), systemImage: "pencil") { editTarget = EditTarget(row: row) },
                 .init(String(localized: "Delete"), systemImage: "trash", isDestructive: true) {
-                    mutate { await repo.deleteWorkout(row) }
+                    mutate { try await repo.deleteWorkout(row) }
                 }
             ]
         case .whoop, .apple:
@@ -364,9 +370,18 @@ struct WorkoutDetailScreen: View {
     }
 
     /// Run a mutation, reload the list, then pop back to it — the detail's `row` is a value copy, so the
-    /// honest move after any change is to return to the freshly-loaded list.
-    private func mutate(_ op: @escaping () async -> Void) {
-        Task { await op(); await onChange(); dismiss() }
+    /// honest move after any change is to return to the freshly-loaded list. Write failures keep the
+    /// detail open and surface `SaveErrorToast` instead of pretending success.
+    private func mutate(_ op: @escaping () async throws -> Void) {
+        Task {
+            do {
+                try await op()
+                await onChange()
+                dismiss()
+            } catch {
+                saveError = true
+            }
+        }
     }
 
     /// A manual-source copy of an imported row, so "Duplicate as manual" pre-fills the add sheet without

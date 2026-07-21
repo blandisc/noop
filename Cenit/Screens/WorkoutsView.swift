@@ -48,6 +48,7 @@ struct WorkoutsView: View {
     @State private var sheet: WorkoutSheetTarget?
     /// Opens the (legacy dark) Data Sources screen from the empty state / the connect line. Self-contained.
     @State private var showDataSources = false
+    @State private var saveError = false
 
     /// `.some(nil)` = add a new workout, `.some(row)` = edit `row`, `nil` = closed.
     private struct WorkoutSheetTarget: Identifiable { let editing: WorkoutRow?; let id = UUID() }
@@ -104,10 +105,18 @@ struct WorkoutsView: View {
         }
         .sheet(item: $sheet) { target in
             ManualWorkoutSheet(editing: target.editing, theme: theme) { row, replacing in
-                Task { await repo.saveManualWorkout(row, replacing: replacing); await reload() }
+                Task {
+                    do {
+                        try await repo.saveManualWorkout(row, replacing: replacing)
+                        await reload()
+                    } catch {
+                        saveError = true
+                    }
+                }
             }
         }
         .sheet(isPresented: $showDataSources) { dataSourcesSheet }
+        .saveErrorToast(isPresented: $saveError)
         .task {
             guard !loaded else { return }
             let r = await repo.workoutRows()
