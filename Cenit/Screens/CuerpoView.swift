@@ -462,7 +462,7 @@ private struct CuerpoLanding: View {
         } else if let item = stressDetail {
             // FER-1027: el mapa intradía de estrés es de banda; en Apple-only no se muestra.
             StressDetailScreen(theme: theme, model: item.model,
-                               dayMap: repo.dataSourceMode.usesWhoop ? stressDayMap : nil,
+                               dayMap: nil,
                                patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                    repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(

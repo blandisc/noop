@@ -82,7 +82,7 @@ extension AppModel {
         // Skin temp is likewise source-routed (FER-882: each instrument has its own absolute-°C baseline).
         // Respiration IS the same physical metric across sources (both measured during sleep, breaths/min)
         // and keeps the full merged history. `appleHealthDays == []` ⇒ identity (a strap-only user → no change).
-        let strapDays: [DailyMetric] = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
+        let strapDays: [DailyMetric] = SourceLens.strapOnlyHistory(days, appleHealthDays: repo.appleHealthDays)
         // FER-884: the source that feeds RHR/HRV/skin-temp — Apple only when the mode excludes the band.
         let signalSource: SourceLens.Source = (repo.dataSourceMode == .appleHealthOnly) ? .apple : .band
         // RHR/HRV history: strapDays byte-for-byte in Combined/strap-only; Apple-isolated in Apple-only.

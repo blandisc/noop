@@ -91,6 +91,16 @@ public enum SourceLens {
         if keep == .band && appleDays.isEmpty { return days }
         return days.map { keeps($0.day, keep: keep, appleDays: appleDays) ? $0 : blank($0) }
     }
+
+    /// Whole-row baseline lens: drop every Apple-sourced day, keep the rest of the history verbatim.
+    /// `appleHealthDays == []` is the identity. The ROW sibling of `maskForBaseline` (that nils
+    /// cross-source columns in place; this drops the whole row). Used by illness detection to fold a
+    /// single-source baseline (FER-634). Relocated from the retired IntelligenceEngine; the identity
+    /// collapse is deferred to the read-model phase (science gate).
+    public static func strapOnlyHistory(_ hist: [DailyMetric],
+                                        appleHealthDays: Set<String>) -> [DailyMetric] {
+        appleHealthDays.isEmpty ? hist : hist.filter { !appleHealthDays.contains($0.day) }
+    }
 }
 
 private extension DailyMetric {

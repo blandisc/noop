@@ -219,19 +219,6 @@ private struct AjustesLanding: View {
             ? "\(profile.hrMaxOverride) bpm"
             : String(localized: "Auto · \(profile.hrMax) bpm")
     }
-    /// One-line state for the «Steps estimate» row (FER-663): manual override, auto-fit, or not yet.
-    private var stepsCalDisplay: String {
-        if profile.stepsManualCoefficient > 0 { return String(localized: "Manual") }
-        if profile.stepsCalibrationCoefficient > 0 { return String(localized: "Auto") }
-        return String(localized: "Not calibrated")
-    }
-    /// One-line state for the 5/MG «Steps calibration» row (FER-665): the divisor, or «Off» at 1.0.
-    private var stepTicksDisplay: String {
-        profile.stepTicksPerStep > 1.0
-            ? String(format: "÷ %.1f", profile.stepTicksPerStep)
-            : String(localized: "Off")
-    }
-
     // MARK: - More (A5: grouped drill rows with overlines + subtitles)
 
     private var moreSection: some View {
@@ -262,13 +249,6 @@ private struct AjustesLanding: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             section("Experimental") {
-                // FER-1027: la fase de ciclo necesita la temperatura de la banda; sin banda queda oculta
-                // (el motor sigue dormido, no se borra). Reaparece si algún día vuelve el modo con banda.
-                if repo.dataSourceMode.usesWhoop {
-                    navRow("Cycle phase",
-                           subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
-                    divider
-                }
                 Toggle(isOn: $whitespaceMetrics) {
                     Text("Experimental metrics").font(StrandFont.body).foregroundStyle(theme.ink)
                 }

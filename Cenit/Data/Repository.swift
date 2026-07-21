@@ -22,7 +22,7 @@ final class Repository: ObservableObject {
     /// The data-source mode (FER-484): which sources feed the dashboard + baseline. Set by `AppModel`
     /// from `SourceModeStore`. `combined` (the default) reads every source exactly as before; capture is
     /// untouched — this only filters reads.
-    var dataSourceMode: DataSourceMode = .combined
+    var dataSourceMode: DataSourceMode = .appleHealthOnly
     /// The baseline cut day-key («Recalibrar recuperación», FER-677): "YYYY-MM-DD" or nil for no cut.
     /// Set by `AppModel` from `ProfileStore.baselineEpochOrNil`. The estimated-recovery path honors it
     /// so the Apple estimate re-anchors exactly like the strap baseline in `IntelligenceEngine`.
@@ -344,8 +344,8 @@ final class Repository: ObservableObject {
             snap = try await store.dashboardSnapshot(DashboardReadRequest(
                 strapDeviceId: deviceId, computedDeviceId: computedDeviceId, appleDeviceId: "apple-health",
                 fromDay: fromDay, toDay: toDay, fromTs: lo, toTs: hi, sleepLimit: 4000,
-                includeApple: dataSourceMode.usesAppleHealth,
-                includeWhoopSeries: dataSourceMode.usesWhoop))
+                includeApple: true,
+                includeWhoopSeries: false))
         } catch {
             // A failed read (e.g. SQLITE_BUSY past the 5 s timeout against a VACUUM/checkpoint barrier)
             // must NOT publish an empty snapshot as if it were the real dashboard: the previously
@@ -362,20 +362,20 @@ final class Repository: ObservableObject {
         // so a strap-uncovered user still sees HRV / resting HR / sleep-stage trends. Read UNGATED
         // (they feed the FER-485 coverage diagnostic even when the mode hides the source).
         let appleRaw = snap.appleDays
-        // FER-484: the mode filters which sources enter the merge/baseline. `combined` is the identity
-        // (regression zero); `whoopOnly` drops Apple; `appleHealthOnly` drops the strap. The strap sleep
-        // + verbatim figures below are strap-sourced, so they're gated on `usesWhoop` the same way.
-        let (imported, computed, apple) = DataSourcePolicy.filter(dataSourceMode, imported: importedRaw, computed: computedRaw, apple: appleRaw)
+        // FER-484 / FER-1003: Apple-only pin — strap arrays stay empty; Apple passes through.
+        let imported: [DailyMetric] = []
+        let computed: [DailyMetric] = []
+        let apple = appleRaw
         // FER-485: strap sleeps arrive UNFILTERED for the diagnostic stored-count, then gate for the dashboard.
         let impSleepRaw = snap.importedSleeps
         let compSleepRaw = snap.computedSleeps
-        let impSleep = dataSourceMode.usesWhoop ? impSleepRaw : []
-        let compSleep = dataSourceMode.usesWhoop ? compSleepRaw : []
-        // FER-486: Apple Health sleep sessions (real per-epoch stage timeline), gated on the mode. The band
+        let impSleep: [CachedSleepSession] = []
+        let compSleep: [CachedSleepSession] = []
+        // FER-486: Apple Health sleep sessions (real per-epoch stage timeline). The band
         // wins per night, so the appleSleeps surfaced to the Detalle drop any overlapping a strap session.
         let appleSleepRaw = snap.appleSleeps
         // FER-883: Apple workout-HR samples under apple-health (persisted by HealthKitBridge during
-        // HKWorkouts only). Gated on usesAppleHealth so whoopOnly never reads them into the dashboard.
+        // HKWorkouts only).
         // FER-970 (R-01): their ONLY consumer is the estimated-strain path for days whose MERGED
         // strain is nil — a band-covered history has none, so skip the HR read (paid on EVERY
         // refresh) entirely instead of loading and grouping it for nothing. The pre-pass reuses
@@ -384,8 +384,7 @@ final class Repository: ObservableObject {
         // Spec L1b (A3): the only UI consumer of estimated strain is today (`repo.today`), so the
         // window is local midnight→now (not the full history). Safety cap 200_000 (a day can't near it).
         let appleHrRaw: [HRSample]
-        if dataSourceMode.usesAppleHealth,
-           !Self.strainEstimateEligibleDays(imported: imported, computed: computed, apple: apple).isEmpty {
+        if !Self.strainEstimateEligibleDays(imported: imported, computed: computed, apple: apple).isEmpty {
             let window = Self.appleHrWindow(now: now, tzOffsetSeconds: TimeZone.current.secondsFromGMT())
             let fromTs = Int(window.from.timeIntervalSince1970)
             let toTs = Int(window.to.timeIntervalSince1970)
@@ -436,15 +435,13 @@ final class Repository: ObservableObject {
         next.seq = dashboard.seq + 1
         // R3 (FER-1008): the nocturnal autonomic trend rides ONLY on Apple's `apple-health-noop`
         // RMSSD-per-night partition — computed here (needs `now` + the store) and injected into the
-        // freshly-assembled dashboard. Band path stays bit-identical; in whoopOnly (no Apple) it's nil.
-        if dataSourceMode.usesAppleHealth {
-            let nightRows = (try? await store.metricSeries(deviceId: Self.appleComputedDeviceId,
-                                                           key: "apple_rmssd_night", from: fromDay, to: toDay)) ?? []
-            let asOf = Self.localDayKey(now)
-            let recentCutoff = Self.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now)
-            next.autonomicTrend = Self.autonomicTrend(nights: nightRows.map { (day: $0.day, rmssdMs: $0.value) },
-                                                      asOf: asOf, recentCutoff: recentCutoff)
-        }
+        // freshly-assembled dashboard.
+        let nightRows = (try? await store.metricSeries(deviceId: Self.appleComputedDeviceId,
+                                                       key: "apple_rmssd_night", from: fromDay, to: toDay)) ?? []
+        let asOf = Self.localDayKey(now)
+        let recentCutoff = Self.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now)
+        next.autonomicTrend = Self.autonomicTrend(nights: nightRows.map { (day: $0.day, rmssdMs: $0.value) },
+                                                  asOf: asOf, recentCutoff: recentCutoff)
         // One assignment → one objectWillChange for the whole refresh (was four).
         self.dashboard = next
         // FER-1024: record the local day this published dashboard belongs to, so a later foreground
@@ -634,9 +631,8 @@ final class Repository: ObservableObject {
     // MARK: - Detail passthroughs
 
     func dailyMetrics(fromDay: String, toDay: String) async -> [DailyMetric] {
-        guard dataSourceMode.usesWhoop else { return [] }   // FER-484: appleHealthOnly excludes the strap
-        guard let store = await ensureStore() else { return [] }
-        return (try? await store.dailyMetrics(deviceId: deviceId, from: fromDay, to: toDay)) ?? []
+        // FER-484 / FER-1003: appleHealthOnly excludes the strap — method kept for callers, always empty.
+        return []
     }
 
     func hrSamples(from: Int, to: Int, limit: Int = 8000) async -> [HRSample] {
@@ -671,28 +667,8 @@ final class Repository: ObservableObject {
     /// sheet open stops re-reading ~28 nights × raw samples. The math lives in
     /// `ThermalStabilityEngine.warmingMagnitudeC` (same body, moved to the package with its test).
     func nocturnalWarmingMagnitudes(nights: Int = 28) async -> [Double?] {
-        guard dataSourceMode.usesWhoop else { return [] }
-        let now = Int(Date().timeIntervalSince1970)
-        let from = now - (nights + 2) * 86_400
-        let sessions = (await sleepSessions(from: from, to: now)).suffix(nights)
-        let stored = Dictionary((await computedSeries(key: "night_warming_c", days: nights + 3))
-                                    .map { ($0.day, $0.value) }, uniquingKeysWith: { _, b in b })
-        var out: [Double?] = []
-        for s in sessions where s.startTs < s.endTs {
-            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.endTs)))
-            if let v = stored[day] { out.append(v); continue }
-            let memo = "w|\(day)"
-            if nocturnalScalarAttempted.contains(memo) { out.append(nil); continue }
-            nocturnalScalarAttempted.insert(memo)
-            let samples = (await skinTempSamples(from: s.startTs, to: s.endTs)).sorted { $0.ts < $1.ts }
-            let v = ThermalStabilityEngine.warmingMagnitudeC(inBedRaw: samples)
-            if let v, let store = await ensureStore() {
-                _ = try? await store.upsertMetricSeries(
-                    [MetricPoint(day: day, key: "night_warming_c", value: v)], deviceId: computedDeviceId)
-            }
-            out.append(v)
-        }
-        return out
+        // FER-1003: strap thermal-stability path is dormant under Apple-only.
+        return []
     }
 
     /// Gravity (accelerometer) samples for the strap in `[from, to]`. Read by `IntelligenceEngine`'s
@@ -725,11 +701,10 @@ final class Repository: ObservableObject {
     /// collision), oldest first.
     func sleepSessions(from: Int, to: Int, limit: Int = 100) async -> [CachedSleepSession] {
         guard let store = await ensureStore() else { return [] }
-        // FER-484/486: the mode filters which sources are read. Strap (imported + on-device computed) is
-        // gated on usesWhoop; Apple Health sleep sessions (FER-486, per-night stage timeline) on usesAppleHealth.
-        let imported = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: deviceId, from: from, to: to, limit: limit)) ?? []) : []
-        let computed = dataSourceMode.usesWhoop ? ((try? await store.sleepSessions(deviceId: computedDeviceId, from: from, to: to, limit: limit)) ?? []) : []
-        let apple = dataSourceMode.usesAppleHealth ? ((try? await store.sleepSessions(deviceId: "apple-health", from: from, to: to, limit: limit)) ?? []) : []
+        // FER-484/486 / FER-1003: Apple-only — strap partitions stay empty; Apple Health sessions only.
+        let imported: [CachedSleepSession] = []
+        let computed: [CachedSleepSession] = []
+        let apple = (try? await store.sleepSessions(deviceId: "apple-health", from: from, to: to, limit: limit)) ?? []
         return Self.mergeSleepSessions(imported: imported, computed: computed, apple: apple)
     }
 
@@ -783,34 +758,8 @@ final class Repository: ObservableObject {
     /// its sleep session span (same span the surface uses tonight, so the trend isn't biased by method).
     /// nil unless at least 3 recent nights read cleanly (an honest "no baseline yet" ⇒ no trend arrow).
     func nocturnalDCBaseline(nights: Int = 14) async -> Double? {
-        guard dataSourceMode.usesWhoop else { return nil }
-        let now = Int(Date().timeIntervalSince1970)
-        let from = now - (nights + 2) * 86_400
-        let sessions = await sleepSessions(from: from, to: now)
-        // FER-972 (P-05): the nightly pass persists `night_dc_ms` per night (next to `hrv_lf`);
-        // only nights it didn't cover are computed here once (write-through) — a sheet open stops
-        // re-reading ~14 nights × R-R. Fallback math identical to before (NocturnalDC over the span).
-        let stored = Dictionary((await computedSeries(key: "night_dc_ms", days: nights + 3))
-                                    .map { ($0.day, $0.value) }, uniquingKeysWith: { _, b in b })
-        var dcs: [Double] = []
-        for s in sessions.suffix(nights) where s.startTs < s.endTs {
-            let day = DayKey.local(Date(timeIntervalSince1970: Double(s.endTs)))
-            if let v = stored[day] { dcs.append(v); continue }
-            let memo = "dc|\(day)"
-            if nocturnalScalarAttempted.contains(memo) { continue }
-            nocturnalScalarAttempted.insert(memo)
-            let rr = (await rrIntervals(from: s.startTs, to: s.endTs)).map { Double($0.rrMs) }
-            let r = NocturnalDC.compute(rawRR: rr)
-            guard r.confidence != .unreadable else { continue }
-            if let store = await ensureStore() {
-                _ = try? await store.upsertMetricSeries(
-                    [MetricPoint(day: day, key: "night_dc_ms", value: r.dcMs)], deviceId: computedDeviceId)
-            }
-            dcs.append(r.dcMs)
-        }
-        guard dcs.count >= 3 else { return nil }
-        let sorted = dcs.sorted()
-        return sorted[sorted.count / 2]
+        // FER-1003: strap nocturnal-DC path is dormant under Apple-only.
+        return nil
     }
 
     /// Per-day intraday-stress summaries (FER-378), reassembled from `metricSeries`, last `days` days.
@@ -1203,8 +1152,10 @@ final class Repository: ObservableObject {
         guard let store = await ensureStore() else { return [] }
         let now = Int(Date().timeIntervalSince1970)
         let lo = now - days * 86_400, hi = now + 86_400
-        let useWhoop = !respectingMode || dataSourceMode.usesWhoop
-        let useApple = !respectingMode || dataSourceMode.usesAppleHealth
+        // FER-1003: Apple-only pin — `usesWhoop` is always false, `usesAppleHealth` always true.
+        // Diagnostic (`respectingMode == false`) still surfaces stored strap rows.
+        let useWhoop = !respectingMode
+        let useApple = true
         var rows: [WorkoutRow] = []
         if useWhoop {
             rows += (try? await store.workouts(deviceId: deviceId, from: lo, to: hi, limit: 5000)) ?? []
@@ -1348,7 +1299,8 @@ final class Repository: ObservableObject {
     /// `respectingMode`: dashboard callers (Today/Cuerpo) leave it `true` so Apple is hidden in `whoopOnly`;
     /// the Apple Health diagnostic screen passes `false` to show what's STORED regardless of mode (FER-485).
     func appleDailyRows(days: Int = 4000, respectingMode: Bool = true) async -> [AppleDaily] {
-        if respectingMode && !dataSourceMode.usesAppleHealth { return [] }
+        // FER-1003: Apple is always included under the product pin (`usesAppleHealth` is constant true).
+        _ = respectingMode
         guard let store = await ensureStore() else { return [] }
         let (from, to) = Self.dayWindow(days: days)
         return (try? await store.appleDaily(deviceId: "apple-health", from: from, to: to)) ?? []
@@ -1360,9 +1312,7 @@ final class Repository: ObservableObject {
     /// didn't decode HRV/sleep) hides the value Apple Health does have; Today's Key Metrics falls back
     /// to these to fill that gap without disturbing the dashboard merge or the recovery baseline. (FER-98)
     func appleDailyMetricRows(days: Int = 4000) async -> [DailyMetric] {
-        // FER-484: dashboard-only read (TodayView/CuerpoView Key-Metrics fall-back) — no diagnostic caller,
-        // so it honors the mode directly: whoopOnly surfaces no Apple HRV/sleep into the dashboard.
-        guard dataSourceMode.usesAppleHealth else { return [] }
+        // FER-484 / FER-1003: dashboard-only Apple Key-Metrics fall-back (TodayView/CuerpoView).
         guard let store = await ensureStore() else { return [] }
         let (from, to) = Self.dayWindow(days: days)
         return (try? await store.dailyMetrics(deviceId: "apple-health", from: from, to: to)) ?? []

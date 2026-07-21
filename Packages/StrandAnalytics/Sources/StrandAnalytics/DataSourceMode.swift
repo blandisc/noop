@@ -4,6 +4,8 @@ import StrandModels
 /// Which data sources feed the dashboard and the recovery baseline — a single user preference (FER-484).
 /// The capture pipeline (BLE strap + HealthKit) always writes ALL sources; the mode only filters what is
 /// READ. `combined` is the historical behavior (strap wins, Apple Health is the base / gap-fill).
+/// Under the Apple-only pin (FER-1003) the live app is pinned to `.appleHealthOnly`; the other cases
+/// remain for persistence/raw-value stability and later phases.
 public enum DataSourceMode: String, Codable, CaseIterable, Sendable {
     /// WHOOP strap + Apple Health: strap wins, Apple fills the gaps (the historical default).
     case combined
@@ -12,24 +14,20 @@ public enum DataSourceMode: String, Codable, CaseIterable, Sendable {
     /// Apple Health only — the strap is excluded from every read (its rows stay stored, just unused).
     case appleHealthOnly
 
-    /// True when WHOOP strap rows (raw `strap` + on-device `strap-noop`) may be read.
-    public var usesWhoop: Bool { self != .appleHealthOnly }
-    /// True when Apple Health rows may be read.
-    public var usesAppleHealth: Bool { self != .whoopOnly }
+    /// True when Apple Health rows may be read. Always true under the Apple-only product pin.
+    public var usesAppleHealth: Bool { true }
 }
 
 /// Applies a `DataSourceMode` to the per-source daily arrays BEFORE they enter the dashboard merge
-/// (`Repository.mergeDaily`) and the baseline fold (`IntelligenceEngine`). It empties the arrays a mode
-/// excludes; `combined` is the identity, so the merge it feeds is byte-for-byte the historical result —
-/// the regression-zero guarantee. The mode never mutates a row, only decides which rows enter.
+/// (`Repository.mergeDaily`) and the baseline fold. Collapsed to the Apple-only branch under the
+/// FER-1003 pin: strap rows never enter; Apple is passed through unchanged.
 public enum DataSourcePolicy {
     public static func filter(_ mode: DataSourceMode,
                               imported: [DailyMetric],
                               computed: [DailyMetric],
                               apple: [DailyMetric])
         -> (imported: [DailyMetric], computed: [DailyMetric], apple: [DailyMetric]) {
-        (mode.usesWhoop ? imported : [],
-         mode.usesWhoop ? computed : [],
-         mode.usesAppleHealth ? apple : [])
+        _ = mode; _ = imported; _ = computed
+        return ([], [], apple)
     }
 }

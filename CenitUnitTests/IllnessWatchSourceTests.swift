@@ -11,7 +11,7 @@ import StrandAnalytics
 ///
 /// These tests mirror `AppModel.evaluateIllness`'s RHR term exactly: base = the 28 nights ending
 /// 3 days ago (`suffix(31).dropLast(3)`), fed to `IllnessWatch` after `strapOnlyHistory` masks the
-/// Apple-only nights. They exercise the real production helpers (`IntelligenceEngine.strapOnlyHistory`
+/// Apple-only nights. They exercise the real production helpers (`SourceLens.strapOnlyHistory`
 /// + `IllnessWatch.deviation`), not a re-implementation of the math.
 final class IllnessWatchSourceTests: XCTestCase {
 
@@ -50,7 +50,7 @@ final class IllnessWatchSourceTests: XCTestCase {
     /// baseline is contaminated (its mean is pulled up and its dispersion inflated); the masked one is not.
     func testAppleNightExcludedFromRhrBaseline() {
         let (days, appleDays) = history()
-        let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: appleDays)
+        let strapDays = SourceLens.strapOnlyHistory(days, appleHealthDays: appleDays)
 
         let contaminated = rhrBase(days)
         let cleaned = rhrBase(strapDays)
@@ -69,7 +69,7 @@ final class IllnessWatchSourceTests: XCTestCase {
     /// σ swallow the signal). Same recent value, opposite verdict — proving the mask changes the outcome.
     func testContaminatedBaselineSilencesRealRhrAnomaly() {
         let (days, appleDays) = history()
-        let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: appleDays)
+        let strapDays = SourceLens.strapOnlyHistory(days, appleHealthDays: appleDays)
         let recentBandRhr = 64.0   // a real early-illness RHR rise, +6 over the band baseline
 
         XCTAssertTrue(
@@ -96,7 +96,7 @@ final class IllnessWatchSourceTests: XCTestCase {
             appleDays.insert(day)
         }
         // OLD path: strap-only history is empty in Apple-only mode → no baseline → the term can never fire.
-        let strapDays = IntelligenceEngine.strapOnlyHistory(days, appleHealthDays: appleDays)
+        let strapDays = SourceLens.strapOnlyHistory(days, appleHealthDays: appleDays)
         XCTAssertTrue(strapDays.isEmpty, "Apple-only mode: strap-only history is empty")
         XCTAssertTrue(rhrBase(strapDays).isEmpty, "so the RHR term has no baseline — the gap FER-884 closes")
 

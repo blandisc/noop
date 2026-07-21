@@ -397,26 +397,18 @@ struct TodayView: View {
     private var whyEmptyExplanation: LocalizedStringKey? {
         let state = heroState
         guard state != .verdict else { return nil }
-        // FER-888: en modo Solo-Apple el estado vacío habla del Apple Watch, no de la banda.
-        let usesWhoop = repo.dataSourceMode.usesWhoop
+        // FER-888 / FER-1003: Solo-Apple — empty states speak of the Apple Watch, not the band.
         switch state {
         case .loading, .verdict:
             return nil   // neutro de carga (o veredicto, ya filtrado arriba): nada que explicar todavía
         case .calibrating:
-            return usesWhoop
-                ? "Your baseline is still settling. A couple more nights of sleep synced from your Apple Watch, and your day's verdict starts to show here."
-                : "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here."
+            return "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here."
         case .waiting:
             // Modificador «descargando» (ex-`.downloading`); si no, espera / base Apple.
             if isSyncing {
-                return usesWhoop
-                    ? "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
-                    : "We're syncing from Apple Health. As soon as it finishes, your day's verdict shows here."
+                return "We're syncing from Apple Health. As soon as it finishes, your day's verdict shows here."
             }
-            if !usesWhoop {
-                return "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
-            }
-            return "Connect Apple Health and, with your night's sleep, your day's reading starts to show here."
+            return "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
         }
     }
 
@@ -545,7 +537,7 @@ struct TodayView: View {
                 // is read-only (the Coach handoff was removed, Pase v2 #7).
                 // FER-1027: el mapa intradía de estrés es de banda; en Apple-only no se muestra.
                 StressDetailScreen(theme: theme, model: item.model,
-                                   dayMap: repo.dataSourceMode.usesWhoop ? stressDayMap : nil,
+                                   dayMap: nil,
                                    patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                        repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                    eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
@@ -1050,19 +1042,6 @@ struct TodayView: View {
                     .tracking(2)
                     .foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: CenitMetrics.space2)
-                // FER-888 (W3): BPM en vivo / «sin señal» / sello del dial 24h son de la banda.
-                // En modo Solo-Apple no aplican; en Combinado/Solo-banda quedan idénticos.
-                if repo.dataSourceMode.usesWhoop {
-                    // FER-972 P-09: sello dueño de su lectura de progreso (no invalida el árbol).
-                    PullIndicator(
-                        pullProgress: pullProgressModel,
-                        isSyncing: isSyncing,
-                        reduceMotion: reduceMotion,
-                        hour: clockHourNow,
-                        solar: solarWindow,
-                        sleep: sleepWindow
-                    )
-                }
             }
             syncStatusLine
         }

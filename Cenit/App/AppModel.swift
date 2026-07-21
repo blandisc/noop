@@ -42,8 +42,6 @@ import UIKit
     /// Which data sources feed the dashboard + baseline (combined / WHOOP-only / Apple-Health-only) —
     /// a user preference; capture stays active in every mode (FER-484).
     let sources = SourceModeStore()
-    /// On-device WHOOP-style recovery/strain/sleep computation from raw strap streams.
-    let intelligence: IntelligenceEngine
 
     /// The iOS Apple Health bridge, wired in by `CenitApp` right after init (it depends on `repo`).
     /// `weak` so SwiftUI owns its lifetime; AppModel only reaches it for the one-time day-key
@@ -157,9 +155,6 @@ import UIKit
             : (age > 0 ? StrainScorer.tanakaHRmax(age: Double(age)) : nil)
         self.repo.strainHRmax = strainHRmax
         self.repo.strainSex = profile.sex
-        // Ola 2: Apple-only — no WHOOP hardware step estimation.
-        self.intelligence = IntelligenceEngine(repo: repo, profile: profile, deviceId: "strap",
-                                               estimatesSteps: false)
         // FER-721: the lock-screen actions come back through the controller; apply them to the live session.
         restActivity.onAction = { [weak self] (action: RestActivityBridge.Action) in self?.applyRestAction(action) }
         // FER-806: the Activity now lives the WHOLE session, so we must NOT kill it unconditionally at
