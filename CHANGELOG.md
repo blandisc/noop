@@ -20,6 +20,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+## 1.85 — iOS: Apple Salud only — la banda se retira, con integridad de datos y rendimiento reforzados
+
+El hito de este corte (2026-07-20) es que Cénit deja de usar la banda WHOOP y pasa a ser una app de Apple Salud: el soporte de banda se retira del producto y los datos históricos importados se conservan intactos y solo-lectura. Sobre esa base, una tanda de endurecimiento: guardados que avisan si fallan en vez de perder el dato en silencio, un error momentáneo de lectura que ya no vacía la pantalla, la Carga del día estimada que deja de releer años de pulso en cada refresco, y limpieza de restos internos de la banda. Todo sigue 100% en el dispositivo.
+
 - **Un error momentáneo de lectura ya no vacía la pantalla.** Si la base de datos está ocupada (p. ej. durante una compactación) cuando se refresca, Cénit conserva el tablero anterior en vez de publicar uno vacío como si fuera real; así una lectura fallida transitoria no borra tus datos de la vista ni cierra por error un experimento en curso.
 
 - **Editar descansos, tipos de ejercicio y carpetas del plan avisa si el guardado falla.**

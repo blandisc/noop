@@ -9,7 +9,7 @@ options:
   developmentLanguage: en
 settings:
   base:
-    MARKETING_VERSION: "1.81"
+    MARKETING_VERSION: "1.85"
     # Single source for the build number, threaded into the app's CFBundleVersion via
     # $(CURRENT_PROJECT_VERSION). Bump it here once per TestFlight / App Store upload.
     CURRENT_PROJECT_VERSION: "25"
