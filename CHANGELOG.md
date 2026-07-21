@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **La Carga del día deja de mostrar una gráfica «hora a hora» que ya no tenía cómo llenarse / Day Strain drops an "hour by hour" chart that could no longer fill.**
+  **ES** — El detalle de Carga del día traía una gráfica de cómo se iba acumulando tu esfuerzo durante el día. Esa curva se dibujaba con el pulso segundo a segundo de la banda; sin banda no hay con qué trazarla, así que mostraba para siempre un «no hay suficiente actividad todavía». La retiramos: el número de Carga del día —lo que sí se puede estimar desde tu Apple Watch— se queda igual, y el detalle ya no te enseña un hueco vacío. Reconstruir esa curva con el pulso de todo el día del Apple Watch quedó anotado como trabajo aparte.
+  **EN** — The Day Strain detail carried a chart of how your effort built up through the day. That curve was drawn from the band's second-by-second pulse; without the band there's nothing to trace it, so it showed a permanent "not enough activity yet." We retired it: the Day Strain number — what your Apple Watch can actually estimate — stays exactly the same, and the detail no longer shows you an empty gap. Rebuilding that curve from the Apple Watch's all-day pulse is noted as separate future work.
+  ([StrainDetailScreen.swift](Cenit/Screens/StrainDetailScreen.swift), [MetricInfoSheet.swift](Cenit/Screens/MetricInfoSheet.swift))
+
 ## 1.85 — iOS: Apple Salud only — la banda se retira, con integridad de datos y rendimiento reforzados
 
 El hito de este corte (2026-07-20) es que Cénit deja de usar la banda WHOOP y pasa a ser una app de Apple Salud: el soporte de banda se retira del producto y los datos históricos importados se conservan intactos y solo-lectura. Sobre esa base, una tanda de endurecimiento: guardados que avisan si fallan en vez de perder el dato en silencio, un error momentáneo de lectura que ya no vacía la pantalla, la Carga del día estimada que deja de releer años de pulso en cada refresco, y limpieza de restos internos de la banda. Todo sigue 100% en el dispositivo.
