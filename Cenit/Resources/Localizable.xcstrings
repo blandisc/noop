@@ -27245,19 +27245,19 @@
         }
       }
     },
-    "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short to gather 20 clean beats." : {
+    "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short to gather 20 clean beats."
+            "value" : "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin HRV de anoche. Puede pasar si no dormiste con tu Apple Watch, o si la noche fue muy corta para reunir 20 latidos limpios."
+            "value" : "Sin HRV de anoche. Puede pasar si no dormiste con tu Apple Watch, o si la noche fue muy corta para registrarla."
           }
         }
       }
@@ -35071,19 +35071,19 @@
         }
       }
     },
-    "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score." : {
+    "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score."
+            "value" : "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "RMSSD (Task Force, 1996); rechazo de ectópicos con la regla de Malik. La HRV pesa cerca del 60% de tu recuperación."
+            "value" : "SDNN y RMSSD (Task Force, 1996); el RMSSD es la medida vagal de recuperación (Shaffer & Ginsberg, 2017). El HRV es el mayor motor de tu recuperación."
           }
         }
       }
@@ -44801,19 +44801,19 @@
         }
       }
     },
-    "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD." : {
+    "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure — RMSSD — recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD."
+            "value" : "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure — RMSSD — recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tomamos los intervalos entre tus latidos durante la noche, descartamos los que quedan fuera de 300–2000 ms y los que se desvían más de 20% de sus vecinos (latidos ectópicos). Si quedan al menos 20 latidos limpios, calculamos el RMSSD."
+            "value" : "El número que ves es el HRV que Apple registra de noche: SDNN, la dispersión general del tiempo entre tus latidos. Tu lectura de recuperación usa otra medida de HRV —RMSSD— recalculada de los intervalos latido a latido de tus noches más densas. El RMSSD sigue específicamente la rama vagal (de descanso), mientras que el SDNN mezcla ambas ramas de tu sistema nervioso; eso, sumado a que se calculan sobre ventanas distintas de la noche, hace que el número de HRV de aquí no siempre coincida con la dirección de tu recuperación."
           }
         }
       }
