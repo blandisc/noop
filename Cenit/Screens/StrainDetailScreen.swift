@@ -8,27 +8,23 @@ import Foundation
 // MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en «Instrumento» (FER-238 · FER-859)
 //
 // Hermana de `RecoveryDetailScreen` (FER-857): reutiliza el esqueleto del handoff «Detalle de
-// Tendencias Final» — héroe invertido → instrumento firma → niveles → historial siempre abierto
+// Tendencias Final» — héroe invertido → niveles → historial siempre abierto
 // (`GraficaRangos`) → calendario 90 días → método + sello. NO extiende `MetricDetailScreen`/
 // `MetricDetailSpec` (esos son para vitales de serie escalar). El esfuerzo es una métrica
-// compuesta: el hero es el valor de HOY en escala fija 0–21 (último punto de la curva intradía,
-// FER-650), su visualización firma es la curva acumulada del día, y su referencia son zonas fijas.
+// compuesta: el hero es el valor de HOY en escala fija 0–21 (el score asentado del día), y su
+// referencia son zonas fijas. (La curva intradía «hora a hora» se retiró en FER-1025: sin banda
+// no hay pulso segundo a segundo que la alimente.)
 //
 // Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`, FER-162)
-// y SIN `NavigationStack` anidado (FER-171). Consume `StrandAnalytics` y la curva de
-// `CuerpoView.loadStrainCurve()` TAL CUAL: no crea math.
+// y SIN `NavigationStack` anidado (FER-171). Consume `StrandAnalytics` TAL CUAL: no crea math.
 
 /// Light «Instrumento» Detalle de Esfuerzo. Built once from a `StrainDetailModel` (the caller injects the
-/// model so the screen stays DB-free); the intraday curve is loaded async (it reads HR samples from the
-/// DB) the same way `MetricDetailScreen` injects its `seriesLoader`. Themed explicitly for the sheet.
+/// model so the screen stays DB-free). Themed explicitly for the sheet.
 struct StrainDetailScreen: View {
     /// The live «Instrumento» theme, passed explicitly (sheets start a fresh environment). (FER-162)
     var theme: InstrumentoTheme = .base
     /// Everything the screen draws from the in-memory dashboard, derived ONCE by the caller (no DB here).
     let model: StrainDetailModel
-    /// Today's accumulated-strain curve, loaded async (it reads HR samples — DB I/O, not pure). Returns
-    /// `[]` when there's no score / too little activity yet. Injected by the caller (`loadStrainCurve`).
-    var curveLoader: () async -> [TrendPoint] = { [] }
     /// FER-885: today's «Day load» is an Apple workout-HR estimate (Apple-only mode, FER-883), not a
     /// band-measured Day Strain. Flips the footer to the Apple seal and adds the honest under-count hedge.
     var estimated: Bool = false
@@ -40,13 +36,6 @@ struct StrainDetailScreen: View {
     @State private var parsed: [(day: String, date: Date?, value: Double)] = []
     /// The tapped day for the calendar read-out. (FER-830)
     @State private var selectedStrainDay: RecoveryDay? = nil
-    /// Today's intraday curve, loaded in `.task` (loading well until then).
-    @State private var curve: [TrendPoint] = []
-    @State private var curveLoaded = false
-    /// The in-progress day's LIVE strain = the curve's LAST point, captured when the curve loads so the
-    /// hero equals the end of the curve BY CONSTRUCTION (they read the same array — FER-650). nil until the
-    /// curve loads, or when there's too little activity today; the hero then falls back to the settled score.
-    @State private var liveToday: Double?
     /// The hero's ⓘ toggles the «Qué medimos» card right under the inverted field. (FER-859)
     @State private var infoOpen = false
 
@@ -68,7 +57,6 @@ struct StrainDetailScreen: View {
                         heroFlat.padding(CenitMetrics.screenPadding)
                     }
                     if infoOpen { whatWeMeasureCard }
-                    seccion(String(localized: "How today added up")) { howTodayContent }
                     seccion(String(localized: "Levels")) { levelsContent }
                     seccion(String(localized: "See your history")) { historyContent }
                     if parsed.contains(where: { $0.value > 0 }) {
@@ -90,7 +78,7 @@ struct StrainDetailScreen: View {
         .sheetPaper(theme)
         // FER-954: re-run when the placeholder model is replaced by the real one (same seam as
         // Sueño/Recuperación, FER-953) and hop the day-key parse off-main. The placeholder pass
-        // bails early so `curveLoader` runs exactly once, on the real model.
+        // bails early so the parse runs only on the real model.
         .task(id: model.loaded) {
             guard model.loaded else { return }   // placeholder pass — nothing to parse yet (FER-954)
             range = .month
@@ -98,12 +86,6 @@ struct StrainDetailScreen: View {
             parsed = await Task.detached(priority: .userInitiated) {
                 series.map { ($0.day, Repository.parseDayKey($0.day), $0.value) }
             }.value
-            curve = await curveLoader()
-            // The hero shows the curve's LAST point (the live in-progress-day value) so «ends on your score
-            // above» holds exactly — same array, no second derivation (FER-650). `.last` is the real endpoint
-            // (the prepended midnight anchor is `.first`).
-            liveToday = curve.last?.value
-            curveLoaded = true
         }
     }
 
@@ -114,11 +96,10 @@ struct StrainDetailScreen: View {
 
     // MARK: - 1. Héroe invertido — siempre `dataStrain` (descriptivo, sin semáforo)
 
-    /// The value shown as today's strain: the live curve endpoint once the curve loads (so hero == the
-    /// curve's last point by construction, FER-650), falling back to the settled `repo.today.strain` before
-    /// the curve loads or when there's too little activity to draw one. Drives the hero number, its plain-
-    /// language reading, and the highlighted level — one value, never a contradiction on-screen.
-    private var shownToday: Double? { liveToday ?? model.today }
+    /// The value shown as today's strain: the settled day score (`repo.today.strain`, estimated from Apple
+    /// workout HR in Apple-only mode). Drives the hero number, its plain-language reading, and the
+    /// highlighted level — one value, never a contradiction on-screen.
+    private var shownToday: Double? { model.today }
 
     /// The inverted hero: the ONE field saturated at 100% of `theme.dataStrain`. Overline + ⓘ,
     /// 60pt Grotesk numeral (recRise), «en curso» capsule, verdict line. Text is paper on hue.
@@ -202,52 +183,7 @@ struct StrainDetailScreen: View {
         }
     }
 
-    // MARK: - 2. Cómo se acumuló hoy (curva intradía acumulada)
-
-    private var howTodayContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            (Text("Only rises")
-                .font(InstrumentoType.grotesk(16, weight: .semibold))
-                .foregroundColor(theme.ink)
-             + Text(verbatim: " · ")
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.inkSecondary)
-             + Text("every second of pulse adds to the total")
-                .font(InstrumentoType.grotesk(14))
-                .foregroundColor(theme.inkSecondary))
-                .fixedSize(horizontal: false, vertical: true)
-            Group {
-                if curve.count > 1 {
-                    TrendChart(
-                        points: curve,
-                        gradient: chartGradient,
-                        valueRange: 0...21,
-                        showsArea: true,
-                        height: 160,
-                        showsScrub: true,
-                        valueFormat: { fmt($0) },
-                        dateFormat: { Self.hourString($0) },
-                        axisLabelColor: theme.inkTertiary,
-                        gridLineColor: theme.hairline,
-                        yAxisValues: [10, 21],
-                        accessibilityLabel: "Accumulated day strain, rising through the day."
-                    )
-                    BarraAncla(
-                        String(localized: "Ends on your score today: it's the same number as the hero."),
-                        color: theme.dataStrain, theme: theme)
-                } else if !curveLoaded {
-                    ChartWell(theme).loading(height: 160)
-                } else {
-                    ChartWell(theme).empty(text: "Not enough activity yet today to chart.")
-                }
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.card, theme: theme)
-    }
-
-    // MARK: - 3. Niveles (las 4 bandas fijas de `MetricInfo.strain`, la activa marcada)
+    // MARK: - 2. Niveles (las 4 bandas fijas de `MetricInfo.strain`, la activa marcada)
 
     private var levelsContent: some View {
         let bands = MetricInfo.strain(shownToday).bands
@@ -461,23 +397,10 @@ struct StrainDetailScreen: View {
             .padding(.top, 2)
     }
 
-    // MARK: - Colour + format
-
-    private var chartGradient: Gradient { ChartWell.fillGradient(theme.dataStrain) }
+    // MARK: - Format
 
     /// Strain reads to one decimal (0–21), like the row and the hero.
     private func fmt(_ v: Double) -> String { String(format: "%.1f", v) }
-
-    // MARK: - Chart axis
-
-    /// Locale-aware hour label for the intraday curve's x-axis (12/24h per region).
-    private static let hourFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("j")
-        return f
-    }()
-
-    private static func hourString(_ date: Date) -> String { hourFormatter.string(from: date) }
 }
 
 // MARK: - Sheet item
@@ -501,8 +424,7 @@ struct StrainDetailItem: Identifiable {
 // The data layer of the strain detail, lifted out of the view. `StrainDetailScreen` is pure presentation
 // over this; the caller (Cuerpo) builds it with `StrainDetailModel.build(...)` from the in-memory
 // dashboard so the screen stays DB-free. It CONSUMES `StrandAnalytics` as-is (no new math): today's score
-// from `repo.today.strain`, the 14d+ series from `repo.days`. The intraday curve is NOT here — it reads HR
-// samples (DB I/O) and is injected as an async `curveLoader` instead.
+// from `repo.today.strain`, the 14d+ series from `repo.days`.
 
 struct StrainDetailModel {
     /// Today's Day Strain (0–21), or nil while there's no score yet (strap-only, no Apple fallback).
@@ -595,31 +517,19 @@ private func sampleStrainSeries(days: Int = 60) -> [(day: String, value: Double)
     }
 }
 
-private func sampleCurve() -> [TrendPoint] {
-    let cal = Calendar(identifier: .gregorian)
-    let midnight = cal.startOfDay(for: Date())
-    var acc = 0.0
-    return (0...16).map { h in
-        acc += Double((h * 13) % 4) * 0.25 + 0.6
-        return TrendPoint(date: midnight.addingTimeInterval(Double(h) * 3600), value: Swift.min(21, acc))
-    }
-}
-
 #Preview("Strain detail: con datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         StrainDetailScreen(
             model: StrainDetailModel(today: 14.2, series: sampleStrainSeries(), loaded: true,
                                      drivers: [.init(driver: .sameDayRecovery, trend: .rises),
-                                               .init(driver: .priorDayStrain, trend: .falls)]),
-            curveLoader: { sampleCurve() })
+                                               .init(driver: .priorDayStrain, trend: .falls)]))
     }
 }
 
 #Preview("Strain detail: sin datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         StrainDetailScreen(
-            model: StrainDetailModel(today: nil, series: [], loaded: true, drivers: []),
-            curveLoader: { [] })
+            model: StrainDetailModel(today: nil, series: [], loaded: true, drivers: []))
     }
 }
 #endif

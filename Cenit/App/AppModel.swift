@@ -262,11 +262,6 @@ import UIKit
         repo.today?.strain ?? repo.estimatedStrain(repo.today?.day ?? Repository.localDayKey(Date()))
     }
 
-    // TODO(/pm): sin banda no hay curva intradía de carga; ¿mostrar solo el punto final del día?
-    func strainCurveTrendPoints() async -> [TrendPoint] {
-        return []
-    }
-
     /// Cleared band-era HR smoother; kept as a no-op so strength start/end call sites still compile.
     func resetSmoothing() {}
 
