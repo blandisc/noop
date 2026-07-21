@@ -14,18 +14,17 @@ import Foundation
 // Composition (top → bottom), all inside `iosBody`:
 //   (a) HEADER — date · strap battery · live BPM (tap → Latidos) · the 34pt `DialSeal` (the 24h
 //                signature AND the pull-to-refresh spinner), plus the freshness line (`headerBlock`).
-//   (b) HERO   — the 124pt recovery numeral in its verdict color + the right column (overline,
-//                verdict word with dotted underline + ⓘ → Recuperación, delta vs your average)
-//                (`heroBlock`). `heroState` still picks the numeral per mode: `··` calibrating,
-//                `—` no data, `~N` estimated. The big `DiurnalDial` was retired from this screen
-//                (owner's call; the component stays in StrandDesign until F3).
+//   (b) HERO   — last night's SLEEP as the dominant numeral + the «cómo vienes» autonomic-trend card
+//                (`appleTrendHero`). FER-1029: this is the ONLY hero. The 0–100 recovery verdict numeral
+//                (band era) was retired — `repo.today.recovery` is always nil on Apple-only, so it was
+//                unreachable dead code. The big `DiurnalDial` was retired earlier; the 24h lives in the
+//                header seal.
 //   (c) TABS   — SEÑALES / BRIEF with the elastic underline (`sectionTabs`) over a 2-page pager:
-//                · Page 0 (`senalesPage`) — «POR QUÉ N» (the five rules, `FiveRulesView` fed by
-//                  `RecoveryRules`) + the 2×4 tile grid with sparkbands (`iosMetricsSection`).
+//                · Page 0 (`senalesPage`) — the 2×4 tile grid with sparkbands (`iosMetricsSection`).
 //                · Page 1 (`verdictPage`) — the Daily Brief (headline, connection, actions, CTA).
 //
-// Pull-to-refresh: the seal winds up with the pull and spins while syncing; the numeral and the
-// rule marks settle straight to their values (no count-up or reveal sequence on completion).
+// Pull-to-refresh: the seal winds up with the pull and spins while syncing; the tile values settle
+// straight to their numbers (no count-up or reveal sequence on completion).
 
 /// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)` from Today
 /// (the model itself isn't Identifiable). Mirrors the one Cuerpo uses. (FER-251)
@@ -203,13 +202,6 @@ struct TodayView: View {
     /// FER-953: sleep summary for MetricInfoSheet, built off-main when the sleep info sheet opens.
     @State private var sleepSummaryModel: SleepDetailModel? = nil
     @State private var showWhyVerdict = false
-    /// FER-878: la ⓘ junto a «POR QUÉ N» abre la tarjeta «Qué medimos» (el caption explicativo ya no
-    /// flota en pantalla; vive aquí, como en Tendencias).
-    @State private var showWhatWeMeasure = false
-    /// FER-878 `recRise`: el numeral del héroe sube (opacity 0 + translateY 4→0, 0.5s ease-out) SOLO al
-    /// entrar a la pantalla. `false` en el primer frame → anima a `true` en `.onAppear`; el asentado del
-    /// sync no lo re-dispara (solo cambia con el ciclo de vida de la vista, no con los datos).
-    @State private var heroEntered = false
 
     // Rich «Instrumento» Detalle drilled into via the summary sheet's "Ver más" (FER-251). These mirror the
     // ones Cuerpo presents — Today reuses the SAME static `.build()` factories / specs, so the detail is
@@ -270,10 +262,6 @@ struct TodayView: View {
     /// El nivel del veredicto de AYER, memoizado (FER-475): da continuidad en la página 1 «en espera»
     /// («Ayer cerraste en Equilibrado») cuando aún no hay lectura de hoy. `nil`/insufficient → no se muestra.
     @State private var memoYesterdayLevel: ReadinessEngine.Level?
-    /// Las cinco reglas de hoy (FER-709), memoizadas: `RecoveryRules` sobre el `RecoveryImpact` del día
-    /// (banda-only) + el score mostrado, de modo que la suma encendida == el numeral. Vacías sin
-    /// descomposición honesta (cold-start o día Apple-only).
-    @State private var memoRules: [RecoveryRules.Rule]?
     /// Los días de base para las medias de 7 días, memoizados (ver `baselineDays()`): el `filter+sort`
     /// sobre `repo.displayDays` lo comparten el delta del héroe, el Daily Brief y los tiles.
     @State private var memoBaselineDays: [DailyMetric]?
@@ -318,14 +306,13 @@ struct TodayView: View {
         let yesterdayLevel: ReadinessEngine.Level
         let baselineDays: [DailyMetric]
         let trainingLoad: TrainingLoadModel
-        let rules: [RecoveryRules.Rule]
     }
 
     /// Siembra el veredicto + los conteos UNA vez por refresh. La llama el `.task(id: repo.refreshSeq)`
     /// (vía `loadAll()`). FER-982: la derivación pesada (3–4× `ReadinessEngine.evaluate`, cada uno ordena
-    /// TODO `repo.days`, + `RecoveryImpact` + máscaras) ya NO corre en el MainActor — se snapshotean los
+    /// TODO `repo.days`, + máscaras) ya NO corre en el MainActor — se snapshotean los
     /// inputs value-type en main y el cómputo puro hopea a un executor de fondo (mismo patrón que
-    /// `RecoveryDetailModel.buildDetached`, FER-953/954). Solo los 7 resultados vuelven a main; el body
+    /// `RecoveryDetailModel.buildDetached`, FER-953/954). Solo los resultados vuelven a main; el body
     /// sigue sin recalcular en cada frame gracias a los `@State memo*` (FER-172), con el fallback en frío
     /// (memo aún nil) cubriendo el breve hueco del hop, igual que en el primer paint.
     private func recomputeDerived() async {
@@ -348,7 +335,6 @@ struct TodayView: View {
         memoYesterdayLevel = state.yesterdayLevel
         memoBaselineDays = state.baselineDays
         trainingLoad = state.trainingLoad
-        memoRules = state.rules
         #if DEBUG
         // FER-172: prueba de que el veredicto se recalcula UNA vez por refresh (ahora off-main). En
         // scroll/animación/ticks de HR esta línea NO debe reaparecer; solo sale una vez por `seq`.
@@ -356,7 +342,7 @@ struct TodayView: View {
         #endif
     }
 
-    /// Derivación pura de los 7 memos desde un snapshot value-type — corre FUERA del MainActor (FER-982).
+    /// Derivación pura de los memos desde un snapshot value-type — corre FUERA del MainActor (FER-982).
     /// Byte-idéntica al body síncrono anterior; solo cambió el hilo. Reusa los helpers `static` puros para
     /// que el memo y el fallback en frío de instancia compartan UNA fuente de verdad (deben coincidir —
     /// ver `readiness`). `todayKey`/`yKey` se snapshotean una vez (idéntico: las llamadas originales a
@@ -381,18 +367,9 @@ struct TodayView: View {
             acwr: acwrReadiness.acwr,
             series: ReadinessEngine.acwrSeries(days: acwrMasked).map { (day: $0.day, value: $0.ratio) },
             days: acwrMasked)
-        // FER-709: las cinco reglas del día. `RecoveryImpact` devuelve nil en cold-start o en un día
-        // Apple-only: ahí el bloque se oculta en vez de inventar una descomposición.
-        let rules: [RecoveryRules.Rule]
-        if let score = todayRecovery.map({ Int($0.rounded()) }),
-           let impact = RecoveryImpact.compute(days: days, todayKey: todayKey, appleDays: appleDays) {
-            rules = RecoveryRules.rules(impact: impact, score: score)
-        } else {
-            rules = []
-        }
         return DerivedState(readiness: readiness, counts: counts, yesterdayLevel: yesterdayLevel,
                             baselineDays: baselineDays,
-                            trainingLoad: trainingLoad, rules: rules)
+                            trainingLoad: trainingLoad)
     }
 
     /// FER-623: `repo.days` con la HRV de Apple (SDNN) enmascarada, para medir el veredicto solo contra la
@@ -532,9 +509,6 @@ struct TodayView: View {
                 WhyVerdictSheet(readiness: readiness, theme: theme,
                                 sleepMinutes: repo.today?.totalSleepMin,
                                 emptyStateExplanation: whyEmptyExplanation)
-            }
-            .sheet(isPresented: $showWhatWeMeasure) {
-                WhatWeMeasureSheet(score: recoveryScore ?? 0, theme: theme)
             }
             // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
             // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
@@ -1062,17 +1036,6 @@ struct TodayView: View {
         }
     }
 
-    /// El color del DATO de recuperación por banda del score (no del veredicto): el numeral habla del
-    /// score de recuperación, así que su color es el de su banda. green → `dataRecovery`, yellow →
-    /// `warning`, red → `critical` (mismo mapeo que Cuerpo, vía `RecoveryScorer.band`).
-    private func recoveryBandColor(_ score: Int) -> Color {
-        switch RecoveryScorer.band(Double(score)) {
-        case "green":  return theme.dataRecovery
-        case "yellow": return theme.warning
-        default:       return theme.critical
-        }
-    }
-
     /// El header del handoff «Hoy» 2026-07 (FER-709): fecha · batería de la banda · BPM vivo tocable ·
     /// sello del dial (la firma de 24 h, que también es el spinner del pull-to-refresh). Debajo, en
     /// reposo, la línea de frescura «última lectura hace N min»; sincronizando, «Sincronizando con tu
@@ -1184,14 +1147,10 @@ struct TodayView: View {
 
 
     @ViewBuilder private var heroBlock: some View {
-        switch heroState {
-        case .verdict, .loading:
-            verdictHero
-        case .calibrating:
-            appleTrendHero
-        case .waiting:
-            appleTrendHero
-        }
+        // FER-1029: Hoy tiene UNA sola cara — la de Apple (Sueño de anoche + la tarjeta de tendencia
+        // autonómica). El héroe del veredicto 0–100 (era banda) se retiró: en Apple-only `repo.today.recovery`
+        // es siempre nil, así que ese path era inalcanzable (solo lo encendían datos de banda dormidos).
+        appleTrendHero
     }
 
     /// R4 (FER-1008): el héroe del path Apple-only — el SUEÑO es el número dominante (el 0–100 estilo-WHOOP
@@ -1232,186 +1191,6 @@ struct TodayView: View {
                 onTap: { showAutonomicDetail = true }
             )
             .padding(.top, CenitMetrics.space2)
-        }
-    }
-
-    /// El héroe del handoff «Hoy» 2026-07 (FER-709; numeral 102 pt): en el color del veredicto +
-    /// la columna derecha (overline, palabra-veredicto con subrayado punteado + ⓘ que abre la hoja
-    /// Recuperación, y el delta «+3 vs tu promedio»). El dial de 240 pt y el numeral concéntrico SE
-    /// RETIRAN (decisión del dueño; `DiurnalDial` grande sigue en el paquete hasta F3) — el 24 h vive
-    /// ahora en el sello del header. El numeral nunca miente: `··` calibrando, `—` sin datos, `~N`
-    /// estimado.
-    @ViewBuilder private var verdictHero: some View {
-        let state = heroState
-        let animatingHero = !reduceMotion
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            // Alineación al TOPE del numeral (no centrada): el overline «RECUPERACIÓN DE HOY» arranca a
-            // la altura del tope del número. Gap más amplio para dar aire al héroe (FER-878 follow-up).
-            HStack(alignment: .top, spacing: CenitMetrics.sectionGapCompact) {
-                heroNumeralText(state)
-                    // El numeral de 102pt (Space Grotesk) trae ~29.8pt de descenso VACÍO bajo la línea base
-                    // (los dígitos no bajan): ese hueco es el «padding» de más hacia SEÑALES. Lo recupero con
-                    // padding inferior negativo para apretar la fila del héroe contra las pestañas.
-                    .padding(.bottom, -Self.heroNumeralBottomInk)
-                    .opacity((animatingHero && !heroEntered) ? 0 : 1)
-                    .offset(y: (animatingHero && !heroEntered) ? 4 : 0)
-                    .animation(animatingHero ? .easeOut(duration: 0.5) : nil, value: heroEntered)
-                // FER-878 follow-up: columna derecha más apretada (space1) — así la cápsula «vs tu base»
-                // sube y queda mejor centrada contra el número grande, y el héroe pierde alto.
-                VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-                    Text(heroOverline(state))
-                        .groteskOverline()
-                        .foregroundStyle(theme.inkTertiary)
-                        .lineSpacing(2)
-                    heroVerdictColumn(state)
-                }
-                // El mismo numeral trae ~27.8pt de blanco SOBRE el glifo, así que con top-align el overline
-                // «RECUPERACIÓN DE HOY» quedaba ~25pt más alto que el «75». Bajo la columna esa diferencia
-                // (28 del numeral − ~3 del propio overline) para que su tope case con el tope del número.
-                .alignmentGuide(.top) { $0[.top] - Self.heroColumnTopDrop }
-                Spacer(minLength: 0)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // Toda el área del héroe (número, columna y el aire alrededor) abre el detalle de Recuperación,
-        // no solo el numeral: un blanco de toque generoso. Solo con veredicto (en calibrando/sin lectura
-        // no hay detalle que abrir). La palabra «Equilibrado» es un Button propio y gana la prioridad del
-        // toque, así que sigue abriendo su «¿por qué?» sin chocar con esto.
-        .contentShape(Rectangle())
-        .onTapGesture { if state == .verdict { metricDetail = recoveryInfo } }
-        .onAppear { heroEntered = true }   // FER-878: dispara recRise una vez al entrar a la pantalla
-    }
-
-    /// Blanco vacío que trae el numeral de 102pt de Space Grotesk (medido con CoreText a ese tamaño):
-    /// ~29.8pt de descenso bajo la línea base y ~28.9pt sobre la altura de mayúscula. Los usamos para
-    /// apretar la fila del héroe (bottom) y para casar el tope de la columna con el del número (top).
-    /// Al subir el numeral 98→102, subo también el claw-back inferior (24→27) para reclamar el descenso
-    /// EXTRA del glifo mayor, de modo que la fila del héroe casi no crece y SEÑALES sigue sin scroll.
-    private static let heroNumeralBottomInk: CGFloat = 27
-    /// Cuánto baja la columna «RECUPERACIÓN…» para que su tope case con el glifo: blanco superior del
-    /// numeral (~29) menos el del propio overline de 10pt (~3).
-    private static let heroColumnTopDrop: CGFloat = 27
-
-    /// El numeral dominante (102/700 tabular, tracking −4.5). Veredicto → el score en su color de nivel;
-    /// calibrando → «··»; descargando / sin lectura → «—». Tocarlo con
-    /// veredicto abre la hoja de Recuperación. El score se asienta directo (sin conteo de arranque);
-    /// un cambio real de valor rueda con `contentTransition(.numericText())`.
-    @ViewBuilder private func heroNumeralText(_ s: HeroState) -> some View {
-        switch s {
-        case .verdict:
-            let score = recoveryScore ?? 0
-            let lvl = readiness.level
-            let hasWord = lvl != .insufficient
-            let color = hasWord ? recoveryBandColor(score) : theme.ink
-            Text("\(score)").groteskHero()
-                .foregroundStyle(color)
-                .contentTransition(.numericText(value: Double(score)))
-                .lineLimit(1).minimumScaleFactor(0.7)
-                .contentShape(Rectangle())
-                .onTapGesture { metricDetail = recoveryInfo }
-                .accessibilityLabel(Text("Today's recovery: \(score)"))
-                .accessibilityAddTraits(.isButton)
-        case .calibrating:
-            Text(verbatim: "··").groteskHero().foregroundStyle(theme.inkTertiary)
-        case .waiting, .loading:
-            Text(verbatim: "—").groteskHero().foregroundStyle(theme.inkTertiary)
-        }
-    }
-
-    /// La columna junto al numeral: con veredicto, la palabra del nivel (20/700, subrayado punteado +
-    /// ⓘ → hoja «¿Por qué?», `WhyVerdictSheet`) y el delta vs tu promedio; en los demás estados, la
-    /// palabra honesta del momento con su renglón de contexto. El numeral abre Recuperación (arriba); la
-    /// palabra abre el porqué del veredicto — dos toques, dos hojas (como antes de FER-709; se habían
-    /// fusionado sin querer en el mismo botón).
-    @ViewBuilder private func heroVerdictColumn(_ s: HeroState) -> some View {
-        switch s {
-        case .verdict:
-            let lvl = readiness.level
-            if lvl != .insufficient {
-                Button { showWhyVerdict = true } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
-                        Text(stateLabel(lvl))
-                            .font(InstrumentoType.groteskVerdict)
-                            .foregroundStyle(theme.ink)
-                            .overlay(alignment: .bottom) {
-                                Line()
-                                    .stroke(theme.ink.opacity(StrandOpacity.dim),
-                                            style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
-                                    .frame(height: 1)
-                                    .offset(y: 2)
-                            }
-                        StrandIcon.info.image.font(StrandFont.glyph(.chevron))
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("Opens why the verdict reads this way"))
-            } else {
-                Text("Not enough context for a verdict")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if let delta = recoveryVsAverage {
-                heroDeltaCapsule(delta)
-            }
-        case .calibrating(let nights):
-            Text("Calibrating")
-                .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-            Text("\(nights) of \(Baselines.minNightsSeed) nights")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-        case .waiting:
-            if isSyncing {
-                // Modificador «descargando» (ex-`.downloading`): la noche está bajando.
-                Text("Downloading")
-                    .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-                Text("your night is on its way")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-            } else {
-                Text("No reading")
-                    .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-                Text("connect your band or Apple Health")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        case .loading:
-            // Neutro de carga: nada que narrar — el numeral «—» y la overline bastan mientras la DB publica.
-            EmptyView()
-        }
-    }
-
-    /// El delta del héroe: la recuperación de hoy vs tu base (misma base que los tiles).
-    /// nil sin lectura o sin ≥4 días de base.
-    private var recoveryVsAverage: Int? {
-        guard let today = repo.today?.recovery else { return nil }
-        let base = history(baselineDays()) { $0.recovery }
-        guard base.count >= 4 else { return nil }
-        return Int((today - base.reduce(0, +) / Double(base.count)).rounded())
-    }
-
-    /// FER-878: la cápsula del delta del héroe («+3 vs tu base»), reemplaza el texto plano «vs your
-    /// average». 500/12 SG tabular, texto en `positiveText`/`negativeText` según valencia (recuperación:
-    /// más alta es mejor) sobre un fondo del mismo tinte al 10 %, radio-cápsula, padding 3×9. La ventana
-    /// de la base («tus últimos 30 días») vive solo en el ⓘ del veredicto, no aquí (regla FER-642/836).
-    @ViewBuilder private func heroDeltaCapsule(_ delta: Int) -> some View {
-        let favorable = delta >= 0
-        let tint = favorable ? theme.positiveText : theme.negativeText
-        // Texto en dos partes: el numeral con signo (verbatim) + la clave localizada «vs tu base» como
-        // `LocalizedStringKey` cacheada (evita `String(localized:)` en el camino caliente del héroe).
-        (Text(verbatim: "\(favorable ? "+" : "\u{2212}")\(abs(delta)) ") + Text("vs your baseline"))
-            .font(InstrumentoType.grotesk(12, weight: .medium).monospacedDigit())
-            .foregroundStyle(tint)
-            .padding(.horizontal, 9).padding(.vertical, 3)
-            .background(theme.tint(tint), in: Capsule())
-    }
-
-    /// Una línea horizontal simple para el subrayado punteado del veredicto.
-    private struct Line: Shape {
-        func path(in rect: CGRect) -> Path {
-            var p = Path()
-            p.move(to: CGPoint(x: 0, y: rect.midY))
-            p.addLine(to: CGPoint(x: rect.width, y: rect.midY))
-            return p
         }
     }
 
@@ -1834,7 +1613,6 @@ struct TodayView: View {
         // Gap `space2` (8) entre «Por qué N» y la retícula (FER-878 follow-up: 12→8 para recuperar el alto
         // que sumó la leyenda de orígenes y el numeral más grande, y que SEÑALES quepa sin scroll).
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            if heroState == .verdict, !rulesRows.isEmpty { fiveRulesBlock }
             // Franja de carga (FER-705 · handoff «Carga»): ahora vive DENTRO de Señales, bajo las cinco
             // reglas, así que pertenece solo a esta página y NO viaja al Brief con el swipe. No respira ni
             // participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no sembró (primer
@@ -1848,52 +1626,6 @@ struct TodayView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-
-    /// El bloque «POR QUÉ 74 · las cinco reglas»: la suma visible del score. Overlines arriba
-    /// («POR QUÉ N» / «EL LARGO ES EL PESO») y el instrumento de marcas. (FER-743 retiró la leyenda de
-    /// fuentes de abajo: la fuente ya se lee en el punto de origen de cada tile.)
-    /// Las marcas se dibujan asentadas siempre (sin secuencia de encendido en el sync).
-    @ViewBuilder private var fiveRulesBlock: some View {
-        let rows = rulesRows
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            HStack(spacing: CenitMetrics.space1) {
-                Text("Why \(recoveryScore ?? 0)")
-                    .groteskOverline().foregroundStyle(theme.inkTertiary)
-                // FER-878: la ⓘ que abre «Qué medimos» (la explicación deja de flotar en pantalla).
-                Button { showWhatWeMeasure = true } label: {
-                    StrandIcon.info.image.font(StrandFont.glyph(.chevron))
-                        .foregroundStyle(theme.inkTertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("What we measure"))
-                Spacer(minLength: CenitMetrics.space2)
-                Text("Length is weight")
-                    .groteskOverline(small: true).foregroundStyle(theme.inkMuted)
-            }
-            FiveRulesView(rows: rows, animateEntrance: true)   // FER-878: recGrow al entrar (scaleX + stagger)
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("Why \(recoveryScore ?? 0): the sum of your five signals"))
-    }
-
-    /// Las filas del instrumento, del motor puro (`RecoveryRules`, memoizado en `recomputeDerived`) con
-    /// su etiqueta y color de dato por señal.
-    private var rulesRows: [FiveRulesView.Row] {
-        (memoRules ?? []).map { rule in
-            let (label, color): (String, Color) = {
-                switch rule.key {
-                case "hrv":      return (String(localized: "HRV"), theme.dataHrv)
-                case "rhr":      return (String(localized: "Resting HR"), theme.dataHeart)
-                case "sleep":    return (String(localized: "Sleep"), theme.dataSleep)
-                case "skinTemp": return (String(localized: "Skin temp"), theme.dataStrain)
-                default:         return (String(localized: "Respiration"), theme.dataSpO2)
-                }
-            }()
-            return FiveRulesView.Row(id: rule.key, label: label, color: color,
-                                     marks: rule.marks, lit: rule.lit)
-        }
-    }
-
 
     /// El pager horizontal de 2 páginas (FER-465, pulido FER-725). **Full-bleed:** cada página ocupa el
     /// ANCHO COMPLETO de la pantalla (el `.padding(.horizontal, -screenPadding)` cancela el margen del
@@ -2025,15 +1757,6 @@ struct TodayView: View {
     /// (FER-972 P-09): leen el progreso en su propio body para no invalidar Hoy por frame.
     // TODO(/pm): sin banda, "sincronizando" solo refleja el pull-to-refresh del usuario, no un fetch real de Apple Health en curso.
     private var isSyncing: Bool { pullSyncing }
-
-    /// La overline del héroe (dos líneas, MAYÚSCULAS trackeadas): qué es el numeral, honesto por estado.
-    private func heroOverline(_ s: HeroState) -> LocalizedStringKey {
-        switch s {
-        case .verdict:     return "Recovery\ntoday"
-        case .calibrating: return "Your baseline\nis settling"
-        default:           return "Recovery\ntoday"
-        }
-    }
 
     /// El cuerpo bajo el numeral: la palabra del veredicto + «i» + modificadores (veredicto), o la línea
     /// honesta de qué falta (resto de modos).
