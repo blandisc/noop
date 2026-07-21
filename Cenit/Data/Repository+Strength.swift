@@ -72,11 +72,14 @@ extension Repository {
     /// own exercises, sorted by name — each one re-typed by the user's measurement-type override (FER-541)
     /// so a catalog or custom override is respected everywhere this list feeds. Catalog stays read-only;
     /// the override is applied on read, not baked into the bundled data.
+    ///
+    /// Custom exercises + overrides are decoded once (via `StrengthExerciseMemo`) and reused by
+    /// `resolvedExercise` in the same session until a custom/override write invalidates the memo.
     func allExercises() async -> [Exercise] {
         guard let store = await storeHandle() else { return ExerciseCatalog.all }
-        let custom = (try? await store.customExercises()) ?? []
-        let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
-        return (ExerciseCatalog.all + custom).map { $0.applying(overrides) }.sorted { $0.name < $1.name }
+        let memo = await StrengthExerciseMemo.load(for: self, store: store)
+        // Decode custom once; apply overrides from the same memo (no per-exercise store round-trip).
+        return (ExerciseCatalog.all + memo.custom).map { $0.applying(memo.overrides) }.sorted { $0.name < $1.name }
     }
 
     /// One slot's guided-session seed: «la última vez» prefill + the progression evaluation (FER-E).
@@ -98,16 +101,28 @@ extension Repository {
     /// Resolve one exercise by id (catalog or custom) with its user type override applied — the single
     /// point every guided-session / builder / detail path uses, so no reader sees a non-overridden type.
     /// Precedence: override > custom > catalog (FER-541). nil if the id is unknown.
+    ///
+    /// Uses the session memo so a loop of `resolvedExercise` calls does not re-fetch/decode every
+    /// custom exercise's JSON blobs on each id (N+1).
     func resolvedExercise(_ id: String) async -> Exercise? {
         let catalog = ExerciseCatalog.byID(id)
         var custom: Exercise?
         var override: ExerciseType?
         if let store = await storeHandle() {
-            custom = (try? await store.customExercises())?.first { $0.id == id }
-            override = (try? await store.exerciseTypeOverrides())?[id]
+            let memo = await StrengthExerciseMemo.load(for: self, store: store)
+            custom = memo.customById[id]
+            override = memo.overrides[id]
         }
+        return Self.resolveExercise(id: id, catalog: catalog, custom: custom, override: override)
+    }
+
+    /// Pure resolution (override > custom > catalog). Shared by `resolvedExercise` and tests so the
+    /// memo only owns fetch/decode, not the precedence rules.
+    static func resolveExercise(id: String, catalog: Exercise?, custom: Exercise?,
+                                override: ExerciseType?) -> Exercise? {
         guard let base = custom ?? catalog else { return nil }
-        let eff = ExerciseTypeResolver.effectiveType(override: override, custom: custom?.type, catalog: catalog?.type)
+        let eff = ExerciseTypeResolver.effectiveType(override: override, custom: custom?.type,
+                                                     catalog: catalog?.type)
         return (eff != nil && eff != base.type) ? base.retyped(to: eff!) : base
     }
 
@@ -122,6 +137,7 @@ extension Repository {
     func saveCustomExercise(_ e: Exercise) async throws {
         guard let store = await storeHandle() else { return }
         try await store.saveCustomExercise(e)
+        StrengthExerciseMemo.invalidate(for: self)
     }
 
     // MARK: - Exercise type overrides (FER-541)
@@ -130,7 +146,8 @@ extension Repository {
     /// «revert to default» only when there is one.
     func exerciseTypeOverride(_ exerciseId: String) async -> ExerciseType? {
         guard let store = await storeHandle() else { return nil }
-        return (try? await store.exerciseTypeOverrides())?[exerciseId]
+        let memo = await StrengthExerciseMemo.load(for: self, store: store)
+        return memo.overrides[exerciseId]
     }
 
     /// Override an exercise's measurement type (catalog or custom).
@@ -138,6 +155,7 @@ extension Repository {
     func setExerciseTypeOverride(_ exerciseId: String, type: ExerciseType) async throws {
         guard let store = await storeHandle() else { return }
         try await store.setExerciseTypeOverride(exerciseId, type: type, ts: Int(Date().timeIntervalSince1970))
+        StrengthExerciseMemo.invalidate(for: self)
     }
 
     /// Drop an exercise's type override → it reverts to its catalog/custom default.
@@ -145,6 +163,7 @@ extension Repository {
     func clearExerciseTypeOverride(_ exerciseId: String) async throws {
         guard let store = await storeHandle() else { return }
         try await store.clearExerciseTypeOverride(exerciseId)
+        StrengthExerciseMemo.invalidate(for: self)
     }
 
     // MARK: - Learned exercise aliases (import matching memory — FER-523)
@@ -275,5 +294,47 @@ extension Exercise {
     /// unchanged. The single fold every list-resolution path uses, so they can't diverge.
     func applying(_ overrides: [String: ExerciseType]) -> Exercise {
         overrides[id].map { retyped(to: $0) } ?? self
+    }
+}
+
+// MARK: - Custom-exercise read memo (L3-F1)
+//
+// `resolvedExercise` used to call `store.customExercises()` on every id, which re-reads and
+// JSON-decodes the entire custom table (N+1 when resolving a loop of ids). Memoize the decoded
+// list + overrides per Repository until a write path invalidates. Stored off the Repository type
+// so this file owns the cache without touching Repository.swift (another lane).
+
+@MainActor
+enum StrengthExerciseMemo {
+    struct Entry {
+        let custom: [Exercise]
+        let customById: [String: Exercise]
+        let overrides: [String: ExerciseType]
+    }
+
+    private static var entries: [ObjectIdentifier: Entry] = [:]
+
+    /// Load (or return cached) decoded custom exercises + type overrides for this repository.
+    static func load(for repo: Repository, store: CenitStore) async -> Entry {
+        let key = ObjectIdentifier(repo)
+        if let hit = entries[key] { return hit }
+        let custom = (try? await store.customExercises()) ?? []
+        let overrides = (try? await store.exerciseTypeOverrides()) ?? [:]
+        let entry = Entry(
+            custom: custom,
+            customById: Dictionary(custom.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a }),
+            overrides: overrides
+        )
+        entries[key] = entry
+        return entry
+    }
+
+    static func invalidate(for repo: Repository) {
+        entries[ObjectIdentifier(repo)] = nil
+    }
+
+    /// Test-only: how many times `load` has populated a fresh entry for `repo` (cache misses).
+    static func cachedEntry(for repo: Repository) -> Entry? {
+        entries[ObjectIdentifier(repo)]
     }
 }

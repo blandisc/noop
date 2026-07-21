@@ -86,7 +86,10 @@ extension CenitStore {
 
     /// Points for MULTIPLE `keys` on days in [from, to] in one read (day then key ascending) —
     /// the batched sibling of the single-key accessor, so a caller assembling the 24 hourly
-    /// `act_hNN` keys (FER-868) doesn't issue 24 round-trips. Same index as the single-key read.
+    /// `act_hNN` keys (FER-868) doesn't issue 24 round-trips.
+    ///
+    /// SQL `ORDER BY` follows `idx_metricSeries_device_key_day` (`key`, `day`) so SQLite does not
+    /// build a TEMP B-TREE to re-sort; the public order (`day`, `key`) is restored in memory.
     public func metricSeries(deviceId: String, keys: [String], from: String, to: String) async throws -> [MetricPoint] {
         guard !keys.isEmpty else { return [] }
         let placeholders = Array(repeating: "?", count: keys.count).joined(separator: ", ")
@@ -94,12 +97,15 @@ extension CenitStore {
         args.append(contentsOf: keys)
         args.append(contentsOf: [from, to])
         return try syncRead { db in
-            try Row.fetchAll(db, sql: """
+            var points = try Row.fetchAll(db, sql: """
                 SELECT day, key, value FROM metricSeries
                 WHERE deviceId = ? AND key IN (\(placeholders)) AND day >= ? AND day <= ?
-                ORDER BY day ASC, key ASC
+                ORDER BY key ASC, day ASC
                 """, arguments: StatementArguments(args))
                 .map { MetricPoint(day: $0["day"], key: $0["key"], value: $0["value"]) }
+            // Public contract: day then key. Cheap vs. a SQLite temp b-tree on large series.
+            points.sort { ($0.day, $0.key) < ($1.day, $1.key) }
+            return points
         }
     }
 

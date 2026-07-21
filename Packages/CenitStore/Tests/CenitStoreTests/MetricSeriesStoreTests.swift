@@ -65,6 +65,34 @@ final class MetricSeriesStoreTests: XCTestCase {
         XCTAssertEqual(rec[0], MetricPoint(day: "2026-05-10", key: "recovery", value: 72))
     }
 
+    // MARK: - multi-key read (day then key; SQL orders by index then re-sorts)
+
+    func testMultiKeyRangeReadOrdersByDayThenKey() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.upsertMetricSeries([
+            MetricPoint(day: "2026-05-02", key: "act_h01", value: 2),
+            MetricPoint(day: "2026-05-01", key: "act_h01", value: 1),
+            MetricPoint(day: "2026-05-01", key: "act_h00", value: 0),
+            MetricPoint(day: "2026-05-02", key: "act_h00", value: 3),
+        ], deviceId: "devA")
+
+        let rows = try await store.metricSeries(deviceId: "devA",
+                                                keys: ["act_h01", "act_h00"],
+                                                from: "2026-05-01", to: "2026-05-31")
+        XCTAssertEqual(rows.map { "\($0.day)/\($0.key)" },
+                       ["2026-05-01/act_h00", "2026-05-01/act_h01",
+                        "2026-05-02/act_h00", "2026-05-02/act_h01"],
+                       "public multi-key order is day ASC, key ASC")
+        XCTAssertEqual(rows.map(\.value), [0, 1, 3, 2])
+    }
+
+    func testMultiKeyEmptyKeysReturnsEmpty() async throws {
+        let store = try await CenitStore.inMemory()
+        let rows = try await store.metricSeries(deviceId: "devA", keys: [],
+                                                from: "2026-05-01", to: "2026-05-31")
+        XCTAssertTrue(rows.isEmpty)
+    }
+
     // MARK: - idempotency + conflict-update
 
     func testIdempotencyAndConflictUpdate() async throws {
