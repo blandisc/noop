@@ -37,11 +37,11 @@ Llevar Cénit a un mundo greenfield donde la banda WHOOP **nunca existió**. Usu
 ## FASES (leaf-first; cada una compila y se commitea)
 - **F0 — Baseline verde:** `swift build && swift test` por paquete tocado; anotar estado antes de cortar.
 - **F1 — Eliminar `WhoopProtocol`:** rm paquete + refs en project.yml/Package.swift. Verificar 0 imports. (Casi cero riesgo.)
-- **F2 — Retirar reloj corporal + plan de viaje:** RelojCorporalSheet, PlanViajeSheet, JetLagPlanStore, CircadianEngine, StepsEstimateEngine + sus entradas de navegación. Feature removal decidido.
-- **F3 — Colapsar `DataSourceMode`/`usesWhoop`/`SourceModeStore`** a Apple; borrar ramas muertas.
-- **F4 — Borrar `IntelligenceEngine`** + `strapOnlyHistory`→identidad.
-- **F5 — Retirar número recuperación 0-100** (`RecoveryImpact` + fantasmas en TodayView/RecoveryDetail), preservando `calibrationNights`.
-- **F6 — Colapso del read-model** (`SourceLens`/`SourceFusion`/`keep:.band`→Apple directo). **Gate ciencia** (re-derivar a mano que ningún consumidor lea la columna equivocada).
+- **F2 — Retirar SOLO las pantallas** reloj corporal + plan de viaje (RelojCorporalSheet, PlanViajeSheet, JetLagPlanStore + entradas en AjustesView + wiring en AppModel). **NO tocar los motores aquí:** Swift type-checkea el cuerpo de `IntelligenceEngine.analyzeRecent` completo aunque el `guard usesWhoop` (línea 209) lo haga inalcanzable en runtime — borrar `CircadianEngine`/`StepsEstimateEngine` rompe el compile hasta que muera IntelligenceEngine. F2 = solo UI/nav → compila. (Ajuste post-adversarial Grok.)
+- **F3 — Colapsar `DataSourceMode`/`usesWhoop`/`SourceModeStore` a Apple.** ALINEADA con F4: `usesWhoop` vive dentro de `IntelligenceEngine.swift:209` y `AppModel+Analysis.swift:53` → van juntas, o F3 fija un pin Apple explícito que F4 remueve.
+- **F4 — Borrar `IntelligenceEngine` + los motores band-only** (`CircadianEngine`, `StepsEstimateEngine` + sus tests + campos de calibración de steps en `Profile`) + `strapOnlyHistory`→identidad. Aquí se hace compilable el borrado de motores que F2 dejó pendiente.
+- **F5 — Retirar número recuperación 0-100 CON sus pantallas consumidoras en el MISMO paso** (`RecoveryImpact` + sus bloques en TodayView/RecoveryDetail juntos), preservando `calibrationNights`.
+- **F6 — Colapso del read-model (`SourceLens`/`SourceFusion`/`keep:.band`). CONTRATO DE DATO EXPLÍCITO (gate ciencia):** «Apple directo» = **RMSSD nocturno real** (`apple_rmssd_night` en metricSeries, patrón `SourceFusion.autonomicTrend:13-18`), **NUNCA `DailyMetric.avgHrv`** (que es SDNN — mezclar reintroduce FER-519/629; meanHRV mezclado ≈43.8ms vs banda ≈49.6ms). Migrar los 7 consumidores con cuidado: TodayView.computeDerived/bandDays (CRÍT), RecoveryDetailScreen (CRÍT), CuerpoView BodyAge/Vitality (CRÍT), InsightsProvider.rank (ALTO), WhatMovesIt clave "hrv" (ALTO), CyclePhaseView (MED), AppModel+Illness (ya apple-aware con SDNN a propósito — no mezclar su historia). + **test de no-regresión SDNN↔RMSSD** sobre esos call sites. Gate `/cso`+`/estadistico`+Grok antes del merge.
 - **F7 — Esquema greenfield v1 + naming `strap`→`apple`** (recrear DB limpia si versión no coincide → re-sync HealthKit).
 - **F8 — Docs + copy final** (ARCHITECTURE/README/BUILD/CLAUDE + barrido de copy residual).
 
