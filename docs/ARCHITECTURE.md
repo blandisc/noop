@@ -623,9 +623,15 @@ Workouts, Health, Apple Health, Data Sources, Settings, Support). There is no `L
 Automations screen. The home / lock-screen widgets live in `CenitWidgets/`.
 
 **Inject (hot-reload).** The app target links the third-party `Inject` package (`project.yml`) for
-Debug UI hot-reload with InjectionIII / InjectionNext. In **Release** the library is a **no-op**
-(no interposable hooks); verify with `otool -L` on a Release binary if you need to confirm the
-dependency is present but inert.
+Debug UI hot-reload with InjectionIII / InjectionNext. In **Release** the library is a **no-op**: the
+`-interposable` linker flag is Debug-only and the `.enableInjection()` / `@ObserveInjection` hooks
+compile away. **Verified (2026-07-20) on an unsigned Release iOS build**: the code is statically linked
+in (Inject symbols appear in `nm`, and one `InjectionIII` path string survives), but it pulls **no
+external dylib** (`otool -L` shows only system libraries) and **zero `enableInjection` strings** remain —
+present but inert, as designed. It is the only non-first-party dependency of the shipping binary; the
+posture is "accept and document," not remove (a Debug-only link is not cleanly expressible in xcodegen
+and `#if DEBUG`-guarding ~46 call sites is churn for a cosmetic gain). Re-check with `nm`/`strings`/
+`otool -L` on a Release binary if App Review ever objects.
 
 **Dormant / retired surfaces (post band amputation).** (a) `IntelligenceEngine.analyzeRecent` is a
 no-op under the pinned `.appleHealthOnly` mode: it `guard`s on `mode.usesWhoop` and returns early
