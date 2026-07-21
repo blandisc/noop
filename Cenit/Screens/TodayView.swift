@@ -2740,9 +2740,9 @@ struct TodayView: View {
         // (FER-172). FER-982: `recomputeDerived()` snapshotea `repo` en main y hopea el cómputo pesado a
         // un `Task.detached`; el fallback en frío (memo aún nil) cubre el breve hueco del hop.
         await recomputeDerived()
-        // Issue every query concurrently, then collect. The store is a serial DatabaseQueue so I/O still
-        // serializes, but the memoized ensureStore() makes the parallel first-callers share ONE open, and
-        // the queries run back-to-back with no main-actor ping-pong.
+        // Issue every query concurrently, then collect. The store is a DatabasePool (2 readers since
+        // FER-970) so read I/O can overlap; the memoized ensureStore() makes the parallel first-callers
+        // share ONE open, and the queries avoid main-actor ping-pong.
         async let adRows     = repo.appleDailyRows()
         async let amRows     = repo.appleDailyMetricRows()
         // Stored daily "stress" series (0–3) — the model prefers it, else derives from RHR/HRV. (FER-180)

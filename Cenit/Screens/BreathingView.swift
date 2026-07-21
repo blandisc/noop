@@ -472,21 +472,6 @@ struct BreathingView: View {
         }
     }
 
-    // MARK: - HRV (RMSSD)
-
-
-    /// RMSSD = sqrt(mean of squared successive differences) over the R-R series.
-    private func computeRMSSD(_ intervals: [Int]) -> Double? {
-        guard intervals.count >= 2 else { return nil }
-        var sumSq = 0.0
-        for i in 1..<intervals.count {
-            let d = Double(intervals[i] - intervals[i - 1])
-            sumSq += d * d
-        }
-        let meanSq = sumSq / Double(intervals.count - 1)
-        return meanSq.squareRoot()
-    }
-
     // MARK: - Formatting
 
     private func timeString(_ total: Int) -> String {
