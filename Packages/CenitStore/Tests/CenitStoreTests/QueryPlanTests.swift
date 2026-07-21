@@ -60,6 +60,32 @@ final class QueryPlanTests: XCTestCase {
         assertIndexed(plan, table: "metricSeries")
     }
 
+    /// Multi-key range read (IntelligenceEngine's 24 `act_hNN` keys). ORDER BY must follow the
+    /// index `(deviceId, key, day)` so SQLite does not build a TEMP B-TREE; the store re-sorts to
+    /// day/key in memory for the public contract.
+    func testMetricSeriesMultiKeyRangeReadUsesIndexWithoutTempBTree() async throws {
+        let store = try await CenitStore.inMemory()
+        // Mirror MetricSeriesStore.metricSeries(deviceId:keys:from:to:) SQL (24 placeholders like prod).
+        let keys = (0..<24).map { String(format: "act_h%02d", $0) }
+        let placeholders = Array(repeating: "?", count: keys.count).joined(separator: ", ")
+        var args: [DatabaseValueConvertible?] = ["d"]
+        args.append(contentsOf: keys)
+        args.append(contentsOf: ["2020-01-01", "2030-01-01"])
+        let plan = try await store.queryPlanForTest("""
+            SELECT day, key, value FROM metricSeries
+            WHERE deviceId = ? AND key IN (\(placeholders)) AND day >= ? AND day <= ?
+            ORDER BY key ASC, day ASC
+            """, arguments: StatementArguments(args))
+        assertIndexed(plan, table: "metricSeries")
+        let joined = plan.joined(separator: " | ")
+        let usesTempBTree = plan.contains {
+            $0.localizedCaseInsensitiveContains("TEMP B-TREE")
+                || $0.localizedCaseInsensitiveContains("USE TEMP B-TREE")
+        }
+        XCTAssertFalse(usesTempBTree,
+                       "multi-key metricSeries must not sort via TEMP B-TREE — plan: [\(joined)]")
+    }
+
     // MARK: - v8 cache tables (composite PK)
 
     func testJournalRangeReadUsesPrimaryKey() async throws {
