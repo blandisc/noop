@@ -52,9 +52,9 @@ import Foundation
 //     rest regardless of how fresh a muscle is.
 //
 // Pure & database-free, like `OneRepMax`: it operates on flat `MuscleSetEvent` primitives, so it
-// needs no dependency on StrandTraining or GRDB. The caller (the Cuerpo screen) reads work sets
-// from CenitStore, expands each one across `Exercise.muscleInvolvement`, computes `daysAgo` in the
-// device's local calendar, and reads systemic recovery from the dashboard.
+// needs no dependency on StrandTraining or the store layer. The caller (the Cuerpo screen) reads
+// work sets from persistence, expands each one across `Exercise.muscleInvolvement`, computes
+// `daysAgo` in the device's local calendar, and reads systemic recovery from the dashboard.
 
 public enum MuscleFatigueMap {
 

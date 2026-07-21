@@ -1,5 +1,5 @@
 import XCTest
-import CenitStore
+import StrandModels
 @testable import StrandAnalytics
 
 /// FER-339 — the single source of truth for sleep need + debt, shared by the coach (InsightEngine)

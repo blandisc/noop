@@ -1,6 +1,6 @@
 import XCTest
 @testable import StrandAnalytics
-import CenitStore
+import StrandModels
 
 /// FER-628 — «Qué la movió hoy»: the per-signal decomposition of today's recovery score. The
 /// contributions must (a) rank by |z·weight|, not |z|; (b) fold their baselines on the BAND-ONLY

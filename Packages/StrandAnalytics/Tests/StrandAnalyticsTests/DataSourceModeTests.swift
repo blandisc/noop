@@ -1,5 +1,5 @@
 import XCTest
-import CenitStore
+import StrandModels
 @testable import StrandAnalytics
 
 /// Pins the FER-484 data-source policy: the mode flags decide which sources are read, and

@@ -1,5 +1,5 @@
 import XCTest
-import CenitStore
+import StrandModels
 @testable import StrandAnalytics
 
 /// FER-640 — Vitality / Body Age must feed its «nocturnal RMSSD» (and nocturnal resting HR) from the

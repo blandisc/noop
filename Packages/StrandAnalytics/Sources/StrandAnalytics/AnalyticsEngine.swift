@@ -1,6 +1,6 @@
 import Foundation
 import BiometricStreams
-@preconcurrency import CenitStore
+@preconcurrency import StrandModels
 
 // AnalyticsEngine.swift — orchestrator producing DailyMetric + sleep-session results.
 //

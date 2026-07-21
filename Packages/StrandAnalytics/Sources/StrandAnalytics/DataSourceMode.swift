@@ -1,5 +1,5 @@
 import Foundation
-import CenitStore
+import StrandModels
 
 /// Which data sources feed the dashboard and the recovery baseline — a single user preference (FER-484).
 /// The capture pipeline (BLE strap + HealthKit) always writes ALL sources; the mode only filters what is
