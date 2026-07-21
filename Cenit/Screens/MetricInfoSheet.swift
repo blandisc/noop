@@ -182,13 +182,12 @@ struct MetricInfoSheet: View {
     }
 
     /// F2 (FER-710): the redesigned recovery summary — verdict word + zone meter under the
-    /// hero, then «Hoy, vs tu normal» ABOVE the level instrument, no vs-ayer line. The
-    /// detail (RecoveryDetailScreen, opened by «Ver más en Tendencias») keeps every block.
+    /// hero, then the level instrument. The detail (RecoveryDetailScreen, opened by
+    /// «Ver más en Tendencias») keeps every block.
     @ViewBuilder private var recoverySummaryContent: some View {
         recoveryReading
         recoveryZoneMeter
         headlineText
-        if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
         levelsBlock
     }
 
@@ -232,11 +231,9 @@ struct MetricInfoSheet: View {
         } else {
             classicMiddleCharts
         }
-        // Recovery's calibration card + today's impact block ride alongside BOTH layouts — only
-        // Recovery sets them, so they stay invisible on every other metric. With the levels
-        // instrument they sit just below it («qué la movió hoy»). (FER-620 / FER-628)
+        // Recovery's calibration card rides alongside BOTH layouts — only Recovery sets it, so it
+        // stays invisible on every other metric. (FER-620)
         if let calibration = info.calibration { calibrationCard(calibration) }
-        if let impact = info.impact, !impact.signals.isEmpty { impactBlock(impact) }
     }
 
     /// Charts + bands for the classic (non-levels) middle slot. (FER-981)
@@ -1165,117 +1162,6 @@ struct MetricInfoSheet: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
     }
 
-    // MARK: «Qué la movió hoy» (FER-628)
-
-    /// |contribution| below this reads as "barely moved it" — no arrow, quiet copy. The buckets are
-    /// copy thresholds only (the math is `RecoveryImpact`); in composite-z units, where the score's
-    /// full Red–Green band spans ≈ ±2 (RecoveryScorer.logisticK).
-    private static let impactBarely = 0.12
-
-    /// «Qué la movió hoy»: today's per-signal impact on the recovery score, ordered by REAL
-    /// contribution (|z·weight|, the FER-632 ranking — never |z| alone). One plain-language headline
-    /// naming the day's driver, then a row per signal: its state word, an impact phrase, and a
-    /// divergent vs-your-base bar whose length is the contribution. No σ and no % here — those live
-    /// under "How it's calculated".
-    private func impactBlock(_ impact: RecoveryImpact.Result) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Today, vs your normal")
-                .groteskOverline()
-                .foregroundStyle(theme.inkTertiary)
-            impactHeadline(impact)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            VStack(alignment: .leading, spacing: 14) {
-                ForEach(Array(impact.signals.enumerated()), id: \.element.id) { i, s in
-                    impactRow(s, index: i)
-                }
-            }
-            impactLegend
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-    }
-
-    /// The plain-language headline names the signal with the LARGEST contribution to today's score
-    /// (its state word in the flag color, everything else in ink). Built from fragments so it
-    /// localizes cleanly, like `RecoveryDetailScreen`'s titular.
-    private func impactHeadline(_ impact: RecoveryImpact.Result) -> Text {
-        guard let top = impact.top, abs(top.contribution) >= Self.impactBarely else {
-            return Text("All your signals sat near your base today.")
-        }
-        let tail: LocalizedStringKey = top.contribution < 0
-            ? ", is what holds your recovery back most today."
-            : ", is what holds your recovery up most today."
-        return Text("Your ")
-            + Text(Self.impactLabel(top.key)).foregroundColor(impactColor(impactFlag(top))).fontWeight(.semibold)
-            + Text(Self.positionPhrase(top))
-            + Text(tail)
-    }
-
-    /// One signal: overline label · position-vs-base word (flag hue) · `· N%` weight, and the divergent
-    /// contribution bar below, via the shared `ImpactSignalRow` (FER-975; was a hand-copy of the
-    /// Detalle's `levelSignalRow`, now the same component). VoiceOver reads the combined row.
-    private func impactRow(_ s: RecoveryImpact.Signal, index: Int) -> some View {
-        let flag = impactFlag(s)
-        let color = flag == .neutral ? theme.inkSecondary : impactColor(flag)
-        return ImpactSignalRow(
-            label: Self.impactLabel(s.key),
-            word: Self.baseBandWord(s),
-            weightPct: Int((s.weight * 100).rounded()),
-            contribution: s.contribution,
-            color: color,
-            index: index,
-            theme: theme
-        )
-    }
-
-    /// The position-vs-base word from the RAW deviation (+ = the metric itself sits above your average),
-    /// so the word is honest about where the value is; the row color (oriented flag) carries the valence.
-    /// |z| < 1 reads «In your base». Shared vocabulary with the Detalle. (FER-642)
-    private static func baseBandWord(_ s: RecoveryImpact.Signal) -> LocalizedStringKey {
-        if s.z >= 1 { return "Above your base" }
-        if s.z <= -1 { return "Below your base" }
-        return "In your base"
-    }
-
-    /// The headline's inline position clause, «, above your base, » etc., with a «well» qualifier past 1σ.
-    /// Matches `baseBandWord`. (FER-642)
-    private static func positionPhrase(_ s: RecoveryImpact.Signal) -> LocalizedStringKey {
-        let above = s.z >= 0
-        let strong = abs(s.z) >= 1.0
-        return strong
-            ? (above ? ", well above your base" : ", well below your base")
-            : (above ? ", above your base"      : ", below your base")
-    }
-
-    /// The axis legend: «◀ te la bajó · tu base · te la subió ▶» — decorative, hidden from VoiceOver.
-    private var impactLegend: some View {
-        ImpactAxisLegend(theme: theme)
-    }
-
-    /// The signal's display name — the same catalog keys the Detalle's driver rows use.
-    private static func impactLabel(_ key: String) -> LocalizedStringKey {
-        switch key {
-        case "hrv":      return "HRV"
-        case "rhr":      return "Resting HR"
-        case "sleep":    return "Sleep"
-        case "skinTemp": return "Skin temp"
-        case "respRate": return "Respiration"
-        default:         return LocalizedStringKey(key)
-        }
-    }
-
-    /// State flag from the ORIENTED z (+ = pushed the score up) — the single source of the σ cuts
-    /// (`ReadinessEngine.Flag(orientedZ:)`), so the state words agree with the Detalle's and the score.
-    private func impactFlag(_ s: RecoveryImpact.Signal) -> ReadinessEngine.Flag {
-        ReadinessEngine.Flag(orientedZ: s.orientedZ)
-    }
-
-    /// flag → theme color, shared with the Detalle's driver rows so both surfaces color states alike.
-    private func impactColor(_ flag: ReadinessEngine.Flag) -> Color { flag.color(theme) }
-
     /// Progressive disclosure: the technical "how" lives one tap down, collapsed by default. Uses the
     /// shared `Metodo` component (FER-975; was a hand-copy — same DisclosureGroup shape as the Detalle
     /// screens' «Cómo se calcula»). `Metodo` owns its own collapsed state internally.
@@ -1392,15 +1278,7 @@ struct MetricInfoSheet: View {
 
 #Preview("MetricInfoSheet: Recovery") {
     Color.clear.sheet(isPresented: .constant(true)) {
-        // The 27-jun-2026 sick-day shape: HRV collapsed (the driver), resting HR way up, the rest quiet.
-        MetricInfoSheet(info: .recovery(score: 12, calibrationNights: nil, nightsNeeded: 4,
-            impact: RecoveryImpact.Result(signals: [
-                .init(key: "hrv",      z: -3.6, orientedZ: -3.6, weight: 0.545),
-                .init(key: "rhr",      z:  3.0, orientedZ: -3.0, weight: 0.182),
-                .init(key: "skinTemp", z:  2.4, orientedZ: -2.4, weight: 0.091),
-                .init(key: "sleep",    z: -0.4, orientedZ: -0.4, weight: 0.136),
-                .init(key: "respRate", z:  0.6, orientedZ: -0.6, weight: 0.045),
-            ])))
+        MetricInfoSheet(info: .recovery(score: 12, calibrationNights: nil, nightsNeeded: 4))
     }
 }
 

@@ -964,18 +964,11 @@ struct TodayView: View {
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
 
     /// The recovery summary sheet's model — the ONE way every entry point (Daily Brief bullet, the
-    /// hero numeral, the glance pill) opens it. Includes «Qué la movió hoy» (FER-628), computed
-    /// against the band-only slice: `RecoveryImpact` drops `repo.appleHealthDays` whole-row before
-    /// folding, the same `strapOnlyHistory` filter the persisted score's baselines use (FER-519), so
-    /// the block and the score can never disagree about the same night.
+    /// hero numeral, the glance pill) opens it.
     private var recoveryInfo: MetricInfo {
-        let todayKey = Repository.localDayKey(Date())
-        let todayImpact = RecoveryImpact.compute(days: repo.days, todayKey: todayKey,
-                                                 appleDays: repo.appleHealthDays)
-        return .recovery(score: recoveryScore,
+        .recovery(score: recoveryScore,
                   calibrationNights: recoveryCalibration,
-                  nightsNeeded: Baselines.minNightsSeed,
-                  impact: todayImpact)
+                  nightsNeeded: Baselines.minNightsSeed)
     }
 
     /// El lienzo: el papel del tema, leído DENTRO del subárbol tematizado para que también recolore por

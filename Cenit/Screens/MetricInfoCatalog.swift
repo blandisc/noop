@@ -21,10 +21,6 @@ struct MetricInfo: Identifiable {
 
     // Progressive-disclosure extras for composite metrics (Recovery; reused by HRV in FER-109).
     // All optional with defaults so the band-based factories above stay untouched.
-    /// «Qué la movió hoy» (FER-628): today's per-signal contributions to the recovery score, computed
-    /// against the band-only baseline (the same slice the persisted score folds — FER-519/FER-629).
-    /// nil hides the block (calibrating, no band reading today, or any non-recovery metric).
-    var impact: RecoveryImpact.Result? = nil
     var method: Method? = nil
     var disclaimer: LocalizedStringKey? = nil
     var calibration: Calibration? = nil
@@ -505,13 +501,11 @@ extension MetricInfo {
     }
 
     /// Recovery (0–100) is a weighted composite, not a banded range, so it gets its own body:
-    /// «Qué la movió hoy» (today's per-signal impact, FER-628) + a "See the method" disclosure
-    /// (where the exact weights and the σ language now live). While the baseline is still seeding
-    /// (`calibrationNights` non-nil) it shows honest progress instead of a made-up number. The
-    /// header numeral is tinted by the WHOOP recovery band (green ≥67 · yellow 34–67 · red <34),
-    /// mirroring TodayView's `recoveryDataColor`. (FER-108 / FER-162)
-    static func recovery(score: Int?, calibrationNights: Int?, nightsNeeded: Int,
-                         impact: RecoveryImpact.Result? = nil) -> MetricInfo {
+    /// a "See the method" disclosure (where the exact weights and the σ language live). While the
+    /// baseline is still seeding (`calibrationNights` non-nil) it shows honest progress instead of a
+    /// made-up number. The header numeral is tinted by the WHOOP recovery band (green ≥67 · yellow
+    /// 34–67 · red <34), mirroring TodayView's `recoveryDataColor`. (FER-108 / FER-162)
+    static func recovery(score: Int?, calibrationNights: Int?, nightsNeeded: Int) -> MetricInfo {
         let disclaimer: LocalizedStringKey = "It's an estimate, not a diagnosis."
 
         if let done = calibrationNights {
@@ -549,7 +543,6 @@ extension MetricInfo {
             headerTint: tint,
             bands: [],
             note: nil,
-            impact: impact,
             method: Method(
                 prose: "Each signal becomes a score of how far above or below your personal average it sits (a z-score, in σ). They're averaged with fixed weights, HRV 60%, resting heart rate 20%, sleep 15%, skin temperature 10%, respiration 5%, and mapped onto a 0–100 scale, calibrated so a typical day lands near 58. If a signal is missing on a given night, its weight is shared among the others.",
                 citation: "A composite of z-scores through a logistic curve. HRV via RMSSD (Task Force, 1996)."
