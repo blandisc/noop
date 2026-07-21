@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Entrenar deja de mostrar un dato de recuperación que se quedaba «calibrando» para siempre / Train no longer shows a recovery readout stuck on "calibrating" forever.**
+  **ES** — El hub de Entrenar traía, junto al título «Hoy», un pequeño indicador con tu número de recuperación. Sin la banda ese número nunca se calcula, así que se quedaba permanentemente en «—, calibrando» — prometiendo un dato que jamás llegaba. Lo retiramos: la línea de «Hoy» queda limpia. La sugerencia de aligerar el día según cómo vienes (la nota «tu recuperación está baja/alta») sigue igual donde ya vivía.
+  **EN** — The Train hub carried a small readout of your recovery number next to the "Today" title. Without the band that number is never computed, so it sat permanently on "—, calibrating" — promising a value that never arrived. We retired it: the "Today" line is now clean. The suggestion to ease the day based on how you're trending (the "your recovery is low/high" note) stays exactly where it already lived.
+  ([EntrenarView.swift](Cenit/Screens/EntrenarView.swift))
+
 - **Tu HRV ahora explica por qué a veces no cuadra con tu recuperación / Your HRV now explains why it can differ from your recovery.**
   **ES** — El número de HRV que ves viene de Apple y se mide como SDNN, pero tu lectura de recuperación usa otra medida —RMSSD, la de la rama de descanso— calculada de tus noches más densas. Son métodos distintos, así que a veces no se mueven igual. Antes la ficha del ⓘ decía que calculábamos RMSSD, lo cual no era cierto para el número visible; ahora lo explica en claro, con su cita, para que sepas por qué tu HRV y tu recuperación pueden no coincidir.
   **EN** — The HRV number you see comes from Apple, measured as SDNN, but your recovery read uses a different measure — RMSSD, the rest-and-digest one — computed from your densest nights. They're different methods, so they don't always move together. The info sheet used to say we computed RMSSD, which wasn't true for the visible number; now it explains the split honestly, with its citation, so you know why your HRV and your recovery can differ.
