@@ -1313,6 +1313,7 @@ private struct CuerpoLanding: View {
         let appleHealthDays: Set<String> = repo.appleHealthDays
         let hasRecovery: Bool = repo.today?.recovery != nil
         let sleeps = repo.sleeps
+        let appleSleeps = repo.appleSleeps   // FER-1026: real Apple sleep sessions feed regularity too (no strap)
         let age: Int = model.profile.age
         let sex = model.profile.sex
         let todayKey: String = Repository.localDayKey(Date())
@@ -1376,7 +1377,9 @@ private struct CuerpoLanding: View {
             let recentBand: [DailyMetric] = SourceLens.maskForBaseline(recent, keep: .band, appleDays: appleHealthDays)
             // Sleep Regularity Index (FER-214) over a trailing ~35d of sessions, as 0–1 for the engine (SRI/100).
             // nil → the builder's duration proxy. Was `computeSleepRegularity()`; inlined for the hop (FER-955).
-            let recentSleeps = sleeps.filter { (s: CachedSleepSession) -> Bool in s.startTs >= regularityCutoff }
+            // FER-1026: feed from Apple + strap sessions (union, no overlap) so Apple-only users keep the SRI
+            // instead of silently dropping to the duration proxy.
+            let recentSleeps = (appleSleeps + sleeps).filter { (s: CachedSleepSession) -> Bool in s.startTs >= regularityCutoff }
             let sleepRegularity: Double? = SleepRegularityIndex.fromSessions(recentSleeps).map { (sri: Double) -> Double in sri / 100.0 }
             let nightlyRestingHR: [Double] = recentBand.compactMap { (d: DailyMetric) -> Double? in d.restingHr.map(Double.init) }
             let nightlyRMSSD: [Double] = recentBand.compactMap { (d: DailyMetric) -> Double? in d.avgHrv }

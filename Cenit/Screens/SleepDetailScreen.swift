@@ -359,8 +359,9 @@ struct SleepDetailScreen: View {
     /// Header for «Last night»: the shape of the night in words + the clock. The per-stage breakdown that
     /// used to live here as four tiles is gone — «Last night vs your typical» below already draws the same
     /// stages, against your average, as bars (no need to say it twice). Left: cycle count and how much of
-    /// the night was awake. Right: the wall-clock the strap saw — asleep at / awake at. Apple-Health nights
-    /// carry no reliable per-epoch clock, so the times hide there, same as the hypnogram. (FER · Anoche)
+    /// the night was awake. Right: the wall-clock — asleep at / awake at. Shown whenever the night has a
+    /// real clock (a strap night OR a real Apple Health session, FER-486): only the degenerate daily
+    /// fallback (`appleHealthNight`, `startTs == endTs`) has no clock and hides the times. (FER-1026)
     private func lastNightHeader(_ night: SleepDetailModel.Night) -> some View {
         let awakePct = pct(night.stages.awake, night.stages.total)
         let title = remBoutCount.flatMap { $0 > 0 ? $0 : nil }
@@ -375,7 +376,7 @@ struct SleepDetailScreen: View {
                     .foregroundColor(theme.inkSecondary)
             }
             Spacer(minLength: 0)
-            if !model.isAppleHealth {
+            if night.endTs > night.startTs {   // real clock (strap or real Apple session); daily fallback has start == end
                 VStack(alignment: .trailing, spacing: 3) {
                     clockLine(String(localized: "Asleep"), night.onsetDate)
                     clockLine(String(localized: "Awake"),
@@ -1404,27 +1405,29 @@ struct SleepDetailModel {
             return decodeSegments(s.stagesJSON, sessionStart: s.startTs)?.intervals ?? []
         }()
 
-        // --- Regularity: onset/wake from real strap sessions only (exclude Apple-only nights). ---
-        let timing: [SleepRegularity.NightTiming] = sleeps.compactMap { s in
-            guard s.endTs > s.startTs else { return nil }   // Apple fallback uses startTs == endTs
-            return SleepRegularity.NightTiming(onset: s.startTs, wake: s.endTs)
-        }
+        // --- Regularity: onset/wake from real sessions, Apple + strap (FER-1026). `appleSleeps` carry
+        // real startTs/endTs (FER-486) and never overlap strap nights (`appleSleepsNotCoveredByStrap`),
+        // so the union is every real night; the engine drops naps itself via `SleepMainNight`. Without
+        // this, Apple-only users had an empty `timing` → "calibrating" forever. `realSessions` (the union
+        // minus the degenerate daily fallback, start == end) also feeds the nap disclosure below. ---
+        let realSessions = (appleSleeps + sleeps).filter { $0.endTs > $0.startTs }
+        let timing = realSessions.map { SleepRegularity.NightTiming(onset: $0.startTs, wake: $0.endTs) }
         let regularity = SleepRegularity.compute(timing)
-        // The effective window size the engine would use (so the calibration says "N nights to go").
-        let regularityNights = min(timing.count, SleepRegularity.windowNights)
+        // The effective window size the engine scores — main nights only, capped at windowNights — so
+        // "N nights to go" matches `compute` instead of over-counting raw sessions (naps included).
+        let regularityNights = SleepRegularity.effectiveNightCount(timing)
 
         // --- Naps excluded from the regularity window, for the disclosure line (FER-310). ---
         // The engine keeps only "main nights" (≥ SleepMainNight threshold) and scores the most recent
         // `windowNights` of them. A nap counts as excluded only if it onset at/after the oldest night
         // in that window — older naps are off-window and irrelevant to the current read.
         let napThresholdSec = Int(SleepMainNight.minDurationMinutes * 60)
-        let strapSessions = sleeps.filter { $0.endTs > $0.startTs }   // excludes Apple-only (start == end)
-        let mainNightWindow = strapSessions
+        let mainNightWindow = realSessions
             .filter { $0.endTs - $0.startTs >= napThresholdSec }
             .sorted { $0.startTs > $1.startTs }
             .prefix(SleepRegularity.windowNights)
         let windowStart = mainNightWindow.last?.startTs ?? 0
-        let excludedNaps = mainNightWindow.isEmpty ? [] : strapSessions.filter {
+        let excludedNaps = mainNightWindow.isEmpty ? [] : realSessions.filter {
             $0.endTs - $0.startTs < napThresholdSec && $0.startTs >= windowStart
         }
         let excludedNapCount = excludedNaps.count
