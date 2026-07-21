@@ -32,7 +32,7 @@ jobs:
     #   - CenitStore:   Compression (RawOutbox.swift) — and StrandImport inherits it
     #     (depends on CenitStore, so fails to build on Linux transitively).
     #   - StrandTraining: Compression (Exercise.swift — zlib-inflated catalog, FER-875).
-    # Pure / Foundation-only packages build/test on Linux: BiometricStreams, WhoopProtocol,
+    # Pure / Foundation-only packages build/test on Linux: BiometricStreams,
     # StrandModels, StrandAnalytics (depends on StrandModels + BiometricStreams only — L3-C1b;
     # no longer links GRDB via CenitStore).
     runs-on: ${{ matrix.os }}
@@ -41,8 +41,6 @@ jobs:
       matrix:
         include:
           - package: BiometricStreams
-            os: ubuntu-latest
-          - package: WhoopProtocol
             os: ubuntu-latest
           - package: StrandAnalytics
             os: ubuntu-latest
