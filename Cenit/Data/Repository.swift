@@ -330,11 +330,23 @@ final class Repository: ObservableObject {
         // query gating (FER-484/486) rides in the request; the in-memory gating below is unchanged.
         // (Unqualified type names: the ACTOR `CenitStore` shadows the module of the same name in
         // qualified lookup from the app layer — `CenitStore.DashboardReadRequest` doesn't resolve.)
-        let snap = (try? await store.dashboardSnapshot(DashboardReadRequest(
-            strapDeviceId: deviceId, computedDeviceId: computedDeviceId, appleDeviceId: "apple-health",
-            fromDay: fromDay, toDay: toDay, fromTs: lo, toTs: hi, sleepLimit: 4000,
-            includeApple: dataSourceMode.usesAppleHealth,
-            includeWhoopSeries: dataSourceMode.usesWhoop))) ?? DashboardSnapshot()
+        let snap: DashboardSnapshot
+        do {
+            snap = try await store.dashboardSnapshot(DashboardReadRequest(
+                strapDeviceId: deviceId, computedDeviceId: computedDeviceId, appleDeviceId: "apple-health",
+                fromDay: fromDay, toDay: toDay, fromTs: lo, toTs: hi, sleepLimit: 4000,
+                includeApple: dataSourceMode.usesAppleHealth,
+                includeWhoopSeries: dataSourceMode.usesWhoop))
+        } catch {
+            // A failed read (e.g. SQLITE_BUSY past the 5 s timeout against a VACUUM/checkpoint barrier)
+            // must NOT publish an empty snapshot as if it were the real dashboard: the previously
+            // published `dashboard` stays put, and callers gated on `fullyLoaded` (notably
+            // `closeDueExperiment`, which would otherwise persist an irreversible "insufficient" verdict
+            // against an empty series) don't act on emptiness caused by a transient read error. Log in
+            // the FER-793 vein and bail this pass — the next refresh retries. (FER: dashboard resilience.)
+            print("[refresh] dashboardSnapshot failed (\(full ? "full" : "firstPaint")): \(error) — keeping prior dashboard")
+            return
+        }
         let importedRaw = snap.importedDays
         let computedRaw = snap.computedDays
         // FER-62: Apple Health daily rows — the lowest-precedence fallback layer for the dashboard,
