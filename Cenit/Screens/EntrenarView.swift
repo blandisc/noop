@@ -15,7 +15,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // sheet (F3). Below the hero: a contextual suggestion, the week strip + streak in one card (F10), the
 // plan as a collapsible disclosure with a single «Editar» action (F5), and Diet as a footer link.
 //
-// Color appears ONLY on the recovery datum (the chip ring/numeral, the today-dot, the Today recovery
+// Color appears ONLY on the recovery datum (the today-dot, the Today recovery
 // line); everything else is ink on paper. Navigation is owned by the tab's `NavigationStack` in
 // RootTabView; the landing pushes via the injected closures and hosts the guided session + sheets here.
 
@@ -108,8 +108,6 @@ private struct EntrenarLanding: View {
     /// «Empezar» from the mobility template stashes its (name, slots) here; the session starts on the
     /// sheet's dismiss so it never stacks on the templates sheet (FER-560).
     @State private var pendingMobility: (name: String, slots: [StrengthSessionModel.PlanSlot])? = nil
-    /// Drives the Recovery Detail sheet opened from the recovery chip (FER-557).
-    @State private var recoveryDetail: RecoveryDetailItem? = nil
     /// The Daily Brief's «Empezar» arrived (via `TabRouter`) before this view finished loading its
     /// prefetched slots — start today's session as soon as `load()` completes (FER-613).
     @State private var startWhenLoaded = false
@@ -144,7 +142,7 @@ private struct EntrenarLanding: View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 // FER-952 (owner): the «Train» wordmark + tab glyph row retired — the dock already
-                // names the tab; the recovery chip now rides the hero's «Hoy» line (see heroSection).
+                // names the tab.
                 if loaded {
                     if loadFailed {
                         loadErrorState       // store couldn't be read — «No pudimos leer tus rutinas · Reintentar»
@@ -203,11 +201,6 @@ private struct EntrenarLanding: View {
         .navigationDestination(isPresented: $showTricks) {
             WorkshopTricksScreen()
         }
-        // Recovery detail from the chip — same sheet Today/Cuerpo open; theme passed explicitly (it
-        // doesn't cross the `.sheet` boundary, FER-162), no nested NavigationStack (FER-171). (FER-557)
-        .sheet(item: $recoveryDetail) { item in
-            RecoveryDetailScreen(theme: theme, model: item.model)
-        }
         // «En vivo» from the expanded «Más formas» pill — the live-HR free workout, same sheet the
         // rest-day / other-ways screens present (theme passed explicitly; it doesn't cross `.sheet`).
         // FER-950: disc said «Rápido»/«Movilidad» but AppModel only re-opens the live session — make
@@ -250,51 +243,6 @@ private struct EntrenarLanding: View {
         if loaded { startToday() } else { startWhenLoaded = true }
     }
 
-    // MARK: - Header + recovery chip
-
-
-    /// The recovery chip: a small arc (`dataRecovery`) + the numeral. Tapping opens the Recovery Detail
-    /// sheet (same as Today/Cuerpo) — it does NOT switch tabs. The one glanceable point of color here.
-    private func recoveryChip(_ rec: Double) -> some View {
-        Button {
-            // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
-            // in under the same id (same pattern as Tendencias/Hoy).
-            let item = RecoveryDetailItem(model: .loading)
-            recoveryDetail = item
-            Task {
-                let m = await RecoveryDetailModel.buildDetached(repo: repo)
-                if recoveryDetail?.id == item.id {
-                    recoveryDetail = RecoveryDetailItem(id: item.id, model: m)
-                }
-            }
-        } label: {
-            HStack(spacing: 7) {
-                RecoveryChipRing(score: rec).frame(width: 22, height: 22)
-                Text("\(Int(rec.rounded()))")
-                    .font(InstrumentoType.groteskNumber(17, weight: .semibold)).foregroundStyle(theme.ink)
-            }
-            .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
-            .background(theme.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Recovery \(Int(rec.rounded())). See detail."))
-    }
-
-    /// Quiet chrome while recovery is still calibrating (no score). Same capsule + height as the live
-    /// chip so the header stays still; `inkDim` only (no datum color); not tappable. (FER-949)
-    private var recoveryChipPlaceholder: some View {
-        Text(verbatim: "—")
-            .font(InstrumentoType.groteskNumber(17, weight: .semibold))
-            .foregroundStyle(theme.inkDim)
-            .frame(minWidth: 22, minHeight: 22)   // match the live chip's ring box so height doesn't jump
-            .padding(.leading, 8).padding(.trailing, 11).padding(.vertical, 5)
-            .background(theme.surface, in: Capsule())
-            .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text("Recovery, calibrating"))
-    }
-
     // MARK: - ① Open hero + «Empezar» + discs (handoff v4b, FER-939)
     //
     // The hero sits OPEN on the paper — no card, no border. Hierarchy by space (Instrumento): the
@@ -304,13 +252,8 @@ private struct EntrenarLanding: View {
 
     private var heroSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // FER-952 (owner): the recovery chip rides the «Hoy» line — trailing, at the overline's height.
-            HStack(alignment: .center, spacing: 8) {
-                Text(hoyOverline)
-                    .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
-                if let rec = recovery { recoveryChip(rec) } else { recoveryChipPlaceholder }
-            }
+            Text(hoyOverline)
+                .groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
             if let r = todayRoutine {
                 // «Bisel»: la marca de familia es una regla vertical, no un cuadro en línea. El cuadro vivía
                 // dentro del HStack, así que le robaba ancho al título y lo empujaba a la derecha; con
@@ -1432,29 +1375,6 @@ private struct DiscPressStyle: ButtonStyle {
             .scaleEffect(!reduceMotion && configuration.isPressed ? 0.93 : 1)
             .opacity(reduceMotion && configuration.isPressed ? 0.7 : 1)
             .animation(StrandMotion.interactive, value: configuration.isPressed)
-    }
-}
-
-// MARK: - Recovery chip ring (FER-534)
-
-/// A small 240° recovery arc in the `dataRecovery` token — no bloom, no bead (the full `RecoveryRing` is
-/// geometry-heavy for a 22pt chip). The fraction of the arc filled reads as the score; the caller draws
-/// the numeral beside it. Single-token color (not the multi-stop ring gradient) so the chip stays
-/// token-pure at 22pt, where the gradient nuance wouldn't read anyway.
-private struct RecoveryChipRing: View {
-    @Environment(\.instrumentoTheme) private var theme
-    let score: Double   // 0…100
-
-    var body: some View {
-        let frac = max(0, min(1, score / 100))
-        ZStack {
-            Circle().trim(from: 0, to: 0.75)
-                .stroke(theme.hairline, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .rotationEffect(.degrees(135))
-            Circle().trim(from: 0, to: 0.75 * frac)
-                .stroke(theme.dataRecovery, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .rotationEffect(.degrees(135))
-        }
     }
 }
 
