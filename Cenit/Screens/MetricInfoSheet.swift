@@ -23,18 +23,6 @@ struct MetricInfoSheet: View {
     /// reading and an Apple fallback for the same metric badge differently.
     var appleSource: Bool = false
 
-    /// Loads today's accumulated-strain curve. Supplied only for the Day Strain sheet; nil for every
-    /// other metric (and on macOS). Run lazily when the sheet appears. (FER-110)
-    var strainCurveLoader: (() async -> [TrendPoint])? = nil
-
-    /// FER-732 · today's recommended day-strain ceiling (0–21), a personal recovery-scaled guardrail
-    /// (`StrainCeiling`). Supplied only for the strain sheet; nil hides the ceiling line.
-    var strainCeiling: Double? = nil
-
-    /// FER-732 · the habitual training window (`TrainingHabit`), derived from past session start hours.
-    /// Supplied only for the strain sheet; nil hides the amber band.
-    var trainingWindow: TrainingHabit.Window? = nil
-
     /// Loads today's 24h HR curve (5-minute buckets). Supplied only for the Heart Rate sheet; nil
     /// elsewhere (and on macOS). Run lazily when the sheet appears. (FER-137)
     var heartRateCurveLoader: (() async -> [TrendPoint])? = nil
@@ -63,8 +51,6 @@ struct MetricInfoSheet: View {
     /// falls back to the shared single-value layout, so no-data / Apple-only states stay unchanged.
     var sleepDetail: SleepDetailModel? = nil
 
-    @State private var strainCurve: [TrendPoint] = []
-    @State private var strainLoading = false
     @State private var heartRateCurve: [TrendPoint] = []
     @State private var heartRateLoading = false
     @State private var trendData: [TrendPoint] = []
@@ -139,12 +125,6 @@ struct MetricInfoSheet: View {
         .presentationDetents(strainDetents)
         .presentationDragIndicator(.visible)
         .sheetPaper(theme)
-        .task {
-            guard info.id == "strain", let loader = strainCurveLoader else { return }
-            strainLoading = true
-            strainCurve = await loader()
-            strainLoading = false
-        }
         .task {
             guard info.id == "heart_rate", let loader = heartRateCurveLoader else { return }
             heartRateLoading = true
@@ -234,12 +214,11 @@ struct MetricInfoSheet: View {
         sleepParaEstaNoche
     }
 
-    /// F2 (FER-710): Day Strain — verdict by level, then the intraday accumulated curve
-    /// (between the verdict and the selector) and the level instrument.
+    /// F2 (FER-710): Day Strain — verdict by level, then the level instrument. (The intraday «hora a
+    /// hora» curve was retired in FER-1025: without the band there's no per-second pulse to feed it.)
     @ViewBuilder private var strainSummaryContent: some View {
         vitalReading
         headlineText
-        strainIntradaySection
         levelsBlock
     }
 
@@ -263,11 +242,6 @@ struct MetricInfoSheet: View {
     /// Charts + bands for the classic (non-levels) middle slot. (FER-981)
     @ViewBuilder private var classicMiddleCharts: some View {
         if trendLoader != nil { trendSection }
-        // Day Strain's intraday "How today added up" curve sits in the SAME middle slot as
-        // the 14-day trend on every other metric — after the headline, before the reference
-        // bands — so chart placement reads consistently across all sheets. (strain has no
-        // trendLoader, so the two never both appear.)
-        if info.id == "strain" { strainSection }
         // Heart Rate's 24h curve sits in the same middle slot (it has no 14-day trendLoader,
         // so the two never both appear). (FER-137)
         if info.id == "heart_rate" { heartRateSection }
@@ -1163,144 +1137,6 @@ struct MetricInfoSheet: View {
         return m > 0 ? "\(h)h \(m)m" : "\(h)h"
     }
 
-    // MARK: - Day-strain accumulation chart (FER-110)
-
-    /// "How today added up" — the day's strain building from 0 to the score in the header. Shows the
-    /// curve once loaded, a quiet placeholder while loading, and a short message when there isn't
-    /// enough of today's activity to chart.
-    @ViewBuilder private var strainSection: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            Text("How today added up")
-                .font(StrandFont.headline)
-                .foregroundStyle(theme.ink)
-            if strainCurve.count > 1 {
-                TrendChart(
-                    points: strainCurve,
-                    gradient: chartGradient,
-                    valueRange: strainCurveRange,
-                    showsArea: true,
-                    height: 132,
-                    showsScrub: true,
-                    valueFormat: { String(format: "%.1f", $0) },
-                    dateFormat: { Self.hourString($0) },
-                    axisLabelColor: theme.inkTertiary,
-                    gridLineColor: theme.hairline,
-                    accessibilityLabel: "Accumulated day strain, rising through the day."
-                )
-            } else if strainLoading {
-                ChartWell(theme).loading(height: 132)
-            } else {
-                ChartWell(theme).empty(icon: "chart.xyaxis.line", text: "Not enough activity yet today to chart.")
-            }
-        }
-    }
-
-    /// Auto-scale the Y axis to the day's own buildup (0 → a little above the peak) so a low-strain
-    /// day still reads as a clear curve instead of a flat line pinned to the 0–21 floor.
-    private var strainCurveRange: ClosedRange<Double> {
-        let peak = strainCurve.map(\.value).max() ?? 1
-        return 0...max(peak * 1.15, 1)
-    }
-
-    private static let hourFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.setLocalizedDateFormatFromTemplate("j")   // locale hour, 12/24h per region
-        return f
-    }()
-    private static func hourString(_ date: Date) -> String { hourFormatter.string(from: date) }
-
-    // MARK: - Day-strain intraday curve (FER-730 §5)
-
-    /// «Hoy, hora a hora»: today's accumulated strain — solid through the lived portion, a flat dashed
-    /// projection from «now» to midnight (strain only accumulates, so the honest projection is «if you
-    /// stop here»), a breathing dot at now, and a fixed 00/6/12/18/24 axis. When the real data exists it
-    /// also draws the recommended ceiling (`StrainCeiling`, a dashed ink guardrail) and the habitual
-    /// training window (`TrainingHabit`, an amber band); each is omitted when its source is absent, so the
-    /// curve stays exactly as it was when neither is available. (§5, FER-732)
-    @ViewBuilder private var strainIntradaySection: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            Text("Today, hour by hour").groteskOverline().foregroundStyle(theme.inkTertiary)
-            if strainCurve.count > 1 {
-                StrainIntradayCurve(points: strainCurve, hue: theme.dataStrain, theme: theme,
-                                    ceiling: strainCeiling, window: trainingWindow)
-                    .frame(height: 130)
-                    .accessibilityElement()
-                    .accessibilityLabel(strainCurveAxLabel)
-                    // FER-977: the datum VoiceOver was missing — today's accumulated day strain so far.
-                    .accessibilityValue(Text(strainCurve.last.map { String(format: "%.1f", $0.value) } ?? ""))
-                HStack(spacing: 16) {
-                    curveLegend(dashed: false, label: "lived")
-                    curveLegend(dashed: true, label: "projected")
-                    if strainCeiling != nil { ceilingLegend }
-                    if trainingWindow != nil { windowLegend }
-                }
-                if strainCeiling != nil {
-                    // Honest framing (FER-732 / CSO): the ceiling is a personal reference, not a goal
-                    // or a medical instruction, and you can pass it.
-                    Text("Your ceiling is a reference from your recent load and how recovered you woke up. It is context, not a goal, and you can go past it.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            } else if strainLoading {
-                ChartWell(theme).loading(height: 130)
-            } else {
-                ChartWell(theme).empty(icon: "chart.xyaxis.line", text: "Not enough activity yet today to chart.")
-            }
-        }
-    }
-
-    /// One legend entry: a short solid swatch, or three dashes, in the strain hue + its label.
-    private func curveLegend(dashed: Bool, label: LocalizedStringKey) -> some View {
-        HStack(spacing: 5) {
-            if dashed {
-                HStack(spacing: 3) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Capsule().fill(theme.dataStrain.opacity(0.75)).frame(width: 3, height: 2.4) // token-exempt: >0.70 (swatch de leyenda)
-                    }
-                }
-            } else {
-                Capsule().fill(theme.dataStrain).frame(width: 14, height: 2.4)
-            }
-            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// Legend entry for the recommended ceiling: a short dashed ink line. (FER-732)
-    private var ceilingLegend: some View {
-        HStack(spacing: 5) {
-            HStack(spacing: 3) {
-                ForEach(0..<3, id: \.self) { _ in
-                    Capsule().fill(theme.inkSecondary.opacity(StrandOpacity.muted)).frame(width: 3, height: 1.6)
-                }
-            }
-            Text("ceiling").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// Legend entry for the habitual training window: a small amber swatch. (FER-732)
-    private var windowLegend: some View {
-        HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 2).fill(theme.warning.opacity(StrandOpacity.tintFillStrong)).frame(width: 14, height: 9) // token-exempt: geometría de dato (swatch r2)
-            Text("your training").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    /// VoiceOver label for the curve, naming the ceiling / window only when they are actually drawn. (FER-732)
-    private var strainCurveAxLabel: Text {
-        var s = String(localized: "Accumulated day strain, rising through the day and projected flat to midnight.")
-        if strainCeiling != nil {
-            s += " " + String(localized: "A dashed line marks your recommended ceiling for today.")
-        }
-        if trainingWindow != nil {
-            s += " " + String(localized: "An amber band marks when you usually train.")
-        }
-        return Text(s)
-    }
-
     // MARK: - Recovery weight breakdown + method disclosure (FER-108)
 
     /// Cold-start progress: "Calibrating baseline" over a thin recovery-tinted track, shown instead of
@@ -1512,28 +1348,7 @@ struct MetricInfoSheet: View {
 // MARK: - Preview
 
 #if DEBUG
-/// A rising sample curve from local midnight, ending at `score`, for previews/renders.
-private func sampleStrainCurve(score: Double) -> [TrendPoint] {
-    let midnight = Calendar.current.startOfDay(for: Date())
-    let shape: [(h: Double, f: Double)] = [
-        (0, 0), (6.5, 0.09), (8, 0.19), (10, 0.32), (12, 0.49),
-        (12.75, 0.67), (13.25, 0.80), (14, 0.90), (15, 1.0),
-    ]
-    return shape.map { p in
-        TrendPoint(date: midnight.addingTimeInterval(p.h * 3600), value: score * p.f)
-    }
-}
-
-#Preview("MetricInfoSheet: Strain (curve)") {
-    Color.clear.sheet(isPresented: .constant(true)) {
-        MetricInfoSheet(info: .strain(11.5),
-                        strainCurveLoader: { sampleStrainCurve(score: 11.5) },
-                        strainCeiling: 14.2,
-                        trainingWindow: TrainingHabit.Window(start: 16.5, end: 18.5))
-    }
-}
-
-#Preview("MetricInfoSheet: Strain (no data)") {
+#Preview("MetricInfoSheet: Strain") {
     Color.clear.sheet(isPresented: .constant(true)) {
         MetricInfoSheet(info: .strain(3.9))
     }

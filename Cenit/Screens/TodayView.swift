@@ -186,9 +186,6 @@ struct TodayView: View {
     @State private var hasSplit = false
     @State private var todayRoutineName: String? = nil
     @State private var trainingStreak = 0
-    /// FER-732 · the habitual training window (median session-start hour ± 1 SD) for the strain sheet's
-    /// amber band. nil until enough past sessions exist. Loaded with the plan block from the same store.
-    @State private var trainingWindow: TrainingHabit.Window? = nil
 
     // «La conexión de hoy» — la correlación más relevante del día (FER-614). Cargados en `loadAll` vía el
     // loader compartido `InsightsProvider`, así la conexión del brief == la que muestra Patrones (mismo FDR).
@@ -560,8 +557,7 @@ struct TodayView: View {
                     .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in
-                StrainDetailScreen(theme: theme, model: item.model,
-                                   curveLoader: { await loadStrainCurve() }, estimated: item.estimated)
+                StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated)
                     .recEntranceGate()
             }
             .sheet(item: $skinTempDetail) { item in
@@ -660,9 +656,6 @@ struct TodayView: View {
             theme: theme,
             appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
             appleSource: fromApple && info.displayValue != "—",
-            strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
-            strainCeiling: info.id == "strain" ? strainCeiling : nil,
-            trainingWindow: info.id == "strain" ? trainingWindow : nil,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id),
             onSeeMore: seeMoreAction(for: info.id),
@@ -2340,9 +2333,9 @@ struct TodayView: View {
         // reemplaza a SpO₂ en la retícula (SpO₂ sólo venía de Apple Salud; la temperatura de piel es señal
         // real de la banda en reposo, así que gana el tile). Sigue accesible el Detalle desde Cuerpo.
         let skinTempR = latestFromDisplay { $0.skinTempDevC }
-        // Esfuerzo del día en curso: el valor VIVO (fin de la curva intradía), no el score asentado —
-        // así el tile, el héroe del Detalle y la curva muestran UN solo número (FER-650). Cae al asentado
-        // mientras el vivo aún no se computa. Los días pasados no lo tocan.
+        // Esfuerzo del día: el score asentado (`displayedDayStrain`) — el mismo número que muestra el
+        // héroe del Detalle de Esfuerzo (la curva intradía «hora a hora» se retiró en FER-1025). Los
+        // días pasados no lo tocan.
         // FER-883: Apple workout-HR estimate → label «Day load» + source .apple; band days unchanged.
         let strainT = model.displayedDayStrain
         let strainEstimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
@@ -2791,22 +2784,6 @@ struct TodayView: View {
         hasSplit = !split.isEmpty
         todayRoutineName = tid.flatMap { byId[$0]?.name }
         trainingStreak = TrainingStreak.streak(sessions: sessions, split: split)
-        // FER-732 · habitual training window from past session START hours (local clock). The split holds
-        // no time, so this habit is the only honest source; TrainingHabit returns nil below its minimum.
-        let cal = Calendar.current
-        let startHours = sessions.map { s -> Double in
-            let comps = cal.dateComponents([.hour, .minute], from: Date(timeIntervalSince1970: TimeInterval(s.startTs)))
-            return Double(comps.hour ?? 0) + Double(comps.minute ?? 0) / 60
-        }
-        trainingWindow = TrainingHabit.window(startHours: startHours)
-    }
-
-    /// FER-732 · today's recommended day-strain ceiling for the strain sheet — a personal, recovery-scaled
-    /// guardrail (`StrainCeiling`), nil until there is enough chronic history and a recovery score. Reads the
-    /// SAME `repo.days` + surfaced recovery the tiles use, so it never disagrees with the shown numbers.
-    private var strainCeiling: Double? {
-        StrainCeiling.recommend(days: repo.days, recovery: repo.today?.recovery,
-                                today: Repository.localDayKey(Date()))?.strain
     }
 
     // MARK: - 14-day trend loader (all platforms)
@@ -2831,8 +2808,7 @@ struct TodayView: View {
 
     /// Returns a loader closure for the given metric id, picking the matching `DailyMetric` field.
     /// Called inline when the MetricInfoSheet is created; runs lazily once the sheet appears. Strain
-    /// returns nil: its sheet already carries a dedicated intraday "How today added up" curve, so a
-    /// second 14-day line chart would be redundant.
+    /// returns nil: it shows its verdict + levels instrument, not a 14-day line chart.
     private func trendLoader(for id: String) -> (() async -> [TrendPoint])? {
         // Stress isn't a stored `DailyMetric` field — it's the derived 0–3 proxy the tile's
         // `StressModel` already computed. Reuse that history so its info sheet shows the same 14-day
@@ -2850,7 +2826,7 @@ struct TodayView: View {
         case "spo2":      pick = { $0.spo2Pct }
         case "skin_temp": pick = { $0.skinTempDevC }
         case "steps":     pick = { $0.steps.map(Double.init) }
-        default:          return nil   // strain (own intraday curve) and anything else: no 14-day trend
+        default:          return nil   // strain (verdict + levels only) and anything else: no 14-day trend
         }
         return { await self.loadTrend(pick: pick) }
     }
@@ -2915,20 +2891,6 @@ struct TodayView: View {
         let cutoff = Calendar.current.date(byAdding: .day, value: -window, to: Date()) ?? Date()
         return trend.filter { $0.date >= cutoff }
     }
-
-    #if os(iOS)
-    /// Today's accumulated-strain curve for the Day Strain info sheet (FER-110). Reads today's HR
-    /// (local midnight → now) and runs it through the SAME strain parameters as the daily score — the
-    /// user's HRmax, today's resting HR, sex — so the curve's last point lands on the Day Strain value
-    /// shown in the header. Loaded lazily when the sheet opens. Returns [] when there's no score yet or
-    /// too little activity, so the sheet shows its "not enough activity" state.
-    private func loadStrainCurve() async -> [TrendPoint] {
-        // Single canonical derivation + builder (FER-650): AppModel owns the params, window and midnight
-        // anchor so the tile, the hero and this curve can never disagree. It also publishes
-        // `the live day-strain value` (= the last point) as a side effect.
-        await model.strainCurveTrendPoints()
-    }
-    #endif
 
     // MARK: - Loaders for the rich vital Detalle drilled into via "Ver más" (FER-251)
     //

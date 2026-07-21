@@ -218,7 +218,7 @@ private struct CuerpoLanding: View {
     /// old dark sleep screen (built fresh on tap from the in-memory dashboard), theme passed explicitly.
     @State private var sleepDetail: SleepDetailItem? = nil
     /// Light «Instrumento» Detalle de Esfuerzo (FER-238) — the «Day Strain» row now opens this rich detail
-    /// (curva intradía + zonas + tendencia + método) instead of the legacy `MetricInfoSheet`. Hoy unchanged.
+    /// (héroe + zonas + tendencia + método) instead of the legacy `MetricInfoSheet`. Hoy unchanged.
     @State private var strainDetail: StrainDetailItem? = nil
     /// Light «Instrumento» Detalle de Estrés (FER-241) — the «Stress» row now opens this dedicated screen
     /// (valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto), theme passed explicitly. SOLO
@@ -453,8 +453,7 @@ private struct CuerpoLanding: View {
         } else if let item = recoveryDetail {
             RecoveryDetailScreen(theme: theme, model: item.model)
         } else if let item = strainDetail {
-            StrainDetailScreen(theme: theme, model: item.model, curveLoader: { await loadStrainCurve() },
-                               estimated: item.estimated)
+            StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated)
         } else if let item = sleepDetail {
             SleepDetailScreen(theme: theme, model: item.model,
                               loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
@@ -892,18 +891,17 @@ private struct CuerpoLanding: View {
     }
 
     private var strainStat: some View {
-        // Valor VIVO del día en curso (fin de la curva intradía), no el score asentado — una sola
-        // derivación alimenta este número, el héroe del Detalle y la curva (FER-650). Cae al asentado
-        // mientras el vivo aún no se computa. FER-883: on a band-less Apple day the label flips to
-        // «Day load» + originApple; band days stay byte-identical ("Day Strain" / originComputed).
+        // El score asentado del día (`displayedDayStrain`) — el mismo número que muestra el héroe del
+        // Detalle de Esfuerzo (la curva intradía «hora a hora» se retiró en FER-1025). FER-883: on a
+        // band-less Apple day the label flips to «Day load» + originApple; band days stay
+        // byte-identical ("Day Strain" / originComputed).
         let v = model.displayedDayStrain
         let estimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
         return statColumn(estimated ? "Day load" : "Day Strain", value: v.map { String(format: "%.1f", $0) },
                           color: theme.dataStrain,
                           spark: windowedSpark { $0.strain }) {
-            // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard;
-            // the intraday curve loads async in the screen via `loadStrainCurve`. (Hoy still uses
-            // `MetricInfo.strain`/`MetricInfoSheet`.) FER-954: present the loading state IMMEDIATELY;
+            // Opens the rich Detalle de Esfuerzo (FER-238) — built fresh from the in-memory dashboard.
+            // (Hoy still uses `MetricInfo.strain`/`MetricInfoSheet`.) FER-954: present the loading state IMMEDIATELY;
             // the model builds off-main and swaps in under the same id (same pattern as `sleepStat`).
             let estimatedNow = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
             let item = StrainDetailItem(model: .loading, estimated: estimatedNow)
@@ -1232,7 +1230,6 @@ private struct CuerpoLanding: View {
             info: info,
             theme: theme,
             appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
-            strainCurveLoader: info.id == "strain" ? { await loadStrainCurve() } : nil,
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
             trendLoader: trendLoader(for: info.id)
         )
@@ -1504,8 +1501,8 @@ private struct CuerpoLanding: View {
         return .init(hf: hfBand, lf: band(lf), total: totalVal)
     }
 
-    /// The 14-day trend loader the `MetricInfoSheet` runs lazily. Strain returns nil (it has its own
-    /// intraday "How today added up" curve); resp/skin_temp aren't routed here (they open the catalog).
+    /// The 14-day trend loader the `MetricInfoSheet` runs lazily. Strain returns nil (it shows its
+    /// verdict + levels instrument, not a 14-day chart); resp/skin_temp aren't routed here (they open the catalog).
     private func trendLoader(for id: String) -> (() async -> [TrendPoint])? {
         let pick: (DailyMetric) -> Double?
         switch id {
@@ -1518,13 +1515,6 @@ private struct CuerpoLanding: View {
         default:         return nil
         }
         return { await self.loadTrend(pick: pick) }
-    }
-
-    /// Today's accumulated-strain curve for the Day Strain sheet — the ONE canonical builder
-    /// (`model.strainCurveTrendPoints`, FER-650) so its last point lands exactly on the header value and the
-    /// Hoy tile. [] when there's no score / too little data.
-    private func loadStrainCurve() async -> [TrendPoint] {
-        await model.strainCurveTrendPoints()
     }
 
     // MARK: - Value resolution + helpers (mirror Today)
