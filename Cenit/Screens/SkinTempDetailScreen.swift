@@ -324,7 +324,7 @@ struct SkinTempDetailScreen: View {
     private var heroReading: LocalizedStringKey {
         guard let v = model.today else {
             if !model.series.isEmpty { return "No reading from last night yet: your recent history is below." }
-            return "No skin-temperature reading yet. Wear your strap overnight and open this again after it syncs."
+            return "No skin-temperature reading yet. Wear your Apple Watch to sleep and open this again after it syncs."
         }
         if abs(v) < 0.3 { return "Right around your usual nighttime baseline." }
         return v > 0 ? "A touch warmer than your baseline last night."
@@ -477,7 +477,7 @@ struct SkinTempDetailScreen: View {
         PieMetodo(theme: theme) {
             Metodo(title: String(localized: "How it's calculated"), theme: theme) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Each night your strap records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation.")
+                    Text("Each night your Apple Watch records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation.")
                         .font(StrandFont.subhead)
                         .foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)

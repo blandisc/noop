@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Cénit ya no te habla de una banda que no tienes / Cénit no longer mentions a fitness band you don't have.**
+  **ES** — Quedaban textos por toda la app que le hablaban a la banda —«ponte la banda esta noche», «tu banda afina la lectura», «medido con tu banda»— y hasta te sugerían usar una. Como Cénit ahora lee solo de Apple Salud y tu Apple Watch, esos mensajes le mentían a cualquiera que empieza desde cero (un teléfono nuevo nunca tiene datos de banda). Los reescribimos en lenguaje de Apple Watch / Apple Salud, quitamos las sugerencias de la banda, y ocultamos el experimento de fase de ciclo, que solo funcionaba con la temperatura de la banda. Además dejamos un chequeo automático que evita que ese tipo de copy se vuelva a colar.
+  **EN** — Copy across the app still spoke to a fitness band — "wear your strap tonight," "your strap sharpens the reading," "measured with your band" — and even suggested getting one. Since Cénit now reads only from Apple Health and your Apple Watch, those messages misled anyone starting fresh (a new phone never has band data). We rewrote them in Apple Watch / Apple Health language, dropped the band suggestions, and hid the cycle-phase experiment, which only worked with the band's temperature. We also added an automated check that keeps that kind of copy from slipping back in.
+  ([MetricInfoCatalog.swift](Cenit/Screens/MetricInfoCatalog.swift), [TodayView.swift](Cenit/Screens/TodayView.swift), [Tools/check-band-copy.py](Tools/check-band-copy.py))
+
 - **Abrir la app ya no rearma el tablero dos veces.** Al volver a Cénit, antes se reensamblaba el tablero completo dos veces por cada apertura (desperdicio de trabajo y batería). Ahora se arma una sola vez: solo se fuerza un refresco cuando cambió el día —para que «Hoy» pase a la fecha correcta después de la medianoche aunque Apple Salud no traiga datos nuevos—; el resto de las aperturas se apoyan en el refresco que ya hace la sincronización.
 
 - **La Carga del día deja de mostrar una gráfica «hora a hora» que ya no tenía cómo llenarse / Day Strain drops an "hour by hour" chart that could no longer fill.**

@@ -1255,7 +1255,7 @@ struct WorkoutSessionDetailScreen: View {
                 // el hue del dato (dataHeart) no marca procedencia (§8.7, auditoría FER-952).
                 HStack(spacing: 5) {
                     Circle().fill(theme.originBand).frame(width: 5, height: 5)
-                    Text("Measured with your band")
+                    Text("Measured on device")
                         .font(StrandFont.caption).foregroundStyle(theme.ink)
                 }
                 .padding(.horizontal, 9).padding(.vertical, 3)

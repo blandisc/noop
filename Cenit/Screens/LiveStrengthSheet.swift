@@ -2043,7 +2043,7 @@ struct LiveStrengthSheet: View {
             }
             .frame(width: 232, height: 232)
             .frame(maxWidth: .infinity)
-            Text(noStrapFallback ? String(localized: "No strap signal: resting by time, 5 min cap")
+            Text(noStrapFallback ? String(localized: "No heart-rate signal: resting by time, 5 min cap")
                                   : String(localized: "Rings and buzzes when it ends."))
                 .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -3127,7 +3127,7 @@ struct LiveStrengthSheet: View {
                 .foregroundStyle(remaining == 0 ? theme.dataRecovery : theme.ink)
                 .contentTransition(.numericText())
             if noStrapFallback {
-                Text("No strap signal: resting by time, 5 min cap")
+                Text("No heart-rate signal: resting by time, 5 min cap")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
         }

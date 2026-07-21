@@ -528,7 +528,7 @@ struct MetricDetailScreen: View {
         VStack(alignment: .leading, spacing: 8) {
             QueLaMueveHeader("What moves it", chip: "trend, not cause", theme: theme)
             if whatMovesItFindings.isEmpty {
-                Text("Not enough data yet: keep wearing your strap and check back in a few weeks.")
+                Text("Not enough data yet: keep wearing your Apple Watch and check back in a few weeks.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
@@ -1692,7 +1692,7 @@ struct MetricDetailScreen: View {
             Text("No VO₂max yet")
                 .font(InstrumentoType.groteskHeadline(17))
                 .foregroundStyle(theme.ink)
-            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the strap.")
+            Text("Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal.")
                 .font(StrandFont.subhead)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
