@@ -87,6 +87,8 @@ private struct PatronesLanding: View {
     @State private var info: BucleInfo? = nil
     /// The running experiment whose detail sheet is open (racha + effect chart). FER-462/2b.
     @State private var experimentDetail: ExperimentItem? = nil
+    /// Write failure banner (journal / experiment / reset) — same pattern as strength screens.
+    @State private var saveError = false
 
     /// Nights of own history the engine needs before it speaks with confidence.
     private static let calibrationTarget = 14
@@ -139,9 +141,13 @@ private struct PatronesLanding: View {
         }
         .sheet(item: $startLever) { item in
             StartExperimentSheet(insight: item.insight, theme: theme) { behavior, outcome, sign in
-                await repo.startExperiment(behavior: behavior, outcome: outcome, expectedSign: sign)
-                startLever = nil
-                await load()
+                do {
+                    _ = try await repo.startExperiment(behavior: behavior, outcome: outcome, expectedSign: sign)
+                    startLever = nil
+                    await load()
+                } catch {
+                    saveError = true
+                }
             }
             .instrumentoTheme(theme)
         }
@@ -166,10 +172,14 @@ private struct PatronesLanding: View {
         }
         .sheet(isPresented: $showDisena) {
             DisenaExperimentoSheet(theme: theme) { behavior, outcome, sign, window in
-                await repo.startExperiment(behavior: behavior, outcome: outcome,
-                                           expectedSign: sign, windowDays: window)
-                showDisena = false
-                await load()
+                do {
+                    _ = try await repo.startExperiment(behavior: behavior, outcome: outcome,
+                                                       expectedSign: sign, windowDays: window)
+                    showDisena = false
+                    await load()
+                } catch {
+                    saveError = true
+                }
             }
             .instrumentoTheme(theme)
             .environmentObject(repo)
@@ -190,13 +200,18 @@ private struct PatronesLanding: View {
                 .init(String(localized: "Keep my journal"), role: .primary),
                 .init(String(localized: "Delete what I logged"), role: .destructive) {
                     Task {
-                        await repo.resetContributedPatrones()
-                        dismissedExperimentId = ""
-                        await load()
+                        do {
+                            try await repo.resetContributedPatrones()
+                            dismissedExperimentId = ""
+                            await load()
+                        } catch {
+                            saveError = true
+                        }
                     }
                 }
             ]
         )
+        .saveErrorToast(isPresented: $saveError)
     }
 
     // MARK: Header
@@ -523,9 +538,13 @@ private struct PatronesLanding: View {
     private func checkInToggle(_ label: LocalizedStringKey, answeredYes: Bool, behavior: String) -> some View {
         Button {
             Task {
-                await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
-                                             question: behavior, answeredYes: answeredYes)
-                await load()
+                do {
+                    try await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
+                                                     question: behavior, answeredYes: answeredYes)
+                    await load()
+                } catch {
+                    saveError = true
+                }
             }
         } label: {
             Text(label).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
@@ -557,8 +576,13 @@ private struct PatronesLanding: View {
                 Spacer(minLength: 8)
                 Button {
                     Task {
-                        await repo.clearJournalAnswer(day: Repository.localDayKey(Date()), question: behavior)
-                        await load()
+                        do {
+                            try await repo.clearJournalAnswer(day: Repository.localDayKey(Date()),
+                                                              question: behavior)
+                            await load()
+                        } catch {
+                            saveError = true
+                        }
                     }
                 } label: {
                     Text("Undo").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary).underline()
@@ -732,10 +756,15 @@ private struct PatronesLanding: View {
 
     private func restartExperiment(_ exp: ExperimentRow) {
         Task {
-            dismissedExperimentId = exp.id
-            _ = await repo.startExperiment(behavior: exp.behavior, outcome: exp.outcome,
-                                           expectedSign: exp.expectedSign, windowDays: exp.windowDays)
-            await load()
+            do {
+                dismissedExperimentId = exp.id
+                _ = try await repo.startExperiment(behavior: exp.behavior, outcome: exp.outcome,
+                                                   expectedSign: exp.expectedSign,
+                                                   windowDays: exp.windowDays)
+                await load()
+            } catch {
+                saveError = true
+            }
         }
     }
 

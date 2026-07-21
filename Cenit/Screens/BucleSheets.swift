@@ -278,6 +278,7 @@ struct AnotaTuDiaSheet: View {
     @State private var importedQuestions: [String] = []
     /// Offsets (0…13) con algún hábito anotado — marca el puntito en la tira.
     @State private var daysWithData: Set<Int> = []
+    @State private var saveError = false
 
     /// Cuántos días hacia atrás muestra la tira (Hoy + 13).
     private static let historyDays = 14
@@ -333,6 +334,7 @@ struct AnotaTuDiaSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.paper.ignoresSafeArea())
+        .saveErrorToast(isPresented: $saveError)
         .task { await reload(scanHistory: true) }
     }
 
@@ -398,10 +400,14 @@ struct AnotaTuDiaSheet: View {
         return Button {
             guard isEditable else { return }
             Task {
-                if sel { await repo.clearJournalAnswer(day: dayKey, question: q) }
-                else { await repo.saveJournalAnswer(day: dayKey, question: q, answeredYes: value) }
-                await reload(scanHistory: true)
-                onChanged()
+                do {
+                    if sel { try await repo.clearJournalAnswer(day: dayKey, question: q) }
+                    else { try await repo.saveJournalAnswer(day: dayKey, question: q, answeredYes: value) }
+                    await reload(scanHistory: true)
+                    onChanged()
+                } catch {
+                    saveError = true
+                }
             }
         } label: {
             Text(label).font(StrandFont.captionNumber)
@@ -738,6 +744,7 @@ struct ExperimentDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var progress: ExperimentProgress?
     @State private var effect: ExperimentEffect?
+    @State private var saveError = false
 
     var body: some View {
         ScrollView {
@@ -757,6 +764,7 @@ struct ExperimentDetailSheet: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .presentationDragIndicator(.visible)
+        .saveErrorToast(isPresented: $saveError)
         .task { await reload() }
     }
 
@@ -861,10 +869,14 @@ struct ExperimentDetailSheet: View {
     private func checkInToggle(_ label: LocalizedStringKey, answeredYes: Bool) -> some View {
         Button {
             Task {
-                await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
-                                             question: row.behavior, answeredYes: answeredYes)
-                await reload()
-                onChanged()
+                do {
+                    try await repo.saveJournalAnswer(day: Repository.localDayKey(Date()),
+                                                     question: row.behavior, answeredYes: answeredYes)
+                    await reload()
+                    onChanged()
+                } catch {
+                    saveError = true
+                }
             }
         } label: {
             Text(label).font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
@@ -886,7 +898,15 @@ struct ExperimentDetailSheet: View {
 
     private var cancel: some View {
         Button {
-            Task { await repo.cancelExperiment(row); onChanged(); dismiss() }
+            Task {
+                do {
+                    try await repo.cancelExperiment(row)
+                    onChanged()
+                    dismiss()
+                } catch {
+                    saveError = true
+                }
+            }
         } label: {
             Text("Cancel experiment").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                 .frame(maxWidth: .infinity)

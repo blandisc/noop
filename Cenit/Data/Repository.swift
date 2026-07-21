@@ -1013,17 +1013,17 @@ final class Repository: ObservableObject {
     }
 
     /// Write one native answer (day per the importer's wake-day convention).
-    func saveJournalAnswer(day: String, question: String, answeredYes: Bool, notes: String? = nil) async {
+    func saveJournalAnswer(day: String, question: String, answeredYes: Bool, notes: String? = nil) async throws {
         guard let store = await ensureStore() else { return }
-        _ = try? await store.upsertJournal(
+        _ = try await store.upsertJournal(
             [JournalEntry(day: day, question: question, answeredYes: answeredYes, notes: notes)],
             deviceId: Self.journalDeviceId)
     }
 
     /// Clear one native answer (never touches imported rows — scoped to the dedicated source id).
-    func clearJournalAnswer(day: String, question: String) async {
+    func clearJournalAnswer(day: String, question: String) async throws {
         guard let store = await ensureStore() else { return }
-        _ = try? await store.deleteJournal(deviceId: Self.journalDeviceId, day: day, question: question)
+        _ = try await store.deleteJournal(deviceId: Self.journalDeviceId, day: day, question: question)
     }
 
     // MARK: - N-of-1 experiments (FER-307)
@@ -1056,27 +1056,30 @@ final class Repository: ObservableObject {
         return out
     }
 
-    /// «Empezar de cero» (Patrones): wipe everything the user CONTRIBUTED — the native in-app journal
-    /// and every experiment (with its verdicts, so the derived proven levers clear too). It never touches
-    /// the imported WHOOP journal (a different source id) nor the biometric history the detected findings
-    /// are recomputed from — those aren't stored records, so they regenerate on their own. Irreversible.
-    func resetContributedPatrones() async {
+    /// «Empezar de cero» (Patrones): wipe everything the user CONTRIBUTED — the native in-app journal,
+    /// every experiment (with its verdicts, so the derived proven levers clear too), diet adherence marks,
+    /// and the derived `diet-adherence` metric series. It never touches the imported WHOOP journal (a
+    /// different source id) nor the biometric history the detected findings are recomputed from — those
+    /// aren't stored records, so they regenerate on their own. Irreversible.
+    func resetContributedPatrones() async throws {
         guard let store = await ensureStore() else { return }
-        _ = try? await store.deleteAllJournal(deviceId: Self.journalDeviceId)
-        _ = try? await store.deleteAllExperiments(deviceId: Self.journalDeviceId)
+        _ = try await store.deleteAllJournal(deviceId: Self.journalDeviceId)
+        _ = try await store.deleteAllExperiments(deviceId: Self.journalDeviceId)
+        try await store.deleteAllDietAdherence(deviceId: Self.journalDeviceId)
+        try await store.deleteMetricSeries(deviceId: Self.journalDeviceId, key: Self.dietAdherenceKey)
     }
 
     /// Start a 7-day experiment on a candidate lever. No-op (returns nil) if one already runs.
     @discardableResult
     func startExperiment(behavior: String, outcome: String, expectedSign: Int,
-                         windowDays: Int = 7) async -> ExperimentRow? {
+                         windowDays: Int = 7) async throws -> ExperimentRow? {
         guard let store = await ensureStore() else { return nil }
-        if (try? await store.activeExperiment(deviceId: Self.journalDeviceId)) != nil { return nil }   // one at a time
+        if try await store.activeExperiment(deviceId: Self.journalDeviceId) != nil { return nil }   // one at a time
         let now = Int(Date().timeIntervalSince1970)
         let row = ExperimentRow(id: UUID().uuidString, behavior: behavior, outcome: outcome,
                                 expectedSign: expectedSign, startDay: Self.localDayKey(Date()),
                                 windowDays: windowDays, status: .running, createdAt: now)
-        _ = try? await store.upsertExperiment(row, deviceId: Self.journalDeviceId)
+        _ = try await store.upsertExperiment(row, deviceId: Self.journalDeviceId)
         return row
     }
 
@@ -1113,9 +1116,9 @@ final class Repository: ObservableObject {
     }
 
     /// Persist a captured plan and make it the active one.
-    func saveDietPlan(_ row: DietPlanRow) async {
+    func saveDietPlan(_ row: DietPlanRow) async throws {
         guard let store = await ensureStore() else { return }
-        _ = try? await store.upsertDietPlan(row, deviceId: Self.journalDeviceId)
+        _ = try await store.upsertDietPlan(row, deviceId: Self.journalDeviceId)
     }
 
     /// The metric-series key under which each day's diet-adherence % is stored — a standard metric
@@ -1131,17 +1134,25 @@ final class Repository: ObservableObject {
     /// Record one meal's status, recompute the day's adherence %, persist it to `metricSeries`
     /// (key `diet-adherence`), and return the new % (nil if the plan has no meals). The metric point is
     /// written whenever at least one meal is marked — which it always is right after this upsert.
+    /// The primary adherence write throws on failure; a derived metric-series failure is logged only
+    /// (the meal mark already landed).
     @discardableResult
     func saveDietAdherence(day: String, mealId: String, status: DietMealStatus,
-                           plannedMeals: Int, optionIndex: Int? = nil) async -> Int? {
+                           plannedMeals: Int, optionIndex: Int? = nil) async throws -> Int? {
         guard let store = await ensureStore() else { return nil }
-        _ = try? await store.upsertDietAdherence(
+        _ = try await store.upsertDietAdherence(
             DietAdherenceRow(day: day, mealId: mealId, status: status, optionIndex: optionIndex),
             deviceId: Self.journalDeviceId)
         let rows = (try? await store.dietAdherence(deviceId: Self.journalDeviceId, day: day)) ?? []
         guard let pct = DietAdherence.dayPercent(statuses: rows.map(\.status), plannedMeals: plannedMeals) else { return nil }
-        _ = try? await store.upsertMetricSeries(
-            [MetricPoint(day: day, key: Self.dietAdherenceKey, value: Double(pct))], deviceId: Self.journalDeviceId)
+        do {
+            _ = try await store.upsertMetricSeries(
+                [MetricPoint(day: day, key: Self.dietAdherenceKey, value: Double(pct))],
+                deviceId: Self.journalDeviceId)
+        } catch {
+            // Primary adherence is durable; the sparkline point is derived. Don't lose the meal mark.
+            print("[saveDietAdherence] diet-adherence metricSeries upsert failed after adherence save: \(error)")
+        }
         return pct
     }
 
@@ -1166,11 +1177,11 @@ final class Repository: ObservableObject {
     }
 
     /// End a running experiment early, with no verdict.
-    func cancelExperiment(_ row: ExperimentRow) async {
+    func cancelExperiment(_ row: ExperimentRow) async throws {
         guard let store = await ensureStore() else { return }
         let canceled = Self.experimentRow(row, status: .canceled,
                                           decidedAt: Int(Date().timeIntervalSince1970))
-        _ = try? await store.upsertExperiment(canceled, deviceId: Self.journalDeviceId)
+        _ = try await store.upsertExperiment(canceled, deviceId: Self.journalDeviceId)
     }
 
     /// If a running experiment's window has elapsed (today ≥ startDay + windowDays), compute its
@@ -1213,7 +1224,12 @@ final class Repository: ObservableObject {
                                       effectSize: e?.cohensD, pValue: e?.pApprox, nWith: e?.nWith,
                                       nWithout: e?.nWithout, createdAt: exp.createdAt,
                                       decidedAt: Int(Date().timeIntervalSince1970))
-        _ = try? await store.upsertExperiment(completed, deviceId: Self.journalDeviceId)
+        // Autonomous (not a user write): don't surface to UI, but don't swallow silently either (FER-793).
+        do {
+            _ = try await store.upsertExperiment(completed, deviceId: Self.journalDeviceId)
+        } catch {
+            print("[FER-793] closeDueExperiment upsert failed for \(exp.id): \(error)")
+        }
     }
 
     /// The day key on which an experiment's window closes (startDay + windowDays, exclusive).
@@ -1307,25 +1323,41 @@ final class Repository: ObservableObject {
     ///  - editing a DETECTED bout ("Edit details…") replaces it with this manual row — the detected
     ///    original is dismissed durably so the re-detector doesn't bring it back (else both would show);
     ///  - editing a MANUAL row whose natural key (startTs/sport) changed deletes the stale strap row
-    ///    first (the (deviceId, startTs, sport) PK upsert would otherwise orphan it);
+    ///    after the upsert (insert-first: never delete the only copy before the new one lands);
     ///  - an IMPORTED row is never passed here as `replacing` (duplicating one is a pure add), so its
     ///    history is never touched.
-    func saveManualWorkout(_ row: WorkoutRow, replacing old: WorkoutRow? = nil) async {
+    /// Order is upsert → delete. If the delete fails after a successful upsert, the error is logged
+    /// (a visible duplicate is safer than losing the session).
+    func saveManualWorkout(_ row: WorkoutRow, replacing old: WorkoutRow? = nil) async throws {
         guard let store = await ensureStore() else { return }
+        _ = try await store.upsertWorkouts([row], deviceId: deviceId)
         if let old, WorkoutSource.classify(old.source) == .detected {
-            await dismissDetected(old)
+            // Durable dismiss so re-detect doesn't resurrect the bout; delete is best-effort after upsert.
+            let token = WorkoutSource.dismissedToken(for: old)
+            var spans = dismissedDetectedSpans
+            if !spans.contains(token) { spans.append(token); dismissedDetectedSpans = spans }
+            do {
+                _ = try await store.deleteWorkouts(deviceId: computedDeviceId, sport: old.sport,
+                                                   from: old.startTs, to: old.startTs)
+            } catch {
+                print("[saveManualWorkout] delete of detected original failed after upsert: \(error)")
+            }
         } else if let old, old.startTs != row.startTs || old.sport != row.sport {
-            _ = try? await store.deleteWorkouts(deviceId: deviceId, sport: old.sport,
-                                                from: old.startTs, to: old.startTs)
+            do {
+                _ = try await store.deleteWorkouts(deviceId: deviceId, sport: old.sport,
+                                                   from: old.startTs, to: old.startTs)
+            } catch {
+                print("[saveManualWorkout] delete of replaced row failed after upsert: \(error)")
+            }
         }
-        _ = try? await store.upsertWorkouts([row], deviceId: deviceId)
     }
 
     /// Re-label a detected bout: copy it to a manual strap row with the chosen sport, then delete the
     /// detected original. This survives analyzeRecent — the engine wipes + re-derives only sport
     /// "detected" rows under the computed id AND skips any re-derived bout overlapping a real strap
     /// workout, which this copy now is — so the same session is never re-created as a duplicate. (#107)
-    func relabelDetected(_ row: WorkoutRow, sport: String) async {
+    /// Upsert first; if the detected delete fails after a successful upsert, log (duplicate > loss).
+    func relabelDetected(_ row: WorkoutRow, sport: String) async throws {
         guard let store = await ensureStore() else { return }
         let trimmed = sport.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
@@ -1333,32 +1365,42 @@ final class Repository: ObservableObject {
                                 durationS: row.durationS, energyKcal: row.energyKcal,
                                 avgHr: row.avgHr, maxHr: row.maxHr, strain: row.strain,
                                 distanceM: row.distanceM, zonesJSON: row.zonesJSON, notes: row.notes)
-        _ = try? await store.upsertWorkouts([manual], deviceId: deviceId)
-        _ = try? await store.deleteWorkouts(deviceId: computedDeviceId, sport: "detected",
-                                            from: row.startTs, to: row.startTs)
+        _ = try await store.upsertWorkouts([manual], deviceId: deviceId)
+        do {
+            _ = try await store.deleteWorkouts(deviceId: computedDeviceId, sport: "detected",
+                                               from: row.startTs, to: row.startTs)
+        } catch {
+            print("[relabelDetected] delete of detected bout failed after upsert: \(error)")
+        }
     }
 
     /// Dismiss a DETECTED bout the user says isn't a workout. Records its span in the durable dismissed
     /// list (so a re-detect that recreates the same span stays hidden) AND deletes the current row so it
     /// disappears immediately. Idempotent: a span already present isn't duplicated. (#107)
-    func dismissDetected(_ row: WorkoutRow) async {
+    func dismissDetected(_ row: WorkoutRow) async throws {
         guard WorkoutSource.classify(row.source) == .detected else { return }
         let token = WorkoutSource.dismissedToken(for: row)
         var spans = dismissedDetectedSpans
         if !spans.contains(token) { spans.append(token); dismissedDetectedSpans = spans }
         guard let store = await ensureStore() else { return }
-        _ = try? await store.deleteWorkouts(deviceId: computedDeviceId, sport: row.sport,
-                                            from: row.startTs, to: row.startTs)
+        _ = try await store.deleteWorkouts(deviceId: computedDeviceId, sport: row.sport,
+                                           from: row.startTs, to: row.startTs)
     }
 
     /// Delete ONE workout by natural key. The read model has no deviceId, so reconstruct it from the
     /// source: detected rows live under the computed id (and also get their span dismissed so they don't
     /// come back); everything else the screen can delete (manual) lives under the strap id.
-    func deleteWorkout(_ row: WorkoutRow) async {
-        if WorkoutSource.classify(row.source) == .detected { await dismissDetected(row); return }
+    func deleteWorkout(_ row: WorkoutRow) async throws {
+        if WorkoutSource.classify(row.source) == .detected { try await dismissDetected(row); return }
         guard let store = await ensureStore() else { return }
-        _ = try? await store.deleteWorkouts(deviceId: deviceId, sport: row.sport,
-                                            from: row.startTs, to: row.startTs)
+        _ = try await store.deleteWorkouts(deviceId: deviceId, sport: row.sport,
+                                           from: row.startTs, to: row.startTs)
+    }
+
+    /// Test seam: attach an already-open store so unit tests drive writes against a tmp/in-memory DB
+    /// without opening the default App Support path.
+    func attachStoreForTesting(_ store: CenitStore) {
+        self.store = store
     }
 
     /// Apple Health daily aggregates (steps/energy/vo2/hr).

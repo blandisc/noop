@@ -58,6 +58,7 @@ struct DietCaptureView: View {
     // Manual capture (FER-403): the form being typed.
     @State private var manualPlanName = ""
     @State private var manualMeals: [ManualMeal] = [ManualMeal()]
+    @State private var saveError = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -79,6 +80,7 @@ struct DietCaptureView: View {
         }
         .background(theme.paper.ignoresSafeArea())
         .navigationTitle("Diet")
+        .saveErrorToast(isPresented: $saveError)
         .task { await loadIfNeeded() }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.json]) { result in
             handleImport(result)
@@ -803,10 +805,14 @@ struct DietCaptureView: View {
         let day = selectedDay
         let planned = mealsForDay(day).count   // the day's planned meals (semanal varies by weekday, FER-431)
         Task {
-            await repo.saveDietAdherence(day: day, mealId: mealId, status: status,
-                                         plannedMeals: planned, optionIndex: option)
-            adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(of: day), to: day)
-            await loadHeat()
+            do {
+                _ = try await repo.saveDietAdherence(day: day, mealId: mealId, status: status,
+                                                     plannedMeals: planned, optionIndex: option)
+                adherence7d = await repo.dietAdherenceSeries(from: Self.weekAgoKey(of: day), to: day)
+                await loadHeat()
+            } catch {
+                saveError = true
+            }
         }
     }
 
@@ -915,15 +921,19 @@ struct DietCaptureView: View {
             plan, id: UUID().uuidString, createdAt: Int(Date().timeIntervalSince1970)
         ) else { return }
         Task {
-            await repo.saveDietPlan(row)
-            activePlan = await repo.activeDietPlan()
-            activeParsed = plan
-            await loadTrackerData()
-            await DietReminderScheduler.reschedule(plan.meals)   // new plan → re-aim reminders (FER-412)
-            pasteText = ""
-            pendingPlan = nil
-            parseError = nil
-            phase = .landing
+            do {
+                try await repo.saveDietPlan(row)
+                activePlan = await repo.activeDietPlan()
+                activeParsed = plan
+                await loadTrackerData()
+                await DietReminderScheduler.reschedule(plan.meals)   // new plan → re-aim reminders (FER-412)
+                pasteText = ""
+                pendingPlan = nil
+                parseError = nil
+                phase = .landing
+            } catch {
+                saveError = true
+            }
         }
     }
 
