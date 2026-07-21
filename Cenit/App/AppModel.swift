@@ -206,10 +206,10 @@ import UIKit
         }
         #endif
 
-        // Turn the strap's offloaded raw data into dashboard scores on launch and every 15
-        // minutes, so recovery / strain / sleep populate from the strap itself with no import.
-        // IntelligenceEngine computes, persists under "strap-noop", and refreshes the dashboard.
-        startAnalysisLoop()
+        // Run the launch analysis sequence (first-paint → full refresh → migrations; band mode also
+        // keeps a periodic recompute). Launch-time only — foreground returns use
+        // `resumeForegroundAnalysis()` so the launch refresh isn't re-run each activation (FER-1024).
+        startAnalysis()
     }
 
     /// The exercise whose thumbnail is currently staged in the App Group, and the resulting file name —

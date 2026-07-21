@@ -10,15 +10,22 @@ import StrandTraining
 
 extension AppModel {
 
-    /// Start (or resume) the periodic on-device analysis loop. Idempotent — a call while the loop is
-    /// already running is a no-op, so the launch path and the scene-phase `.active` hook don't
-    /// double-start it. The loop refreshes the dashboard once; if today still has no verdict it runs
-    /// `analyzeRecent()` right away (the stored raw streams may already produce it — no reason to make
-    /// the morning verdict wait for the offload grace); then waits for the first offload and every
-    /// 15 min runs `analyzeRecent()` UNLESS a backfill or import is writing (it would compete with BLE
-    /// on the main actor and could score fresh raw rows against a stale baseline). Cancelled in
-    /// `stopAnalysisLoop()` when the app backgrounds (FER-177).
-    func startAnalysisLoop() {
+    /// Run the on-device analysis sequence, retained so `stopAnalysis()` can cancel it. Idempotent —
+    /// a call while it is already running is a no-op, so the launch path doesn't double-start it.
+    ///
+    /// It first runs the **launch refresh sequence** (first-paint → restore session → full refresh →
+    /// one-shot migrations); if today still has no verdict it runs `analyzeRecent()` right away (the
+    /// stored raw streams may already produce it — no reason to make the morning verdict wait for the
+    /// offload grace). ONLY in band mode (`usesWhoop`) does it then keep a periodic recompute alive,
+    /// waking every 15 min to run `analyzeRecent()` UNLESS a backfill/import is writing. Under the
+    /// Apple-only pin (FER-1003/1022) the `guard usesWhoop` below returns before any timer, so there is
+    /// no 15-min tick — the sequence is purely the launch refresh. Cancelled in `stopAnalysis()` when
+    /// the app backgrounds (FER-177).
+    ///
+    /// NOTE: this is a LAUNCH-time entry point. It is NOT re-invoked on every foreground return — that
+    /// would re-run the whole launch refresh each activation, concurrently with `HealthKitBridge.sync`,
+    /// assembling the dashboard twice. Foreground uses `resumeForegroundAnalysis()` instead (FER-1024).
+    func startAnalysis() {
         guard analysisTask == nil else { return }
         #if DEBUG
         // Screenshot fixtures seed a synthetic dashboard; the production loop would overwrite it.
@@ -63,11 +70,48 @@ extension AppModel {
         }
     }
 
-    /// Cancel the periodic analysis loop (app backgrounded / teardown). Any in-flight `analyzeRecent`
-    /// finishes its current pass, then the loop exits; the next `startAnalysisLoop()` begins fresh.
-    func stopAnalysisLoop() {
+    /// Cancel the analysis sequence (app backgrounded / teardown). Any in-flight `analyzeRecent`
+    /// finishes its current pass, then it exits; the next `startAnalysis()` begins fresh.
+    func stopAnalysis() {
         analysisTask?.cancel()
         analysisTask = nil
+    }
+
+    /// Foreground policy for the scene-phase `.active` handler. Replaces the old unconditional
+    /// `startAnalysisLoop()` re-run, which re-executed the ENTIRE launch refresh (first-paint + full
+    /// refresh) on every return to foreground — concurrently with `HealthKitBridge.sync`'s own
+    /// refresh, so the dashboard was assembled twice per activation (wasted work/battery; correct only
+    /// by luck of the `refreshGen` guard). Now at most ONE refresh per foreground, never two
+    /// concurrent (FER-1024):
+    ///  • Band mode (`usesWhoop`, dormant under the Apple-only pin) resumes its periodic recompute
+    ///    loop exactly as before — behaviour preserved.
+    ///  • Apple-only: the launch sequence already ran once at launch. Re-assemble ONLY if the day
+    ///    rolled over since the last published dashboard, so «Hoy» re-buckets to the new local day
+    ///    even when Apple has no new data (FER-224/226/630). Awaited by the caller BEFORE
+    ///    `HealthKitBridge.sync`, so the forced refresh and the sync's guarded refresh never overlap.
+    ///    A same-day foreground forces nothing — `HealthKitBridge.sync`'s FER-872/881 guard covers any
+    ///    genuinely new Apple data.
+    @MainActor
+    func resumeForegroundAnalysis() async {
+        guard sources.mode.usesWhoop else {
+            if Self.shouldForceRefreshOnForeground(lastPublishedDay: repo.lastRefreshDayKey,
+                                                   currentDay: Repository.localDayKey(Date())) {
+                await repo.refresh()
+            }
+            return
+        }
+        // Band mode: resume the periodic recompute cancelled on background (unchanged path).
+        startAnalysis()
+    }
+
+    /// Whether returning to the foreground must force a full dashboard rebuild: only when the day
+    /// rolled over since the dashboard was last assembled. Pure (no instance state) so a unit test can
+    /// pin the midnight matrix without a live AppModel — the risk this whole change turns on
+    /// (FER-1024). `nil` (nothing published yet) never forces: the launch sequence owns that path.
+    nonisolated static func shouldForceRefreshOnForeground(lastPublishedDay: String?,
+                                                           currentDay: String) -> Bool {
+        guard let lastPublishedDay else { return false }
+        return lastPublishedDay != currentDay
     }
 
     // MARK: - Baseline recalibration («Recalibrar recuperación», FER-677)

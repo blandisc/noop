@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Abrir la app ya no rearma el tablero dos veces.** Al volver a Cénit, antes se reensamblaba el tablero completo dos veces por cada apertura (desperdicio de trabajo y batería). Ahora se arma una sola vez: solo se fuerza un refresco cuando cambió el día —para que «Hoy» pase a la fecha correcta después de la medianoche aunque Apple Salud no traiga datos nuevos—; el resto de las aperturas se apoyan en el refresco que ya hace la sincronización.
+
 - **La Carga del día deja de mostrar una gráfica «hora a hora» que ya no tenía cómo llenarse / Day Strain drops an "hour by hour" chart that could no longer fill.**
   **ES** — El detalle de Carga del día traía una gráfica de cómo se iba acumulando tu esfuerzo durante el día. Esa curva se dibujaba con el pulso segundo a segundo de la banda; sin banda no hay con qué trazarla, así que mostraba para siempre un «no hay suficiente actividad todavía». La retiramos: el número de Carga del día —lo que sí se puede estimar desde tu Apple Watch— se queda igual, y el detalle ya no te enseña un hueco vacío. Reconstruir esa curva con el pulso de todo el día del Apple Watch quedó anotado como trabajo aparte.
   **EN** — The Day Strain detail carried a chart of how your effort built up through the day. That curve was drawn from the band's second-by-second pulse; without the band there's nothing to trace it, so it showed a permanent "not enough activity yet." We retired it: the Day Strain number — what your Apple Watch can actually estimate — stays exactly the same, and the detail no longer shows you an empty gap. Rebuilding that curve from the Apple Watch's all-day pulse is noted as separate future work.
