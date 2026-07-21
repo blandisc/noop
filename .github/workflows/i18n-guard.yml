@@ -11,12 +11,18 @@ on:
     paths:
       - 'Cenit/Screens/BucleView.swift'
       - 'Cenit/Screens/BucleSheets.swift'
+      - 'Cenit/Screens/TodayView.swift'
+      - 'Cenit/Screens/EntrenarView.swift'
+      - 'Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift'
       - 'Tools/check-hardcoded-strings.py'
       - '.github/workflows/i18n-guard.yml'
   push:
     paths:
       - 'Cenit/Screens/BucleView.swift'
       - 'Cenit/Screens/BucleSheets.swift'
+      - 'Cenit/Screens/TodayView.swift'
+      - 'Cenit/Screens/EntrenarView.swift'
+      - 'Packages/StrandDesign/Sources/StrandDesign/FiveRules.swift'
       - 'Tools/check-hardcoded-strings.py'
       - '.github/workflows/i18n-guard.yml'
   workflow_dispatch:
