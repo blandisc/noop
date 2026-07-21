@@ -125,20 +125,23 @@ struct CenitApp: App {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
-                // Resume the periodic on-device analysis loop (cancelled when we backgrounded). Idempotent,
-                // so the initial launch — where AppModel.init already started it — is a no-op here.
-                model.startAnalysisLoop()
                 model.drainPendingIntents()
                 Task {
+                    // FER-1024: one refresh per foreground, never two concurrent. `resumeForegroundAnalysis`
+                    // forces a rebuild ONLY when the day rolled over (so «Hoy» re-buckets past midnight even
+                    // with no new Apple data), and is awaited BEFORE the sync so the two never overlap. It
+                    // replaces the old `startAnalysisLoop()` here, which re-ran the whole launch refresh —
+                    // concurrently with the sync below — and assembled the dashboard twice per activation.
+                    await model.resumeForegroundAnalysis()
                     await health.sync(trigger: .foreground)   // FER-872: delta window + no-op refresh guard
                     // Snapshot the (possibly just-offloaded) strap history to iCloud Drive. Throttled
                     // to ~once a day and a no-op until the user picks a folder, so it's safe here.
                     await autoBackup.backupIfDue(checkpoint: { await model.repo.checkpointForBackup() })
                 }
             case .background:
-                // Stop the heavy 15-min analysis while NOOP is off screen, so it doesn't compete with
-                // BLE keep-alive / backfill on the main actor (FER-177).
-                model.stopAnalysisLoop()
+                // Stop the analysis sequence while NOOP is off screen, so the band-mode periodic recompute
+                // doesn't compete with BLE keep-alive / backfill on the main actor (FER-177).
+                model.stopAnalysis()
             case .inactive:
                 break   // transient (app switcher, Control Center) — keep the loop alive
             @unknown default:

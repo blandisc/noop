@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Abrir la app ya no rearma el tablero dos veces.** Al volver a Cénit, antes se reensamblaba el tablero completo dos veces por cada apertura (desperdicio de trabajo y batería). Ahora se arma una sola vez: solo se fuerza un refresco cuando cambió el día —para que «Hoy» pase a la fecha correcta después de la medianoche aunque Apple Salud no traiga datos nuevos—; el resto de las aperturas se apoyan en el refresco que ya hace la sincronización.
+
 ## 1.85 — iOS: Apple Salud only — la banda se retira, con integridad de datos y rendimiento reforzados
 
 El hito de este corte (2026-07-20) es que Cénit deja de usar la banda WHOOP y pasa a ser una app de Apple Salud: el soporte de banda se retira del producto y los datos históricos importados se conservan intactos y solo-lectura. Sobre esa base, una tanda de endurecimiento: guardados que avisan si fallan en vez de perder el dato en silencio, un error momentáneo de lectura que ya no vacía la pantalla, la Carga del día estimada que deja de releer años de pulso en cada refresco, y limpieza de restos internos de la banda. Todo sigue 100% en el dispositivo.

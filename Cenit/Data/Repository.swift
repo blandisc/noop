@@ -306,6 +306,15 @@ final class Repository: ObservableObject {
     /// can never clobber a newer dashboard. @MainActor-confined, so no races.
     private var refreshGen = 0
 
+    /// The local day key (`yyyy-MM-dd`) the last SUCCESSFULLY PUBLISHED dashboard was assembled for.
+    /// Set only when a pass actually publishes (never on the early-return read-failure path, which
+    /// keeps the prior dashboard). The foreground scene-phase handler compares it to the current day
+    /// (`AppModel.shouldForceRefreshOnForeground`) to force exactly one rebuild when the day rolled
+    /// over — so «Hoy» re-buckets to the new local day even when Apple has no new data to trigger
+    /// `HealthKitBridge.sync`'s own refresh (the FER-224/226/630 "Hoy shows yesterday after midnight"
+    /// class). Nil until the first publish. (FER-1024)
+    private(set) var lastRefreshDayKey: String?
+
     /// Whether a finished refresh pass may publish its dashboard. Pure so a unit test can pin the
     /// matrix: a stale generation never publishes; a first-paint pass never overwrites a dashboard
     /// that is already fully loaded (`fullyLoaded` is monotonic within a session).
@@ -438,6 +447,10 @@ final class Repository: ObservableObject {
         }
         // One assignment → one objectWillChange for the whole refresh (was four).
         self.dashboard = next
+        // FER-1024: record the local day this published dashboard belongs to, so a later foreground
+        // that crossed midnight forces a rebuild. Only set here — a failed read returns above without
+        // publishing, and must NOT advance this (its stale dashboard is still yesterday's).
+        lastRefreshDayKey = Self.localDayKey(now)
         #if DEBUG
         let ms = Int(Date().timeIntervalSince(now) * 1000)
         print("[refresh] \(full ? "full" : "firstPaint") publicado en \(ms) ms · \(next.days.count) días")
