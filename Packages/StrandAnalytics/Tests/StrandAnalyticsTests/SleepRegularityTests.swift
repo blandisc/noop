@@ -24,6 +24,31 @@ final class SleepRegularityTests: XCTestCase {
         return SleepRegularity.NightTiming(onset: onset, wake: wake)
     }
 
+    // MARK: - effectiveNightCount (FER-1026): main nights only, capped at windowNights
+
+    func testEffectiveNightCountCountsMainNightsOnly() {
+        // 7 main nights (8 h) + 5 naps (1 h) → 7; naps are dropped, matching compute().
+        var nights = (0..<7).map { i in night(String(format: "2026-03-%02d", i + 1), onsetHour: 23, hours: 8) }
+        nights += (0..<5).map { i in night(String(format: "2026-03-%02d", i + 10), onsetHour: 14, hours: 1) }
+        XCTAssertEqual(SleepRegularity.effectiveNightCount(nights), 7)
+    }
+
+    func testEffectiveNightCountCapsAtWindow() {
+        let nights = (0..<20).map { i in night(String(format: "2026-04-%02d", i + 1), onsetHour: 23, hours: 8) }
+        XCTAssertEqual(SleepRegularity.effectiveNightCount(nights), SleepRegularity.windowNights)
+    }
+
+    func testEffectiveNightCountEmptyIsZero() {
+        XCTAssertEqual(SleepRegularity.effectiveNightCount([]), 0)
+    }
+
+    /// Apple-derived nights (real onset/wake) feed compute() exactly like strap nights — the source is
+    /// irrelevant to the pure engine. This is the point of FER-1026: the app now passes `appleSleeps`.
+    func testComputeWorksOnAppleDerivedNights() {
+        let nights = (0..<7).map { i in night(String(format: "2026-05-%02d", i + 1), onsetHour: 23, hours: 8) }
+        XCTAssertNotNil(SleepRegularity.compute(nights, calendar: cal))
+    }
+
     // MARK: - Gate: fewer than 7 nights → nil (calibration, not a fake number)
 
     func testFewerThanMinNightsReturnsNil() {
