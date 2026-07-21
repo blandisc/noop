@@ -13,6 +13,11 @@ name: iOS App Compile Check
 on:
   pull_request:
     types: [labeled, opened, synchronize, reopened]
+  # Nightly compile gate over iOS (plan de remediación 2026-07-20): the app layer merges by default
+  # without any machine compiling it (the label gate went unused through the entire FER-1003 epic —
+  # 0% adoption). One scheduled run/day bounds the damage window at ~1 macOS-hour/day billable.
+  schedule:
+    - cron: '17 7 * * *'   # 07:17 UTC ≈ 01:17 CDMX, machine idle hours
   workflow_dispatch:
 
 concurrency:
@@ -23,6 +28,7 @@ jobs:
   compile-check:
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
       contains(github.event.pull_request.labels.*.name, 'ci-app')
     # macos-26 ships Xcode 26+ (iOS 26 SDK) — same reasoning as release.yaml.
     runs-on: macos-26
