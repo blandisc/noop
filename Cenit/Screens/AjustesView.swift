@@ -268,9 +268,13 @@ private struct AjustesLanding: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             section("Experimental") {
-                navRow("Cycle phase",
-                       subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
-                divider
+                // FER-1027: la fase de ciclo necesita la temperatura de la banda; sin banda queda oculta
+                // (el motor sigue dormido, no se borra). Reaparece si algún día vuelve el modo con banda.
+                if repo.dataSourceMode.usesWhoop {
+                    navRow("Cycle phase",
+                           subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
+                    divider
+                }
                 Toggle(isOn: $relojCorporalEnabled) {
                     Text("Lectura del reloj corporal").font(StrandFont.body).foregroundStyle(theme.ink)
                 }

@@ -427,7 +427,7 @@ struct TodayView: View {
             return nil   // neutro de carga (o veredicto, ya filtrado arriba): nada que explicar todavía
         case .calibrating:
             return usesWhoop
-                ? "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
+                ? "Your baseline is still settling. A couple more nights of sleep synced from your Apple Watch, and your day's verdict starts to show here."
                 : "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here."
         case .waiting:
             // Modificador «descargando» (ex-`.downloading`); si no, espera / base Apple.
@@ -569,7 +569,9 @@ struct TodayView: View {
                 // SAME rich detail Cuerpo presents — the «mapa del día» (chart + moments) + patterns,
                 // wired through the shared `StressDayMapPresenter` (FER-452). The cross-day pattern line
                 // is read-only (the Coach handoff was removed, Pase v2 #7).
-                StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
+                // FER-1027: el mapa intradía de estrés es de banda; en Apple-only no se muestra.
+                StressDetailScreen(theme: theme, model: item.model,
+                                   dayMap: repo.dataSourceMode.usesWhoop ? stressDayMap : nil,
                                    patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                        repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                    eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
@@ -1370,7 +1372,7 @@ struct TodayView: View {
             } else {
                 Text("No reading")
                     .font(InstrumentoType.groteskVerdict).foregroundStyle(theme.ink)
-                Text("connect your band or Apple Health")
+                Text("connect Apple Health")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -2067,7 +2069,7 @@ struct TodayView: View {
                     Text("Today's reading is missing")
                         .font(StrandFont.headline).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Use your band to add the one thing Apple Health can't: today's reading.")
+                    Text("Today's reading fills in once last night's sleep syncs from Apple Health.")
                         .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
@@ -2075,7 +2077,7 @@ struct TodayView: View {
                     Text("No reading yet")
                         .font(StrandFont.headline).foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("Connect Apple Health to start. Your strap sharpens the reading.")
+                    Text("Connect Apple Health to start.")
                         .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -2259,7 +2261,7 @@ struct TodayView: View {
                     Image(systemName: "sparkles").font(StrandFont.glyph(.chevron))
                     // Compacto (FER-202): la procedencia «base Apple Salud» se pliega aquí, en la misma línea
                     // de la etiqueta, en vez de un tercer renglón aparte — recorta alto para que Hoy quepa.
-                    Text("Sharpening with your strap")
+                    Text("Sharpening your baseline")
                         .font(StrandFont.caption)
                         .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate, at large Dynamic Type
                     if baselineFromApple {
@@ -2291,8 +2293,8 @@ struct TodayView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Calibration confidence"))
         .accessibilityValue(Text(baselineFromApple
-            ? "Sharpening with your strap, \(ownNights) of \(Baselines.minNightsTrust) nights. Your baseline comes from Apple Health."
-            : "Sharpening with your strap, \(ownNights) of \(Baselines.minNightsTrust) nights."))
+            ? "Sharpening your baseline, \(ownNights) of \(Baselines.minNightsTrust) nights. Your baseline comes from Apple Health."
+            : "Sharpening your baseline, \(ownNights) of \(Baselines.minNightsTrust) nights."))
     }
 
     /// El rótulo de la sección «Métricas de hoy» (handoff «Hoy · Estados»): un overline en tinta seguido de

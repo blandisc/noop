@@ -248,7 +248,7 @@ struct SleepDetailScreen: View {
                     .instrumentoHero(46)
                     .foregroundStyle(theme.inkTertiary)
                 Text(model.loaded
-                     ? "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends, or wear your band to bed and open this again once it syncs."
+                     ? "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends."
                      : "Loading your sleep history…")
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.ink)

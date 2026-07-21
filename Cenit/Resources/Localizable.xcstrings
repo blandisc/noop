@@ -3502,19 +3502,19 @@
         }
       }
     },
-    "%lld of 30 days · %lld from the strap, %lld Apple Health only" : {
+    "%lld of 30 days · %lld on-device, %lld Apple Health only" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld of 30 days · %lld from the strap, %lld Apple Health only"
+            "value" : "%lld of 30 days · %lld on-device, %lld Apple Health only"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld de 30 días · %lld desde la banda, %lld solo de Apple Salud"
+            "value" : "%lld de 30 días · %lld en el dispositivo, %lld solo de Apple Salud"
           }
         }
       }
@@ -3536,19 +3536,19 @@
         }
       }
     },
-    "%lld of 30 days from your strap" : {
+    "%lld of 30 days with data" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld of 30 days from your strap"
+            "value" : "%lld of 30 days with data"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld de 30 días desde tu banda"
+            "value" : "%lld de 30 días con datos"
           }
         }
       }
@@ -11420,19 +11420,19 @@
         }
       }
     },
-    "Calibrating: we need a few more nights of your strap." : {
+    "Calibrating: we need a few more nights of sleep." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calibrating: we need a few more nights of your strap."
+            "value" : "Calibrating: we need a few more nights of sleep."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calibrando, necesitamos unas noches más con tu banda."
+            "value" : "Calibrando: necesitamos unas noches más de sueño."
           }
         }
       }
@@ -11889,19 +11889,19 @@
         }
       }
     },
-    "Cénit reads your blood oxygen from Apple Health, your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise, altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter." : {
+    "Cénit reads your blood oxygen from Apple Health; the Apple Watch senses it optically at the wrist. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise, altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cénit reads your blood oxygen from Apple Health, your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise, altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter."
+            "value" : "Cénit reads your blood oxygen from Apple Health; the Apple Watch senses it optically at the wrist. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise, altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cénit lee tu oxígeno en sangre desde Apple Salud, tu banda lo detecta ópticamente en la muñeca, pero Cénit no lo convierte en porcentaje por su cuenta. Un adulto sano suele estar en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido, altitud, un resfriado, o cómo quedó el sensor. Una racha sostenida de noches bajas es lo que amerita revisarse con un oxímetro de dedo."
+            "value" : "Cénit lee tu oxígeno en sangre desde Apple Salud; el Apple Watch lo detecta ópticamente en la muñeca. Un adulto sano normalmente está en 95–100%; lecturas por debajo de 90% se consideran bajas (hipoxemia). Las noches bajas aisladas suelen ser ruido, altitud, un resfriado, o cómo quedó el sensor. Lo que vale la pena revisar con un oxímetro de dedo es una racha sostenida de noches bajas."
           }
         }
       }
@@ -12993,19 +12993,19 @@
         }
       }
     },
-    "Connect Apple Health to start. Your strap sharpens the reading." : {
+    "Connect Apple Health to start." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connect Apple Health to start. Your strap sharpens the reading."
+            "value" : "Connect Apple Health to start."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conecta Apple Salud para empezar. Tu banda afina la lectura."
+            "value" : "Conecta Apple Salud para empezar."
           }
         }
       }
@@ -13057,23 +13057,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conecta la banda para señales de vibración"
-          }
-        }
-      }
-    },
-    "connect your band or Apple Health" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "connect your band or Apple Health"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "conecta tu banda o Apple Salud"
           }
         }
       }
@@ -14187,19 +14170,19 @@
         }
       }
     },
-    "Data coverage for the last 30 days: %lld days with data. %lld days from the strap, %lld days Apple Health only, %lld days with no data." : {
+    "Data coverage for the last 30 days: %lld days with data. %lld days on-device, %lld days Apple Health only, %lld days with no data." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Data coverage for the last 30 days: %lld days with data. %lld days from the strap, %lld days Apple Health only, %lld days with no data."
+            "value" : "Data coverage for the last 30 days: %lld days with data. %lld days on-device, %lld days Apple Health only, %lld days with no data."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cobertura de datos de los últimos 30 días: %lld días con datos. %lld días desde la banda, %lld días solo de Apple Salud, %lld días sin datos."
+            "value" : "Cobertura de datos de los últimos 30 días: %lld días con datos. %lld días en el dispositivo, %lld días solo de Apple Salud, %lld días sin datos."
           }
         }
       }
@@ -16077,19 +16060,19 @@
         }
       }
     },
-    "Each night your strap records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation." : {
+    "Each night your Apple Watch records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each night your strap records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation."
+            "value" : "Each night your Apple Watch records skin temperature. We compare it with a rolling baseline of your own recent nights and report the difference in °C: so the value is always relative to you, not an absolute temperature. The trend and the spread are computed from that same nightly deviation."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada noche tu banda registra la temperatura de tu piel. La comparamos con una base móvil de tus propias noches recientes y reportamos la diferencia en °C, así el valor siempre es relativo a ti, no una temperatura absoluta. La tendencia y la dispersión se calculan de esa misma desviación nocturna."
+            "value" : "Cada noche tu Apple Watch registra la temperatura de tu piel. La comparamos con una línea base móvil de tus noches recientes y reportamos la diferencia en °C: así el valor siempre es relativo a ti, no una temperatura absoluta. La tendencia y la dispersión se calculan de esa misma desviación por noche."
           }
         }
       }
@@ -16128,19 +16111,19 @@
         }
       }
     },
-    "Each session is a workout from your strap, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)." : {
+    "Each session is a workout from Apple Health, an on-device capture, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each session is a workout from your strap, Apple Health, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)."
+            "value" : "Each session is a workout from Apple Health, an on-device capture, or a manual entry. The count and totals follow the range you pick above (widened if that range is empty)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada sesión es un entrenamiento de tu banda, Apple Salud o una entrada manual. El conteo y los totales siguen el rango que eliges arriba (se amplía si ese rango está vacío)."
+            "value" : "Cada sesión es un entrenamiento de Apple Salud, una captura en el dispositivo o una entrada manual. El conteo y los totales siguen el rango que eliges arriba (se amplía si ese rango está vacío)."
           }
         }
       }
@@ -16156,18 +16139,18 @@
         }
       }
     },
-    "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest." : {
+    "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your recovery: a low-recovery day gates everything to rest." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your strap recovery: a low-recovery day gates everything to rest."
+            "value" : "Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with your recovery: a low-recovery day gates everything to rest."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días: el curso temporal de la síntesis de proteína muscular (MacDougall 1995; Damas 2015). El color es relativo a tu músculo más cargado, así que lee cuáles de tus músculos están calientes ahora. El volumen semanal se juzga contra la banda de 10–20 series por semana (Schoenfeld 2017), una guía de hipertrofia por grupo muscular; el volumen mostrado está ponderado por involucramiento, así que los músculos secundarios cuentan menos. La recomendación lo cruza con la recuperación de tu banda: un día de recuperación baja lo manda todo a descanso."
+            "value" : "Cada serie suma carga a los músculos que trabaja y decae a la mitad cada dos días: el curso temporal de la síntesis de proteína muscular (MacDougall 1995; Damas 2015). El color es relativo a tu músculo más cargado, así que lee cuáles de tus músculos están calientes ahora. El volumen semanal se juzga contra la banda de 10–20 series por semana (Schoenfeld 2017), una guía de hipertrofia por grupo muscular; el volumen mostrado está ponderado por involucramiento, así que los músculos secundarios cuentan menos. La recomendación lo cruza con tu recuperación: un día de recuperación baja lo manda todo a descanso."
           }
         }
       }
@@ -16500,35 +16483,35 @@
         }
       }
     },
-    "Effort (0–21 scale) is computed only by your strap: this session doesn't carry it." : {
+    "Effort (0–21 scale) isn't available for this session." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effort (0–21 scale) is computed only by your strap: this session doesn't carry it."
+            "value" : "Effort (0–21 scale) isn't available for this session."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El esfuerzo (escala 0–21) solo lo calcula tu banda, esta sesión no lo trae."
+            "value" : "El esfuerzo (escala 0–21) no está disponible para esta sesión."
           }
         }
       }
     },
-    "Effort and heart rate are measured by your band. They can't be edited." : {
+    "Effort and heart rate were measured during the session. They can't be edited." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effort and heart rate are measured by your band. They can't be edited."
+            "value" : "Effort and heart rate were measured during the session. They can't be edited."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El esfuerzo y la frecuencia cardiaca los mide tu banda. No se editan."
+            "value" : "El esfuerzo y la frecuencia cardiaca se midieron en la sesión. No se editan."
           }
         }
       }
@@ -22321,36 +22304,36 @@
         }
       }
     },
-    "Keep wearing the band a few nights and it appears on its own: we don't show a half-finished number." : {
+    "As more nights sync, it appears on its own: we don't show a half-finished number." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keep wearing the band a few nights and it appears on its own: we don't show a half-finished number."
+            "value" : "As more nights sync, it appears on its own: we don't show a half-finished number."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sigue usando la banda unas noches y aparece sola, no mostramos un número a medias."
+            "value" : "Conforme lleguen más noches, aparece sola: no mostramos un número a medias."
           }
         }
       }
     },
-    "Keep wearing your band overnight and this fills in on its own." : {
+    "Wear your Apple Watch to sleep and this fills in on its own." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keep wearing your band overnight and this fills in on its own."
+            "value" : "Wear your Apple Watch to sleep and this fills in on its own."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sigue usando tu banda por las noches y esto se completa solo."
+            "value" : "Duerme con tu Apple Watch y esto se completa solo."
           }
         }
       }
@@ -24860,19 +24843,19 @@
         }
       }
     },
-    "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the strap." : {
+    "Measured by your Apple Watch during outdoor walks and runs." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the strap."
+            "value" : "Measured by your Apple Watch during outdoor walks and runs."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lo mide tu Apple Watch en caminatas y carreras al aire libre, la banda no lo registra."
+            "value" : "Lo mide tu Apple Watch en caminatas y carreras al aire libre."
           }
         }
       }
@@ -24894,36 +24877,36 @@
         }
       }
     },
-    "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead." : {
+    "Measured overnight from your Apple Watch's heart rate; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate instead." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead."
+            "value" : "Measured overnight from your Apple Watch's heart rate; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate instead."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se mide de noche con tu strap; cuando no lo traes, Cénit usa la frecuencia cardíaca en reposo de Apple Salud."
+            "value" : "Se mide de noche con la frecuencia cardiaca de tu Apple Watch; cuando no lo usas al dormir, Cénit usa la frecuencia en reposo de Apple Salud."
           }
         }
       }
     },
-    "Measured overnight from your strap. What matters is the change from your own baseline, not the absolute number." : {
+    "Measured overnight from your heart rate during sleep. What matters is the change from your own baseline, not the absolute number." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Measured overnight from your strap. What matters is the change from your own baseline, not the absolute number."
+            "value" : "Measured overnight from your heart rate during sleep. What matters is the change from your own baseline, not the absolute number."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se mide de noche con tu banda. Lo que importa es el cambio respecto a tu propia base, no el número absoluto."
+            "value" : "Se mide de noche a partir de tu frecuencia cardiaca al dormir. Lo que importa es el cambio respecto a tu propia base, no el número absoluto."
           }
         }
       }
@@ -24979,18 +24962,18 @@
         }
       }
     },
-    "Measured with your band" : {
+    "Measured on device" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Measured with your band"
+            "value" : "Measured on device"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Medido con tu banda"
+            "value" : "Medido en el dispositivo"
           }
         }
       }
@@ -26295,19 +26278,19 @@
         }
       }
     },
-    "Needs about 2 weeks of recorded strain. Keep wearing the strap and this read will appear." : {
+    "Needs about 2 weeks of recorded strain. As more workouts sync, this read will appear." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Needs about 2 weeks of recorded strain. Keep wearing the strap and this read will appear."
+            "value" : "Needs about 2 weeks of recorded strain. As more workouts sync, this read will appear."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Necesita unas 2 semanas de esfuerzo registrado. Sigue usando la banda y esta lectura aparecerá."
+            "value" : "Necesita unas 2 semanas de esfuerzo registrado. Conforme lleguen más entrenamientos, esta lectura aparecerá."
           }
         }
       }
@@ -27179,19 +27162,19 @@
         }
       }
     },
-    "No events today and no stress readings yet: your curve fills in as your strap syncs." : {
+    "No events today and no stress readings yet: your curve fills in as more readings sync." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No events today and no stress readings yet: your curve fills in as your strap syncs."
+            "value" : "No events today and no stress readings yet: your curve fills in as more readings sync."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hoy no hay eventos ni lecturas de estrés todavía, tu curva se llena conforme tu banda sincroniza."
+            "value" : "Hoy no hay eventos ni lecturas de estrés todavía: tu curva se llena conforme llegan más lecturas."
           }
         }
       }
@@ -27262,36 +27245,36 @@
         }
       }
     },
-    "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats." : {
+    "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short to gather 20 clean beats." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats."
+            "value" : "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short to gather 20 clean beats."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No hay HRV de anoche. Puede pasar si no usaste el strap o si la noche fue muy corta para reunir 20 latidos limpios."
+            "value" : "Sin HRV de anoche. Puede pasar si no dormiste con tu Apple Watch, o si la noche fue muy corta para reunir 20 latidos limpios."
           }
         }
       }
     },
-    "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends, or wear your band to bed and open this again once it syncs." : {
+    "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends, or wear your band to bed and open this again once it syncs."
+            "value" : "No nights yet. Connect Apple Health in Data Sources to see your sleep stages and trends."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay noches. Conecta Apple Salud en Fuentes de datos para ver tus fases de sueño y tendencias, o duerme con tu banda y vuelve a abrir esto cuando sincronice."
+            "value" : "Aún no hay noches. Conecta Apple Salud en Fuentes de datos para ver tus fases de sueño y tendencias."
           }
         }
       }
@@ -27441,19 +27424,19 @@
         }
       }
     },
-    "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs: your history is below." : {
+    "No reading in the last couple of days. Wear your Apple Watch to sleep and it refreshes after it syncs: your history is below." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs: your history is below."
+            "value" : "No reading in the last couple of days. Wear your Apple Watch to sleep and it refreshes after it syncs: your history is below."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin lectura en los últimos días. Usa tu banda de noche y se actualizará cuando sincronice, tu historial está abajo."
+            "value" : "Sin lectura en los últimos días. Duerme con tu Apple Watch y se actualiza cuando sincronice: tu historial está abajo."
           }
         }
       }
@@ -27586,19 +27569,19 @@
         }
       }
     },
-    "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources." : {
+    "No recovery yet. Wear your Apple Watch to sleep and open this again after it syncs." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources."
+            "value" : "No recovery yet. Wear your Apple Watch to sleep and open this again after it syncs."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay recuperación. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa el historial de tu banda en Fuentes de datos."
+            "value" : "Aún no hay recuperación. Duerme con tu Apple Watch y vuelve a abrir esto cuando sincronice."
           }
         }
       }
@@ -27803,36 +27786,36 @@
         }
       }
     },
-    "No skin temperature last night. That can happen if you didn't wear the strap, or it hasn't gathered enough nights to set your baseline yet." : {
+    "No skin temperature last night. That can happen if you didn't wear your Apple Watch to sleep, or it hasn't gathered enough nights to set your baseline yet." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No skin temperature last night. That can happen if you didn't wear the strap, or it hasn't gathered enough nights to set your baseline yet."
+            "value" : "No skin temperature last night. That can happen if you didn't wear your Apple Watch to sleep, or it hasn't gathered enough nights to set your baseline yet."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin temperatura de piel anoche. Puede pasar si no traías la banda, o si aún no ha juntado suficientes noches para fijar tu base."
+            "value" : "Sin temperatura de piel anoche. Puede pasar si no dormiste con tu Apple Watch, o si aún no ha reunido suficientes noches para fijar tu línea base."
           }
         }
       }
     },
-    "No skin-temperature reading yet. Wear your strap overnight and open this again after it syncs." : {
+    "No skin-temperature reading yet. Wear your Apple Watch to sleep and open this again after it syncs." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No skin-temperature reading yet. Wear your strap overnight and open this again after it syncs."
+            "value" : "No skin-temperature reading yet. Wear your Apple Watch to sleep and open this again after it syncs."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay lectura de temperatura de piel. Usa tu banda por la noche y vuelve a abrir esto cuando sincronice."
+            "value" : "Aún no hay lectura de temperatura de piel. Duerme con tu Apple Watch y vuelve a abrir esto cuando sincronice."
           }
         }
       }
@@ -27871,19 +27854,19 @@
         }
       }
     },
-    "No strain yet. Wear your strap through the day and open this again after it syncs." : {
+    "No strain yet. Day Strain builds from your workout heart rate — open this again after your next workout syncs from Apple Health." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No strain yet. Wear your strap through the day and open this again after it syncs."
+            "value" : "No strain yet. Day Strain builds from your workout heart rate — open this again after your next workout syncs from Apple Health."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay esfuerzo. Usa tu banda durante el día y vuelve a abrir esto cuando sincronice."
+            "value" : "Aún no hay esfuerzo. El Esfuerzo del día se calcula de la frecuencia cardiaca de tus entrenos; vuelve a abrir esto cuando tu próximo entreno sincronice desde Apple Salud."
           }
         }
       }
@@ -27905,36 +27888,36 @@
         }
       }
     },
-    "No strap signal: resting by time, 5 min cap" : {
+    "No heart-rate signal: resting by time, 5 min cap" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No strap signal: resting by time, 5 min cap"
+            "value" : "No heart-rate signal: resting by time, 5 min cap"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin señal del strap: descanso por tiempo, tope 5 min"
+            "value" : "Sin señal de pulso: descanso por tiempo, tope 5 min"
           }
         }
       }
     },
-    "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources. Stress is read from your resting heart rate and HRV." : {
+    "No stress reading yet. Wear your Apple Watch to sleep and open this again after it syncs. Stress is read from your resting heart rate and HRV." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources. Stress is read from your resting heart rate and HRV."
+            "value" : "No stress reading yet. Wear your Apple Watch to sleep and open this again after it syncs. Stress is read from your resting heart rate and HRV."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay lectura de estrés. Usa tu banda de noche y vuelve a abrir esto cuando sincronice, o importa el historial de tu banda en Fuentes de datos. El estrés se lee de tu frecuencia en reposo y tu HRV."
+            "value" : "Aún no hay lectura de estrés. Duerme con tu Apple Watch y vuelve a abrir esto cuando sincronice. El estrés se lee de tu frecuencia en reposo y tu HRV."
           }
         }
       }
@@ -28214,19 +28197,19 @@
         }
       }
     },
-    "Not enough data yet: keep wearing your strap and check back in a few weeks." : {
+    "Not enough data yet: keep wearing your Apple Watch and check back in a few weeks." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not enough data yet: keep wearing your strap and check back in a few weeks."
+            "value" : "Not enough data yet: keep wearing your Apple Watch and check back in a few weeks."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay suficientes datos, sigue usando tu banda y vuelve en unas semanas."
+            "value" : "Aún no hay suficientes datos: sigue usando tu Apple Watch y vuelve en unas semanas."
           }
         }
       }
@@ -29639,19 +29622,19 @@
         }
       }
     },
-    "Onset time isn't available for this night yet; it needs the strap's own lights-out mark. The range above is the healthy reference." : {
+    "Onset time isn't available for this night yet. The range above is the healthy reference." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Onset time isn't available for this night yet; it needs the strap's own lights-out mark. The range above is the healthy reference."
+            "value" : "Onset time isn't available for this night yet. The range above is the healthy reference."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El tiempo para dormirte aún no está disponible para esta noche; necesita la marca de apagar luces de la banda. El rango de arriba es la referencia sana."
+            "value" : "La hora de conciliar el sueño aún no está disponible para esta noche. El rango de arriba es la referencia saludable."
           }
         }
       }
@@ -36966,52 +36949,52 @@
         }
       }
     },
-    "Sharpening with your strap" : {
+    "Sharpening your baseline" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sharpening with your strap"
+            "value" : "Sharpening your baseline"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se afina con tu banda"
+            "value" : "Afinando tu base"
           }
         }
       }
     },
-    "Sharpening with your strap, %lld of %lld nights." : {
+    "Sharpening your baseline, %lld of %lld nights." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sharpening with your strap, %lld of %lld nights."
+            "value" : "Sharpening your baseline, %lld of %lld nights."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se afina con tu banda, %lld de %lld noches."
+            "value" : "Afinando tu base, %lld de %lld noches."
           }
         }
       }
     },
-    "Sharpening with your strap, %lld of %lld nights. Your baseline comes from Apple Health." : {
+    "Sharpening your baseline, %lld of %lld nights. Your baseline comes from Apple Health." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sharpening with your strap, %lld of %lld nights. Your baseline comes from Apple Health."
+            "value" : "Sharpening your baseline, %lld of %lld nights. Your baseline comes from Apple Health."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se afina con tu banda, %lld de %lld noches. Tu base viene de Apple Salud."
+            "value" : "Afinando tu base, %lld de %lld noches. Tu base viene de Apple Salud."
           }
         }
       }
@@ -38143,19 +38126,19 @@
         }
       }
     },
-    "Source: measured with your band" : {
+    "Source: measured on device" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Source: measured with your band"
+            "value" : "Source: measured on device"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Origen: medido con tu banda"
+            "value" : "Origen: medido en el dispositivo"
           }
         }
       }
@@ -39111,18 +39094,18 @@
         }
       }
     },
-    "Strap" : {
+    "On-device" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Strap"
+            "value" : "On-device"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Banda"
+            "value" : "En el dispositivo"
           }
         }
       }
@@ -40543,19 +40526,19 @@
         }
       }
     },
-    "The band tells you when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it." : {
+    "Rest by heart rate ends when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The band tells you when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it."
+            "value" : "Rest by heart rate ends when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La banda te avisa cuando tu pulso recuperó lo suficiente para volver a cargar. El tiempo fijo sigue ahí si lo prefieres."
+            "value" : "El descanso por frecuencia cardiaca termina cuando tu pulso recuperó lo suficiente para volver a cargar. El tiempo fijo sigue ahí si lo prefieres."
           }
         }
       }
@@ -41365,19 +41348,19 @@
         }
       }
     },
-    "They come from your strap and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere." : {
+    "They come from Apple Health history. Connect it in Data Sources, or add one you tracked elsewhere." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "They come from your strap and Apple Health history. Import them in Data Sources, or add one you tracked elsewhere."
+            "value" : "They come from Apple Health history. Connect it in Data Sources, or add one you tracked elsewhere."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vienen del historial de tu banda y Apple Salud. Impórtalos en Orígenes de datos, o agrega uno que registraste en otro lado."
+            "value" : "Vienen del historial de Apple Salud. Conéctalo en Fuentes de datos, o agrega uno que registraste en otro lado."
           }
         }
       }
@@ -43395,19 +43378,19 @@
         }
       }
     },
-    "Use your band to add the one thing Apple Health can't: today's reading." : {
+    "Today's reading fills in once last night's sleep syncs from Apple Health." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use your band to add the one thing Apple Health can't: today's reading."
+            "value" : "Today's reading fills in once last night's sleep syncs from Apple Health."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usa tu banda para sumar lo único que Apple Salud no puede: la lectura de hoy."
+            "value" : "La lectura de hoy se completa cuando el sueño de anoche sincroniza desde Apple Salud."
           }
         }
       }
@@ -44605,19 +44588,19 @@
         }
       }
     },
-    "We can't score your recovery yet. We need at least %lld nights with your strap to learn your baseline; you're at %lld of %lld. We'd rather not show you a made-up number." : {
+    "We can't score your recovery yet. We need at least %lld nights of sleep to learn your baseline; you're at %lld of %lld. We'd rather not show you a made-up number." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We can't score your recovery yet. We need at least %lld nights with your strap to learn your baseline; you're at %lld of %lld. We'd rather not show you a made-up number."
+            "value" : "We can't score your recovery yet. We need at least %lld nights of sleep to learn your baseline; you're at %lld of %lld. We'd rather not show you a made-up number."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no calculamos tu recuperación. Necesitamos al menos %lld noches con tu strap para conocer tu línea base; llevas %lld de %lld. Preferimos no darte un número inventado."
+            "value" : "Aún no calculamos tu recuperación. Necesitamos al menos %lld noches de sueño para conocer tu línea base; llevas %lld de %lld. Preferimos no darte un número inventado."
           }
         }
       }
@@ -44785,19 +44768,19 @@
         }
       }
     },
-    "We need a few more nights with your strap to learn your baseline before we score your recovery. We'd rather not show a made-up number." : {
+    "We need a few more nights of sleep to learn your baseline before we score your recovery. We'd rather not show a made-up number." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We need a few more nights with your strap to learn your baseline before we score your recovery. We'd rather not show a made-up number."
+            "value" : "We need a few more nights of sleep to learn your baseline before we score your recovery. We'd rather not show a made-up number."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Necesitamos unas noches más con tu banda para aprender tu base antes de calcular tu recuperación. Preferimos no mostrarte un número inventado."
+            "value" : "Necesitamos algunas noches más de sueño para aprender tu línea base antes de calificar tu recuperación. Preferimos no mostrar un número inventado."
           }
         }
       }
@@ -47251,19 +47234,19 @@
         }
       }
     },
-    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the strap." : {
+    "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal: it isn't recorded by the strap."
+            "value" : "Your Apple Watch estimates VO₂max during outdoor walks and runs with a good GPS signal."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS, la banda no lo registra."
+            "value" : "Tu Apple Watch estima el VO₂max en caminatas y carreras al aire libre con buena señal de GPS."
           }
         }
       }
@@ -47505,19 +47488,19 @@
         }
       }
     },
-    "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here." : {
+    "Your baseline is still settling. A couple more nights of sleep synced from your Apple Watch, and your day's verdict starts to show here." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your baseline is still settling. A couple more nights of sleep synced with your band, and your day's verdict starts to show here."
+            "value" : "Your baseline is still settling. A couple more nights of sleep synced from your Apple Watch, and your day's verdict starts to show here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu base aún se afina: con un par de noches más de sueño sincronizado con la banda, tu veredicto del día empieza a aparecer aquí."
+            "value" : "Tu base aún se afina: con un par de noches más de sueño sincronizado desde tu Apple Watch, tu veredicto del día empieza a aparecer aquí."
           }
         }
       }
@@ -48963,19 +48946,19 @@
         }
       }
     },
-    "Your strap reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C)." : {
+    "Your Apple Watch reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C)." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your strap reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C)."
+            "value" : "Your Apple Watch reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu banda lee la temperatura de tu piel durante la noche; Cénit promedia la parte con la banda puesta y dormido, y la compara con tu propia base reciente, así que lo que ves es la desviación en °C, no una temperatura cruda. Cerca de tu base es normal; una subida sostenida de alrededor de +0.4 °C o más es un marcador clásico de enfermedad temprana, así que Cénit la marca como corriendo caliente (~+0.4 °C) o muy por encima (~+0.8 °C)."
+            "value" : "Tu Apple Watch lee la temperatura de tu piel durante la noche; Cénit promedia la parte con el reloj puesto y dormido, y la compara con tu propia base reciente, así que lo que ves es la desviación en °C, no una temperatura cruda. Cerca de tu base es normal; una subida sostenida de alrededor de +0.4 °C o más es un marcador clásico de enfermedad temprana, así que Cénit la marca como corriendo caliente (~+0.4 °C) o muy por encima (~+0.8 °C)."
           }
         }
       }

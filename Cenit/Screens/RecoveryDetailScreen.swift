@@ -250,11 +250,11 @@ struct RecoveryDetailScreen: View {
             default:       return "Low: prioritize rest today."
             }
         }
-        if model.calibration != nil { return "Calibrating: we need a few more nights of your strap." }
+        if model.calibration != nil { return "Calibrating: we need a few more nights of sleep." }
         // Offline / no reading today but history exists: be honest the day's number is missing without
         // implying a brand-new user (the trend and calendar below are populated). (FER-225, QA O1)
         if !model.series.isEmpty { return "No reading from last night yet: your recent history is below." }
-        return "No recovery yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources."
+        return "No recovery yet. Wear your Apple Watch to sleep and open this again after it syncs."
     }
 
     // MARK: - 2. Hoy, vs tu normal — atribución unificada por nivel (FER-642)
@@ -723,7 +723,7 @@ struct RecoveryDetailScreen: View {
                 }
             }
             .frame(height: 6)
-            Text("We need a few more nights with your strap to learn your baseline before we score your recovery. We'd rather not show a made-up number.")
+            Text("We need a few more nights of sleep to learn your baseline before we score your recovery. We'd rather not show a made-up number.")
                 .font(StrandFont.caption)
                 .foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)

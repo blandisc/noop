@@ -198,7 +198,7 @@ struct BodyAgeSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
 
-                Text("Keep wearing the band a few nights and it appears on its own: we don't show a half-finished number.")
+                Text("As more nights sync, it appears on its own: we don't show a half-finished number.")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)

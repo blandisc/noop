@@ -460,7 +460,9 @@ private struct CuerpoLanding: View {
                               loadNightRR: { from, to in await repo.rrIntervals(from: from, to: to) },
                               loadDCBaseline: { await repo.nocturnalDCBaseline() })
         } else if let item = stressDetail {
-            StressDetailScreen(theme: theme, model: item.model, dayMap: stressDayMap,
+            // FER-1027: el mapa intradía de estrés es de banda; en Apple-only no se muestra.
+            StressDetailScreen(theme: theme, model: item.model,
+                               dayMap: repo.dataSourceMode.usesWhoop ? stressDayMap : nil,
                                patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                    repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
