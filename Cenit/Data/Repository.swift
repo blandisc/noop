@@ -188,23 +188,9 @@ final class Repository: ObservableObject {
     /// Pure arithmetic, zero DateFormatter (FER-972 · M-04).
     nonisolated private static let dayKeyParser = DayKey.utcFormatter
 
-    /// Days since 1970-01-01 for a civil date (Hinnant `days_from_civil`; valid for the app's range).
-    /// `ComparisonEngine.epochDay` is package-internal, so this copy lives here for the app layer.
-    private nonisolated static func epochDays(y: Int, m: Int, d: Int) -> Int {
-        let yy = y - (m <= 2 ? 1 : 0)
-        let era = (yy >= 0 ? yy : yy - 399) / 400
-        let yoe = yy - era * 400
-        let doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1
-        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
-        return era * 146097 + doe - 719468
-    }
-
     nonisolated static func parseDayKey(_ s: String) -> Date? {
-        let parts = s.split(separator: "-")
-        guard parts.count == 3,
-              let y = Int(parts[0]), let m = Int(parts[1]), let d = Int(parts[2]),
-              (1...12).contains(m), (1...31).contains(d) else { return nil }
-        return Date(timeIntervalSince1970: Double(epochDays(y: y, m: m, d: d)) * 86_400)
+        guard let days = ComparisonEngine.epochDay(of: s) else { return nil }
+        return Date(timeIntervalSince1970: Double(days) * 86_400)
     }
 
     /// Format a chart date BACK to its `yyyy-MM-dd` key in UTC — the exact inverse of `parseDayKey`,
@@ -252,7 +238,7 @@ final class Repository: ObservableObject {
                 print("[FER-793] CenitStore failed to open at \(path): \(error)")
                 s = nil
             }
-            if let s { try? await s.upsertDevice(id: deviceId, mac: nil, name: "WHOOP") }
+            if let s { try? await s.upsertDevice(id: deviceId, mac: nil, name: "Historial de banda") }
             return s
         }
         storeInit = task              // published synchronously (still on @MainActor) before the await below
@@ -369,14 +355,24 @@ final class Repository: ObservableObject {
         // FER-883: Apple workout-HR samples under apple-health (persisted by HealthKitBridge during
         // HKWorkouts only). Gated on usesAppleHealth so whoopOnly never reads them into the dashboard.
         // FER-970 (R-01): their ONLY consumer is the estimated-strain path for days whose MERGED
-        // strain is nil — a band-covered history has none, so skip the ≤500k-row read (paid on
-        // EVERY refresh) entirely instead of loading and grouping it for nothing. The pre-pass
-        // reuses the same mergeDaily the assembler runs, so eligibility can't drift. Deliberately
-        // OUTSIDE the snapshot: it's a skippable phase-B read, not dashboard state.
+        // strain is nil — a band-covered history has none, so skip the HR read (paid on EVERY
+        // refresh) entirely instead of loading and grouping it for nothing. The pre-pass reuses
+        // the same mergeDaily the assembler runs, so eligibility can't drift. Deliberately OUTSIDE
+        // the snapshot: it's a skippable phase-B read, not dashboard state.
+        // Spec L1b (A3): the only UI consumer of estimated strain is today (`repo.today`), so the
+        // window is local midnight→now (not the full history). Safety cap 200_000 (a day can't near it).
         let appleHrRaw: [HRSample]
         if dataSourceMode.usesAppleHealth,
            !Self.strainEstimateEligibleDays(imported: imported, computed: computed, apple: apple).isEmpty {
-            appleHrRaw = (try? await store.hrSamples(deviceId: "apple-health", from: lo, to: hi, limit: 500_000)) ?? []
+            let window = Self.appleHrWindow(now: now, tzOffsetSeconds: TimeZone.current.secondsFromGMT())
+            let fromTs = Int(window.from.timeIntervalSince1970)
+            let toTs = Int(window.to.timeIntervalSince1970)
+            do {
+                appleHrRaw = try await store.hrSamples(deviceId: "apple-health", from: fromTs, to: toTs, limit: 200_000)
+            } catch {
+                print("[repo] apple HR read failed: \(error)")
+                appleHrRaw = []
+            }
         } else {
             appleHrRaw = []
         }
@@ -559,12 +555,21 @@ final class Repository: ObservableObject {
     /// instead of a gap. The strap value always wins when present — only genuine gaps fill.
     /// FER-970 (R-01): the days whose MERGED strain is nil — the only days Apple workout-HR can
     /// serve (the estimated-strain path). A pure pre-pass over rows performRefresh has already
-    /// read, so the ≤500k-row HR read can be skipped outright when this comes back empty. Reuses
-    /// the very same `mergeDaily` the assembler runs — eligibility cannot drift from it.
+    /// read, so the HR read can be skipped outright when this comes back empty. Reuses the very
+    /// same `mergeDaily` the assembler runs — eligibility cannot drift from it.
     nonisolated static func strainEstimateEligibleDays(imported: [DailyMetric], computed: [DailyMetric],
                                                        apple: [DailyMetric]) -> Set<String> {
         Set(mergeDaily(imported: imported, computed: computed, apple: apple)
             .days.filter { $0.strain == nil }.map(\.day))
+    }
+
+    /// Inclusive read window for Apple workout-HR used by the estimated «Carga del día»: local
+    /// midnight of the civil day containing `now` → `now` (the only day the UI shows an estimate).
+    /// Pure + static so CenitUnitTests can pin the bounds without a store.
+    nonisolated static func appleHrWindow(now: Date, tzOffsetSeconds: Int) -> (from: Date, to: Date) {
+        let nowTs = Int(now.timeIntervalSince1970)
+        let fromTs = AnalyticsEngine.localMidnight(nowTs, tzOffsetSeconds: tzOffsetSeconds)
+        return (Date(timeIntervalSince1970: TimeInterval(fromTs)), now)
     }
 
     nonisolated static func mergeDaily(imported: [DailyMetric], computed: [DailyMetric],

@@ -204,10 +204,8 @@ public enum ComparisonEngine {
 
     // MARK: - Helpers
 
-    /// Days since 1970-01-01 for a "yyyy-MM-dd" string, via Howard Hinnant's `days_from_civil` — pure
-    /// integer arithmetic, no `Date`/timezone, so two day strings always differ by their true calendar
-    /// distance. Returns nil for an unparseable / out-of-range day. Used by `periodOverPeriod`.
-    static func epochDay(of day: String) -> Int? {
+    /// Days since 1970-01-01 for a "yyyy-MM-dd" string (Hinnant `days_from_civil`); nil if unparseable.
+    public static func epochDay(of day: String) -> Int? {
         let parts = day.split(separator: "-", omittingEmptySubsequences: false)
         guard parts.count >= 3,
               let y0 = Int(parts[0]), let m = Int(parts[1]), let d = Int(parts[2]),
