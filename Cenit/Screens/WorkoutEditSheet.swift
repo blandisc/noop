@@ -229,7 +229,7 @@ struct WorkoutEditSheet: View {
                         readonlyStat("\(hr)", unit: "bpm", label: "Avg HR")
                     }
                 }
-                Text("Effort and heart rate are measured by your band. They can't be edited.")
+                Text("Effort and heart rate were measured during the session. They can't be edited.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }

@@ -325,7 +325,7 @@ struct WorkoutDetailScreen: View {
         if case .strain = heroKind {
             return "Scale 0–21: it grows logarithmically, not a physical unit."
         }
-        return "Effort (0–21 scale) is computed only by your strap: this session doesn't carry it."
+        return "Effort (0–21 scale) isn't available for this session."
     }
 
     // MARK: - Acciones (menú ••• según fuente)
@@ -559,7 +559,7 @@ struct WorkoutDetailScreen: View {
 func workoutSourceBadge(for source: String, theme: InstrumentoTheme) -> some View {
     let (label, tint, a11y): (LocalizedStringKey, Color, LocalizedStringKey) = {
         switch WorkoutSource.classify(source) {
-        case .whoop:    return ("Measured with your band", theme.dataStrain, "Source: measured with your band")
+        case .whoop:    return ("Measured on device", theme.dataStrain, "Source: measured on device")
         case .apple:    return ("Apple", theme.dataSpO2, "Source Apple Health")
         case .detected: return ("Detected", theme.inkSecondary, "Source on-device detected")
         case .manual:   return ("Manual", theme.warning, "Source manual entry")

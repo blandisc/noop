@@ -276,7 +276,7 @@ struct FitnessAgeDetailView: View {
                              detail: "\(snapshot.rhrNights) of 4 nights needed")
                 }
                 .instrumentoCard(.control, theme: theme, fill: theme.surface)
-                Text("Keep wearing your band overnight and this fills in on its own.")
+                Text("Wear your Apple Watch to sleep and this fills in on its own.")
                     .font(StrandFont.caption)
                     .foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)

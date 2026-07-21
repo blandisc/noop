@@ -159,7 +159,7 @@ extension MetricInfo {
             headerTint: value == nil ? .neutral : .metric,
             bands: [],
             note: value == nil
-                ? "No HRV from last night. That can happen if you didn't wear the strap, or the night was too short to gather 20 clean beats."
+                ? "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short to gather 20 clean beats."
                 : "HRV is personal. There are no universal good/bad thresholds: only your trend over time.",
             method: Method(
                 prose: "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.",
@@ -190,7 +190,7 @@ extension MetricInfo {
             unit: lpm,
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: "Measured overnight from your strap; when the strap isn't worn, Cénit uses Apple Health's resting heart rate instead.",
+            note: "Measured overnight from your Apple Watch's heart rate; when it isn't worn to sleep, Cénit uses Apple Health's resting heart rate instead.",
             levelsMetric: .restingHR,
             levelsTodayValue: value.map(Double.init)
         )
@@ -220,7 +220,7 @@ extension MetricInfo {
             unit: String(localized: "rpm"),
             headerTint: value == nil ? .neutral : .metric,
             bands: bands,
-            note: "Measured overnight from your strap. What matters is the change from your own baseline, not the absolute number.",
+            note: "Measured overnight from your heart rate during sleep. What matters is the change from your own baseline, not the absolute number.",
             method: Method(
                 prose: "We count your breaths across the night from the slow rise and fall in your heart-rate signal (respiratory sinus arrhythmia) and report the nightly mean.",
                 citation: "Respiration from RSA in the overnight inter-beat intervals; reported as the nightly mean."
@@ -332,7 +332,7 @@ extension MetricInfo {
             headerTint: minutes == nil ? .neutral : .metric,
             bands: bands,
             note: minutes == nil
-                ? "Onset time isn't available for this night yet; it needs the strap's own lights-out mark. The range above is the healthy reference."
+                ? "Onset time isn't available for this night yet. The range above is the healthy reference."
                 : "One night says little on its own. What matters is whether your typical onset drifts over weeks."
         )
     }
@@ -359,7 +359,7 @@ extension MetricInfo {
             bands: bands,
             note: "Blood oxygen comes from Apple Health. Wrist-based sensors have lower accuracy than medical pulse oximeters: treat values as a trend, not a clinical reading.",
             method: Method(
-                prose: "Cénit reads your blood oxygen from Apple Health, your strap senses it optically at the wrist, but Cénit doesn't turn that into a percentage on its own. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise, altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.",
+                prose: "Cénit reads your blood oxygen from Apple Health; the Apple Watch senses it optically at the wrist. A healthy adult typically sits at 95–100%; readings below 90% are considered low (hypoxemia). Isolated low nights are usually noise, altitude, a cold, or how the sensor sat. A sustained run of low nights is what's worth a look with a finger pulse oximeter.",
                 citation: "Wrist optical sensors are less accurate than medical pulse oximeters: read this as a trend, not a clinical measurement. Cénit is not a medical device."),
             levelsMetric: .bloodOxygen,
             levelsTodayValue: value
@@ -382,10 +382,10 @@ extension MetricInfo {
             headerTint: value == nil ? .neutral : .metric,
             bands: [],
             note: value == nil
-                ? "No skin temperature last night. That can happen if you didn't wear the strap, or it hasn't gathered enough nights to set your baseline yet."
+                ? "No skin temperature last night. That can happen if you didn't wear your Apple Watch to sleep, or it hasn't gathered enough nights to set your baseline yet."
                 : "Measured at your wrist; the deviation from your personal baseline matters more than the absolute value. An isolated reading is usually noise, like a cold room or how the sensor sat. A sustained run is what's worth a look.",
             method: Method(
-                prose: "Your strap reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C).",
+                prose: "Your Apple Watch reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C).",
                 citation: "Baseline-relative skin temperature as an early illness signal (cf. Oura ~+0.5 °C). A wrist trend, not a clinical thermometer. Cénit is not a medical device."),
             levelsMetric: .skinTemp,
             levelsTodayValue: value
@@ -405,7 +405,7 @@ extension MetricInfo {
             unit: String(localized: "ml/kg/min"),
             headerTint: value == nil ? .neutral : .metric,
             bands: [],
-            note: "Measured by your Apple Watch during outdoor walks and runs: it isn't recorded by the strap.",
+            note: "Measured by your Apple Watch during outdoor walks and runs.",
             method: Method(
                 prose: "Your Apple Watch estimates VO₂max from your heart rate and pace during brisk outdoor walks and runs with a good GPS signal, so it updates every so often rather than daily. We read where it sits among healthy adults of your age and sex (the FRIEND reference median), and translate that into a plain band. A higher VO₂max is associated with a lower risk of all-cause mortality: it's one of the best-evidenced markers of long-term health.",
                 citation: "Reference: Kaminsky et al., FRIEND Registry (Mayo Clin Proc 2015). Longevity association: Mandsager et al. (JAMA 2018), Kodama et al. (JAMA 2009). A coarse population reference, not a clinical measurement: Cénit is not a medical device.")
@@ -518,7 +518,7 @@ extension MetricInfo {
             return MetricInfo(
                 id: "recovery",
                 name: "Recovery",
-                headline: "We can't score your recovery yet. We need at least \(nightsNeeded) nights with your strap to learn your baseline; you're at \(done) of \(nightsNeeded). We'd rather not show you a made-up number.",
+                headline: "We can't score your recovery yet. We need at least \(nightsNeeded) nights of sleep to learn your baseline; you're at \(done) of \(nightsNeeded). We'd rather not show you a made-up number.",
                 displayValue: "\(done)/\(nightsNeeded)",
                 unit: nil,
                 headerTint: .neutral,

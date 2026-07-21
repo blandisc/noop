@@ -64,7 +64,7 @@ struct StressDetailScreen: View {
                         heroField(model)
                         bandScale(model.score)
                     } else {
-                        heroFlat(message: "No reading in the last couple of days. Wear your strap overnight and it'll refresh after it syncs: your history is below.")
+                        heroFlat(message: "No reading in the last couple of days. Wear your Apple Watch to sleep and it refreshes after it syncs: your history is below.")
                             .padding(CenitMetrics.screenPadding)
                     }
                     if infoOpen { whatWeMeasureCard }
@@ -94,7 +94,7 @@ struct StressDetailScreen: View {
                             .padding(.top, 2)
                     }
                 } else {
-                    heroFlat(message: "No stress reading yet. Wear your strap overnight and open this again after it syncs, or import your strap history in Data Sources. Stress is read from your resting heart rate and HRV.")
+                    heroFlat(message: "No stress reading yet. Wear your Apple Watch to sleep and open this again after it syncs. Stress is read from your resting heart rate and HRV.")
                         .padding(CenitMetrics.screenPadding)
                 }
             }

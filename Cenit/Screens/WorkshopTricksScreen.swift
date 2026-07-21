@@ -32,7 +32,7 @@ struct WorkshopTricksScreen: View {
         .init(id: "hr-rest", systemImage: "heart.fill",
               tint: \.dataHeart,
               title: "Rest by heart, not by clock",
-              body: "The band tells you when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it."),
+              body: "Rest by heart rate ends when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it."),
         .init(id: "import", systemImage: "square.and.arrow.down",
               tint: \.dataHrv,
               title: "Import your AI's plan",

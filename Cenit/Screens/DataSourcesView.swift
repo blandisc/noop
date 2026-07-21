@@ -559,14 +559,14 @@ struct DataSourcesView: View {
     private func coverageSummaryString(whoop: Int, apple: Int) -> String {
         let total = whoop + apple
         if total == 0 { return String(localized: "No data in the last 30 days") }
-        if apple == 0 { return String(localized: "\(total) of 30 days from your strap") }
+        if apple == 0 { return String(localized: "\(total) of 30 days with data") }
         if whoop == 0 { return String(localized: "\(total) of 30 days · Apple Health only") }
-        return String(localized: "\(total) of 30 days · \(whoop) from the strap, \(apple) Apple Health only")
+        return String(localized: "\(total) of 30 days · \(whoop) on-device, \(apple) Apple Health only")
     }
 
     private func coverageA11yLabel(whoop: Int, apple: Int, empty: Int) -> String {
         let total = whoop + apple
-        return String(localized: "Data coverage for the last 30 days: \(total) days with data. \(whoop) days from the strap, \(apple) days Apple Health only, \(empty) days with no data.")
+        return String(localized: "Data coverage for the last 30 days: \(total) days with data. \(whoop) days on-device, \(apple) days Apple Health only, \(empty) days with no data.")
     }
 
     @ViewBuilder
@@ -579,7 +579,7 @@ struct DataSourcesView: View {
 
     @ViewBuilder
     private func coverageLegendItems(hasWhoop: Bool, hasApple: Bool) -> some View {
-        coverageLegendItem(color: theme.dataRecovery, label: "Strap", active: hasWhoop)
+        coverageLegendItem(color: theme.dataRecovery, label: "On-device", active: hasWhoop)
         coverageLegendItem(color: theme.dataSpO2, label: "Apple Health only", active: hasApple)
         coverageLegendItem(color: theme.hairlineStrong, label: "No data", active: true)
     }
@@ -614,7 +614,7 @@ struct DataSourcesView: View {
         VStack(alignment: .leading, spacing: 8) {
             if hasData {
                 if whoopDays > 0 {
-                    sourceRow(name: "Strap",
+                    sourceRow(name: "On-device",
                               count: String(localized: "\(whoopDays) days · \(repo.sleeps.count) sleeps"),
                               tint: theme.dataRecovery)
                 }
@@ -703,7 +703,7 @@ struct DataSourcesView: View {
 
     private var autoBackupBlock: some View {
         block("Automatic iCloud backup",
-              subtitle: "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your strap history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. A free Apple ID is enough.") {
+              subtitle: "Pick a folder in iCloud Drive and Cénit keeps a fresh copy of all your data there. Your history lives only inside the app, so this is what protects it if you reinstall Cénit or switch phones. A free Apple ID is enough.") {
             VStack(alignment: .leading, spacing: 14) {
                 if let name = autoBackup.destinationName {
                     Label("Backing up to \(name)", systemImage: "checkmark.icloud.fill")

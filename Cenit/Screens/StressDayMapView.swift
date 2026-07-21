@@ -98,7 +98,7 @@ struct StressDayMapBlock: View {
                     .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             } else if !hasReadings && !hasEvents {
-                Text("No events today and no stress readings yet: your curve fills in as your strap syncs.")
+                Text("No events today and no stress readings yet: your curve fills in as more readings sync.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {

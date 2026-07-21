@@ -213,7 +213,7 @@ private struct CatalogRow: View {
                 Text(metric.title)
                     .font(StrandFont.body)
                     .foregroundStyle(theme.ink)
-                Text(metric.source == "apple-health" ? "Apple Health" : "Strap")
+                Text(metric.source == "apple-health" ? "Apple Health" : "On-device")
                     .font(StrandFont.footnote)
                     .foregroundStyle(theme.inkTertiary)
             }

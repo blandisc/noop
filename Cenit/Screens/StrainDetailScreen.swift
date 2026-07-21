@@ -173,7 +173,7 @@ struct StrainDetailScreen: View {
     private var heroReading: LocalizedStringKey {
         guard let v = shownToday else {
             if !model.series.isEmpty { return "No strain from today yet: your recent history is below." }
-            return "No strain yet. Wear your strap through the day and open this again after it syncs."
+            return "No strain yet. Day Strain builds from your workout heart rate — open this again after your next workout syncs from Apple Health."
         }
         switch MetricInfo.strain(v).bands.firstIndex(where: \.isActive) ?? 0 {
         case 0:  return "Light load today: plenty left in the tank."
