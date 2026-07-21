@@ -17,7 +17,11 @@ let package = Package(
         ),
         .testTarget(
             name: "StrandAnalyticsTests",
-            dependencies: ["StrandAnalytics"],
+            dependencies: [
+                "StrandAnalytics",
+                "StrandModels",
+                "BiometricStreams",
+            ],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
     ]

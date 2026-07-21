@@ -1,8 +1,7 @@
 import XCTest
-import CenitStore
+import StrandModels
 import BiometricStreams
-import StrandAnalytics
-@testable import Cenit
+@testable import StrandAnalytics
 
 /// Pins the FER-62 dashboard merge: Apple Health is the lowest-precedence base, on-device computed
 /// rows fill its gaps, and imported strap rows win over everything — so the strap always beats Apple
@@ -10,7 +9,6 @@ import StrandAnalytics
 /// FER-149 block below pins the display-only Apple back-fill: an empty-strap day shows Apple's HRV in
 /// `displayDays` (sparkline/trend) while `days` (the recovery baseline / ownNights source) stays
 /// strap-only.
-@MainActor
 final class RepositoryMergeTests: XCTestCase {
 
     private func dm(_ day: String, hrv: Double? = nil) -> DailyMetric {
@@ -20,7 +18,7 @@ final class RepositoryMergeTests: XCTestCase {
     }
 
     func testImportedStrapBeatsComputedAndApple() {
-        let r = Repository.mergeDaily(imported: [dm("2026-06-10", hrv: 50)],
+        let r = SourceFusion.mergeDaily(imported: [dm("2026-06-10", hrv: 50)],
                                       computed: [dm("2026-06-10", hrv: 99)],
                                       apple: [dm("2026-06-10", hrv: 77)])
         XCTAssertEqual(r.days.count, 1)
@@ -29,14 +27,14 @@ final class RepositoryMergeTests: XCTestCase {
     }
 
     func testComputedStrapBeatsAppleWhenNoImport() {
-        let r = Repository.mergeDaily(imported: [], computed: [dm("2026-06-10", hrv: 60)],
+        let r = SourceFusion.mergeDaily(imported: [], computed: [dm("2026-06-10", hrv: 60)],
                                       apple: [dm("2026-06-10", hrv: 77)])
         XCTAssertEqual(r.days[0].avgHrv, 60)                 // on-device strap beats Apple
         XCTAssertFalse(r.appleDays.contains("2026-06-10"))
     }
 
     func testAppleFillsOnlyDaysNoStrapCovers() {
-        let r = Repository.mergeDaily(imported: [dm("2026-06-10", hrv: 50)], computed: [],
+        let r = SourceFusion.mergeDaily(imported: [dm("2026-06-10", hrv: 50)], computed: [],
                                       apple: [dm("2026-06-09", hrv: 70), dm("2026-06-10", hrv: 77)])
         XCTAssertEqual(r.days.count, 2)
         XCTAssertEqual(r.days.first(where: { $0.day == "2026-06-09" })?.avgHrv, 70)  // apple-only day
@@ -45,7 +43,7 @@ final class RepositoryMergeTests: XCTestCase {
     }
 
     func testResultSortedByDayAscending() {
-        let r = Repository.mergeDaily(imported: [], computed: [],
+        let r = SourceFusion.mergeDaily(imported: [], computed: [],
                                       apple: [dm("2026-06-12"), dm("2026-06-10"), dm("2026-06-11")])
         XCTAssertEqual(r.days.map(\.day), ["2026-06-10", "2026-06-11", "2026-06-12"])
         XCTAssertEqual(r.appleDays, ["2026-06-10", "2026-06-11", "2026-06-12"])
@@ -58,7 +56,7 @@ final class RepositoryMergeTests: XCTestCase {
     /// while the strap-only `days` keep nil — so the value fills the sparkline without inflating the
     /// recovery calibration (`ownNights` maps `repo.days`, never `displayDays`).
     func testEmptyStrapDayBackfillsHrvFromAppleInDisplayOnly() {
-        let r = Repository.mergeDaily(imported: [],
+        let r = SourceFusion.mergeDaily(imported: [],
                                       computed: [dm("2026-06-14", hrv: nil)],   // empty strap row
                                       apple: [dm("2026-06-14", hrv: 46.7)])
         // display uses Apple — the sparkline/trend sees the value, no gap
@@ -72,7 +70,7 @@ final class RepositoryMergeTests: XCTestCase {
     /// When the strap DID decode HRV that day, the strap value wins in BOTH `days` and `displayDays` —
     /// Apple never overwrites a real strap reading.
     func testStrapHrvWinsOverAppleInDisplay() {
-        let r = Repository.mergeDaily(imported: [],
+        let r = SourceFusion.mergeDaily(imported: [],
                                       computed: [dm("2026-06-15", hrv: 57.1)],
                                       apple: [dm("2026-06-15", hrv: 35.7)])
         XCTAssertEqual(r.days.first?.avgHrv, 57.1)          // strap wins for analytics
@@ -83,7 +81,7 @@ final class RepositoryMergeTests: XCTestCase {
     /// DISPLAY HRV series has no gaps (46.7, 57.1, 37.9), while the strap-only `days` series the baseline
     /// reads keeps the two empty days nil (only 57.1 survives) — proving the baseline input is unchanged.
     func testIssueScenarioDisplayHasNoGapsButAnalyticsStaysStrapOnly() {
-        let r = Repository.mergeDaily(
+        let r = SourceFusion.mergeDaily(
             imported: [],
             computed: [dm("2026-06-14", hrv: nil), dm("2026-06-15", hrv: 57.1), dm("2026-06-16", hrv: nil)],
             apple:    [dm("2026-06-14", hrv: 46.7), dm("2026-06-15", hrv: 35.7), dm("2026-06-16", hrv: 37.9)])
@@ -100,7 +98,7 @@ final class RepositoryMergeTests: XCTestCase {
         let apple = DailyMetric(day: "2026-06-14", totalSleepMin: 420, efficiency: nil, deepMin: nil,
                                 remMin: nil, lightMin: nil, disturbances: nil, restingHr: 52,
                                 avgHrv: 46.7, recovery: nil, strain: 99, exerciseCount: nil)
-        let r = Repository.mergeDaily(imported: [], computed: [strap], apple: [apple])
+        let r = SourceFusion.mergeDaily(imported: [], computed: [strap], apple: [apple])
         let d = r.displayDays.first
         XCTAssertEqual(d?.avgHrv, 46.7)          // nil → filled from Apple
         XCTAssertEqual(d?.restingHr, 52)         // nil → filled from Apple
@@ -111,7 +109,7 @@ final class RepositoryMergeTests: XCTestCase {
     /// An Apple-only day (no strap row at all) is unchanged by the display pass: `displayDays` equals the
     /// Apple row and the day stays badged Apple.
     func testAppleOnlyDayUnchangedInDisplay() {
-        let r = Repository.mergeDaily(imported: [], computed: [],
+        let r = SourceFusion.mergeDaily(imported: [], computed: [],
                                       apple: [dm("2026-06-09", hrv: 70)])
         XCTAssertEqual(r.displayDays.first?.avgHrv, 70)
         XCTAssertEqual(r.days.first?.avgHrv, 70)
@@ -127,8 +125,8 @@ final class RepositoryMergeTests: XCTestCase {
         let cmp = [dm("2026-06-11", hrv: 60)]
         let app = [dm("2026-06-12", hrv: 70)]
         let f = DataSourcePolicy.filter(.combined, imported: imp, computed: cmp, apple: app)
-        let viaMode = Repository.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
-        let direct  = Repository.mergeDaily(imported: imp, computed: cmp, apple: app)
+        let viaMode = SourceFusion.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
+        let direct  = SourceFusion.mergeDaily(imported: imp, computed: cmp, apple: app)
         XCTAssertEqual(viaMode.days, direct.days)
         XCTAssertEqual(viaMode.displayDays, direct.displayDays)
         XCTAssertEqual(viaMode.appleDays, direct.appleDays)
@@ -141,7 +139,7 @@ final class RepositoryMergeTests: XCTestCase {
                                         imported: [dm("2026-06-10", hrv: 50)],
                                         computed: [],
                                         apple: [dm("2026-06-09", hrv: 70), dm("2026-06-10", hrv: 77)])
-        let r = Repository.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
+        let r = SourceFusion.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
         XCTAssertEqual(r.days.map(\.day), ["2026-06-10"])   // the Apple-only day is gone
         XCTAssertEqual(r.days[0].avgHrv, 50)                // strap value, untouched by Apple
         XCTAssertTrue(r.appleDays.isEmpty)                  // nothing badged Apple
@@ -154,7 +152,7 @@ final class RepositoryMergeTests: XCTestCase {
                                         imported: [dm("2026-06-10", hrv: 50)],
                                         computed: [dm("2026-06-11", hrv: 60)],
                                         apple: [dm("2026-06-10", hrv: 77), dm("2026-06-11", hrv: 80)])
-        let r = Repository.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
+        let r = SourceFusion.mergeDaily(imported: f.imported, computed: f.computed, apple: f.apple)
         XCTAssertEqual(r.days.map(\.avgHrv), [77, 80])              // Apple values, no strap
         XCTAssertEqual(r.appleDays, ["2026-06-10", "2026-06-11"])  // all Apple-sourced
     }
@@ -172,7 +170,7 @@ final class RepositoryMergeTests: XCTestCase {
     /// (Apple rows carry no recovery into days).
     func testMergeDailyUnaffectedByEstimates() {
         let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
-        let r = Repository.mergeDaily(imported: [], computed: [], apple: apple)
+        let r = SourceFusion.mergeDaily(imported: [], computed: [], apple: apple)
         XCTAssertTrue(r.days.allSatisfy { $0.recovery == nil })   // Apple rows carry no recovery into days
     }
 
@@ -193,7 +191,7 @@ final class RepositoryMergeTests: XCTestCase {
         let day = "2026-06-10"
         // ts around a fixed epoch so DayKey.local grouping isn't under test here — we pass hrByDay pre-grouped.
         let hrByDay = [day: denseHR(150)]
-        let out = Repository.appleStrainEstimates(hrByDay: hrByDay, eligibleDays: [day])
+        let out = SourceFusion.appleStrainEstimates(hrByDay: hrByDay, eligibleDays: [day])
         XCTAssertNotNil(out[day])
         XCTAssertGreaterThan(out[day]!, 0)
         XCTAssertLessThanOrEqual(out[day]!, 21)
@@ -202,7 +200,7 @@ final class RepositoryMergeTests: XCTestCase {
     /// Sparse/too-few HR → no entry even if the day is eligible.
     func testAppleStrainEstimatesSparseHRNoEntry() {
         let day = "2026-06-10"
-        let out = Repository.appleStrainEstimates(hrByDay: [day: sparseHR(150)], eligibleDays: [day])
+        let out = SourceFusion.appleStrainEstimates(hrByDay: [day: sparseHR(150)], eligibleDays: [day])
         XCTAssertNil(out[day])
         XCTAssertTrue(out.isEmpty)
     }
@@ -216,7 +214,7 @@ final class RepositoryMergeTests: XCTestCase {
             d3: denseHR(155, start: 1_700_200_000),
         ]
         // d2 not eligible (e.g. band already has measured strain that day).
-        let out = Repository.appleStrainEstimates(hrByDay: hrByDay, eligibleDays: [d1, d3])
+        let out = SourceFusion.appleStrainEstimates(hrByDay: hrByDay, eligibleDays: [d1, d3])
         XCTAssertNotNil(out[d1])
         XCTAssertNil(out[d2])
         XCTAssertNotNil(out[d3])
@@ -227,7 +225,7 @@ final class RepositoryMergeTests: XCTestCase {
     func testAppleStrainEstimatesNeverWinsOverBandStrain() {
         let day = "2026-06-10"
         // Contract at appleStrainEstimates level: pass day NOT in eligibleDays despite hrByDay samples.
-        let out = Repository.appleStrainEstimates(
+        let out = SourceFusion.appleStrainEstimates(
             hrByDay: [day: denseHR(180)],
             eligibleDays: []   // band day filtered out of eligibility by assembleDashboard
         )
@@ -238,14 +236,14 @@ final class RepositoryMergeTests: XCTestCase {
     /// `mergeDaily` is untouched by strain estimates — Apple rows carry no strain into days/displayDays.
     func testMergeDailyUnaffectedByStrainEstimates() {
         let apple = (1...5).map { appleRow(String(format: "2026-06-%02d", $0), hrv: 50) }
-        let r = Repository.mergeDaily(imported: [], computed: [], apple: apple)
+        let r = SourceFusion.mergeDaily(imported: [], computed: [], apple: apple)
         XCTAssertTrue(r.days.allSatisfy { $0.strain == nil })
         XCTAssertTrue(r.displayDays.allSatisfy { $0.strain == nil })
     }
 
     /// Empty hrByDay → empty map (whoopOnly / no workout HR).
     func testAppleStrainEstimatesEmptyHR() {
-        XCTAssertTrue(Repository.appleStrainEstimates(hrByDay: [:], eligibleDays: ["2026-06-01"]).isEmpty)
+        XCTAssertTrue(SourceFusion.appleStrainEstimates(hrByDay: [:], eligibleDays: ["2026-06-01"]).isEmpty)
     }
 
     /// FER-883 (/cso finding 1): the threaded HRmax actually changes the estimate — the Apple «Carga del
@@ -254,13 +252,13 @@ final class RepositoryMergeTests: XCTestCase {
     func testAppleStrainEstimatesHRmaxAffectsResult() {
         let day = "2026-06-10"
         let hr = [day: denseHR(150)]
-        let low  = Repository.appleStrainEstimates(hrByDay: hr, eligibleDays: [day], maxHR: 170)[day]
-        let high = Repository.appleStrainEstimates(hrByDay: hr, eligibleDays: [day], maxHR: 210)[day]
+        let low  = SourceFusion.appleStrainEstimates(hrByDay: hr, eligibleDays: [day], maxHR: 170)[day]
+        let high = SourceFusion.appleStrainEstimates(hrByDay: hr, eligibleDays: [day], maxHR: 210)[day]
         XCTAssertNotNil(low); XCTAssertNotNil(high)
         XCTAssertGreaterThan(low!, high!)
     }
 
-    /// R3 (FER-1008): the Repository→engine seam. `Repository.autonomicTrend` is a pure pass-through of
+    /// R3 (FER-1008): the Repository→engine seam. `SourceFusion.autonomicTrend` is a pure pass-through of
     /// `AutonomicTrend.evaluate` over the persisted dense `apple_rmssd_night` rows — 14+ dense nights get
     /// a real trend, fewer gets calibrating, and the wrapper adds NO logic of its own.
     func testAutonomicTrendPureFromPersistedNights() {
@@ -268,14 +266,14 @@ final class RepositoryMergeTests: XCTestCase {
             (0..<n).map { (day: String(format: "2026-01-%02d", $0 + 1), rmssdMs: 50.0 + Double($0 % 5)) }
         }
         // 13 dense nights → still calibrating, no direction.
-        let calib = Repository.autonomicTrend(nights: nights(13), asOf: "2026-01-13", recentCutoff: "2026-01-11")
+        let calib = SourceFusion.autonomicTrend(nights: nights(13), asOf: "2026-01-13", recentCutoff: "2026-01-11")
         XCTAssertEqual(calib.confidence, .calibrating)
         XCTAssertNil(calib.direction)
 
         // 21 dense nights → solid, a real direction, and IDENTICAL to the engine (the wrapper only pins
         // the seam; it must never diverge from AutonomicTrend.evaluate).
         let ns = nights(21)
-        let viaRepo = Repository.autonomicTrend(nights: ns, asOf: "2026-01-21", recentCutoff: "2026-01-15")
+        let viaRepo = SourceFusion.autonomicTrend(nights: ns, asOf: "2026-01-21", recentCutoff: "2026-01-15")
         let viaEngine = AutonomicTrend.evaluate(nights: ns, asOf: "2026-01-21", recentCutoff: "2026-01-15")
         XCTAssertEqual(viaRepo.confidence, .solid)
         XCTAssertNotNil(viaRepo.direction)
