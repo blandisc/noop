@@ -351,7 +351,7 @@ struct TodayView: View {
                                            appleDays: Set<String>, todayRecovery: Double?,
                                            todayKey: String, yKey: String) -> DerivedState {
         // FER-623: el veredicto mide la HRV solo contra la base de BANDA (RMSSD), vía `band`.
-        let band = SourceLens.maskHrv(days, keep: .band, appleDays: appleDays)
+        let band = SourceLens.clearBandHrv(days)
         let readiness = ReadinessEngine.evaluate(days: band, today: todayKey)
         let counts = computeHrvCounts(days: days, appleDays: appleDays, todayHasRecovery: todayRecovery != nil)
         // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera».
@@ -361,7 +361,7 @@ struct TodayView: View {
         // Carga de entrenamiento (FER-705): el ACWR + serie desde el dashboard BAND-masked — el mismo corte
         // que la tarjeta de Tendencias y el detalle de recuperación (FER-632), para que la franja, la
         // tarjeta y el veredicto nunca discrepen. `acwr == nil` → la franja muestra «calibrando» sin punto.
-        let acwrMasked = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleDays)
+        let acwrMasked = SourceLens.clearBandColumns(days)
         let acwrReadiness = ReadinessEngine.evaluate(days: acwrMasked, today: todayKey)
         let trainingLoad = TrainingLoadModel(
             acwr: acwrReadiness.acwr,
@@ -378,7 +378,7 @@ struct TodayView: View {
     /// (mismo dashboard publicado, sin await en medio) para no reintroducir la carrera FER-177. Una sola
     /// fuente de verdad: `recomputeDerived` y el fallback en frío de `readiness` la comparten (deben coincidir).
     private var bandDays: [DailyMetric] {
-        SourceLens.maskHrv(repo.days, keep: .band, appleDays: repo.appleHealthDays)
+        SourceLens.clearBandHrv(repo.days)
     }
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).

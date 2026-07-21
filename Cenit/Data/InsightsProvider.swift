@@ -54,7 +54,7 @@ enum InsightsProvider {
                                  behaviors: [String: Set<String>],
                                  eligibleDaysByBehavior: [String: Set<String>],
                                  proven: Set<Lever>, today: String) -> [Insight] {
-        let bandDays = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleDays)
+        let bandDays = SourceLens.clearBandColumns(days)
         let inputs = InsightEngine.Inputs(days: bandDays, behaviors: behaviors,
                                           eligibleDaysByBehavior: eligibleDaysByBehavior, referenceDay: today)
         return InsightEngine.promoteProven(InsightEngine.generate(inputs), provenLevers: proven)

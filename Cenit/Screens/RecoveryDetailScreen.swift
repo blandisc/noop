@@ -669,7 +669,7 @@ struct RecoveryDetailModel {
         // column-level equivalent of the scorer's row drop — pinned to the same z by test. On an Apple-only
         // day today's own row is masked too (the band didn't measure it), so no band σ is invented for a
         // reading the band never took.
-        let bandDays = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleHealthDays)
+        let bandDays = SourceLens.clearBandColumns(days)
         let readiness = ReadinessEngine.evaluate(days: bandDays, today: todayKey)
         let load: LoadState? = readiness.acwr.map { acwr in
             LoadState(acwr: acwr,

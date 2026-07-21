@@ -58,7 +58,7 @@ enum WhatMovesItEngine {
             // conversion. Nil the Apple-day HRV so those nights drop from the correlation instead of
             // mixing scales (FER-644; the same lens Today/InsightsProvider already use). `appleDays == []`
             // (a strap-only user) is the identity, so a band user's findings are unchanged.
-            sourced = SourceLens.maskHrv(days, keep: .band, appleDays: appleDays)
+            sourced = SourceLens.clearBandHrv(days)
         case "rhr":
             // Resting HR is the same physical metric across sources (bpm↔bpm) — no source lens.
             primary = { $0.restingHr.map(Double.init) }

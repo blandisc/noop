@@ -1332,7 +1332,7 @@ private struct CuerpoLanding: View {
             // Carga de entrenamiento (FER-705): today's ACWR + the replayed series, from the BAND-masked
             // dashboard — the same slice the recovery detail feeds `ReadinessEngine` (FER-632), so the card,
             // the «Your patterns» line and the verdict signal can never disagree on the band.
-            let bandMasked: [DailyMetric] = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleHealthDays)
+            let bandMasked: [DailyMetric] = SourceLens.clearBandColumns(days)
             let readiness = ReadinessEngine.evaluate(days: bandMasked, today: todayKey)
             let acwrSeries: [(day: String, value: Double)] = ReadinessEngine.acwrSeries(days: bandMasked)
                 .map { (p: (day: String, ratio: Double)) -> (day: String, value: Double) in
@@ -1373,7 +1373,7 @@ private struct CuerpoLanding: View {
             // `VitalityInputsBuilder`'s coverage gate drops the HRV factor rather than comparing SDNN to the
             // band norm. A strap-only user is the identity — `recentBand == recent`.
             let recent: [DailyMetric] = trailing(28)
-            let recentBand: [DailyMetric] = SourceLens.maskForBaseline(recent, keep: .band, appleDays: appleHealthDays)
+            let recentBand: [DailyMetric] = SourceLens.clearBandColumns(recent)
             // Sleep Regularity Index (FER-214) over a trailing ~35d of sessions, as 0–1 for the engine (SRI/100).
             // nil → the builder's duration proxy. Was `computeSleepRegularity()`; inlined for the hop (FER-955).
             let recentSleeps = sleeps.filter { (s: CachedSleepSession) -> Bool in s.startTs >= regularityCutoff }
