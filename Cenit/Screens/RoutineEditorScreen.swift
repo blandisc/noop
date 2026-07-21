@@ -1137,9 +1137,13 @@ struct RoutineEditorScreen: View {
     private func changeRoutine(to r: Routine) {
         guard let wd = planWeekday else { return }
         Task {
-            guard let store = await repo.storeHandle() else { return }
-            try? await store.setRoutineSchedule(weekday: wd, routineId: r.id)
-            await load()
+            guard let store = await repo.storeHandle() else { saveError = true; return }
+            do {
+                try await store.setRoutineSchedule(weekday: wd, routineId: r.id)
+                await load()
+            } catch {
+                saveError = true
+            }
         }
     }
 

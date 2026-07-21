@@ -2785,10 +2785,14 @@ struct LiveStrengthSheet: View {
             if saveToRoutine, let routineId = session.routineId {
                 let reId = session.runs[ei].id
                 Task {
-                    await model.repo.updateRoutineExerciseRest(
-                        routineExerciseId: reId, routineId: routineId,
-                        mode: config.mode, seconds: config.seconds,
-                        reference: config.hrReference, value: config.hrValue)
+                    do {
+                        try await model.repo.updateRoutineExerciseRest(
+                            routineExerciseId: reId, routineId: routineId,
+                            mode: config.mode, seconds: config.seconds,
+                            reference: config.hrReference, value: config.hrValue)
+                    } catch {
+                        saveError = true
+                    }
                 }
             }
         } else if let si {
@@ -2796,7 +2800,14 @@ struct LiveStrengthSheet: View {
             if saveToRoutine, let routineId = session.routineId,
                session.runs[ei].sets.indices.contains(si) {
                 let routineSetId = session.runs[ei].sets[si].id   // seeded from the planned RoutineSet id
-                Task { await model.repo.updateRoutineSetRest(routineSetId: routineSetId, routineId: routineId, rest: config) }
+                Task {
+                    do {
+                        try await model.repo.updateRoutineSetRest(
+                            routineSetId: routineSetId, routineId: routineId, rest: config)
+                    } catch {
+                        saveError = true
+                    }
+                }
             }
         }
     }

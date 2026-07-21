@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Editar descansos, tipos de ejercicio y carpetas del plan avisa si el guardado falla.**
+
 - **Guardar un momento, dieta, experimento o entrenamiento manual ya avisa si el guardado falla, en vez de perderlo en silencio.**
 
 - **El pulso vivo del Apple Watch aparece en la píldora de sesión y termina descansos por FC con el teléfono bloqueado; los temporizadores vibran con el teléfono.** La FC viva unificada es `watchBpm` (ya no el `bpm` muerto de la banda); el auto-skip de descanso por recuperación cardiaca (FER-758) vuelve a funcionar; `buzz()` usa háptica del iPhone; el copy deja de prometer que «la banda vibrará».
