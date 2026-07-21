@@ -28801,6 +28801,16 @@
         }
       }
     },
+    "of rest · the phone buzzes on arrival" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de descanso · el teléfono vibra al llegar"
+          }
+        }
+      }
+    },
     "of the last %lld nights" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -34280,6 +34290,16 @@
         }
       }
     },
+    "Rest ends when your pulse drops to the threshold. The phone buzzes when you're ready." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El descanso termina cuando tu pulso baja al umbral. El teléfono avisa con una vibración cuando ya puedes seguir."
+          }
+        }
+      }
+    },
     "Rest when you finish" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37356,6 +37376,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "HIIT háptico silencioso, la banda vibra en las transiciones"
+          }
+        }
+      }
+    },
+    "Silent haptic HIIT: your phone buzzes the transitions" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HIIT háptico silencioso, el teléfono vibra en las transiciones"
           }
         }
       }
@@ -41103,6 +41133,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "el strap zumbará"
+          }
+        }
+      }
+    },
+    "the phone will buzz" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el teléfono vibrará"
           }
         }
       }

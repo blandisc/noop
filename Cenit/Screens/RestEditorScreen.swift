@@ -133,7 +133,7 @@ struct RestEditorScreen: View {
 
     private var hrSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Rest ends when your pulse drops to the threshold. The strap buzzes when you're ready.")
+            Text("Rest ends when your pulse drops to the threshold. The phone buzzes when you're ready.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
             // Owner call 2026-07-15: your OWN resting HR named up front — the anchor every margin
             // below is computed against.

@@ -486,8 +486,8 @@ private extension View {
 }
 
 /// Hosts the `SessionPill` with a live-ticking clock (FER-716): a `TimelineView` recomputes the
-/// elapsed time each second, and the BPM is the app's LIVE smoothed value (`model.bpm` — the same
-/// source as the session header; nil = no strap streaming, so the pill drops its ♥ segment instead
+/// elapsed time each second, and the BPM is the Apple Watch live mirror (`model.watchBpm` — the same
+/// source as the session header; nil = no watch reading, so the pill drops its ♥ segment instead
 /// of freezing a stale sample). Tapping re-opens the session. The routine hue is the effort ember
 /// (`dataStrain`) — the same hue the session screen and the approved previews use.
 private struct ActiveSessionPillHost: View {
@@ -505,12 +505,12 @@ private struct ActiveSessionPillHost: View {
                 SessionPill(
                     routineName: session.routineName,
                     elapsed: elapsed,
-                    bpm: model.bpm,
+                    bpm: model.watchBpm,
                     detail: total > 0 ? String(localized: "set \(min(session.doneCount + 1, total))/\(total)") : nil,
                     paused: session.paused,
                     hue: theme.dataStrain,
                     theme: theme,
-                    accessibilityLabel: pillLabel(session.routineName, elapsed, model.bpm),
+                    accessibilityLabel: pillLabel(session.routineName, elapsed, model.watchBpm),
                     accessibilityHint: Text("Returns to the session"),
                     action: { model.resumeStrengthSession() },
                     onDiscard: { confirmDiscard = true },

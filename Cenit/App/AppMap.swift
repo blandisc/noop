@@ -564,7 +564,7 @@ private struct MapSessionPillHost: View {
                 SessionPill(
                     routineName: session.routineName,
                     elapsed: SessionClock.format(session.elapsedSeconds(now: context.date)),
-                    bpm: model.bpm,
+                    bpm: model.watchBpm,
                     detail: total > 0 ? String(localized: "set \(min(session.doneCount + 1, total))/\(total)") : nil,
                     paused: session.paused,
                     hue: theme.dataStrain,

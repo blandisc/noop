@@ -1987,7 +1987,7 @@ struct LiveStrengthSheet: View {
     }
 
     private func focusRestHRHero(elapsed: Int, readiness v: RestReadiness) -> some View {
-        let bpm = model.bpm ?? 0
+        let bpm = model.watchBpm ?? 0
         let target = session.currentRestTarget
         let ready = v.ready
         return VStack(alignment: .leading, spacing: CenitMetrics.gap) {
@@ -2003,14 +2003,14 @@ struct LiveStrengthSheet: View {
             if let target, !ready {
                 (Text(String(localized: "dropping toward "))
                  + Text("\(target) bpm").bold()
-                 + Text(" · " + String(localized: "the strap will buzz")))
+                 + Text(" · " + String(localized: "the phone will buzz")))
                     .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
             } else if let toReady = v.bpmToReady, !ready {
                 Text("\(toReady) bpm to ready")
                     .font(StrandFont.subhead).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
             }
             focusRestHRTrack(bpm: bpm, target: target)
-            Text("\(Self.clock(elapsed)) " + String(localized: "of rest · the strap buzzes on arrival"))
+            Text("\(Self.clock(elapsed)) " + String(localized: "of rest · the phone buzzes on arrival"))
                 .font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -3049,7 +3049,7 @@ struct LiveStrengthSheet: View {
 
     /// By-HR rest body: the live pulse dropping toward the threshold, with a gradient track + ink tick.
     private func restCardHRBody(elapsed: Int, readiness v: RestReadiness) -> some View {
-        let bpm = model.bpm ?? 0
+        let bpm = model.watchBpm ?? 0
         let target = session.currentRestTarget
         let ready = v.ready
         return VStack(alignment: .leading, spacing: 10) {
@@ -3070,7 +3070,7 @@ struct LiveStrengthSheet: View {
             if let target, !ready {
                 (Text(String(localized: "dropping toward "))
                  + Text("\(target) bpm").foregroundColor(theme.dataRecovery).bold()
-                 + Text(" · " + String(localized: "the strap will buzz")))
+                 + Text(" · " + String(localized: "the phone will buzz")))
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
         }

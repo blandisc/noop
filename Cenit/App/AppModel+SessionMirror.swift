@@ -116,9 +116,9 @@ extension AppModel {
         if let s = strengthSession, s.summary == nil, !s.paused, s.phase == .resting,
            s.currentRestMode == .heartRate, let started = s.restStartedAt {
             let elapsed = max(0, Int(Date().timeIntervalSince(started)))
-            // no band → no live HR to feed HR-guided rest anymore (Watch→phone HR is separate: watchBpm)
-            let hr: Int? = nil
-            let v = RestReadinessRule.evaluate(currentHR: hr, worn: false,
+            // FER-1003 / L2-B1: live HR is the Watch mirror (`watchBpm`); feeds auto-skip when recovered.
+            let hr = watchBpm
+            let v = RestReadinessRule.evaluate(currentHR: hr, worn: watchBpm != nil,
                                                restingHR: restingHrBaseline, elapsedS: elapsed,
                                                targetHR: s.currentRestTarget)
             if v.ready, v.reason == .hrRecovered {
