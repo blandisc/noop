@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Un error momentáneo de lectura ya no vacía la pantalla.** Si la base de datos está ocupada (p. ej. durante una compactación) cuando se refresca, Cénit conserva el tablero anterior en vez de publicar uno vacío como si fuera real; así una lectura fallida transitoria no borra tus datos de la vista ni cierra por error un experimento en curso.
+
 - **Editar descansos, tipos de ejercicio y carpetas del plan avisa si el guardado falla.**
 
 - **Guardar un momento, dieta, experimento o entrenamiento manual ya avisa si el guardado falla, en vez de perderlo en silencio.**
