@@ -15,6 +15,7 @@
 - **Machine-readable tokens:** [`tokens/design-tokens.json`](tokens/design-tokens.json) (W3C Design Tokens format)
 - **Assets:** [`assets/`](assets/) — app icons + brand marks
 - **Voz y contenido:** [`LENGUAJE.md`](LENGUAJE.md) — cómo suena el sistema: tono, escritura es-MX, microcopy y glosario canónico (compañero de este doc)
+- **«Liquid Glass v1» (rediseño 2026-07):** [`LIQUID-GLASS.md`](LIQUID-GLASS.md) — la evolución del ADN para pantallas rediseñadas: tokens `Liquid*` (color/tipo/espacio/radios), 4 recetas de vidrio, contrato de motion (`LiquidMotion`) y los 7 componentes + la pantalla Hoy de referencia (`LiquidHoyScreen`), todo en `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/`
 - **Guías compañeras:** [`ACCESIBILIDAD.md`](ACCESIBILIDAD.md) (contraste, Dynamic Type, VoiceOver, reduce-motion, 44pt) · [`I18N.md`](I18N.md) (locales, plurales, formato) · [`ICONOGRAFIA.md`](ICONOGRAFIA.md) (catálogo `StrandIcon`, glifos, naming)
 
 > ⚠️ This document is **generated from code**. The Swift package is canonical — if a
