@@ -85,11 +85,10 @@ public struct LiquidSignalOrb: View {
         let displayed: Double? = motionDisabled ? clamped : (clamped == nil ? nil : shownProgress)
         return ZStack {
             LiquidSphere(tone: state.tone)
+                // El glow e/2 como geometría (círculo difuminado detrás): una sombra directa
+                // sobre material proyecta el RECTÁNGULO de su capa de fondo.
+                .liquidShadow(LiquidElevation.e2(tone: state.tone), silhouette: Circle())
                 .padding(4)
-                // El glow e/2 exige aplanar primero: una sombra directa sobre material del
-                // sistema proyecta el RECTÁNGULO de la capa de fondo, no la silueta esférica.
-                .compositingGroup()
-                .liquidShadow(LiquidElevation.e2(tone: state.tone))
             // Track + progreso, r29 de un lienzo de 64 (relación 29/32 del radio medio).
             OrbRing().stroke(LiquidColor.tinta10, lineWidth: 3.5)
             if let displayed {

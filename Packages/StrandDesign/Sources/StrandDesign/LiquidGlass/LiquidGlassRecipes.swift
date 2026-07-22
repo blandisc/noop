@@ -124,10 +124,9 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
                 shape.strokeBorder(border, lineWidth: 0.5).allowsHitTesting(false)
             }
             .clipShape(shape)
-            // Aplanar antes de sombrear: la sombra de un material sin aplanar proyecta el
-            // RECTÁNGULO de su capa de fondo, no la forma recortada.
-            .compositingGroup()
-            .liquidShadow(shadow)
+            // Elevación como GEOMETRÍA (silueta difuminada detrás): `.shadow` sobre material
+            // proyecta el rectángulo de su capa de fondo, y compositingGroup no lo salva.
+            .liquidShadow(shadow, silhouette: shape)
     }
 }
 

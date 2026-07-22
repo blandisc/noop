@@ -109,3 +109,24 @@ private struct LiquidShadowModifier: ViewModifier {
         }
     }
 }
+
+public extension View {
+    /// Elevación dibujada como GEOMETRÍA: la silueta de `shape`, difuminada, DETRÁS de la
+    /// vista. Obligatoria cuando la vista contiene material del sistema — `.shadow` sobre
+    /// material proyecta el RECTÁNGULO de su capa de fondo (y `compositingGroup` no lo
+    /// salva, porque el backdrop no se deja aplanar). Una silueta difuminada no puede
+    /// volverse rectángulo, por construcción.
+    func liquidShadow<S: Shape>(_ layers: [LiquidShadowLayer], silhouette shape: S) -> some View {
+        background {
+            ZStack {
+                ForEach(Array(layers.enumerated()), id: \.offset) { _, layer in
+                    shape
+                        .fill(layer.color)
+                        .blur(radius: layer.radius)
+                        .offset(y: layer.y)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+    }
+}

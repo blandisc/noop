@@ -204,12 +204,11 @@ public struct LiquidDialSeal: View {
                           y: size / 2 + r * CGFloat(sin(markerAngle)))
         }
         .frame(width: size, height: size)
-        // Aplanar antes de sombrear (misma regla que las recetas de vidrio).
-        .compositingGroup()
+        // Elevación como geometría (misma regla que las recetas: nada de .shadow sobre material).
         .liquidShadow([
             .init(color: LiquidColor.tinta900.opacity(0.14), radius: 16, y: 12),
             .init(color: LiquidColor.tinta900.opacity(0.07), radius: 3, y: 2),
-        ])
+        ], silhouette: Circle())
         // Decorativo para VoiceOver: la fecha ya vive en el kicker de la cabecera.
         .accessibilityHidden(true)
     }
