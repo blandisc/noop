@@ -231,7 +231,7 @@ private struct AppleHealthStep: View {
                 Task {
                     await health.requestAuthorization()
                     requesting = false
-                    if health.auth == .authorized { await health.sync() }
+                    if health.auth == .authorized { await health.sync(days: 180) }
                 }
             }
             .disabled(requesting)
@@ -525,14 +525,44 @@ private struct ImportStep: View {
 private struct DoneStep: View {
     let onFinish: () -> Void
     @Environment(\.instrumentoTheme) private var theme
+    @Environment(\.openURL) private var openURL
     var body: some View {
-        CenteredState(
-            glyph: "checkmark.seal",
-            glyphColor: theme.verdict,
-            title: "All set.",
-            titleColor: theme.ink,
-            message: "Every night and every day will weave into a single read of you. Welcome to Cénit."
-        ) {
+        StepShell {
+            Overline(text: "The ritual")
+            Text("All set. Tonight, the first read.")
+                .font(StrandFont.title1)
+                .foregroundStyle(theme.ink)
+                .padding(.top, CenitMetrics.space2)
+            Text("Sleep with your Apple Watch. In the morning, your day's read will be waiting.")
+                .font(StrandFont.body)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, CenitMetrics.space2)
+
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                Checkline("Night 1: I meet your resting rhythm.")
+                Checkline("Night 3: the read starts to feel yours.")
+                Checkline("Resting also counts. There is no streak to lose here.")
+            }
+            .padding(.top, CenitMetrics.sectionGap)
+
+            Rectangle().fill(theme.hairline).frame(height: 1)
+                .padding(.vertical, CenitMetrics.gap)
+
+            Text("One more thing, optional")
+                .font(StrandFont.subhead.weight(.semibold))
+                .foregroundStyle(theme.ink)
+            Text("If you turn on AFib History in the Health app, your watch samples your heartbeats much more often and the night read gets sharper.")
+                .font(StrandFont.subhead)
+                .foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, CenitMetrics.space2)
+            OutlineButton("Open Health") {
+                if let url = URL(string: "x-apple-health://") { openURL(url) }
+            }
+            .padding(.top, CenitMetrics.gap)
+
+            Spacer(minLength: CenitMetrics.sectionGap)
             InkButton("Enter Cénit", action: onFinish)
         }
     }
