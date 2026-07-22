@@ -108,6 +108,11 @@ public extension InstrumentoType {
     /// The verdict word next to the hero («Equilibrado») — 22/700, scales with `.title3`.
     static let groteskVerdict = grotesk(22, weight: .bold, relativeTo: .title3)
 
+    /// The verdict-AS-hero voice (FER-1030 «Preparación»): with no 0–100 numeral, the verdict WORD
+    /// is the dominant datum, so it's bigger + heavier than `groteskVerdict`. Scales with Dynamic
+    /// Type relative to `.largeTitle` because it reads as a phrase that can wrap, not a fixed numeral.
+    static let groteskVerdictHero = grotesk(34, weight: .bold, relativeTo: .largeTitle)
+
     /// An in-screen headline — the Grotesk successor to the retired `StrandFont.serif(_:)` (FER-901:
     /// the serif title voice retires). Medium (500), not bold, so it keeps the airy editorial presence
     /// the serif had rather than reading as a loud datum; scales with Dynamic Type relative to `.title2`.
