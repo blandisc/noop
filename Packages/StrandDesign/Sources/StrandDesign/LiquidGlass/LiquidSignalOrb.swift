@@ -55,8 +55,8 @@ public struct LiquidSignalOrb: View {
                 .padding(.top, -3)
         }
         .onAppear {
-            guard shownProgress == 0 else { return }
-            if reduceMotion || motionDisabled {
+            guard shownProgress == 0, !motionDisabled else { return }
+            if reduceMotion {
                 shownProgress = clamped
             } else {
                 withAnimation(LiquidMotion.ringProgress) { shownProgress = clamped }
@@ -69,19 +69,21 @@ public struct LiquidSignalOrb: View {
     }
 
     private var orb: some View {
-        ZStack {
+        // Con el motion congelado (previews/renders) el anillo se pinta ya en su valor.
+        let displayed = motionDisabled ? clamped : shownProgress
+        return ZStack {
             LiquidSphere(tone: state.tone)
                 .padding(4)
                 .liquidShadow(LiquidElevation.e2(tone: state.tone))
             // Track + progreso, r29 de un lienzo de 64 (relación 29/32 del radio medio).
             OrbRing().stroke(LiquidColor.tinta10, lineWidth: 3.5)
             OrbRing()
-                .trim(from: 0, to: shownProgress)
+                .trim(from: 0, to: displayed)
                 .stroke(state.ring, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(orbStartAngle))
-            OrbMarkerDot(progress: shownProgress)
+            OrbMarkerDot(progress: displayed)
                 .fill(LiquidColor.tinta900)
-            OrbMarkerDot(progress: shownProgress)
+            OrbMarkerDot(progress: displayed)
                 .stroke(Color.white, lineWidth: 1.4)
             LiquidIcon(icon, size: 18).foregroundStyle(LiquidColor.tinta900)
         }

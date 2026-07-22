@@ -98,14 +98,18 @@ public enum LiquidMotion {
     /// Escala máxima del drift (1 → 1.1).
     public static let driftScaleMax: CGFloat = 1.1
 
-    /// Fase del dash de `flowDash` (stroke-dashoffset → −96 cada 9 s, lineal y continuo).
-    /// El patrón (2.5 + 93.5 = 96) coincide con el offset, así que el loop no salta.
-    public static func flowDashPhase(time t: TimeInterval, delay: Double = 0) -> CGFloat {
-        CGFloat(-96.0 * ((t - delay) / flowPeriod))
+    /// Progreso 0–1 del pulso que viaja por un cable: un recorrido completo cada
+    /// `flowPeriod` (9 s), lineal y continuo, con el delay de su cable (0 / 0.8 / 1.6).
+    /// Es el equivalente en `trim` del `flowDash` de CSS (dash 2.5/93.5 → −96); en
+    /// SwiftUI el pulso se dibuja con `Shape.trim`, no con stroke-dash.
+    public static func flowPulseProgress(time t: TimeInterval, delay: Double = 0) -> Double {
+        let raw = ((t - delay) / flowPeriod).truncatingRemainder(dividingBy: 1)
+        return raw < 0 ? raw + 1 : raw
     }
 
-    /// Patrón del pulso que viaja por los cables.
-    public static let flowDashPattern: [CGFloat] = [2.5, 93.5]
+    /// Largo del pulso como fracción del cable (los 2.5 pt del dash sobre un cable de
+    /// ~130 pt del ensamble).
+    public static let flowPulseLength: Double = 0.02
 }
 
 // MARK: - Override de motion para previews/tests
@@ -115,8 +119,9 @@ private struct LiquidMotionDisabledKey: EnvironmentKey {
 }
 
 public extension EnvironmentValues {
-    /// Fuerza el comportamiento «Reduce Motion» del sistema Liquid (el flag real de
-    /// accesibilidad es de solo lectura; los previews «sin motion» ponen esto en `true`).
+    /// Congela TODO el motion del sistema Liquid y presenta la UI ya asentada (progresos
+    /// en su valor, entradas visibles). Para previews «sin motion», tests y renders — el
+    /// flag real de accesibilidad es de solo lectura y ahí la entrada degrada a crossfade.
     var liquidMotionDisabled: Bool {
         get { self[LiquidMotionDisabledKey.self] }
         set { self[LiquidMotionDisabledKey.self] = newValue }
@@ -152,13 +157,12 @@ private struct LiquidEntrada: ViewModifier {
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
     func body(content: Content) -> some View {
-        let still = reduceMotion || motionDisabled
         content
-            .opacity(shown ? 1 : 0)
-            .offset(y: shown || still ? 0 : LiquidMotion.entradaOffset)
+            .opacity(shown || motionDisabled ? 1 : 0)
+            .offset(y: shown || motionDisabled || reduceMotion ? 0 : LiquidMotion.entradaOffset)
             .onAppear {
-                guard !shown else { return }
-                if still {
+                guard !shown, !motionDisabled else { return }
+                if reduceMotion {
                     // Reduce Motion: crossfade simple, sin desplazamiento ni stagger.
                     withAnimation(.easeInOut(duration: 0.2)) { shown = true }
                 } else {

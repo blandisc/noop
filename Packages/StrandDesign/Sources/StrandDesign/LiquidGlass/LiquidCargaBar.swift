@@ -47,9 +47,9 @@ public struct LiquidCargaBar: View {
         .padding(.horizontal, LiquidSpace.s400)
         .liquidGlass(.pastilla)
         .onAppear {
-            guard !entered else { return }
+            guard !entered, !motionDisabled else { return }
             entered = true
-            if reduceMotion || motionDisabled {
+            if reduceMotion {
                 shownPos = clampedPos
             } else {
                 withAnimation(LiquidMotion.ringProgress) { shownPos = clampedPos }
@@ -62,7 +62,9 @@ public struct LiquidCargaBar: View {
     }
 
     private var bar: some View {
-        GeometryReader { geo in
+        // Con el motion congelado (previews/renders) knob y segmento van ya a su lugar.
+        let effectivePos = motionDisabled ? clampedPos : shownPos
+        return GeometryReader { geo in
             let w = geo.size.width
             ZStack(alignment: .topLeading) {
                 HStack(spacing: LiquidSpace.s050) {
@@ -76,7 +78,7 @@ public struct LiquidCargaBar: View {
                     .fill(Color.white)
                     .overlay(Circle().strokeBorder(LiquidColor.tinta900, lineWidth: 2))
                     .frame(width: 10, height: 10)
-                    .offset(x: w * shownPos / 100 - 5)
+                    .offset(x: w * effectivePos / 100 - 5)
             }
         }
         .frame(height: 10)
@@ -85,7 +87,7 @@ public struct LiquidCargaBar: View {
 
     @ViewBuilder
     private func segment(_ index: Int) -> some View {
-        let active = index == zone && entered
+        let active = index == zone && (entered || motionDisabled)
         Capsule()
             .fill(active
                   ? AnyShapeStyle(LinearGradient(

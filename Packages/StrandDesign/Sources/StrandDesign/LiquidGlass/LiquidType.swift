@@ -18,6 +18,10 @@ public enum LiquidType {
     /// `display/xl` — 54/700, tracking −1.9. Hero de veredicto («Dale con todo»).
     public static let displayXL = InstrumentoType.grotesk(54, weight: .bold)
     public static let displayXLTracking: CGFloat = -1.9
+    /// Compensa el line-height 0.96 de la spec: la caja de línea de Grotesk mide ~1.28 em,
+    /// así que las líneas del hero se apilan con spacing 54 × (0.96 − 1.28) ≈ −17
+    /// (SwiftUI no permite reducir el line-height directo).
+    public static let displayXLLineSpacing: CGFloat = -17
 
     /// `display/l` — 30/700, tracking −0.6. Títulos de sección grandes.
     public static let displayL = InstrumentoType.grotesk(30, weight: .bold)
