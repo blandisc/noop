@@ -73,4 +73,75 @@ public enum ExperimentVerdict {
         let verdict: Verdict = (e.significant && sameDirection) ? .sustained : .notSustained
         return ExperimentResult(verdict: verdict, effect: e)
     }
+
+    // MARK: - Tag-experiment contrast (FER-1034, Preparación Capa 2)
+
+    /// The result of a tag-experiment: the two-sided contrast of the outcome on days a context tag was
+    /// "yes" vs "no", plus the arm sizes and how many days confounder-restriction removed.
+    public struct ContrastResult: Sendable, Equatable {
+        public let verdict: Verdict
+        /// The Mann-Whitney read (nil when `insufficient` for lack of data).
+        public let mwu: MannWhitneyResult?
+        public let nWith: Int
+        public let nWithout: Int
+        /// Days dropped from BOTH arms by confounder restriction (sick/travel), surfaced honestly.
+        public let nExcluded: Int
+        public init(verdict: Verdict, mwu: MannWhitneyResult?, nWith: Int, nWithout: Int, nExcluded: Int) {
+            self.verdict = verdict; self.mwu = mwu
+            self.nWith = nWith; self.nWithout = nWithout; self.nExcluded = nExcluded
+        }
+    }
+
+    /// Minimum days PER ARM (after confounder restriction) to judge rather than `insufficient`. Reuses
+    /// the repo-wide significance floor (5): the smallest balanced design where the exact Mann-Whitney
+    /// can cross α = 0.05 with some overlap (5v5 min p = 2/252 ≈ 0.008). Below it the test degenerates
+    /// to all-or-nothing and a "result" is more likely artifact than effect.
+    public static var minPerArm: Int { BehaviorInsights.minGroupForSignificance }
+
+    /// Judge a tag experiment: the outcome on explicit yes-days vs explicit no-days, WITHIN the window,
+    /// with confounder days removed from both arms. Two-sided (no prior direction), distribution-free.
+    ///
+    /// - `withDays` / `withoutDays`: the window days the user answered the tag "yes" / "no" (absence of
+    ///   an answer = unknown = neither arm — the FER-385 eligible-universe discipline).
+    /// - `outcomeByDay`: the target outcome per "yyyy-MM-dd".
+    /// - `confounderYesDays`: window days with a "yes" on ANY OTHER confounder tag (sick/travel); the
+    ///   caller excludes the experiment's own tag before passing this in.
+    ///
+    /// Verdicts map to the shipped es-MX copy: `.sustained` = «probable efecto (en ti)», `.notSustained`
+    /// = «no se ve (todavía)», `.insufficient` = «datos insuficientes».
+    public static func evaluateContrast(withDays: Set<String>,
+                                        withoutDays: Set<String>,
+                                        outcomeByDay: [String: Double],
+                                        confounderYesDays: Set<String> = []) -> ContrastResult {
+        let r = restrictConfounders(with: withDays, without: withoutDays,
+                                    confounderYesDays: confounderYesDays)
+        let xs = r.with.compactMap { outcomeByDay[$0] }
+        let ys = r.without.compactMap { outcomeByDay[$0] }
+        guard xs.count >= minPerArm, ys.count >= minPerArm else {
+            return ContrastResult(verdict: .insufficient, mwu: nil,
+                                  nWith: xs.count, nWithout: ys.count, nExcluded: r.excluded)
+        }
+        guard let mwu = MannWhitney.test(xs, ys) else {
+            return ContrastResult(verdict: .insufficient, mwu: nil,
+                                  nWith: xs.count, nWithout: ys.count, nExcluded: r.excluded)
+        }
+        // Two-sided: `.sustained` iff significant in EITHER direction (the templates carry no prior
+        // hypothesis). A short window has little power, so `.notSustained` means "didn't show THIS
+        // time", never "proven absent".
+        let verdict: Verdict = mwu.p < 0.05 ? .sustained : .notSustained
+        return ContrastResult(verdict: verdict, mwu: mwu,
+                              nWith: xs.count, nWithout: ys.count, nExcluded: r.excluded)
+    }
+
+    /// Remove confounder days from BOTH arms (restriction by design — classic confound control). The
+    /// experiment's own tag is never a confounder here (the caller strips it). Returns the trimmed arms
+    /// and how many day-memberships were removed (for the honest "se excluyeron N días" line).
+    public static func restrictConfounders(with: Set<String>, without: Set<String>,
+                                           confounderYesDays: Set<String>)
+        -> (with: Set<String>, without: Set<String>, excluded: Int) {
+        let w = with.subtracting(confounderYesDays)
+        let wo = without.subtracting(confounderYesDays)
+        let excluded = (with.count - w.count) + (without.count - wo.count)
+        return (w, wo, excluded)
+    }
 }
