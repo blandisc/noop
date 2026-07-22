@@ -103,4 +103,24 @@ final class PreparednessTests: XCTestCase {
                                           spark: [], asOfWasDense: true)
         XCTAssertEqual(read(days, asOf: "2026-06-21", trend: falling, config: noHyst).verdict, .easy)
     }
+
+    // MARK: Signed knobs (/cso gate) — any change here must be an intentional re-gate
+
+    /// Locks the values `/cso` signed for FER-1030 so a future retune can't drift silently.
+    func testSignedKnobs_lockedByCSO() {
+        let c = Preparedness.Config.default
+        XCTAssertEqual(c.wHRV, 0.35); XCTAssertEqual(c.wRHR, 0.40); XCTAssertEqual(c.wResp, 0.25)
+        XCTAssertEqual(c.autonomicOutZ, -1.0)
+        XCTAssertEqual(c.respBadZ, 1.5)
+        XCTAssertEqual(c.thermalOutC, 0.8)
+        XCTAssertEqual(c.hysteresisDays, 2)
+        XCTAssertEqual(c.sdnnCfgKey, "sdnn")
+    }
+
+    /// The SDNN baseline config exists and is byte-identical to the HRV machinery (signed: SDNN is
+    /// log-normal like RMSSD), but kept under its OWN key so an RMSSD retune never moves it.
+    func testSdnnBaselineConfig_existsAndIdentical() {
+        XCTAssertNotNil(Baselines.metricCfg["sdnn"])
+        XCTAssertEqual(Baselines.metricCfg["sdnn"], Baselines.metricCfg["hrv"])
+    }
 }

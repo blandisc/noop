@@ -4,8 +4,14 @@ import StrandModels
 /// Preparedness — the honest "how you woke up" morning verdict for Apple-only Cénit (FER-1030).
 ///
 /// A pure, deterministic composition (no store, no clock, no UIKit) that reads a handful of
-/// overnight Apple-Health signals against the user's OWN baseline and returns a categorical
+/// resting Apple-Health signals against the user's OWN baseline and returns a categorical
 /// verdict — never a 0–100 number. It answers *"today: push or ease?"*.
+///
+/// **Honest limit (`/cso`, inherited from the illness engine):** Apple's `avgHrv` is SDNN sampled
+/// *all day* (`discreteAverage`), not sleep-windowed, and `restingHr` is an awake-sedentary
+/// aggregate — so this is "your resting signals vs your own norm", NOT a nocturnal/sleep
+/// measurement. UI copy must not claim overnight precision, and the four verdict strings must be
+/// added to the claims allow-list (docs/ANALYTICS.md) before they surface.
 ///
 /// ## Design (settled through two adversarial science rounds + a product negotiation)
 /// - **Consensus by AXIS, not by signal.** HRV + resting-HR + respiration collapse into ONE
@@ -115,17 +121,19 @@ public enum Preparedness {
         /// Oriented-z below which an axis counts as OUT. −1.0 (one-sided ≈16%) matches the shipped
         /// `ReadinessEngine.Flag.bad` cut; NOT `|z|≤1` (rejected as noisy in `VitalBands`). `/cso`.
         public var autonomicOutZ: Double = -1.0
-        /// Respiration is watched wider (its own shipped cut-offs), so a normal rise isn't flagged.
-        public var respWatchZ: Double = 1.0
+        /// Respiration flags on its own (wider) cut, so a normal nightly rise isn't flagged. A raw
+        /// respiratory z at or above this counts the autonomic axis out even if the composite doesn't.
         public var respBadZ: Double = 1.5
         /// Skin-temp deviation (°C from Apple's own baseline) that counts as OUT. Absolute, no z.
         public var thermalOutC: Double = 0.8
         /// Consecutive daily readings a NEW raw verdict must hold before it replaces the stable one.
         public var hysteresisDays: Int = 2
-        /// Baseline config used to z-score Apple's SDNN. ⚠️ `Baselines.metricCfg["hrv"]` is
-        /// calibrated for ln(RMSSD); reusing it for SDNN is provisional and MUST be validated by
-        /// `/cso` (RMSSD ≠ SDNN — the same trap that killed the v1 design).
-        public var sdnnCfgKey: String = "hrv"
+        /// Baseline config key for Apple's SDNN (`Baselines.metricCfg["sdnn"]`). SIGNED by `/cso`
+        /// (FER-1030): SDNN is z-scored WITHIN-SOURCE — Apple's SDNN against the user's OWN
+        /// Apple-SDNN norm — which is right-skewed / log-normal like RMSSD and takes the same log
+        /// treatment (Task Force 1996). This is NOT a cross-construct RMSSD conversion, so the
+        /// "RMSSD ≠ SDNN" trap that killed the v1 design does not apply here.
+        public var sdnnCfgKey: String = "sdnn"
         public init() {}
         public static let `default` = Config()
     }

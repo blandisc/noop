@@ -154,6 +154,14 @@ public enum Baselines {
         // ~a 10% night-to-night band) instead of the old 5 ms.
         "hrv": MetricCfg(minVal: 5.0, maxVal: 250.0, floorSpread: 0.08,
                          halfLifeB: 14.0, halfLifeS: 21.0, logDomain: true),
+        // Apple's SDNN, baselined WITHIN-SOURCE (Apple SDNN vs the user's own Apple-SDNN norm —
+        // never mixed with band or Apple RMSSD, the three-baseline invariant). Identical machinery to
+        // "hrv" because SDNN is right-skewed / log-normal too and the standard treatment is the same
+        // log-transform (Task Force 1996; SDNN log-normality, Sci Rep 2019). Kept as its OWN key
+        // (not reusing "hrv") so a future RMSSD retune can never silently move the SDNN baseline.
+        // Signed by /cso for FER-1030 (Preparedness autonomic axis).
+        "sdnn": MetricCfg(minVal: 5.0, maxVal: 250.0, floorSpread: 0.08,
+                          halfLifeB: 14.0, halfLifeS: 21.0, logDomain: true),
         "resting_hr": MetricCfg(minVal: 30.0, maxVal: 120.0, floorSpread: 2.0,
                                 halfLifeB: 14.0, halfLifeS: 21.0),
         "resp": MetricCfg(minVal: 4.0, maxVal: 40.0, floorSpread: 0.5,
