@@ -1093,7 +1093,7 @@ struct TodayView: View {
         let nights = repo.todayAutonomicTrend?.nightsUsable ?? 0
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(alignment: .top) {
-                Text("PREPARACIÓN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(verbatim: "PREPARACIÓN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 SelloConfianzaArco(nights: nights,
                                    a11y: Text(verbatim: "Confianza: \(nights) de 21 noches"),
