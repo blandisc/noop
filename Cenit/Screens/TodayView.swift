@@ -646,7 +646,6 @@ struct TodayView: View {
                     headerBlock
                     HealthAlertBanner()
                     heroBlock
-                    autonomicTrendCardBlock
                 }
                 // FER-1039: Hoy es UNA sola superficie — SEÑALES. Se retiró el brief «en espera» junto con
                 // las pestañas SEÑALES/BRIEF, el pager de 2 páginas y sus page dots: la franja de carga + la
@@ -924,19 +923,6 @@ struct TodayView: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// R4 (FER-1008): la tarjeta «cómo vienes» — solo en el path Apple-only (sin recuperación de banda) y
-    /// cuando hay una lectura de tendencia. En banda con veredicto no aparece (el veredicto es el héroe).
-    @ViewBuilder private var autonomicTrendCardBlock: some View {
-        if repo.today?.recovery == nil, let trend = repo.todayAutonomicTrend {
-            AutonomicTrendCard(
-                read: trend,
-                showLowSampleBanner: (resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.value ?? 0) > 0 && trend.asOfWasDense == false,
-                onTap: { showAutonomicDetail = true }
-            )
-            .padding(.top, CenitMetrics.space2)
-        }
-    }
-
     // MARK: - «Preparación» hero (FER-1030)
 
     private struct AxisNeedle: Identifiable {
@@ -978,6 +964,20 @@ struct TodayView: View {
                 Spacer(minLength: 0)
             }
             .padding(.top, CenitMetrics.space1)
+            if let trend = repo.todayAutonomicTrend, !trend.spark.isEmpty {
+                VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+                    TrendSparkline(values: trend.spark,
+                                   lastIsOut: abs(trend.spark.last ?? 0) > AutonomicTrend.swcK,
+                                   theme: theme)
+                        .frame(height: 14)
+                    Text(verbatim: "HRV de sueño · últimas noches · sobre tu base")
+                        .font(StrandFont.footnote)
+                        .foregroundStyle(theme.inkTertiary)
+                }
+                .padding(.top, CenitMetrics.space1)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "Tendencia de HRV de sueño de las últimas noches"))
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
