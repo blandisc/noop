@@ -21,7 +21,9 @@ import Foundation
 //                header seal.
 //   (c) TABS   — SEÑALES / BRIEF with the elastic underline (`sectionTabs`) over a 2-page pager:
 //                · Page 0 (`senalesPage`) — the 2×4 tile grid with sparkbands (`iosMetricsSection`).
-//                · Page 1 (`verdictPage`) — the Daily Brief (headline, connection, actions, CTA).
+//                · Page 1 (`verdictPage`) — the «en espera» brief: honest headline + «ayer cerraste en …»
+//                  + the bridge to Métricas. FER-1029: the band-era Daily Brief (verdict headline, bullets,
+//                  training CTA — all gated on band recovery) was retired as unreachable dead code.
 //
 // Pull-to-refresh: the seal winds up with the pull and spins while syncing; the tile values settle
 // straight to their numbers (no count-up or reveal sequence on completion).
@@ -180,11 +182,6 @@ struct TodayView: View {
     // StressView builds, computed once per load from `repo.displayDays` + the stored "stress" series. (FER-180)
     @State private var stress: StressModel? = nil
 
-    // «Hoy en tu plan» — el bloque puente con Entrenar al pie del brief (FER-613). Cargados en `loadAll`
-    // desde el store: si hay split, la rutina de hoy (nil = descanso) y la racha COMPARTIDA con Entrenar.
-    @State private var hasSplit = false
-    @State private var todayRoutineName: String? = nil
-    @State private var trainingStreak = 0
 
     // «La conexión de hoy» — la correlación más relevante del día (FER-614). Cargados en `loadAll` vía el
     // loader compartido `InsightsProvider`, así la conexión del brief == la que muestra Patrones (mismo FDR).
@@ -201,14 +198,12 @@ struct TodayView: View {
     @State private var metricDetail: MetricInfo? = nil
     /// FER-953: sleep summary for MetricInfoSheet, built off-main when the sleep info sheet opens.
     @State private var sleepSummaryModel: SleepDetailModel? = nil
-    @State private var showWhyVerdict = false
 
     // Rich «Instrumento» Detalle drilled into via the summary sheet's "Ver más" (FER-251). These mirror the
     // ones Cuerpo presents — Today reuses the SAME static `.build()` factories / specs, so the detail is
     // identical from both tabs. `pendingSeeMore` defers presenting until the summary fully dismisses, so the
     // sheet-over-sheet hand-off never gets swallowed (it runs in the summary sheet's `onDismiss`).
     @State private var pendingSeeMore: (() -> Void)? = nil
-    @State private var recoveryDetail: RecoveryDetailItem? = nil
     @State private var sleepDetail: SleepDetailItem? = nil
     @State private var strainDetail: StrainDetailItem? = nil
     @State private var stressDetail: StressDetailItem? = nil
@@ -224,7 +219,7 @@ struct TodayView: View {
     /// La hoja de carga (montada al tocar la franja).
     @State private var trainingLoadItem: TrainingLoadItem? = nil
 
-    /// Página activa del pager de 2 páginas (FER-465): 0 = veredicto (Daily Brief) · 1 = «Métricas de hoy».
+    /// Página activa del pager de 2 páginas (FER-465): 0 = «Señales» (métricas) · 1 = Brief «en espera».
     /// Optional porque es el binding de `.scrollPosition(id:)` (puede quedar nil a media transición); los
     /// page dots lo leen con `?? 0`. Arranca en la página 1 del veredicto.
     @State private var pagerPage: Int? = 0
@@ -234,18 +229,15 @@ struct TodayView: View {
     /// el scroll vertical solo aparece en Brief. Vacío el primer frame → el pager cae a su alto natural.
     @State private var pageHeights: [Int: CGFloat] = [:]
 
-    /// Arma el latido del punto «Ahora» del Daily Brief (FER-549/handoff): al aparecer pasa a `true` con una
-    /// animación `repeatForever`, de modo que el halo concéntrico pulse. Estático bajo Reduce Motion.
-    @State private var briefDotPulse = false
 
     // THE single grid definition — every tile group reuses it so margins line up.
     private let grid = [GridItem(.adaptive(minimum: 168), spacing: CenitMetrics.gap)]
 
-    // MARK: - Memoización del veredicto + conteos derivados (FER-172)
+    // MARK: - Memoización de conteos derivados (FER-172)
     //
-    // `ReadinessEngine.evaluate` y los conteos de noches de HRV ordenan/mapean los ~4000 días de
-    // historia. Antes eran computed properties que el `body` invocaba 3+ veces POR RENDER (héroe,
-    // verdictBody, métricas, sheet), así que corrían completos en CADA repintado —cada tick de HR en
+    // `ReadinessEngine.evaluate` (nivel de ayer + carga) y los conteos de noches de HRV ordenan/mapean
+    // los ~4000 días de historia. Antes eran computed properties que el `body` invocaba varias veces POR
+    // RENDER (héroe, métricas, sheet), así que corrían completos en CADA repintado —cada tick de HR en
     // vivo, cada frame de animación—, congelando el hilo principal hasta el riesgo de watchdog. Ahora
     // se calculan UNA vez por cambio de datos y se cachean en `@State`: `recomputeDerived()` los siembra
     // desde el `.task(id: repo.refreshSeq)` (mismo patrón de memoización que StressView). El gate es
@@ -254,22 +246,18 @@ struct TodayView: View {
     // arreglo completo. Los accesores caen a un cálculo en línea solo si el memo aún es nil (el primer
     // body antes de que `.task` siembre), nunca en el camino caliente.
 
-    /// El veredicto de hoy, memoizado. nil hasta la primera siembra; el accesor `readiness` cae a un
-    /// cálculo en línea ese único frame para no parpadear.
-    @State private var memoReadiness: ReadinessEngine.Readiness?
     /// Los conteos de noches derivados de HRV, memoizados (ver `DerivedHrvCounts`).
     @State private var memoCounts: DerivedHrvCounts?
     /// El nivel del veredicto de AYER, memoizado (FER-475): da continuidad en la página 1 «en espera»
     /// («Ayer cerraste en Equilibrado») cuando aún no hay lectura de hoy. `nil`/insufficient → no se muestra.
     @State private var memoYesterdayLevel: ReadinessEngine.Level?
     /// Los días de base para las medias de 7 días, memoizados (ver `baselineDays()`): el `filter+sort`
-    /// sobre `repo.displayDays` lo comparten el delta del héroe, el Daily Brief y los tiles.
+    /// sobre `repo.displayDays` lo comparten el delta del héroe y los tiles.
     @State private var memoBaselineDays: [DailyMetric]?
 
-    /// Los tres conteos de noches que el héroe/veredicto leen, agrupados para sembrarlos de una sola
+    /// Los conteos de noches que la calibración lee, agrupados para sembrarlos de una sola
     /// pasada sobre `repo.days` (antes cada propiedad remapeaba la historia por su cuenta).
     private struct DerivedHrvCounts: Equatable, Sendable {
-        let recoveryCalibration: Int?
         let ownNights: Int
         let seededNights: Int
         /// La base ya está sembrada (≥ `minNightsSeed` noches válidas) pero las noches PROPIAS del strap
@@ -280,28 +268,23 @@ struct TodayView: View {
     }
 
     /// Calcula los conteos de una sola pasada: `nightlyHrv` (toda la historia) se mapea UNA vez y se
-    /// reutiliza para `recoveryCalibration` y `seededNights`; `strapHrv` (sin los días de Apple Health)
-    /// para `ownNights`. Misma matemática que las propiedades previas, sin el remapeo triple.
+    /// reutiliza para `seededNights`; `strapHrv` (sin los días de Apple Health) para `ownNights`.
     private func computeHrvCounts() -> DerivedHrvCounts {
-        Self.computeHrvCounts(days: repo.days, appleDays: repo.appleHealthDays,
-                              todayHasRecovery: repo.today?.recovery != nil)
+        Self.computeHrvCounts(days: repo.days, appleDays: repo.appleHealthDays)
     }
 
     /// Forma pura — misma matemática desde un snapshot, para que el hop off-main de `recomputeDerived` y
     /// el fallback en frío de instancia (`hrvCounts`) compartan UNA fuente de verdad.
-    private nonisolated static func computeHrvCounts(days: [DailyMetric], appleDays: Set<String>,
-                                             todayHasRecovery: Bool) -> DerivedHrvCounts {
+    private nonisolated static func computeHrvCounts(days: [DailyMetric], appleDays: Set<String>) -> DerivedHrvCounts {
         let nightlyHrv = days.map(\.avgHrv)
         let strapHrv = days.filter { !appleDays.contains($0.day) }.map(\.avgHrv)
         return DerivedHrvCounts(
-            recoveryCalibration: RecoveryScorer.calibrationNights(nightlyHrv: nightlyHrv, hasRecovery: todayHasRecovery),
             ownNights: RecoveryScorer.calibrationNights(nightlyHrv: strapHrv, hasRecovery: false, seed: .max) ?? 0,
             seededNights: RecoveryScorer.calibrationNights(nightlyHrv: nightlyHrv, hasRecovery: false, seed: .max) ?? 0)
     }
 
     /// Los derivados que `recomputeDerived` computa fuera del MainActor y luego asigna a los `@State memo*`.
     private struct DerivedState: Sendable {
-        let readiness: ReadinessEngine.Readiness
         let counts: DerivedHrvCounts
         let yesterdayLevel: ReadinessEngine.Level
         let baselineDays: [DailyMetric]
@@ -319,18 +302,15 @@ struct TodayView: View {
         let todayKey = Repository.localDayKey(Date())
         let yKey = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
         let days = repo.days, displayDays = repo.displayDays, appleDays = repo.appleHealthDays
-        let todayRecovery = repo.today?.recovery
         let seq = repo.refreshSeq
         let state = await Task.detached(priority: .userInitiated) {
             Self.computeDerived(days: days, displayDays: displayDays, appleDays: appleDays,
-                                todayRecovery: todayRecovery,
                                 todayKey: todayKey, yKey: yKey)
         }.value
         // FER-982: si un refresh más nuevo ya superó a este mientras el cómputo estaba en vuelo, no pises
         // sus memos con un snapshot viejo — el `.task(id: refreshSeq)` más nuevo los sembrará. (El `.task`
         // cancela a su predecesor, pero el `Task.detached` es independiente y podría aterrizar después.)
         guard seq == repo.refreshSeq else { return }
-        memoReadiness = state.readiness
         memoCounts = state.counts
         memoYesterdayLevel = state.yesterdayLevel
         memoBaselineDays = state.baselineDays
@@ -348,12 +328,11 @@ struct TodayView: View {
     /// ver `readiness`). `todayKey`/`yKey` se snapshotean una vez (idéntico: las llamadas originales a
     /// `localDayKey(Date())` ocurrían microsegundos aparte en la misma pasada síncrona).
     private nonisolated static func computeDerived(days: [DailyMetric], displayDays: [DailyMetric],
-                                           appleDays: Set<String>, todayRecovery: Double?,
+                                           appleDays: Set<String>,
                                            todayKey: String, yKey: String) -> DerivedState {
-        // FER-623: el veredicto mide la HRV solo contra la base de BANDA (RMSSD), vía `band`.
+        // FER-623: la HRV se mide solo contra la base de BANDA (RMSSD), vía `band`.
         let band = SourceLens.clearBandHrv(days)
-        let readiness = ReadinessEngine.evaluate(days: band, today: todayKey)
-        let counts = computeHrvCounts(days: days, appleDays: appleDays, todayHasRecovery: todayRecovery != nil)
+        let counts = computeHrvCounts(days: days, appleDays: appleDays)
         // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera».
         let yesterdayLevel = ReadinessEngine.evaluate(days: band, today: yKey).level
         // FER-709: la base de 7 días (filter+sort sobre displayDays).
@@ -367,18 +346,9 @@ struct TodayView: View {
             acwr: acwrReadiness.acwr,
             series: ReadinessEngine.acwrSeries(days: acwrMasked).map { (day: $0.day, value: $0.ratio) },
             days: acwrMasked)
-        return DerivedState(readiness: readiness, counts: counts, yesterdayLevel: yesterdayLevel,
+        return DerivedState(counts: counts, yesterdayLevel: yesterdayLevel,
                             baselineDays: baselineDays,
                             trainingLoad: trainingLoad)
-    }
-
-    /// FER-623: `repo.days` con la HRV de Apple (SDNN) enmascarada, para medir el veredicto solo contra la
-    /// base de BANDA (RMSSD) — igual que Recuperación (FER-519): la σ de «HRV vs tu base» no se contamina
-    /// mezclando dos métricas sin conversión. Lee `days` + `appleHealthDays` en una sola expresión síncrona
-    /// (mismo dashboard publicado, sin await en medio) para no reintroducir la carrera FER-177. Una sola
-    /// fuente de verdad: `recomputeDerived` y el fallback en frío de `readiness` la comparten (deben coincidir).
-    private var bandDays: [DailyMetric] {
-        SourceLens.clearBandHrv(repo.days)
     }
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
@@ -390,35 +360,6 @@ struct TodayView: View {
         guard let l = memoYesterdayLevel, l != .insufficient else { return nil }
         return l
     }
-
-    /// La explicación honesta para la hoja «¿Por qué?» (la «i») cuando NO hay lectura de hoy (FER-475):
-    /// QUÉ falta según el estado real, en vez del genérico «¿Por qué preparación?» con el chip gris. `nil`
-    /// con veredicto → la hoja muestra el porqué normal.
-    private var whyEmptyExplanation: LocalizedStringKey? {
-        let state = heroState
-        guard state != .verdict else { return nil }
-        // FER-888 / FER-1003: Solo-Apple — empty states speak of the Apple Watch, not the band.
-        switch state {
-        case .loading, .verdict:
-            return nil   // neutro de carga (o veredicto, ya filtrado arriba): nada que explicar todavía
-        case .calibrating:
-            return "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here."
-        case .waiting:
-            // Modificador «descargando» (ex-`.downloading`); si no, espera / base Apple.
-            if isSyncing {
-                return "We're syncing from Apple Health. As soon as it finishes, your day's verdict shows here."
-            }
-            return "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
-        }
-    }
-
-    /// Recovery cold-start: recovery is nil until the HRV baseline crosses the seed gate
-    /// (Baselines.minNightsSeed valid nights). While calibrating, this is the count of nights
-    /// banked so far — it drives an honest "Calibrating — N of 4 nights" on the recovery ring,
-    /// the synthesis card and the Key Metrics tile instead of a bare empty state. It self-clears
-    /// the moment recovery populates, and never claims "calibrating" at/above the seed gate.
-    /// Mirrors Android TodayScreen.recoveryCalibrationNights (7b5f212). Memoizado vía `hrvCounts` (FER-172).
-    private var recoveryCalibration: Int? { hrvCounts.recoveryCalibration }
 
     /// Nights of the user's OWN strap data with usable HRV, 0… (drives the night-dots progress).
     /// Apple-Health days are deliberately EXCLUDED: Apple Health fills Trends/Sleep preliminarily but
@@ -497,11 +438,6 @@ struct TodayView: View {
                 guard !Task.isCancelled else { return }   // sheet switched away while building
                 sleepSummaryModel = model
             }
-            .sheet(isPresented: $showWhyVerdict) {
-                WhyVerdictSheet(readiness: readiness, theme: theme,
-                                sleepMinutes: repo.today?.totalSleepMin,
-                                emptyStateExplanation: whyEmptyExplanation)
-            }
             // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
             // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
             // NavigationStack (FER-171). (FER-251)
@@ -510,11 +446,7 @@ struct TodayView: View {
             // slides up from the bottom, so a synchronous-datum screen (Estrés, Temp. de piel, Carga) shows
             // the number already in place — the same lost-under-the-motion bug the Tendencias layer fixed
             // (FER-1008). The gate holds the keyframes until the sheet lands; the late-swap screens
-            // (Recuperación/Sueño/Esfuerzo) are unaffected (their number appears after the gate flips anyway).
-            .sheet(item: $recoveryDetail) { item in
-                RecoveryDetailScreen(theme: theme, model: item.model)
-                    .recEntranceGate()
-            }
+            // (Sueño/Esfuerzo) are unaffected (their number appears after the gate flips anyway).
             .sheet(item: $sleepDetail) { item in
                 SleepDetailScreen(theme: theme, model: item.model,
                                   loadNightHR: { from, to in await repo.hrSamples(from: from, to: to) },
@@ -646,19 +578,6 @@ struct TodayView: View {
     private func seeMoreAction(for id: String) -> (() -> Void)? {
         let present: (() -> Void)?
         switch id {
-        case "recovery":
-            present = {
-                // FER-954: present the loading state IMMEDIATELY; the model builds off-main and swaps
-                // in under the same id (same pattern as `sleep` above, FER-953).
-                let item = RecoveryDetailItem(model: .loading)
-                recoveryDetail = item
-                Task {
-                    let m = await RecoveryDetailModel.buildDetached(repo: repo)
-                    if recoveryDetail?.id == item.id {
-                        recoveryDetail = RecoveryDetailItem(id: item.id, model: m)
-                    }
-                }
-            }
         case "sleep":
             present = {
                 // FER-953: present the loading state IMMEDIATELY; the model builds off-main and swaps
@@ -960,17 +879,6 @@ struct TodayView: View {
     /// (`guard !backfilling`, the BLE engine). `refreshBattery()` es agnóstico al modelo (4.0 → comando
     /// GET_BATTERY_LEVEL; 5/MG → lectura 0x2A19) y no introduce ningún comando nuevo.
 
-    /// Recovery score driving the hero numeral (0–100). nil while calibrating.
-    private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
-
-    /// The recovery summary sheet's model — the ONE way every entry point (Daily Brief bullet, the
-    /// hero numeral, the glance pill) opens it.
-    private var recoveryInfo: MetricInfo {
-        .recovery(score: recoveryScore,
-                  calibrationNights: recoveryCalibration,
-                  nightsNeeded: Baselines.minNightsSeed)
-    }
-
     /// El lienzo: el papel del tema, leído DENTRO del subárbol tematizado para que también recolore por
     /// hora. (El `.background(theme.paper)` del propio `iosBody` resolvería contra el tema base, no el de
     /// la hora — por eso esta vista hija lo lee del entorno.)
@@ -1097,18 +1005,15 @@ struct TodayView: View {
     /// idéntico: solo cambia la etiqueta del caso, no cuándo se entra a él.
     private enum HeroState: Equatable {
         case loading                    // el dashboard aún no publica (repo.loaded == false): esqueleto neutro, sin narrativa
-        case verdict                    // LISTO — repo.today?.recovery != nil → hay número
         case calibrating(nights: Int)   // CALIBRANDO — strap visto, ownNights < seed
         case waiting                    // EN ESPERA — absorbe descargando (isSyncing) y base Apple (hasImportedBaseline)
     }
 
     private var heroState: HeroState {
-        if repo.today?.recovery != nil { return .verdict }
         // Arranque frío: mientras el refresh no publica la historia COMPLETA, los conteos de abajo
         // mienten (con `days` vacío ownNights = 0 → «calibrando»; sobre la ventana corta de la primera
-        // pasada subcuentan igual). El veredicto no espera nada — sale arriba en cuanto hay recovery de
-        // hoy, y la ventana corta siempre trae la fila de hoy; solo los narrativos pre-veredicto
-        // aguardan `fullyLoaded` para no narrar un estado falso.
+        // pasada subcuentan igual). Solo los narrativos pre-lectura aguardan `fullyLoaded` para no
+        // narrar un estado falso.
         if !repo.fullyLoaded { return .loading }
         // FER-286/FER-106: descargando la noche o base sembrada por Apple → EN ESPERA (la descarga la
         // narran el header + el sello; la base Apple, el chip de procedencia). Mismo corte y prioridad que
@@ -1170,32 +1075,24 @@ struct TodayView: View {
 
     // MARK: - Pager de 2 páginas (FER-465)
 
-    /// Página 1 del pager. Con veredicto (FER-470) muestra el **Daily Brief** —titular en palabras +
-    /// porqué + 2–3 viñetas, armado por `DailyBriefEngine`—; en los demás estados (descargando / base
-    /// Apple / calibrando / espera) conserva el copy honesto de `heroBody` + `heroFooter`. El motor
-    /// devuelve `nil` sin veredicto, así que el `else` cubre también ese caso de forma natural.
+    /// Página 1 del pager (FER-475). En Apple-only no hay veredicto de banda, así que siempre es el Brief
+    /// «en espera»: encabezado + titular honesto + «Ayer cerraste en …» + el puente a Métricas para los
+    /// estados de espera; el copy honesto de `heroBody` + `heroFooter` mientras descarga o calibra.
     @ViewBuilder private var verdictPage: some View {
-        let state = heroState
-        if state == .verdict, let brief = dailyBrief {
-            dailyBriefView(brief)
-        } else {
-            transitionalBriefView(state)
-        }
+        transitionalBriefView(heroState)
     }
 
-    /// Página 1 cuando aún no hay veredicto (FER-475). Para los estados de «aún no hay lectura» (`waiting`/
-    /// `importedBaseline`) muestra un Brief «en espera» ENRIQUECIDO: encabezado + titular honesto + por qué
-    /// llega + la continuidad «Ayer cerraste en …» + el puente a Métricas (NADA del copy viejo de «base
-    /// lista / strap»). Para `downloading` (la noche está bajando) y `calibrating` (onboarding de las
-    /// primeras noches) conserva su copy honesto de `heroBody` —siguen siendo precisos— + el puente.
+    /// Página 1 según el estado (FER-475). Para «aún no hay lectura» (`waiting`) muestra un Brief «en
+    /// espera» ENRIQUECIDO: encabezado + titular honesto + por qué llega + la continuidad «Ayer cerraste
+    /// en …» + el puente a Métricas. Para `downloading` (la noche está bajando) y `calibrating` (onboarding
+    /// de las primeras noches) conserva su copy honesto de `heroBody` —siguen siendo precisos— + el puente.
     @ViewBuilder private func transitionalBriefView(_ state: HeroState) -> some View {
         switch state {
         case .waiting where !isSyncing:
             // EN ESPERA (sin la descarga en curso) y base Apple: el Brief «en espera» enriquecido. La
             // descarga (isSyncing) cae al copy honesto de heroBody de abajo, como antes `.downloading`.
             waitingBrief(state)
-        default:   // descargando (waiting+isSyncing) / calibrating — y .verdict SÍ llega aquí cuando
-                   // `dailyBrief == nil` (nivel .insufficient o < 2 viñetas): cae al copy honesto (FER-547)
+        default:   // descargando (waiting+isSyncing) / calibrating / loading: cae al copy honesto (FER-547)
             VStack(spacing: CenitMetrics.gap) {
                 heroBody(state)
                 heroFooter(state)
@@ -1210,7 +1107,7 @@ struct TodayView: View {
     /// Métricas. Sin el copy viejo de «tu base está lista / usa el strap».
     private func waitingBrief(_ state: HeroState) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            briefHeader(now: false)
+            briefHeader()
             Text("No reading for today yet")
                 .font(StrandFont.title2).fontWeight(.semibold).foregroundStyle(theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1245,268 +1142,21 @@ struct TodayView: View {
         .accessibilityHint(Text("Opens today's metrics page"))
     }
 
-    /// El Daily Brief del día (FER-470), armado desde el veredicto memoizado + la recuperación de hoy y su
-    /// media reciente (derivada con el MISMO `baselineDays()`/`history()` que los tiles) + el sueño de
-    /// anoche. `nil` sin veredicto → la página 1 cae al copy honesto.
-    private var dailyBrief: DailyBrief? {
-        let recBase = history(baselineDays()) { $0.recovery }
-        let recoveryBaseline = recBase.isEmpty ? nil : recBase.reduce(0, +) / Double(recBase.count)
-        let sleepMin = resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.value
-        return DailyBriefEngine.make(readiness: readiness,
-                                     recovery: repo.today?.recovery,
-                                     recoveryBaseline: recoveryBaseline,
-                                     sleepMinutes: sleepMin)
-    }
-
-    /// El bloque «Hoy en tu plan» (FER-613): puente con Entrenar al pie del brief. `nil` sin split (se omite).
-    private var trainingBlock: DailyBrief.TrainingBlock? {
-        DailyBriefEngine.trainingBlock(hasSplit: hasSplit,
-                                       todayRoutineName: todayRoutineName,
-                                       streakDays: trainingStreak,
-                                       recovery: repo.today?.recovery)
-    }
-
-    /// El Daily Brief renderizado (handoff «Hoy» 2026-07): plano sobre el papel — encabezado con el
-    /// punto AHORA, titular 22/700 en grotesk (abre el porqué), cuerpo, «La conexión de hoy» sobre
-    /// `patternBlock`, las filas de acción y el CTA de entrenamiento. Las cinco reglas NO viven aquí
-    /// (pertenecen solo a Señales). Sin serif: la voz nueva es Space Grotesk (F0).
-    private func dailyBriefView(_ brief: DailyBrief) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            briefHeader(now: true)
-            Button { showWhyVerdict = true } label: {
-                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
-                    Text(brief.titular)
-                        .font(InstrumentoType.grotesk(22, weight: .bold, relativeTo: .title2))
-                        .tracking(-0.4)
-                        .foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    StrandIcon.info.image.font(StrandFont.glyph(.inline))
-                        .foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint(Text("Opens why the verdict reads this way"))
-
-            Text(brief.why).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            // FER-992: «La conexión de hoy» + CTAs to Patrones off (`dayConnectionView` below stays for re-enable).
-            // FER-999: su fuente de datos (`dayConnection` + `activeExperiment` + `loadActiveExperiment`) se borró
-            // por estar 100% huérfana; `loadActiveExperiment` además escribía a la DB en cada `loadAll`. Re-enable =
-            // restaurarla desde el historial de git y volver a llamar `dayConnectionView(conn)` aquí.
-
-            VStack(spacing: 0) {
-                ForEach(Array(brief.bullets.enumerated()), id: \.offset) { i, b in
-                    briefBulletRow(b, showTopHairline: i > 0)
-                }
-            }
-
-            if let tb = trainingBlock { trainingBlockView(tb) }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - «La conexión de hoy» (FER-614 correlación · FER-615 experimento)
-
-    /// El renglón «La conexión de hoy»: despacha entre la correlación detectada (F2) y el experimento N-of-1 en
-    /// curso (F3), ya elegidos por la regla de prioridad del motor. Ambos comparten el mismo chrome (overline +
-    /// acento + frase + CTA); solo cambian la frase, el copy del CTA y el destino del deep-link.
-    @ViewBuilder
-    private func dayConnectionView(_ conn: DailyBrief.DayConnection) -> some View {
-        switch conn {
-        case .correlation(let c):
-            connectionLineView(text: c.text, cta: "See pattern",
-                               hint: "Opens this pattern in Patrones") {
-                tabRouter.openInsight(key: InsightFreshness.key(for: c.insight))
-            }
-        case .experiment(let line):
-            connectionLineView(text: line.text,
-                               cta: line.pendingCheckIn ? "Log check-in" : "See experiment",
-                               hint: line.pendingCheckIn
-                                   ? "Opens your experiment in Patrones to log today's check-in"
-                                   : "Opens your experiment in Patrones") {
-                tabRouter.openExperiment()
-            }
-        }
-    }
-
-    /// El chrome compartido del renglón «La conexión de hoy»: acento verde a la izquierda, la frase sin jerga y
-    /// el CTA con chevron. Toca → `action` (deep-link a Patrones, distinto por fuente).
-    private func connectionLineView(text: String, cta: LocalizedStringKey, hint: String,
-                                    action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-                Text("Today's connection").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
-                    Text(text).font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: CenitMetrics.space2)
-                    HStack(spacing: 2) {
-                        Text(cta).font(StrandFont.caption)
-                        StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    }
-                    .foregroundStyle(theme.verdict)
-                    .fixedSize()
-                }
-            }
-            .padding(.leading, CenitMetrics.gap)
-            .padding(.trailing, CenitMetrics.space2)
-            .padding(.vertical, CenitMetrics.space2)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            // Bloque «patrón/conexión» del handoff: fondo `patternBlock` con la barra verde a la
-            // izquierda y esquinas redondeadas solo del lado derecho (radio 0 8 8 0).
-            .background(theme.patternBlock,
-                        in: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
-                                                   bottomTrailingRadius: 8, topTrailingRadius: 8,
-                                                   style: .continuous))
-            .overlay(alignment: .leading) { Rectangle().fill(theme.verdict).frame(width: 2.5) }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.top, CenitMetrics.space2)
-        .accessibilityHint(Text(hint))
-    }
-
-    // MARK: - Bloque «Hoy en tu plan» (FER-613)
-
-    /// El bloque puente con Entrenar al pie del brief: su propia tarjeta `surface`, fiel al preview aprobado.
-    /// Día de entreno → rutina + chip de racha + línea de ritmo (color por `pace`) + «Empezar»; descanso →
-    /// «Hoy descansas». El color del ritmo (verde sube / ámbar baja) es el único dato con color, como el resto
-    /// del «Instrumento». «Empezar» enruta a Entrenar y arranca la sesión vía `TabRouter` (reusa el prefetch).
-    private func trainingBlockView(_ tb: DailyBrief.TrainingBlock) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            Text("Today in your plan").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            switch tb.state {
-            case .training:
-                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
-                    Text(tb.routineName ?? "").font(StrandFont.title2).foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    streakChip(tb.streakDays)
-                    Spacer(minLength: 0)
-                }
-                if let copy = tb.paceCopy {
-                    HStack(spacing: CenitMetrics.space2) {
-                        Image(systemName: paceGlyph(tb.pace)).font(StrandFont.glyph(.inline, weight: .semibold))
-                            .foregroundStyle(paceColor(tb.pace))
-                        Text(copy).font(StrandFont.subhead).foregroundStyle(paceColor(tb.pace))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .accessibilityElement(children: .combine)
-                }
-                // CTA del handoff: barra en TINTA (radio 14) con la rutina en crema y «EMPEZAR →» en el
-                // acento `ctaAccent` — el único lugar donde ese verde eléctrico existe (solo sobre tinta).
-                Button { tabRouter.startTodayTraining() } label: {
-                    HStack(spacing: CenitMetrics.space2) {
-                        Text(tb.routineName ?? String(localized: "Your workout"))
-                            .font(InstrumentoType.grotesk(13, weight: .bold))
-                            .foregroundStyle(theme.paperHi)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                        Spacer(minLength: CenitMetrics.space2)
-                        HStack(spacing: CenitMetrics.space1) {
-                            Text("Start")
-                                .font(InstrumentoType.grotesk(11, weight: .semibold))
-                                .tracking(1.2)
-                                .textCase(.uppercase)
-                            Image(systemName: "arrow.right").font(StrandFont.glyph(.chevron, weight: .semibold))
-                        }
-                        .foregroundStyle(theme.ctaAccent)
-                    }
-                    .padding(.horizontal, CenitMetrics.cardPadding)
-                    .padding(.vertical, 14)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .padding(.top, CenitMetrics.space1)
-                .accessibilityHint(Text("Opens Train and starts today's session"))
-            case .rest:
-                HStack(spacing: CenitMetrics.gap) {
-                    Image(systemName: "moon.fill").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkSecondary)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Rest day today").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                        Text("your split has no routine today").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .accessibilityElement(children: .combine)
-            }
-        }
-        .padding(CenitMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .fill(theme.surface)
-                .strandElevation(.hairline, ink: theme.ink)
-        }
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
-    }
-
-    /// El chip de racha: glifo de llama + «racha N días» (singular «día» en 1). Mismo número que Entrenar.
-    private func streakChip(_ days: Int) -> some View {
-        let unit = days == 1 ? String(localized: "day") : String(localized: "days")
-        return HStack(spacing: 4) {
-            Image(systemName: "flame.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.warning)
-            Text("streak \(days) \(unit)").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-        }
-        .padding(.horizontal, CenitMetrics.space2).padding(.vertical, 2)
-        .background(theme.paper, in: Capsule())
-        .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 0.5))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Streak of \(days) \(unit) in your plan"))
-    }
-
-    /// El color del ajuste de ritmo: verde «sube», ámbar «baja», tinta secundaria «mantén» — color en el dato.
-    private func paceColor(_ pace: DailyBrief.TrainingBlock.Pace?) -> Color {
-        switch pace {
-        case .up:   return theme.verdict
-        case .down: return theme.warning
-        case .hold, .none: return theme.inkSecondary
-        }
-    }
-
-
-    /// El encabezado de la página 1 (FER-475): overline «DAILY BRIEF» · punto · «AHORA» (verde, con
-    /// veredicto) o «EN ESPERA» (tinta, sin lectura) + una regla hairline. Fiel al handoff.
-    private func briefHeader(now: Bool) -> some View {
+    /// El encabezado de la página 1 (FER-475): overline «DAILY BRIEF» · punto · «EN ESPERA» (tinta) + una
+    /// regla hairline. En Apple-only siempre es el estado «en espera» (no hay veredicto de banda).
+    private func briefHeader() -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(spacing: CenitMetrics.space2) {
                 Text("Daily Brief").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer(minLength: 0)
-                // FER-549/handoff: el estado va a la DERECHA (space-between) y el punto «Ahora» PULSA (halo)
-                // cuando hay veredicto; estático en espera o bajo Reduce Motion.
-                nowDot(now: now)
-                Text(now ? "Now" : "Waiting").instrumentoOverline()
-                    .foregroundStyle(now ? theme.verdict : theme.inkTertiary)
+                Circle().fill(theme.inkTertiary).frame(width: 6, height: 6)
+                    .accessibilityHidden(true)
+                Text("Waiting").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
             Rectangle().fill(theme.hairline).frame(height: 0.5)
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
-    }
-
-    /// El punto «Ahora» del Daily Brief: un círculo en el color de estado (verde con veredicto, tinta en
-    /// espera). Con veredicto, un halo concéntrico RESPIRA detrás con el MISMO token que el punto «ahora»
-    /// del dial (`StrandMotion.breathe`), para que los dos indicadores de «en vivo» pulsen igual; estático
-    /// bajo Reduce Motion. El latido se arma con `briefDotPulse` al aparecer (lo anima el `.animation` por
-    /// cambio de valor, no un `withAnimation`).
-    @ViewBuilder private func nowDot(now: Bool) -> some View {
-        let c = now ? theme.verdict : theme.inkTertiary
-        ZStack {
-            if now {
-                Circle().fill(c)
-                    .frame(width: 14, height: 14)
-                    .scaleEffect(briefDotPulse ? 1.3 : 0.92)
-                    .opacity(briefDotPulse ? 0.05 : 0.20)
-                    .strandAnimation(StrandMotion.breathe, value: briefDotPulse)
-            }
-            Circle().fill(c).frame(width: 6, height: 6)
-        }
-        .frame(width: 6, height: 6)
-        .onAppear { if now && !reduceMotion { briefDotPulse = true } }
-        .accessibilityHidden(true)
     }
 
     /// La línea de continuidad «Ayer cerraste en …» (FER-475): el nivel del veredicto de ayer en su color.
@@ -1519,78 +1169,14 @@ struct TodayView: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// Una viñeta del Daily Brief: glifo SF tintado por el flag (misma fuente de color que la palabra del
-    /// veredicto, vía `flagColor`) + lead semibold + sub con la cifra + chevron. Toda la fila es tocable
-    /// (FER-475): abre `WhyVerdictSheet` —«tus señales de hoy» en σ— el detalle compartido de cualquier
-    /// viñeta (el handoff usa una hoja con cuerpo común). Separador hairline entre viñetas.
-    private func briefBulletRow(_ b: DailyBrief.Bullet, showTopHairline: Bool) -> some View {
-        Button { openBriefBullet(b.kind) } label: {
-            HStack(spacing: CenitMetrics.gap) {
-                Image(systemName: briefGlyph(b.kind))
-                    .font(StrandFont.glyph(.lead))
-                    .foregroundStyle(flagColor(b.flag))
-                    .frame(width: 22)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(b.lead).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                    Text(b.sub).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            .padding(.vertical, CenitMetrics.space2)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .overlay(alignment: .top) {
-            if showTopHairline { Rectangle().fill(theme.hairline).frame(height: 0.5) }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityHint(Text("Opens today's signals detail"))
-    }
-
-    /// FER-589: cada viñeta del Brief abre el DETALLE de su señal (el mismo destino que la pill/tile de
-    /// esa métrica), no la hoja genérica del veredicto. `skinTemp`/`acwr` no tienen detalle propio (son
-    /// contexto del veredicto) → ahí sí cae a `WhyVerdictSheet`, a propósito.
-    private func openBriefBullet(_ kind: DailyBrief.BulletKind) {
-        switch kind {
-        case .sleep:
-            metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }.map { Int($0.value.rounded()) })
-        case .recovery:
-            metricDetail = recoveryInfo
-        case .hrv:
-            metricDetail = .hrv(latestFromDisplay { $0.avgHrv }?.value)
-        case .rhr:
-            metricDetail = .restingHR(latestFromDisplay { $0.restingHr.map(Double.init) }.map { Int($0.value.rounded()) })
-        case .respRate:
-            metricDetail = .respiratory(latestFromDisplay { $0.respRateBpm }?.value)
-        case .skinTemp, .acwr:
-            showWhyVerdict = true   // sin detalle de métrica propio → el porqué del veredicto
-        }
-    }
-
-    /// Color por `Flag`, la MISMA fuente que `WhyVerdictSheet`/la palabra del veredicto: good→verdict,
-    /// watch→warning, bad→critical, neutral→tinta terciaria. (FER-470)
-    private func flagColor(_ f: ReadinessEngine.Flag) -> Color {
-        switch f {
-        case .good:    return theme.verdict
-        case .neutral: return theme.inkTertiary
-        case .watch:   return theme.warning
-        case .bad:     return theme.critical
-        }
-    }
-
-    /// Página 1 del pager: SEÑALES — el bloque «POR QUÉ N» (las cinco reglas, solo con veredicto) +
-    /// la retícula 2×4 de tiles; o la tarjeta de fuentes si no hay ninguna (FER-364).
+    /// Página 0 del pager: SEÑALES — la franja de carga + la retícula 2×4 de tiles; o la tarjeta de
+    /// fuentes si no hay ninguna (FER-364).
     @ViewBuilder private var senalesPage: some View {
-        // Gap `space2` (8) entre «Por qué N» y la retícula (FER-878 follow-up: 12→8 para recuperar el alto
-        // que sumó la leyenda de orígenes y el numeral más grande, y que SEÑALES quepa sin scroll).
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            // Franja de carga (FER-705 · handoff «Carga»): ahora vive DENTRO de Señales, bajo las cinco
-            // reglas, así que pertenece solo a esta página y NO viaja al Brief con el swipe. No respira ni
-            // participa del pull-to-refresh; tocarla abre la hoja. Si `trainingLoad` aún no sembró (primer
-            // refresh) se omite; una vez con datos muestra la banda o «calibrando».
+            // Franja de carga (FER-705 · handoff «Carga»): vive DENTRO de Señales, así que pertenece solo a
+            // esta página y NO viaja al Brief con el swipe. No respira ni participa del pull-to-refresh;
+            // tocarla abre la hoja. Si `trainingLoad` aún no sembró (primer refresh) se omite; una vez con
+            // datos muestra la banda o «calibrando».
             if let trainingLoad {
                 TrainingLoadStrip(model: trainingLoad, theme: theme) {
                     trainingLoadItem = makeTrainingLoadItem(trainingLoad)
@@ -1736,8 +1322,6 @@ struct TodayView: View {
     /// honesta de qué falta (resto de modos).
     @ViewBuilder private func heroBody(_ s: HeroState) -> some View {
         switch s {
-        case .verdict:
-            verdictBody
         case .calibrating(let nights):
             VStack(alignment: .center, spacing: CenitMetrics.gap) {
                 calibrationDots(nights: nights)   // FER-467: pulso vivo movido al encabezado de Métricas
@@ -1784,50 +1368,12 @@ struct TodayView: View {
         }
     }
 
-    /// El cuerpo del veredicto: la palabra en su color de nivel + la «i» (toda la fila tocable) que abre
-    /// el porqué, la frase puente, la salvedad de noche corta y la barra «afinando · N de 14». Cuando el
-    /// nivel es `insufficient` hay número pero no palabra: el numeral va en tinta (arriba) y aquí la razón.
-    @ViewBuilder private var verdictBody: some View {
-        let r = readiness
-        if r.level != .insufficient {
-            // FER-549 (B1): la palabra del veredicto + el «¿por qué?» ya viven en el CENTRO del dial; aquí
-            // (el fallback de página 1 sin Daily Brief) ya no se repiten. FER-545: el sello «estimado» también
-            // subió al dial (camino principal), así que aquí solo quedan los modificadores de puente/confianza.
-            if let bridge = r.bridge {
-                Text(bridge).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if r.confidenceLow {
-                // FER-285: en el Hero, una línea CORTA; la explicación con las horas reales de anoche
-                // vive en WhyVerdictSheet (la «i» de arriba la abre). El `confidenceNote` del engine se
-                // conserva (a11y / otros consumidores), pero el Hero ya no lo muestra entero.
-                HStack(spacing: CenitMetrics.space2) {
-                    StrandIcon.warning.image.font(StrandFont.glyph(.chevron))
-                    Text("Short night · low confidence").font(StrandFont.caption)
-                }
-                .foregroundStyle(theme.warning)
-            }
-            if (1..<Baselines.minNightsTrust).contains(ownNights) {
-                calibrationConfidence
-            }
-        } else {
-            // Hay número pero sin contexto para una palabra (ex-anillo / estado 6). El numeral ya va en
-            // tinta; aquí, la razón honesta — nunca un veredicto pintado de color sin respaldo. (FER-160)
-            Text("Not enough context yet for a day's verdict.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    /// El pie del héroe — solo afordancias de onboarding (FER-189): el CTA «Buscar strap» cuando nunca se
-    /// ha visto uno, o el atajo «¿Tienes historial en Apple Salud?…» mientras calibra. El renglón de pulso
-    /// vivo «Verlo latido a latido» se MUDÓ al pie de la pantalla (`iosBody`), así que el héroe queda
-    /// limpio: número + veredicto. En veredicto / espera-con-strap el pie del héroe no muestra nada.
+    /// El pie del héroe — solo afordancias de onboarding (FER-189): el atajo «¿Tienes historial en Apple
+    /// Salud?…» mientras calibra. El renglón de pulso vivo «Verlo latido a latido» se MUDÓ al pie de la
+    /// pantalla (`iosBody`). En carga / espera el pie del héroe no muestra nada.
     @ViewBuilder private func heroFooter(_ s: HeroState) -> some View {
         switch s {
-        case .verdict, .loading, .waiting:
+        case .loading, .waiting:
             // En espera el CTA vive en la tarjeta de fuentes (`emptySourcesCard`), no en el pie del
             // héroe. (FER-364; el CTA «Buscar banda» se retiró con la banda, FER-1003.)
             EmptyView()
@@ -1938,58 +1484,6 @@ struct TodayView: View {
             .accessibilityLabel(Text("Connect Apple Health"))
             .accessibilityHint(Text("Opens Data Sources to get your baseline ahead"))
         }
-    }
-
-    /// Whether the personal baseline draws on imported Apple Health history — drives the
-    /// "Your baseline comes from Apple Health" note on the calibration row. (FER-105)
-    private var baselineFromApple: Bool { !repo.appleHealthDays.isEmpty }
-
-    /// Quiet calibration-progress row at the foot of the verdict: the read keeps sharpening as the
-    /// user's OWN strap nights ramp to the trusted baseline (`minNightsTrust`). Visually distinct
-    /// from the 0–100 readiness gauge — a thin accent track with no 0/100 scale and an "N of 14
-    /// nights" counter — so the two never read as the same thing twice. When Apple Health seeded the
-    /// baseline, a tertiary note names the source so the early verdict never feels unexplained. (FER-105)
-    private var calibrationConfidence: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
-                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
-                    Image(systemName: "sparkles").font(StrandFont.glyph(.chevron))
-                    // Compacto (FER-202): la procedencia «base Apple Salud» se pliega aquí, en la misma línea
-                    // de la etiqueta, en vez de un tercer renglón aparte — recorta alto para que Hoy quepa.
-                    Text("Sharpening your baseline")
-                        .font(StrandFont.caption)
-                        .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate, at large Dynamic Type
-                    if baselineFromApple {
-                        Text("· Apple Health baseline")
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkTertiary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: CenitMetrics.space2)
-                Text("\(ownNights) of \(Baselines.minNightsTrust) nights")
-                    .font(StrandFont.captionNumber)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize()
-                    .layoutPriority(1)
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(theme.ink.opacity(StrandOpacity.tintFill)).frame(height: 5)
-                    Capsule().fill(theme.dataRecovery)
-                        .frame(width: max(6, geo.size.width * CGFloat(ownNights) / CGFloat(Baselines.minNightsTrust)),
-                               height: 5)
-                }
-            }
-            .frame(height: 5)
-        }
-        .padding(.top, CenitMetrics.space2)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Calibration confidence"))
-        .accessibilityValue(Text(baselineFromApple
-            ? "Sharpening your baseline, \(ownNights) of \(Baselines.minNightsTrust) nights. Your baseline comes from Apple Health."
-            : "Sharpening your baseline, \(ownNights) of \(Baselines.minNightsTrust) nights."))
     }
 
     /// El rótulo de la sección «Métricas de hoy» (handoff «Hoy · Estados»): un overline en tinta seguido de
@@ -2391,16 +1885,6 @@ struct TodayView: View {
         }
     }
 
-    /// On-device readiness for the verdict hero (`ReadinessEngine`).
-    /// Memoizado en `memoReadiness` (FER-172): cae a un cálculo en línea solo si el memo aún es nil
-    /// (el primer body antes de que `.task` lo siembre), nunca en el camino caliente de cada render.
-    private var readiness: ReadinessEngine.Readiness {
-        // FER-623: misma base de banda que `recomputeDerived`, para que el fallback en frío coincida con el memo.
-        memoReadiness ?? ReadinessEngine.evaluate(days: bandDays, today: Repository.localDayKey(Date()))
-    }
-
-
-
     /// Today's mean HR (nil when there are no readings) — the value on the "Heart Rate" Key-Metrics
     /// row. The day's average summarizes the day without echoing the live bpm that lives in the hero.
     private var hrTodayAvg: Int? {
@@ -2456,7 +1940,6 @@ struct TodayView: View {
         // UTC-bucketed "tomorrow" row (FER-226) can't blank the tile.
         stress = StressModel(days: repo.displayDays, stored: await stressRows,
                              todayKey: Repository.localDayKey(Date()), appleDays: repo.appleHealthDays)
-        await loadTrainingPlan()
         // Ola 2: live day-strain fold retired with the band; settled daily strain via repo.today is enough.
         // «La conexión de hoy» (FER-614): los hallazgos rankeados, misma fuente que Patrones. Memoizado
         // por (refreshSeq, díaLocal) — FER-872: si el mismo seq re-dispara `loadAll`, no repite la
@@ -2466,21 +1949,6 @@ struct TodayView: View {
             insights = await InsightsProvider.generate(repo: repo, today: Repository.localDayKey(Date()))
             memoInsightsKey = insightsKey
         }
-    }
-
-    /// Carga los insumos del bloque «Hoy en tu plan» (FER-613): el split, la rutina de hoy y la racha de
-    /// días cumpliendo el plan — esta última vía el helper compartido `TrainingStreak`, así sale EXACTAMENTE
-    /// igual que la que muestra Entrenar. Lee del mismo store que `EntrenarView.load()`.
-    private func loadTrainingPlan() async {
-        guard let store = await repo.storeHandle() else { return }
-        let sched = (try? await store.routineSchedule()) ?? []
-        let split = Dictionary(sched.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
-        let byId = Dictionary((await repo.routines()).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let sessions = await repo.recentSessions(limit: 200)
-        let tid = WeeklySplit.todayRoutineId(split: split, todayWeekday: Calendar.current.component(.weekday, from: Date()))
-        hasSplit = !split.isEmpty
-        todayRoutineName = tid.flatMap { byId[$0]?.name }
-        trainingStreak = TrainingStreak.streak(sessions: sessions, split: split)
     }
 
     // MARK: - 14-day trend loader (all platforms)
