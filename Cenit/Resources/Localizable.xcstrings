@@ -8091,6 +8091,23 @@
         }
       }
     },
+    "All set. Tonight, the first read." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All set. Tonight, the first read."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listo. Esta noche, la primera lectura."
+          }
+        }
+      }
+    },
     "All sets" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -20559,6 +20576,23 @@
         }
       }
     },
+    "If you turn on AFib History in the Health app, your watch samples your heartbeats much more often and the night read gets sharper." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you turn on AFib History in the Health app, your watch samples your heartbeats much more often and the night read gets sharper."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si activas Historial de FA en la app Salud, tu reloj muestrea tus latidos mucho más seguido y la lectura nocturna se afina."
+          }
+        }
+      }
+    },
     "Ignore" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -26104,6 +26138,40 @@
         }
       }
     },
+    "Night 1: I meet your resting rhythm." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night 1: I meet your resting rhythm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noche 1: conozco tu ritmo en reposo."
+          }
+        }
+      }
+    },
+    "Night 3: the read starts to feel yours." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night 3: the read starts to feel yours."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noche 3: la lectura empieza a sentirse tuya."
+          }
+        }
+      }
+    },
     "Night · %lld cycles" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -28684,6 +28752,23 @@
         }
       }
     },
+    "One more thing, optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One more thing, optional"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una cosa más, opcional"
+          }
+        }
+      }
+    },
     "One night says little on its own. What matters is whether your typical onset drifts over weeks." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -29019,6 +29104,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La hora de conciliar el sueño aún no está disponible para esta noche. El rango de arriba es la referencia saludable."
+          }
+        }
+      }
+    },
+    "Open Health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Health"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Salud"
           }
         }
       }
@@ -33651,6 +33753,23 @@
         }
       }
     },
+    "Resting also counts. There is no streak to lose here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting also counts. There is no streak to lose here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descansar también cuenta. Aquí no hay racha que perder."
+          }
+        }
+      }
+    },
     "Resting · by HR" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37029,6 +37148,23 @@
         }
       }
     },
+    "Sleep with your Apple Watch. In the morning, your day's read will be waiting." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep with your Apple Watch. In the morning, your day's read will be waiting."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duerme con tu Apple Watch. En la mañana te espera la lectura de tu día."
+          }
+        }
+      }
+    },
     "slept %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -40047,6 +40183,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lo demás puede esperar."
+          }
+        }
+      }
+    },
+    "The ritual" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ritual"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El ritual"
           }
         }
       }
