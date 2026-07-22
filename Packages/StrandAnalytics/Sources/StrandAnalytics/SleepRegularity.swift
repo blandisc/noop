@@ -107,6 +107,15 @@ public enum SleepRegularity {
             weekendShiftMinutes: weekendShift(timed, calendar: calendar))
     }
 
+    /// The effective window size the engine scores: the count of MAIN nights
+    /// (`SleepMainNight.qualifies`, i.e. naps dropped) capped at `windowNights`. Callers use this for
+    /// the "N nights to go" calibration so it matches `compute` exactly — both filter naps the same way,
+    /// instead of counting raw sessions (which over-counts naps and under-states how many are left). (FER-1026)
+    public static func effectiveNightCount(_ nights: [NightTiming]) -> Int {
+        let main = nights.filter { SleepMainNight.qualifies(startTs: $0.onset, endTs: $0.wake) }
+        return Swift.min(main.count, windowNights)
+    }
+
     // MARK: - Mid-sleep point (as time-of-day, midnight-safe via circular handling)
 
     /// Mid-sleep point of a night as a MINUTE-OF-DAY (0..<1440) — a point on the 24 h clock circle.

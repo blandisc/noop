@@ -142,9 +142,10 @@ extension MetricInfo {
         )
     }
 
-    /// HRV (RMSSD, ms). Plain-language headline + the existing "it's personal" note, plus a
-    /// "See the method" disclosure (reusing FER-108's component) with the real cleaning pipeline.
-    /// When there's no reading, the note explains why instead of leaving a bare "—". (FER-109)
+    /// HRV (Apple SDNN, ms). Plain-language headline + the existing "it's personal" note, plus a
+    /// "See the method" disclosure (reusing FER-108's component) that is honest about the split: the
+    /// visible number is Apple's SDNN, while the recovery read uses RMSSD (FER-1028). When there's no
+    /// reading, the note explains why instead of leaving a bare "—". (FER-109)
     static func hrv(_ value: Double?) -> MetricInfo {
         MetricInfo(
             id: "hrv",
@@ -155,11 +156,11 @@ extension MetricInfo {
             headerTint: value == nil ? .neutral : .metric,
             bands: [],
             note: value == nil
-                ? "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short to gather 20 clean beats."
+                ? "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record."
                 : "HRV is personal. There are no universal good/bad thresholds: only your trend over time.",
             method: Method(
-                prose: "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD.",
-                citation: "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score."
+                prose: "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure — RMSSD — recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery.",
+                citation: "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery."
             ),
             levelsTodayValue: value,
             levelsRelative: true

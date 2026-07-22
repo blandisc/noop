@@ -201,12 +201,12 @@ struct AutonomicTrendCard: View {
         let deadX = width / 2
 
         return ZStack {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
+            RoundedRectangle(cornerRadius: trackHeight / 2, style: .continuous)
                 .fill(theme.hairline)
                 .frame(width: width, height: trackHeight)
 
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(theme.dataHrv.opacity(0.18))
+            RoundedRectangle(cornerRadius: 2, style: .continuous) // token-exempt: banda de zona muerta del track z (geometría de dato)
+                .fill(theme.dataHrv.opacity(StrandOpacity.tintFillStrong))
                 .frame(width: deadWidth, height: trackHeight)
                 .position(x: deadX, y: markerSize / 2)
 
@@ -238,7 +238,7 @@ struct AutonomicTrendCard: View {
             // Single point: end marker only, no polyline.
             let color: Color = abs(only) > AutonomicTrend.swcK
                 ? theme.warning
-                : theme.ink.opacity(0.7)
+                : theme.ink.opacity(StrandOpacity.muted)
             Circle()
                 .fill(color)
                 .frame(width: 3.5, height: 3.5)
@@ -252,7 +252,7 @@ struct AutonomicTrendCard: View {
             let lastRaw = values.last ?? 0
             let lastColor: Color = abs(lastRaw) > AutonomicTrend.swcK
                 ? theme.warning
-                : theme.ink.opacity(0.7)
+                : theme.ink.opacity(StrandOpacity.muted)
 
             ZStack(alignment: .topLeading) {
                 Path { path in
@@ -272,7 +272,7 @@ struct AutonomicTrendCard: View {
                     }
                 }
                 .stroke(
-                    theme.ink.opacity(0.7),
+                    theme.ink.opacity(StrandOpacity.muted),
                     style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
                 )
 

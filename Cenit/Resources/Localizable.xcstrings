@@ -280,22 +280,6 @@
             }
         }
     },
-    "Strap not worn" : {
-        "localizations" : {
-            "en" : {
-                "stringUnit" : {
-                    "state" : "translated",
-                    "value" : "Strap not worn"
-                }
-            },
-            "es" : {
-                "stringUnit" : {
-                    "state" : "translated",
-                    "value" : "Banda sin puesta"
-                }
-            }
-        }
-    },
     "Strength" : {
         "localizations" : {
             "en" : {
@@ -6480,22 +6464,6 @@
         }
       }
     },
-    "A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project." : {
-        "localizations" : {
-          "en" : {
-            "stringUnit" : {
-              "state" : "translated",
-              "value" : "A standalone companion for your strap. Everything stays on this device: your history, your live stream, your numbers. Nothing is uploaded. %@ is an independent, experimental project."
-            }
-          },
-          "es" : {
-            "stringUnit" : {
-              "state" : "translated",
-              "value" : "Un acompañante independiente para tu banda. Todo se queda en este dispositivo: tu historial, tu monitor en vivo, tus números. Nada se sube. %@ es un proyecto independiente y experimental."
-            }
-          }
-        }
-      },
     "A steadier bedtime tonight helps your rhythm." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6611,16 +6579,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Una comparación de bienestar, no una edad biológica ni un diagnóstico clínico. La HRV se estima desde PPG nocturno; la norma de referencia es conservadora."
-          }
-        }
-      }
-    },
-    "A 4.0 strap sends no step count, so Cénit estimates steps from wrist motion calibrated against your iPhone. It is always an estimate, never an exact count." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una banda 4.0 no manda conteo de pasos, así que Cénit los estima desde el movimiento de la muñeca, calibrado contra tu iPhone. Siempre es una estimación, nunca un conteo exacto."
           }
         }
       }
@@ -7712,23 +7670,6 @@
         }
       }
     },
-    "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness: typing at a desk still counts as sitting." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "After a long sit with no walking around, the strap buzzes on its next sync. It measures a lack of walking, not wrist stillness: typing at a desk still counts as sitting."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tras un rato largo sentado sin caminar, la banda zumba en su próxima sincronización. Mide la falta de caminata, no la quietud de la muñeca, teclear en el escritorio sigue contando como estar sentado."
-          }
-        }
-      }
-    },
     "After each sport" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8467,17 +8408,6 @@
         }
       }
     },
-    "Apple Health as the base, your band on top when you wear it. The most complete reading." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Salud de base y tu banda encima cuando la traes. La lectura más completa."
-          }
-        }
-      }
-    },
     "Apple Health connected" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8508,17 +8438,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple Salud conectado."
-          }
-        }
-      }
-    },
-    "Apple Health is disconnected; right now Combined only uses your band. Connect it to add its data." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Salud está desconectado; ahora mismo Combinado solo usa tu banda. Conéctalo para sumar sus datos."
           }
         }
       }
@@ -8656,23 +8575,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "LECTURA APROXIMADA"
-          }
-        }
-      }
-    },
-    "Arms the strap to buzz at your wake time." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arms the strap to buzz at your wake time."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arma la banda para que zumbe a tu hora de despertar."
           }
         }
       }
@@ -10551,23 +10453,6 @@
         }
       }
     },
-    "Bond your strap on the Live screen to feel the transitions hands-free." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bond your strap on the Live screen to feel the transitions hands-free."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vincula tu banda en la pantalla En vivo para sentir las transiciones sin ver la pantalla."
-          }
-        }
-      }
-    },
     "Bonded · idle" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11121,19 +11006,6 @@
         }
       }
     },
-    "Buzz Strap" : {
-      "comment" : "The title of the \"Buzz Strap\" intent.",
-      "extractionState" : "stale",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vibrar banda"
-          }
-        }
-      }
-    },
     "Buzz when you hit your top zone (ease off) and again when you recover. Uses your max HR from Settings." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11561,23 +11433,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pantorrillas"
-          }
-        }
-      }
-    },
-    "Can't connect: your strap's pairing was reset" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Can't connect: your strap's pairing was reset"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se puede conectar, el emparejamiento de tu banda se restableció"
           }
         }
       }
@@ -12321,23 +12176,6 @@
         }
       }
     },
-    "Close the strap's official app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Close the strap's official app (or turn its phone's Bluetooth off), put the strap in pairing mode (on a 5.0/MG, tap the band repeatedly until the LEDs flash blue), then reconnect."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cierra la app oficial de la banda (o apaga el Bluetooth de ese teléfono), pon la banda en modo de emparejamiento (en una 5.0/MG, da toques firmes a la banda hasta que los LED parpadeen en azul) y vuelve a conectar."
-          }
-        }
-      }
-    },
     "Close to your typical stage mix" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -12583,23 +12421,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Completado"
-          }
-        }
-      }
-    },
-    "Complete secure pairing first: the strap won’t offload its history until the encrypted bond is set." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Complete secure pairing first: the strap won’t offload its history until the encrypted bond is set."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Primero completa el emparejamiento seguro, la banda no descargará su historial hasta que se establezca el vínculo cifrado."
           }
         }
       }
@@ -12898,22 +12719,6 @@
         }
       }
     },
-    "Connect and wear your strap to record live." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect and wear your strap to record live."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conecta tu banda y póntela para grabar en vivo."
-          }
-        }
-      }
-    },
     "connect Apple Health" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -13040,107 +12845,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conectar mi calendario"
-          }
-        }
-      }
-    },
-    "Connect strap for buzz cues" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect strap for buzz cues"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conecta la banda para señales de vibración"
-          }
-        }
-      }
-    },
-    "Connect your band or Apple Health and your verdict will read every morning." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect your band or Apple Health and your verdict will read every morning."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conecta tu banda o Apple Salud y tu veredicto empezará a leerse cada mañana."
-          }
-        }
-      }
-    },
-    "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect your band or Apple Health and, with your night's sleep, your day's verdict starts to read here."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conecta tu banda o Apple Salud y, con tu sueño de la noche, tu veredicto del día empieza a leerse aquí."
-          }
-        }
-      }
-    },
-    "Connect your strap for haptic guidance: you'll feel one pulse on the inhale, two on the exhale, so you can breathe with your eyes closed." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect your strap for haptic guidance: you'll feel one pulse on the inhale, two on the exhale, so you can breathe with your eyes closed."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conecta tu banda para la guía háptica: sentirás un pulso al inhalar y dos al exhalar, para que puedas respirar con los ojos cerrados."
-          }
-        }
-      }
-    },
-    "Connect your strap to run the sync diagnostic." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect your strap to run the sync diagnostic."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conecta tu banda para ejecutar el diagnóstico de sincronización."
-          }
-        }
-      }
-    },
-    "Connect your strap to see it live" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect your strap to see it live"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conecta tu banda para ver en vivo"
           }
         }
       }
@@ -15339,23 +15043,6 @@
         }
       }
     },
-    "Disconnect strap?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disconnect strap?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Desconectar la banda?"
-          }
-        }
-      }
-    },
     "Disconnected" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -15465,23 +15152,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Distancia %@ %@"
-          }
-        }
-      }
-    },
-    "Do you have a strap?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Do you have a strap?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Tienes una banda?"
           }
         }
       }
@@ -15618,23 +15288,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doble toque"
-          }
-        }
-      }
-    },
-    "Double-tap the strap to trigger an action. (The strap exposes a single double-tap gesture.)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Double-tap the strap to trigger an action. (The strap exposes a single double-tap gesture.)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Da doble toque a la banda para disparar una acción. (La banda expone un solo gesto de doble toque.)"
           }
         }
       }
@@ -17614,23 +17267,6 @@
         }
       }
     },
-    "Experimental tools for the newer 5 and MG straps. They have no effect on a 4.0." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Experimental tools for the newer 5 and MG straps. They have no effect on a 4.0."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Herramientas experimentales para las bandas 5 y MG nuevas. No afectan a la 4.0."
-          }
-        }
-      }
-    },
     "exploratory" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17854,40 +17490,6 @@
         }
       }
     },
-    "Find my strap" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Find my strap"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscar mi banda"
-          }
-        }
-      }
-    },
-    "Find your strap" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Find your strap"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscar strap"
-          }
-        }
-      }
-    },
     "Findings" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17944,23 +17546,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿Terminar el entrenamiento?"
-          }
-        }
-      }
-    },
-    "Fire a single haptic pulse on the strap (requires a bonded connection)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fire a single haptic pulse on the strap (requires a bonded connection)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dispara un solo pulso háptico en la banda (requiere conexión vinculada)"
           }
         }
       }
@@ -18336,16 +17921,6 @@
         }
       }
     },
-    "For now, without your band the recovery and sleep detail come estimated or later. The day's numbers do read from Apple Health." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Por ahora, sin tu banda la recuperación y el detalle del sueño llegan estimados o más adelante. Los números del día sí se leen de Apple Salud."
-          }
-        }
-      }
-    },
     "For tonight" : {
       "localizations" : {
         "en" : {
@@ -18579,23 +18154,6 @@
         }
       }
     },
-    "From your Apple Watch (HRV SDNN), a lower grade than your band." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "From your Apple Watch (HRV SDNN), a lower grade than your band."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Viene de tu Apple Watch (HRV SDNN), con menor grado que tu banda."
-          }
-        }
-      }
-    },
     "From your best set with the Epley (1985) formula. A progress signal, not a target to load." : {
       "localizations" : {
         "en" : {
@@ -18825,23 +18383,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Empezar"
-          }
-        }
-      }
-    },
-    "Get your strap ready" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get your strap ready"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prepara tu banda"
           }
         }
       }
@@ -21163,23 +20704,6 @@
         }
       }
     },
-    "In a moment your iPhone will ask for Bluetooth permission. Choose Allow so Cénit can find your strap. The connection is direct: nothing goes through the cloud." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In a moment your iPhone will ask for Bluetooth permission. Choose Allow so Cénit can find your strap. The connection is direct: nothing goes through the cloud."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En un momento tu iPhone pedirá permiso de Bluetooth. Elige Permitir para que Cénit encuentre tu banda. La conexión es directa: nada pasa por la nube."
-          }
-        }
-      }
-    },
     "In a normal range." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -21804,23 +21328,6 @@
     "It looks like there's no data on this device. If you've used Cénit before, on this phone or another, restore your strap history and settings from an iCloud Drive backup." : {
       "comment" : "A message in the alert that appears when the user is prompted to restore",
       "isCommentAutoGenerated" : true
-    },
-    "It sits on top of Apple Health and sharpens the signal: continuous HRV and strap-grade recovery." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "It sits on top of Apple Health and sharpens the signal: continuous HRV and strap-grade recovery."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se monta sobre Apple Salud y afina la señal: HRV continuo y recuperación de grado banda."
-          }
-        }
-      }
     },
     "It will stop streaming until you re-scan. Your saved data isn't touched." : {
       "extractionState" : "manual",
@@ -23435,23 +22942,6 @@
         }
       }
     },
-    "Live HR works: free the strap to unlock buzz, alarms & sync" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Live HR works: free the strap to unlock buzz, alarms & sync"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La FC en vivo funciona, libera la banda para desbloquear vibración, alarmas y sincronización"
-          }
-        }
-      }
-    },
     "lived" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -23777,23 +23267,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se vio estable."
-          }
-        }
-      }
-    },
-    "Looking for your strap…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Looking for your strap…"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buscando tu banda…"
           }
         }
       }
@@ -24161,23 +23634,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Asegúrate de que tenga carga."
-          }
-        }
-      }
-    },
-    "Make the strap do things: tap to act, train by feel, wake to a buzz." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Make the strap do things: tap to act, train by feel, wake to a buzz."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Haz que la banda haga cosas, toca para actuar, entrena por sensación, despierta con un zumbido."
           }
         }
       }
@@ -24856,23 +24312,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lo mide tu Apple Watch en caminatas y carreras al aire libre."
-          }
-        }
-      }
-    },
-    "Measured by your band" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Measured by your band"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Medido por tu banda"
           }
         }
       }
@@ -26830,22 +26269,6 @@
         }
       }
     },
-    "No activity yet. The log fills in as your strap connects." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No activity yet. The log fills in as your strap connects."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no hay actividad. El registro aparece cuando conectas la banda."
-          }
-        }
-      }
-    },
     "No Apple Health data imported yet: tap Sync now to pull your recent history." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -27245,19 +26668,19 @@
         }
       }
     },
-    "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short to gather 20 clean beats." : {
+    "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short to gather 20 clean beats."
+            "value" : "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin HRV de anoche. Puede pasar si no dormiste con tu Apple Watch, o si la noche fue muy corta para reunir 20 latidos limpios."
+            "value" : "Sin HRV de anoche. Puede pasar si no dormiste con tu Apple Watch, o si la noche fue muy corta para registrarla."
           }
         }
       }
@@ -27769,23 +27192,6 @@
         }
       }
     },
-    "No signal from your band" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No signal from your band"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin señal de tu banda"
-          }
-        }
-      }
-    },
     "No skin temperature last night. That can happen if you didn't wear your Apple Watch to sleep, or it hasn't gathered enough nights to set your baseline yet." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -27867,23 +27273,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aún no hay esfuerzo. El Esfuerzo del día se calcula de la frecuencia cardiaca de tus entrenos; vuelve a abrir esto cuando tu próximo entreno sincronice desde Apple Salud."
-          }
-        }
-      }
-    },
-    "No strap connected. Put your strap nearby and tap Re-scan to pair." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No strap connected. Put your strap nearby and tap Re-scan to pair."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No hay banda conectada. Acerca tu banda y toca Volver a escanear para emparejar."
           }
         }
       }
@@ -28348,23 +27737,6 @@
         }
       }
     },
-    "Not saved: no heart rate from the strap." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not saved: no heart rate from the strap."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se guardó: no llegó ritmo cardiaco de la banda."
-          }
-        }
-      }
-    },
     "Not showing up? That's normal." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -28763,23 +28135,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "del último mes"
-          }
-        }
-      }
-    },
-    "of rest · the strap buzzes on arrival" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "of rest · the strap buzzes on arrival"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "de descanso · la banda vibra al llegar"
           }
         }
       }
@@ -29261,23 +28616,6 @@
         }
       }
     },
-    "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On a 5/MG strap this is experimental: arming is confirmed, but a strap-driven wake-up hasn't been verified yet, so don't rely on it as your only alarm there. The 4.0 strap is the proven path."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En una banda 5/MG esto es experimental, el armado está confirmado, pero aún no se ha verificado un despertar accionado por la banda, así que no dependas de ella como tu única alarma ahí. La banda 4.0 es la vía probada."
-          }
-        }
-      }
-    },
     "One night says little on its own. What matters is whether your typical onset drifts over weeks." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -29579,28 +28917,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Solo Hoy y Ayer se pueden editar. Los días viejos quedan fijos."
-          }
-        }
-      }
-    },
-    "Only what Apple Health records, without your band." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Solo lo que registra Apple Salud, sin tu banda."
-          }
-        }
-      }
-    },
-    "Only what your band measures. Nights without the band won't have a reading." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Solo lo que mide tu banda. Las noches sin banda no tendrán lectura."
           }
         }
       }
@@ -30412,23 +29728,6 @@
         }
       }
     },
-    "Pair strap" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pair strap"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Emparejar banda"
-          }
-        }
-      }
-    },
     "Paired · idle" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -30455,23 +29754,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ayuda de emparejamiento: %@"
-          }
-        }
-      }
-    },
-    "Pairs directly with your strap over Bluetooth: no other app, no cloud." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pairs directly with your strap over Bluetooth: no other app, no cloud."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se vincula directo con tu banda por Bluetooth, sin otra app, sin nube."
           }
         }
       }
@@ -32756,22 +32038,6 @@
         }
       }
     },
-    "Record heart rate and effort with your strap" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Record heart rate and effort with your strap"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Graba tu frecuencia cardiaca y esfuerzo con tu banda"
-          }
-        }
-      }
-    },
     "Record on Apple Watch" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -34256,23 +33522,6 @@
         }
       }
     },
-    "Rest ends when your pulse drops to the threshold. The strap buzzes when you're ready." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rest ends when your pulse drops to the threshold. The strap buzzes when you're ready."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El descanso termina cuando tu pulso baja al umbral. El strap avisa con un zumbido cuando estás listo."
-          }
-        }
-      }
-    },
     "Rest ends when your pulse drops to the threshold. The phone buzzes when you're ready." : {
       "localizations" : {
         "es" : {
@@ -35054,36 +34303,19 @@
         }
       }
     },
-    "Ritmo needs a strap." : {
+    "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ritmo needs a strap."
+            "value" : "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ritmo necesita una banda."
-          }
-        }
-      }
-    },
-    "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "RMSSD (Task Force, 1996); ectopic rejection by Malik's rule. HRV is about 60% of your recovery score."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "RMSSD (Task Force, 1996); rechazo de ectópicos con la regla de Malik. La HRV pesa cerca del 60% de tu recuperación."
+            "value" : "SDNN y RMSSD (Task Force, 1996); el RMSSD es la medida vagal de recuperación (Shaffer & Ginsberg, 2017). El HRV es el mayor motor de tu recuperación."
           }
         }
       }
@@ -35293,23 +34525,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ejecutar un atajo al quitártela"
-          }
-        }
-      }
-    },
-    "Run a Shortcut when the strap comes off or goes back on: set a Focus, pause media, mark yourself away." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Run a Shortcut when the strap comes off or goes back on: set a Focus, pause media, mark yourself away."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ejecuta un atajo cuando te quitas o te pones la banda, activa un modo de Concentración, pausa el audio, márcate ausente."
           }
         }
       }
@@ -36259,19 +35474,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enviar"
-          }
-        }
-      }
-    },
-    "Send a haptic buzz to your strap." : {
-      "comment" : "Intent to send a haptic buzz to the user's strap.",
-      "extractionState" : "stale",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Envía una vibración háptica a tu banda."
           }
         }
       }
@@ -37346,23 +36548,6 @@
         }
       }
     },
-    "Silent haptic HIIT: the strap buzzes the transitions" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Silent haptic HIIT: the strap buzzes the transitions"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HIIT háptico silencioso, la banda vibra en las transiciones"
-          }
-        }
-      }
-    },
     "Silent haptic HIIT: your phone buzzes the transitions" : {
       "localizations" : {
         "es" : {
@@ -37772,23 +36957,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Etapas de sueño: profundo %lld por ciento, ligero %lld por ciento, REM %lld por ciento, despierto %lld por ciento"
-          }
-        }
-      }
-    },
-    "Sleep with your strap to see your rhythm here." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sleep with your strap to see your rhythm here."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Duerme con tu strap para ver tu ritmo aquí."
           }
         }
       }
@@ -38685,23 +37853,6 @@
         }
       }
     },
-    "Step 3 · Your strap" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Step 3 · Your strap"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paso 3 · Tu banda"
-          }
-        }
-      }
-    },
     "Steps" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -39106,114 +38257,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "En el dispositivo"
-          }
-        }
-      }
-    },
-    "STRAP · CONNECTED" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "STRAP · CONNECTED"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BANDA · CONECTADA"
-          }
-        }
-      }
-    },
-    "Strap battery: %@%%" : {
-
-    },
-    "Strap battery: %@%%, charging" : {
-
-    },
-    "Strap battery: %lld%%" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strap battery: %lld%%"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Batería de la banda: %lld%%"
-          }
-        }
-      }
-    },
-    "Strap battery: %lld%%, charging" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strap battery: %lld%%, charging"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Batería de la banda: %lld%%, cargando"
-          }
-        }
-      }
-    },
-    "Strap bonded" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strap bonded"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda vinculada"
-          }
-        }
-      }
-    },
-    "Strap log" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strap log"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Log de la banda"
-          }
-        }
-      }
-    },
-    "Strap not connected" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strap not connected"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda no conectada"
           }
         }
       }
@@ -39744,23 +38787,6 @@
         }
       }
     },
-    "Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in: nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sync the last few weeks two-way, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps, and writes its own strap-derived metrics back. Strictly opt-in: nothing leaves your iPhone. (For a one-time bulk history, use the export import above.)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sincroniza las últimas semanas en ambos sentidos, en el dispositivo: Cénit lee tu FC, HRV, sueño, SpO₂ y pasos de Apple Health, y escribe de vuelta sus propias métricas derivadas de la banda. Estrictamente opcional, nada sale de tu iPhone. (Para un historial masivo de una vez, usa la importación de exportación de arriba.)"
-          }
-        }
-      }
-    },
     "synced %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39791,74 +38817,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sincronizado %@"
-          }
-        }
-      }
-    },
-    "Synced %@ · strap %lld%%" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Synced %@ · strap %lld%%"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sincronizado %@ · banda %lld%%"
-          }
-        }
-      }
-    },
-    "Syncing strap history…" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Syncing strap history…"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sincronizando el historial de la banda…"
-          }
-        }
-      }
-    },
-    "Syncing with your band…" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Syncing with your band…"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sincronizando con tu banda…"
-          }
-        }
-      }
-    },
-    "Syncing with your band… %lld packets" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Syncing with your band… %lld packets"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sincronizando con tu banda… %lld paquetes"
           }
         }
       }
@@ -40833,22 +39791,6 @@
         }
       }
     },
-    "The monitor beats in real time when your strap is nearby and worn." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The monitor beats in real time when your strap is nearby and worn."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El monitor late en tiempo real cuando tu banda está cerca y puesta."
-          }
-        }
-      }
-    },
     "The more nights you sleep with the band, the sooner I see it." : {
       "localizations" : {
         "es" : {
@@ -41103,23 +40045,6 @@
         }
       }
     },
-    "the strap will buzz" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "the strap will buzz"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "el strap zumbará"
-          }
-        }
-      }
-    },
     "the phone will buzz" : {
       "localizations" : {
         "es" : {
@@ -41194,23 +40119,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "todo el cuerpo"
-          }
-        }
-      }
-    },
-    "The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The strap's official app isn't holding it. Only one host at a time: close it or turn off its Bluetooth."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No la tiene tomada la app oficial de la banda. Solo un host a la vez: ciérrala o apaga su Bluetooth."
           }
         }
       }
@@ -41512,40 +40420,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esta lectura necesita tu banda."
-          }
-        }
-      }
-    },
-    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy: read it as a guide, not a band reading. Not a diagnosis." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep on a night your band didn't record, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy: read it as a guide, not a band reading. Not a diagnosis."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta recuperación es ESTIMADA a partir del HRV (SDNN) y el sueño de tu Apple Watch en una noche que tu banda no registró, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. No es un diagnóstico."
-          }
-        }
-      }
-    },
-    "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep while your band is still calibrating its own baseline, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy: read it as a guide, not a band reading. It switches to your band automatically once it's calibrated. Not a diagnosis." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This recovery is ESTIMATED from your Apple Watch HRV (SDNN) and sleep while your band is still calibrating its own baseline, compared with your own Apple-Health baseline. SDNN isn't the same measure as the band's HRV, so it's a lower-confidence proxy: read it as a guide, not a band reading. It switches to your band automatically once it's calibrated. Not a diagnosis."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta recuperación es ESTIMADA a partir del HRV (SDNN) y el sueño de tu Apple Watch mientras tu banda aún calibra su propia base, comparado con tu propia base de Apple Salud. El SDNN no es la misma medida que el HRV de la banda, así que es una estimación de menor confianza, tómalo como guía, no como una lectura de la banda. Cambia a tu banda automáticamente en cuanto calibra. No es un diagnóstico."
           }
         }
       }
@@ -42666,23 +41540,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Entrenar"
-          }
-        }
-      }
-    },
-    "Train by feel: the strap buzzes so you don't have to watch a screen." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Train by feel: the strap buzzes so you don't have to watch a screen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entrena por sensación, la banda zumba para que no tengas que mirar una pantalla."
           }
         }
       }
@@ -44425,23 +43282,6 @@
         }
       }
     },
-    "Wake to a wrist buzz. This arms the strap's own firmware alarm, so it still fires even if your iPhone is asleep or Cénit is closed." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wake to a wrist buzz. This arms the strap's own firmware alarm, so it still fires even if your iPhone is asleep or Cénit is closed."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Despierta con un zumbido en la muñeca. Esto arma la alarma del propio firmware de la banda, así que suena aunque tu iPhone esté dormido o Cénit esté cerrado."
-          }
-        }
-      }
-    },
     "Warm-up set" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -44801,19 +43641,19 @@
         }
       }
     },
-    "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD." : {
+    "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure — RMSSD — recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We take the intervals between your heartbeats overnight, drop any outside 300–2000 ms and any that deviate more than 20% from their neighbours (ectopic beats). If at least 20 clean beats remain, we compute RMSSD."
+            "value" : "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure — RMSSD — recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tomamos los intervalos entre tus latidos durante la noche, descartamos los que quedan fuera de 300–2000 ms y los que se desvían más de 20% de sus vecinos (latidos ectópicos). Si quedan al menos 20 latidos limpios, calculamos el RMSSD."
+            "value" : "El número que ves es el HRV que Apple registra de noche: SDNN, la dispersión general del tiempo entre tus latidos. Tu lectura de recuperación usa otra medida de HRV —RMSSD— recalculada de los intervalos latido a latido de tus noches más densas. El RMSSD sigue específicamente la rama vagal (de descanso), mientras que el SDNN mezcla ambas ramas de tu sistema nervioso; eso, sumado a que se calculan sobre ventanas distintas de la noche, hace que el número de HRV de aquí no siempre coincida con la dirección de tu recuperación."
           }
         }
       }
@@ -44932,40 +43772,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Póntela ajustada, el sensor necesita contacto con la piel."
-          }
-        }
-      }
-    },
-    "Wear the strap for a few nights and your readiness read will appear here." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wear the strap for a few nights and your readiness read will appear here."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa la banda unas cuantas noches y tu lectura de preparación aparecerá aquí."
-          }
-        }
-      }
-    },
-    "Wear the strap tonight: the first of %lld nights your own baseline needs." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wear the strap tonight: the first of %lld nights your own baseline needs."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa la banda esta noche: la primera de %lld noches que tu base necesita."
           }
         }
       }
@@ -45918,22 +44724,6 @@
         }
       }
     },
-    "Which strap?" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Which strap?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿Cuál banda?"
-          }
-        }
-      }
-    },
     "While you sleep, Cénit looks at how evenly your heart beats, beat to beat, and draws it for you." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -45947,23 +44737,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mientras duermes, Cénit mira qué tan parejo late tu corazón, latido a latido, y te lo dibuja."
-          }
-        }
-      }
-    },
-    "Strap · Apple Health · backup" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strap · Apple Health · backup"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Banda · Apple Salud · copia"
           }
         }
       }
@@ -46015,23 +44788,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sondas de protocolo 5/MG"
-          }
-        }
-      }
-    },
-    "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Straps don't show up in your iPhone's Settings › Bluetooth: they use a custom profile only apps like Cénit can see. There's nothing to pair there."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las bandas no salen en Ajustes › Bluetooth de tu iPhone, usan un perfil propio que solo apps como Cénit pueden ver. No hay nada que emparejar ahí."
           }
         }
       }
@@ -47121,23 +45877,6 @@
         }
       }
     },
-    "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your baseline is ready. Wear the strap tonight and your morning recovery, strain and sleep appear once it syncs."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu base está lista. Usa el strap esta noche y la recuperación, el esfuerzo y el sueño de la mañana aparecen al sincronizar."
-          }
-        }
-      }
-    },
     "Your data from last night is arriving. The first sync of the day can take a few minutes." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -47697,23 +46436,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu ratio día a día: la franja verde es tu equilibrio %@ a %@. Arrastra sobre la gráfica para leer cada día."
-          }
-        }
-      }
-    },
-    "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your day's reading comes from how you slept. There's no data for last night yet. Sleep with your band and sync in the morning, and your verdict shows here."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La lectura de tu día viene de cómo dormiste. Aún no hay datos de anoche. Duerme con tu banda y sincroniza en la mañana, y tu veredicto aparece aquí."
           }
         }
       }
@@ -48878,74 +47600,6 @@
         }
       }
     },
-    "Your strap" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your strap"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu banda"
-          }
-        }
-      }
-    },
-    "Your strap is connected · %lld%% battery." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your strap is connected · %lld%% battery."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu banda está conectada · %lld%% de batería."
-          }
-        }
-      }
-    },
-    "Your strap is connected and ready." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your strap is connected and ready."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu banda está conectada y lista."
-          }
-        }
-      }
-    },
-    "Your strap is paired and sending data. Open Live for a real-time heart rate." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your strap is paired and sending data. Open Live for a real-time heart rate."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu banda está emparejada y enviando datos. Abre En vivo para ver la frecuencia cardiaca en tiempo real."
-          }
-        }
-      }
-    },
     "Your Apple Watch reads your skin temperature through the night; Cénit averages the worn, asleep portion and compares it with your own recent baseline, so what you see is the deviation in °C, not a raw temperature. Around your base is normal; a sustained rise of roughly +0.4 °C or more is a classic early illness marker, so Cénit flags it as running warm (~+0.4 °C) or well above (~+0.8 °C)." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48959,23 +47613,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu Apple Watch lee la temperatura de tu piel durante la noche; Cénit promedia la parte con el reloj puesto y dormido, y la compara con tu propia base reciente, así que lo que ves es la desviación en °C, no una temperatura cruda. Cerca de tu base es normal; una subida sostenida de alrededor de +0.4 °C o más es un marcador clásico de enfermedad temprana, así que Cénit la marca como corriendo caliente (~+0.4 °C) o muy por encima (~+0.8 °C)."
-          }
-        }
-      }
-    },
-    "Your strap's connection trail. Attach it to a bug report if something looks off." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your strap's connection trail. Attach it to a bug report if something looks off."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El rastro de conexión de tu banda. Adjúntalo a un reporte de error si algo se ve raro."
           }
         }
       }
@@ -49230,16 +47867,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tu plan semanal"
-          }
-        }
-      }
-    },
-    "A 5.0/MG strap counts steps from a wrist counter that tends to read high. If it shows more steps than you actually took, raise this until it matches a day you can check. Leave it at Off (1.0) to use the raw count." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una banda 5.0/MG cuenta pasos con un contador de muñeca que tiende a leer de más. Si marca más pasos de los que diste, súbelo hasta que cuadre con un día que puedas verificar. Déjalo en Apagado (1.0) para usar el conteo tal cual."
           }
         }
       }
