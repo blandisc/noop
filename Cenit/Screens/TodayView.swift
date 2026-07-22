@@ -888,11 +888,43 @@ struct TodayView: View {
         // FER-1030: el héroe es «Preparación» — el veredicto categórico del día por consenso de ejes,
         // sin número. Cae a `appleTrendHero` (el sueño medido) cuando no hay veredicto real («baja
         // señal» / arranque en frío), como manda la decisión del dueño (nunca una pantalla vacía).
+        // FER-1033: si hay lectura del cuerpo pero NO se grabó una noche de sueño (no dormiste con el
+        // reloj), no se disfraza de Preparación completa: se degrada a «Lectura de día» honesta (sin
+        // palabra-veredicto, sin color, con la salvedad de que es menos precisa).
         if let prep = repo.todayPreparedness, prep.verdict != .lowSignal {
-            preparacionHero(prep)
+            if prep.isNightAnchored {
+                preparacionHero(prep)
+            } else {
+                lecturaDeDiaHero(prep)
+            }
         } else {
             appleTrendHero
         }
+    }
+
+    /// FER-1033: la «Lectura de día» — la superficie DEGRADADA cuando hay señales de cuerpo pero no se
+    /// grabó una noche de sueño. Deliberadamente NO lleva palabra-veredicto ni color: es una lectura
+    /// de día, explícitamente menos precisa, nunca disfrazada de la Preparación completa anclada a
+    /// noche (docs/ANALYTICS.md, allow-list de claims). El eje autonómico aquí solo es `.low`/`.inRange`
+    /// (nunca `.high`) porque su compuesto solo marca «fuera» a la baja.
+    @ViewBuilder private func lecturaDeDiaHero(_ prep: Preparedness.Read) -> some View {
+        let autonomic = prep.drivers.first { $0.axis == .autonomic }?.state
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            Text(verbatim: "LECTURA DE DÍA").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(verbatim: autonomic == .low
+                 ? "Tus señales de día vienen abajo de tu rango."
+                 : "Tus señales de día vienen en tu rango.")
+                .font(StrandFont.title3)                       // más chico que el veredicto: es una lectura menor
+                .foregroundStyle(theme.ink)                    // tinta, NUNCA color de veredicto
+                .fixedSize(horizontal: false, vertical: true)
+            Text(verbatim: "Anoche no hubo lectura de sueño; esto es menos preciso.")
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { showAutonomicDetail = true }
+        .accessibilityElement(children: .contain)
     }
 
     /// R4 (FER-1008): el héroe del path Apple-only — el SUEÑO es el número dominante (el 0–100 estilo-WHOOP
