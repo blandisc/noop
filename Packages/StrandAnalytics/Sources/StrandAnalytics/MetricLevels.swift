@@ -201,9 +201,7 @@ public enum MetricLevels {
     /// This is the app's source-language string; the es-MX comes from the app's `Localizable.xcstrings`
     /// (the English string IS the catalog key, so `LocalizedStringKey(name(for:))` / `String(localized:)`
     /// resolve «Alto», «Agotado», … at render). It is deliberately English (not `LocalizedStringKey`) so
-    /// the map stays testable in pure `swift test` and free of SwiftUI. `DailyBrief.recoveryZoneName` is a
-    /// SEPARATE es-only home: it interpolates Spanish sentences inside this pure package (no catalog to
-    /// reach), so its words can't come from here — the two are one-per-language by necessity.
+    /// the map stays testable in pure `swift test` and free of SwiftUI.
     ///
     /// **FER-638 lives here, once:** the 70–88 recovery zone (`primed`) reads **"High"** (es «Alto»),
     /// never «A punto» — that word belongs only to the dial's verdict. A level rename touches this map and
