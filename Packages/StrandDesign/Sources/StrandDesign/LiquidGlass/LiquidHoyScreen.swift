@@ -91,10 +91,11 @@ public struct LiquidHoyModel: Sendable {
     public let dial: Dial
     public let senales: [Senal]
     public let hero: Hero
-    public let carga: Carga
+    /// `nil` = la barra de carga no se muestra (el modelo de carga aún no siembra).
+    public let carga: Carga?
     public let metricas: [Metrica]
 
-    public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga,
+    public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
                 metricas: [Metrica]) {
         self.kicker = kicker
         self.dial = dial
@@ -178,9 +179,11 @@ public struct LiquidHoyContent: View {
                 .padding(.top, LiquidSpace.s050)
                 .liquidEntrada(index: 2)
 
-            carga
-                .padding(.top, LiquidSpace.s300)
-                .liquidEntrada(index: 3)
+            if model.carga != nil {
+                carga
+                    .padding(.top, LiquidSpace.s300)
+                    .liquidEntrada(index: 3)
+            }
 
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: LiquidSpace.s200),
@@ -226,6 +229,8 @@ public struct LiquidHoyContent: View {
                            state: state, action: onTapCarga)
         case .calibrando(let status):
             LiquidCargaBar(modo: .calibrando, status: status, action: onTapCarga)
+        case nil:
+            EmptyView()
         }
     }
 
