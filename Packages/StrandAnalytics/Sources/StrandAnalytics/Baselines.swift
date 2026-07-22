@@ -332,6 +332,29 @@ public enum Baselines {
         var state: BaselineState? = nil
         for v in values { state = update(state, value: v, cfg: cfg) }
         if let s = state { return s }
+        return emptyState(cfg: cfg)
+    }
+
+    /// One forward pass returning, for each index `i`, the baseline state built from `values[0..<i]`
+    /// — exactly the "priors" baseline `foldHistory` would produce for that strict prefix (the state
+    /// `values[i]` should be deviated against), but O(n) for the whole sequence instead of O(n²)
+    /// across all prefixes. Reuses the SAME `update` reduce, so `prefixStates(v)[i]` is bit-identical
+    /// to `foldHistory(Array(v[0..<i]))` — only the cost changes. Element 0 is the empty seed.
+    /// (FER-1040: lets `Preparedness` compute every per-day raw verdict without re-folding history.)
+    public static func prefixStates(_ values: [Double?], cfg: MetricCfg) -> [BaselineState] {
+        var out: [BaselineState] = []
+        out.reserveCapacity(values.count)
+        let empty = emptyState(cfg: cfg)
+        var state: BaselineState? = nil
+        for v in values {
+            out.append(state ?? empty)     // state BEFORE folding day i = the priors baseline for day i
+            state = update(state, value: v, cfg: cfg)
+        }
+        return out
+    }
+
+    /// The "no nights yet" seed `foldHistory` returns for an empty history.
+    private static func emptyState(cfg: MetricCfg) -> BaselineState {
         let seed = (cfg.minVal + cfg.maxVal) / 2.0
         return BaselineState(baseline: seed, spread: cfg.floorSpread, nValid: 0,
                              nightsSinceUpdate: 0, status: .calibrating,

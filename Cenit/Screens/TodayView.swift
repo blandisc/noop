@@ -936,7 +936,11 @@ struct TodayView: View {
     /// El héroe «Preparación»: la palabra-veredicto (único color) + porqué + arco de confianza +
     /// las agujas-en-banda por eje. «cuadro de instrumentos en reposo» (FER-1030, diseño /ui).
     @ViewBuilder private func preparacionHero(_ prep: Preparedness.Read) -> some View {
-        let nights = repo.todayAutonomicTrend?.nightsUsable ?? 0
+        // FER-1040 (D2): el arco mide la madurez del PROPIO veredicto — las noches de la baseline
+        // autonómica (SDNN) sobre la que se para — no las noches RMSSD del trend nocturno (otro
+        // constructo: un veredicto firme con pocas noches de Watch leía «2 de 21» y se contradecía).
+        // Tope en 21: la baseline madura sigue sumando noches, pero la confianza ya está llena.
+        let nights = min(prep.autonomicNights, 21)
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(alignment: .top) {
                 Text(verbatim: "PREPARACIÓN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
