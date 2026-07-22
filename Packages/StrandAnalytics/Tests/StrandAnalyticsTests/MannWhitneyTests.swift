@@ -63,6 +63,16 @@ final class MannWhitneyTests: XCTestCase {
         XCTAssertEqual(r.p, 1.0, accuracy: tol)
     }
 
+    func testLargeN_noTies_usesApproximation() {
+        // Locks the SIZE-based exact→approx crossover (/estadistico FER-1034): no ties, but
+        // n1+n2 = 32 > exactMaxN (30) → .approx, gated by size, not ties.
+        let x = (1...16).map(Double.init)         // 16 vs 16, all distinct
+        let y = (100...115).map(Double.init)
+        let r = MannWhitney.test(x, y)!
+        XCTAssertEqual(r.method, .approx)
+        XCTAssertLessThan(r.p, 0.05)              // perfect separation stays significant
+    }
+
     // MARK: Effect
 
     func testHodgesLehmann_knownShift() {

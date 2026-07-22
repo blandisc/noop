@@ -137,6 +137,10 @@ public enum ExperimentVerdict {
     /// Remove confounder days from BOTH arms (restriction by design — classic confound control). The
     /// experiment's own tag is never a confounder here (the caller strips it). Returns the trimmed arms
     /// and how many day-memberships were removed (for the honest "se excluyeron N días" line).
+    ///
+    /// Precondition (caller-enforced): `with` and `without` are DISJOINT — one explicit yes/no answer
+    /// per day. `nExcluded` sums removals across both arms, so a day in both would be double-counted;
+    /// the journal's one-answer-per-(day,question) key guarantees disjointness (`/estadistico` FER-1034).
     public static func restrictConfounders(with: Set<String>, without: Set<String>,
                                            confounderYesDays: Set<String>)
         -> (with: Set<String>, without: Set<String>, excluded: Int) {
