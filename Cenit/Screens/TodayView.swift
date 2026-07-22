@@ -566,13 +566,13 @@ struct TodayView: View {
     // `@Environment(\.instrumentoTheme)`. (FER-398 retiró el tinte por hora del día.)
 
     private var iosBody: some View {
-        // Reparto del aire sobrante (FER-217): un `GeometryReader` da el alto visible (`proxy.size.height`)
-        // y el contenido se fuerza a medir AL MENOS ese alto (`.frame(minHeight:)`), de modo que dos
-        // `Spacer(minLength:)` reparten por igual el espacio que sobre —arriba y abajo de «Métricas de
-        // hoy»— y el bloque queda equilibrado en pantallas altas. En pantalla chica (contenido que llena
-        // o lo excede) los spacers colapsan a su mínimo y NO suman altura: preserva el compactado de
-        // FER-202 y el scroll de siempre. Los modifiers de la pantalla (refresh, tema, hojas) cuelgan del
-        // `GeometryReader`, que envuelve al `ScrollView`, así que pull-to-refresh y el papel siguen igual.
+        // Alto y anclaje (FER-217 · FER-1039): un `GeometryReader` da el alto visible (`proxy.size.height`)
+        // y el contenido se fuerza a medir AL MENOS ese alto (`.frame(minHeight:)`), anclado ARRIBA
+        // (`alignment: .topLeading`) para que el header quede pegado al tope en pantallas altas donde
+        // SEÑALES no llena. En pantalla chica (contenido que llena o lo excede) crece y hace scroll normal:
+        // preserva el compactado de FER-202 y el scroll de siempre. Los modifiers de la pantalla (refresh,
+        // tema, hojas) cuelgan del `GeometryReader`, que envuelve al `ScrollView`, así que pull-to-refresh y
+        // el papel siguen igual.
         GeometryReader { proxy in
             todayScroll(proxy)
         }
@@ -669,15 +669,13 @@ struct TodayView: View {
             }
             // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
             .padding(.horizontal, CenitMetrics.screenPadding)
-            // Margen inferior compacto (FER-475): los page dots (último elemento) quedan pegados al dock,
-            // no flotando con 24pt de aire. Bajado 8→4 para asentar los dots un pelín MÁS abajo (más cerca
-            // del dock) y, de paso, reclamar altura que compensa el numeral mayor. La rejilla de métricas
-            // mantiene su aire propio (cards + gap).
+            // Margen inferior compacto: la retícula de señales respira sobre el dock sin flotar.
             .padding(.bottom, CenitMetrics.space1)
             .padding(.top, CenitMetrics.space2)
-            // Llena al menos el alto visible para que los `Spacer` tengan sobrante que repartir; si el
-            // contenido lo excede (p. ej. calibrando en pantalla chica), crece y hace scroll igual.
-            .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .leading)
+            // Llena al menos el alto visible y ancla el contenido ARRIBA (FER-1039): sin el pager ya no hay
+            // un `Spacer` que reparta el sobrante, así que la alineación vertical `.top` mantiene el header
+            // pegado al tope en vez de centrar la superficie; si el contenido excede el alto, crece y scrollea.
+            .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .topLeading)
             // FER-222 (respaldo iOS 17): el fondo del bloque publica el offset de su tope en el coordinate
             // space propio del scroll. En iOS 18+ esta preferencia se ignora (manda `onScrollGeometryChange`).
             .background(
@@ -1060,8 +1058,8 @@ struct TodayView: View {
 
     // MARK: - SEÑALES (única superficie de Hoy)
 
-    /// Página 0 del pager: SEÑALES — la franja de carga + la retícula 2×4 de tiles; o la tarjeta de
-    /// fuentes si no hay ninguna (FER-364).
+    /// SEÑALES — la única superficie de Hoy (FER-1039): la franja de carga + la retícula 2×4 de tiles; o
+    /// la tarjeta de fuentes si no hay ninguna (FER-364).
     @ViewBuilder private var senalesPage: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             // Franja de carga (FER-705 · handoff «Carga»): vive DENTRO de Señales, así que pertenece solo a
