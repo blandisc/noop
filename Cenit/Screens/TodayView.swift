@@ -922,8 +922,23 @@ struct TodayView: View {
     // misma acción accesible «Sync». El chrome que no es de la composición (línea de sync,
     // banner de alertas, leyenda de origen) vive alrededor, alineado al margen Liquid.
 
+    /// Interruptor de DEMO para la sesión /inject (solo DEBUG): el simulador no tiene datos
+    /// de HealthKit, así que la superficie cae honestamente al héroe de sueño; con esto se
+    /// fuerza el estado de veredicto con los datos de muestra del ensamble para pulirlo en
+    /// vivo. Computed a propósito: su cuerpo se voltea EN VIVO por inyección.
+    private var liquidDemo: Bool { false }
+
+    private var liquidOutput: LiquidHoyBuilder.Output {
+        #if DEBUG
+        if liquidDemo {
+            return LiquidHoyBuilder.Output(model: .ejemplo, heroRoute: .autonomic)
+        }
+        #endif
+        return LiquidHoyBuilder.build(liquidInputs())
+    }
+
     @ViewBuilder private var liquidSurface: some View {
-        let output = LiquidHoyBuilder.build(liquidInputs())
+        let output = liquidOutput
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Group {
                 syncStatusLine
