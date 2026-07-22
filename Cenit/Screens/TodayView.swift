@@ -1001,8 +1001,16 @@ struct TodayView: View {
         if let d = driver(.sleep) {
             out.append(AxisNeedle(id: "sue", state: d.state, glyph: .sleep, name: "SUEÑO", position: positionFromState(d.state)))
         }
-        if let d = driver(.thermal) {
-            out.append(AxisNeedle(id: "ter", state: d.state, glyph: .skinTemp, name: "TÉRMICO", position: positionFromState(d.state)))
+        // TÉRMICO — la temperatura de piel es una señal lenta que a veces aún no aterriza en la fila de
+        // HOY (la muñeca del Apple Watch la reporta con retraso), así que el eje `today`-estricto de
+        // `Preparedness` quedaba «sin datos» → medidor vacío, PESE a que el tile de abajo sí mostraba la
+        // última lectura. Leemos la MISMA última desviación disponible que el tile (`latestFromDisplay`)
+        // con el mismo corte (`thermalOutC`); si de plano no hay ninguna lectura, el eje se oculta (como
+        // «carga»), en vez de dibujar un medidor vacío.
+        if let dev = latestFromDisplay({ $0.skinTempDevC })?.value {
+            let cutC = Preparedness.Config.default.thermalOutC
+            let state: Preparedness.AxisState = dev >= cutC ? .high : (dev <= -cutC ? .low : .inRange)
+            out.append(AxisNeedle(id: "ter", state: state, glyph: .skinTemp, name: "TÉRMICO", position: positionFromState(state)))
         }
         return out
     }
