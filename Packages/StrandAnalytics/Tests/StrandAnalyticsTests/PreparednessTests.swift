@@ -150,6 +150,26 @@ final class PreparednessTests: XCTestCase {
         XCTAssertEqual(cold.verdict, .lowSignal)
     }
 
+    // MARK: Daytime demotion (FER-1033)
+
+    /// No recorded sleep session → the read still computes (day signals) but is NOT night-anchored:
+    /// the UI must demote to the explicit "lectura de día" surface, never the full verdict word.
+    func testNoSleepRecorded_readsButNotNightAnchored() {
+        var days = baseline()
+        days.append(dm("2026-06-21", sleep: nil))   // wore the watch by day, no night recorded
+        let r = read(days, asOf: "2026-06-21", config: noHyst)
+        XCTAssertNotEqual(r.verdict, .lowSignal, "day signals still produce a read")
+        XCTAssertFalse(r.isNightAnchored, "no sleep session → must demote to lectura de día")
+    }
+
+    /// A recorded night (even a short one) anchors the full surface.
+    func testSleepRecorded_nightAnchored() {
+        var days = baseline(); days.append(dm("2026-06-21"))
+        XCTAssertTrue(read(days, asOf: "2026-06-21").isNightAnchored)
+        var short = baseline(); short.append(dm("2026-06-22", sleep: 300))
+        XCTAssertTrue(read(short, asOf: "2026-06-22").isNightAnchored)
+    }
+
     // MARK: Signed knobs (/cso gate) — any change here must be an intentional re-gate
 
     /// Locks the values `/cso` signed for FER-1030 so a future retune can't drift silently.
