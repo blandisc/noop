@@ -98,9 +98,6 @@ private struct AjustesLanding: View {
     @State private var showMaxHR = false
     @State private var showCyclePhase = false
     @AppStorage(CyclePhaseExperiment.enabledKey) private var cyclePhaseOn = false
-    @State private var showReloj = false
-    /// Opt-in experimental body-clock reading (off by default). FER-712.
-    @AppStorage("noop.relojCorporalEnabled") private var relojCorporalEnabled = false
     @AppStorage(WhitespaceMetricsExperiment.enabledKey) private var whitespaceMetrics = false
     /// FER-722: opt-in exercise media download (default off — the first/only exception to offline
     /// for exercise thumbs/loops, gated end-to-end by `MediaDownloadCoordinator`).
@@ -135,9 +132,6 @@ private struct AjustesLanding: View {
         }
         .sheet(isPresented: $showMaxHR) {
             MaxHRSheet().instrumentoTheme(theme).environmentObject(profile)
-        }
-        .sheet(isPresented: $showReloj) {
-            RelojCorporalSheet().instrumentoTheme(theme).environmentObject(repo)
         }
         .sheet(item: $profileWheel) { wheel in
             ProfileWheelSheet(wheel: wheel).instrumentoTheme(theme).environmentObject(profile)
@@ -225,19 +219,6 @@ private struct AjustesLanding: View {
             ? "\(profile.hrMaxOverride) bpm"
             : String(localized: "Auto · \(profile.hrMax) bpm")
     }
-    /// One-line state for the «Steps estimate» row (FER-663): manual override, auto-fit, or not yet.
-    private var stepsCalDisplay: String {
-        if profile.stepsManualCoefficient > 0 { return String(localized: "Manual") }
-        if profile.stepsCalibrationCoefficient > 0 { return String(localized: "Auto") }
-        return String(localized: "Not calibrated")
-    }
-    /// One-line state for the 5/MG «Steps calibration» row (FER-665): the divisor, or «Off» at 1.0.
-    private var stepTicksDisplay: String {
-        profile.stepTicksPerStep > 1.0
-            ? String(format: "÷ %.1f", profile.stepTicksPerStep)
-            : String(localized: "Off")
-    }
-
     // MARK: - More (A5: grouped drill rows with overlines + subtitles)
 
     private var moreSection: some View {
@@ -268,26 +249,6 @@ private struct AjustesLanding: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             section("Experimental") {
-                // FER-1027: la fase de ciclo necesita la temperatura de la banda; sin banda queda oculta
-                // (el motor sigue dormido, no se borra). Reaparece si algún día vuelve el modo con banda.
-                if repo.dataSourceMode.usesWhoop {
-                    navRow("Cycle phase",
-                           subtitle: Text(cyclePhaseOn ? "Experiment · on" : "Experiment · off")) { showCyclePhase = true }
-                    divider
-                }
-                Toggle(isOn: $relojCorporalEnabled) {
-                    Text("Lectura del reloj corporal").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .toggleStyle(.instrumento)
-                .frame(minHeight: 44)
-                Text("Estimates whether your body leans early-bird or night-owl, from your activity pattern. Experimental and approximate; it needs several days of use to read well.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if relojCorporalEnabled {
-                    divider
-                    navRow("Ver tu reloj corporal") { showReloj = true }
-                }
-                divider
                 Toggle(isOn: $whitespaceMetrics) {
                     Text("Experimental metrics").font(StrandFont.body).foregroundStyle(theme.ink)
                 }

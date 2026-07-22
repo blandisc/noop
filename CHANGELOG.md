@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **La documentación describe Cénit como Apple Salud desde el día uno / Docs describe Cénit as Apple Health from day one.**
+  **ES** — Se reescribe la documentación del repo (README, CONTRIBUTING, BUILD, DATA_MODEL, ANALYTICS, PRIVACY_SECURITY, LIBRARY, ATTRIBUTION, plantilla de PR, CLAUDE.md, ARCHITECTURE) para que lea Cénit como una app de Apple Salud, sin marco residual de banda. Completa en la capa de docs el retiro del paquete `WhoopProtocol`, de las guías de protocolo/BLE y del tooling de captura en Linux ya eliminados del árbol.
+  **EN** — Rewrites the repo documentation (README, CONTRIBUTING, BUILD, DATA_MODEL, ANALYTICS, PRIVACY_SECURITY, LIBRARY, ATTRIBUTION, PR template, CLAUDE.md, ARCHITECTURE) so it describes Cénit as an Apple Health app, without residual band framing. Completes on the docs layer the removal of the `WhoopProtocol` package, the protocol/BLE guides, and the Linux capture tooling already deleted from the tree.
+  ([README.md](README.md), [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md))
+
 - **Entrenar deja de mostrar un dato de recuperación que se quedaba «calibrando» para siempre / Train no longer shows a recovery readout stuck on "calibrating" forever.**
   **ES** — El hub de Entrenar traía, junto al título «Hoy», un pequeño indicador con tu número de recuperación. Sin la banda ese número nunca se calcula, así que se quedaba permanentemente en «—, calibrando» — prometiendo un dato que jamás llegaba. Lo retiramos: la línea de «Hoy» queda limpia. La sugerencia de aligerar el día según cómo vienes (la nota «tu recuperación está baja/alta») sigue igual donde ya vivía.
   **EN** — The Train hub carried a small readout of your recovery number next to the "Today" title. Without the band that number is never computed, so it sat permanently on "—, calibrating" — promising a value that never arrived. We retired it: the "Today" line is now clean. The suggestion to ease the day based on how you're trending (the "your recovery is low/high" note) stays exactly where it already lived.

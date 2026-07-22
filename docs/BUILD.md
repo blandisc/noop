@@ -1,15 +1,13 @@
 # Building Cénit
 
 Cénit is a standalone, fully **offline** health app on **Apple Health**. It syncs HealthKit into
-on-device SQLite, can import Apple Health exports and historical WHOOP CSV exports, and computes
-recovery / strain / HRV / sleep locally. There is no cloud, no account — the app works only with
-**your own data**. Direct WHOOP band pairing was retired (FER-1003).
+on-device SQLite, can import Apple Health exports, and computes recovery / strain / HRV / sleep
+locally. There is no cloud, no account — the app works only with **your own data**.
 
-> **Not affiliated with WHOOP, and not a medical device.** Historical "WHOOP" references name
-> hardware the app once interoperated with, or import formats it can still read. Cénit contains no
-> WHOOP code, firmware, or assets. All outputs (HR, HRV, recovery, strain, sleep, SpO₂, temperature)
-> are approximations and are **not** clinically validated. See [`DISCLAIMER.md`](../DISCLAIMER.md)
-> and [`ATTRIBUTION.md`](../ATTRIBUTION.md).
+> **Not affiliated with WHOOP, and not a medical device.** Cénit contains no WHOOP code, firmware,
+> or assets. All outputs (HR, HRV, recovery, strain, sleep, SpO₂, temperature) are approximations
+> and are **not** clinically validated. See [`DISCLAIMER.md`](../DISCLAIMER.md) and
+> [`ATTRIBUTION.md`](../ATTRIBUTION.md).
 
 ---
 
@@ -33,28 +31,29 @@ Cenit/
 │   └── System/                 # ProjectInfo and app-layer helpers
 ├── Packages/
 │   ├── BiometricStreams/       # neutral biometric row vocabulary
-│   ├── WhoopProtocol/          # BLE frame parsing — research only; NOT linked to app (FER-1003)
+│   ├── StrandModels/           # shared model types
 │   ├── CenitStore/             # GRDB/SQLite persistence (migrations, streams, caches)
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
 │   ├── StrandTraining/         # strength domain
-│   ├── StrandImport/           # WHOOP CSV + Apple Health importers
+│   ├── StrandImport/           # Apple Health importers
 │   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
 └── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
 ```
 
 ### Packages and platforms
 
-Every package declares **both** `.iOS(.v16)` and `.macOS(.v13)`, so the protocol, storage,
-analytics, import, and design layers compile and run unmodified on iOS (and stay portable to other
-platforms). Any framework-specific code is guarded with `#if canImport(AppKit) / #elseif canImport(UIKit)`
+Every package declares **both** `.iOS(.v16)` and `.macOS(.v13)`, so the storage, analytics, import,
+and design layers compile and run unmodified on iOS (and stay portable to other platforms). Any
+framework-specific code is guarded with `#if canImport(AppKit) / #elseif canImport(UIKit)`
 (for example the color bridging in `Packages/StrandDesign/Sources/StrandDesign/Palette.swift`).
 
 | Package          | Platforms                | Key dependencies                          | Responsibility |
 |------------------|--------------------------|-------------------------------------------|----------------|
-| `WhoopProtocol`  | iOS 16+, macOS 13+       | none (bundles `Resources/whoop_protocol.json`) | BLE framing, CRC, command/event/packet decode — the reverse-engineering core |
-| `CenitStore`     | iOS 16+, macOS 13+       | `WhoopProtocol`, `GRDB.swift` (≥ 6.0.0)   | SQLite persistence, migrations, decoded streams, metric caches |
-| `StrandAnalytics`| macOS 13+, iOS 16+       | `WhoopProtocol`, `CenitStore`             | HRV / recovery / strain / sleep / correlation math |
-| `StrandImport`   | macOS 13+, iOS 16+       | `WhoopProtocol`, `CenitStore`, `ZIPFoundation` (≥ 0.9.0) | WHOOP CSV + Apple Health (`export.xml`, streaming) importers |
+| `BiometricStreams` | iOS 16+, macOS 13+     | none                                      | Neutral biometric row vocabulary |
+| `StrandModels`   | iOS 16+, macOS 13+       | none                                      | Shared model types |
+| `CenitStore`     | iOS 16+, macOS 13+       | `BiometricStreams`, `StrandModels`, `StrandTraining`, `GRDB.swift` (≥ 6.0.0) | SQLite persistence, migrations, streams, metric caches |
+| `StrandAnalytics`| macOS 13+, iOS 16+       | `BiometricStreams`, `StrandModels`        | HRV / recovery / strain / sleep / correlation math |
+| `StrandImport`   | macOS 13+, iOS 16+       | `CenitStore`, `StrandTraining`, `ZIPFoundation` (≥ 0.9.0) | Apple Health (`export.xml`, streaming) importers |
 | `StrandDesign`   | macOS 13+, iOS 16+       | none                                      | SwiftUI design system: palette, components, charts |
 
 All third-party dependencies are resolved through **Swift Package Manager**; nothing is vendored
@@ -130,13 +129,11 @@ Xcode to refresh it. The app keeps bundle id `com.feriracheta.noop` and product 
 
 ### 4. Apple Health on iOS
 
-Cénit is **Apple Health–only** (FER-1003): it does not pair with a WHOOP strap. On first launch
-iOS prompts for HealthKit permissions; grant the types you want Cénit to read. Foreground sync
-pulls samples through `HealthKitBridge` into the local SQLite store. You can also import an
-Apple Health `export.xml` (or a historical WHOOP CSV) from **Settings → Data Sources**.
-
-(Historical BLE protocol research lives in `Packages/WhoopProtocol` and
-[`PROTOCOL.md`](PROTOCOL.md); it is not linked into the shipping app.)
+Cénit is **Apple Health–only**: it does not pair with a WHOOP strap. On first launch iOS prompts
+for HealthKit permissions; grant the types you want Cénit to read. Foreground sync pulls samples
+through `HealthKitBridge` into the local SQLite store. You can also import an Apple Health
+`export.xml` from **Settings → Data Sources**. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for
+package layout and conventions.
 
 ### 5. Dev loop
 
@@ -149,7 +146,7 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit \
   -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
 
 # per-package iteration (much faster than the full app):
-cd Packages/WhoopProtocol && swift build && swift test
+cd Packages/StrandAnalytics && swift build && swift test
 cd Packages/CenitStore    && swift build && swift test
 cd Packages/StrandImport  && swift build && swift test
 ```
@@ -200,12 +197,10 @@ does not capture them.
 
 ## Other platforms
 
-A native **Windows** client is planned. The protocol facts in
-`WhoopProtocol/Resources/whoop_protocol.json` and the framing/CRC rules are language-agnostic, so the
-wire behavior is portable; the remaining work is a Windows BLE stack plus a UI re-implementation that
-matches the shared packages' behavior. Because every package declares both `.iOS(.v16)` and
+A native **Windows** client is planned. Because every package declares both `.iOS(.v16)` and
 `.macOS(.v13)` and guards UI-framework code with `#if canImport(UIKit) / #elseif canImport(AppKit)`,
-the non-UI core stays portable across platforms.
+the non-UI core (`StrandAnalytics`, `CenitStore`, …) stays portable across platforms; the remaining
+work is a Windows UI re-implementation that matches the shared packages' behavior.
 
 ---
 
@@ -213,9 +208,8 @@ the non-UI core stays portable across platforms.
 
 ```bash
 # Package test suites (no Xcode project needed):
-cd Packages/WhoopProtocol && swift test
-cd Packages/CenitStore    && swift test
 cd Packages/StrandAnalytics && swift test
+cd Packages/CenitStore    && swift test
 cd Packages/StrandImport  && swift test
 cd Packages/StrandDesign  && swift test
 
@@ -228,12 +222,6 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform
 
 ## Credits
 
-Cénit builds on prior community reverse-engineering and interoperability work:
-
-- **`johnmiddleton12/my-whoop`** — WHOOP 4.0 BLE protocol; the `WhoopProtocol` and `CenitStore`
-  packages are adapted from this work.
-- **`b-nnett/goose`** — WHOOP 5.0 / MG BLE protocol (service family `fd4b0001-…`, CRC16-Modbus
-  header) that the WHOOP-5 decode path is ported from.
 - **`groue/GRDB.swift`** — SQLite persistence.
 - **`weichsel/ZIPFoundation`** — zip handling for Apple Health exports.
 

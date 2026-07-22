@@ -5,8 +5,7 @@ health app on **Apple Health** — it syncs HealthKit into on-device SQLite and
 computes recovery / strain / HRV / sleep locally. No servers, no accounts, no
 data leaving the device — with exactly one narrow, opt-in, off-by-default
 exception: the exercise media downloader (thumbnails/loops cached from
-ExerciseDB, FER-722). Documented in [`README.md`](README.md#privacy). WHOOP band
-support was retired (FER-1003); historical imports are preserved.
+ExerciseDB, FER-722). Documented in [`README.md`](README.md#privacy).
 
 This file is a quick orientation. The **full contributing guide** —
 repository layout, the design-system rules, how to add a metric / screen /
@@ -32,11 +31,11 @@ packages — they build and test on their own, no Xcode project needed.
 cd Packages/StrandAnalytics && swift build && swift test
 ```
 
-The seven packages are `BiometricStreams` (neutral biometric row vocabulary),
-`WhoopProtocol` (BLE framing / decode — research only, not linked to the app),
-`CenitStore` (SQLite persistence), `StrandAnalytics` (recovery / strain / HRV /
-sleep math), `StrandTraining` (strength domain), `StrandImport` (WHOOP CSV +
-Apple Health importers), and `StrandDesign` (the SwiftUI design system).
+The packages are `BiometricStreams` (neutral biometric row vocabulary),
+`StrandModels` (shared model types), `CenitStore` (SQLite persistence),
+`StrandAnalytics` (recovery / strain / HRV / sleep math), `StrandTraining`
+(strength domain), `StrandImport` (Apple Health importers), and `StrandDesign`
+(the SwiftUI design system).
 
 ### iOS app
 
@@ -70,13 +69,10 @@ generated output (`Cenit.xcodeproj/`) or any secrets, keystores, or `local.prope
 
 ## Submitting a PR
 
-1. One concern per PR where practical (keep protocol, schema, and UI changes
-   separate).
+1. One concern per PR where practical (keep schema and UI changes separate).
 2. Fill in the [PR template](.github/PULL_REQUEST_TEMPLATE.md).
-3. For anything on the BLE path, state what you tested **on real hardware** and on
-   which strap. A green build is not proof a command behaves correctly.
-4. For analytics changes, add a test and cite the method.
-5. For UI changes, use `StrandDesign` tokens only — no hardcoded colors, fonts,
+3. For analytics changes, add a test and cite the method.
+4. For UI changes, use `StrandDesign` tokens only — no hardcoded colors, fonts,
    or spacing.
 
 By opening a pull request you agree your contribution is licensed under the same

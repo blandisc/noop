@@ -1,10 +1,10 @@
 # Cénit — On-Device Data Model
 
 Cénit is a standalone, fully offline health app on **Apple Health**. It stores HealthKit syncs,
-file imports, and on-device computed metrics in a single local SQLite database. Direct WHOOP band
-pairing was retired (FER-1003); historical band partitions may still exist in older DBs as
-dormant rows. This document describes that on-device database: every table, its columns, natural
-keys, indexes, and the migration history that produced the current schema.
+file imports, and on-device computed metrics in a single local SQLite database. Older installs may
+still carry dormant historical band-era partitions in the same DB. This document describes that
+on-device database: every table, its columns, natural keys, indexes, and the migration history that
+produced the current schema.
 
 > **Scope note.** Cénit is **not affiliated with, endorsed by, or connected to WHOOP**, and it is
 > **not a medical device** — none of the stored values are intended for diagnosis or treatment.
@@ -68,9 +68,9 @@ The schema falls into four groups:
 
 | Group | Tables | Origin |
 | --- | --- | --- |
-| **Device registry** | `device` | Legacy device registry (historical band / import partitions) |
-| **Decoded streams** (durable) | `hrSample`, `rrInterval`, `event`, `battery`, `spo2Sample`, `skinTempSample`, `respSample`, `gravitySample` | Historical band decode and/or HealthKit-derived samples |
-| **Raw outbox** (transient) | `rawBatch` | Compressed raw frames (legacy band path), prunable |
+| **Device registry** | `device` | Dormant/historical registry from the retired band era |
+| **Decoded streams** (durable) | `hrSample`, `rrInterval`, `event`, `battery`, `spo2Sample`, `skinTempSample`, `respSample`, `gravitySample` | Dormant/historical sample tables (band era and/or HealthKit-derived) |
+| **Raw outbox** (transient) | `rawBatch` | Dormant/historical compressed frames from the retired band era, prunable |
 | **Bookkeeping** | `cursors` | Highwater / read cursors |
 | **Metric caches** | `sleepSession`, `dailyMetric`, `journal`, `workout`, `appleDaily`, `metricSeries` | Derived metrics + CSV / Apple-Health imports |
 | **Experiments** *(v12)* | `experiment` | N-of-1 experiments (FER-307) |
@@ -123,7 +123,7 @@ a `DROP COLUMN` migration over potentially millions of existing rows. Treat it a
 
 ### `device` *(v1)*
 
-One row per strap the app has seen. Natural key is the device `id`.
+One row per device the app has ever recorded data for (historical — no device pairs today). Natural key is the device `id`.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -134,25 +134,24 @@ One row per strap the app has seen. Natural key is the device `id`.
 | `lastSeen` | INTEGER | Unix seconds, bumped on every upsert. |
 
 `upsertDevice(id:mac:name:)` (`StreamStore.swift`) inserts or, on `id` conflict, updates `mac`,
-`name`, and `lastSeen` (it does not touch `firstSeen`). Every other table references the strap via
+`name`, and `lastSeen` (it does not touch `firstSeen`). Every other table references the device via
 a `deviceId` text column, scoping all data per device.
 
 ---
 
 ## Decoded streams (durable record)
 
-These eight tables are the **durable, compact local record** of what the strap measured. They are
-decoded on-device from BLE frames by the `WhoopProtocol` package and written by
+These eight tables were historically populated by the (now-removed) band-decode path and remain
+for schema continuity; they may also hold HealthKit-derived samples. Writes go through
 `CenitStore.insert(_ streams:deviceId:)` (`StreamStore.swift`). The in-memory shapes are the
 `BiometricStreams` stream structs (`Packages/BiometricStreams/Sources/BiometricStreams/Streams.swift`):
 `HRSample`, `RRInterval`, `StreamEvent`, `BatterySample`, `SpO2Sample`, `SkinTempSample`,
 `RespSample`, `GravitySample`, aggregated into `Streams`.
 
 All inserts are **idempotent by natural key** — they use `ON CONFLICT(...) DO NOTHING`, so
-re-decoding overlapping frames (the common case during BLE backfill) never duplicates rows.
-`insert(...)` returns the count of rows *actually* inserted per stream. Range reads live in
-`Reads.swift` and follow a uniform shape: `WHERE deviceId = ? AND ts >= ? AND ts <= ? ORDER BY ts
-ASC LIMIT ?`.
+replaying overlapping samples never duplicates rows. `insert(...)` returns the count of rows
+*actually* inserted per stream. Range reads live in `Reads.swift` and follow a uniform shape:
+`WHERE deviceId = ? AND ts >= ? AND ts <= ? ORDER BY ts ASC LIMIT ?`.
 
 > The biometric stream structs carry a constant `unit` field (`"raw_adc"` / `"g"`) for JSON
 > parity with golden fixtures, but `unit` is **not** a database column — only the numeric fields
@@ -464,15 +463,8 @@ served by the `(deviceId, ts)` / `(deviceId, day)` / `(deviceId, startTs)` prima
 
 ## Provenance
 
-Cénit's strap interoperability is built on community reverse-engineering work, which it credits and
-builds upon:
-
-- **WHOOP 4.0 protocol** — [`johnmiddleton12/my-whoop`](https://github.com/johnmiddleton12/my-whoop)
-- **WHOOP 5.0 protocol** — [`b-nnett/goose`](https://github.com/b-nnett/goose)
-
-The frame parsing, CRC, and command/event/packet decode that feed the decoded-stream tables above
-live in the `WhoopProtocol` package; persistence is `CenitStore`; the local recovery / strain /
-HRV / sleep math is `StrandAnalytics`; and the CSV / Apple-Health importers are `StrandImport`.
+Persistence is `CenitStore`; the local recovery / strain / HRV / sleep math is `StrandAnalytics`;
+and the Apple Health importers are `StrandImport`.
 
 > **Reminder.** Cénit is not affiliated with WHOOP and is not a medical device. All stored data is
 > the user's own, kept entirely on the user's device.

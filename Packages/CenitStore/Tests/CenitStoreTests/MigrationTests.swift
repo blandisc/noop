@@ -6,16 +6,62 @@ import BiometricStreams
 
 final class MigrationTests: XCTestCase {
     func testMigratorRegistersContiguousVersions() {
-        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...36).map { "v\($0)" })
-        XCTAssertEqual(CenitStoreInfo.schemaVersion, 36)
-        XCTAssertEqual(CenitStoreInfo.latestMigration, "v36")
+        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...37).map { "v\($0)" })
+        XCTAssertEqual(CenitStoreInfo.schemaVersion, 37)
+        XCTAssertEqual(CenitStoreInfo.latestMigration, "v37")
     }
 
     func testInMemoryRunsMigrations() async throws {
         let store = try await CenitStore.inMemory()
         let tables = try await store.tableNames()
-        for t in ["device", "hrSample", "rrInterval", "event", "battery", "rawBatch"] {
+        // F7 (v37): device/event/battery/rawBatch are dropped (band-only, zero live consumer) —
+        // covered by testV37DropsDeadBandTablesOnUpgradeAndFresh below.
+        for t in ["hrSample", "rrInterval", "cursors", "dailyMetric"] {
             XCTAssertTrue(tables.contains(t), "missing table \(t)")
+        }
+    }
+
+    /// F7 (reduced scope, "la banda nunca existió"): v37 DROPs the 9 dead band-only raw-stream tables
+    /// — on both an upgrade from the pre-v37 schema and a fresh install — while every live table
+    /// (dieta/fuerza/sueño/journal/workout/dailyMetric/metricSeries/hrSample/rrInterval/deviceIdMap/
+    /// cursors/experiment) survives untouched. Append-only: v1…v36 are not touched by v37.
+    func testV37DropsDeadBandTablesOnUpgradeAndFresh() async throws {
+        let deadTables = ["device", "event", "battery", "rawBatch",
+                          "spo2Sample", "skinTempSample", "respSample", "gravitySample",
+                          "stepSample", "circadianPhase"]
+        let liveTables = ["hrSample", "rrInterval", "dailyMetric", "metricSeries", "sleepSession",
+                          "journal", "workout", "appleDaily", "cursors", "experiment",
+                          "dietPlan", "dietAdherence", "customExercise", "routine",
+                          "routineExercise", "strengthSession", "setEntry", "personalRecord",
+                          "deviceIdMap"]
+
+        // Upgrade path: seed a DB at v36 (old schema, dead tables present) then migrate to HEAD.
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v36")
+        try await dbQueue.read { db in
+            for t in deadTables {
+                XCTAssertTrue(try db.tableExists(t), "\(t) must exist at v36 (pre-drop)")
+            }
+        }
+        try migrator.migrate(dbQueue)   // → v37
+        try await dbQueue.read { db in
+            for t in deadTables {
+                XCTAssertFalse(try db.tableExists(t), "\(t) must be dropped by v37")
+            }
+            for t in liveTables {
+                XCTAssertTrue(try db.tableExists(t), "\(t) must survive v37 (upgrade path)")
+            }
+        }
+
+        // Fresh install: same end state, reached directly.
+        let fresh = try await CenitStore.inMemory()
+        let freshTables = try await fresh.tableNames()
+        for t in deadTables {
+            XCTAssertFalse(freshTables.contains(t), "\(t) must not exist on a fresh install")
+        }
+        for t in liveTables {
+            XCTAssertTrue(freshTables.contains(t), "\(t) must exist on a fresh install")
         }
     }
 
@@ -57,7 +103,7 @@ final class MigrationTests: XCTestCase {
         }
 
         // After v21, the 5 rebuilt tables drop `synced`; the non-rebuilt v5 tables keep it.
-        try migrator.migrate(dbQueue)
+        try migrator.migrate(dbQueue, upTo: "v21")   // pinned — v37 later drops event/battery/spo2Sample
         try await dbQueue.read { db in
             for table in ["hrSample", "rrInterval", "skinTempSample", "respSample", "gravitySample"] {
                 XCTAssertFalse(try db.columns(in: table).map(\.name).contains("synced"),
@@ -118,17 +164,20 @@ final class MigrationTests: XCTestCase {
         XCTAssertEqual(pk, ["exerciseId"], "exerciseId is the PK → at most one override per exercise")
     }
 
-    /// v25 (FER-712): the circadianPhase table exists with a (deviceId, day) composite PK (≤ 1 record per
-    /// day), append-only — every prior table still stands.
+    /// Pinned to v25 (not HEAD): v37 later DROPs `circadianPhase` (F7, "Tu reloj corporal" retired in
+    /// F2) — this only re-verifies v25's OWN historical output, matching the v21/v20 pinning pattern
+    /// elsewhere in this file.
     func testV25CreatesCircadianPhaseTableAppendOnly() async throws {
-        let store = try await CenitStore.inMemory()   // migrated to v25
-        let tables = try await store.tableNames()
-        XCTAssertTrue(tables.contains("circadianPhase"), "v25 must create circadianPhase")
-        for prior in ["hrSample", "experiment", "exerciseTypeOverride", "routineSchedule"] {
-            XCTAssertTrue(tables.contains(prior), "v25 is append-only — \(prior) must survive")
+        let dbQueue = try DatabaseQueue()
+        try CenitStore.makeMigrator().migrate(dbQueue, upTo: "v25")
+        try await dbQueue.read { db in
+            XCTAssertTrue(try db.tableExists("circadianPhase"), "v25 must create circadianPhase")
+            for prior in ["hrSample", "experiment", "exerciseTypeOverride", "routineSchedule"] {
+                XCTAssertTrue(try db.tableExists(prior), "v25 is append-only — \(prior) must survive")
+            }
+            XCTAssertEqual(try db.primaryKey("circadianPhase").columns, ["deviceId", "day"],
+                           "PK is (deviceId, day) → at most one record per day")
         }
-        let pk = try await store.primaryKeyColumns("circadianPhase")
-        XCTAssertEqual(pk, ["deviceId", "day"], "PK is (deviceId, day) → at most one record per day")
     }
 
     /// v29 (FER-A): the four load-progression columns exist on `routineExercise`, and a routine seeded at
@@ -204,21 +253,6 @@ final class MigrationTests: XCTestCase {
             XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM progressionOptOut"), 1,
                            "the pre-existing row survives the no-op migration")
         }
-    }
-
-    /// v25 upsert is idempotent by (deviceId, day): writing the same day twice keeps one row, latest wins.
-    func testV25UpsertIsIdempotentPerDay() async throws {
-        let store = try await CenitStore.inMemory()
-        let first = CircadianPhaseRow(day: "2026-07-05", tempMinHour: 5.5, acrophaseHours: 15,
-                                      offsetMinutes: 23, confidence: "solid", daysObserved: 20,
-                                      bedtimeHour: 23.3, wakeHour: 7, computedAt: 1)
-        try await store.upsertCircadianPhase(first, deviceId: "dev")
-        let updated = CircadianPhaseRow(day: "2026-07-05", tempMinHour: 4.0, acrophaseHours: 13,
-                                        offsetMinutes: -30, confidence: "wide", daysObserved: 9,
-                                        bedtimeHour: 22.0, wakeHour: 7, computedAt: 2)
-        try await store.upsertCircadianPhase(updated, deviceId: "dev")
-        let latest = try await store.latestCircadianPhase(deviceId: "dev")
-        XCTAssertEqual(latest, updated)   // second write overwrote the first, not appended
     }
 
     /// v24 preserves existing data: seed a custom exercise at v23, migrate to v24, assert it survives and
@@ -354,7 +388,7 @@ final class MigrationTests: XCTestCase {
 
         let before = try await dbQueue.read { db in try Self.rowCounts(db) }
 
-        try migrator.migrate(dbQueue)   // → HEAD, running v36
+        try migrator.migrate(dbQueue, upTo: "v36")   // pinned — v37 later drops `device`, out of scope here
 
         try await dbQueue.read { db in
             // ZERO loss: every table that existed at v21 has exactly the count it had before the relabel.
@@ -401,7 +435,7 @@ final class MigrationTests: XCTestCase {
     /// relabel again is a no-op, and the strap partition still resolves.
     func testV36IsIdempotent() async throws {
         let dbQueue = try DatabaseQueue()
-        try CenitStore.makeMigrator().migrate(dbQueue)   // fresh → HEAD
+        try CenitStore.makeMigrator().migrate(dbQueue, upTo: "v36")   // fresh → v36 (pinned; v37 drops `device`, which `renameDevicePartition` still writes)
         try await dbQueue.write { db in
             try db.execute(sql: "INSERT INTO dailyMetric (deviceId, day) VALUES ('strap','2026-07-01')")
             // Re-run the relabel by hand; nothing matches the old label any more.
@@ -424,20 +458,18 @@ final class MigrationTests: XCTestCase {
         }
     }
 
-    /// Post-v21 the public String-keyed API round-trips through the integer surrogate, and the WRITE
-    /// path maps a never-seen deviceId ON DEMAND (no `upsertDevice` first) — so the Backfiller, which
-    /// acks+trims history even if `insert` fails, can never lose acked data to a missing mapping.
+    /// F7: the gravity leg of this test was removed — `gravitySample` is dropped by v37 (band-only,
+    /// zero live consumer), so `insert()` no longer writes it. hr/rr still cover the on-demand mapping.
     func testV21StringApiRoundTripAndOnDemandMapping() async throws {
-        let store = try await CenitStore.inMemory()   // migrated to v21
+        let store = try await CenitStore.inMemory()
         _ = try await store.insert(
             Streams(hr: [HRSample(ts: 1, bpm: 60), HRSample(ts: 2, bpm: 61)],
-                    rr: [RRInterval(ts: 1, rrMs: 800)],
-                    gravity: [GravitySample(ts: 1, x: 0.1, y: 0.2, z: 0.3)]),
+                    rr: [RRInterval(ts: 1, rrMs: 800)]),
             deviceId: "dev1")   // never registered via upsertDevice
         let hr = try await store.hrSamples(deviceId: "dev1", from: 0, to: 10, limit: 100)
         XCTAssertEqual(hr, [HRSample(ts: 1, bpm: 60), HRSample(ts: 2, bpm: 61)])
-        let grav = try await store.gravitySamples(deviceId: "dev1", from: 0, to: 10, limit: 100)
-        XCTAssertEqual(grav, [GravitySample(ts: 1, x: 0.1, y: 0.2, z: 0.3)])
+        let rr = try await store.rrIntervals(deviceId: "dev1", from: 0, to: 10, limit: 100)
+        XCTAssertEqual(rr, [RRInterval(ts: 1, rrMs: 800)])
         // A different, also-unseen deviceId is isolated (its own surrogate; reads empty).
         let other = try await store.hrSamples(deviceId: "dev2", from: 0, to: 10, limit: 100)
         XCTAssertTrue(other.isEmpty)
@@ -514,7 +546,7 @@ final class MigrationTests: XCTestCase {
             try db.execute(sql: "INSERT INTO rrInterval (deviceId, ts, rrMs) VALUES ('d',1,800)")
         }
 
-        try migrator.migrate(dbQueue)   // → v20
+        try migrator.migrate(dbQueue, upTo: "v20")   // pinned — v37 later drops these tables
 
         try await dbQueue.read { db in
             XCTAssertTrue(try db.tableExists("spo2Sample"), "v20 keeps the (empty) spo2Sample table")

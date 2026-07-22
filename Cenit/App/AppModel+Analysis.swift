@@ -13,13 +13,9 @@ extension AppModel {
     /// Run the on-device analysis sequence, retained so `stopAnalysis()` can cancel it. Idempotent —
     /// a call while it is already running is a no-op, so the launch path doesn't double-start it.
     ///
-    /// It first runs the **launch refresh sequence** (first-paint → restore session → full refresh →
-    /// one-shot migrations); if today still has no verdict it runs `analyzeRecent()` right away (the
-    /// stored raw streams may already produce it — no reason to make the morning verdict wait for the
-    /// offload grace). ONLY in band mode (`usesWhoop`) does it then keep a periodic recompute alive,
-    /// waking every 15 min to run `analyzeRecent()` UNLESS a backfill/import is writing. Under the
-    /// Apple-only pin (FER-1003/1022) the `guard usesWhoop` below returns before any timer, so there is
-    /// no 15-min tick — the sequence is purely the launch refresh. Cancelled in `stopAnalysis()` when
+    /// Runs the **launch refresh sequence** (first-paint → restore session → full refresh →
+    /// one-shot migrations). Under the Apple-only pin (FER-1003/1022) there is no periodic band
+    /// recompute — the sequence is purely the launch refresh. Cancelled in `stopAnalysis()` when
     /// the app backgrounds (FER-177).
     ///
     /// NOTE: this is a LAUNCH-time entry point. It is NOT re-invoked on every foreground return — that
@@ -36,7 +32,7 @@ extension AppModel {
             // Two-pass launch: the ~90-day first-paint pass publishes the dashboard in
             // milliseconds so «Hoy» renders, then the full pass rebuilds it over the whole history
             // (its merge work runs off the main actor) and flips `repo.fullyLoaded`. Everything that
-            // persists off `repo.days` (the engine, the day-key migration below) runs AFTER the full
+            // persists off `repo.days` (the day-key migration below) runs AFTER the full
             // pass — `migrateDayKeysToLocalIfNeeded` recomputes with `force: true`, so running it over
             // the short window would both skew scores and burn its one-shot flag.
             await self.repo.refreshFirstPaint()                // ① paint «Hoy» now (~90 days)
@@ -45,28 +41,6 @@ extension AppModel {
             await self.migrateDayKeysToLocalIfNeeded()         // FER-226: one-time UTC→local re-bucket (flag-gated)
             await self.compactDatabaseAfterSpo2PurgeIfNeeded() // FER-511: one-time VACUUM after the spo2 purge (flag-gated)
             await self.compactDatabaseAfterRebuildIfNeeded()   // FER-513: one-time VACUUM after the v21 rebuild (flag-gated)
-            // FER-1022: under the Apple-only pin, `IntelligenceEngine.analyzeRecent` is a constant no-op
-            // (its `usesWhoop` guard never opens). The launch sequence above is the real work and has run;
-            // fresh Apple data refreshes the dashboard through `HealthKitBridge.sync`, not this loop. So
-            // stop here rather than wake every 15 min to do nothing. (If the band pin is ever lifted this
-            // guard falls through and the periodic recompute resumes unchanged.)
-            guard self.sources.mode.usesWhoop else { return }
-            // Si hoy aún no tiene veredicto (mañana post-medianoche: la fila no existe o su recovery es
-            // nil), no hagas esperar el primer análisis los 6 s del offload: los crudos YA almacenados
-            // pueden producirlo ahora. El sleep de abajo queda solo como cortesía al primer offload BLE.
-            if self.repo.today?.recovery == nil,
-               Self.mayRecomputeAfterBackfill(backfilling: false,
-                                              hasActiveImport: self.hasActiveImport) {
-                await self.intelligence.analyzeRecent()
-            }
-            try? await Task.sleep(nanoseconds: 6_000_000_000)  // give the first offload a moment
-            while !Task.isCancelled {
-                if Self.mayRecomputeAfterBackfill(backfilling: false,
-                                                  hasActiveImport: self.hasActiveImport) {
-                    await self.intelligence.analyzeRecent()
-                }
-                try? await Task.sleep(nanoseconds: 900_000_000_000)  // 15 min, matches the offload cadence
-            }
         }
     }
 
@@ -83,8 +57,6 @@ extension AppModel {
     /// refresh, so the dashboard was assembled twice per activation (wasted work/battery; correct only
     /// by luck of the `refreshGen` guard). Now at most ONE refresh per foreground, never two
     /// concurrent (FER-1024):
-    ///  • Band mode (`usesWhoop`, dormant under the Apple-only pin) resumes its periodic recompute
-    ///    loop exactly as before — behaviour preserved.
     ///  • Apple-only: the launch sequence already ran once at launch. Re-assemble ONLY if the day
     ///    rolled over since the last published dashboard, so «Hoy» re-buckets to the new local day
     ///    even when Apple has no new data (FER-224/226/630). Awaited by the caller BEFORE
@@ -93,15 +65,10 @@ extension AppModel {
     ///    genuinely new Apple data.
     @MainActor
     func resumeForegroundAnalysis() async {
-        guard sources.mode.usesWhoop else {
-            if Self.shouldForceRefreshOnForeground(lastPublishedDay: repo.lastRefreshDayKey,
-                                                   currentDay: Repository.localDayKey(Date())) {
-                await repo.refresh()
-            }
-            return
+        if Self.shouldForceRefreshOnForeground(lastPublishedDay: repo.lastRefreshDayKey,
+                                               currentDay: Repository.localDayKey(Date())) {
+            await repo.refresh()
         }
-        // Band mode: resume the periodic recompute cancelled on background (unchanged path).
-        startAnalysis()
     }
 
     /// Whether returning to the foreground must force a full dashboard rebuild: only when the day
@@ -136,7 +103,6 @@ extension AppModel {
         repo.baselineEpoch = profile.baselineEpochOrNil
         Task { @MainActor in
             await repo.refresh()
-            await intelligence.analyzeRecent(force: true)
         }
     }
 

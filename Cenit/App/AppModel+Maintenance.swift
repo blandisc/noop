@@ -32,14 +32,10 @@ extension AppModel {
 
         let window = 60   // bounded recompute window; older days keep their date (accepted seam)
 
-        // 1. On-device computed scores: re-group from the still-stored raw streams onto the local day
-        //    (force bypasses FER-177's idempotent skip), then drop the future-in-local orphan(s).
-        let writtenComputed = await intelligence.analyzeRecent(maxDays: window, force: true)
-        await Self.pruneFutureLocalDays(store: store, deviceId: deviceId + "-noop", written: writtenComputed)
-
-        // 2. Apple Health: only when already connected (auth restored from the persisted "connected"
-        //    flag on launch). New Apple rows are written local from now on, so a user who connects HK
-        //    LATER has no UTC rows to migrate — the normal sync already lands them on the local day.
+        // Apple Health: only when already connected (auth restored from the persisted "connected"
+        // flag on launch). New Apple rows are written local from now on, so a user who connects HK
+        // LATER has no UTC rows to migrate — the normal sync already lands them on the local day.
+        // (The on-device `-noop` re-group/prune was band-only and is gone with IntelligenceEngine.)
         if let health = healthBridge, health.auth == .authorized {
             let writtenApple = await health.sync(days: window)
             await Self.pruneFutureLocalDays(store: store, deviceId: appleDeviceId, written: writtenApple)

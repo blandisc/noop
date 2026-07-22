@@ -5,15 +5,10 @@ import BiometricStreams
 final class ReadTests: XCTestCase {
     private func seeded() async throws -> CenitStore {
         let store = try await CenitStore.inMemory()
-        try await store.upsertDevice(id: "dev1", mac: nil, name: nil)
-        try await store.upsertDevice(id: "other", mac: nil, name: nil)
         let s = Streams(
             hr: [HRSample(ts: 100, bpm: 60), HRSample(ts: 200, bpm: 61),
                  HRSample(ts: 300, bpm: 62)],
-            rr: [RRInterval(ts: 100, rrMs: 800), RRInterval(ts: 100, rrMs: 820)],
-            events: [StreamEvent(ts: 150, kind: "BLE_CONNECTION_DOWN(12)",
-                                payload: ["k": .int(9)])],
-            battery: [BatterySample(ts: 120, soc: 88.0, mv: 3900)])
+            rr: [RRInterval(ts: 100, rrMs: 800), RRInterval(ts: 100, rrMs: 820)])
         _ = try await store.insert(s, deviceId: "dev1")
         // Decoy on another device — must never appear in dev1 reads.
         _ = try await store.insert(Streams(hr: [HRSample(ts: 200, bpm: 99)]), deviceId: "other")
@@ -48,40 +43,5 @@ final class ReadTests: XCTestCase {
         let store = try await seeded()
         let rr = try await store.rrIntervals(deviceId: "dev1", from: 0, to: 1000, limit: 100)
         XCTAssertEqual(rr, [RRInterval(ts: 100, rrMs: 800), RRInterval(ts: 100, rrMs: 820)])
-    }
-
-    func testEventsDecodePayload() async throws {
-        let store = try await seeded()
-        let evs = try await store.events(deviceId: "dev1", from: 0, to: 1000, limit: 100)
-        XCTAssertEqual(evs, [StreamEvent(ts: 150, kind: "BLE_CONNECTION_DOWN(12)",
-                                        payload: ["k": .int(9)])])
-    }
-
-    func testBatterySamples() async throws {
-        let store = try await seeded()
-        let bat = try await store.batterySamples(deviceId: "dev1", from: 0, to: 1000, limit: 100)
-        XCTAssertEqual(bat, [BatterySample(ts: 120, soc: 88.0, mv: 3900)])
-    }
-
-    func testStorageStats() async throws {
-        let store = try await seeded()
-        // Add one of each biometric stream so the count proves all 8 tables are summed.
-        _ = try await store.insert(
-            Streams(spo2: [SpO2Sample(ts: 400, red: 1, ir: 2)],
-                    skinTemp: [SkinTempSample(ts: 400, raw: 930)],
-                    resp: [RespSample(ts: 400, raw: 3073)],
-                    gravity: [GravitySample(ts: 400, x: 0.1, y: 0.2, z: 0.3)]),
-            deviceId: "dev1")
-        try await store.enqueueRawBatch(
-            RawBatchMeta(batchId: "b1", deviceId: "dev1",
-                         clockRef: ClockRef(device: 0, wall: 0), capturedAt: 1,
-                         startTs: 0, endTs: 0, frameCount: 1, byteSize: 4),
-            frames: [[0xAA, 0x00, 0x01, 0x02]])
-        let stats = try await store.storageStats()
-        // dev1: 3 hr + 2 rr + 1 event + 1 battery + 0 spo2 (not stored, FER-511) + 1 skinTemp + 1 resp
-        //       + 1 gravity = 10; other: 1 hr = 1 → 11 decoded rows.
-        XCTAssertEqual(stats.decodedRows, 11)
-        XCTAssertEqual(stats.rawBatches, 1)
-        XCTAssertEqual(stats.rawBytes, 4)
     }
 }

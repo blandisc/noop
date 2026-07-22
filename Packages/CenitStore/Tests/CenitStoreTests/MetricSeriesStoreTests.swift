@@ -30,7 +30,8 @@ final class MetricSeriesStoreTests: XCTestCase {
     func testExistingTablesStillPresentAfterV9() async throws {
         let store = try await CenitStore.inMemory()
         let tables = try await store.tableNames()
-        for t in ["device", "hrSample", "rrInterval", "event", "battery", "rawBatch",
+        // F7 (v37): device/event/battery/rawBatch are dropped later (band-only, zero live consumer).
+        for t in ["hrSample", "rrInterval",
                   "sleepSession", "dailyMetric", "journal", "workout", "appleDaily"] {
             XCTAssertTrue(tables.contains(t), "v9 must not drop \(t)")
         }

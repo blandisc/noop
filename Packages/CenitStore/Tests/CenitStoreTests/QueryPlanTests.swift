@@ -198,13 +198,8 @@ final class QueryPlanTests: XCTestCase {
         assertIndexed(plan, table: "rrInterval")
     }
 
-    func testGravitySamplesRangeReadUsesPrimaryKey() async throws {
-        let store = try await CenitStore.inMemory()
-        let plan = try await store.queryPlanForTest("""
-            SELECT ts, x, y, z FROM gravitySample
-            WHERE deviceId = ? AND ts >= ? AND ts <= ?
-            ORDER BY ts ASC LIMIT ?
-            """, arguments: [1, 0, 9_999_999_999, 100])
-        assertIndexed(plan, table: "gravitySample")
-    }
+    // F7 (reduced scope): testGravitySamplesRangeReadUsesPrimaryKey removed — `gravitySample` is
+    // dropped in v37 (band-only, zero live consumer); `CenitStore.gravitySamples()` is kept (a
+    // dormant Repository caller survives) but its query plan is no longer testable at HEAD since the
+    // table it targets doesn't exist.
 }

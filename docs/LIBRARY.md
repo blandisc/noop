@@ -1,32 +1,21 @@
 # Cénit — Cross-Platform Swift Library Reference
 
-Cénit is a standalone, fully **offline** companion app for WHOOP straps (4.0 and
-5.0). It pairs directly with the user's own strap over Bluetooth — **no WHOOP
-cloud or account** — stores everything on-device in SQLite, can
-import WHOOP CSV and Apple Health exports, and computes recovery, strain, HRV,
-and sleep locally.
+Cénit is a standalone, fully **offline** health app on **Apple Health**. It syncs
+HealthKit into on-device SQLite, can import Apple Health exports, and computes
+recovery, strain, HRV, and sleep locally — no cloud, no account.
 
 This document is the reference for the **reusable, cross-platform Swift
 packages** that make that possible. They are designed to be vendored and reused
 independently of the app itself.
 
-> **Not affiliated with WHOOP.** "WHOOP" is used nominatively only to identify
-> the hardware these packages interoperate with. Cénit contains no WHOOP
-> proprietary code, firmware, or assets and works only with the user's own
-> device and data. **Cénit is not a medical device.** Every derived metric (HR,
-> HRV, recovery, strain, sleep, SpO₂, temperature) is an approximation and is
-> not clinically validated.
+> **Not affiliated with WHOOP.** Cénit contains no WHOOP proprietary code,
+> firmware, or assets and works only with the user's own device and data.
+> **Cénit is not a medical device.** Every derived metric (HR, HRV, recovery,
+> strain, sleep, SpO₂, temperature) is an approximation and is not clinically
+> validated.
 
 ## Credits
 
-These packages build on prior community reverse-engineering and
-interoperability work:
-
-- **`johnmiddleton12/my-whoop`** — the WHOOP 4.0 BLE framing, command/decode,
-  and collection logic that `WhoopProtocol` and `CenitStore` are adapted from.
-- **`b-nnett/goose`** — the WHOOP 5.0 / MG protocol work (the `fd4b0001-…`
-  service family, CRC16-Modbus header, `CLIENT_HELLO`, and the "puffin" packet
-  types) that the WHOOP 5.0 paths are ported from.
 - **`groue/GRDB.swift`** — SQLite persistence used by `CenitStore`.
 
 ---
@@ -35,189 +24,60 @@ interoperability work:
 
 | Package | Purpose | Pure / portable? | UI deps | External deps |
 |---|---|---|---|---|
-| **WhoopProtocol** | BLE frame parsing, CRC, command/event/packet decode (the reverse-engineering core) | ✅ Pure Foundation | none | none |
-| **CenitStore** | GRDB/SQLite persistence: migrations, decoded streams, raw outbox, metric caches | ✅ Pure (server-free) | none | GRDB |
-| **StrandAnalytics** | HRV / recovery / strain / sleep / correlation math | ✅ Pure, deterministic | none | (WhoopProtocol, CenitStore types) |
-| **StrandImport** | WHOOP CSV + Apple Health (`export.xml`, streaming) importers | ✅ Pure Foundation/XML | none | ZIPFoundation |
+| **CenitStore** | GRDB/SQLite persistence: migrations, streams, raw outbox, metric caches | ✅ Pure (server-free) | none | GRDB |
+| **StrandAnalytics** | HRV / recovery / strain / sleep / correlation math | ✅ Pure, deterministic | none | (BiometricStreams, StrandModels types) |
+| **StrandImport** | Apple Health (`export.xml`, streaming) importers | ✅ Pure Foundation/XML | none | ZIPFoundation |
 | **StrandDesign** | SwiftUI design system (palette, components, charts) | SwiftUI only | SwiftUI | none |
 
-All five packages declare the same platforms — **iOS 16+ and macOS 13+** — and
-build with **swift-tools-version 5.9**. The first four are platform-pure: they
-never import `CoreBluetooth`, `UIKit`, or `AppKit`, so they run unchanged in CLI
-tools, tests, and on any platform. `StrandDesign` is the only SwiftUI package;
+These packages declare the same platforms — **iOS 16+ and macOS 13+** — and
+build with **swift-tools-version 5.9**. The non-UI packages are platform-pure:
+they never import `CoreBluetooth`, `UIKit`, or `AppKit`, so they run unchanged in
+CLI tools, tests, and on any platform. `StrandDesign` is the only SwiftUI package;
 it builds on both iOS and macOS, bridging through `UIColor`/`NSColor` only where
 unavoidable, guarded with `#if canImport(UIKit)` / `#if canImport(AppKit)`.
 
 ### Dependency graph
 
 ```
-WhoopProtocol  (no internal deps)
+BiometricStreams / StrandModels  (root vocabulary + shared models)
       │
-      ├──────────────► CenitStore        (+ GRDB)
+      ├──────────────► CenitStore        (+ GRDB, StrandTraining)
       │                     │
       ▼                     ▼
-StrandAnalytics ◄───────────┘            (depends on WhoopProtocol + CenitStore types)
+StrandAnalytics ◄───────────┘            (depends on BiometricStreams + StrandModels)
 
-StrandImport   ──► WhoopProtocol, CenitStore   (+ ZIPFoundation)
+StrandImport   ──► CenitStore, StrandTraining   (+ ZIPFoundation)
 
 StrandDesign   (standalone — SwiftUI only, no internal deps)
 ```
 
-The app target (`Cenit/`, built by `Cenit`) is the integration layer: it
-owns the CoreBluetooth transport, wraps the protocol library's UUID *strings* in
-`CBUUID`, and wires the pure packages together. The pure packages are
-platform-agnostic and reusable on their own.
-
----
-
-## WhoopProtocol
-
-The reverse-engineering core: a schema-driven decoder that turns raw BLE frame
-bytes from a WHOOP 4.0 or 5.0 strap into typed, annotated records. **Pure
-Foundation — no CoreBluetooth, no UI.** The library deliberately exposes GATT
-UUIDs as *strings* so the app layer (not this package) wraps them in `CBUUID`,
-keeping the decoder runnable anywhere.
-
-**Sources:** `Framing.swift`, `Schema.swift`, `Interpreter.swift`, `Values.swift`,
-`Streams.swift`, `HistoricalStreams.swift`, `HistoricalMeta.swift`,
-`DeviceFamily.swift`, `PostHooks.swift`, plus the bundled
-`Resources/whoop_protocol.json` canonical decode schema.
-
-### Depend on it
-
-```swift
-// Package.swift
-dependencies: [
-    .package(path: "../WhoopProtocol"),
-],
-targets: [
-    .target(name: "MyTarget", dependencies: ["WhoopProtocol"]),
-]
-```
-
-### Key public types & functions
-
-**Device families** (`DeviceFamily.swift`)
-
-```swift
-public enum DeviceFamily: String, Sendable, CaseIterable { case whoop4, whoop5 }
-```
-
-`DeviceFamily` carries everything the transport needs without importing
-CoreBluetooth:
-
-| Member | Meaning |
-|---|---|
-| `headerCRCKind` | `.crc8` (WHOOP 4.0) or `.crc16Modbus` (WHOOP 5.0) |
-| `serviceUUIDString` | primary GATT service UUID *string* (`6108…` / `fd4b…`) |
-| `characteristicUUIDStrings` | characteristic UUID strings in stable order |
-| `commandCharacteristicUUIDString` | the `…0002` write endpoint |
-| `clientHello` | static `CLIENT_HELLO` frame bytes (`nil` for 4.0; a fixed type-35 frame for 5.0) |
-
-`PuffinPacketType` and `canonicalTypeName(_:schema:)` alias WHOOP 5.0 "puffin"
-types (38 → `COMMAND_RESPONSE`, 56 → `METADATA`) onto their base decode
-semantics.
-
-**CRC + framing** (`Framing.swift`)
-
-```swift
-public func crc8(_ bytes: [UInt8]) -> UInt8            // poly 0x07 (WHOOP 4.0 header)
-public func crc32(_ bytes: [UInt8]) -> UInt32          // zlib CRC-32 (payload trailer)
-public func crc16Modbus(_ bytes: [UInt8]) -> UInt16    // poly 0xA001 (WHOOP 5.0 header)
-
-public func verifyFrame(_ frame: [UInt8]) -> FrameCheck
-public func verifyFrame(_ frame: [UInt8], family: DeviceFamily) -> FrameCheck
-
-public final class Reassembler {                       // accumulate BLE fragments → whole frames
-    public init()
-    public func feed(_ fragment: [UInt8]) -> [[UInt8]]
-}
-```
-
-`FrameCheck` reports `ok`, the declared `length`, and the header/payload CRC
-outcomes.
-
-**Schema + parsing** (`Schema.swift`, `Interpreter.swift`, `Values.swift`)
-
-```swift
-public func loadSchema() -> Schema                     // loads + caches Resources/whoop_protocol.json
-
-public func parseFrame(_ frame: [UInt8]) -> ParsedFrame
-public func parseFrame(_ frame: [UInt8], family: DeviceFamily) -> ParsedFrame
-```
-
-A `ParsedFrame` carries `ok`, `typeName`, `seq`, optional `cmdName`, `crcOK`,
-the full list of annotated `DecodedField`s, and a flat `parsed: [String:
-ParsedValue]` dictionary. `ParsedValue` is a JSON-round-tripping scalar/array
-enum (`.int`, `.double`, `.string`, `.intArray`, `.bool`, `.null`) with
-`intValue` / `doubleValue` / `stringValue` / `intArrayValue` accessors.
-
-**Decoded stream rows** (`BiometricStreams/Streams.swift`) — the durable, compact record shapes
-that `CenitStore` persists. They live in the neutral **`BiometricStreams`** package (as does
-`ParsedValue`), which `WhoopProtocol` depends on — never the reverse (FER-993 · D2):
-
-`HRSample`, `RRInterval`, `StreamEvent`, `BatterySample`, `SpO2Sample`,
-`SkinTempSample`, `RespSample`, `GravitySample`, all gathered into a single
-`Streams` value. All carry wall-clock unix-second timestamps and are `Codable`.
-
-```swift
-// Live capture (type-40 REALTIME_DATA): HR + R-R, device clock → wall clock.
-public func extractStreams(_ parsed: [ParsedFrame],
-                           deviceClockRef: Int, wallClockRef: Int) -> Streams
-
-// Historical offload (type-47 HISTORICAL_DATA + type-43 raw headers): full biometrics.
-public func extractHistoricalStreams(_ parsed: [ParsedFrame],
-                                     deviceClockRef: Int, wallClockRef: Int) -> Streams
-```
-
-`classifyHistoricalMeta(_:)` (`HistoricalMeta.swift`) drives the
-historical-offload state machine by classifying a parsed `METADATA` frame into
-`.start`, `.end(unix:trim:)`, `.complete`, or `.other` — gated on a valid CRC32
-so a garbled peer cannot forge a `HISTORY_END`.
-
-### Minimal usage
-
-```swift
-import WhoopProtocol
-
-// Reassemble BLE notification fragments, then decode each complete frame.
-let reassembler = Reassembler()
-var parsedFrames: [ParsedFrame] = []
-
-func onNotification(_ fragment: [UInt8], family: DeviceFamily) {
-    for frame in reassembler.feed(fragment) {
-        let parsed = parseFrame(frame, family: family)
-        guard parsed.ok, parsed.crcOK != false else { continue }
-        parsedFrames.append(parsed)
-    }
-}
-
-// Turn a batch of live frames into durable rows.
-let streams = extractStreams(parsedFrames,
-                             deviceClockRef: deviceEpochAtConnect,
-                             wallClockRef: Int(Date().timeIntervalSince1970))
-print("HR samples:", streams.hr.count, "R-R intervals:", streams.rr.count)
-```
+The app target (`Cenit/`, built by `Cenit`) is the integration layer: it owns
+HealthKit sync, wraps the pure packages together, and presents the UI. The pure
+packages are platform-agnostic and reusable on their own.
 
 ---
 
 ## CenitStore
 
-On-device persistence built on **GRDB/SQLite**. Decoded streams are durable;
-raw frames are a transient, compressed, prunable outbox. The store is an
-`actor`, so its API is `async` and all `DatabaseQueue` work runs off the main
-thread on the actor's serial executor.
+On-device persistence built on **GRDB/SQLite**. Stream tables are durable; raw
+frames are a transient, compressed, prunable outbox. The store is an `actor`, so
+its API is `async` and all `DatabaseQueue` work runs off the main thread on the
+actor's serial executor.
 
 **Sources:** `CenitStore.swift`, `Database.swift` (the migrator),
 `StreamStore.swift`, `Reads.swift`, `RawOutbox.swift`, `Cursors.swift`,
 `MetricsCache.swift`, `JournalWorkoutAppleCache.swift`, `MetricSeriesStore.swift`.
+
+> **Note.** Schema version numbers and table inventories in this section may lag
+> the live migrator — see [`DATA_MODEL.md`](DATA_MODEL.md) and
+> `Packages/CenitStore/Sources/CenitStore/Database.swift` for ground truth.
 
 ### Depend on it
 
 ```swift
 // Package.swift
 dependencies: [
-    .package(path: "../WhoopProtocol"),
+    .package(path: "../CenitStore"),
     .package(url: "https://github.com/groue/GRDB.swift.git", from: "6.0.0"),
 ],
 targets: [
@@ -229,16 +89,15 @@ targets: [
 
 ### Schema
 
-The migrator (`CenitStore.makeMigrator()`) runs `v1`…`v9`
-(`CenitStoreInfo.schemaVersion == 9`). On open, the store enables WAL journal
-mode, `synchronous = NORMAL`, a 16 MB page cache, 256 MB mmap, and a 5-second
+The migrator (`CenitStore.makeMigrator()`) runs versioned migrations on open. The
+store enables WAL journal mode, `synchronous = NORMAL`, a page cache, mmap, and a
 busy timeout so two handles to the same file don't deadlock.
 
 | Table | Purpose | Natural key |
 |---|---|---|
-| `device` | known straps | `id` |
-| `hrSample`, `rrInterval`, `event`, `battery` | decoded live streams | `(deviceId, ts[, …])` |
-| `spo2Sample`, `skinTempSample`, `respSample`, `gravitySample` | type-47 biometric streams | `(deviceId, ts)` |
+| `device` | known devices (historical) | `id` |
+| `hrSample`, `rrInterval`, `event`, `battery` | decoded stream tables | `(deviceId, ts[, …])` |
+| `spo2Sample`, `skinTempSample`, `respSample`, `gravitySample` | biometric stream tables | `(deviceId, ts)` |
 | `rawBatch` | zlib-compressed raw-frame outbox | `batchId` |
 | `cursors` | named highwater/read cursors | `name` |
 | `sleepSession`, `dailyMetric` | cached derived metrics | `(deviceId, startTs)` / `(deviceId, day)` |
@@ -255,8 +114,7 @@ public static func inMemory() async throws -> CenitStore   // tests
 public static let schemaVersion: Int             // on CenitStoreInfo
 ```
 
-**Write decoded streams** (idempotent upsert by natural key; returns rows
-actually inserted)
+**Write streams** (idempotent upsert by natural key; returns rows actually inserted)
 
 ```swift
 public func upsertDevice(id: String, mac: String?, name: String?) async throws
@@ -302,17 +160,16 @@ public func pruneRaw(now:keepWindowSeconds:maxUnsyncedBytes:) async throws -> In
 
 ```swift
 import CenitStore
-import WhoopProtocol
 
 let store = try await CenitStore(path: "/path/to/noop.sqlite")
-try await store.upsertDevice(id: "AA:BB:CC", mac: "AA:BB:CC", name: "My WHOOP")
+try await store.upsertDevice(id: "device-1", mac: nil, name: "Apple Watch")
 
-// Persist decoded streams (idempotent — safe to replay).
-let counts = try await store.insert(streams, deviceId: "AA:BB:CC")
+// Persist stream rows (idempotent — safe to replay).
+let counts = try await store.insert(streams, deviceId: "device-1")
 print("inserted HR:", counts.hr)
 
 // Read a day back out.
-let hr = try await store.hrSamples(deviceId: "AA:BB:CC",
+let hr = try await store.hrSamples(deviceId: "device-1",
                                    from: dayStart, to: dayEnd, limit: 100_000)
 ```
 
@@ -323,7 +180,7 @@ let hr = try await store.hrSamples(deviceId: "AA:BB:CC",
 Pure, deterministic on-device analytics: HRV, recovery, strain, sleep staging,
 workout detection, baselines, and statistical comparison/correlation. **No
 database access** — every entry point is a pure function over its inputs (it
-consumes the `WhoopProtocol` stream types and produces `CenitStore` cache
+consumes `BiometricStreams` / `StrandModels` types and produces `CenitStore` cache
 shapes, but performs no I/O). All derived values are explicitly **approximate**.
 
 **Sources:** `HRVAnalyzer.swift`, `RecoveryScorer.swift`, `StrainScorer.swift`,
@@ -336,8 +193,6 @@ shapes, but performs no I/O). All derived values are explicitly **approximate**.
 ```swift
 // Package.swift
 dependencies: [
-    .package(path: "../WhoopProtocol"),
-    .package(path: "../CenitStore"),
     .package(path: "../StrandAnalytics"),
 ],
 targets: [
@@ -367,7 +222,6 @@ targets: [
 
 ```swift
 import StrandAnalytics
-import WhoopProtocol
 
 // HRV over a night's R-R intervals.
 let hrv = HRVAnalyzer.analyze(rrIntervals, windowStart: bedStart, windowEnd: wakeEnd)
@@ -389,23 +243,20 @@ print("recovery:", day.recovery ?? .nan, "strain:", day.strain ?? .nan)
 
 ## StrandImport
 
-Parsers for the two export formats a user can bring offline: **WHOOP CSV**
-exports and **Apple Health** exports (`export.zip` / `export.xml`, streamed so a
-multi-hundred-MB file never loads fully into memory). This layer is **parsing
-only** — it produces normalized Swift model arrays and an `ImportSummary` and
-does not touch the database, so the whole package is unit-testable.
+Parser for the Apple Health export format a user can bring offline
+(`export.zip` / `export.xml`, streamed so a multi-hundred-MB file never loads
+fully into memory). This layer is **parsing only** — it produces normalized Swift
+model arrays and an `ImportSummary` and does not touch the database, so the whole
+package is unit-testable.
 
 **Sources:** `ImportCoordinator.swift` (top-level + auto-detection),
-`AppleHealthImporter.swift`, `AppleHealthAggregator.swift`,
-`WhoopExportImporter.swift`, `CSVParsing.swift`, `ImportModels.swift`.
+`AppleHealthImporter.swift`, `AppleHealthAggregator.swift`, `ImportModels.swift`.
 
 ### Depend on it
 
 ```swift
 // Package.swift
 dependencies: [
-    .package(path: "../WhoopProtocol"),
-    .package(path: "../CenitStore"),
     .package(path: "../StrandImport"),
     .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
 ],
@@ -418,15 +269,9 @@ targets: [
 
 ```swift
 public struct ImportCoordinator {
-    public init(appleHealth: AppleHealthImporter = .init(),
-                whoop: WhoopExportImporter = .init())
+    public init(appleHealth: AppleHealthImporter = .init())
 
     public func importAppleHealth(from url: URL) throws -> AppleHealthImportResult
-    public func importWhoopExport(from url: URL) throws -> WhoopImportResult
-
-    // Auto-detect (export.xml → Apple Health; physiological_cycles.csv etc. → WHOOP).
-    public func detectKind(of url: URL) throws -> DataSourceKind
-    public func detectAndImport(from url: URL) throws -> DetectedImport
 }
 ```
 
@@ -440,16 +285,9 @@ public struct ImportCoordinator {
   `aggregate(_:)` roll samples into per-civil-day `AppleDailyAggregate`s;
   `metricPoints(_:)` projects them into `(day, key, value)` triples ready for
   `CenitStore.upsertMetricSeries`.
-- **`WhoopExportImporter`** — `import(from:)` parses the CSV bundle
-  (`physiological_cycles.csv`, `sleeps.csv`, `workouts.csv`,
-  `journal_entries.csv`) from a folder or `.zip`. Header-name-driven and
-  tolerant (columns matched by normalized name, every column optional, BOMs
-  stripped); one parser covers WHOOP 4 / 5 / MG. Returns `WhoopImportResult`
-  (`cycles`, `sleeps`, `workouts`, `journal`, `summary`).
 
-Models: `HealthSample`, `HealthWorkout`, `SleepStageInterval`, `SleepStage`,
-`WhoopCycleRow`, `WhoopSleepRow`, `WhoopWorkoutRow`, `WhoopJournalRow`,
-`ImportSummary`, and the `ImportError` enum.
+Models include `HealthSample`, `HealthWorkout`, `SleepStageInterval`,
+`SleepStage`, `ImportSummary`, and the `ImportError` enum.
 
 ### Minimal usage
 
@@ -457,28 +295,22 @@ Models: `HealthSample`, `HealthWorkout`, `SleepStageInterval`, `SleepStage`,
 import StrandImport
 
 let coordinator = ImportCoordinator()
-
-// Auto-detect WHOOP vs Apple Health and parse.
-switch try coordinator.detectAndImport(from: fileURL) {
-case .whoopExport(let r):
-    print("WHOOP cycles:", r.cycles.count, "sleeps:", r.sleeps.count)
-case .appleHealth(let r):
-    let daily = AppleHealthAggregator.aggregate(r)
-    let points = AppleHealthAggregator.metricPoints(daily)   // → upsertMetricSeries
-    print("Apple daily rows:", daily.count)
-}
+let result = try coordinator.importAppleHealth(from: fileURL)
+let daily = AppleHealthAggregator.aggregate(result)
+let points = AppleHealthAggregator.metricPoints(daily)   // → upsertMetricSeries
+print("Apple daily rows:", daily.count)
 ```
 
 ---
 
 ## StrandDesign
 
-The SwiftUI design system — the only UI package. Dark-only, instrument-grade:
-palette, type scale, motion presets, and the signature data components
-(Recovery Ring, Strain Gauge, Hypnogram, trend/sparkline charts, year heat
-strip, cards, status pills). Builds on **both iOS and macOS**; it imports only
-`SwiftUI` and bridges to `UIColor`/`NSColor` for color-component extraction
-under `#if canImport(UIKit)` / `#if canImport(AppKit)`.
+The SwiftUI design system — the only UI package. Palette, type scale, motion
+presets, and the signature data components (Recovery Ring, Strain Gauge,
+Hypnogram, trend/sparkline charts, year heat strip, cards, status pills). Builds
+on **both iOS and macOS**; it imports only `SwiftUI` and bridges to
+`UIColor`/`NSColor` for color-component extraction under `#if canImport(UIKit)` /
+`#if canImport(AppKit)`.
 
 **Sources:** `Palette.swift`, `Typography.swift`, `Motion.swift`, plus the
 component views `RecoveryRing.swift`, `StrainGauge.swift`, `Hypnogram.swift`,
@@ -553,15 +385,10 @@ struct RecoveryHeader: View {
 
 ## Reuse notes
 
-- **Pick only what you need.** `WhoopProtocol` is self-contained (no
-  dependencies); `CenitStore` adds GRDB; `StrandImport` adds ZIPFoundation;
-  `StrandAnalytics` consumes the first two's types but does no I/O. A headless
-  tool can decode and analyze WHOOP data with no SwiftUI involved at all.
-- **Bring your own transport.** The protocol library never opens a Bluetooth
-  connection. Wire `DeviceFamily.serviceUUIDString` / `characteristicUUIDStrings`
-  into your platform's BLE stack, feed notification bytes through `Reassembler`,
-  and decode with `parseFrame(_:family:)`.
-- **Determinism.** The analytics and protocol packages are pure and
-  deterministic — the same inputs always yield byte-identical outputs, which is
-  what makes their golden-fixture tests possible and what makes them safe to run
-  fully offline on the user's own data.
+- **Pick only what you need.** `CenitStore` adds GRDB; `StrandImport` adds
+  ZIPFoundation; `StrandAnalytics` is pure over stream/model types and does no I/O.
+  A headless tool can analyze stored samples with no SwiftUI involved at all.
+- **Determinism.** The analytics packages are pure and deterministic — the same
+  inputs always yield byte-identical outputs, which is what makes their
+  golden-fixture tests possible and what makes them safe to run fully offline on
+  the user's own data.

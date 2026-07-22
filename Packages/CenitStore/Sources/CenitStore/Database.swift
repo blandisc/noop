@@ -824,6 +824,23 @@ extension CenitStore {
         migrator.registerMigration("v36") { db in
             try renameDevicePartition(db, from: "my-whoop", to: "strap")
         }
+        // v37 (F7, reduced scope — "la banda nunca existió"): drop the 9 dead band-only raw-stream
+        // tables. APPEND-ONLY: v1…v36 are untouched; this only DROPs tables with zero live consumer
+        // under the Apple-only pin (FER-1003). `device`/`event`/`battery`/`rawBatch` were the BLE
+        // device registry + raw frame outbox; `spo2Sample`/`skinTempSample`/`respSample`/
+        // `gravitySample`/`stepSample` were the 1 Hz decoded band streams (the Apple equivalents live
+        // as DAILY columns on `dailyMetric`/`appleDaily`, untouched here); `circadianPhase` fed the
+        // "Tu reloj corporal" surface, retired in F2. Every other table (dieta, fuerza, sueño,
+        // journal, workout, dailyMetric, metricSeries, hrSample, rrInterval, deviceIdMap, cursors,
+        // experiment, …) is untouched — this is a pure subtraction, not a rebuild. `DROP TABLE IF
+        // EXISTS` makes it idempotent/safe against any prior schema state.
+        migrator.registerMigration("v37") { db in
+            for table in ["device", "event", "battery", "rawBatch",
+                          "spo2Sample", "skinTempSample", "respSample", "gravitySample",
+                          "stepSample", "circadianPhase"] {
+                try db.execute(sql: "DROP TABLE IF EXISTS \"\(table)\"")
+            }
+        }
         return migrator
     }
 

@@ -4,9 +4,8 @@ import PackageDescription
 // BiometricStreams — the neutral vocabulary of decoded biometric rows (HRSample, RRInterval,
 // StreamEvent, BatterySample, the type-47 biometric samples, `Streams`) plus `ParsedValue`.
 // Foundation-only and dependency-free BY DESIGN: it is the root of the package graph, so
-// persistence (CenitStore) and math (StrandAnalytics) can speak this vocabulary WITHOUT
-// linking the strap's wire protocol. The direction is one-way — WhoopProtocol depends on
-// BiometricStreams, never the reverse (FER-993 · D2).
+// persistence (CenitStore) and math (StrandAnalytics) can speak this vocabulary from a
+// single, dependency-free root (FER-993 · D2).
 let package = Package(
     name: "BiometricStreams",
     platforms: [.iOS(.v16), .macOS(.v13)],

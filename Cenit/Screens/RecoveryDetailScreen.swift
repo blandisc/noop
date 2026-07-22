@@ -96,13 +96,6 @@ struct RecoveryDetailScreen: View {
                         heroFlat.padding(CenitMetrics.screenPadding)
                     }
                     if infoOpen { whatWeMeasureCard }
-                    // Level 1 · the answer: what's pushing it, then what changed since yesterday.
-                    if let impact = model.impact, !impact.signals.isEmpty {
-                        seccion(String(localized: "Today, vs your normal")) { levelAttributionCard(impact) }
-                    }
-                    if let change = model.change {
-                        seccion(String(localized: "What changed since yesterday")) { changeSinceYesterdayContent(change) }
-                    }
                     if hasPanorama {
                         seccion(String(localized: "Panorama")) { panoramaContent }
                     }
@@ -257,183 +250,8 @@ struct RecoveryDetailScreen: View {
         return "No recovery yet. Wear your Apple Watch to sleep and open this again after it syncs."
     }
 
-    // MARK: - 2. Hoy, vs tu normal — atribución unificada por nivel (FER-642)
-
-    // ONE section, ONE model, ONE axis, identical to the recovery summary («Hoy, vs tu normal»): the same
-    // `RecoveryImpact` decomposition of today's score, rendered as a plain-language headline naming the
-    // day's dominant signal, then a row per present signal — overline label · position-vs-base word ·
-    // `· N%` weight — with a divergent bar below whose length is the signal's CONTRIBUTION to the score
-    // (right = holds it up, left = holds it back). No σ, no ⓘ; the jargon lives under «See the method».
-
-    /// |contribution| below this reads as "barely moved it" in the headline — the same threshold the
-    /// summary uses, so both surfaces pick the all-near-base fallback on the same days. (FER-628/FER-642)
-    private static let impactBarely = 0.12
-
-    /// Level-attribution card — the screen's instrumento firma on a `surface` card (handoff FER-857):
-    /// a two-line verdict (signal name in its hue + position · weight), one row per signal with the
-    /// divergent bar (recGrow, staggered), and the axis legend. Shown only when `RecoveryImpact` is
-    /// present (band-only; calibrating and Apple-only days hide it).
-    private func levelAttributionCard(_ impact: RecoveryImpact.Result) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            levelHeadline(impact)
-            VStack(alignment: .leading, spacing: 13) {
-                ForEach(Array(impact.signals.enumerated()), id: \.element.id) { i, s in
-                    levelSignalRow(s, index: i)
-                }
-            }
-            .padding(.top, 10)
-            levelLegend
-                .padding(.top, 4)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.card, theme: theme)
-    }
-
-    /// The two-line verdict opening the card: «**VFC** te sostiene hoy» + «Muy por encima de tu base ·
-    /// pesa 55 % del cálculo». Falls back to the all-near-base line. Same `RecoveryImpact` facts as
-    /// before (FER-642); only the typography changed.
-    @ViewBuilder private func levelHeadline(_ impact: RecoveryImpact.Result) -> some View {
-        if let top = impact.top, abs(top.contribution) >= Self.impactBarely {
-            let flag = ReadinessEngine.Flag(orientedZ: top.orientedZ)
-            VStack(alignment: .leading, spacing: 3) {
-                (Text(Self.driverLabel(top.key))
-                    .foregroundColor(flagColor(flag))
-                 + Text(verbatim: " ")
-                 + Text(top.contribution < 0 ? "holds you back today" : "holds you up today")
-                    .foregroundColor(theme.ink))
-                    .font(InstrumentoType.grotesk(16, weight: .semibold))
-                (Text(Self.positionPhraseStandalone(top))
-                 + Text(verbatim: " · ")
-                 + Text(verbatim: String.localizedStringWithFormat(
-                        String(localized: "weighs %d %% of the score"),
-                        Int((top.weight * 100).rounded()))))
-                    .font(InstrumentoType.grotesk(13))
-                    .foregroundStyle(theme.inkSecondary)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-        } else {
-            Text("All your signals sat near your base today.")
-                .font(InstrumentoType.grotesk(16, weight: .semibold))
-                .foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    /// The standalone position phrase for the verdict's second line («Well above your base»).
-    private static func positionPhraseStandalone(_ s: RecoveryImpact.Signal) -> LocalizedStringKey {
-        let above = s.z >= 0
-        let strong = abs(s.z) >= 1.0
-        return strong
-            ? (above ? "Well above your base" : "Well below your base")
-            : (above ? "Above your base"      : "Below your base")
-    }
-
-    /// One signal row: overline label · position-vs-base word (flag hue) · `· N%` weight, and the divergent
-    /// contribution bar below (recGrow, staggered by row). (FER-642/836/857/975)
-    private func levelSignalRow(_ s: RecoveryImpact.Signal, index: Int) -> some View {
-        let flag = ReadinessEngine.Flag(orientedZ: s.orientedZ)
-        let color = flag == .neutral ? theme.inkSecondary : flagColor(flag)
-        return ImpactSignalRow(
-            label: Self.driverLabel(s.key),
-            word: Self.baseBandWord(s: s),
-            weightPct: Int((s.weight * 100).rounded()),
-            contribution: s.contribution,
-            color: color,
-            index: index,
-            theme: theme
-        )
-    }
-
-    /// The unified axis legend: «◀ la frena · tu base · la sostiene ▶» — decorative, hidden from VoiceOver.
-    private var levelLegend: some View {
-        ImpactAxisLegend(theme: theme)
-    }
-
-    /// The flag → theme color (shared with the recovery summary's «Hoy, vs tu normal» rows, FER-628/FER-642).
+    /// The flag → theme color (used by the Panorama load cell).
     private func flagColor(_ flag: ReadinessEngine.Flag) -> Color { flag.color(theme) }
-
-    /// `driverLabel` as a plain localized `String`, for components that take strings (tiles). Same keys.
-    static func driverName(_ key: String) -> String {
-        switch key {
-        case "hrv":      return String(localized: "HRV")
-        case "rhr":      return String(localized: "Resting HR")
-        case "sleep":    return String(localized: "Sleep")
-        case "skinTemp": return String(localized: "Skin temp")
-        case "respRate": return String(localized: "Respiration")
-        default:         return key
-        }
-    }
-
-    /// The signal's display name — the same catalog keys the summary's rows use. (FER-642)
-    private static func driverLabel(_ key: String) -> LocalizedStringKey {
-        switch key {
-        case "hrv":      return "HRV"
-        case "rhr":      return "Resting HR"
-        case "sleep":    return "Sleep"
-        case "skinTemp": return "Skin temp"
-        case "respRate": return "Respiration"
-        default:         return LocalizedStringKey(key)
-        }
-    }
-
-    /// The position-vs-base word for a signal, oriented BY SIGNAL: it uses the ORIENTED z, so a low resting
-    /// HR / respiration / skin-temp reads «Below your base» while still being the helpful direction (the row
-    /// color, from the oriented flag, carries the valence). |orientedZ| < 1 reads «In your base». (FER-642)
-    private static func baseBandWord(s: RecoveryImpact.Signal) -> LocalizedStringKey {
-        // `z` is the RAW physical deviation (+ = the metric itself is above your average); that's the
-        // honest word for where the value sits, independent of whether higher or lower is better.
-        if s.z >= 1 { return "Above your base" }
-        if s.z <= -1 { return "Below your base" }
-        return "In your base"
-    }
-
-    // MARK: - 2b. Qué cambió vs ayer — el movimiento día-a-día (FER-642, motor RecoveryChange)
-
-    /// The day-over-day content — dato primero (handoff FER-857): a `TileSurface` grid («VS AYER ±N
-    /// puntos» + one tile per top mover with its yesterday→today values and signed delta), anchored
-    /// by the mandatory `BarraAncla`. Same `RecoveryChange` facts as before (FER-642).
-    private func changeSinceYesterdayContent(_ change: RecoveryChange.Result) -> some View {
-        let deltaColor = change.deltaScore >= 0 ? theme.positiveText : theme.critical
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
-                TileSurface(label: String(localized: "VS YESTERDAY"),
-                            value: signed(change.deltaScore),
-                            valueColor: change.deltaScore == 0 ? theme.ink : deltaColor,
-                            caption: String(localized: "Points"),
-                            theme: theme)
-                ForEach(change.movers.prefix(2)) { m in
-                    TileSurface(label: Self.driverName(m.key),
-                                value: "\(Self.moverBare(m.yesterday, m.unit))→\(Self.moverBare(m.today, m.unit))",
-                                caption: Self.moverUnitWord(m.unit),
-                                delta: signed(Int((m.today - m.yesterday).rounded())),
-                                deltaColor: m.improved ? theme.positiveText : theme.warning,
-                                theme: theme)
-                }
-            }
-            BarraAncla(String(localized: "The small number is the change vs yesterday."),
-                       color: deltaColor, theme: theme)
-        }
-    }
-
-    /// «+6» / «−3» / «0» with an explicit sign for the positive case.
-    private func signed(_ n: Int) -> String { n > 0 ? "+\(n)" : "\(n)" }
-
-    /// A mover's bare value (no unit — the unit goes to the tile caption). Skin temp keeps its sign.
-    private static func moverBare(_ v: Double, _ unit: RecoveryChange.Unit) -> String {
-        unit == .celsius ? String(format: "%+.1f", v) : "\(Int(v.rounded()))"
-    }
-
-    /// The unit word for a mover tile's caption.
-    private static func moverUnitWord(_ unit: RecoveryChange.Unit) -> String {
-        switch unit {
-        case .millis:  return "ms"
-        case .bpm:     return "bpm"
-        case .breaths: return "rpm"
-        case .percent: return "%"
-        case .celsius: return "°C"
-        }
-    }
 
     // MARK: - 2.5 Panorama — pronóstico + rango normal + estabilidad + carga, en un grid 2×2 (handoff v2, FER-831)
     //
@@ -786,13 +604,6 @@ struct RecoveryDetailModel {
     let calibration: Int?
     /// The seed gate (`Baselines.minNightsSeed`), for the "N / seed nights" copy.
     let nightsNeeded: Int
-    /// FER-642 · «Hoy, vs tu normal»: today's per-signal contributions to the score (the SAME
-    /// `RecoveryImpact` the summary draws), band-only. nil while calibrating / on an Apple-only day —
-    /// then the block is hidden (the `calibrationBlock` stands in).
-    let impact: RecoveryImpact.Result?
-    /// FER-642 · «Qué cambió vs ayer»: the day-over-day change + its top movers. nil with no band
-    /// yesterday — then that block is hidden.
-    let change: RecoveryChange.Result?
     /// The full recovery series (oldest → newest), `(day "yyyy-MM-dd", value)`, for trend / normal range / CV.
     let series: [(day: String, value: Double)]
     /// The trailing 90 calendar days as `RecoveryDay` (score nil for days with no reading) for the heat grid.
@@ -858,7 +669,7 @@ struct RecoveryDetailModel {
         // column-level equivalent of the scorer's row drop — pinned to the same z by test. On an Apple-only
         // day today's own row is masked too (the band didn't measure it), so no band σ is invented for a
         // reading the band never took.
-        let bandDays = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleHealthDays)
+        let bandDays = SourceLens.clearBandColumns(days)
         let readiness = ReadinessEngine.evaluate(days: bandDays, today: todayKey)
         let load: LoadState? = readiness.acwr.map { acwr in
             LoadState(acwr: acwr,
@@ -876,40 +687,10 @@ struct RecoveryDetailModel {
             recovery: sortedDays.map(\.recovery),
             sleepDebtMin: importedSleep[todayKey]?.debtMin)
 
-        // FER-642 · unified level attribution: the SAME `RecoveryImpact` the summary draws, computed
-        // band-only (Apple-only rows dropped whole-row) so the Detalle and the summary tell one story.
-        let impact = RecoveryImpact.compute(days: days, todayKey: todayKey, appleDays: appleHealthDays)
-
-        // FER-642 · «Qué cambió vs ayer»: the day-over-day change vs the previous CALENDAR day (D2 — «ayer»
-        // means literally yesterday, not the last band night). Resolved from the same band-only slice, the
-        // app's OWN displayed scores (`.recovery`), and the change in each signal's contribution. nil (block
-        // hidden) when there's no band row / score for yesterday. Keys are date-only; ±1 day arithmetic runs
-        // in a single UTC calendar so it never crosses a zone boundary.
-        let change: RecoveryChange.Result? = {
-            let byDay = Dictionary(days.map { ($0.day, $0) }, uniquingKeysWith: { a, _ in a })
-            guard let todayDate = RecoveryDetailScreen.dayParser.date(from: todayKey),
-                  var cal = Optional(Calendar(identifier: .gregorian)) else { return nil }
-            cal.timeZone = TimeZone(identifier: "UTC")!
-            guard let yDate = cal.date(byAdding: .day, value: -1, to: todayDate) else { return nil }
-            let yesterdayKey = RecoveryDetailScreen.dayParser.string(from: yDate)
-            guard let todayRow = byDay[todayKey], !appleHealthDays.contains(todayKey),
-                  let yestRow = byDay[yesterdayKey], !appleHealthDays.contains(yesterdayKey)
-            else { return nil }
-            return RecoveryChange.compute(
-                today: todayRow, yesterday: yestRow,
-                todayScore: todayRow.recovery.map { Int($0.rounded()) },
-                yesterdayScore: yestRow.recovery.map { Int($0.rounded()) },
-                todayImpact: impact,
-                yesterdayImpact: RecoveryImpact.compute(days: days, todayKey: yesterdayKey,
-                                                        appleDays: appleHealthDays))
-        }()
-
         return RecoveryDetailModel(
             score: score,
             calibration: calibration,
             nightsNeeded: Baselines.minNightsSeed,
-            impact: impact,
-            change: change,
             series: series,
             heat: heat,
             load: load,
@@ -968,26 +749,11 @@ private func sampleModel(score: Int?, calibration: Int?,
         let scoreVal: Double? = (off % 16 == 0) ? nil : Swift.max(8.0, Swift.min(98.0, v))
         return RecoveryDay(date: date, score: scoreVal)
     }
-    let impact: RecoveryImpact.Result? = (score == nil && calibration != nil) ? nil
-        : RecoveryImpact.Result(signals: [
-            .init(key: "hrv",      z: 1.4,  orientedZ: 1.4,  weight: 0.60 / 1.10),
-            .init(key: "rhr",      z: -0.6, orientedZ: 0.6,  weight: 0.20 / 1.10),
-            .init(key: "sleep",    z: 0.4,  orientedZ: 0.4,  weight: 0.15 / 1.10),
-            .init(key: "skinTemp", z: 0.1,  orientedZ: -0.1, weight: 0.10 / 1.10),
-            .init(key: "respRate", z: 0.3,  orientedZ: -0.3, weight: 0.05 / 1.10),
-        ])
-    let change: RecoveryChange.Result? = (score == nil && calibration != nil) ? nil
-        : RecoveryChange.Result(deltaScore: 9, movers: [
-            .init(key: "hrv",   unit: .millis,  yesterday: 48, today: 61, deltaContribution: 0.42),
-            .init(key: "sleep", unit: .percent, yesterday: 84, today: 91, deltaContribution: 0.10),
-        ])
     let recoveryVals: [Double] = series.map { (p: (day: String, value: Double)) -> Double in p.value }
     return RecoveryDetailModel(
         score: score,
         calibration: calibration,
         nightsNeeded: 4,
-        impact: impact,
-        change: change,
         series: series,
         heat: calibration != nil ? [] : heat,
         load: calibration != nil ? nil : .init(acwr: 1.05, monotony: 1.4, bandLabel: "In balance", bandFlag: .good),
@@ -1011,7 +777,7 @@ private func sampleModel(score: Int?, calibration: Int?,
 #Preview("Recovery detail: sin datos") {
     Color.clear.sheet(isPresented: .constant(true)) {
         RecoveryDetailScreen(model: RecoveryDetailModel(
-            score: nil, calibration: nil, nightsNeeded: 4, impact: nil, change: nil,
+            score: nil, calibration: nil, nightsNeeded: 4,
             series: [], heat: [], load: nil, loaded: true, isAppleHealth: false, forecast: nil))
     }
 }

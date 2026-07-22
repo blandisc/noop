@@ -14,8 +14,7 @@
 
 <!--
 For analytics changes, point to the test that covers it and cite the method.
-For research changes under Packages/WhoopProtocol that alter outbound bytes,
-say what you tested on real hardware. For UI, confirm StrandDesign tokens only.
+For UI, confirm StrandDesign tokens only.
 -->
 
 ## Checklist

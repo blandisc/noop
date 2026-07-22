@@ -7,36 +7,6 @@ import BiometricStreams
 // engines themselves. Clearly separated from production math.
 final class CDOAuditRegressionTests: XCTestCase {
 
-    // MARK: - CircadianEngine: recover known cosinor phase/amplitude from a synthetic cosine.
-
-    /// A pure cosine y = M + A·cos(2π(t − φ)/24) sampled at all 24 hours must recover M, A, φ.
-    func testCosinorRecoversKnownPhaseAmplitude() {
-        let M = 5.0, A = 3.0, phi = 15.0   // peak at 15:00
-        let w = 2.0 * Double.pi / 24.0
-        var bins: [CircadianEngine.ActivityBin] = []
-        for h in 0..<24 {
-            let y = M + A * cos(w * (Double(h) - phi))
-            bins.append(.init(hour: Double(h), activity: y))
-        }
-        let fit = CircadianEngine.cosinor(bins)!
-        XCTAssertEqual(fit.mesor, M, accuracy: 1e-6)
-        XCTAssertEqual(fit.amplitude, A, accuracy: 1e-6)
-        XCTAssertEqual(fit.acrophaseHours, phi, accuracy: 1e-6)
-    }
-
-    /// Amplitude is always ≥ 0 and acrophase always in [0,24) even for a peak near midnight.
-    func testCosinorAcrophaseWraps() {
-        let w = 2.0 * Double.pi / 24.0
-        let phi = 23.5
-        var bins: [CircadianEngine.ActivityBin] = []
-        for h in 0..<24 { bins.append(.init(hour: Double(h), activity: 2.0 + cos(w * (Double(h) - phi)))) }
-        let fit = CircadianEngine.cosinor(bins)!
-        XCTAssertGreaterThanOrEqual(fit.amplitude, 0)
-        XCTAssertGreaterThanOrEqual(fit.acrophaseHours, 0)
-        XCTAssertLessThan(fit.acrophaseHours, 24)
-        XCTAssertEqual(fit.acrophaseHours, phi, accuracy: 1e-6)
-    }
-
     // MARK: - HRVFreqDomain: a pure sine in the HF band lands in HF, not LF.
 
     /// Synthesize an R-R series modulated at 0.25 Hz (HF band). Over a >=250 s span the HF power

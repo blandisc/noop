@@ -1,17 +1,14 @@
 # Contributing to Cénit
 
 Cénit is a standalone, fully **offline** health app on **Apple Health**. It syncs HealthKit into
-on-device SQLite, can import Apple Health exports and historical WHOOP CSV exports, and computes
-recovery / strain / HRV / sleep locally — no cloud, no account. Direct WHOOP band pairing was
-**retired** (FER-1003); protocol research lives in `Packages/WhoopProtocol` and is not linked into
-the app. This document explains how the repository is laid out, how to build and test it, and the
-conventions every change is expected to follow.
+on-device SQLite, can import Apple Health exports, and computes recovery / strain / HRV / sleep
+locally — no cloud, no account. This document explains how the repository is laid out, how to
+build and test it, and the conventions every change is expected to follow.
 
-> **Not affiliated with WHOOP, and not a medical device.** Historical "WHOOP" references name
-> hardware the app once interoperated with, or import formats it can still read. Cénit reads
-> **your own data** on **your own device**; it contains no WHOOP code, firmware, or assets and
-> performs no DRM circumvention. Every derived metric (HR, HRV, recovery, strain, sleep, SpO₂,
-> temperature) is an **approximation** and is **not** clinically validated. See
+> **Not affiliated with WHOOP, and not a medical device.** Cénit reads **your own data** on
+> **your own device**; it contains no WHOOP code, firmware, or assets and performs no DRM
+> circumvention. Every derived metric (HR, HRV, recovery, strain, sleep, SpO₂, temperature) is an
+> **approximation** and is **not** clinically validated. See
 > [`../DISCLAIMER.md`](../DISCLAIMER.md) and [`../ATTRIBUTION.md`](../ATTRIBUTION.md).
 
 ---
@@ -30,7 +27,6 @@ conventions every change is expected to follow.
 - [Tests & fixtures](#tests--fixtures)
 - [Commit & PR conventions](#commit--pr-conventions)
 - [Roadmap](#roadmap)
-- [Appendix: historical BLE safety (band retired, FER-1003)](#appendix-historical-ble-safety-band-retired-fer-1003--applies-only-to-packageswhoopprotocol)
 
 ---
 
@@ -42,18 +38,12 @@ A few principles run through the whole codebase. Internalize them before opening
    that phones home — for any reason — does not belong here. Health data, imports, and computed
    metrics live in a local SQLite database and never leave the device. (The one opt-in exception is
    exercise-media download in `Cenit/Media/`, off by default.)
-2. **Apple Health first.** The shipping app is Apple-only (FER-1003). It does not pair with a WHOOP
-   strap. Keep WHOOP references *nominative* where they still appear (historical imports, research
-   package, attribution).
-3. **Never destructive on the wire (research only).** Product BLE was removed. If you work on
-   `Packages/WhoopProtocol` for research/CLI, keep the historical safe-command discipline — see the
-   [appendix](#appendix-historical-ble-safety-band-retired-fer-1003--applies-only-to-packageswhoopprotocol)
-   and [`PROTOCOL.md`](PROTOCOL.md).
-4. **Transparent math.** Analytics are approximations of published methods, documented file by file.
+2. **Apple Health first.** The shipping app is Apple Health–only. It does not pair with external
+   fitness bands. Cénit contains no WHOOP proprietary code.
+3. **Transparent math.** Analytics are approximations of published methods, documented file by file.
    No black boxes, no claims of clinical accuracy, no reproduction of any proprietary model.
-5. **Credit upstream.** Protocol research builds on prior community reverse-engineering —
-   `johnmiddleton12/my-whoop` (WHOOP 4.0) and `b-nnett/goose` (WHOOP 5.0). Preserve those credits in
-   code comments and in [`../ATTRIBUTION.md`](../ATTRIBUTION.md).
+4. **Credit dependencies.** Preserve credits for `GRDB.swift` and `ZIPFoundation` in code comments
+   and in [`../ATTRIBUTION.md`](../ATTRIBUTION.md).
 
 ---
 
@@ -83,31 +73,27 @@ Cenit/
 ├── CenitUnitTests/             # app-layer unit tests (simulator)
 ├── CenitUITests/               # UI tests
 ├── Packages/
-│   ├── BiometricStreams/       # neutral vocabulary of decoded biometric rows (root, zero deps)
-│   ├── WhoopProtocol/          # BLE frame parsing, CRC, decode — research only; NOT linked to app
-│   │                           #   (also builds the `whoop-decode` CLI — runs on Linux)
+│   ├── BiometricStreams/       # neutral vocabulary of biometric rows (root, zero deps)
+│   ├── StrandModels/           # shared model types
 │   ├── CenitStore/             # GRDB/SQLite persistence (migrations, streams, caches)
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
 │   ├── StrandTraining/         # strength domain types, catalog, sets/reps rules (pure)
-│   ├── StrandImport/           # WHOOP CSV + Apple Health importers
+│   ├── StrandImport/           # Apple Health importers
 │   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
 └── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
-                                #   includes tools/linux-capture for protocol RE (research only)
 ```
 
 ### Where logic belongs
 
 | If your change is about… | It belongs in… | Notes |
 |---|---|---|
-| Decoding strap bytes, CRC, framing, packet/event types | `Packages/WhoopProtocol` | **Research only — not linked into the app.** Platform-pure, no CoreBluetooth. |
 | Persisting data, migrations, caches, reads | `Packages/CenitStore` | GRDB/SQLite only. |
 | Computing recovery / strain / HRV / sleep / correlations | `Packages/StrandAnalytics` | Pure, database-free analyzers. |
 | Strength domain types & rules (exercise catalog, sets/reps modeling, progression) | `Packages/StrandTraining` | Pure domain; live session state & persistence → app layer (`Cenit/`). |
-| Parsing WHOOP CSV or Apple Health `export.xml` | `Packages/StrandImport` | Header-name-driven CSV; streaming SAX XML. |
+| Parsing Apple Health `export.xml` | `Packages/StrandImport` | Streaming SAX XML. |
 | Colors, fonts, motion, cards, charts | `Packages/StrandDesign` | No external UI deps; bridges AppKit/UIKit. |
 | HealthKit sync, import glue, repository | `CenitApp/Health`, `Cenit/Data` | App layer. |
 | A screen or navigation destination | `Cenit/Screens`, `Cenit/System` | App layer. |
-| Capturing strap frames on Linux for protocol RE | `Tools/linux-capture` | Research only. Python/bleak capture → `whoop-decode`. |
 
 **Rule of thumb:** the more "math-level" or "storage-level" a change is, the deeper into `Packages/` it
 should live, and the more it should be covered by a `swift test` suite that runs without an app or
@@ -130,8 +116,7 @@ let ui = UIColor(self)
 ```
 
 Do **not** add `import AppKit`/`import UIKit`/`import CoreBluetooth` to any file under `Packages/` —
-that is what breaks the cross-platform contract. The shipping app has no CoreBluetooth path
-(FER-1003).
+that is what breaks the cross-platform contract.
 
 ---
 
@@ -154,32 +139,14 @@ The packages themselves only need a Swift toolchain — they build and test with
 ### Per-package iteration (fastest loop)
 
 Most contributions live inside one package. Build and test it in isolation — it's far faster than
-the whole app and needs no strap:
+the whole app and needs no HealthKit hardware:
 
 ```bash
-cd Packages/WhoopProtocol && swift build && swift test
-cd Packages/CenitStore     && swift build && swift test
 cd Packages/StrandAnalytics && swift build && swift test
+cd Packages/CenitStore     && swift build && swift test
 cd Packages/StrandImport   && swift build && swift test
 cd Packages/StrandDesign   && swift build && swift test
 ```
-
-### Linux (protocol RE)
-
-The pure packages build and test on Linux with the standard Swift toolchain (no Apple frameworks).
-`WhoopProtocol` also produces a `whoop-decode` CLI used by the Linux capture workbench:
-
-```bash
-cd Packages/WhoopProtocol
-swift build && swift test                 # decoder + its tests, on Linux
-swift build --product whoop-decode        # the decode CLI → .build/debug/whoop-decode
-
-cd ../../tools/linux-capture
-python3 -m unittest -v                     # framing/reassembly tests (stdlib only, no bleak)
-```
-
-Capturing from a real strap on Linux is documented in
-[`../tools/linux-capture/README.md`](../tools/linux-capture/README.md).
 
 ### iOS app
 
@@ -200,7 +167,7 @@ xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform
 The scheme is `Cenit`; the built product is `Cenit.app` (`project.yml` sets `PRODUCT_NAME: Cenit`,
 display name `Cénit`, bundle id `com.feriracheta.noop`). A **free** Apple ID is enough to install a personal build on your own
 iPhone — no paid Apple Developer account needed. See [`BUILD.md`](BUILD.md) for the on-device install
-recipe and pairing notes.
+recipe.
 
 ### CI for the app layer (opt-in)
 
@@ -338,17 +305,14 @@ from the Swift by `swift run StrandDesignTokens` — never hand-edit them; run t
 - **Public API is intentional.** `public` only what a consumer package or the app actually needs.
   Internal helpers stay internal. Types crossing concurrency boundaries are `Sendable` where it makes
   sense (e.g. `DeviceFamily`, `AnalyticsEngine.ProfileBaselines`).
-- **Document the "why", and cite sources.** Protocol and analytics code carries comments that explain
-  *where a fact came from* — e.g. `crc16Modbus` is annotated "Ported verbatim from the Goose
-  reverse-engineering"; the safe command list cites the upstream `CommandNumber` table; analyzers
-  cite Task Force 1996 (HRV), Karvonen (%HRR), Edwards/Banister (TRIMP), Tanaka (HRmax). Preserve and
-  extend these citations; they are how we keep the math transparent and the protocol auditable.
-- **Pure where possible.** `WhoopProtocol` decode functions, `StrandAnalytics` analyzers, and
-  `FrameRouter` are deliberately free of side effects and frameworks so they're unit-testable. Keep
-  new logic in that pure style and let the app layer do the I/O.
-- **`@MainActor` for UI-touching state.** `FrameRouter` and live-state types are main-actor isolated;
-  `CBCentralManager` is created on `.main` so delegate callbacks land on the main actor. Don't move
-  CoreBluetooth work off-main without a very good reason.
+- **Document the "why", and cite sources.** Analytics code carries comments that explain *where a
+  fact came from* — analyzers cite Task Force 1996 (HRV), Karvonen (%HRR), Edwards/Banister (TRIMP),
+  Tanaka (HRmax). Preserve and extend these citations; they are how we keep the math transparent.
+- **Pure where possible.** `StrandAnalytics` analyzers are deliberately free of side effects and
+  frameworks so they're unit-testable. Keep new logic in that pure style and let the app layer do
+  the I/O.
+- **`@MainActor` for UI-touching state.** Live-state types that touch SwiftUI are main-actor
+  isolated. Don't move UI-facing work off-main without a very good reason.
 - **No anonymous magic.** Reach for an existing constant/enum (`CenitMetrics`, `StrandPalette`,
   `MetricCatalog`) before introducing a literal.
 - **Validate before you trust.** HealthKit and import values that drive UI/state should be
@@ -424,14 +388,13 @@ Schema lives in `Packages/CenitStore/Sources/CenitStore/Database.swift` as a **v
 ## Tests & fixtures
 
 - **Each package owns its tests** under `Packages/<Name>/Tests/…`; run them with `swift test`.
-  Coverage already includes framing/CRC parity, reassembly, schema, stream decode, store
-  insert/read/migration/prune, the analyzers (HRV, recovery, strain, sleep, correlation, baselines,
-  workout detection), and the CSV / Apple Health importers (including real-export tests).
+  Coverage already includes schema, store insert/read/migration/prune, the analyzers (HRV,
+  recovery, strain, sleep, correlation, baselines, workout detection), and the Apple Health
+  importers (including real-export tests).
 - **Import fixtures** live in package test resources (`StrandImport` via its `Package.swift`) and
   under `docs/fixtures/` for UI captures.
-- **Prefer pure tests.** Because `StrandAnalytics` (and research `WhoopProtocol`) are
-  framework-free, you can (and should) cover new math/decode with fixtures rather than requiring
-  hardware.
+- **Prefer pure tests.** Because `StrandAnalytics` is framework-free, you can (and should) cover
+  new math with fixtures rather than requiring HealthKit hardware.
 - The **app test target** is the app-layer integration suite (run via `xcodebuild … test`).
 
 ### Screen captures (`docs/fixtures/`)
@@ -481,16 +444,14 @@ Also note `app.tabBars` is **empty**: the native bar is hidden app-wide in favou
 - **Generated artifacts stay out of git.** `Cenit.xcodeproj/`, `build/`, `.build/`, `*.app`, and
   DerivedData are gitignored; commit `project.yml`, not the generated project. `Package.resolved` is
   fine to commit.
-- **One concern per PR.** Keep a protocol change, a schema migration, and a UI change in separate
-  commits/PRs where practical.
+- **One concern per PR.** Keep a schema migration and a UI change in separate commits/PRs where
+  practical.
 - **Show your verification.** For analytics, cite the method and add a test. For UI, confirm it uses
-  only `StrandDesign` tokens. For research changes under `Packages/WhoopProtocol` that alter
-  outbound bytes, state what you tested on real hardware (see the appendix).
+  only `StrandDesign` tokens.
 - **Anonymous, project-voice.** Documentation and comments are written in a neutral, third-person
-  project voice. Keep upstream credits (`my-whoop`, `goose`, `GRDB.swift`, `ZIPFoundation`) intact.
-- **No proprietary material.** Don't add WHOOP firmware, decompiled app code, logos, or assets, and
-  don't introduce DRM circumvention. Keep contributions to clean-room interoperability with hardware
-  the user owns.
+  project voice. Keep dependency credits (`GRDB.swift`, `ZIPFoundation`) intact.
+- **No proprietary material.** Don't add third-party firmware, decompiled app code, logos, or
+  assets, and don't introduce DRM circumvention.
 - **Licensing.** By opening a pull request you agree your contribution is licensed under the same
   [PolyForm Noncommercial License 1.0.0](../LICENSE) as the rest of Cénit. Forks and personal,
   non-commercial use are welcome under those terms.
@@ -506,12 +467,11 @@ Contributions toward these are welcome — open an issue to coordinate first.
 
 ### Other platforms
 
-- **Windows app (planned).** A native desktop client for Windows. The protocol facts in
-  `WhoopProtocol/Resources/whoop_protocol.json` and the framing/CRC rules are language-agnostic, so
-  the wire behavior is portable; the work is a Windows BLE stack + UI re-implementation that matches
-  the shared packages' behavior. Every package already declares `.iOS(.v16)` and `.macOS(.v13)` and
-  guards UI-framework code with `#if canImport(UIKit) / #elseif canImport(AppKit)`, so the non-UI core
-  stays portable.
+- **Windows app (planned).** A native desktop client for Windows. Every package already declares
+  `.iOS(.v16)` and `.macOS(.v13)` and guards UI-framework code with
+  `#if canImport(UIKit) / #elseif canImport(AppKit)`, so the non-UI core (`StrandAnalytics`,
+  `CenitStore`, …) stays portable; the work is a Windows UI re-implementation that matches the
+  shared packages' behavior.
 
 ### Deferred ideas
 
@@ -526,36 +486,7 @@ These are scoped but intentionally not built yet. They're listed so contributors
   Watch-side physiology into recovery/strain is open product work.
 
 > Roadmap items don't change the ground rules. Everything above still holds: offline-only,
-> design-system-only UI, transparent and clearly-non-clinical math, and credit to the upstream
-> reverse-engineering work preserved in research docs.
-
----
-
-## Appendix: historical BLE safety (band retired, FER-1003) — applies only to Packages/WhoopProtocol
-
-> **Histórico.** The shipping app no longer pairs with a WHOOP band. App-layer BLE transport
-> and the in-app command sender were **deleted** in FER-1003. This appendix applies **only** if
-> you touch research/CLI code under `Packages/WhoopProtocol`. For the wire protocol itself, see
-> [`PROTOCOL.md`](PROTOCOL.md) and [`BLE_REVERSE_ENGINEERING.md`](BLE_REVERSE_ENGINEERING.md).
-
-### Never add destructive commands
-
-Outbound command builders for research/CLI must stay a **curated, reversible subset**. Do **not**
-add reboot, firmware/DFU, ship-mode/power-cycle, force-trim, fuel-gauge reset, or any command that
-can brick, wipe, or permanently alter a device. If a non-trivial command is needed for research,
-open an issue first, justify reversibility, and document payload + on-device verification.
-
-### CRC-gate everything
-
-Frames are only acted on after checksums pass. See
-`Packages/WhoopProtocol/Sources/WhoopProtocol/Framing.swift` (`verifyFrame`, CRC8 / CRC16-Modbus /
-CRC32). Never short-circuit a CRC check "to make a capture work".
-
-### Verify hardware changes on real straps
-
-Anything under `Packages/WhoopProtocol` that changes what bytes would go out on the wire must be
-tested against an actual strap and noted in the PR. Pure decode/parse work can (and should) use
-captured frames and `swift test` without hardware.
+> design-system-only UI, and transparent, clearly-non-clinical math.
 
 ---
 

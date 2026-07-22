@@ -351,7 +351,7 @@ struct TodayView: View {
                                            appleDays: Set<String>, todayRecovery: Double?,
                                            todayKey: String, yKey: String) -> DerivedState {
         // FER-623: el veredicto mide la HRV solo contra la base de BANDA (RMSSD), vía `band`.
-        let band = SourceLens.maskHrv(days, keep: .band, appleDays: appleDays)
+        let band = SourceLens.clearBandHrv(days)
         let readiness = ReadinessEngine.evaluate(days: band, today: todayKey)
         let counts = computeHrvCounts(days: days, appleDays: appleDays, todayHasRecovery: todayRecovery != nil)
         // FER-475: el veredicto de ayer, para la línea de continuidad de la página 1 «en espera».
@@ -361,7 +361,7 @@ struct TodayView: View {
         // Carga de entrenamiento (FER-705): el ACWR + serie desde el dashboard BAND-masked — el mismo corte
         // que la tarjeta de Tendencias y el detalle de recuperación (FER-632), para que la franja, la
         // tarjeta y el veredicto nunca discrepen. `acwr == nil` → la franja muestra «calibrando» sin punto.
-        let acwrMasked = SourceLens.maskForBaseline(days, keep: .band, appleDays: appleDays)
+        let acwrMasked = SourceLens.clearBandColumns(days)
         let acwrReadiness = ReadinessEngine.evaluate(days: acwrMasked, today: todayKey)
         let trainingLoad = TrainingLoadModel(
             acwr: acwrReadiness.acwr,
@@ -378,7 +378,7 @@ struct TodayView: View {
     /// (mismo dashboard publicado, sin await en medio) para no reintroducir la carrera FER-177. Una sola
     /// fuente de verdad: `recomputeDerived` y el fallback en frío de `readiness` la comparten (deben coincidir).
     private var bandDays: [DailyMetric] {
-        SourceLens.maskHrv(repo.days, keep: .band, appleDays: repo.appleHealthDays)
+        SourceLens.clearBandHrv(repo.days)
     }
 
     /// Los conteos memoizados; cae a un cálculo en línea solo el primer frame (memo aún nil).
@@ -397,26 +397,18 @@ struct TodayView: View {
     private var whyEmptyExplanation: LocalizedStringKey? {
         let state = heroState
         guard state != .verdict else { return nil }
-        // FER-888: en modo Solo-Apple el estado vacío habla del Apple Watch, no de la banda.
-        let usesWhoop = repo.dataSourceMode.usesWhoop
+        // FER-888 / FER-1003: Solo-Apple — empty states speak of the Apple Watch, not the band.
         switch state {
         case .loading, .verdict:
             return nil   // neutro de carga (o veredicto, ya filtrado arriba): nada que explicar todavía
         case .calibrating:
-            return usesWhoop
-                ? "Your baseline is still settling. A couple more nights of sleep synced from your Apple Watch, and your day's verdict starts to show here."
-                : "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here."
+            return "Your baseline is still settling. A couple more nights of sleep tracked with your Apple Watch, and your day's verdict starts to show here."
         case .waiting:
             // Modificador «descargando» (ex-`.downloading`); si no, espera / base Apple.
             if isSyncing {
-                return usesWhoop
-                    ? "We're downloading your night. As soon as the sync finishes, we compute your day's verdict and it shows here."
-                    : "We're syncing from Apple Health. As soon as it finishes, your day's verdict shows here."
+                return "We're syncing from Apple Health. As soon as it finishes, your day's verdict shows here."
             }
-            if !usesWhoop {
-                return "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
-            }
-            return "Connect Apple Health and, with your night's sleep, your day's reading starts to show here."
+            return "Your day's reading comes from how you slept. There's no data for last night yet. Wear your Apple Watch to sleep and it reads here in the morning."
         }
     }
 
@@ -545,7 +537,7 @@ struct TodayView: View {
                 // is read-only (the Coach handoff was removed, Pase v2 #7).
                 // FER-1027: el mapa intradía de estrés es de banda; en Apple-only no se muestra.
                 StressDetailScreen(theme: theme, model: item.model,
-                                   dayMap: repo.dataSourceMode.usesWhoop ? stressDayMap : nil,
+                                   dayMap: nil,
                                    patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                        repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
                                    eventPatternsLoader: { await StressDayMapPresenter.eventPatterns(
@@ -972,18 +964,11 @@ struct TodayView: View {
     private var recoveryScore: Int? { repo.today?.recovery.map { Int($0.rounded()) } }
 
     /// The recovery summary sheet's model — the ONE way every entry point (Daily Brief bullet, the
-    /// hero numeral, the glance pill) opens it. Includes «Qué la movió hoy» (FER-628), computed
-    /// against the band-only slice: `RecoveryImpact` drops `repo.appleHealthDays` whole-row before
-    /// folding, the same `strapOnlyHistory` filter the persisted score's baselines use (FER-519), so
-    /// the block and the score can never disagree about the same night.
+    /// hero numeral, the glance pill) opens it.
     private var recoveryInfo: MetricInfo {
-        let todayKey = Repository.localDayKey(Date())
-        let todayImpact = RecoveryImpact.compute(days: repo.days, todayKey: todayKey,
-                                                 appleDays: repo.appleHealthDays)
-        return .recovery(score: recoveryScore,
+        .recovery(score: recoveryScore,
                   calibrationNights: recoveryCalibration,
-                  nightsNeeded: Baselines.minNightsSeed,
-                  impact: todayImpact)
+                  nightsNeeded: Baselines.minNightsSeed)
     }
 
     /// El lienzo: el papel del tema, leído DENTRO del subárbol tematizado para que también recolore por
@@ -1050,19 +1035,6 @@ struct TodayView: View {
                     .tracking(2)
                     .foregroundStyle(theme.inkSecondary)
                 Spacer(minLength: CenitMetrics.space2)
-                // FER-888 (W3): BPM en vivo / «sin señal» / sello del dial 24h son de la banda.
-                // En modo Solo-Apple no aplican; en Combinado/Solo-banda quedan idénticos.
-                if repo.dataSourceMode.usesWhoop {
-                    // FER-972 P-09: sello dueño de su lectura de progreso (no invalida el árbol).
-                    PullIndicator(
-                        pullProgress: pullProgressModel,
-                        isSyncing: isSyncing,
-                        reduceMotion: reduceMotion,
-                        hour: clockHourNow,
-                        solar: solarWindow,
-                        sleep: sleepWindow
-                    )
-                }
             }
             syncStatusLine
         }

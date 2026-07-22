@@ -46,8 +46,7 @@ settings:
       ONLY_ACTIVE_ARCH: NO
 packages:
   # BiometricStreams — vocabulario neutro de filas biométricas (FER-993 · D2). Raíz del grafo:
-  # no depende de nadie. (WhoopProtocol vive en el monorepo para investigación/CLI, pero desde
-  # el Frente B [FER-1003] NO se linkea al binario: el app es Apple-only.)
+  # no depende de nadie. El app es Apple-only.
   BiometricStreams:
     path: Packages/BiometricStreams
   CenitStore:
@@ -71,7 +70,7 @@ targets:
   # iOS app target (module/product Cenit). Reuses the shared packages and the
   # app-layer under Cenit/ (SwiftUI screens, data layer, media, onboarding);
   # the iOS app shell + HealthKit + widgets/intents live under CenitApp/.
-  # Apple Health only — no BLE / WhoopProtocol link (FER-1003).
+  # Apple Health only — no BLE (FER-1003).
   Cenit:
     type: application
     platform: iOS

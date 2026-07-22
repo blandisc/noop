@@ -1,6 +1,6 @@
 # Cénit Analytics
 
-On-device analytics for **Cénit** — a standalone, fully offline health app on **Apple Health**. Cénit stores samples locally in SQLite and computes recovery, strain, HRV, and sleep on-device. There is no cloud and no account involved in any of the math described here. Direct WHOOP band pairing was retired (FER-1003); analyzers still accept the same stream shapes for historical/imported data.
+On-device analytics for **Cénit** — a standalone, fully offline health app on **Apple Health**. Cénit stores samples locally in SQLite and computes recovery, strain, HRV, and sleep on-device. There is no cloud and no account involved in any of the math described here. Analyzers accept the stream shapes produced by HealthKit sync and optional file import.
 
 > **Not affiliated with WHOOP.** Cénit works with data you already own. The metrics below are **approximations** of common exercise-physiology and HRV methods, derived from published literature — they are **not** reproductions of any proprietary scoring model, and they are **not a medical device**. Nothing here is medical advice.
 
@@ -35,13 +35,13 @@ The package contains more analytics than the app currently calls. This section i
 | `HeartRateRecovery` | `HeartRateRecovery.swift` | **Library-only / experimental** (FER-683). Behind the experimental-metrics flag; UI in progress (FER-852). APPROXIMATE. |
 | `DFAAlpha1` | `DFAAlpha1.swift` | **Library-only / experimental** (FER-683). Inert unless `experimentalEnabled`; refuses to output on a noisy signal. Not surfaced. APPROXIMATE. |
 
-**In short:** the *interactive data-interrogation* engines (correlation, behavior effects, period comparison) are wired into screens, and the *recompute-from-raw-streams* engines (recovery, strain, sleep staging, workout detection) run live too: `IntelligenceEngine` calls `analyzeDay` for every night the strap offloaded and persists the APPROXIMATE results under the `"-noop"` source, merged under any imported rows — a WHOOP export still wins wherever it covers a day. The live BLE app additionally runs four small inline analytics in `AppModel`: HR smoothing, RMSSD, HR-zone coaching, an illness/strain early-warning, and a resting-stress nudge.
+**In short:** the *interactive data-interrogation* engines (correlation, behavior effects, period comparison) are wired into screens, and the *recompute-from-raw-streams* engines (recovery, strain, sleep staging, workout detection) run live too: `IntelligenceEngine` calls `analyzeDay` for every night the strap offloaded and persists the APPROXIMATE results under the `"-noop"` source, merged under any imported rows — a WHOOP export still wins wherever it covers a day. The app additionally runs four small inline analytics in `AppModel`: HR smoothing, RMSSD, HR-zone coaching, an illness/strain early-warning, and a resting-stress nudge.
 
 ---
 
 ## Live analytics in `AppModel`
 
-Source: `Cenit/App/AppModel.swift`. These run against the live BLE stream and the daily history, on the main actor.
+Source: `Cenit/App/AppModel.swift`. These run against the ingested Apple Health history and the daily history, on the main actor.
 
 ### 1. Heart-rate smoothing (`ingestHR`)
 
@@ -632,7 +632,7 @@ Source: `ComparisonEngine.swift`. Period-over-period comparison of one daily met
 
 ## The library orchestrator: `AnalyticsEngine`
 
-Source: `AnalyticsEngine.swift`. A pure function that ties the recompute engines together for one day. **Implemented and tested, but not yet wired into the import/store pipeline** — the importers currently copy WHOOP's own per-day recovery/strain/sleep numbers from your export.
+Source: `AnalyticsEngine.swift`. A pure function that ties the recompute engines together for one day. **Implemented and tested**; the app wires recompute through `IntelligenceEngine` / store pipelines, and imported HealthKit/export rows take precedence where present.
 
 `analyzeDay(day:hr:rr:resp:gravity:profile:baselines:maxHROverride:)` runs, in order:
 
@@ -694,22 +694,20 @@ A sport with fewer than `minSessions` next-morning pairs is **omitted entirely**
 ## Data flow summary
 
 ```
-WHOOP strap (BLE) ─┐
-                   ├─► WhoopProtocol (frame decode) ─► CenitStore (SQLite, 1 Hz streams)
-WHOOP CSV export ──┤                                         │
-Apple Health XML ──┘                                         │
-                                                             ▼
-   importers copy per-day recovery / strain / sleep ──► DailyMetric (metrics cache)
-                                                             │
-                          ┌──────────────────────────────────┤
-                          ▼                                   ▼
-   AnalyticsEngine.analyzeDay (recompute path,        Repository.days ─► TodayView,
-   library-only today: HRV/recovery/strain/sleep      InsightsView (CorrelationEngine,
-   from raw streams)                                   BehaviorInsights), CompareView,
-                                                       MetricExplorerView (ComparisonEngine)
+Apple Health (HealthKit) ──► HealthKitBridge ──► CenitStore (SQLite)
+Apple Health XML ──► StrandImport ────────────────────┘
+                                                      │
+                                                      ▼
+   importers / analyzers ──► DailyMetric (metrics cache)
+                                                      │
+                          ┌───────────────────────────┤
+                          ▼                           ▼
+   AnalyticsEngine.analyzeDay (recompute path)   Repository.days ─► TodayView,
+   (HRV/recovery/strain/sleep from raw streams)  InsightsView, CompareView,
+                                                 MetricExplorerView
 
-   live BLE stream ─► AppModel: HR smoothing · RMSSD · zone coaching ·
-                       illness early-warning · resting-stress nudge
+   AppModel: HR smoothing · RMSSD · zone coaching ·
+             illness early-warning · resting-stress nudge
 ```
 
 ---
@@ -761,4 +759,4 @@ date, or any clinical claim.
 - **Robust statistics.** z-scores use EWMA mean-absolute-deviation (`× 1.253` to a Gaussian σ); resting HR uses 5-minute bin minima; HR display uses windowed medians — all chosen to resist single-sample outliers.
 - **Cold-start honesty.** When a baseline isn't trustworthy yet, the recovery scorer returns `nil` rather than a fabricated number.
 - **Not a medical device.** None of this is diagnostic or medical advice. The illness early-warning is a wellness nudge from your own baselines, not a clinical screen.
-- **Not affiliated with WHOOP.** Cénit interoperates with hardware and exports you already own, entirely on-device. Protocol decoding builds on community reverse-engineering of the WHOOP 4.0 (project *my-whoop*, `johnmiddleton12/my-whoop`) and WHOOP 5.0 (project *goose*, `b-nnett/goose`) protocols.
+- **Not affiliated with WHOOP.** Cénit works with data you already own (Apple Health / HealthKit), entirely on-device.

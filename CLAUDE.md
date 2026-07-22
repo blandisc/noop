@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Cénit is a fully **offline, on-device** health companion built on **Apple Health**: it syncs HealthKit into local SQLite and computes recovery / strain / HRV / sleep on-device. No server, no account, no network by default. WHOOP band support was **retired** (FER-1003); historical imported band data is preserved but dormant. `Packages/WhoopProtocol` remains in the monorepo for research and is **not** linked into the app binary. Not affiliated with WHOOP; not a medical device (see [DISCLAIMER.md](DISCLAIMER.md)).
+Cénit is a fully **offline, on-device** health companion built on **Apple Health**: it syncs HealthKit into local SQLite and computes recovery / strain / HRV / sleep on-device. No server, no account, no network by default. Not affiliated with WHOOP; not a medical device (see [DISCLAIMER.md](DISCLAIMER.md)).
 
 **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) is the full guide** — repository layout, build/test, the design-system rules, and how to add a metric / screen / DB migration. Read it before any non-trivial change. This file is the high-signal summary, not a replacement.
 
@@ -12,12 +12,11 @@ Cénit is a fully **offline, on-device** health companion built on **Apple Healt
 
 Cross-platform **Swift packages do the real work**; thin platform apps wrap them.
 
-- `Packages/BiometricStreams` — the neutral vocabulary of decoded rows (`HRSample`, `RRInterval`, `StreamEvent`, `Streams`, `ParsedValue`). **Root of the graph: zero deps, Foundation-only.** `WhoopProtocol` depends on it, **never the reverse**; no `@_exported import`.
-- `Packages/WhoopProtocol` — BLE frame parsing, CRC, packet/event decode. **Pure, no CoreBluetooth** (runs in tests / CLI / Linux). **Research only — not linked into the shipping app** (FER-1003).
+- `Packages/BiometricStreams` — the neutral vocabulary of decoded rows (`HRSample`, `RRInterval`, `StreamEvent`, `Streams`, `ParsedValue`). **Root of the graph: zero deps, Foundation-only.** `CenitStore` and `StrandAnalytics` depend on it, **never the reverse**; no `@_exported import`.
 - `Packages/CenitStore` — GRDB/SQLite persistence (versioned migrations).
 - `Packages/StrandAnalytics` — recovery / strain / HRV / sleep math. **Pure, database-free.**
 - `Packages/StrandTraining` — strength domain: exercise catalog, types/rules (sets/reps, progression, routines). **Pure, Foundation-only** (no GRDB/UI).
-- `Packages/StrandImport` — WHOOP CSV + Apple Health importers.
+- `Packages/StrandImport` — Apple Health importer.
 - `Packages/StrandDesign` — the SwiftUI design system (single source of visual truth).
 - `Cenit/` — the **SwiftUI app layer** (`App`, `Data`, `LiveActivity`, `Media`, `Onboarding`, `Screens`, `System`). HealthKit lives in `CenitApp/Health`.
 - `Cenit*/` — the iOS app shell + widgets/tests (`CenitApp`, `CenitShared`, `CenitWidgets`, `CenitUnitTests`, `CenitUITests`). The app target/module/product is `Cenit`; it builds `Cenit/`.
@@ -54,7 +53,6 @@ CI has **six workflows**: `swift-packages` (package build/test on `Packages/**` 
 ## Rules that will get a change rejected
 
 - **Offline only.** No server, telemetry, account, or network call — ever. (One opt-in exception already exists and stays **off by default** behind an explicit toggle: exercise-media download in `Cenit/Media/`. The app default is zero network. Do **not** weaken this rule for new code.)
-- **Historical BLE safety (research only).** The product no longer ships a BLE path (FER-1003). If you touch `Packages/WhoopProtocol` for research/CLI work: never add destructive commands (reboot / firmware-DFU / ship-mode / wipe / fuel-gauge-reset); CRC-gate every frame and reject `crcOK == false`; anything that changes outbound bytes must be **verified on real hardware** and noted in the PR. See the historical appendix in [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and [docs/PROTOCOL.md](docs/PROTOCOL.md). This rule does **not** apply to the shipping app binary, which does not link `WhoopProtocol`.
 - **The design system is law.** Screens use only `StrandDesign` tokens (`StrandPalette`, `StrandFont`, `CenitMetrics`) and components (`NoopCard`, `StatTile`, …). No raw hex, font sizes, spacing, or one-off cards. If a token is missing, add it to `StrandDesign` (with a `#Preview`) — don't inline it. The **DNA** that gives those tokens a point of view lives in [docs/design-system/DESIGN.md](docs/design-system/DESIGN.md): «Instrumento diurno» (warm paper, one dominant number, **color only in the datum**, hierarchy by space) is **canonical** for new/redesigned screens; the dark system is **legacy** (maintain, don't extend). For iOS-native decisions (HIG, SF Symbols, motion) cite Apple via the **Cupertino** MCP, not guesswork.
 - **Transparent math.** Analytics are documented approximations — add a test and cite the method (Task Force 1996, Karvonen, Edwards/Banister, Tanaka). No black boxes, no clinical claims.
 - **Migrations are append-only.** Never edit a shipped GRDB migration; add `vN+1` plus a `MigrationTests` case. Every `ADD COLUMN` goes through `CenitStore.addColumnIfMissing` (in `Database.swift`), not a raw `db.alter`/`add` — it guards on the live schema so a migration that re-runs against a DB that already grew the column (common after iterating a migration locally and reinstalling over the same on-device DB) is a no-op, not a "duplicate column" crash that wedges startup (FER-791/792).
@@ -84,7 +82,7 @@ The flow is **requirement → (architecture) → experience → screen → code 
 
 **Two risk lanes (how much process runs).** Not every change earns the same ceremony — running the full gate on a margin tweak costs more than the rework it prevents. `/pm` tags each issue with a **`Carril`** field, and `/implement`/`/ui`/`/ux`/`/qa` read it (design work runs the same two lanes — heavy = full evidence + variants + AI Slop Test; light = map to existing tokens within the DNA + one preview):
 - **Light** — reversible, cosmetic (UI/copy/layout/i18n, a small tweak to an existing screen). `/pm` writes it lean (no UX subagent); `/implement` does its own build + criteria check + HTML preview and ships — **no independent `/qa`, no 3-round loop, no `/arquitecto`**. Rework is trivial and you verify on the iPhone, so the independent gate would cost more than it protects.
-- **Heavy** — risky or hard to revert (DB migration, analytics/math, on-device data, cross-package/concurrency, a feature with real logic, or research changes in `Packages/WhoopProtocol`). Full flow: `/arquitecto` if structural, the independent `/qa` gate, then a `/simplify` pass (agents tend to over-build). **When in doubt, heavy.**
+- **Heavy** — risky or hard to revert (DB migration, analytics/math, on-device data, cross-package/concurrency, or a feature with real logic). Full flow: `/arquitecto` if structural, the independent `/qa` gate, then a `/simplify` pass (agents tend to over-build). **When in doubt, heavy.**
 
 - **Linear:** team **Fer**, project **Cénit iOS**. Label every issue by type (`UI/Today`, `Analytics`, `Bug`, `Import`, `Performance`, `i18n`, `Diseño`, `Feature`, …). Issue lifecycle: **Todo → In Progress → In Review → Done**. Reference the issue in the PR (`Closes FER-NN`).
 - **Branch hygiene — one branch per issue, never collide.** Use the issue's Linear-generated `gitBranchName` (e.g. `blandisc/fer-81-…`), branched from an up-to-date `origin/iOS` (`git fetch` first). Never work on `iOS`, never reuse another issue's branch, and if the branch already exists, another session owns it — stop, don't overwrite. PRs target `iOS`, squash-merge, then delete the branch.
