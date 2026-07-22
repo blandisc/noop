@@ -18,10 +18,17 @@ final class PreparednessTests: XCTestCase {
     }
 
     /// `n` prior nights (01..n June) with a little spread so baselines are well-defined & trusted.
+    /// Sub-expressions are explicitly typed: the mixed Int/Double arithmetic inside the `dm(…)` call
+    /// blows the Linux Swift type-checker's per-expression budget when inlined (CI runs StrandAnalytics
+    /// on ubuntu only — it type-checks fine on macOS, so a local `swift test` won't catch it).
     private func baseline(_ n: Int = 20) -> [DailyMetric] {
-        (1...n).map { i in dm(String(format: "2026-06-%02d", i),
-                              hrv: 52 + Double(i % 5), rhr: 54 + i % 3,
-                              resp: 13 + Double(i % 3), sleep: 440 + Double(i % 4) * 5, temp: 0.0) }
+        (1...n).map { (i: Int) -> DailyMetric in
+            let hrv: Double = 52 + Double(i % 5)
+            let rhr: Int = 54 + i % 3
+            let resp: Double = 13 + Double(i % 3)
+            let sleep: Double = 440 + Double(i % 4) * 5
+            return dm(String(format: "2026-06-%02d", i), hrv: hrv, rhr: rhr, resp: resp, sleep: sleep, temp: 0.0)
+        }
     }
 
     /// Hysteresis disabled — isolates the pure per-day consensus.
