@@ -1132,7 +1132,7 @@ struct TodayView: View {
     @ViewBuilder private var appleTrendHero: some View {
         let sleepMin = resolveMeasured(todayOnly: true) { $0.totalSleepMin }?.value
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-            Text("SUEÑO DE ANOCHE").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("LAST NIGHT'S SLEEP").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if let sleepMin, sleepMin > 0 {
                 let h = Int(sleepMin) / 60, m = Int(sleepMin) % 60
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -1142,11 +1142,11 @@ struct TodayView: View {
                     Text("m").font(StrandFont.number(28)).foregroundStyle(theme.inkSecondary)
                 }
                 .lineLimit(1).minimumScaleFactor(0.6)
-                Text(sleepMin >= 420 ? "Dormiste bien" : "Sueño corto")
+                Text(sleepMin >= 420 ? LocalizedStringKey("You slept well") : LocalizedStringKey("Sleep was short"))
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             } else {
                 Text("—").font(StrandFont.number(64)).foregroundStyle(theme.inkTertiary)
-                Text("Sin registro de sueño anoche").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                Text("No sleep recorded last night").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
