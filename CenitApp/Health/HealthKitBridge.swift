@@ -398,6 +398,16 @@ final class HealthKitBridge: ObservableObject {
             }
         }
 
+        // CARGA VIVA: group workout HR by local day + the set of days that had ≥1 HKWorkout,
+        // so AppleLoadEstimator can classify rest(0) / load(TRIMP) / missing(NA) before we write
+        // DailyMetric.strain. dayString is the canonical write-side day key (DayKey.local).
+        var workoutHRByDay: [String: [HRSample]] = [:]
+        for s in workoutHrSamples {
+            let day = Self.dayString(Date(timeIntervalSince1970: TimeInterval(s.ts)))
+            workoutHRByDay[day, default: []].append(s)
+        }
+        let workoutDays: Set<String> = Set(hkWorkouts.map { Self.dayString($0.startDate) })
+
         stage(14, "saving")
 
         // Build + upsert the store rows under the apple-health source.
@@ -417,11 +427,29 @@ final class HealthKitBridge: ObservableObject {
             guard let v, appleSkinBase.usable else { return nil }
             return (Baselines.deviation(v, state: appleSkinBase).delta * 100.0).rounded() / 100.0
         }
+        // Persist DailyMetric.strain only for completed days. Writing today's (partial) strain freezes
+        // the "Esfuerzo del día" tile and blocks the live estimatedStrain fallback (AppModel / Repository).
+        let todayKey = Self.dayString(Date())
         let dmRows = byDay.map { (day, a) in
-            DailyMetric(day: day, totalSleepMin: a.asleepMin, efficiency: effByDay[day],
+            let activity = AppleLoadEstimator.DayActivity(
+                workoutHR: workoutHRByDay[day] ?? [],
+                steps: a.steps.map { Int($0) },
+                activeKcal: a.activeKcal,
+                hasWorkout: workoutDays.contains(day))
+            let dayLoad = AppleLoadEstimator.classify(activity, maxHR: repo.strainHRmax,
+                restingHR: a.restingHr ?? StrainScorer.defaultRestingHR, sex: repo.strainSex)
+            let strainValue: Double? = {
+                guard AppleLoadEstimator.isCompletedDay(day, today: todayKey) else { return nil }
+                switch dayLoad {
+                case .rest:          return 0
+                case .load(let s):   return s
+                case .missing:       return nil
+                }
+            }()
+            return DailyMetric(day: day, totalSleepMin: a.asleepMin, efficiency: effByDay[day],
                         deepMin: a.deepMin, remMin: a.remMin, lightMin: a.coreMin, disturbances: nil,
                         restingHr: a.restingHr.map { Int($0.rounded()) }, avgHrv: a.hrv,
-                        recovery: nil, strain: nil, exerciseCount: nil,
+                        recovery: nil, strain: strainValue, exerciseCount: nil,
                         spo2Pct: a.spo2, skinTempDevC: appleSkinDev(a.skinTempC), respRateBpm: a.respRate,
                         steps: a.steps.map { Int($0) })
         }

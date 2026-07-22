@@ -127,6 +127,53 @@ final class MetricsCacheTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(row.activeKcalEst), 450, accuracy: 0.001)
     }
 
+    /// CARGA VIVA (Fable adversarial D1): `strain` is monotonic in the REAL-LOAD direction. A scored
+    /// workout must never be regressed to 0 (rest) or NULL (missing) by a later partial/degraded resync
+    /// (workout HR not yet delivered, or read permission revoked). Rest(0) and missing(NULL) may still
+    /// correct each other, so a false rest 0 written from incomplete data can be walked back to NULL.
+    func testDailyMetricStrainNeverRegressesRealLoad() async throws {
+        func day(_ d: String, strain: Double?) -> DailyMetric {
+            DailyMetric(day: d, totalSleepMin: nil, efficiency: nil, deepMin: nil, remMin: nil,
+                        lightMin: nil, disturbances: nil, restingHr: nil, avgHrv: nil, recovery: nil,
+                        strain: strain, exerciseCount: nil)
+        }
+        func strainOf(_ store: CenitStore, _ d: String) async throws -> Double? {
+            try await store.dailyMetrics(deviceId: "devA", from: d, to: d).first?.strain
+        }
+        let store = try await CenitStore.inMemory()
+
+        // 1. A persisted real load is NOT zeroed by a later rest(0) — the "silent zeroing" scenario.
+        try await store.upsertDailyMetrics([day("2026-06-01", strain: 14.2)], deviceId: "devA")
+        try await store.upsertDailyMetrics([day("2026-06-01", strain: 0)], deviceId: "devA")
+        let s1 = try await strainOf(store, "2026-06-01")
+        XCTAssertEqual(s1, 14.2, "rest(0) must not overwrite a real load")
+
+        // 2. A persisted real load is NOT blanked by a later missing(nil).
+        try await store.upsertDailyMetrics([day("2026-06-02", strain: 9.0)], deviceId: "devA")
+        try await store.upsertDailyMetrics([day("2026-06-02", strain: nil)], deviceId: "devA")
+        let s2 = try await strainOf(store, "2026-06-02")
+        XCTAssertEqual(s2, 9.0, "missing(nil) must not blank a real load")
+
+        // 3. A false rest(0) CAN be walked back to nil when the day reclassifies missing — the "sticky
+        //    false rest" scenario. (Only rest/missing correct each other; neither is a real load.)
+        try await store.upsertDailyMetrics([day("2026-06-03", strain: 0)], deviceId: "devA")
+        try await store.upsertDailyMetrics([day("2026-06-03", strain: nil)], deviceId: "devA")
+        let s3 = try await strainOf(store, "2026-06-03")
+        XCTAssertNil(s3, "a rest 0 must be clearable to missing(nil)")
+
+        // 4. A real load still upgrades an existing rest(0).
+        try await store.upsertDailyMetrics([day("2026-06-04", strain: 0)], deviceId: "devA")
+        try await store.upsertDailyMetrics([day("2026-06-04", strain: 12.0)], deviceId: "devA")
+        let s4 = try await strainOf(store, "2026-06-04")
+        XCTAssertEqual(s4, 12.0, "a scored workout upgrades a rest day")
+
+        // 5. Rest(0) still writes where the day was empty (nil).
+        try await store.upsertDailyMetrics([day("2026-06-05", strain: nil)], deviceId: "devA")
+        try await store.upsertDailyMetrics([day("2026-06-05", strain: 0)], deviceId: "devA")
+        let s5 = try await strainOf(store, "2026-06-05")
+        XCTAssertEqual(s5, 0, "rest(0) sets strain on an empty day")
+    }
+
     func testDailyMetricDayRangeFilter() async throws {
         let store = try await CenitStore.inMemory()
         try await store.upsertDailyMetrics([

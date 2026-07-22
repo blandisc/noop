@@ -278,7 +278,7 @@ struct TrainingLoadSheet: View {
                 Text(verbatim: "—")
                     .instrumentoHero(46)
                     .foregroundStyle(theme.inkTertiary)
-                Text("Needs about 2 weeks of recorded strain. As more workouts sync, this read will appear.")
+                Text("Needs about 2 weeks of recorded strain from workouts with heart rate. Log a few workouts on your Apple Watch and this read will appear.")
                     .font(StrandFont.headline)
                     .foregroundStyle(theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
@@ -287,7 +287,7 @@ struct TrainingLoadSheet: View {
     }
 
     private var calibratingBlock: some View {
-        Text("Needs about 2 weeks of recorded strain. As more workouts sync, this read will appear.")
+        Text("Needs about 2 weeks of recorded strain from workouts with heart rate. Log a few workouts on your Apple Watch and this read will appear.")
             .font(StrandFont.subhead)
             .foregroundStyle(theme.inkSecondary)
             .fixedSize(horizontal: false, vertical: true)
