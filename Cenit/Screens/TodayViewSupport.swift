@@ -13,17 +13,6 @@ struct TodayScrollOffsetKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
-/// El alto NATURAL de cada página del pager de «Hoy», por índice (FER-725). Deja que el pager mida su
-/// alto según la página ACTIVA en vez de la más alta: así Señales (más corta) no arrastra el alto de
-/// Brief y el scroll vertical solo aparece en Brief. `reduce` coalesce con el máximo por si un mismo
-/// índice reporta dos veces en un frame de transición.
-struct TodayPageHeightKey: PreferenceKey {
-    static var defaultValue: [Int: CGFloat] = [:]
-    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
-        value.merge(nextValue(), uniquingKeysWith: { Swift.max($0, $1) })
-    }
-}
-
 /// FER-878: la tarjeta «Qué medimos» que abre la ⓘ junto a «POR QUÉ N». Saca de la pantalla el caption
 /// explicativo (ya no flota bajo las cinco reglas) y lo deja aquí, en la misma superficie radio-12 que las
 /// tarjetas de Tendencias: la suma encendida ES el numeral, el largo de cada marca es su peso, y por qué
@@ -112,24 +101,6 @@ extension TodayView {
 
     /// ¿Horario diurno (8–22)? Puro reloj: no gritamos «banda desconectada» mientras duermes.
     var isDaytime: Bool { clockHourNow >= 8 && clockHourNow < 22 }
-
-    /// El canalón entre Señales y Brief (FER-725): el hueco de papel que se ve al deslizar, para que las
-    /// hojas no se lean pegadas. Solo visible en la transición (en reposo la hoja activa llena la pantalla).
-    var pagerGutter: CGFloat { CenitMetrics.screenPadding + CenitMetrics.space2 }   // 32
-
-    /// El label es-MX por nivel, derivado del `level` (no del `headline` de la página 1, que F3 va a
-    /// cambiar). Reusa las MISMAS claves del catálogo que `ReadinessEngine` (`Primed`/`Balanced`/…), así
-    /// que «A punto / Equilibrado / Exigido / Desgastado» ya están traducidas. `insufficient` no tiene
-    /// palabra (el encabezado se queda solo con el overline).
-    func stateLabel(_ level: ReadinessEngine.Level) -> LocalizedStringKey {
-        switch level {
-        case .primed:       return "Primed"
-        case .balanced:     return "Balanced"
-        case .strained:     return "Strained"
-        case .rundown:      return "Run down"
-        case .insufficient: return "Readiness"
-        }
-    }
 
     /// Sueño en formato reloj del handoff: «7:12» (horas:minutos dormidos).
     func sleepClockText(_ mins: Double) -> String {
