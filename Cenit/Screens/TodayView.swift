@@ -946,7 +946,9 @@ struct TodayView: View {
                 Text(verbatim: "PREPARACIÓN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 SelloConfianzaArco(nights: nights,
-                                   a11y: Text(verbatim: "Confianza: \(nights) de 21 noches"),
+                                   a11y: Text(verbatim: nights >= 21
+                                              ? "Modelo calibrado con tus noches"
+                                              : "Confianza: \(nights) de 21 noches"),
                                    theme: theme)
             }
             Text(verbatim: verdictWord(prep.verdict))
@@ -974,13 +976,14 @@ struct TodayView: View {
                                    lastIsOut: abs(trend.spark.last ?? 0) > AutonomicTrend.swcK,
                                    theme: theme)
                         .frame(height: 14)
-                    Text(verbatim: "HRV de sueño · últimas noches · sobre tu base")
+                    Text(verbatim: "Cómo se recupera tu cuerpo de noche · sobre tu base")
                         .font(StrandFont.footnote)
                         .foregroundStyle(theme.inkTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.top, CenitMetrics.space1)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "Tendencia de HRV de sueño de las últimas noches"))
+                .accessibilityLabel(Text(verbatim: "Cómo se recupera tu cuerpo de noche, últimas noches, sobre tu base"))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1292,8 +1295,9 @@ struct TodayView: View {
     /// el punto de cada tile: banda (verde) · Apple Salud (azul) · calculado en tu teléfono (gris). El
     /// texto en tinta terciaria 11 pt, igual que el sello de origen del header.
     private var originLegend: some View {
+        // Apple-only (greenfield): los tiles solo pueden venir de Apple Salud o calcularse en el
+        // teléfono; el punto «band» quedó muerto tras la demolición de la banda (FER-1043).
         HStack(spacing: CenitMetrics.gap + 2) {
-            legendItem(origin: .band, label: "band")
             legendItem(origin: .apple, label: "Apple Health source")
             legendItem(origin: .computed, label: "computed on your phone")
         }
