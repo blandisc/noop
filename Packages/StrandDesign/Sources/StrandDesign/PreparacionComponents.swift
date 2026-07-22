@@ -107,6 +107,89 @@ public struct SelloConfianzaArco: View {
     }
 }
 
+/// Sparkline de tendencia en tinta para el héroe «Preparación»: polilínea muted + punto final.
+/// El punto final se pinta `theme.warning` cuando `lastIsOut` (fuera del cambio mínimo relevante);
+/// si no, tinta muted. Sin ejes, sin color decorativo: color solo en el dato.
+public struct TrendSparkline: View {
+    public let values: [Double]
+    public let lastIsOut: Bool
+    public let theme: InstrumentoTheme
+
+    public init(values: [Double], lastIsOut: Bool, theme: InstrumentoTheme) {
+        self.values = values
+        self.lastIsOut = lastIsOut
+        self.theme = theme
+    }
+
+    public var body: some View {
+        GeometryReader { geo in
+            sparkline(width: geo.size.width, height: 14)
+        }
+        .frame(height: 14)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func sparkline(width: CGFloat, height: CGFloat) -> some View {
+        if values.isEmpty {
+            EmptyView()
+        } else if values.count == 1 {
+            // Single point: end marker only, no polyline.
+            let color: Color = lastIsOut
+                ? theme.warning
+                : theme.ink.opacity(StrandOpacity.muted)
+            Circle()
+                .fill(color)
+                .frame(width: 3.5, height: 3.5)
+                .position(x: width / 2, y: height / 2)
+                .frame(width: width, height: height)
+        } else {
+            let minV = values.min() ?? 0
+            let maxV = values.max() ?? 1
+            let range = maxV - minV
+            let count = values.count
+            let lastColor: Color = lastIsOut
+                ? theme.warning
+                : theme.ink.opacity(StrandOpacity.muted)
+
+            ZStack(alignment: .topLeading) {
+                Path { path in
+                    for (i, v) in values.enumerated() {
+                        let t: CGFloat = range < 1e-9
+                            ? 0.5
+                            : CGFloat((v - minV) / range)
+                        // Invert: higher value → higher on screen → smaller y.
+                        let y = (1 - t) * height
+                        let x = CGFloat(i) / CGFloat(count - 1) * width
+                        let p = CGPoint(x: x, y: y)
+                        if i == 0 {
+                            path.move(to: p)
+                        } else {
+                            path.addLine(to: p)
+                        }
+                    }
+                }
+                .stroke(
+                    theme.ink.opacity(StrandOpacity.muted),
+                    style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                )
+
+                let lastT: CGFloat = range < 1e-9
+                    ? 0.5
+                    : CGFloat(((values.last ?? 0) - minV) / range)
+                Circle()
+                    .fill(lastColor)
+                    .frame(width: 3.5, height: 3.5)
+                    .position(
+                        x: CGFloat(count - 1) / CGFloat(count - 1) * width,
+                        y: (1 - lastT) * height
+                    )
+            }
+            .frame(width: width, height: height)
+        }
+    }
+}
+
 #Preview("Señales en banda") {
     let t = InstrumentoTheme.base
     return HStack(spacing: 8) {
@@ -133,6 +216,20 @@ public struct SelloConfianzaArco: View {
         SelloConfianzaArco(nights: 14, a11y: Text(verbatim: "Confianza: 14 de 21 noches"), theme: t)
         SelloConfianzaArco(nights: 21, a11y: Text(verbatim: "Confianza: 21 de 21 noches"), theme: t)
         SelloConfianzaArco(nights: 5, a11y: Text(verbatim: "Confianza: 5 de 21 noches"), theme: t)
+    }
+    .padding(24)
+    .background(InstrumentoTheme.base.paper)
+}
+
+#Preview("TrendSparkline") {
+    let t = InstrumentoTheme.base
+    return VStack(alignment: .leading, spacing: 12) {
+        TrendSparkline(values: [-0.2, 0.1, 0.3, 0.5, 0.6, 0.4, 0.7, 0.8, 0.6, 0.9],
+                       lastIsOut: true, theme: t)
+            .frame(height: 14)
+        TrendSparkline(values: [-0.2, 0.05, -0.1, 0.15, 0.0, -0.05, 0.1],
+                       lastIsOut: false, theme: t)
+            .frame(height: 14)
     }
     .padding(24)
     .background(InstrumentoTheme.base.paper)
