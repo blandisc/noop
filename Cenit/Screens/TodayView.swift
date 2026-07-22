@@ -1026,10 +1026,14 @@ struct TodayView: View {
 
 
     @ViewBuilder private var heroBlock: some View {
-        // FER-1029: Hoy tiene UNA sola cara — la de Apple (Sueño de anoche + la tarjeta de tendencia
-        // autonómica). El héroe del veredicto 0–100 (era banda) se retiró: en Apple-only `repo.today.recovery`
-        // es siempre nil, así que ese path era inalcanzable (solo lo encendían datos de banda dormidos).
-        appleTrendHero
+        // FER-1030: el héroe es «Preparación» — el veredicto categórico del día por consenso de ejes,
+        // sin número. Cae a `appleTrendHero` (el sueño medido) cuando no hay veredicto real («baja
+        // señal» / arranque en frío), como manda la decisión del dueño (nunca una pantalla vacía).
+        if let prep = repo.todayPreparedness, prep.verdict != .lowSignal {
+            preparacionHero(prep)
+        } else {
+            appleTrendHero
+        }
     }
 
     /// R4 (FER-1008): el héroe del path Apple-only — el SUEÑO es el número dominante (el 0–100 estilo-WHOOP
@@ -1070,6 +1074,125 @@ struct TodayView: View {
                 onTap: { showAutonomicDetail = true }
             )
             .padding(.top, CenitMetrics.space2)
+        }
+    }
+
+    // MARK: - «Preparación» hero (FER-1030)
+
+    private struct AxisNeedle: Identifiable {
+        let id: String
+        let state: Preparedness.AxisState
+        let glyph: MetricGlyph
+        let name: String
+        let position: Double
+    }
+
+    /// El héroe «Preparación»: la palabra-veredicto (único color) + porqué + arco de confianza +
+    /// las agujas-en-banda por eje. «cuadro de instrumentos en reposo» (FER-1030, diseño /ui).
+    @ViewBuilder private func preparacionHero(_ prep: Preparedness.Read) -> some View {
+        let nights = repo.todayAutonomicTrend?.nightsUsable ?? 0
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            HStack(alignment: .top) {
+                Text(verbatim: "PREPARACIÓN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Spacer()
+                SelloConfianzaArco(nights: nights,
+                                   a11y: Text(verbatim: "Confianza: \(nights) de 21 noches"),
+                                   theme: theme)
+            }
+            Text(verbatim: verdictWord(prep.verdict))
+                .font(InstrumentoType.groteskVerdictHero)
+                .foregroundStyle(verdictColor(prep.verdict))
+                .fixedSize(horizontal: false, vertical: true)
+            Text(verbatim: verdictWhy(prep.verdict))
+                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            HStack(spacing: CenitMetrics.space2) {
+                ForEach(needles(prep)) { n in
+                    SenalEnBanda(glyph: n.glyph,
+                                 name: Text(verbatim: n.name),
+                                 a11y: Text(verbatim: "\(n.name): \(axisStateWord(n.state))"),
+                                 position: n.position,
+                                 state: senalState(n.state),
+                                 tint: (prep.verdict != .full && n.state.isOut) ? verdictColor(prep.verdict) : nil,
+                                 theme: theme)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.top, CenitMetrics.space1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { showAutonomicDetail = true }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func needles(_ prep: Preparedness.Read) -> [AxisNeedle] {
+        func driver(_ ax: Preparedness.Axis) -> Preparedness.Driver? { prep.drivers.first { $0.axis == ax } }
+        var out: [AxisNeedle] = []
+        if let d = driver(.autonomic) {
+            out.append(AxisNeedle(id: "aut", state: d.state, glyph: .hrv, name: "AUTONÓMICO", position: positionFromZ(d.orientedZ)))
+        }
+        if let d = driver(.sleep) {
+            out.append(AxisNeedle(id: "sue", state: d.state, glyph: .sleep, name: "SUEÑO", position: positionFromState(d.state)))
+        }
+        if let d = driver(.thermal) {
+            out.append(AxisNeedle(id: "ter", state: d.state, glyph: .skinTemp, name: "TÉRMICO", position: positionFromState(d.state)))
+        }
+        return out
+    }
+
+    private func positionFromZ(_ z: Double?) -> Double {
+        guard let z else { return 0.5 }
+        return min(0.94, max(0.06, 0.5 + z / 4))   // + (mejor que tu base) → a la derecha
+    }
+    private func positionFromState(_ s: Preparedness.AxisState) -> Double {
+        switch s {
+        case .inRange: return 0.5
+        case .low: return 0.2
+        case .high: return 0.8
+        case .noData: return 0.5
+        }
+    }
+    private func senalState(_ s: Preparedness.AxisState) -> SenalEnBanda.State {
+        switch s {
+        case .inRange: return .inRange
+        case .low: return .low
+        case .high: return .high
+        case .noData: return .noData
+        }
+    }
+    private func axisStateWord(_ s: Preparedness.AxisState) -> String {
+        switch s {
+        case .inRange: return "en tu rango"
+        case .low: return "abajo de tu base"
+        case .high: return "arriba de tu base"
+        case .noData: return "sin datos"
+        }
+    }
+
+    /// Copy es-MX del veredicto (FER-1030). ⚠️ Pendiente de allow-list de claims + String Catalog
+    /// (gate /cso, ítem de Ola 2/UI): estas frases van al catálogo + allow-list antes del release.
+    private func verdictWord(_ v: Preparedness.Verdict) -> String {
+        switch v {
+        case .full: return "Dale con todo"
+        case .caution: return "Bien, con un detalle"
+        case .easy: return "Ándate leve"
+        case .lowSignal: return "Con poca señal"
+        }
+    }
+    private func verdictWhy(_ v: Preparedness.Verdict) -> String {
+        switch v {
+        case .full: return "Amaneciste en tu base."
+        case .caution: return "Vienes bien, con un detalle que cuidar."
+        case .easy: return "Tu cuerpo pide bajarle hoy."
+        case .lowSignal: return ""
+        }
+    }
+    private func verdictColor(_ v: Preparedness.Verdict) -> Color {
+        switch v {
+        case .full: return theme.verdict
+        case .caution: return theme.warning
+        case .easy: return theme.critical
+        case .lowSignal: return theme.inkTertiary
         }
     }
 

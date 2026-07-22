@@ -180,6 +180,22 @@ This surface is deliberately constrained. **Forbidden** in copy / metrics / arti
 
 ---
 
+## `Preparedness` + `SleepBands` — the morning «Preparación» verdict (Apple-only, FER-1030)
+
+Source: `Preparedness.swift`, `SleepBands.swift` (both `StrandAnalytics`, pure). Live in `TodayView` (the hero). Replaces the retired 0–100 recovery number with a **categorical verdict** — *«Dale con todo / Bien, con un detalle / Ándate leve / Con poca señal»* — by **consensus across independent axes**, not raw signals. Composed over the user's OWN Apple baselines via `Baselines.foldHistory`/`deviation`; it does **not** reuse `ReadinessEngine` (whose ACWR/monotony load machinery is band-era, out of scope for a passive Apple morning read).
+
+**Axes → one vote each.** The **autonomic** axis collapses HRV + resting-HR + respiration into a single oriented-z composite (weighted `wHRV 0.35 / wRHR 0.40 / wResp 0.25` — RHR weighted for Apple's better resting-HR fidelity vs its sparse SDNN), **never a min-of-three (which biases to ≈ −0.85) nor a flag count** — that is what stops one bad night (which drives all three together) from being counted three times (FER-1010). **Sleep** (`SleepBands`, `< 360` / `≥ 420` min) and **thermal** (`skinTempDevC`, ±0.8 °C, above the normal luteal shift) are separate votes; **load** is optional (only with a real Apple workout, from `strainEstimates`). Consensus: 0 out → full · 1 → caution · ≥ 2 or a falling RMSSD trend → easy · autonomic-axis unusable → «baja señal» (falls to measured sleep). Oriented OUT cut −1.0 (matches `ReadinessEngine.Flag.bad`; **not** `|z| ≤ 1`, rejected as noisy in `VitalBands`). Hysteresis of 2 consecutive days stops flip-flop.
+
+**HRV construct (three-baseline invariant, FER-629):** the autonomic axis z-scores Apple's **SDNN** (`avgHrv`) against the user's OWN Apple-SDNN norm via `metricCfg["sdnn"]` — its own key, machinery identical to the RMSSD config (SDNN is right-skewed / log-normal too, Task Force 1996), kept separate so a future RMSSD retune can never silently move it. This is **within-source SDNN-vs-SDNN**, *not* a cross-construct RMSSD conversion (the trap that killed the v1 design). The RMSSD trend (`AutonomicTrend`) is a **separate surface** — the sparkline and a "falling" nudge — never a verdict vote.
+
+**Honest limit (`/cso`):** `avgHrv` (all-day SDNN, `discreteAverage`) and `restingHr` (awake-sedentary) are **not** sleep-windowed, so the read is "your resting signals vs your own norm", not a nocturnal measurement — UI copy must never claim overnight precision. Signed by `/cso` (weights, cuts, hysteresis, SDNN-within-source). APPROXIMATE, no clinical claim. References: **Plews et al. 2013** (*Sports Med* 43(9):773); **Task Force 1996** (*Circulation* 93(5):1043); **Buchheit 2014** (*Front Physiol* 5:73).
+
+### Claims allow-list — «Preparación» (PR-blocking)
+
+**Allowed** verdict copy (es-MX, a training *suggestion*, never a diagnosis): *«Dale con todo» / «Bien, con un detalle» / «Ándate leve» / «Con poca señal»*, plus a per-axis "why" that names the out axis ("tu pulso viene alto", "dormiste corto"). **Forbidden**: any number, "como WHOOP", "estás enfermo / sobreentrenado", any clinical or overnight-precision claim. "Ándate leve" reads as a suggestion from *your own* signals, never an imperative or diagnosis.
+
+---
+
 ## `RecoveryScorer` — transparent 0–100 recovery composite
 
 Source: `RecoveryScorer.swift`. A **z-score + logistic** composite. It is explicitly **approximate** — HRV-dominant and baseline-normalized — and makes no claim to reproduce WHOOP's proprietary recovery model.
