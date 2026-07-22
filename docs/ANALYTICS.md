@@ -190,9 +190,13 @@ Source: `Preparedness.swift`, `SleepBands.swift` (both `StrandAnalytics`, pure).
 
 **Honest limit (`/cso`):** `avgHrv` (all-day SDNN, `discreteAverage`) and `restingHr` (awake-sedentary) are **not** sleep-windowed, so the read is "your resting signals vs your own norm", not a nocturnal measurement — UI copy must never claim overnight precision. Signed by `/cso` (weights, cuts, hysteresis, SDNN-within-source). APPROXIMATE, no clinical claim. References: **Plews et al. 2013** (*Sports Med* 43(9):773); **Task Force 1996** (*Circulation* 93(5):1043); **Buchheit 2014** (*Front Physiol* 5:73).
 
+**Daytime demotion (FER-1033):** `Read.isNightAnchored` is `false` when NO sleep session was recorded for the as-of day (the user likely did not sleep with the watch — and a night the watch missed demotes too, since without a session night anchoring cannot be claimed). The verdict still computes (the signals are day-aggregates anyway, see the honest limit above), but the UI **must demote the surface to the explicit «Lectura de día»**: no verdict word, no verdict color, an explicit "less precise" hedge. A watchless day is never presented as the full night-anchored read.
+
 ### Claims allow-list — «Preparación» (PR-blocking)
 
 **Allowed** verdict copy (es-MX, a training *suggestion*, never a diagnosis): *«Dale con todo» / «Bien, con un detalle» / «Ándate leve» / «Con poca señal»*, plus a per-axis "why" that names the out axis ("tu pulso viene alto", "dormiste corto"). **Forbidden**: any number, "como WHOOP", "estás enfermo / sobreentrenado", any clinical or overnight-precision claim. "Ándate leve" reads as a suggestion from *your own* signals, never an imperative or diagnosis.
+
+**Allowed** «Lectura de día» copy (FER-1033, the demoted watchless-night surface): *«LECTURA DE DÍA»* (overline) · *«Tus señales de día vienen en tu rango.»* · *«Tus señales de día vienen abajo de tu rango.»* · the mandatory hedge *«Anoche no hubo lectura de sueño; esto es menos preciso.»* **Forbidden** on this surface: the four verdict words, verdict color, any implication of a night reading.
 
 ---
 

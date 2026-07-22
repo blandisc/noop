@@ -97,6 +97,17 @@ public enum Preparedness {
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
             self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
         }
+
+        /// Whether today's read is anchored by a RECORDED night of sleep (FER-1033). `false` means
+        /// the body signals exist (Apple's day-aggregate SDNN / awake resting HR / respiration) but
+        /// no sleep session was recorded — the user likely did not sleep with the watch, so the UI
+        /// MUST demote the surface to the explicit "lectura de día" (less precise, no verdict word),
+        /// never present it as the full night-anchored Preparación. Derived from the sleep axis; a
+        /// night the watch missed (slept with it, Apple logged nothing) demotes too — without a
+        /// session we cannot claim night anchoring.
+        public var isNightAnchored: Bool {
+            drivers.first(where: { $0.axis == .sleep })?.state.hasData ?? false
+        }
     }
 
     // MARK: Inputs
