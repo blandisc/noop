@@ -104,6 +104,45 @@ final class PreparednessTests: XCTestCase {
         XCTAssertEqual(read(days, asOf: "2026-06-21", trend: falling, config: noHyst).verdict, .easy)
     }
 
+    // MARK: Frozen hysteresis sequence (FER-1040 — no-regression after the O(n)→ rewrite)
+
+    /// Freezes the DETERMINISTIC hysteresis output across a run of as-of days, so the single-pass
+    /// rewrite can never silently move the smoothing. Fixture: 20 settled good nights, then
+    /// bad·bad·good·good. With the default 2-day hysteresis the hero must read full → caution →
+    /// caution → full (a new verdict needs 2 consecutive days to take, in BOTH directions).
+    func testHysteresisVerdictSequence_frozen() {
+        var days = baseline()
+        days.append(dm("2026-06-21", hrv: 30, rhr: 75, resp: 20))   // bad 1
+        days.append(dm("2026-06-22", hrv: 30, rhr: 75, resp: 20))   // bad 2 → flips
+        days.append(dm("2026-06-23"))                               // good 1 (holds caution)
+        days.append(dm("2026-06-24"))                               // good 2 → flips back
+        XCTAssertEqual(read(days, asOf: "2026-06-21").verdict, .full)
+        XCTAssertEqual(read(days, asOf: "2026-06-22").verdict, .caution)
+        XCTAssertEqual(read(days, asOf: "2026-06-23").verdict, .caution)
+        XCTAssertEqual(read(days, asOf: "2026-06-24").verdict, .full)
+    }
+
+    // MARK: Confidence depth (FER-1040 — D2: the arc measures the verdict's OWN maturity)
+
+    /// `autonomicNights` is the depth of the SDNN baseline the verdict actually stands on (nights
+    /// strictly before as-of), NOT the nocturnal-RMSSD trend's `nightsUsable`. It rises with history
+    /// and pairs with `maturity`.
+    func testAutonomicNights_reflectsVerdictBaselineDepth() {
+        var days = baseline(20)             // 20 prior nights
+        days.append(dm("2026-06-21"))
+        let mature = read(days, asOf: "2026-06-21")
+        XCTAssertEqual(mature.autonomicNights, 20, "20 nights strictly before as-of feed the baseline")
+        XCTAssertEqual(mature.maturity, .trusted)
+
+        // Cold start: 3 priors (< seed) → the verdict stands on almost nothing, and says so.
+        var few = (1...3).map { dm(String(format: "2026-06-%02d", $0)) }
+        few.append(dm("2026-06-21"))
+        let cold = read(few, asOf: "2026-06-21")
+        XCTAssertEqual(cold.autonomicNights, 3)
+        XCTAssertEqual(cold.maturity, .calibrating)
+        XCTAssertEqual(cold.verdict, .lowSignal)
+    }
+
     // MARK: Signed knobs (/cso gate) — any change here must be an intentional re-gate
 
     /// Locks the values `/cso` signed for FER-1030 so a future retune can't drift silently.

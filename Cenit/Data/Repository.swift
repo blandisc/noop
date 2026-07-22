@@ -89,11 +89,13 @@ final class Repository: ObservableObject {
         /// R3 (FER-1008): the nocturnal autonomic trend (below/inBase/above vs the user's OWN settled
         /// baseline), computed ONLY from Apple's `apple-health-noop` RMSSD-per-night partition — never
         /// from the band, never folded into `days`/any baseline. nil in whoopOnly or before enough dense
-        /// nights. Surfaced via `todayAutonomicTrend`; the screen (R4) reads it.
+        /// nights. Composed off-main in `assembleDashboard` (FER-1040). Surfaced via
+        /// `todayAutonomicTrend`; the screen (R4) reads it.
         var autonomicTrend: AutonomicTrend.Read? = nil
         /// FER-1030: the morning «Preparación» verdict (4 states, no number) by axis-consensus over
-        /// the user's OWN Apple baselines. Derived (never persisted), computed alongside
-        /// `autonomicTrend` in `performRefresh`. Surfaced via `todayPreparedness`; the hero reads it.
+        /// the user's OWN Apple baselines. Derived (never persisted), composed alongside
+        /// `autonomicTrend` in the off-main `assembleDashboard` hop (FER-1040). Surfaced via
+        /// `todayPreparedness`; the hero reads it.
         var preparedness: Preparedness.Read? = nil
         var loaded = false
         /// True once a FULL refresh pass (whole stored history) has published. The launch first-paint
@@ -418,9 +420,21 @@ final class Repository: ObservableObject {
         let need = snap.sleepNeed
         let debt = snap.sleepDebt
 
+        // R3 (FER-1008): the nocturnal autonomic trend rides ONLY on Apple's `apple-health-noop`
+        // RMSSD-per-night partition. Read here (needs the store) but COMPOSED off-main inside
+        // `assembleDashboard` — the DB read is I/O on the store's executor, cheap on this actor; the
+        // CPU-bound trend + verdict math is what must not run here.
+        let nightRows = (try? await store.metricSeries(deviceId: Self.appleComputedDeviceId,
+                                                       key: "apple_rmssd_night", from: fromDay, to: toDay)) ?? []
+        let asOf = Self.localDayKey(now)
+        let recentCutoff = Self.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now)
+
         // The O(n) merge/fusion work over every row read runs OFF the main actor (`assembleDashboard`
         // is nonisolated) — on a years-deep DB the full pass builds the dashboard without stealing
-        // frames from the UI the first-paint pass already put up.
+        // frames from the UI the first-paint pass already put up. FER-1040: the autonomic trend AND
+        // the «Preparación» verdict (an O(n) hysteresis pass over the whole history) are composed in
+        // this SAME off-main hop — they used to run back on the main actor after the publish guard,
+        // where the verdict's per-day re-fold was an O(n²) main-thread hang on a multi-year import.
         let assembled = await Self.assembleDashboard(RefreshInputs(
             importedRaw: importedRaw, computedRaw: computedRaw, appleRaw: appleRaw,
             imported: imported, computed: computed, apple: apple,
@@ -429,7 +443,8 @@ final class Repository: ObservableObject {
             appleHrRaw: appleHrRaw,
             appleAggRaw: appleAggRaw, stepsEstRaw: stepsEstRaw,
             perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch,
-            strainHRmax: strainHRmax, strainSex: strainSex))
+            strainHRmax: strainHRmax, strainSex: strainSex,
+            nightRows: nightRows.map { (day: $0.day, rmssdMs: $0.value) }, asOf: asOf, recentCutoff: recentCutoff))
 
         // Back on the main actor: publish only if this is still the newest refresh, and never let a
         // first-paint pass overwrite a fully loaded dashboard.
@@ -439,20 +454,6 @@ final class Repository: ObservableObject {
         next.loaded = true
         next.fullyLoaded = full
         next.seq = dashboard.seq + 1
-        // R3 (FER-1008): the nocturnal autonomic trend rides ONLY on Apple's `apple-health-noop`
-        // RMSSD-per-night partition — computed here (needs `now` + the store) and injected into the
-        // freshly-assembled dashboard.
-        let nightRows = (try? await store.metricSeries(deviceId: Self.appleComputedDeviceId,
-                                                       key: "apple_rmssd_night", from: fromDay, to: toDay)) ?? []
-        let asOf = Self.localDayKey(now)
-        let recentCutoff = Self.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now)
-        next.autonomicTrend = Self.autonomicTrend(nights: nightRows.map { (day: $0.day, rmssdMs: $0.value) },
-                                                  asOf: asOf, recentCutoff: recentCutoff)
-        // FER-1030: the morning «Preparación» verdict, composed off-main over the freshly-assembled
-        // Apple days + this RMSSD trend (nudge only) + Apple workout strain (which lives in
-        // `strainEstimates`, never in `days`). Pure/derived — no store, no persistence.
-        next.preparedness = Preparedness.evaluate(.init(days: next.days, strainByDay: next.strainEstimates,
-                                                        trend: next.autonomicTrend, asOf: asOf))
         // One assignment → one objectWillChange for the whole refresh (was four).
         self.dashboard = next
         // FER-1024: record the local day this published dashboard belongs to, so a later foreground
@@ -483,6 +484,12 @@ final class Repository: ObservableObject {
         /// FER-883: effective HRmax + sex for the estimated strain, threaded from the Repository props.
         var strainHRmax: Double? = nil
         var strainSex: String = "male"
+        /// FER-1040: the `apple_rmssd_night` rows (read on the caller's side — the store is not
+        /// reachable from the off-main hop) plus the local day keys the trend + «Preparación»
+        /// verdict are composed against.
+        var nightRows: [(day: String, rmssdMs: Double)] = []
+        var asOf: String = ""
+        var recentCutoff: String = ""
     }
 
     /// Pure assembly of the dashboard from rows already read — the EXACT merge pipeline `refresh()`
@@ -545,6 +552,15 @@ final class Repository: ObservableObject {
         for p in inputs.stepsEstRaw { stepsEstByDay[p.day] = p.value }
         let fusion = Self.fusionByDay(imported: inputs.imported, computed: inputs.computed, apple: inputs.apple,
                                       appleAgg: inputs.appleAggRaw, stepsEst: stepsEstByDay)
+        // R3 (FER-1008) + FER-1030/1040: the nocturnal autonomic trend (Apple RMSSD-per-night only)
+        // and the «Preparación» verdict, composed HERE — off the main actor — over the freshly-merged
+        // Apple days + Apple workout strain (`strainEstimates`, never in `days`). Pure/derived — no
+        // store, no persistence. The verdict's hysteresis is an O(n) pass (FER-1040), but on a
+        // years-deep import even O(n) work has no business on the main thread.
+        let autonomicTrend = Self.autonomicTrend(nights: inputs.nightRows,
+                                                 asOf: inputs.asOf, recentCutoff: inputs.recentCutoff)
+        let preparedness = Preparedness.evaluate(.init(days: merged.days, strainByDay: strainEstimates,
+                                                       trend: autonomicTrend, asOf: inputs.asOf))
         return DashboardData(
             days: merged.days,
             displayDays: merged.displayDays,
@@ -556,7 +572,9 @@ final class Repository: ObservableObject {
             storedAppleOnlyDays: storedAppleOnly,
             storedSleepsCount: storedSleeps,
             strainEstimates: strainEstimates,
-            fusion: fusion
+            fusion: fusion,
+            autonomicTrend: autonomicTrend,
+            preparedness: preparedness
         )
     }
 

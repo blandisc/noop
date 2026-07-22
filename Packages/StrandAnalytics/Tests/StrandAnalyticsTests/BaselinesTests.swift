@@ -200,6 +200,31 @@ final class BaselinesTests: XCTestCase {
         XCTAssertTrue(cut.logDomain)
     }
 
+    // MARK: - Prefix states (FER-1040)
+
+    /// `prefixStates(v)[i]` must be bit-identical to `foldHistory(Array(v[0..<i]))` for EVERY prefix.
+    /// This is the equivalence that lets `Preparedness` replace its O(n²) per-day re-fold with a
+    /// single O(n) pass without moving a single verdict. Covers real values, `nil` gaps, out-of-range
+    /// spikes and each shipped signal config (incl. the log-domain HRV/SDNN machinery).
+    func testPrefixStatesEqualsFoldHistoryOnEveryPrefix() {
+        let seqs: [[Double?]] = [
+            [],
+            [50],
+            [50, nil, 52, 999_999, 48, nil, nil, 51, 53, 47, 55, 49, 50, 52, 48, 46, 54, 51, 50, 49],
+            Array(repeating: 50.0, count: 40),
+        ]
+        for cfg in [Baselines.hrvCfg, Baselines.restingHRCfg, Baselines.respCfg] {
+            for v in seqs {
+                let prefixes = Baselines.prefixStates(v, cfg: cfg)
+                XCTAssertEqual(prefixes.count, v.count)
+                for i in v.indices {
+                    XCTAssertEqual(prefixes[i], Baselines.foldHistory(Array(v[0..<i]), cfg: cfg),
+                                   "prefix \(i) diverged")
+                }
+            }
+        }
+    }
+
     // MARK: - Cold-start anti-anchoring (FER-673)
 
     /// Repro of the cold-start anchoring bug (documents that the log domain alone does

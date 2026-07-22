@@ -83,14 +83,19 @@ public enum Preparedness {
         /// Model maturity of the autonomic baseline, mapped to the shipped enum. `.calibrating`
         /// means the verdict is `lowSignal` (not enough of your own nights yet).
         public let maturity: BaselineStatus
+        /// FER-1040: nights of the user's OWN autonomic (Apple SDNN) baseline the verdict actually
+        /// stands on — the honest confidence *depth*, surfaced by the arc. This is the maturity of the
+        /// SAME baseline as `maturity`, NOT the nocturnal-RMSSD `AutonomicTrend.nightsUsable` (a
+        /// different construct on a different partition); the two must not be confused on the UI.
+        public let autonomicNights: Int
         /// The RMSSD trend direction (from `AutonomicTrend`), for the sparkline + the "falling"
         /// nudge. Independent of the verdict's body-signal axes.
         public let trend: AutonomicTrend.Direction?
         public init(verdict: Verdict, drivers: [Driver], signalsPresent: Int, signalsTotal: Int,
-                    maturity: BaselineStatus, trend: AutonomicTrend.Direction?) {
+                    maturity: BaselineStatus, autonomicNights: Int, trend: AutonomicTrend.Direction?) {
             self.verdict = verdict; self.drivers = drivers
             self.signalsPresent = signalsPresent; self.signalsTotal = signalsTotal
-            self.maturity = maturity; self.trend = trend
+            self.maturity = maturity; self.autonomicNights = autonomicNights; self.trend = trend
         }
     }
 
@@ -146,42 +151,30 @@ public enum Preparedness {
             .sorted { $0.day < $1.day }
         guard let today = ordered.last, today.day == input.asOf else {
             return Read(verdict: .lowSignal, drivers: [], signalsPresent: 0, signalsTotal: 3,
-                        maturity: .calibrating, trend: input.trend?.direction)
+                        maturity: .calibrating, autonomicNights: 0, trend: input.trend?.direction)
         }
-        let priors = Array(ordered.dropLast())   // history strictly before asOf
 
-        // --- Body-signal oriented z's (raw days; greenfield = one source, no masking) ---
-        let hrvZ = orientedZ(priors: priors, today: today,
-                             value: { $0.avgHrv }, cfgKey: config.sdnnCfgKey, betterWhenHigher: true)
-        let rhrZ = orientedZ(priors: priors, today: today,
-                             value: { $0.restingHr.map(Double.init) }, cfgKey: "resting_hr", betterWhenHigher: false)
-        let respZ = orientedZ(priors: priors, today: today,
-                              value: { $0.respRateBpm }, cfgKey: "resp", betterWhenHigher: false)
+        // --- ONE forward pass per body signal (FER-1040) ---
+        // `priorStates.<sig>[i]` is the baseline built from `ordered[0..<i]` — exactly the "priors"
+        // baseline day `i` must be deviated against. This replaces the old O(n²) machinery, where
+        // every per-day raw verdict re-filtered + re-sorted the whole `days` array and re-folded the
+        // full history from scratch (`hysteresed` × `axisStates`). `prefixStates` reuses the SAME
+        // `Baselines.update` reduce, so every state — and therefore every verdict — is bit-identical.
+        let priorStates = bodySignalPriorStates(ordered, config: config)
+        let lastIdx = ordered.count - 1
+
+        // --- today's oriented z's (from the last priors state) ---
+        let hrvZ  = orientedZ(prior: priorStates.hrv?[lastIdx],  value: today.avgHrv,                    betterWhenHigher: true)
+        let rhrZ  = orientedZ(prior: priorStates.rhr?[lastIdx],  value: today.restingHr.map(Double.init), betterWhenHigher: false)
+        let respZ = orientedZ(prior: priorStates.resp?[lastIdx], value: today.respRateBpm,               betterWhenHigher: false)
 
         let signalsPresent = [hrvZ, rhrZ, respZ].compactMap { $0 }.count
 
         // --- Axis: autonomic (weighted composite of the present oriented z's) ---
         let autonomic = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR),
                                       resp: (respZ, config.wResp), cfg: config)
-
-        // --- Axis: sleep ---
-        let sleepAxis: Driver
-        if let mins = today.totalSleepMin {
-            let band = SleepBands.band(mins)
-            sleepAxis = Driver(axis: .sleep, state: band == .short ? .low : .inRange, orientedZ: nil)
-        } else {
-            sleepAxis = Driver(axis: .sleep, state: .noData, orientedZ: nil)
-        }
-
-        // --- Axis: thermal (skinTempDevC is already a deviation from Apple's own baseline) ---
-        let thermalAxis: Driver
-        if let dev = today.skinTempDevC {
-            let state: AxisState = dev >= config.thermalOutC ? .high : (dev <= -config.thermalOutC ? .low : .inRange)
-            thermalAxis = Driver(axis: .thermal, state: state, orientedZ: nil)
-        } else {
-            thermalAxis = Driver(axis: .thermal, state: .noData, orientedZ: nil)
-        }
-
+        let sleepAxis = sleepDriver(today)
+        let thermalAxis = thermalDriver(today, config: config)
         // --- Axis: load (optional — present ONLY with a real workout; its OUT logic is deferred to
         // `/cso`, so today it contributes coverage/context but never flips the verdict). ---
         let loadAxis: Driver = input.strainByDay[today.day] != nil
@@ -190,37 +183,66 @@ public enum Preparedness {
 
         let drivers = [autonomic, sleepAxis, thermalAxis, loadAxis]
 
+        // Maturity + confidence depth come from the SAME SDNN priors baseline the verdict stands on
+        // (`prefixStates` last element == fold over the days strictly before asOf).
+        let autoBaseline = priorStates.hrv?[lastIdx]
+        let maturity = autoBaseline?.status ?? .calibrating
+        let autonomicNights = autoBaseline?.nValid ?? 0
+
         // --- Cold start / low signal: the autonomic core must have a usable read. ---
         if autonomic.state == .noData {
             return Read(verdict: .lowSignal, drivers: drivers, signalsPresent: signalsPresent,
-                        signalsTotal: 3, maturity: autonomicMaturity(priors: priors, cfgKey: config.sdnnCfgKey),
+                        signalsTotal: 3, maturity: maturity, autonomicNights: autonomicNights,
                         trend: input.trend?.direction)
         }
 
         // --- Consensus + hysteresis over RAW body verdicts across history (deterministic, no persistence) ---
-        let stable = hysteresed(ordered: ordered, input: input, config: config)
+        let stable = hysteresed(ordered: ordered, priorStates: priorStates, config: config)
         // Trend nudge (post-hysteresis): a sustained falling RMSSD trend pushes a borderline day
         // (`caution`) to `easy`. It never overrides a clean `full`. `/cso` may widen this.
         let final: Verdict = (stable == .caution && input.trend?.direction == .below) ? .easy : stable
 
         return Read(verdict: final, drivers: drivers, signalsPresent: signalsPresent, signalsTotal: 3,
-                    maturity: autonomicMaturity(priors: priors, cfgKey: config.sdnnCfgKey),
-                    trend: input.trend?.direction)
+                    maturity: maturity, autonomicNights: autonomicNights, trend: input.trend?.direction)
     }
 
     // MARK: - Internals
 
-    /// Oriented z for one body signal: builds the baseline from `priors`, deviates today's value,
-    /// and orients it so + = better. Returns `(state, orientedZ)`; state is nil (noData) when the
-    /// baseline isn't usable or tonight's value is missing.
-    private static func orientedZ(priors: [DailyMetric], today: DailyMetric,
-                                  value: (DailyMetric) -> Double?, cfgKey: String,
-                                  betterWhenHigher: Bool) -> Double? {
-        guard let cfg = Baselines.metricCfg[cfgKey], let todayVal = value(today) else { return nil }
-        let state = Baselines.foldHistory(priors.map { (day: $0.day, value: value($0)) }, epoch: nil, cfg: cfg)
-        guard state.usable else { return nil }   // < seed nights → noData (cold start)
-        let dev = Baselines.deviation(todayVal, state: state)
-        return betterWhenHigher ? dev.z : -dev.z   // + = better than baseline
+    /// Per-day priors baselines for the three body signals, each in ONE forward pass. `nil` for a
+    /// signal whose baseline config is missing (never, for the shipped keys). Element `i` of each is
+    /// the baseline over `ordered[0..<i]` — what `ordered[i]` deviates against.
+    private struct PriorStates {
+        let hrv: [BaselineState]?
+        let rhr: [BaselineState]?
+        let resp: [BaselineState]?
+    }
+    private static func bodySignalPriorStates(_ ordered: [DailyMetric], config: Config) -> PriorStates {
+        PriorStates(
+            hrv:  Baselines.metricCfg[config.sdnnCfgKey].map { Baselines.prefixStates(ordered.map { $0.avgHrv }, cfg: $0) },
+            rhr:  Baselines.metricCfg["resting_hr"].map { Baselines.prefixStates(ordered.map { $0.restingHr.map(Double.init) }, cfg: $0) },
+            resp: Baselines.metricCfg["resp"].map { Baselines.prefixStates(ordered.map { $0.respRateBpm }, cfg: $0) }
+        )
+    }
+
+    /// Oriented z for one body signal against a pre-built priors baseline: + = better than baseline.
+    /// nil (noData) when the baseline isn't usable (< seed nights) or tonight's value is missing.
+    private static func orientedZ(prior: BaselineState?, value: Double?, betterWhenHigher: Bool) -> Double? {
+        guard let prior, prior.usable, let v = value else { return nil }
+        let dev = Baselines.deviation(v, state: prior)
+        return betterWhenHigher ? dev.z : -dev.z
+    }
+
+    /// Sleep axis for a given day — `.low` iff the night is short, `.noData` when unmeasured.
+    private static func sleepDriver(_ day: DailyMetric) -> Driver {
+        guard let mins = day.totalSleepMin else { return Driver(axis: .sleep, state: .noData, orientedZ: nil) }
+        return Driver(axis: .sleep, state: SleepBands.band(mins) == .short ? .low : .inRange, orientedZ: nil)
+    }
+
+    /// Thermal axis for a given day — `skinTempDevC` is already a deviation from Apple's own baseline.
+    private static func thermalDriver(_ day: DailyMetric, config: Config) -> Driver {
+        guard let dev = day.skinTempDevC else { return Driver(axis: .thermal, state: .noData, orientedZ: nil) }
+        let state: AxisState = dev >= config.thermalOutC ? .high : (dev <= -config.thermalOutC ? .low : .inRange)
+        return Driver(axis: .thermal, state: state, orientedZ: nil)
     }
 
     /// Collapse HRV/RHR/resp into one autonomic vote via a weighted average of the PRESENT oriented
@@ -241,46 +263,31 @@ public enum Preparedness {
         return Driver(axis: .autonomic, state: out ? .low : .inRange, orientedZ: composite)
     }
 
-    private static func autonomicMaturity(priors: [DailyMetric], cfgKey: String) -> BaselineStatus {
-        guard let cfg = Baselines.metricCfg[cfgKey] else { return .calibrating }
-        return Baselines.foldHistory(priors.map { (day: $0.day, value: $0.avgHrv) }, epoch: nil, cfg: cfg).status
-    }
-
-    /// The RAW (pre-hysteresis, pre-trend) body verdict for a single as-of day. Trend is applied
-    /// once, after hysteresis, in `evaluate` — never folded into the per-day raw (that would make
-    /// the historical raws depend on today's trend).
-    private static func rawVerdict(ordered: [DailyMetric], strainByDay: [String: Double],
-                                   asOf: String, config: Config) -> Verdict {
-        let sub = Input(days: ordered, strainByDay: strainByDay, trend: nil, asOf: asOf)
-        let (a, s, t) = axisStates(sub, config: config)
+    /// The RAW (pre-hysteresis, pre-trend) body verdict for one day `i`, from its pre-built priors
+    /// baselines. Trend is applied once, after hysteresis, in `evaluate` — never folded into the
+    /// per-day raw (that would make the historical raws depend on today's trend). O(1) per day.
+    private static func rawVerdictAt(_ i: Int, ordered: [DailyMetric],
+                                     priorStates: PriorStates, config: Config) -> Verdict {
+        let day = ordered[i]
+        let hrvZ  = orientedZ(prior: priorStates.hrv?[i],  value: day.avgHrv,                    betterWhenHigher: true)
+        let rhrZ  = orientedZ(prior: priorStates.rhr?[i],  value: day.restingHr.map(Double.init), betterWhenHigher: false)
+        let respZ = orientedZ(prior: priorStates.resp?[i], value: day.respRateBpm,               betterWhenHigher: false)
+        let a = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR), resp: (respZ, config.wResp), cfg: config).state
         guard a.hasData else { return .lowSignal }
+        let s = sleepDriver(day).state
+        let t = thermalDriver(day, config: config).state
         let out = [a, s, t].filter { $0.isOut }.count
         if out == 0 { return .full }
         if out == 1 { return .caution }
         return .easy
     }
 
-    /// Compute the three voting axis states for a given as-of (no hysteresis, no load — load never
-    /// votes today).
-    private static func axisStates(_ input: Input, config: Config) -> (AxisState, AxisState, AxisState) {
-        let ordered = input.days.filter { $0.day <= input.asOf }.sorted { $0.day < $1.day }
-        guard let today = ordered.last, today.day == input.asOf else { return (.noData, .noData, .noData) }
-        let priors = Array(ordered.dropLast())
-        let hrvZ = orientedZ(priors: priors, today: today, value: { $0.avgHrv }, cfgKey: config.sdnnCfgKey, betterWhenHigher: true)
-        let rhrZ = orientedZ(priors: priors, today: today, value: { $0.restingHr.map(Double.init) }, cfgKey: "resting_hr", betterWhenHigher: false)
-        let respZ = orientedZ(priors: priors, today: today, value: { $0.respRateBpm }, cfgKey: "resp", betterWhenHigher: false)
-        let a = autonomicAxis(hrv: (hrvZ, config.wHRV), rhr: (rhrZ, config.wRHR), resp: (respZ, config.wResp), cfg: config).state
-        let s: AxisState = today.totalSleepMin.map { SleepBands.band($0) == .short ? .low : .inRange } ?? .noData
-        let t: AxisState = today.skinTempDevC.map { $0 >= config.thermalOutC ? .high : ($0 <= -config.thermalOutC ? .low : .inRange) } ?? .noData
-        return (a, s, t)
-    }
-
     /// Forward pass applying hysteresis over the RAW verdicts of every day up to `asOf`. A new raw
     /// verdict must persist `hysteresisDays` consecutive days before it replaces the stable one.
-    /// Operates on RAW (not smoothed) verdicts, so there is no unbounded recursion.
-    private static func hysteresed(ordered: [DailyMetric], input: Input, config: Config) -> Verdict {
-        let raws = ordered.map { rawVerdict(ordered: ordered, strainByDay: input.strainByDay,
-                                            asOf: $0.day, config: config) }
+    /// Operates on RAW (not smoothed) verdicts, so there is no unbounded recursion. O(n): each raw
+    /// is O(1) from the single-pass `priorStates` (was O(n²) re-folding the full history per day).
+    private static func hysteresed(ordered: [DailyMetric], priorStates: PriorStates, config: Config) -> Verdict {
+        let raws = ordered.indices.map { rawVerdictAt($0, ordered: ordered, priorStates: priorStates, config: config) }
         guard var stable = raws.first else { return .lowSignal }
         // A new raw verdict must persist `hysteresisDays` CONSECUTIVE days before it replaces the
         // stable one — so an isolated borderline day never flips the hero.
