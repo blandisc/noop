@@ -910,14 +910,14 @@ struct TodayView: View {
     @ViewBuilder private func lecturaDeDiaHero(_ prep: Preparedness.Read) -> some View {
         let autonomic = prep.drivers.first { $0.axis == .autonomic }?.state
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            Text(verbatim: "LECTURA DE DÍA").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(verbatim: autonomic == .low
-                 ? "Tus señales de día vienen abajo de tu rango."
-                 : "Tus señales de día vienen en tu rango.")
+            Text("DAYTIME READ").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(autonomic == .low
+                 ? "Your daytime signals are below your range."
+                 : "Your daytime signals are in your range.")
                 .font(StrandFont.title3)                       // más chico que el veredicto: es una lectura menor
                 .foregroundStyle(theme.ink)                    // tinta, NUNCA color de veredicto
                 .fixedSize(horizontal: false, vertical: true)
-            Text(verbatim: "Anoche no hubo lectura de sueño; esto es menos preciso.")
+            Text("No sleep reading last night; this is less precise.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -975,7 +975,7 @@ struct TodayView: View {
         let nights = min(prep.autonomicNights, 21)
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(alignment: .top) {
-                Text(verbatim: "PREPARACIÓN").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("READINESS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 SelloConfianzaArco(nights: nights,
                                    a11y: Text(verbatim: nights >= 21
@@ -983,11 +983,11 @@ struct TodayView: View {
                                               : "Confianza: \(nights) de 21 noches"),
                                    theme: theme)
             }
-            Text(verbatim: verdictWord(prep.verdict))
+            Text(verdictWord(prep.verdict))
                 .font(InstrumentoType.groteskVerdictHero)
                 .foregroundStyle(verdictColor(prep.verdict))
                 .fixedSize(horizontal: false, vertical: true)
-            Text(verbatim: verdictWhy(prep.verdict))
+            Text(verdictWhy(prep.verdict))
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             HStack(spacing: CenitMetrics.space2) {
                 ForEach(needles(prep)) { n in
@@ -1008,7 +1008,7 @@ struct TodayView: View {
                                    lastIsOut: abs(trend.spark.last ?? 0) > AutonomicTrend.swcK,
                                    theme: theme)
                         .frame(height: 14)
-                    Text(verbatim: "Cómo se recupera tu cuerpo de noche · sobre tu base")
+                    Text("How your body recovers at night · over your baseline")
                         .font(StrandFont.footnote)
                         .foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1076,21 +1076,20 @@ struct TodayView: View {
         }
     }
 
-    /// Copy es-MX del veredicto (FER-1030). ⚠️ Pendiente de allow-list de claims + String Catalog
-    /// (gate /cso, ítem de Ola 2/UI): estas frases van al catálogo + allow-list antes del release.
-    private func verdictWord(_ v: Preparedness.Verdict) -> String {
+    /// Copy del veredicto (FER-1030 / FER-1042): llaves fuente en inglés → String Catalog es-MX.
+    private func verdictWord(_ v: Preparedness.Verdict) -> LocalizedStringKey {
         switch v {
-        case .full: return "Dale con todo"
-        case .caution: return "Bien, con un detalle"
-        case .easy: return "Ándate leve"
-        case .lowSignal: return "Con poca señal"
+        case .full: return "Go all in"
+        case .caution: return "Good, one thing to watch"
+        case .easy: return "Take it easy"
+        case .lowSignal: return "Low signal"
         }
     }
-    private func verdictWhy(_ v: Preparedness.Verdict) -> String {
+    private func verdictWhy(_ v: Preparedness.Verdict) -> LocalizedStringKey {
         switch v {
-        case .full: return "Amaneciste en tu base."
-        case .caution: return "Vienes bien, con un detalle que cuidar."
-        case .easy: return "Tu cuerpo pide bajarle hoy."
+        case .full: return "You woke up on your baseline."
+        case .caution: return "You're doing well, with one thing to watch."
+        case .easy: return "Your body's asking you to ease off today."
         case .lowSignal: return ""
         }
     }

@@ -13404,6 +13404,23 @@
         }
       }
     },
+    "DAYTIME READ" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DAYTIME READ"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LECTURA DE DÍA"
+          }
+        }
+      }
+    },
     "No reading yet today" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18489,6 +18506,23 @@
         }
       }
     },
+    "Go all in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go all in"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dale con todo"
+          }
+        }
+      }
+    },
     "Goal %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18546,6 +18580,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bueno"
+          }
+        }
+      }
+    },
+    "Good, one thing to watch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good, one thing to watch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bien, con un detalle"
           }
         }
       }
@@ -20008,6 +20059,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cómo suele verse tu Carga la mañana después de cada deporte, vs tus días de descanso. Observado en tu historial, no una causa."
+          }
+        }
+      }
+    },
+    "How your body recovers at night · over your baseline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How your body recovers at night · over your baseline"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cómo se recupera tu cuerpo de noche · sobre tu base"
           }
         }
       }
@@ -23532,6 +23600,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recuperación baja"
+          }
+        }
+      }
+    },
+    "Low signal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low signal"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con poca señal"
           }
         }
       }
@@ -27375,6 +27460,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin datos de sueño anoche"
+          }
+        }
+      }
+    },
+    "No sleep reading last night; this is less precise." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sleep reading last night; this is less precise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anoche no hubo lectura de sueño; esto es menos preciso."
           }
         }
       }
@@ -31554,6 +31656,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "R-R"
+          }
+        }
+      }
+    },
+    "READINESS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "READINESS"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PREPARACIÓN"
           }
         }
       }
@@ -39038,6 +39157,23 @@
         }
       }
     },
+    "Take it easy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take it easy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ándate leve"
+          }
+        }
+      }
+    },
     "tap a day to edit it" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -45936,6 +46072,23 @@
         }
       }
     },
+    "You woke up on your baseline." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You woke up on your baseline."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amaneciste en tu base."
+          }
+        }
+      }
+    },
     "You woke up well recovered. What needs care today is your training load, not your body." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -46027,6 +46180,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estás conectado."
+          }
+        }
+      }
+    },
+    "You're doing well, with one thing to watch." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're doing well, with one thing to watch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vienes bien, con un detalle que cuidar."
           }
         }
       }
@@ -46492,6 +46662,23 @@
         }
       }
     },
+    "Your body's asking you to ease off today." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your body's asking you to ease off today."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuerpo pide bajarle hoy."
+          }
+        }
+      }
+    },
     "your breathing" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -46674,6 +46861,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El veredicto del día sale de cómo dormiste. Todavía no hay datos de anoche. Duerme con tu Apple Watch puesto y aparece aquí en la mañana."
+          }
+        }
+      }
+    },
+    "Your daytime signals are below your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your daytime signals are below your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus señales de día vienen abajo de tu rango."
+          }
+        }
+      }
+    },
+    "Your daytime signals are in your range." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your daytime signals are in your range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus señales de día vienen en tu rango."
           }
         }
       }
