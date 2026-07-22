@@ -91,6 +91,10 @@ final class Repository: ObservableObject {
         /// from the band, never folded into `days`/any baseline. nil in whoopOnly or before enough dense
         /// nights. Surfaced via `todayAutonomicTrend`; the screen (R4) reads it.
         var autonomicTrend: AutonomicTrend.Read? = nil
+        /// FER-1030: the morning «Preparación» verdict (4 states, no number) by axis-consensus over
+        /// the user's OWN Apple baselines. Derived (never persisted), computed alongside
+        /// `autonomicTrend` in `performRefresh`. Surfaced via `todayPreparedness`; the hero reads it.
+        var preparedness: Preparedness.Read? = nil
         var loaded = false
         /// True once a FULL refresh pass (whole stored history) has published. The launch first-paint
         /// pass (~90 days) publishes `loaded == true` with this still false. RULE: anything that
@@ -162,6 +166,8 @@ final class Repository: ObservableObject {
     /// R3 (FER-1008): today's autonomic trend read (or nil while calibrating / in whoopOnly). Pure
     /// pass-through of the value `performRefresh` computed off the `apple-health-noop` nightly RMSSD.
     var todayAutonomicTrend: AutonomicTrend.Read? { dashboard.autonomicTrend }
+    /// FER-1030: today's «Preparación» verdict (nil until enough of the user's own nights). The hero reads this.
+    var todayPreparedness: Preparedness.Read? { dashboard.preparedness }
 
     /// Pure wrapper over the StrandAnalytics engine, kept `nonisolated static` so the refresh can call it
     /// off the main actor and so tests pin the Repository→engine seam without a store. `nights` are the
@@ -442,6 +448,11 @@ final class Repository: ObservableObject {
         let recentCutoff = Self.localDayKey(Calendar.current.date(byAdding: .day, value: -6, to: now) ?? now)
         next.autonomicTrend = Self.autonomicTrend(nights: nightRows.map { (day: $0.day, rmssdMs: $0.value) },
                                                   asOf: asOf, recentCutoff: recentCutoff)
+        // FER-1030: the morning «Preparación» verdict, composed off-main over the freshly-assembled
+        // Apple days + this RMSSD trend (nudge only) + Apple workout strain (which lives in
+        // `strainEstimates`, never in `days`). Pure/derived — no store, no persistence.
+        next.preparedness = Preparedness.evaluate(.init(days: next.days, strainByDay: next.strainEstimates,
+                                                        trend: next.autonomicTrend, asOf: asOf))
         // One assignment → one objectWillChange for the whole refresh (was four).
         self.dashboard = next
         // FER-1024: record the local day this published dashboard belongs to, so a later foreground
