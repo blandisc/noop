@@ -1,6 +1,8 @@
 import Foundation
 import CenitStore
 import StrandImport
+import StrandAnalytics
+import StrandModels
 
 /// Maps a parsed + aggregated Apple Health export into the on-device store under its own
 /// source id ("apple-health"), so it sits BESIDE Whoop for the per-source pages and cross-source
@@ -12,6 +14,8 @@ enum AppleHealthImport {
         url: URL,
         into store: CenitStore,
         deviceId: String,
+        maxHR: Double? = nil,
+        sex: String = "male",
         progress: AppleHealthImporter.ProgressHandler? = nil,
         isCancelled: (@Sendable () -> Bool)? = nil
     ) async throws -> ImportSummary {
@@ -35,14 +39,35 @@ enum AppleHealthImport {
         }
         try await store.upsertAppleDaily(appleRows, deviceId: deviceId)
 
-        // Recovery-relevant subset into dailyMetric (recovery/strain are nil — Apple doesn't compute them).
+        // CARGA VIVA: XML export has no per-workout HR, so classify only ever returns rest/missing
+        // here (never .load). A later HealthKitBridge.sync with real workout HR upgrades those days
+        // to .load via the same upsert key (deviceId, day).
+        // Day keys must match `d.day` (built with each record's own tzOffsetMin), not device TimeZone.current.
+        let workoutDays: Set<String> = Set(result.workouts.map {
+            AppleHealthAggregator.localDay($0.start, tzOffsetMin: $0.tzOffsetMin)
+        })
+        // Persist strain only for completed days — same gate as HealthKitBridge (see isCompletedDay).
+        let todayKey = DayKey.local(Date())
         let dm = daily.map { d in
-            DailyMetric(day: d.day,
+            let activity = AppleLoadEstimator.DayActivity(
+                workoutHR: [], steps: d.steps.map { Int($0) }, activeKcal: d.activeKcal,
+                hasWorkout: workoutDays.contains(d.day))
+            let dayLoad = AppleLoadEstimator.classify(activity, maxHR: maxHR,
+                restingHR: d.restingHr ?? StrainScorer.defaultRestingHR, sex: sex)
+            let strainValue: Double? = {
+                guard AppleLoadEstimator.isCompletedDay(d.day, today: todayKey) else { return nil }
+                switch dayLoad {
+                case .rest:        return 0
+                case .load(let s): return s
+                case .missing:     return nil
+                }
+            }()
+            return DailyMetric(day: d.day,
                         totalSleepMin: d.asleepMin, efficiency: nil,
                         deepMin: d.deepMin, remMin: d.remMin, lightMin: d.coreMin,
                         disturbances: nil,
                         restingHr: d.restingHr.map { Int($0.rounded()) },
-                        avgHrv: d.hrvSDNN, recovery: nil, strain: nil, exerciseCount: nil,
+                        avgHrv: d.hrvSDNN, recovery: nil, strain: strainValue, exerciseCount: nil,
                         spo2Pct: d.spo2Pct, skinTempDevC: nil, respRateBpm: d.respRate)
         }
         try await store.upsertDailyMetrics(dm, deviceId: deviceId)

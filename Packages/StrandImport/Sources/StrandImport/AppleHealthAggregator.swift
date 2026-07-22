@@ -378,7 +378,7 @@ public enum AppleHealthAggregator {
     /// shift the instant, floor-divide to a civil day number, convert to (y,m,d) with Hinnant's
     /// algorithm, and build the string by hand. Behaviour is identical to reading the UTC calendar
     /// fields of the shifted instant.
-    static func localDay(_ utc: Date, tzOffsetMin: Int) -> String {
+    public static func localDay(_ utc: Date, tzOffsetMin: Int) -> String {
         let shiftedSecs = utc.timeIntervalSince1970 + Double(tzOffsetMin) * 60.0
         let dayNumber = Int((shiftedSecs / 86_400.0).rounded(.down))   // whole days since 1970-01-01 UTC
         let c = CivilDate.civilFromDays(dayNumber)

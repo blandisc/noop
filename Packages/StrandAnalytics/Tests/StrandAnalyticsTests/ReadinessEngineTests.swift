@@ -377,4 +377,84 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertEqual(sorted.map(\.day), shuffled.map(\.day))
         for (a, b) in zip(sorted, shuffled) { XCTAssertEqual(a.ratio, b.ratio, accuracy: 1e-12) }
     }
+
+    // MARK: - Coupled EWMA + active-days piso (CARGA VIVA)
+
+    /// After real load, pure rest days must DECAY the acute leg — not freeze the ratio at 1.0.
+    /// 4 active days (clears minActiveDays) + 13 rest → coverage 17 ≥ 14; acute << chronic → rampingDown.
+    func testEwmaDecaysInRest() {
+        var days: [DailyMetric] = []
+        for i in 1...4 { days.append(d(i, hrv: nil, rhr: nil, strain: 10)) }
+        for i in 5...17 { days.append(d(i, hrv: nil, rhr: nil, strain: 0)) }
+        let r = ReadinessEngine.evaluate(days: days)
+        XCTAssertNotNil(r.acwr)
+        XCTAssertEqual(ReadinessEngine.loadBand(forACWR: r.acwr!), .rampingDown)
+    }
+
+    /// Once the only real active days age out of the trailing 28-calendar-day window, the piso
+    /// reasserts itself — no ACWR from pure zeros, even after the cold-start gate was once cleared.
+    func testActiveDaysAgingOutOfChronicWindowYieldsNil() {
+        // Use real calendar keys (not "2024-03-32") so DayKey.parseUTC can span into April.
+        func key(_ offset: Int) -> String {
+            let start = DayKey.parseUTC("2024-03-01")!
+            return DayKey.utc(DayKey.utcCalendar.date(byAdding: .day, value: offset, to: start)!)
+        }
+        func row(_ offset: Int, strain: Double?) -> DailyMetric {
+            DailyMetric(day: key(offset), totalSleepMin: nil, efficiency: nil,
+                        deepMin: nil, remMin: nil, lightMin: nil, disturbances: nil, restingHr: nil,
+                        avgHrv: nil, recovery: nil, strain: strain, exerciseCount: nil,
+                        spo2Pct: nil, skinTempDevC: nil, respRateBpm: nil)
+        }
+        var days: [DailyMetric] = []
+        // Offsets 0…3 = 4 active days; 4…31 = 28 rest days. At offset 31 the trailing-28 window
+        // is offsets 4…31 — none of the original active days remain.
+        for i in 0..<4 { days.append(row(i, strain: 10)) }
+        for i in 4...31 { days.append(row(i, strain: 0)) }
+        let r = ReadinessEngine.evaluate(days: days)
+        XCTAssertNil(r.acwr)
+    }
+
+    /// 14 pure-rest days clear coverage but fail the active-days piso → nil.
+    /// 14 days with exactly 4 real loads clear both gates → non-nil.
+    func testActiveDaysPisoAtMinChronic() {
+        var pureRest: [DailyMetric] = []
+        for i in 1...14 { pureRest.append(d(i, hrv: nil, rhr: nil, strain: 0)) }
+        XCTAssertNil(ReadinessEngine.evaluate(days: pureRest).acwr)
+
+        var withActive: [DailyMetric] = []
+        for i in 1...4 { withActive.append(d(i, hrv: nil, rhr: nil, strain: 10)) }
+        for i in 5...14 { withActive.append(d(i, hrv: nil, rhr: nil, strain: 0)) }
+        XCTAssertNotNil(ReadinessEngine.evaluate(days: withActive).acwr)
+    }
+
+    /// Inserting `.missing` (nil strain) calendar days must not move the EWMA vs the same known
+    /// sequence without gaps — missing holds, never folds.
+    func testMissingDaysHoldEwma() {
+        // Version A: 4 active + 10 rest, 14 consecutive calendar days.
+        var a: [DailyMetric] = []
+        for i in 1...4 { a.append(d(i, hrv: nil, rhr: nil, strain: 10)) }
+        for i in 5...14 { a.append(d(i, hrv: nil, rhr: nil, strain: 0)) }
+
+        // Version B: same 14 known values, but 3 nil-strain days inserted in the rest run
+        // (spans 17 calendar days; still 4 active, all inside the un-aged trailing-28 window).
+        var b: [DailyMetric] = []
+        for i in 1...4 { b.append(d(i, hrv: nil, rhr: nil, strain: 10)) }
+        b.append(d(5, hrv: nil, rhr: nil, strain: 0))
+        b.append(d(6, hrv: nil, rhr: nil, strain: nil))   // missing
+        b.append(d(7, hrv: nil, rhr: nil, strain: 0))
+        b.append(d(8, hrv: nil, rhr: nil, strain: nil))   // missing
+        b.append(d(9, hrv: nil, rhr: nil, strain: 0))
+        b.append(d(10, hrv: nil, rhr: nil, strain: nil))  // missing
+        for i in 11...17 {
+            // remaining rest days to match the 10 rest of A (used 3 so far → 7 more)
+            b.append(d(i, hrv: nil, rhr: nil, strain: 0))
+        }
+        // A has 10 rest; B has rest on 5,7,9,11…17 = 3 + 7 = 10 rest + 3 missing. Good.
+
+        let acwrA = ReadinessEngine.evaluate(days: a).acwr
+        let acwrB = ReadinessEngine.evaluate(days: b).acwr
+        XCTAssertNotNil(acwrA)
+        XCTAssertNotNil(acwrB)
+        XCTAssertEqual(acwrA!, acwrB!, accuracy: 1e-9)
+    }
 }

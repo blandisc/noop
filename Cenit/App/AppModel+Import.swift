@@ -51,8 +51,9 @@ extension AppModel {
                     Task { @MainActor [weak self] in self?.appleHealthImportProgress = count }
                 }
                 let summary = try await AppleHealthImport.importExport(
-                    url: url, into: store, deviceId: appleDeviceId, progress: progress,
-                    isCancelled: { Task.isCancelled })
+                    url: url, into: store, deviceId: appleDeviceId,
+                    maxHR: repo.strainHRmax, sex: repo.strainSex,
+                    progress: progress, isCancelled: { Task.isCancelled })
                 await repo.refresh()
                 finishImport(.appleHealth, summary: "Imported \(summary.recordCount) records")
             } catch is CancellationError {

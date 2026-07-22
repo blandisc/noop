@@ -170,6 +170,15 @@ public enum ReadinessEngine {
     private static let acuteWindow    = 7
     private static let chronicWindow  = 28
     private static let minChronic     = 14   // need at least this much strain history for ACWR
+    /// Coupled EWMA time-constants (Williams et al. 2017): λ = 2/(N+1) over the same
+    /// acute (7) / chronic (28) horizons the old rigid means used.
+    private static let lambdaAcute: Double   = 2.0 / (Double(acuteWindow) + 1)     // 2/8  = 0.25
+    private static let lambdaChronic: Double = 2.0 / (Double(chronicWindow) + 1)   // 2/29 ≈ 0.0689655
+    /// Piso NUEVO (FER — «CARGA VIVA»): días REALES con carga (`load`, strain>0) dentro de la ventana
+    /// crónica (28 días calendario) que deben existir antes de emitir un ACWR — evita que 14 días de
+    /// puros ceros (zero-fill) trivialicen `minChronic` y produzcan un ACWR/spike espurio. Punto de
+    /// calibración de `/estadistico`.
+    private static let minActiveDays = 4
     /// Below this much sleep last night the morning read is flagged low-confidence (a short night
     /// suppresses HRV and inflates resting HR independent of true recovery). 6 hours.
     private static let shortNightMinutes: Double = 360
@@ -269,30 +278,41 @@ public enum ReadinessEngine {
         }
 
         // Training Stress Balance (ACWR) + monotony --------------------------
-        // Computed on TRIMP-like LINEAR load, not the 0–21 log-compressed strain:
-        // the log map flattens hard days, which understates the acute:chronic ramp
-        // (and inflates monotony) that these signals exist to catch. strainToLoad
-        // inverts StrainScorer's log map so a spike reads as a spike.
-        let strainSeries = sorted.compactMap { $0.strain }.map(strainToLoad)
+        // Coupled EWMA over the EXPLICIT calendar-day sequence (Williams 2017),
+        // computed on TRIMP-like LINEAR load via strainToLoad so a spike reads as
+        // a spike. rest(0) folds/decays the acute leg; missing (nil strain) holds.
+        // Gate: coverageDays ≥ minChronic AND activeInWindow ≥ minActiveDays AND chronic > 0
+        // — so 14 pure-rest zeros never emit a ratio.
+        let replay = ewmaReplay(sorted)
         var acwr: Double? = nil
         var monotony: Double? = nil
-        if strainSeries.count >= minChronic {
-            let acute = mean(Array(strainSeries.suffix(acuteWindow)))!
-            let chronic = mean(Array(strainSeries.suffix(chronicWindow)))!
-            if chronic > 0 {
-                let ratio = acute / chronic
-                acwr = ratio
-                signals.append(acwrSignal(ratio))
-            }
-            // Foster monotony over the last week of strain.
-            let week = Array(strainSeries.suffix(acuteWindow))
-            if week.count >= 4, let sd = sampleSD(week), sd > 0, let m = mean(week) {
-                let mono = m / sd
-                monotony = mono
-                if mono >= 2.0 {
-                    signals.append(Signal(key: "monotony", label: appLocalized("Training variety"),
-                        detail: appLocalized("low — similar strain every day raises strain/illness risk"),
-                        flag: .watch, value: String(format: "%.1f", mono)))
+        if let point = replay.points.first(where: { $0.day == latest.day }), gatePasses(point) {
+            let ratio = point.acute / point.chronic
+            acwr = ratio
+            signals.append(acwrSignal(ratio))
+
+            // Foster monotony (1998) over the TRAILING `acuteWindow` (7) CALENDAR days ending today,
+            // rest(0) folded in (it's part of the week), missing days skipped (can't estimate an unknown).
+            // This is the one behavior change from before: previously `strainSeries.compactMap` could reach
+            // BACK PAST a week to gather 7 non-nil values when a gap existed; now the week is a true
+            // trailing calendar week, so it can hold fewer than 7 values when days are missing.
+            if let latestIdx = DayKey.parseUTC(latest.day) {
+                var weekLoads: [Double] = []
+                var d = latestIdx
+                for _ in 0..<acuteWindow {
+                    let key = DayKey.utc(d)
+                    if let s = replay.rowByDay[key]?.strain { weekLoads.append(strainToLoad(s)) }
+                    guard let prev = DayKey.utcCalendar.date(byAdding: .day, value: -1, to: d) else { break }
+                    d = prev
+                }
+                if weekLoads.count >= 4, let sd = sampleSD(weekLoads), sd > 0, let m = mean(weekLoads) {
+                    let mono = m / sd
+                    monotony = mono
+                    if mono >= 2.0 {
+                        signals.append(Signal(key: "monotony", label: appLocalized("Training variety"),
+                            detail: appLocalized("low — similar strain every day raises strain/illness risk"),
+                            flag: .watch, value: String(format: "%.1f", mono)))
+                    }
                 }
             }
         }
@@ -373,32 +393,101 @@ public enum ReadinessEngine {
         }
     }
 
-    /// The acute:chronic ratio recomputed for each of the last `lastN` strain days — the series behind
-    /// the Tendencias «Training load» card's mini-trend (FER-705). Pure input→output: exactly the same
-    /// linear-load fold `evaluate` runs for today's `acwr` (7-day acute mean vs 28-day chronic mean over
-    /// `strainToLoad`-linearized strain — Gabbett 2016, Br J Sports Med 50:273), replayed as of each day,
-    /// so the last point always equals today's read. Days before `minChronic` strain readings exist are
-    /// skipped (the same calibration gate the single-day read applies); `days` may be in any order.
-    /// Descriptive context only, never an injury predictor (Impellizzeri et al. 2020).
+    /// The acute:chronic ratio recomputed for each of the last `lastN` calendar days that clear the
+    /// emission gate — the series behind the Tendencias «Training load» card's mini-trend (FER-705).
+    /// Pure input→output: the SAME coupled-EWMA replay `evaluate` runs for today's `acwr`
+    /// (Williams et al. 2017, Br J Sports Med 51:209; horizons still Gabbett 2016). When today
+    /// clears the emission gate the last point equals today's `evaluate().acwr`; when today FAILS
+    /// the gate (e.g. fewer than `minActiveDays` active days in the window) `evaluate().acwr` is nil
+    /// and this series simply ends at the most recent day that did pass — the card is hidden on a nil
+    /// read, so the two never disagree on screen. Days that fail coverage / active-days / chronic>0
+    /// are skipped; `days` may be in any order. Descriptive context only, never an injury predictor
+    /// (Impellizzeri et al. 2020).
     public static func acwrSeries(days: [DailyMetric], lastN: Int = 28) -> [(day: String, ratio: Double)] {
         let sorted = days.sorted { $0.day < $1.day }
-        let strains = sorted.compactMap { d in d.strain.map { (day: d.day, load: strainToLoad($0)) } }
-        guard strains.count >= minChronic else { return [] }
-        let loads = strains.map(\.load)
-        // Mean of the trailing `w` loads ending at index i — the same suffix mean `evaluate` folds,
-        // computed by index so the prefix is never copied per day (keeps a multi-year history O(n·w)).
-        func windowMean(endingAt i: Int, width w: Int) -> Double {
-            let lo = max(0, i - w + 1)
-            return loads[lo...i].reduce(0, +) / Double(i - lo + 1)
+        let points = ewmaReplay(sorted).points
+        let gated = points.filter(gatePasses).map { (day: $0.day, ratio: $0.acute / $0.chronic) }
+        return Array(gated.suffix(lastN))
+    }
+
+    // MARK: Coupled EWMA replay (Williams 2017 — shared by evaluate + acwrSeries)
+
+    /// One day of the coupled-EWMA replay.
+    struct EwmaPoint: Equatable {
+        let day: String
+        let acute: Double
+        let chronic: Double
+        /// Cumulative count of KNOWN days (rest OR load — i.e. `DailyMetric.strain != nil`) from the
+        /// first known day through this one. Mirrors the old `strainSeries.count` gate exactly.
+        let coverageDays: Int
+        /// Count of `load` (strain > 0) days within the trailing `chronicWindow` (28) CALENDAR days
+        /// ending on this day (a sliding window over calendar days, not over known-days — so it can
+        /// go back to zero if a user stops logging workouts long enough for old active days to age out).
+        let activeInWindow: Int
+    }
+
+    /// Replay result: points + the day→row lookup monotony reuses (no second pass).
+    private struct EwmaReplay {
+        let points: [EwmaPoint]
+        let rowByDay: [String: DailyMetric]
+    }
+
+    /// Build the EXPLICIT calendar-day sequence spanning `sorted.first.day...sorted.last.day`
+    /// (`sorted` already day-ascending), replaying the coupled EWMA once, O(n). A calendar day with NO
+    /// row in `sorted`, or a row whose `strain == nil`, is `.missing` — held (no fold, no coverage
+    /// increment). A row with `strain == 0` is `.rest` — folds as 0 (decays the acute leg). A row with
+    /// `strain > 0` is `.load` — folds at its `strainToLoad` value AND counts toward `activeInWindow`.
+    /// Seeds both EWMA legs directly (no recurrence) at the FIRST known day; emits a point for every
+    /// calendar day from that first known day onward (days before the first known day are skipped
+    /// entirely — nothing to seed from).
+    private static func ewmaReplay(_ sorted: [DailyMetric]) -> EwmaReplay {
+        guard let firstDay = sorted.first?.day, let lastDay = sorted.last?.day,
+              let start = DayKey.parseUTC(firstDay), let end = DayKey.parseUTC(lastDay) else {
+            return EwmaReplay(points: [], rowByDay: [:])
         }
-        var out: [(day: String, ratio: Double)] = []
-        for i in (minChronic - 1)..<loads.count {
-            let chronic = windowMean(endingAt: i, width: chronicWindow)
-            guard chronic > 0 else { continue }
-            out.append((day: strains[i].day,
-                        ratio: windowMean(endingAt: i, width: acuteWindow) / chronic))
+        var rowByDay: [String: DailyMetric] = [:]
+        for d in sorted { rowByDay[d.day] = d }   // day is a natural key; last-writer-wins is harmless
+
+        var calendarDays: [String] = []
+        var cursor = start
+        while cursor <= end {
+            calendarDays.append(DayKey.utc(cursor))
+            guard let next = DayKey.utcCalendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
         }
-        return Array(out.suffix(lastN))
+
+        var points: [EwmaPoint] = []
+        var acute = 0.0, chronic = 0.0
+        var seeded = false
+        var coverageDays = 0
+        var recentActive: [Bool] = []   // trailing `chronicWindow` calendar days, oldest first
+
+        for day in calendarDays {
+            let load: Double? = rowByDay[day]?.strain.map(strainToLoad)   // nil ⇒ missing
+            recentActive.append(load.map { $0 > 0 } ?? false)
+            if recentActive.count > chronicWindow { recentActive.removeFirst() }
+
+            if let load {
+                if !seeded { acute = load; chronic = load; seeded = true }
+                else {
+                    acute   = load * lambdaAcute   + acute   * (1 - lambdaAcute)
+                    chronic = load * lambdaChronic + chronic * (1 - lambdaChronic)
+                }
+                coverageDays += 1
+            }
+            if seeded {
+                points.append(EwmaPoint(day: day, acute: acute, chronic: chronic,
+                                        coverageDays: coverageDays,
+                                        activeInWindow: recentActive.filter { $0 }.count))
+            }
+        }
+        return EwmaReplay(points: points, rowByDay: rowByDay)
+    }
+
+    /// Whether a point clears the emission gate: enough coverage history, enough REAL active days in
+    /// the trailing chronic window (the zero-fill piso), and a non-zero chronic denominator.
+    private static func gatePasses(_ p: EwmaPoint) -> Bool {
+        p.coverageDays >= minChronic && p.activeInWindow >= minActiveDays && p.chronic > 0
     }
 
     private static func acwrSignal(_ ratio: Double) -> Signal {

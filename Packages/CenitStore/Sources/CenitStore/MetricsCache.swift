@@ -86,7 +86,18 @@ extension CenitStore {
                         restingHr = COALESCE(excluded.restingHr, restingHr),
                         avgHrv = COALESCE(excluded.avgHrv, avgHrv),
                         recovery = COALESCE(excluded.recovery, recovery),
-                        strain = COALESCE(excluded.strain, strain),
+                        -- CARGA VIVA: strain is monotonic in the "real load" direction. A scored
+                        -- workout (excluded.strain > 0) always wins; a persisted load (strain > 0) is
+                        -- NEVER regressed to a 0 (rest) or NULL (missing) by a later partial/degraded
+                        -- resync (e.g. workout HR not yet delivered, or read permission revoked).
+                        -- Only rest(0) and missing(NULL) may correct each other — so a false rest 0
+                        -- written from incomplete data can still be walked back to NULL when the day
+                        -- reclassifies missing. (Fable adversarial D1.)
+                        strain = CASE
+                            WHEN excluded.strain > 0 THEN excluded.strain
+                            WHEN strain > 0 THEN strain
+                            ELSE excluded.strain
+                        END,
                         exerciseCount = COALESCE(excluded.exerciseCount, exerciseCount),
                         spo2Pct = COALESCE(excluded.spo2Pct, spo2Pct),
                         skinTempDevC = COALESCE(excluded.skinTempDevC, skinTempDevC),
