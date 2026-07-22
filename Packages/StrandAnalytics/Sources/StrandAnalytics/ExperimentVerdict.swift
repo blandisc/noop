@@ -107,8 +107,9 @@ public enum ExperimentVerdict {
     /// - `confounderYesDays`: window days with a "yes" on ANY OTHER confounder tag (sick/travel); the
     ///   caller excludes the experiment's own tag before passing this in.
     ///
-    /// Verdicts map to the shipped es-MX copy: `.sustained` = «probable efecto (en ti)», `.notSustained`
-    /// = «no se ve (todavía)», `.insufficient` = «datos insuficientes».
+    /// Verdicts map to the shipped es-MX copy: `.sustained` = «posible patrón (en ti)» / «se asocia
+    /// (en ti)» — NEVER «efecto»/«causa» (self-assigned exposure = association, not causation; `/cso`
+    /// FER-1034) — `.notSustained` = «no se ve (todavía)», `.insufficient` = «datos insuficientes».
     public static func evaluateContrast(withDays: Set<String>,
                                         withoutDays: Set<String>,
                                         outcomeByDay: [String: Double],
