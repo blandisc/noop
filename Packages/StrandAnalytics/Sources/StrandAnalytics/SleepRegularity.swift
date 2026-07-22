@@ -180,11 +180,13 @@ public enum SleepRegularity {
         }
         let r = (sumSin * sumSin + sumCos * sumCos).squareRoot() / Double(n)
         guard r > 1e-9 else { return dayMinutes / 2 }      // fully dispersed → cap at 12 h
-        let sdRadians = (-2 * Foundation.log(min(r, 1))).squareRoot()
-        // A perfect schedule (r == 1) yields -0.0 here, which the UI can render
-        // as "-0 min". Normalize to +0.0.
-        // `+ 0.0` normalizes -0.0 (from r == 1) to +0.0.
-        return sdRadians * dayMinutes / (2 * Double.pi) + 0.0
+        // r is mathematically in (0, 1]. Floating-point nudges a perfect schedule just under 1
+        // (Linux libm returns r = 1 − ~1e-16 for identical points), which would otherwise leak a
+        // spurious ~3e-6 min SD — and the old `-0.0 + 0.0` normalization only fixed the sign, not
+        // the magnitude. Treat r ≈ 1 as a perfect schedule and return a clean +0.0 on every platform.
+        guard r < 1 - 1e-12 else { return 0 }
+        let sdRadians = (-2 * Foundation.log(r)).squareRoot()
+        return sdRadians * dayMinutes / (2 * Double.pi)
     }
 
     /// Circular median of clock minutes: the candidate value minimizing the summed shortest-arc

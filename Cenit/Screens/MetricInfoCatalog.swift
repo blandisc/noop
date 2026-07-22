@@ -159,7 +159,7 @@ extension MetricInfo {
                 ? "No HRV from last night. That can happen if you didn't wear your Apple Watch to sleep, or the night was too short for it to record."
                 : "HRV is personal. There are no universal good/bad thresholds: only your trend over time.",
             method: Method(
-                prose: "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure — RMSSD — recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery.",
+                prose: "The number you see is the HRV Apple records overnight: SDNN, the overall spread of the time between your heartbeats. The read that tells you how recovered you are uses a different HRV measure, RMSSD, recomputed from the beat-to-beat intervals of your densest nights. RMSSD tracks the vagal, rest-and-digest branch specifically, while SDNN blends both branches of your nervous system; that, plus the two being measured over different nightly windows, means the HRV number here won't always line up with the direction of your recovery.",
                 citation: "SDNN and RMSSD (Task Force, 1996); RMSSD is the vagal recovery measure (Shaffer & Ginsberg, 2017). HRV is the biggest driver of your recovery."
             ),
             levelsTodayValue: value,
