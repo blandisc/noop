@@ -162,7 +162,7 @@ public enum AnalyticsEngine {
                                   // Calendar-day-scoped overrides for the ADDITIVE daily totals
                                   // (steps + activeKcalEst) ONLY. When nil, the totals fall back to
                                   // the same window the rest of the analysis uses (preserving the
-                                  // pure-function contract). The caller (IntelligenceEngine) supplies
+                                  // pure-function contract). The caller supplies
                                   // a full [localMidnight(day), localMidnight(day)+86400) read here so a
                                   // PAST day's late hours — which fall outside the ~42h
                                   // night-detection window when the current local time-of-day is before
@@ -171,12 +171,12 @@ public enum AnalyticsEngine {
                                   dayHr: [HRSample]? = nil,
                                   daySteps: [StepSample]? = nil,
                                   // Wear-gated nightly skin-temp mean is harvested here
-                                  // (baseline-independent); IntelligenceEngine seeds a personal
+                                  // (baseline-independent); the caller seeds a personal
                                   // baseline from these means across nights and re-derives
                                   // skinTempDevC in pass 2 (same two-pass shape as avgHrv→recovery).
                                   skinTemp: [SkinTempSample] = [],
                                   // Additive per-band skin-temp calibration (°C). Default 0 = the
-                                  // 5.0's full AS6221 register; IntelligenceEngine passes +28.5 for a
+                                  // 5.0's full AS6221 register; the caller passes +28.5 for a
                                   // 4.0 (whose v24 record drops the integer part). See
                                   // wornNightlySkinTempC. Default keeps pure-function callers/tests
                                   // and the 5.0 path unchanged.
@@ -186,7 +186,7 @@ public enum AnalyticsEngine {
                                   maxHROverride: Double? = nil,
                                   // Wall-clock UTC offset (seconds) for the sleep detector's daytime
                                   // false-sleep guard (#90). Default 0 keeps pure-function callers/tests
-                                  // on UTC; IntelligenceEngine passes the device's real offset.
+                                  // on UTC; the caller passes the device's real offset.
                                   tzOffsetSeconds: Int = 0,
                                   // For the IN-PROGRESS day, the ~42h night window is dominated by
                                   // yesterday's activity (the day just started), so strain would
@@ -372,7 +372,7 @@ public enum AnalyticsEngine {
         // ── Skin-temperature deviation (offline) ──────────────────────────────
         // Wear-gated in-bed mean (baseline-independent, harvested every pass) + the deviation
         // against the personal baseline. In pass 1 baselines.skinTemp is nil so the deviation is
-        // nil and the mean is harvested; IntelligenceEngine seeds the baseline from those means
+        // nil and the mean is harvested; the caller seeds the baseline from those means
         // and re-derives the deviation in pass 2 (mirrors avgHrv→recovery). APPROXIMATE.
         let nightlySkinTempC = wornNightlySkinTempC(matched, hr: hr, skinTemp: skinTemp,
                                                     skinTempOffsetC: skinTempOffsetC)

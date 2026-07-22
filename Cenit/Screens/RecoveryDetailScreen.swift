@@ -662,11 +662,11 @@ struct RecoveryDetailModel {
         let sortedDays = days.sorted { $0.day < $1.day }
         let series = sortedDays.compactMap { d in d.recovery.map { (day: d.day, value: $0) } }
 
-        // FER-632: score the detail's σ against the BAND-only baseline — the same history the recovery
-        // SCORE uses (`IntelligenceEngine.strapOnlyHistory`). Raw `days` measured HRV/RHR/resp against a
+        // FER-632: score the detail's σ against the BAND-only baseline — the same cross-source clearing the
+        // recovery SCORE relies on (`SourceLens.clearBandColumns`). Raw `days` measured HRV/RHR/resp against a
         // baseline contaminated with Apple SDNN/offsets, so the σ the user saw (e.g. HRV −0.72σ, RHR
-        // «normal») diverged from the score's own (−3.56σ, +3.05σ). `maskForBaseline` (FER-631) is the
-        // column-level equivalent of the scorer's row drop — pinned to the same z by test. On an Apple-only
+        // «normal») diverged from the score's own (−3.56σ, +3.05σ). `clearBandColumns` (FER-631) clears
+        // those cross-source columns before the fold — pinned to the same z by test. On an Apple-only
         // day today's own row is masked too (the band didn't measure it), so no band σ is invented for a
         // reading the band never took.
         let bandDays = SourceLens.clearBandColumns(days)

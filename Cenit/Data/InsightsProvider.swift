@@ -42,9 +42,9 @@ enum InsightsProvider {
         }.value
     }
 
-    /// Pure ranking core (testable seam). Masks every cross-source column to the BAND source (FER-639)
+    /// Pure ranking core (testable seam). Clears every cross-source column (FER-639)
     /// BEFORE the engine folds any HRV/RHR/resp baseline, anomaly or correlation — the same
-    /// `SourceLens.maskForBaseline(keep:.band)` the Recovery detail and «Hoy» use (FER-631/632). Without
+    /// `SourceLens.clearBandColumns` the Recovery detail and «Hoy» use (FER-631/632). Without
     /// it, `InsightEngine`'s HRV baseline (`avgHrv`) mixes band RMSSD with Apple SDNN (no published
     /// conversion — Task Force 1996; Shaffer & Ginsberg 2017), so «anoche tu HRV corrió bajo tu base» and
     /// the HRV↔behavior correlations shift by SCALE, not physiology. `strain`/ACWR (trainingLoadInsight)

@@ -35,8 +35,8 @@ extension AppModel {
     /// Same-day behaviour context for the recent illness window, read from the journal (imported ∪
     /// native). A confounder answered "yes" on either of the last two nights suppresses the heads-up.
     /// `hardOrLateWorkout` is derived from a strain z-anomaly (a hard/late session elevates RHR and
-    /// lowers HRV overnight just like early illness); `travelPhaseJump` stays false until the
-    /// CircadianEngine (FER-671) can flag a body-clock jump.
+    /// lowers HRV overnight just like early illness); `travelPhaseJump` stays false (the body-clock-jump
+    /// detector, FER-671, was retired, so nothing sets it).
     private func illnessContext(_ days: [DailyMetric]) async -> IllnessSignalEngine.Context {
         let recentKeys = Set(days.suffix(2).map(\.day))
         let yesQuestions = Set(

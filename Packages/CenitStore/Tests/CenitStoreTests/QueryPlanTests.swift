@@ -60,7 +60,7 @@ final class QueryPlanTests: XCTestCase {
         assertIndexed(plan, table: "metricSeries")
     }
 
-    /// Multi-key range read (IntelligenceEngine's 24 `act_hNN` keys). ORDER BY must follow the
+    /// Multi-key range read (24 `act_hNN` hourly activity-count keys). ORDER BY must follow the
     /// index `(deviceId, key, day)` so SQLite does not build a TEMP B-TREE; the store re-sorts to
     /// day/key in memory for the public contract.
     func testMetricSeriesMultiKeyRangeReadUsesIndexWithoutTempBTree() async throws {

@@ -84,7 +84,7 @@ public extension DailyMetric {
     /// verbatim. This is the SINGLE place the 17-field initializer is fanned out for a copy-with-change, so a
     /// column added to `DailyMetric` is carried here by default instead of being silently nilled at each of the
     /// hand-rolled reconstructors that used to rebuild the whole struct (`fillingNils`, `withRecovery`,
-    /// `IntelligenceEngine.with(recovery:skinTempDevC:)`, `SourceLens.hrvMasked`/`crossSourceMasked`). Pass
+    /// `SourceLens.hrvMasked`/`crossSourceMasked`). Pass
     /// `.set(x)` to replace a column, including `.set(nil)` to clear a nullable one.
     func with(
         day: FieldUpdate<String> = .keep,

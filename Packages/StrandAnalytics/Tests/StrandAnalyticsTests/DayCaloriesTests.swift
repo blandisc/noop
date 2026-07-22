@@ -82,7 +82,7 @@ final class DayCaloriesTests: XCTestCase {
 
     func testAnalyzeDayCaloriesIgnoreAdjacentDayHr() throws {
         // analyzeDay must filter HR to the target UTC day before summing calories — the
-        // IntelligenceEngine read window spans ~42h, so adjacent-day HR must NOT inflate the
+        // analyzeDay read window spans ~42h, so adjacent-day HR must NOT inflate the
         // day's activeKcalEst (the critical "full-window double-count" regression).
         let inDay = (0..<600).map { hr($0, 120) }
         // Same in-day HR plus 600 samples ~36h earlier (a different UTC day, inside the window).

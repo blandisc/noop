@@ -578,9 +578,9 @@ extension CenitStore {
         }
 
         // v25 (FER-712): body-clock phase for the "Tu reloj corporal" experimental surface. One
-        // structured record per local civil day, holding CircadianEngine's cosinor phase estimate.
-        // Written by the nightly IntelligenceEngine pass (the phase signal is the band's accelerometer
-        // rest-activity rhythm). PK (deviceId, day) ⇒ recomputing a day is an idempotent upsert.
+        // structured record per local civil day, holding the cosinor body-clock phase estimate.
+        // Written by the nightly strap phase pass (the phase signal is the band's accelerometer
+        // rest-activity rhythm; dormant under Apple-only). PK (deviceId, day) ⇒ recomputing a day is an idempotent upsert.
         // `confidence` is the raw PhaseConfidence string; CenitStore keeps no dependency on
         // StrandAnalytics (the app layer translates). Append-only: brand-new table, touches no prior
         // migration.
@@ -814,8 +814,8 @@ extension CenitStore {
         // Reading `pragma table_info` also self-corrects for the v21 tables — their `deviceId` is INTEGER,
         // so the type check skips them instead of corrupting the surrogate.
         //
-        // The derived computed partition ('my-whoop-noop', written by IntelligenceEngine as
-        // `deviceId + "-noop"`) is carried along by rewriting the PREFIX, so 'my-whoop-noop' → 'strap-noop'
+        // The derived computed partition ('my-whoop-noop', written as `deviceId + "-noop"` by the
+        // retired on-device strap pass) is carried along by rewriting the PREFIX, so 'my-whoop-noop' → 'strap-noop'
         // in the same pass and keeps matching the app's newly derived id.
         //
         // A plain UPDATE (not UPDATE OR REPLACE) is deliberate: several of these tables have a PK on

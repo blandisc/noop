@@ -637,7 +637,7 @@ public enum SleepStager {
     /// `tzOffsetSeconds` is the wall-clock UTC offset (TimeZone.current.secondsFromGMT)
     /// used ONLY to place each window's center on a LOCAL clock for the daytime
     /// false-sleep guard (#90). It defaults to 0 so the pure function and its tests stay
-    /// UTC; the live call site (IntelligenceEngine) passes the device's real offset.
+    /// UTC; the caller passes the device's real offset.
     ///
     /// `wristOff` and `bandSleepState` are OPTIONAL robustness inputs (FER-662, default empty). When
     /// absent, the off-wrist backstop falls back to its HR-gap proxy and the morning-stillness guard to

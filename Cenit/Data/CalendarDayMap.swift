@@ -7,7 +7,7 @@ import StrandAnalytics
 // CalendarDayMap.swift — the app-layer orchestrator for the «mapa del día» (FER-377).
 //
 // Owns the EventKit permission flow + calendar selection, reads beat-to-beat RR from the store (per day,
-// the IntelligenceEngine pattern — bounded reads), builds the personal waking reference + today's
+// bounded reads), builds the personal waking reference + today's
 // intraday stress curve (`StressEngine`), and crosses it with the day's events (`StressDayMap`). Pure
 // math stays in StrandAnalytics; this only does I/O + state. EventKit lives in the app layer, never in a
 // package. Everything is on-device — `EKEventStore` reads the phone's own calendars, nothing leaves.

@@ -26,8 +26,8 @@ enum WorkoutFormat {
 ///   - "whoop"        — retired WHOOP CSV import (imported WHOOP session)
 ///   - "apple_health" / "apple-health" — AppleHealthImport
 ///   - "manual"       — AppModel.endWorkout (v1.67 live session) AND the retro add/edit sheet
-///   - "strap-noop"   — IntelligenceEngine detected bouts (source == the computed deviceId, i.e.
-///                       it ends in "-noop"). These are re-derived every analyzeRecent run.
+///   - "strap-noop"   — strap-detected bouts from the retired on-device analysis (source == the
+///                       computed deviceId, i.e. it ends in "-noop"). Historical/dormant under Apple-only.
 ///
 /// Classification order matters: "-noop" is checked BEFORE "whoop" so a computed id can never fall
 /// through to the legacy-import branch. It was load-bearing while the computed id was "my-whoop-noop"

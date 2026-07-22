@@ -25,7 +25,7 @@ final class Repository: ObservableObject {
     var dataSourceMode: DataSourceMode = .appleHealthOnly
     /// The baseline cut day-key («Recalibrar recuperación», FER-677): "YYYY-MM-DD" or nil for no cut.
     /// Set by `AppModel` from `ProfileStore.baselineEpochOrNil`. The estimated-recovery path honors it
-    /// so the Apple estimate re-anchors exactly like the strap baseline in `IntelligenceEngine`.
+    /// so the Apple estimate re-anchors at the baseline cut.
     var baselineEpoch: String? = nil
     /// FER-883: the user's effective HRmax + sex for the estimated «Carga del día», set by `AppModel`
     /// from `Profile` (`hrMaxOverride ?? Tanaka(age)`) so the Apple workout-HR estimate uses the SAME
@@ -33,7 +33,7 @@ final class Repository: ObservableObject {
     var strainHRmax: Double? = nil
     var strainSex: String = "male"
     /// Source id for on-device computed scores (recovery/strain/sleep derived from the raw strap
-    /// streams by IntelligenceEngine). Merged UNDER the imported `deviceId` rows at read time, so a
+    /// streams by the retired on-device analysis). Merged UNDER the imported `deviceId` rows at read time, so a
     /// real WHOOP import always wins and the strap-only user still gets a populated dashboard.
     private var computedDeviceId: String { deviceId + "-noop" }
     /// The Apple-derived nocturnal-HRV partition (R2/R3, FER-1008): a SEPARATE metricSeries deviceId from
@@ -105,7 +105,7 @@ final class Repository: ObservableObject {
 
     /// Daily metrics (recovery/strain/sleep/HRV/RHR…), oldest→newest. Includes Apple-only rows (band-less
     /// nights surfaced from Apple Health). The recovery baseline reads this but EXCLUDES `appleHealthDays`
-    /// before folding (FER-519, via `IntelligenceEngine.strapOnlyHistory`), so Apple's SDNN never enters
+    /// before folding (FER-519, via `SourceLens.clearBandColumns`), so Apple's SDNN never enters
     /// the band's RMSSD baseline; only the capped `foldApplePrior` seeds resp (breaths/min during sleep —
     /// same metric; RHR is band sleep-nadir vs Apple awake, so it's no longer seeded either, FER-634).
     var days: [DailyMetric] { dashboard.days }
@@ -569,7 +569,7 @@ final class Repository: ObservableObject {
     ///
     /// `days` includes Apple-only rows (the base layer below): a band-less night surfaces Apple's
     /// HRV/sleep, and `appleDays` is the SET of those days. The recovery baseline reads `repo.days` but
-    /// EXCLUDES `appleHealthDays` before folding HRV/RHR/resp (FER-519, `IntelligenceEngine.strapOnlyHistory`),
+    /// EXCLUDES `appleHealthDays` before folding HRV/RHR/resp (FER-519, `SourceLens.clearBandColumns`),
     /// so Apple's SDNN never enters the band's RMSSD baseline — only the capped `foldApplePrior` seeds
     /// resp (breaths/min during sleep — same metric; RHR is band sleep-nadir vs Apple awake, no longer
     /// seeded, FER-634). `displayDays` (FER-149) is a display-only twin of `days`: a
@@ -671,7 +671,7 @@ final class Repository: ObservableObject {
         return []
     }
 
-    /// Gravity (accelerometer) samples for the strap in `[from, to]`. Read by `IntelligenceEngine`'s
+    /// Gravity (accelerometer) samples for the strap in `[from, to]`. Read by the strap
     /// motion gate for per-window stillness. Range-scanned like `rrIntervals` over `(deviceId, ts)`.
     /// (FER-666; the strap partition — and this read — are dormant under the Apple-only pin.)
     func gravitySamples(from: Int, to: Int, limit: Int = 200_000) async -> [GravitySample] {
@@ -680,7 +680,7 @@ final class Repository: ObservableObject {
     }
 
     /// The latest persisted body-clock phase (computed source), for the «Tu reloj corporal» surface
-    /// (FER-712). nil until the nightly IntelligenceEngine pass has written one.
+    /// (FER-712). nil until a nightly strap phase pass has written one (dormant under Apple-only).
     func latestCircadianPhase() async -> CircadianPhaseRow? {
         guard let store = await ensureStore() else { return nil }
         return (try? await store.latestCircadianPhase(deviceId: computedDeviceId)) ?? nil
@@ -694,8 +694,8 @@ final class Repository: ObservableObject {
     }
 
     /// Sleep sessions overlapping `[from, to]`, MERGED across the imported (raw `deviceId`) and on-device
-    /// COMPUTED (`computedDeviceId`, "-noop") sources — a live strap user's nightly sleep is written by the
-    /// IntelligenceEngine under "-noop", an import user's under the raw id. Reading only the raw id missed a
+    /// COMPUTED (`computedDeviceId`, "-noop") sources — a live strap user's nightly sleep was written by the
+    /// retired on-device strap pass under "-noop", an import user's under the raw id. Reading only the raw id missed a
     /// BLE user's sleep entirely, so the intraday-stress exclusion never fired and the night read as waking
     /// (FER-451). Mirrors the dashboard's own sleep merge. Deduped by startTs (imported/export wins on a
     /// collision), oldest first.
@@ -735,7 +735,7 @@ final class Repository: ObservableObject {
     }
 
     /// Daily series for a metric written under the ON-DEVICE COMPUTED source (`-noop`, the
-    /// IntelligenceEngine outputs like `steps_est`). Derives `computedDeviceId` here so callers never
+    /// retired on-device strap outputs like `steps_est`). Derives `computedDeviceId` here so callers never
     /// reconstruct the `-noop` suffix by hand (FER-663).
     func computedSeries(key: String, days: Int = 4000) async -> [(day: String, value: Double)] {
         await series(key: key, source: computedDeviceId, days: days)
@@ -786,7 +786,7 @@ final class Repository: ObservableObject {
     /// Compute + persist any MISSING per-day stress summaries over the last `days` days (FER-378).
     /// Idempotent — only days without a stored day-mean are computed. Builds ONE recent waking reference
     /// (sleep excluded) and applies it to all days (documented approximation; the pattern signal is
-    /// relative). No-op without RR / a usable reference. Additive: does NOT touch IntelligenceEngine.
+    /// relative). No-op without RR / a usable reference. Additive: does NOT touch the daily metrics pipeline.
     /// FER-972 (P-03): day-keys already attempted this session that yielded no summary (no band
     /// worn that day) — permanent gaps must not re-trigger the reference build on every open.
     /// In-memory only; today (back == 0) is never memoized (its data keeps growing).

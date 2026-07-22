@@ -527,7 +527,7 @@ struct WorkoutDetailScreen: View {
     // MARK: - Strength volume (time-overlap join to StrengthSession — no FK)
 
     /// Match this journal `WorkoutRow` to an in-app strength session by interval overlap (same style as
-    /// `IntelligenceEngine` real-workout skip: `a.start < b.end && b.start < a.end`). Closest `startTs`
+    /// interval-overlap test `a.start < b.end && b.start < a.end`). Closest `startTs`
     /// wins when several overlap. Volume comes from `sessionVolumes()`; leave 0 when nothing real.
     private func loadVolume() async {
         volumeKg = 0
