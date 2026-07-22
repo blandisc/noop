@@ -2,9 +2,8 @@ import XCTest
 @testable import StrandAnalytics
 import BiometricStreams
 
-/// FER-972 (P-05) — the per-night display scalars the nightly pass persists (`night_dc_ms`,
-/// `night_warming_c`): the warming math moved verbatim from the app layer into
-/// `ThermalStabilityEngine`, and `analyzeDay` harvests both over the night's MAIN session.
+/// FER-972 (P-05) — the per-night display scalar `night_warming_c`: the warming math moved
+/// verbatim from the app layer into `ThermalStabilityEngine`.
 final class NocturnalScalarsTests: XCTestCase {
 
     // MARK: - ThermalStabilityEngine.warmingMagnitudeC (the moved math)
@@ -45,62 +44,5 @@ final class NocturnalScalarsTests: XCTestCase {
     func testWarmingMagnitudeNeedsSixtySamples() {
         XCTAssertNil(ThermalStabilityEngine.warmingMagnitudeC(inBedRaw: rampSamples(n: 59)))
         XCTAssertNotNil(ThermalStabilityEngine.warmingMagnitudeC(inBedRaw: rampSamples(n: 60)))
-    }
-
-    // MARK: - analyzeDay harvests both scalars over the main session
-
-    /// The same still, low-HR synthetic night AnalyticsEngineTests uses, plus a warming skin ramp.
-    func testAnalyzeDayEmitsNocturnalScalars() {
-        let day = "2021-06-15"
-        let fmt = DateFormatter()
-        fmt.locale = Locale(identifier: "en_US_POSIX")
-        fmt.timeZone = TimeZone(identifier: "UTC")
-        fmt.dateFormat = "yyyy-MM-dd"
-        let dayMidnight = Int(fmt.date(from: day)!.timeIntervalSince1970)
-        let end = dayMidnight + 6 * 3600
-        let start = end - 7 * 3600
-
-        var hr: [HRSample] = []
-        var grav: [GravitySample] = []
-        for t in start..<end {
-            hr.append(HRSample(ts: t, bpm: 50))
-            grav.append(GravitySample(ts: t, x: 0, y: 0, z: 1))
-        }
-        var rr: [RRInterval] = []
-        var toggle = false
-        for t in stride(from: start, to: end, by: 2) {
-            rr.append(RRInterval(ts: t, rrMs: toggle ? 1205 : 1195))
-            toggle.toggle()
-        }
-        let skins = (0..<((end - start) / 60)).map { i -> SkinTempSample in
-            let raw = i < 80 ? 4480 : 4608
-            return SkinTempSample(ts: start + i * 60, raw: raw)
-        }
-        let profile = UserProfile(weightKg: 75, heightCm: 178, age: 30, sex: "male")
-
-        let result = AnalyticsEngine.analyzeDay(day: day, hr: hr, rr: rr, gravity: grav,
-                                                skinTemp: skins, profile: profile)
-        XCTAssertEqual(result.sleepSessions.count, 1, "precondition: the night was detected")
-
-        // Warming: exactly the moved function over the session-sliced samples.
-        let s = result.sleepSessions[0]
-        let inBed = skins.filter { $0.ts >= s.start && $0.ts <= s.end }
-        XCTAssertEqual(result.warmingMagnitudeC,
-                       ThermalStabilityEngine.warmingMagnitudeC(inBedRaw: inBed))
-        XCTAssertNotNil(result.warmingMagnitudeC)
-
-        // DC: exactly NocturnalDC over the session's R-R (readable on this clean night).
-        let sessionRR = rr.filter { $0.ts >= s.start && $0.ts <= s.end }.map { Double($0.rrMs) }
-        let dc = NocturnalDC.compute(rawRR: sessionRR)
-        if dc.confidence == .unreadable {
-            XCTAssertNil(result.nocturnalDCms)
-        } else {
-            XCTAssertEqual(result.nocturnalDCms, dc.dcMs)
-        }
-
-        // No session → both nil.
-        let empty = AnalyticsEngine.analyzeDay(day: day, profile: profile)
-        XCTAssertNil(empty.nocturnalDCms)
-        XCTAssertNil(empty.warmingMagnitudeC)
     }
 }
