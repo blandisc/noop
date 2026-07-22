@@ -75,8 +75,14 @@ public struct SenalEnBanda: View {
 }
 
 /// El sello de confianza como ARCO de tinta: un arco abierto de 240° relleno a `nights`/`goal`
-/// noches, con el número al centro. La confianza NUNCA lleva color de alarma (no es bueno/malo):
-/// la fracción del arco + el numeral cargan el significado (misma disciplina que `ConfidenceSello`).
+/// noches. La confianza NUNCA lleva color de alarma (no es bueno/malo): la fracción del arco + el
+/// centro cargan el significado (misma disciplina que `ConfidenceSello`).
+///
+/// **Mientras calibra** (`nights < goal`) el centro muestra el CONTEO hacia la meta, con el arco a
+/// medias — eso es progreso legible. **Ya calibrado** (`nights >= goal`) el arco está lleno y el
+/// centro es una PALOMITA de tinta, no un número: un conteo crudo que sigue subiendo (45, 46…) se lee
+/// como el score 0–100 que retiramos y compite con la palabra-veredicto (FER-1043). La palomita va en
+/// tinta, sin color nuevo, para no meter un segundo dato con color en el héroe.
 public struct SelloConfianzaArco: View {
 
     private let nights: Int
@@ -88,6 +94,8 @@ public struct SelloConfianzaArco: View {
         self.nights = nights; self.goal = goal; self.a11y = a11y; self.theme = theme
     }
 
+    private var calibrated: Bool { goal > 0 && nights >= goal }
+
     public var body: some View {
         let frac = goal > 0 ? min(1, max(0, Double(nights) / Double(goal))) : 0
         ZStack {
@@ -97,9 +105,15 @@ public struct SelloConfianzaArco: View {
             Circle().trim(from: 0, to: 0.667 * frac)                                     // relleno (tinta, sin color)
                 .stroke(theme.inkSecondary, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                 .rotationEffect(.degrees(150))
-            Text(verbatim: "\(nights)")
-                .font(InstrumentoType.groteskNumber(14))
-                .foregroundStyle(theme.ink)
+            if calibrated {
+                Image(systemName: "checkmark")                                           // calibrado: palomita, no número
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(theme.inkSecondary)
+            } else {
+                Text(verbatim: "\(nights)")                                              // calibrando: el conteo = progreso
+                    .font(InstrumentoType.groteskNumber(14))
+                    .foregroundStyle(theme.ink)
+            }
         }
         .frame(width: 42, height: 42)
         .accessibilityElement(children: .ignore)
