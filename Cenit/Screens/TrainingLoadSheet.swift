@@ -58,7 +58,7 @@ private enum LoadScale {
 
 // MARK: - Franja de carga (bloque fijo de «Hoy»)
 
-/// La franja de dos filas bajo las pestañas SEÑALES/BRIEF: label + palabra de banda + ratio + chevron,
+/// La franja de dos filas en SEÑALES (única superficie de Hoy): label + palabra de banda + ratio + chevron,
 /// y una escala de 4 cápsulas con el punto de hoy. Tocarla abre la hoja. No respira (no es un dato vivo
 /// intradía) y no participa del pull-to-refresh; solo el punto se reposiciona si el ratio cambió al sincronizar.
 struct TrainingLoadStrip: View {

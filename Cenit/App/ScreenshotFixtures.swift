@@ -40,8 +40,8 @@ enum ScreenshotFixtures {
         let today = cal.startOfDay(for: Date())
 
         // FER-711 · calibrating (`··`): a strap has been seen but only a couple of nights are banked,
-        // below the recovery seed gate — so `heroState` lands on `.calibrating` and the hero numeral
-        // is «··» (never a fake number). Seed a short strap history with usable HRV and NO recovery on
+        // below the recovery seed gate — so Today renders its calibrating / cold-start state (never a
+        // fake number). Seed a short strap history with usable HRV and NO recovery on
         // any row (recovery stays nil until the baseline seeds), and mark the strap as seen.
         if state == "calibrating" {
             // Ola 2: strap-seen fixture no longer applicable (no strap live state); calibrating is driven by night count alone.
@@ -61,7 +61,7 @@ enum ScreenshotFixtures {
         }
 
         // FER · insufficient (numeral en TINTA + «Not enough context for a verdict»): hay recovery de HOY
-        // (→ heroState `.verdict`) pero SIN historia previa, así que ninguna señal se puede z-scorear y
+        // (hay lectura de hoy) pero SIN historia previa, así que ninguna señal se puede z-scorear y
         // `synthesize` cae en `.insufficient`. Una sola fila (hoy).
         if state == "insufficient" {
             let dayKey = Repository.localDayKey(today)
@@ -75,7 +75,7 @@ enum ScreenshotFixtures {
         }
 
         // FER · downloading: sin banda, no hay backfill flag. Sembramos noches PREVIAS con recovery
-        // (para que `fullyLoaded` publique) pero NINGUNA fila de hoy → heroState cae en `.waiting`.
+        // (para que `fullyLoaded` publique) pero NINGUNA fila de hoy → Today queda sin lectura de hoy.
         if state == "downloading" {
             var days: [DailyMetric] = []
             for ago in stride(from: 6, through: 1, by: -1) {   // ayer … −6, sin hoy
