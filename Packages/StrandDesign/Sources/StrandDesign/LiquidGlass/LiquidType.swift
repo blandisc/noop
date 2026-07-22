@@ -67,6 +67,10 @@ public enum LiquidType {
 
     /// `caption` — 9/500. Deltas («+2 ms vs tu base»).
     public static let caption = InstrumentoType.grotesk(9, weight: .medium)
+    /// La variante de LECTURA del caption: mismo 9/500 pero escala con Dynamic Type
+    /// (relativo a .caption2) — los deltas se leen, no son chrome (FER-1045).
+    public static let captionLectura = InstrumentoType.grotesk(9, weight: .medium,
+                                                               relativeTo: .caption2)
 
     /// `label` — 8.5/600, tracking +1.2, MAYÚSCULAS. Labels de tile («FC EN REPOSO»).
     public static let label = InstrumentoType.grotesk(8.5, weight: .semibold)

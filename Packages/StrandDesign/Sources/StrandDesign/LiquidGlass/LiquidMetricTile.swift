@@ -14,11 +14,12 @@ public struct LiquidMetricTile: View {
     private let deltaTone: LiquidDeltaTone
     private let tone: Color
     private let icon: LiquidIcon.Glyph
+    private let origen: LiquidOrigen
     private let action: (() -> Void)?
 
     public init(label: String, value: String, unit: String = "", delta: String,
                 deltaTone: LiquidDeltaTone = .neutral, tone: Color, icon: LiquidIcon.Glyph,
-                action: (() -> Void)? = nil) {
+                origen: LiquidOrigen = .medido, action: (() -> Void)? = nil) {
         self.label = label
         self.value = value
         self.unit = unit
@@ -26,6 +27,7 @@ public struct LiquidMetricTile: View {
         self.deltaTone = deltaTone
         self.tone = tone
         self.icon = icon
+        self.origen = origen
         self.action = action
     }
 
@@ -34,9 +36,20 @@ public struct LiquidMetricTile: View {
             Button(action: action) { content }
                 .buttonStyle(.liquidPress)
                 .liquidLift(tone: tone)
+                .accessibilityLabel(Self.a11yLabel(label: label, value: value,
+                                                   unit: unit, delta: delta))
         } else {
             content
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Self.a11yLabel(label: label, value: value,
+                                                   unit: unit, delta: delta))
         }
+    }
+
+    /// «{label}, {value} {unit}, {delta}» — el contrato de VoiceOver del tile.
+    static func a11yLabel(label: String, value: String, unit: String, delta: String) -> String {
+        let valor = unit.isEmpty ? value : "\(value) \(unit)"
+        return "\(label), \(valor), \(delta)"
     }
 
     private var content: some View {
@@ -52,7 +65,12 @@ public struct LiquidMetricTile: View {
                 }
             }
             .lineLimit(1)
-            LiquidDeltaCaption(delta, tone: deltaTone)
+            HStack(spacing: LiquidSpace.s100) {
+                LiquidDeltaCaption(delta, tone: deltaTone)
+                if origen == .calculado {
+                    LiquidOrigenDot()
+                }
+            }
         }
         .padding(.vertical, 7)
         .padding(.horizontal, LiquidSpace.s300)

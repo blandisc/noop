@@ -1,37 +1,68 @@
 import SwiftUI
 
-// MARK: - Liquid Glass · CargaBar (handoff §5.5)
+// MARK: - Liquid Glass · CargaBar (handoff §5.5 · FER-1045)
 //
 // Pastilla de balance de carga: vidrio/pastilla + e/0, fila [label · barra · status].
 // La barra son 4 segmentos pill (40 / 25 / 10 / resto, gap 2); solo el segmento activo
 // (`zone`) lleva el gradiente del estado; el knob (blanco, borde tinta/900) marca `pos` %.
 // Motion: knob y segmento activo se animan a su posición al entrar (dur/gentle).
+//
+// `.calibrando` (FER-1045): sin knob, 4 segmentos inactivos, status en tinta/500 — el
+// motor todavía no tiene ACWR para este usuario.
+
+/// El modo de la barra: con medición (knob en `pos` 0–100, banda activa `zone` 0–3) o
+/// calibrando (sin knob ni banda).
+public enum LiquidCargaModo: Sendable, Equatable {
+    case medida(pos: Double, zone: Int)
+    case calibrando
+}
 
 public struct LiquidCargaBar: View {
     private let label: String
-    private let pos: Double
-    private let zone: Int
+    private let modo: LiquidCargaModo
     private let status: String
     private let state: LiquidSignalState
+    private let action: (() -> Void)?
 
     @State private var shownPos: Double = 50
     @State private var entered = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
-    /// - Parameters:
-    ///   - pos: posición del knob, 0–100.
-    ///   - zone: segmento activo, 0–3.
-    public init(label: String = "CARGA", pos: Double, zone: Int, status: String,
-                state: LiquidSignalState = .ok) {
+    public init(label: String = "CARGA", modo: LiquidCargaModo, status: String,
+                state: LiquidSignalState = .ok, action: (() -> Void)? = nil) {
         self.label = label
-        self.pos = pos
-        self.zone = zone
+        self.modo = modo
         self.status = status
         self.state = state
+        self.action = action
+    }
+
+    /// Conveniencia con la firma del contrato del handoff (modo medido).
+    public init(label: String = "CARGA", pos: Double, zone: Int, status: String,
+                state: LiquidSignalState = .ok, action: (() -> Void)? = nil) {
+        self.init(label: label, modo: .medida(pos: pos, zone: zone), status: status,
+                  state: state, action: action)
     }
 
     public var body: some View {
+        if let action {
+            Button(action: action) { row }
+                .buttonStyle(.liquidPress)
+                .accessibilityLabel(Self.a11yLabel(label: label, status: status))
+        } else {
+            row
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Self.a11yLabel(label: label, status: status))
+        }
+    }
+
+    /// «{label}: {status}» — el contrato de VoiceOver de la barra (testeable en frío).
+    static func a11yLabel(label: String, status: String) -> String {
+        "\(label): \(status)"
+    }
+
+    private var row: some View {
         HStack(spacing: LiquidSpace.s300) {
             Text(label)
                 .font(LiquidType.cargaLabel).tracking(LiquidType.cargaLabelTracking)
@@ -40,14 +71,14 @@ public struct LiquidCargaBar: View {
             bar
             Text(status)
                 .font(LiquidType.cargaStatus).tracking(LiquidType.cargaStatusTracking)
-                .foregroundStyle(state.status)
+                .foregroundStyle(calibrando ? LiquidColor.tinta500 : state.status)
                 .lineLimit(1)
         }
         .padding(.vertical, 9)
         .padding(.horizontal, LiquidSpace.s400)
         .liquidGlass(.pastilla)
         .onAppear {
-            guard !entered, !motionDisabled else { return }
+            guard case .medida = modo, !entered, !motionDisabled else { return }
             entered = true
             if reduceMotion {
                 shownPos = clampedPos
@@ -57,8 +88,18 @@ public struct LiquidCargaBar: View {
         }
     }
 
+    private var calibrando: Bool {
+        modo == .calibrando
+    }
+
     private var clampedPos: Double {
-        min(100, max(0, pos))
+        guard case .medida(let pos, _) = modo else { return 50 }
+        return min(100, max(0, pos))
+    }
+
+    private var zone: Int? {
+        guard case .medida(_, let zone) = modo else { return nil }
+        return zone
     }
 
     private var bar: some View {
@@ -74,11 +115,13 @@ public struct LiquidCargaBar: View {
                     segment(3)
                 }
                 .padding(.vertical, 3)
-                Circle()
-                    .fill(Color.white)
-                    .overlay(Circle().strokeBorder(LiquidColor.tinta900, lineWidth: 2))
-                    .frame(width: 10, height: 10)
-                    .offset(x: w * effectivePos / 100 - 5)
+                if !calibrando {
+                    Circle()
+                        .fill(Color.white)
+                        .overlay(Circle().strokeBorder(LiquidColor.tinta900, lineWidth: 2))
+                        .frame(width: 10, height: 10)
+                        .offset(x: w * effectivePos / 100 - 5)
+                }
             }
         }
         .frame(height: 10)
@@ -108,6 +151,7 @@ public struct LiquidCargaBar: View {
     VStack(spacing: LiquidSpace.s400) {
         LiquidCargaBar(pos: 51.5, zone: 1, status: "EN EQUILIBRIO · 1.03")
         LiquidCargaBar(pos: 84, zone: 3, status: "SOBRECARGA · 1.62", state: .atencion)
+        LiquidCargaBar(modo: .calibrando, status: "CALIBRANDO")
     }
     .padding(LiquidSpace.s550)
     .background(LiquidColor.papelGradient)

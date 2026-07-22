@@ -118,6 +118,20 @@ private struct LiquidMotionDisabledKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+/// Pausa SOLO las animaciones ambientales continuas (drift de orbes, pulsos de cables) sin
+/// tocar las recetas de interacción. El app la setea desde `scenePhase` para que un Hoy en
+/// background no mantenga TimelineViews vivos (FER-1045).
+private struct LiquidAmbientPausedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+public extension EnvironmentValues {
+    var liquidAmbientPaused: Bool {
+        get { self[LiquidAmbientPausedKey.self] }
+        set { self[LiquidAmbientPausedKey.self] = newValue }
+    }
+}
+
 public extension EnvironmentValues {
     /// Congela TODO el motion del sistema Liquid y presenta la UI ya asentada (progresos
     /// en su valor, entradas visibles). Para previews «sin motion», tests y renders — el
