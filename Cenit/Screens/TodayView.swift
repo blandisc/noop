@@ -4,6 +4,7 @@ import StrandAnalytics
 import StrandTraining
 import CenitStore
 import Foundation
+import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 
 // MARK: - Hoy «Instrumento» evolucionado (FER-709, handoff 2026-07)
@@ -108,6 +109,9 @@ private struct PullSyncHint: View {
 #endif
 
 struct TodayView: View {
+    // Inject: el hook vive en el struct NO privado más externo del archivo (regla PR#1036);
+    // interponer el `body` global arma la copia fresca del archivo completo, privados incluidos.
+    @ObserveInjection private var inject
     @EnvironmentObject var repo: Repository
 
     #if os(iOS)
@@ -434,6 +438,7 @@ struct TodayView: View {
                                   onSeeTrends: item.onSeeTrends)
                     .recEntranceGate()
             }
+            .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
 
     /// Arma la hoja de carga desde la franja: engancha «Tu patrón» al hallazgo de carga (si existe, de la
