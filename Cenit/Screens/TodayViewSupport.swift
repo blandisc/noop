@@ -113,28 +113,6 @@ extension TodayView {
     /// ¿Horario diurno (8–22)? Puro reloj: no gritamos «banda desconectada» mientras duermes.
     var isDaytime: Bool { clockHourNow >= 8 && clockHourNow < 22 }
 
-    /// El glifo del ajuste de ritmo (flecha diagonal arriba/abajo; horizontal en «mantén»).
-    func paceGlyph(_ pace: DailyBrief.TrainingBlock.Pace?) -> String {
-        switch pace {
-        case .up:   return "arrow.up.right"
-        case .down: return "arrow.down.right"
-        case .hold, .none: return "arrow.right"
-        }
-    }
-
-    /// SF Symbol por tema de viñeta (la presentación vive en la app, no en el motor puro).
-    func briefGlyph(_ kind: DailyBrief.BulletKind) -> String {
-        switch kind {
-        case .sleep:    return "moon.fill"
-        case .recovery: return "arrow.up"
-        case .hrv:      return "waveform.path.ecg"
-        case .rhr:      return "bed.double.fill"
-        case .respRate: return "lungs.fill"
-        case .skinTemp: return "thermometer.medium"
-        case .acwr:     return "bolt.fill"
-        }
-    }
-
     /// El canalón entre Señales y Brief (FER-725): el hueco de papel que se ve al deslizar, para que las
     /// hojas no se lean pegadas. Solo visible en la transición (en reposo la hoja activa llena la pantalla).
     var pagerGutter: CGFloat { CenitMetrics.screenPadding + CenitMetrics.space2 }   // 32
