@@ -81,10 +81,10 @@ public enum ReadinessEngine {
         /// verdict hero, «Your patterns», the Tendencias card and its explainer sheet.
         public var shortLabel: String {
             switch self {
-            case .rampingDown:  return String(localized: "Easing off", bundle: .main)
-            case .sweetSpot:    return String(localized: "In balance", bundle: .main)
-            case .buildingFast: return String(localized: "Ramping up", bundle: .main)
-            case .spiking:      return String(localized: "Ramping fast", bundle: .main)
+            case .rampingDown:  return appLocalized("Easing off")
+            case .sweetSpot:    return appLocalized("In balance")
+            case .buildingFast: return appLocalized("Ramping up")
+            case .spiking:      return appLocalized("Ramping fast")
             }
         }
 
@@ -200,8 +200,8 @@ public enum ReadinessEngine {
         if let today { latestRow = sorted.first { $0.day == today } } else { latestRow = sorted.last }
         guard let latest = latestRow else {
             return Readiness(level: .insufficient,
-                             headline: String(localized: "Readiness", bundle: .main),
-                             summary: String(localized: "Wear the strap for a few nights and your readiness read will appear here.", bundle: .main),
+                             headline: appLocalized("Readiness"),
+                             summary: appLocalized("Wear the strap for a few nights and your readiness read will appear here."),
                              signals: [], acwr: nil, monotony: nil)
         }
         let history = sorted.filter { $0.day < latest.day }   // everything before today
@@ -212,24 +212,24 @@ public enum ReadinessEngine {
         let hrvSignal = zSignal(
             value: latest.avgHrv,
             history: history.map { $0.avgHrv }, cfg: Baselines.hrvCfg,
-            key: "hrv", label: String(localized: "HRV", bundle: .main),
+            key: "hrv", label: appLocalized("HRV"),
             higherIsBetter: true,
-            goodText: String(localized: "above your baseline — well recovered", bundle: .main),
-            neutralText: String(localized: "in your normal range", bundle: .main),
-            watchText: String(localized: "slightly below your usual", bundle: .main),
-            badText: String(localized: "suppressed — a sign of autonomic fatigue", bundle: .main))
+            goodText: appLocalized("above your baseline — well recovered"),
+            neutralText: appLocalized("in your normal range"),
+            watchText: appLocalized("slightly below your usual"),
+            badText: appLocalized("suppressed — a sign of autonomic fatigue"))
         if let s = hrvSignal { signals.append(s) }
 
         // Resting-HR drift ---------------------------------------------------
         let rhrSignal = zSignal(
             value: latest.restingHr.map(Double.init),
             history: history.map { $0.restingHr.map(Double.init) }, cfg: Baselines.restingHRCfg,
-            key: "rhr", label: String(localized: "Resting HR", bundle: .main),
+            key: "rhr", label: appLocalized("Resting HR"),
             higherIsBetter: false,
-            goodText: String(localized: "at or below baseline", bundle: .main),
-            neutralText: String(localized: "in your normal range", bundle: .main),
-            watchText: String(localized: "running a little high", bundle: .main),
-            badText: String(localized: "elevated — overtraining or illness can do this", bundle: .main))
+            goodText: appLocalized("at or below baseline"),
+            neutralText: appLocalized("in your normal range"),
+            watchText: appLocalized("running a little high"),
+            badText: appLocalized("elevated — overtraining or illness can do this"))
         if let s = rhrSignal { signals.append(s) }
 
         // Respiratory-rate drift (illness early signal) ----------------------
@@ -242,12 +242,12 @@ public enum ReadinessEngine {
             if base.count >= minBaseline, let m = mean(base), let sd = sampleSD(base), sd > 0 {
                 let z = (rr - m) / sd
                 if z >= respBadZ {
-                    signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
-                        detail: String(localized: "up vs baseline — sometimes an early sign of getting sick", bundle: .main),
+                    signals.append(Signal(key: "respRate", label: appLocalized("Respiratory rate"),
+                        detail: appLocalized("up vs baseline — sometimes an early sign of getting sick"),
                         flag: .bad, value: String(format: "%+.1fσ", z), z: z))
                 } else if z >= respWatchZ {
-                    signals.append(Signal(key: "respRate", label: String(localized: "Respiratory rate", bundle: .main),
-                        detail: String(localized: "slightly raised vs baseline", bundle: .main),
+                    signals.append(Signal(key: "respRate", label: appLocalized("Respiratory rate"),
+                        detail: appLocalized("slightly raised vs baseline"),
                         flag: .watch, value: String(format: "%+.1fσ", z), z: z))
                 }
             }
@@ -258,12 +258,12 @@ public enum ReadinessEngine {
         // a sustained rise is a classic early illness marker (Oura uses ~+0.5 °C).
         if let dev = latest.skinTempDevC {
             if dev >= 0.8 {
-                signals.append(Signal(key: "skinTemp", label: String(localized: "Skin temperature", bundle: .main),
-                    detail: String(localized: "well above baseline — often an early sign of illness", bundle: .main),
+                signals.append(Signal(key: "skinTemp", label: appLocalized("Skin temperature"),
+                    detail: appLocalized("well above baseline — often an early sign of illness"),
                     flag: .bad, value: String(format: "%+.1f °C", dev)))
             } else if dev >= 0.4 {
-                signals.append(Signal(key: "skinTemp", label: String(localized: "Skin temperature", bundle: .main),
-                    detail: String(localized: "running warm vs baseline", bundle: .main),
+                signals.append(Signal(key: "skinTemp", label: appLocalized("Skin temperature"),
+                    detail: appLocalized("running warm vs baseline"),
                     flag: .watch, value: String(format: "%+.1f °C", dev)))
             }
         }
@@ -290,8 +290,8 @@ public enum ReadinessEngine {
                 let mono = m / sd
                 monotony = mono
                 if mono >= 2.0 {
-                    signals.append(Signal(key: "monotony", label: String(localized: "Training variety", bundle: .main),
-                        detail: String(localized: "low — similar strain every day raises strain/illness risk", bundle: .main),
+                    signals.append(Signal(key: "monotony", label: appLocalized("Training variety"),
+                        detail: appLocalized("low — similar strain every day raises strain/illness risk"),
                         flag: .watch, value: String(format: "%.1f", mono)))
                 }
             }
@@ -302,7 +302,7 @@ public enum ReadinessEngine {
         // "Low conf" chip on HRV). Only claimed when we actually have last night's sleep duration.
         let confidenceLow = (latest.totalSleepMin ?? .greatestFiniteMagnitude) < Self.shortNightMinutes
         let confidenceNote = confidenceLow
-            ? String(localized: "Based on a short night — confidence low.", bundle: .main)
+            ? appLocalized("Based on a short night — confidence low.")
             : nil
 
         let (level, headline, summary) = synthesize(signals: signals,
@@ -403,7 +403,7 @@ public enum ReadinessEngine {
 
     private static func acwrSignal(_ ratio: Double) -> Signal {
         let pct = String(format: "%.2f", ratio)
-        let label = String(localized: "Training load", bundle: .main)
+        let label = appLocalized("Training load")
         let band = loadBand(forACWR: ratio)
         // The compact read-out is the bare acute:chronic ratio (one decimal) — a load of 1.0 means acute
         // == chronic. No σ here: load is already a normalized ratio, not a deviation from a baseline.
@@ -416,16 +416,16 @@ public enum ReadinessEngine {
         switch band {
         case .rampingDown:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "easing off (\(pct)) — recent load below your usual", bundle: .main), flag: band.flag, value: value)
+                detail: appLocalized("easing off (\(pct)) — recent load below your usual"), flag: band.flag, value: value)
         case .sweetSpot:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "in balance (\(pct)) — recent load in line with your usual", bundle: .main), flag: band.flag, value: value)
+                detail: appLocalized("in balance (\(pct)) — recent load in line with your usual"), flag: band.flag, value: value)
         case .buildingFast:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "ramping up (\(pct)) — recent load above your usual", bundle: .main), flag: band.flag, value: value)
+                detail: appLocalized("ramping up (\(pct)) — recent load above your usual"), flag: band.flag, value: value)
         case .spiking:
             return Signal(key: "acwr", label: label,
-                detail: String(localized: "ramping fast (\(pct)) — recent load well above your usual", bundle: .main), flag: band.flag, value: value)
+                detail: appLocalized("ramping fast (\(pct)) — recent load well above your usual"), flag: band.flag, value: value)
         }
     }
 
@@ -433,8 +433,8 @@ public enum ReadinessEngine {
 
     private static func synthesize(signals: [Signal], hasHistory: Bool) -> (Level, String, String) {
         guard hasHistory, !signals.isEmpty else {
-            return (.insufficient, String(localized: "Readiness", bundle: .main),
-                    String(localized: "A few more nights of data and your readiness read will sharpen.", bundle: .main))
+            return (.insufficient, appLocalized("Readiness"),
+                    appLocalized("A few more nights of data and your readiness read will sharpen."))
         }
         let bad = signals.filter { $0.flag == .bad }
         let watch = signals.filter { $0.flag == .watch }
@@ -443,19 +443,19 @@ public enum ReadinessEngine {
         let loadHigh = signals.contains { $0.key == "acwr" && $0.flag == .bad }
 
         if bad.count >= 2 || (recoveryDown && loadHigh) {
-            return (.rundown, String(localized: "Run down", bundle: .main),
-                    String(localized: "Several signals are down at once. Treat today as recovery — easy movement, real sleep tonight.", bundle: .main))
+            return (.rundown, appLocalized("Run down"),
+                    appLocalized("Several signals are down at once. Treat today as recovery — easy movement, real sleep tonight."))
         }
         if recoveryDown || loadHigh || bad.count >= 1 {
-            return (.strained, String(localized: "Strained", bundle: .main),
-                    String(localized: "One of your signals is flagging. You can train, but keep it controlled and bank the recovery.", bundle: .main))
+            return (.strained, appLocalized("Strained"),
+                    appLocalized("One of your signals is flagging. You can train, but keep it controlled and bank the recovery."))
         }
         if good.count >= 2 && watch.isEmpty {
-            return (.primed, String(localized: "Primed", bundle: .main),
-                    String(localized: "Your signals are aligned and your load is supported. A harder session is well backed today.", bundle: .main))
+            return (.primed, appLocalized("Primed"),
+                    appLocalized("Your signals are aligned and your load is supported. A harder session is well backed today."))
         }
-        return (.balanced, String(localized: "Balanced", bundle: .main),
-                String(localized: "Nothing's flagging. Train to feel — your body's holding steady.", bundle: .main))
+        return (.balanced, appLocalized("Balanced"),
+                appLocalized("Nothing's flagging. Train to feel — your body's holding steady."))
     }
 
     // MARK: Reconciliation (recovery vs. verdict)
@@ -488,12 +488,12 @@ public enum ReadinessEngine {
     /// and the verdict card's sublabel ("from {your training load}"). One source so both agree.
     private static func signalNoun(_ key: String) -> String {
         switch key {
-        case "acwr":     return String(localized: "your training load", bundle: .main)
-        case "hrv":      return String(localized: "your HRV", bundle: .main)
-        case "rhr":      return String(localized: "your resting heart rate", bundle: .main)
-        case "skinTemp": return String(localized: "your skin temperature", bundle: .main)
-        case "respRate": return String(localized: "your breathing", bundle: .main)
-        default:         return String(localized: "one of your signals", bundle: .main)
+        case "acwr":     return appLocalized("your training load")
+        case "hrv":      return appLocalized("your HRV")
+        case "rhr":      return appLocalized("your resting heart rate")
+        case "skinTemp": return appLocalized("your skin temperature")
+        case "respRate": return appLocalized("your breathing")
+        default:         return appLocalized("one of your signals")
         }
     }
 
@@ -504,7 +504,7 @@ public enum ReadinessEngine {
         case .none, .aligned:
             return nil
         case .rundown:
-            return String(localized: "several signals", bundle: .main)
+            return appLocalized("several signals")
         case .divergenceLoad, .divergenceBody, .strainedFlat:
             return lead.map { signalNoun($0.key) }
         }
@@ -516,15 +516,15 @@ public enum ReadinessEngine {
         case .none:
             return nil
         case .aligned:
-            return String(localized: "Your signals are aligned and your load is supported. A harder session is well backed today.", bundle: .main)
+            return appLocalized("Your signals are aligned and your load is supported. A harder session is well backed today.")
         case .rundown:
-            return String(localized: "Several signals are down at once. Treat today as recovery.", bundle: .main)
+            return appLocalized("Several signals are down at once. Treat today as recovery.")
         case .strainedFlat:
-            return String(localized: "One of your signals is flagging. You can train, but keep it controlled.", bundle: .main)
+            return appLocalized("One of your signals is flagging. You can train, but keep it controlled.")
         case .divergenceLoad:
-            return String(localized: "You woke up well recovered. What needs care today is your training load, not your body.", bundle: .main)
+            return appLocalized("You woke up well recovered. What needs care today is your training load, not your body.")
         case .divergenceBody:
-            return String(localized: "Your recovery is high, but \(signalNoun(lead?.key ?? "")) is flagging — keep an eye on that today.", bundle: .main)
+            return appLocalized("Your recovery is high, but \(signalNoun(lead?.key ?? "")) is flagging — keep an eye on that today.")
         }
     }
 
