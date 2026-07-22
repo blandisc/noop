@@ -77,8 +77,9 @@ public enum IllnessSignalEngine {
     }
 
     /// Same-day behaviour context that can explain an anomaly away. All default-false / nil so a caller
-    /// with no journal still gets the raw signal read. `travelPhaseJump` is the cross-feature hook — the
-    /// CircadianEngine can flag a detected body-clock jump (jet lag), which itself shifts temp + RHR.
+    /// with no journal still gets the raw signal read. `travelPhaseJump` is a cross-feature hook
+    /// (currently always false — the body-clock-jump detector was retired); a detected jump (jet lag)
+    /// would set it, since a body-clock jump itself shifts temp + RHR.
     public struct Context: Equatable, Sendable {
         public var alcohol: Bool
         public var stress: Bool

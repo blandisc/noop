@@ -2,7 +2,7 @@ import XCTest
 @testable import StrandAnalytics
 
 /// FER-60: pins the cold-start contract the Apple Health baseline prior relies on. Folding a handful
-/// of seed nights (what `IntelligenceEngine` injects from the capped Apple Health history) must take
+/// of seed nights (the capped seed prior injected from Apple Health history) must take
 /// the HRV baseline from CALIBRATING — where recovery honestly refuses to score — to PROVISIONAL,
 /// where recovery scores but the FER-13 confidence shrinkage still damps it (so the Apple↔strap HRV
 /// scale gap can't swing the number). A capped prior must NOT vault straight to TRUSTED.

@@ -408,8 +408,8 @@ final class HealthKitBridge: ObservableObject {
                        walkingHr: nil, weightKg: nil)
         }
         // FER-882: Apple's OWN rolling skin-temp baseline over the sync window, then the same final
-        // state's deviation applied to every night (mirrors IntelligenceEngine.recomputeSkinTempDev —
-        // one fold, not a per-day incremental). Never mixed with the band's baseline.
+        // state's deviation applied to every night (one fold over the window, not a per-day
+        // incremental). Never mixed with the band's baseline.
         let skinCfg = Baselines.metricCfg["skin_temp"]!   // minVal 20 / maxVal 42 °C absolute
         let skinSeq: [(day: String, value: Double?)] = byDay.keys.sorted().map { (day: $0, value: byDay[$0]?.skinTempC) }
         let appleSkinBase = Baselines.foldHistory(skinSeq, epoch: nil, cfg: skinCfg)

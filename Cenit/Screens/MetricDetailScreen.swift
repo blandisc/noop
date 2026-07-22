@@ -46,7 +46,7 @@ struct MetricDetailScreen: View {
     /// published conversion), so folding both into one baseline/σ, consistency CV or period Δ% mixes two
     /// scales (FER-629). The screen keeps EVERY night on the today datum + hero (today may be an Apple
     /// night), but folds a SINGLE source into the statistics and the trend line — the band-level equivalent
-    /// of `SourceLens.maskForBaseline` (FER-631), kept here as a plain day-key filter so the view stays
+    /// of `SourceLens.clearBandColumns` (FER-631), kept here as a plain day-key filter so the view stays
     /// DB-free. Empty (a strap-only user, or a single-source metric) → identity, nothing changes. (FER-635)
     var appleDays: Set<String> = []
 
@@ -1090,7 +1090,7 @@ struct MetricDetailScreen: View {
 
     /// Does this day belong to the source the statistics fold? Identity (keeps every day) for a single-source
     /// metric or a strap-only user; otherwise keeps only the chosen source's nights — the same band↔Apple
-    /// classification `SourceLens` uses (`.band` keeps non-Apple days). (FER-635)
+    /// split the cross-source clearing draws on (non-Apple days are the band's). (FER-635)
     private func keepsForStats(_ day: String) -> Bool {
         guard isCrossSource, !appleDays.isEmpty else { return true }
         return appleDays.contains(day) == statKeepsApple

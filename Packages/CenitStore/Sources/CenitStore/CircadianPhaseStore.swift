@@ -3,7 +3,7 @@ import GRDB
 
 // CircadianPhaseStore.swift — persistence for the body-clock phase estimate behind the "Tu reloj
 // corporal" experimental surface (FER-712). One structured record per local civil day, written by the
-// nightly IntelligenceEngine pass and read back by the app-layer provider. Raw-SQL upsert + read via the
+// nightly strap phase pass (dormant under Apple-only) and read back by the app-layer provider. Raw-SQL upsert + read via the
 // actor's syncWrite/syncRead helpers (off the main thread), the same house pattern as ExperimentStore.
 //
 // `confidence` is stored as the raw PhaseConfidence string: CenitStore keeps NO dependency on

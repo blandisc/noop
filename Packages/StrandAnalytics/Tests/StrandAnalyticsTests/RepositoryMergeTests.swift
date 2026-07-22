@@ -51,7 +51,7 @@ final class RepositoryMergeTests: XCTestCase {
 
     // MARK: - FER-149 — display-only Apple back-fill for empty-strap days
 
-    /// A strap-covered day whose HRV is nil (a partial-connection day: IntelligenceEngine wrote a
+    /// A strap-covered day whose HRV is nil (a partial-connection day: the strap pass wrote a
     /// `daily` with HRV/recovery nil) must show Apple Health's HRV in the DISPLAY rows (sparkline/trend)
     /// while the strap-only `days` keep nil — so the value fills the sparkline without inflating the
     /// recovery calibration (`ownNights` maps `repo.days`, never `displayDays`).

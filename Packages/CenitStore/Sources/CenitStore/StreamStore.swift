@@ -26,8 +26,8 @@ extension CenitStore {
     /// F7 (reduced scope, "la banda nunca existió"): only `hrSample`/`rrInterval` are written now —
     /// the other `Streams` fields (spo2/skinTemp/resp/gravity/steps/events/battery) fed band-only raw
     /// tables dropped in v37; writing them here would throw "no such table" and abort this WHOLE
-    /// transaction (including the still-live hr/rr insert). `Streams` itself is unchanged (shared
-    /// with the research-only `WhoopProtocol` package) — its extra fields simply aren't persisted here.
+    /// transaction (including the still-live hr/rr insert). `Streams` itself is unchanged —
+    /// its extra fields simply aren't persisted here.
     ///
     /// NOTE: the `synced` column (added by migration v5 for a since-removed server-upload feature)
     /// is intentionally NOT written here — it is unused and defaults to 0. The column is left in the
