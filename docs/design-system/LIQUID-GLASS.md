@@ -144,6 +144,16 @@ TabBar viven en `LiquidTabBar` (viewBox 23). Tests de bounds por glifo en `Liqui
 datos del ensamble). Orden §7.1: fondo → cabecera → señales → hero → CargaBar → grid 2×4 de
 tiles → velo + TabBar. Previews con y sin motion.
 
+**Composición en app (FER-1045):** `LiquidHoyContent` es la columna COMPONIBLE — sin
+ScrollView, sin TabBar, sin fondo ni safe-areas propios; el app es dueño del scroll
+(pull-to-sync), del dock y monta `LiquidAmbientBackground` detrás. Acciones por id estable
+(`onTapMetric/onTapSenal/onTapCarga/onTapHero`). El modelo habla por estados: `Hero`
+(.veredicto con `highlightTone` / .demotado), `Senal.progress: Double?` (nil = SIN DATOS),
+`Carga?` (.medida / .calibrando / ausente), dial con noche opcional y `origen` por métrica.
+`\.liquidAmbientPaused` (scenePhase) congela drift/pulsos en background. En Cénit, el puente
+de datos reales es `LiquidHoyBuilder` (app layer): proyección pura del estado ya derivado,
+con paridad probada por fixtures.
+
 ## 8. Desviaciones documentadas vs. el prototipo HTML
 
 1. **Pulso de cables con `trim`, no stroke-dash** (§5 arriba). Mismo periodo/delays/largo.

@@ -18,7 +18,7 @@ import SwiftUI
 public struct LiquidSignalOrb: View {
     private let label: String
     private let caption: String
-    private let progress: Double
+    private let progress: Double?
     private let icon: LiquidIcon.Glyph
     private let state: LiquidSignalState
     private let action: (() -> Void)?
@@ -27,7 +27,9 @@ public struct LiquidSignalOrb: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
-    public init(label: String, caption: String, progress: Double,
+    /// `progress == nil` = SIN DATOS: solo el track, sin arco ni punto; el caption baja a
+    /// tinta/500 (el eje no vota — FER-1045).
+    public init(label: String, caption: String, progress: Double?,
                 icon: LiquidIcon.Glyph, state: LiquidSignalState,
                 action: (() -> Void)? = nil) {
         self.label = label
@@ -40,10 +42,19 @@ public struct LiquidSignalOrb: View {
 
     public var body: some View {
         if let action {
-            Button(action: action) { column }.buttonStyle(.liquidPress)
+            Button(action: action) { column }
+                .buttonStyle(.liquidPress)
+                .accessibilityLabel(Self.a11yLabel(label: label, caption: caption))
         } else {
             column
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Self.a11yLabel(label: label, caption: caption))
         }
+    }
+
+    /// «{label}: {caption}» — el contrato de VoiceOver del orbe (testeable en frío).
+    static func a11yLabel(label: String, caption: String) -> String {
+        "\(label): \(caption)"
     }
 
     private var column: some View {
@@ -51,11 +62,12 @@ public struct LiquidSignalOrb: View {
             orb
             Text(label).liquidMicro().foregroundStyle(LiquidColor.tinta900)
                 .multilineTextAlignment(.center)
-            Text(caption).font(LiquidType.microEstado).foregroundStyle(state.caption)
+            Text(caption).font(LiquidType.microEstado)
+                .foregroundStyle(progress == nil ? LiquidColor.tinta500 : state.caption)
                 .padding(.top, -3)
         }
         .onAppear {
-            guard shownProgress == 0, !motionDisabled else { return }
+            guard let clamped, shownProgress == 0, !motionDisabled else { return }
             if reduceMotion {
                 shownProgress = clamped
             } else {
@@ -64,27 +76,29 @@ public struct LiquidSignalOrb: View {
         }
     }
 
-    private var clamped: Double {
-        min(1, max(0.02, progress))
+    private var clamped: Double? {
+        progress.map { min(1, max(0.02, $0)) }
     }
 
     private var orb: some View {
         // Con el motion congelado (previews/renders) el anillo se pinta ya en su valor.
-        let displayed = motionDisabled ? clamped : shownProgress
+        let displayed: Double? = motionDisabled ? clamped : (clamped == nil ? nil : shownProgress)
         return ZStack {
             LiquidSphere(tone: state.tone)
                 .padding(4)
                 .liquidShadow(LiquidElevation.e2(tone: state.tone))
             // Track + progreso, r29 de un lienzo de 64 (relación 29/32 del radio medio).
             OrbRing().stroke(LiquidColor.tinta10, lineWidth: 3.5)
-            OrbRing()
-                .trim(from: 0, to: displayed)
-                .stroke(state.ring, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
-                .rotationEffect(.degrees(orbStartAngle))
-            OrbMarkerDot(progress: displayed)
-                .fill(LiquidColor.tinta900)
-            OrbMarkerDot(progress: displayed)
-                .stroke(Color.white, lineWidth: 1.4)
+            if let displayed {
+                OrbRing()
+                    .trim(from: 0, to: displayed)
+                    .stroke(state.ring, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                    .rotationEffect(.degrees(orbStartAngle))
+                OrbMarkerDot(progress: displayed)
+                    .fill(LiquidColor.tinta900)
+                OrbMarkerDot(progress: displayed)
+                    .stroke(Color.white, lineWidth: 1.4)
+            }
             LiquidIcon(icon, size: 18).foregroundStyle(LiquidColor.tinta900)
         }
         .frame(width: 64, height: 64)

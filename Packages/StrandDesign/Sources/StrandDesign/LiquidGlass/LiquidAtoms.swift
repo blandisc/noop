@@ -48,7 +48,8 @@ public struct LiquidIconDrop: View {
 }
 
 /// El caption de delta bajo un valor («+2 ms vs tu base»): caption 9/500 con el color
-/// semántico del tono de delta — nunca un color propio.
+/// semántico del tono de delta — nunca un color propio. Es texto de lectura: escala con
+/// Dynamic Type.
 public struct LiquidDeltaCaption: View {
     private let text: String
     private let tone: LiquidDeltaTone
@@ -60,8 +61,28 @@ public struct LiquidDeltaCaption: View {
 
     public var body: some View {
         Text(text)
-            .font(LiquidType.caption)
+            .font(LiquidType.captionLectura)
             .foregroundStyle(tone.color)
+    }
+}
+
+/// Origen del dato de un tile (paridad con el SourceChip FER-878 en mundo Apple-only):
+/// medido por Apple Salud, o calculado/estimado por Cénit (p. ej. pasos estimados FER-663).
+public enum LiquidOrigen: Sendable, Equatable {
+    case medido
+    case calculado
+}
+
+/// El punto de origen que marca un dato CALCULADO junto a su delta; la leyenda bajo la
+/// retícula lo decodifica. Decorativo para VoiceOver (la leyenda es quien habla).
+public struct LiquidOrigenDot: View {
+    public init() {}
+
+    public var body: some View {
+        Circle()
+            .fill(LiquidColor.tinta500.opacity(0.55))
+            .frame(width: 3, height: 3)
+            .accessibilityHidden(true)
     }
 }
 

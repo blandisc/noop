@@ -99,6 +99,27 @@ final class LiquidGlassTests: XCTestCase {
         XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 5.3, delay: 0.8), 0.5, accuracy: 1e-9)
     }
 
+    // MARK: Contratos a11y (FER-1045) — las composiciones de label que lee VoiceOver
+
+    func test_a11y_contratos() {
+        XCTAssertEqual(
+            LiquidMetricTile.a11yLabel(label: "HRV", value: "56", unit: "ms",
+                                       delta: "+2 ms vs tu base"),
+            "HRV, 56 ms, +2 ms vs tu base")
+        XCTAssertEqual(
+            LiquidMetricTile.a11yLabel(label: "SUEÑO", value: "7:20", unit: "", delta: "En tu base"),
+            "SUEÑO, 7:20, En tu base")
+        XCTAssertEqual(LiquidSignalOrb.a11yLabel(label: "AUTONÓMICO", caption: "EN TU RANGO"),
+                       "AUTONÓMICO: EN TU RANGO")
+        XCTAssertEqual(LiquidCargaBar.a11yLabel(label: "CARGA", status: "EN EQUILIBRIO · 1.03"),
+                       "CARGA: EN EQUILIBRIO · 1.03")
+        XCTAssertEqual(
+            LiquidHeroVeredicto.a11yLabel(title: "Dale\ncon todo",
+                                          subtitle: "Tus 3 señales amanecieron dentro de tu rango.",
+                                          confianza: "Confianza: 12 de 21 noches"),
+            "Dale con todo. Tus 3 señales amanecieron dentro de tu rango. Confianza: 12 de 21 noches")
+    }
+
     // MARK: Render de humo (macOS)
 
     #if os(macOS)

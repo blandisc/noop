@@ -180,6 +180,12 @@ struct TodayView: View {
     // StressView builds, computed once per load from `repo.displayDays` + the stored "stress" series. (FER-180)
     @State private var stress: StressModel? = nil
 
+    // FER-1045 «Hoy Liquid»: la ventana de la sesión de sueño de anoche (horas locales
+    // 0–24) para el dial-sello; nil = sin sesión → el dial solo marca la hora.
+    @State private var liquidNight: (start: Double, end: Double)? = nil
+    // Pausa las animaciones ambientales Liquid (drift/pulsos) cuando Hoy no está activo.
+    @Environment(\.scenePhase) private var scenePhase
+
 
     // Insights del día (FER-614), cargados en `loadAll` vía el loader compartido `InsightsProvider` (mismo
     // FDR que muestra Patrones). FER-1039: retirado el brief, el único consumidor vivo aquí es la franja de
@@ -303,6 +309,14 @@ struct TodayView: View {
                 let now   = Int(Date().timeIntervalSince1970)
                 let rows  = await repo.hrBuckets(from: start, to: now, bucketSeconds: 300)
                 hrPoints  = rows.map { TrendPoint(date: Date(timeIntervalSince1970: TimeInterval($0.ts)), value: $0.bpm) }
+            }
+            .task(id: repo.refreshSeq) {
+                // FER-1045: la sesión de sueño de anoche (desde ayer mediodía) para el dial-sello.
+                let calendar = Calendar.current
+                let from = Int(calendar.startOfDay(for: Date()).timeIntervalSince1970) - 12 * 3600
+                let to = Int(Date().timeIntervalSince1970)
+                let sessions = await repo.sleepSessions(from: from, to: to)
+                liquidNight = Self.nightWindow(sessions: sessions, calendar: calendar)
             }
             // «Hoy» nunca pedía la carga del strap por su cuenta: dependía del sondeo del keep-alive
             // (cada ~60 s, y SUSPENDIDO durante el offload), así que tras el sync matutino la batería
@@ -582,11 +596,25 @@ struct TodayView: View {
         // dial pasa a girar (modo `syncing` de FER-221). La háptica `.medium` la dispara
         // `.sensoryFeedback` por el cambio de `syncHaptic` que hace `pullToSync` (heredado de FER-204).
         .sensoryFeedback(.impact(weight: .medium), trigger: syncHaptic)
-        // El fondo es el papel del tema (`PaperBackground` lee `\.instrumentoTheme` DENTRO del subárbol
-        // tematizado). El tema se ancla aquí al papel de día `.base`, acotado a TodayView (NUNCA en
-        // RootTabView): todo el árbol de abajo lee `\.instrumentoTheme`. FER-398 retiró el tinte por hora;
-        // el momento del día ya solo vive en el `DiurnalDial` (posición del «ahora», arco solar, sueño).
-        .background(PaperBackground())
+        // El fondo (FER-1045): la superficie Liquid monta su fondo ambiental (aurora + orbes
+        // drift) DETRÁS del scroll — un solo fondo, nunca papel doble; el estado vacío conserva
+        // el papel del tema. El velo de status corona la superficie Liquid, y las animaciones
+        // ambientales se pausan fuera de `.active` (scenePhase → `liquidAmbientPaused`).
+        .background {
+            if noSources {
+                PaperBackground()
+            } else {
+                LiquidAmbientBackground.hoy
+            }
+        }
+        .overlay(alignment: .top) {
+            if !noSources {
+                LiquidVeil()
+                    .frame(height: LiquidSpace.s1400)
+                    .ignoresSafeArea(edges: .top)
+            }
+        }
+        .environment(\.liquidAmbientPaused, scenePhase != .active)
         .instrumentoTheme(.base)
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el
@@ -636,22 +664,26 @@ struct TodayView: View {
     @ViewBuilder
     private func todayScroll(_ proxy: GeometryProxy) -> some View {
         let scroll = ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // Bloque FIJO del instrumento (handoff «Hoy» 2026-07): header + héroe. Sigue dentro del
-                // scroll vertical, así que el pull-to-refresh propio (FER-222) NO cambia.
-                // FER-878 follow-up: aire más apretado entre header y héroe (space1) para recuperar el
-                // alto que sumaron la cápsula del delta y la leyenda de orígenes, y que SEÑALES vuelva a
-                // caber sin scroll.
-                VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-                    headerBlock
-                    HealthAlertBanner()
-                    heroBlock
+            Group {
+                // FER-1045 «Hoy Liquid»: la superficie normal es la composición Liquid Glass
+                // alimentada por el MISMO estado derivado (builder puro). El estado vacío
+                // (cero fuentes) conserva la superficie anterior intacta (criterio 7).
+                if noSources {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // Bloque FIJO del instrumento (handoff «Hoy» 2026-07): header + héroe.
+                        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+                            headerBlock
+                            HealthAlertBanner()
+                            heroBlock
+                        }
+                        // FER-1039: Hoy es UNA sola superficie — SEÑALES.
+                        senalesPage
+                            .padding(.top, CenitMetrics.space2)
+                    }
+                    .padding(.horizontal, CenitMetrics.screenPadding)
+                } else {
+                    liquidSurface
                 }
-                // FER-1039: Hoy es UNA sola superficie — SEÑALES. Se retiró el brief «en espera» junto con
-                // las pestañas SEÑALES/BRIEF, el pager de 2 páginas y sus page dots: la franja de carga + la
-                // retícula 2×4 son toda la pantalla. La franja de carga vive DENTRO de `senalesPage`.
-                senalesPage
-                    .padding(.top, CenitMetrics.space2)
             }
             // FER-274/FER-293: la pista del pull-to-refresh (chevron + microcopy) flota en el TOPE como
             // overlay — NO ocupa alto de layout, así que no empuja el héroe ni desborda la pantalla (a
@@ -666,8 +698,8 @@ struct TodayView: View {
                     reduceMotion: reduceMotion
                 )
             }
-            // Inset superior `gap` (FER-202): el héroe queda alto pero respira.
-            .padding(.horizontal, CenitMetrics.screenPadding)
+            // El padding horizontal vive en cada rama (FER-1045): la superficie Liquid trae su
+            // margen de pantalla (LiquidSpace.s550) y la clásica conserva screenPadding.
             // Margen inferior compacto: la retícula de señales respira sobre el dock sin flotar.
             .padding(.bottom, CenitMetrics.space1)
             .padding(.top, CenitMetrics.space2)
@@ -876,6 +908,148 @@ struct TodayView: View {
     /// El banner de estado activo (mayor prioridad primero), o nada. Presentacional: cada rama arma un
     /// `TodayBanner` con copy es-MX. Orden = urgencia descendente (batería antes que hueco de base).
     // TODO(/pm): sin banda, Hoy no tiene banners de estado propios (bateria/desconexión/antigüedad eran de la banda); ¿banners Apple-equivalentes?
+
+    // MARK: - Superficie Liquid (FER-1045)
+    //
+    // La composición Liquid Glass de SEÑALES: `LiquidHoyBuilder` proyecta el estado ya
+    // derivado (Preparedness, carga, tiles) al modelo del DS y `LiquidHoyContent` lo
+    // compone. Paridad total: mismos strings del catálogo, mismas hojas por id estable,
+    // misma acción accesible «Sync». El chrome que no es de la composición (línea de sync,
+    // banner de alertas, leyenda de origen) vive alrededor, alineado al margen Liquid.
+
+    @ViewBuilder private var liquidSurface: some View {
+        let output = LiquidHoyBuilder.build(liquidInputs())
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+            Group {
+                syncStatusLine
+                HealthAlertBanner()
+            }
+            .padding(.horizontal, LiquidSpace.s550)
+            LiquidHoyContent(
+                model: output.model,
+                onTapMetric: { openLiquidMetric($0) },
+                onTapSenal: { openLiquidSenal($0) },
+                onTapCarga: {
+                    if let trainingLoad {
+                        trainingLoadItem = makeTrainingLoadItem(trainingLoad)
+                    }
+                },
+                onTapHero: {
+                    switch output.heroRoute {
+                    case .autonomic:
+                        showAutonomicDetail = true
+                    case .sleep:
+                        metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
+                            .map { Int($0.value.rounded()) })
+                    }
+                })
+            originLegend
+                .padding(.horizontal, LiquidSpace.s550)
+        }
+        .accessibilityAction(named: Text("Sync")) { triggerPullSync() }
+    }
+
+    /// Los inputs del builder — las MISMAS resoluciones en capas que alimentan los tiles y
+    /// el héroe actuales (paridad por construcción; el builder solo mapea/formatea).
+    private func liquidInputs() -> LiquidHoyBuilder.Inputs {
+        var inputs = LiquidHoyBuilder.Inputs()
+        inputs.preparedness = repo.todayPreparedness
+        inputs.thermalDeviation = latestFromDisplay({ $0.skinTempDevC })?.value
+        inputs.trainingLoad = trainingLoad
+        inputs.sleep = resolveMeasured(todayOnly: true, { $0.totalSleepMin })
+            .map { .init($0.value, fromApple: $0.fromApple) }
+        inputs.hrv = latestFromDisplay({ $0.avgHrv })
+            .map { .init($0.value, fromApple: $0.fromApple) }
+        inputs.rhr = latestFromDisplay({ $0.restingHr.map(Double.init) })
+            .map { .init($0.value, fromApple: $0.fromApple) }
+        inputs.strain = model.displayedDayStrain
+        inputs.strainEstimated = repo.isStrainEstimated(repo.today?.day ?? Repository.localDayKey(Date()))
+        let steps = liquidSteps()
+        inputs.steps = steps.value
+        inputs.stepsEstimated = steps.estimated
+        inputs.skinTemp = latestFromDisplay({ $0.skinTempDevC })
+            .map { .init($0.value, fromApple: $0.fromApple) }
+        inputs.resp = latestFromDisplay({ $0.respRateBpm })
+            .map { .init($0.value, fromApple: $0.fromApple) }
+        inputs.stress = stress?.score
+        let base = baselineDays()
+        inputs.historias.sleep = history(base) { $0.totalSleepMin }
+        inputs.historias.hrv = history(base) { $0.avgHrv }
+        inputs.historias.rhr = history(base) { $0.restingHr.map(Double.init) }
+        inputs.historias.strain = history(base) { $0.strain }
+        inputs.historias.steps = steps.estimated ? stepsEstHistory
+            : history(base) { $0.steps.map(Double.init) }
+        inputs.historias.skinTemp = history(base) { $0.skinTempDevC }
+        inputs.historias.resp = history(base) { $0.respRateBpm }
+        inputs.historias.stress = stressHistory
+        inputs.night = liquidNight
+        return inputs
+    }
+
+    /// Pasos del tile (port del bloque de `iosMetricsSection`): Apple fresco primero; sin
+    /// conteo real cae a la estimación on-device (FER-663), rotulada y con origen calculado.
+    private func liquidSteps() -> (value: Double?, estimated: Bool, raw: Int?) {
+        let cutoff = Repository.localDayKey(Calendar.current.date(byAdding: .day, value: -13, to: Date()) ?? Date())
+        let fresh = appleDays.last(where: { $0.day >= cutoff })?.steps
+        let estFresh = fresh == nil
+            ? stepsEst.last(where: { $0.day >= cutoff }).map { Int($0.value.rounded()) }
+            : nil
+        return ((fresh ?? estFresh).map(Double.init), estFresh != nil, fresh ?? estFresh)
+    }
+
+    /// Tap de un tile Liquid → la MISMA hoja de métrica de siempre, por id estable.
+    private func openLiquidMetric(_ id: String) {
+        switch id {
+        case "sleep":
+            metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
+                .map { Int($0.value.rounded()) })
+        case "hrv":
+            metricDetail = .hrv(latestFromDisplay { $0.avgHrv }?.value)
+        case "rhr":
+            metricDetail = .restingHR(latestFromDisplay({ $0.restingHr.map(Double.init) })
+                .map { Int($0.value.rounded()) })
+        case "strain":
+            metricDetail = .strain(model.displayedDayStrain)
+        case "steps":
+            metricDetail = .steps(liquidSteps().raw)
+        case "skintemp":
+            metricDetail = .skinTemp(latestFromDisplay({ $0.skinTempDevC })?.value)
+        case "resp":
+            metricDetail = .respiratory(latestFromDisplay({ $0.respRateBpm })?.value)
+        case "stress":
+            metricDetail = .stress(stress?.score)
+        default:
+            break
+        }
+    }
+
+    /// Tap de un orbe → la hoja de su eje (autonómico / sueño / térmico).
+    private func openLiquidSenal(_ id: String) {
+        switch id {
+        case "autonomico":
+            showAutonomicDetail = true
+        case "sueno":
+            metricDetail = .sleep(resolveMeasured(todayOnly: true) { $0.totalSleepMin }
+                .map { Int($0.value.rounded()) })
+        case "termico":
+            metricDetail = .skinTemp(latestFromDisplay({ $0.skinTempDevC })?.value)
+        default:
+            break
+        }
+    }
+
+    /// La ventana de la noche para el dial: la sesión que terminó más tarde en la ventana
+    /// consultada, en horas locales 0–24 (medianoche arriba del dial).
+    private nonisolated static func nightWindow(sessions: [CachedSleepSession],
+                                                calendar: Calendar) -> (start: Double, end: Double)? {
+        guard let session = sessions.max(by: { $0.endTs < $1.endTs }) else { return nil }
+        func hour(_ ts: Int) -> Double {
+            let components = calendar.dateComponents([.hour, .minute],
+                                                     from: Date(timeIntervalSince1970: TimeInterval(ts)))
+            return Double(components.hour ?? 0) + Double(components.minute ?? 0) / 60
+        }
+        return (hour(session.startTs), hour(session.endTs))
+    }
 
     // MARK: - Héroe «Instrumento diurno» (FER-160 · FER-1008/FER-1029)
     //

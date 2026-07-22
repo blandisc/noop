@@ -40,6 +40,7 @@ public struct LiquidAmbientBackground: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
 
     public init(auroraStops: [Gradient.Stop], orbs: [LiquidOrbSpec]) {
         self.auroraStops = auroraStops
@@ -68,7 +69,7 @@ public struct LiquidAmbientBackground: View {
     }
 
     public var body: some View {
-        let still = reduceMotion || motionDisabled
+        let still = reduceMotion || motionDisabled || ambientPaused
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
@@ -135,17 +136,16 @@ public struct LiquidScreenHeader<Trailing: View>: View {
 /// arco de noche (índigo), arco de día (tinta), marcador verde en la hora actual y un
 /// punto de papel a medianoche (arriba).
 public struct LiquidDialSeal: View {
-    private let nightStart: Double
-    private let nightEnd: Double
+    private let night: (start: Double, end: Double)?
     private let marker: Double
     private let size: CGFloat
 
     /// Horas en reloj de 24 (medianoche arriba). Defaults = ensamble de Hoy
-    /// (noche 20:00–04:00, marcador 08:00).
-    public init(nightStart: Double = 20, nightEnd: Double = 4, marker: Double = 8,
+    /// (noche 20:00–04:00, marcador 08:00). `night == nil` = sin sesión de sueño
+    /// anoche → solo el marcador de la hora, sin arcos (FER-1045).
+    public init(night: (start: Double, end: Double)? = (20, 4), marker: Double = 8,
                 size: CGFloat = 36) {
-        self.nightStart = nightStart
-        self.nightEnd = nightEnd
+        self.night = night
         self.marker = marker
         self.size = size
     }
@@ -156,8 +156,8 @@ public struct LiquidDialSeal: View {
 
     public var body: some View {
         let r = size * (10.5 / 36)
-        let nightFrom = angle(nightStart)
-        var nightTo = angle(nightEnd)
+        let nightFrom = angle(night?.start ?? 0)
+        var nightTo = angle(night?.end ?? 0)
         if nightTo <= nightFrom { nightTo += 360 }
         let markerAngle = angle(marker) * .pi / 180
 
@@ -186,15 +186,17 @@ public struct LiquidDialSeal: View {
             DialArc(from: 0, to: 360)
                 .stroke(LiquidColor.tinta900.opacity(0.14), lineWidth: 2)
                 .padding((size - 2 * r) / 2)
-            DialArc(from: nightTo, to: nightFrom + 360)
-                .stroke(LiquidColor.tinta900, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
-                .padding((size - 2 * r) / 2)
-            DialArc(from: nightFrom, to: nightTo)
-                .stroke(LiquidColor.indigo, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
-                .padding((size - 2 * r) / 2)
-            Circle().fill(LiquidColor.papelAlto)
-                .frame(width: size * 0.045, height: size * 0.045)
-                .position(x: size / 2, y: size / 2 - r)
+            if night != nil {
+                DialArc(from: nightTo, to: nightFrom + 360)
+                    .stroke(LiquidColor.tinta900, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
+                    .padding((size - 2 * r) / 2)
+                DialArc(from: nightFrom, to: nightTo)
+                    .stroke(LiquidColor.indigo, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
+                    .padding((size - 2 * r) / 2)
+                Circle().fill(LiquidColor.papelAlto)
+                    .frame(width: size * 0.045, height: size * 0.045)
+                    .position(x: size / 2, y: size / 2 - r)
+            }
             Circle().fill(LiquidColor.verdePrimario)
                 .overlay(Circle().strokeBorder(Color.white, lineWidth: 1))
                 .frame(width: size * 0.117, height: size * 0.117)
@@ -206,6 +208,8 @@ public struct LiquidDialSeal: View {
             .init(color: LiquidColor.tinta900.opacity(0.14), radius: 16, y: 12),
             .init(color: LiquidColor.tinta900.opacity(0.07), radius: 3, y: 2),
         ])
+        // Decorativo para VoiceOver: la fecha ya vive en el kicker de la cabecera.
+        .accessibilityHidden(true)
     }
 }
 
@@ -231,6 +235,7 @@ private struct DialArc: Shape {
 public struct LiquidSignalCables: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
+    @Environment(\.liquidAmbientPaused) private var ambientPaused
 
     public init() {}
 
@@ -245,7 +250,7 @@ public struct LiquidSignalCables: View {
     ]
 
     public var body: some View {
-        let still = reduceMotion || motionDisabled
+        let still = reduceMotion || motionDisabled || ambientPaused
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: still)) { context in
             let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
             ZStack {
@@ -299,18 +304,25 @@ private struct CablePath: Shape {
 
 // MARK: Hero de veredicto (Hoy)
 
-/// El veredicto matinal: display/xl centrado con la palabra clave en verde/primario y el
-/// subtítulo cuerpo a 8 pt.
+/// El veredicto matinal: display/xl centrado con la palabra clave en el tono del estado
+/// (verde para «dale», atención para los matices) y el subtítulo cuerpo a 8 pt.
+/// `confianza` es el tether honesto ya localizado («Confianza: 12 de 21 noches»), opcional.
 public struct LiquidHeroVeredicto: View {
     private let title: String
     private let highlight: String
+    private let highlightTone: Color
     private let subtitle: String
+    private let confianza: String?
 
     /// `highlight` debe aparecer dentro de `title` (se pinta su última ocurrencia).
-    public init(title: String, highlight: String, subtitle: String) {
+    public init(title: String, highlight: String,
+                highlightTone: Color = LiquidColor.verdePrimario,
+                subtitle: String, confianza: String? = nil) {
         self.title = title
         self.highlight = highlight
+        self.highlightTone = highlightTone
         self.subtitle = subtitle
+        self.confianza = confianza
     }
 
     public var body: some View {
@@ -323,12 +335,21 @@ public struct LiquidHeroVeredicto: View {
                 }
             }
             .multilineTextAlignment(.center)
-            Text(subtitle)
-                .font(LiquidType.cuerpo)
-                .foregroundStyle(LiquidColor.tinta700)
-                .multilineTextAlignment(.center)
+            LiquidHeroSubtitle(subtitle: subtitle, confianza: confianza)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityLabel(Self.a11yLabel(title: title, subtitle: subtitle, confianza: confianza))
+    }
+
+    /// El label combinado que lee VoiceOver (testeable en frío). No duplica puntuación
+    /// cuando una parte ya cierra su frase.
+    static func a11yLabel(title: String, subtitle: String, confianza: String?) -> String {
+        let flat = title.replacingOccurrences(of: "\n", with: " ")
+        return ([flat, subtitle] + (confianza.map { [$0] } ?? [])).reduce("") { acc, part in
+            acc.isEmpty ? part : acc + (acc.hasSuffix(".") ? " " : ". ") + part
+        }
     }
 
     private func lineText(_ line: String) -> Text {
@@ -336,11 +357,69 @@ public struct LiquidHeroVeredicto: View {
             return Text(line[..<range.lowerBound]).liquidDisplayXL()
                 .foregroundStyle(LiquidColor.tinta900)
                 + Text(line[range]).liquidDisplayXL()
-                .foregroundStyle(LiquidColor.verdePrimario)
+                .foregroundStyle(highlightTone)
                 + Text(line[range.upperBound...]).liquidDisplayXL()
                 .foregroundStyle(LiquidColor.tinta900)
         }
         return Text(line).liquidDisplayXL().foregroundStyle(LiquidColor.tinta900)
+    }
+}
+
+/// El héroe demotado (lectura de día FER-1033 / fallback de sueño): display/l SIN palabra
+/// destacada — la jerarquía baja un escalón porque el dato es menos preciso. El título es
+/// texto que se LEE, así que escala con Dynamic Type (relativo a .title2).
+public struct LiquidHeroDemotado: View {
+    private let kicker: String?
+    private let title: String
+    private let subtitle: String
+
+    public init(kicker: String? = nil, title: String, subtitle: String) {
+        self.kicker = kicker
+        self.title = title
+        self.subtitle = subtitle
+    }
+
+    public var body: some View {
+        VStack(spacing: LiquidSpace.s200) {
+            if let kicker {
+                Text(kicker).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+            }
+            Text(title)
+                .font(InstrumentoType.grotesk(30, weight: .bold, relativeTo: .title2))
+                .tracking(LiquidType.displayLTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+                .multilineTextAlignment(.center)
+            LiquidHeroSubtitle(subtitle: subtitle, confianza: nil)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityLabel(
+            LiquidHeroVeredicto.a11yLabel(
+                title: kicker.map { "\($0). \(title)" } ?? title,
+                subtitle: subtitle, confianza: nil))
+    }
+}
+
+/// Subtítulo del héroe + tether de confianza — texto de lectura: escala con Dynamic Type.
+private struct LiquidHeroSubtitle: View {
+    let subtitle: String
+    let confianza: String?
+    @ScaledMetric(relativeTo: .footnote) private var cuerpoSize: CGFloat = 12.5
+    @ScaledMetric(relativeTo: .caption2) private var captionSize: CGFloat = 9
+
+    var body: some View {
+        VStack(spacing: LiquidSpace.s100) {
+            Text(subtitle)
+                .font(.system(size: cuerpoSize))
+                .foregroundStyle(LiquidColor.tinta700)
+                .multilineTextAlignment(.center)
+            if let confianza {
+                Text(confianza)
+                    .font(InstrumentoType.grotesk(captionSize, weight: .medium))
+                    .foregroundStyle(LiquidColor.tinta500)
+            }
+        }
     }
 }
 
