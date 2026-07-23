@@ -367,11 +367,12 @@ public struct LiquidSignalCables: View {
     // Zona comprimida ~25 % (pasada UI /inject): el vacío entre orbes y héroe se recorta
     // para que veredicto + carga + primera fila de tiles entren al primer pantallazo.
     private static let cables: [(d: String, delay: Double)] = [
-        // Pulso de FIRMA (elevación /inject): delay 0 en los tres — las señales laten
-        // JUNTAS y llegan al veredicto al mismo tiempo (un gesto, no tráfico).
+        // Ritmo ESCALONADO (decisión del dueño /inject, supersede al pulso síncrono):
+        // periodo 6 s con delays a tercios — un pulso llega al veredicto cada ~2 s,
+        // nunca los tres juntos.
         ("M62 56 L62 88 C54 104, 108 110, 124 118 S148 126, 152 128", 0.0),
-        ("M179 56 L179 92 C173 102, 190 110, 186 118 S183 124, 182 127", 0.0),
-        ("M296 56 L296 88 C304 106, 260 112, 238 120 S212 126, 208 128", 0.0),
+        ("M179 56 L179 92 C173 102, 190 110, 186 118 S183 124, 182 127", 2.0),
+        ("M296 56 L296 88 C304 106, 260 112, 238 120 S212 126, 208 128", 4.0),
     ]
 
     public var body: some View {

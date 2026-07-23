@@ -31,7 +31,7 @@ public enum LiquidMotion {
     /// 560 ms — hojas modales, navegación.
     public static let sheetDuration: Double = 0.56
     /// 9 s — pulsos por cables, dashes.
-    public static let flowPeriod: Double = 9
+    public static let flowPeriod: Double = 6
     /// 16–26 s — orbes de fondo (16, 21, 24 y 26 s usados en los ensambles).
     public static let driftPeriods: ClosedRange<Double> = 16...26
 
