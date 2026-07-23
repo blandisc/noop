@@ -248,7 +248,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
     }
 
     /// §1.3 · Sueño rica: doble dato 7:12 | 84 con el ⓘ de regularidad (L5.2), etapas de la
-    /// noche y «Para esta noche». La pastilla `LiquidLaneLabel` está RETIRADA (L3.3): la
+    /// noche. La pastilla `LiquidLaneLabel` está RETIRADA (L3.3): la
     /// frase display de los niveles ya dice el carril en grande.
     ///
     /// Las etapas CUADRAN con el numeral: 91 + 104 + 237 = 432 min dormido = 7:12, + 47
@@ -286,10 +286,8 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 ],
                 overline: "Anoche",
                 ventana: "23:38 → 7:37")
-            LiquidPatternBlock(
-                overline: "Para esta noche",
-                lineas: ["Acostarte a una hora pareja esta noche ayuda a tu ritmo."],
-                tono: LiquidColor.indigo)
+            // «Para esta noche» retirado por el dueño (/inject): el arnés debe reflejar
+            // la hoja REAL, no la anterior.
         }
         .environment(\.dynamicTypeSize, tamano))
     }
@@ -545,7 +543,8 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         let puntos = serieDiaria(dias: 28, base: 55, onda: 6)
         let grafica = LiquidGraficaNiveles(
             puntos: puntos,
-            bandas: bandasVFC(activa: nil),
+            // Coherente con la fila «En tu base» activa de abajo (invariante I1).
+            bandas: bandasVFC(activa: 1),
             dominio: 40...72,
             ticksY: [(66, "66"), (55, "55"), (46, "46")],
             tono: LiquidColor.cian,
