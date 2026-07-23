@@ -83,8 +83,13 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
     let streak: Bool
     let shadow: [LiquidShadowLayer]
 
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+        // Renders/previews congelados (`liquidMotionDisabled`): el glassEffect nativo se
+        // traga el contenido bajo ImageRenderer (sin backdrop real) — ahí se usa SIEMPRE
+        // el stack de imitación, que es rasterizable. En device el nativo manda.
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
             // Liquid Glass NATIVO (investigación /inject 2026-07-22, Cupertino): el sistema
             // aporta refracción, lensing y reactividad al toque reales — imposibles de
             // imitar con material + relleno. La elevación tonal sigue siendo nuestra
@@ -201,13 +206,15 @@ public struct LiquidSphere: View {
         self.tone = tone
     }
 
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
     public var body: some View {
         // «LENTE» (elevación /inject 2026-07-22, camino 1 del dueño): disco de vidrio
         // PLANO — el Liquid Glass real nunca simula volumen. La burbuja esférica del
         // handoff (radial blanco + especular) se retiró: el arco y la joya brillan solos
         // sobre vidrio honesto, con apenas un suspiro del tono del estado.
         ZStack {
-            if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+            if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
                 Circle().glassEffect(.regular.tint(tone.opacity(0.10)), in: Circle())
             } else {
                 Circle().fill(.ultraThinMaterial)

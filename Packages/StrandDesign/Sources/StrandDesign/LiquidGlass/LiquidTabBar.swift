@@ -50,10 +50,13 @@ public struct LiquidTabBar: View {
         .animation(LiquidMotion.selector, value: active)
     }
 
-    /// La pastilla de vidrio del ítem activo: nativa en iOS 26, imitación antes.
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
+    /// La pastilla de vidrio del ítem activo: nativa en iOS 26, imitación antes
+    /// (y también en renders congelados — el glassEffect no rasteriza en ImageRenderer).
     @ViewBuilder
     private var selectorPill: some View {
-        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
             Color.clear.glassEffect(.regular, in: Capsule())
         } else {
             Capsule()
