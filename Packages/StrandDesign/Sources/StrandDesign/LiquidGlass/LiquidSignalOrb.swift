@@ -106,7 +106,7 @@ public struct LiquidSignalOrb: View {
                 OrbMarkerDot(progress: displayed)
                     .stroke(Color.white, lineWidth: 1.4)
             }
-            LiquidIcon(icon, size: 18).foregroundStyle(LiquidColor.tinta900)
+            LiquidIcon(icon, size: 18, color: LiquidColor.tinta900)
         }
         .frame(width: 64, height: 64)
     }

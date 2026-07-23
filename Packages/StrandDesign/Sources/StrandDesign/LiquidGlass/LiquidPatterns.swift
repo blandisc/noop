@@ -247,14 +247,13 @@ public struct LiquidSignalCables: View {
 
     public init() {}
 
-    /// Paths exactos del ensamble (viewBox 358 × 178) con el delay de su pulso.
-    private static let cables: [(d: String, delay: Double, start: UnitPoint, end: UnitPoint)] = [
-        ("M62 94 C52 122, 112 132, 130 148 S153 161, 156 165", 0.0,
-         UnitPoint(x: 0, y: 0), UnitPoint(x: 0.6, y: 1)),
-        ("M179 100 C171 120, 192 140, 187 156 S183 165, 182 170", 0.8,
-         UnitPoint(x: 0, y: 0), UnitPoint(x: 0, y: 1)),
-        ("M296 94 C305 126, 262 138, 234 152 S211 162, 207 166", 1.6,
-         UnitPoint(x: 1, y: 0), UnitPoint(x: 0.4, y: 1)),
+    /// Paths del ensamble (viewBox 358 × 178) con el delay de su pulso. Cada cable lleva un
+    /// TRAMO DE CONEXIÓN inicial (línea desde y=72, el pie de su orbe) para que el pulso
+    /// nazca visiblemente EN el orbe (pedido del dueño, sesión /inject 2026-07-22).
+    private static let cables: [(d: String, delay: Double)] = [
+        ("M62 72 L62 94 C52 122, 112 132, 130 148 S153 161, 156 165", 0.0),
+        ("M179 78 L179 100 C171 120, 192 140, 187 156 S183 165, 182 170", 0.8),
+        ("M296 72 L296 94 C305 126, 262 138, 234 152 S211 162, 207 166", 1.6),
     ]
 
     public var body: some View {
@@ -297,15 +296,20 @@ public struct LiquidSignalCables: View {
     private func pulse(_ d: String, progress: Double) -> some View {
         let len = LiquidMotion.flowPulseLength
         let style = StrokeStyle(lineWidth: 1.6, lineCap: .round)
+        // 3 pulsos por cable, equiespaciados en fase (pedido del dueño: «más puntos» y que
+        // el flujo se lea naciendo en cada orbe).
         ZStack {
-            CablePath(d: d)
-                .trim(from: progress, to: min(1, progress + len))
-                .stroke(LiquidColor.verdePrimario, style: style)
-            if progress + len > 1 {
-                // El pulso cruza el final del cable: se completa desde el arranque.
+            ForEach(0..<3, id: \.self) { k in
+                let p = (progress + Double(k) / 3).truncatingRemainder(dividingBy: 1)
                 CablePath(d: d)
-                    .trim(from: 0, to: progress + len - 1)
+                    .trim(from: p, to: min(1, p + len))
                     .stroke(LiquidColor.verdePrimario, style: style)
+                if p + len > 1 {
+                    // El pulso cruza el final del cable: se completa desde el arranque.
+                    CablePath(d: d)
+                        .trim(from: 0, to: p + len - 1)
+                        .stroke(LiquidColor.verdePrimario, style: style)
+                }
             }
         }
         .opacity(0.75)

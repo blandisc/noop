@@ -46,7 +46,7 @@ public struct LiquidListRow: View {
             if let trailing {
                 Text(trailing).font(LiquidType.unidadCompacta).foregroundStyle(LiquidColor.tinta500)
             }
-            LiquidIcon(.chevron, size: 12).foregroundStyle(tone)
+            LiquidIcon(.chevron, size: 12, color: tone)
         }
         .padding(.vertical, 11)
         .padding(.horizontal, LiquidSpace.s100)

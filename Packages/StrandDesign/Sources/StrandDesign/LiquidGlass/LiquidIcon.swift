@@ -21,16 +21,21 @@ public struct LiquidIcon: View {
 
     private let glyph: Glyph
     private let size: CGFloat
+    private let color: Color
 
-    public init(_ glyph: Glyph, size: CGFloat) {
+    /// El color va EXPLÍCITO en el trazo (no por `foregroundStyle`): el device no dibuja
+    /// el `stroke(style:)` sin contenido — los glifos del TabBar (trazo con color) siempre
+    /// se vieron; estos no. Sesión /inject 2026-07-22.
+    public init(_ glyph: Glyph, size: CGFloat, color: Color = LiquidColor.tinta900) {
         self.glyph = glyph
         self.size = size
+        self.color = color
     }
 
     public var body: some View {
         let spec = glyph.spec
         LiquidIconShape(glyph: glyph)
-            .stroke(style: StrokeStyle(
+            .stroke(color, style: StrokeStyle(
                 lineWidth: spec.strokeWidth * size / spec.viewBox,
                 lineCap: .round, lineJoin: .round))
             .frame(width: size, height: size)
@@ -160,7 +165,7 @@ extension LiquidIcon.Glyph {
     return LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
         ForEach(all, id: \.rawValue) { glyph in
             VStack(spacing: 6) {
-                LiquidIcon(glyph, size: 26).foregroundStyle(LiquidColor.tinta900)
+                LiquidIcon(glyph, size: 26, color: LiquidColor.tinta900)
                 Text(glyph.rawValue).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             }
         }

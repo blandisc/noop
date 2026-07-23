@@ -41,7 +41,7 @@ public struct LiquidIconDrop: View {
                         startPoint: .topLeading, endPoint: .bottomTrailing),
                     lineWidth: 1)
             Circle().strokeBorder(LiquidColor.vidrioBordeFuerte, lineWidth: 0.5)
-            LiquidIcon(glyph, size: iconSize).foregroundStyle(tone)
+            LiquidIcon(glyph, size: iconSize, color: tone)
         }
         .frame(width: size, height: size)
     }
