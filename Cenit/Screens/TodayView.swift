@@ -87,15 +87,17 @@ private struct PullSyncHint: View {
                 let learning = !didFirstPullSync
                 let bobbing = learning && !reduceMotion && hintBob
                 VStack(spacing: CenitMetrics.space1) {
-                    StrandIcon.down.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
+                    // Vestida de Liquid (/inject 2026-07-22): el chevron del sistema nuevo
+                    // en tinta/500 — el único chrome no-Liquid que quedaba en Hoy.
+                    LiquidIcon(.chevron, size: 11, color: LiquidColor.tinta500)
+                        .rotationEffect(.degrees(90))
                         .offset(y: bobbing ? 4 : 0)
-                        .animation(bobbing ? StrandMotion.bob : nil, value: bobbing)
+                        .animation(bobbing ? LiquidMotion.glassSpring(0.9).repeatForever(autoreverses: true) : nil,
+                                   value: bobbing)
                     if learning {
                         Text("Pull to refresh")
-                            .font(StrandFont.caption)
-                            .foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.captionLectura)
+                            .foregroundStyle(LiquidColor.tinta500)
                     }
                 }
                 .transition(.opacity)
