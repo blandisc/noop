@@ -41,6 +41,7 @@ public struct LiquidAmbientBackground: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
     @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.liquidDebugHide) private var debugHide
 
     public init(auroraStops: [Gradient.Stop], orbs: [LiquidOrbSpec]) {
         self.auroraStops = auroraStops
@@ -76,28 +77,33 @@ public struct LiquidAmbientBackground: View {
             ZStack {
                 LiquidColor.papelGradient
                 // Aurora: radial 120 % × 55 % anclada arriba (50 % / −8 %).
-                RadialGradient(stops: auroraStops,
-                               center: UnitPoint(x: 0.5, y: -0.08),
-                               startRadius: 0, endRadius: max(1, w * 1.2))
-                    .scaleEffect(x: 1, y: max(0.01, (h * 0.55) / (w * 1.2)),
-                                 anchor: UnitPoint(x: 0.5, y: -0.08))
-                TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: still)) { context in
-                    let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
-                    ZStack {
-                        ForEach(Array(orbs.enumerated()), id: \.offset) { _, orb in
-                            let u = still ? 0 : LiquidMotion.driftProgress(
-                                time: t, period: orb.period, reverse: orb.reverse)
-                            Ellipse()
-                                .fill(EllipticalGradient(
-                                    colors: [orb.tone.opacity(orb.opacity), orb.tone.opacity(0)],
-                                    center: .center))
-                                .frame(width: orb.size.width, height: orb.size.height)
-                                .blur(radius: orb.blur)
-                                .scaleEffect(1 + (LiquidMotion.driftScaleMax - 1) * u)
-                                .offset(x: orb.offset.width + LiquidMotion.driftTranslation.width * u,
-                                        y: orb.offset.height + LiquidMotion.driftTranslation.height * u)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity,
-                                       alignment: orb.alignment)
+                if !debugHide.contains("aurora") {
+                    RadialGradient(stops: auroraStops,
+                                   center: UnitPoint(x: 0.5, y: -0.08),
+                                   startRadius: 0, endRadius: max(1, w * 1.2))
+                        .scaleEffect(x: 1, y: max(0.01, (h * 0.55) / (w * 1.2)),
+                                     anchor: UnitPoint(x: 0.5, y: -0.08))
+                }
+                if !debugHide.contains("orbes") {
+                    TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: still)) { context in
+                        let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
+                        ZStack {
+                            ForEach(Array(orbs.enumerated()), id: \.offset) { _, orb in
+                                let u = still ? 0 : LiquidMotion.driftProgress(
+                                    time: t, period: orb.period, reverse: orb.reverse)
+                                // Sin `.blur` (el degradado radial YA es suave): el blur de una
+                                // capa enorme era candidato a artefactos y costo de GPU.
+                                Ellipse()
+                                    .fill(EllipticalGradient(
+                                        colors: [orb.tone.opacity(orb.opacity), orb.tone.opacity(0)],
+                                        center: .center))
+                                    .frame(width: orb.size.width, height: orb.size.height)
+                                    .scaleEffect(1 + (LiquidMotion.driftScaleMax - 1) * u)
+                                    .offset(x: orb.offset.width + LiquidMotion.driftTranslation.width * u,
+                                            y: orb.offset.height + LiquidMotion.driftTranslation.height * u)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity,
+                                           alignment: orb.alignment)
+                            }
                         }
                     }
                 }
@@ -237,6 +243,7 @@ public struct LiquidSignalCables: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
     @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.liquidDebugHide) private var debugHide
 
     public init() {}
 
@@ -255,18 +262,31 @@ public struct LiquidSignalCables: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: still)) { context in
             let t = still ? 0 : context.date.timeIntervalSinceReferenceDate
             ZStack {
-                ForEach(Array(Self.cables.enumerated()), id: \.offset) { _, cable in
-                    CablePath(d: cable.d)
-                        .stroke(
-                            LinearGradient(
-                                colors: [LiquidColor.verdePrimario.opacity(0.45),
-                                         LiquidColor.verdePrimario.opacity(0)],
-                                startPoint: cable.start, endPoint: cable.end),
-                            lineWidth: 1.2)
-                    // El pulso viaja con `trim` (la gramática del sistema para progreso
-                    // sobre Shape); congelado queda en el arranque del cable.
-                    pulse(cable.d, progress: still
-                          ? 0 : LiquidMotion.flowPulseProgress(time: t, delay: cable.delay))
+                if !debugHide.contains("cables") {
+                    // Trazo base SÓLIDO + máscara vertical de desvanecimiento: el stroke con
+                    // gradiente directo era candidato a artefactos de placa en device; la
+                    // máscara reproduce el mismo apagado hacia el hero, cable por cable.
+                    ZStack {
+                        ForEach(Array(Self.cables.enumerated()), id: \.offset) { _, cable in
+                            CablePath(d: cable.d)
+                                .stroke(LiquidColor.verdePrimario.opacity(0.45), lineWidth: 1.2)
+                        }
+                    }
+                    .mask {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black.opacity(0.15), location: 0.85),
+                                .init(color: .clear, location: 1),
+                            ],
+                            startPoint: .top, endPoint: .bottom)
+                    }
+                    ForEach(Array(Self.cables.enumerated()), id: \.offset) { _, cable in
+                        // El pulso viaja con `trim` (la gramática del sistema para progreso
+                        // sobre Shape); congelado queda en el arranque del cable.
+                        pulse(cable.d, progress: still
+                              ? 0 : LiquidMotion.flowPulseProgress(time: t, delay: cable.delay))
+                    }
                 }
             }
         }

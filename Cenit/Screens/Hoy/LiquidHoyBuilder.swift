@@ -187,10 +187,14 @@ enum LiquidHoyBuilder {
                     ? String(localized: "You slept well")
                     : String(localized: "Sleep was short"))
         }
+        // Sin veredicto Y sin nada que mostrar: honestidad explícita en vez de un «—» mudo
+        // (decisión del dueño, sesión /inject 2026-07-22).
+        // TODO(/inject cierre): mover este copy al String Catalog (clave EN + es-MX) antes
+        // del commit final de la sesión.
         return .demotado(
-            kicker: String(localized: "LAST NIGHT'S SLEEP"),
-            title: "—",
-            subtitle: String(localized: "No sleep recorded last night"))
+            kicker: String(localized: "READINESS"),
+            title: "Aún sin datos suficientes",
+            subtitle: "Duerme con tu Apple Watch unas noches y aquí amanece tu veredicto del día.")
     }
 
     // MARK: Señales (port literal de `TodayView.needles()`)

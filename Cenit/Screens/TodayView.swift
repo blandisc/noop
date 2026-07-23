@@ -926,7 +926,7 @@ struct TodayView: View {
     /// de HealthKit, así que la superficie cae honestamente al héroe de sueño; con esto se
     /// fuerza el estado de veredicto con los datos de muestra del ensamble para pulirlo en
     /// vivo. Computed a propósito: su cuerpo se voltea EN VIVO por inyección.
-    private var liquidDemo: Bool { false }
+    private var liquidDemo: Bool { true }
 
     private var liquidOutput: LiquidHoyBuilder.Output {
         #if DEBUG
@@ -963,8 +963,8 @@ struct TodayView: View {
                             .map { Int($0.value.rounded()) })
                     }
                 })
-            originLegend
-                .padding(.horizontal, LiquidSpace.s550)
+            // /inject: la leyenda de origen se retiró de la superficie Liquid a pedido del
+            // dueño (los puntos de origen por tile se quedan).
         }
         .accessibilityAction(named: Text("Sync")) { triggerPullSync() }
     }

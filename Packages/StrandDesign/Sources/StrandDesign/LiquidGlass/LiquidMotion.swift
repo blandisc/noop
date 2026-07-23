@@ -132,6 +132,20 @@ public extension EnvironmentValues {
     }
 }
 
+/// SOLO DEV (sesiones /inject): apaga capas Liquid por nombre para bisecar artefactos
+/// visuales en vivo — «aurora», «orbes», «cables», «esferas», «glow». Vacío en producción;
+/// ninguna pantalla la setea fuera de una sesión de depuración.
+private struct LiquidDebugHideKey: EnvironmentKey {
+    static let defaultValue: Set<String> = []
+}
+
+public extension EnvironmentValues {
+    var liquidDebugHide: Set<String> {
+        get { self[LiquidDebugHideKey.self] }
+        set { self[LiquidDebugHideKey.self] = newValue }
+    }
+}
+
 public extension EnvironmentValues {
     /// Congela TODO el motion del sistema Liquid y presenta la UI ya asentada (progresos
     /// en su valor, entradas visibles). Para previews «sin motion», tests y renders — el

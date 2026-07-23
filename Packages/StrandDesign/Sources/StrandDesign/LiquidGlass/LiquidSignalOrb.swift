@@ -26,6 +26,7 @@ public struct LiquidSignalOrb: View {
     @State private var shownProgress: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
+    @Environment(\.liquidDebugHide) private var debugHide
 
     /// `progress == nil` = SIN DATOS: solo el track, sin arco ni punto; el caption baja a
     /// tinta/500 (el eje no vota — FER-1045).
@@ -84,11 +85,15 @@ public struct LiquidSignalOrb: View {
         // Con el motion congelado (previews/renders) el anillo se pinta ya en su valor.
         let displayed: Double? = motionDisabled ? clamped : (clamped == nil ? nil : shownProgress)
         return ZStack {
-            LiquidSphere(tone: state.tone)
-                // El glow e/2 como geometría (círculo difuminado detrás): una sombra directa
-                // sobre material proyecta el RECTÁNGULO de su capa de fondo.
-                .liquidShadow(LiquidElevation.e2(tone: state.tone), silhouette: Circle())
-                .padding(4)
+            if !debugHide.contains("esferas") {
+                LiquidSphere(tone: state.tone)
+                    // El glow e/2 como geometría (círculo difuminado detrás): una sombra
+                    // directa sobre material proyecta el RECTÁNGULO de su capa de fondo.
+                    .liquidShadow(debugHide.contains("glow") ? []
+                                  : LiquidElevation.e2(tone: state.tone),
+                                  silhouette: Circle())
+                    .padding(4)
+            }
             // Track + progreso, r29 de un lienzo de 64 (relación 29/32 del radio medio).
             OrbRing().stroke(LiquidColor.tinta10, lineWidth: 3.5)
             if let displayed {
