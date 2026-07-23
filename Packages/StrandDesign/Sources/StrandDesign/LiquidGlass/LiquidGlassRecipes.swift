@@ -194,6 +194,31 @@ public struct LiquidVeil: View {
     }
 }
 
+// MARK: - vidrio/hoja (fondo de sheet de resumen — épico hoja Liquid, F0)
+
+/// El fondo de una hoja de resumen Liquid: degradado del fondo claro con un suspiro del
+/// tono del clima/métrica arriba (4 %, mismo lenguaje que el velo) — pensado para
+/// `presentationBackground`. El grip lo pone el sistema (`presentationDragIndicator`).
+public struct LiquidSheetFondo: View {
+    private let tone: Color?
+
+    public init(tone: Color? = nil) {
+        self.tone = tone
+    }
+
+    public var body: some View {
+        ZStack {
+            LinearGradient(colors: [LiquidColor.fondoAlto, LiquidColor.fondoBajo],
+                           startPoint: .top, endPoint: .bottom)
+            if let tone {
+                LinearGradient(colors: [tone.opacity(0.04), tone.opacity(0)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
 // MARK: - Esfera (SignalOrb / dial) — variante esférica del vidrio
 
 /// El fondo esférico de vidrio: radial blanco → tinte del tono, borde blanco, inner-highlights

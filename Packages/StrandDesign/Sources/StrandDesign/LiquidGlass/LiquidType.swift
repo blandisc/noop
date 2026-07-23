@@ -38,6 +38,12 @@ public enum LiquidType {
     /// protagonista no puede escalar menos que su delta.
     public static let valorL = InstrumentoType.groteskNumber(22, relativeTo: .title3)
 
+    /// `numeral/hoja` — 34/700 tabular, escala con Dynamic Type. El dato héroe de la
+    /// hoja de resumen (épico hoja Liquid, F0): manda sobre todo lo demás de la hoja.
+    public static let numeralHoja = InstrumentoType.groteskNumber(34, relativeTo: .largeTitle)
+    /// Unidad junto al numeral de hoja — 13, tinta/500.
+    public static let numeralHojaUnidad = Font.system(size: 13)
+
     /// `título` — 15/700. Títulos de tarjeta.
     public static let titulo = InstrumentoType.grotesk(15, weight: .bold)
 
