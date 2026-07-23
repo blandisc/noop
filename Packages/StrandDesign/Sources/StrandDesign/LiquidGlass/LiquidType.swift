@@ -65,23 +65,27 @@ public enum LiquidType {
     public static let kicker = InstrumentoType.grotesk(11, weight: .semibold)
     public static let kickerTracking: CGFloat = 2
 
-    /// `caption` — 9/500. Deltas («+2 ms vs tu base»).
-    public static let caption = InstrumentoType.grotesk(9, weight: .medium)
-    /// La variante de LECTURA del caption: mismo 9/500 pero escala con Dynamic Type
-    /// (relativo a .caption2) — los deltas se leen, no son chrome (FER-1045).
-    public static let captionLectura = InstrumentoType.grotesk(9, weight: .medium,
+    // Los tamaños chicos subieron un escalón sobre el handoff (9→10.5, 8.5→10, 8→9.5,
+    // 7.5→9) a pedido del dueño en la sesión /inject 2026-07-22: en device real se leían
+    // apretados. La jerarquía relativa se conserva.
+
+    /// `caption` — 10.5/500. Deltas («+2 ms vs tu base»).
+    public static let caption = InstrumentoType.grotesk(10.5, weight: .medium)
+    /// La variante de LECTURA del caption: escala con Dynamic Type (relativo a .caption2)
+    /// — los deltas se leen, no son chrome (FER-1045).
+    public static let captionLectura = InstrumentoType.grotesk(10.5, weight: .medium,
                                                                relativeTo: .caption2)
 
-    /// `label` — 8.5/600, tracking +1.2, MAYÚSCULAS. Labels de tile («FC EN REPOSO»).
-    public static let label = InstrumentoType.grotesk(8.5, weight: .semibold)
+    /// `label` — 10/600, tracking +1.2, MAYÚSCULAS. Labels de tile («FC EN REPOSO»).
+    public static let label = InstrumentoType.grotesk(10, weight: .semibold)
     public static let labelTracking: CGFloat = 1.2
 
-    /// `micro` — 8/700, tracking +0.8. Labels de orbe («AUTONÓMICO»).
-    public static let micro = InstrumentoType.grotesk(8, weight: .bold)
+    /// `micro` — 9.5/700, tracking +0.8. Labels de orbe («AUTONÓMICO»).
+    public static let micro = InstrumentoType.grotesk(9.5, weight: .bold)
     public static let microTracking: CGFloat = 0.8
 
-    /// `micro/estado` — 7.5/600. Chips de estado («EN TU RANGO»).
-    public static let microEstado = InstrumentoType.grotesk(7.5, weight: .semibold)
+    /// `micro/estado` — 9/600. Chips de estado («EN TU RANGO»).
+    public static let microEstado = InstrumentoType.grotesk(9, weight: .semibold)
 
     /// `botón` — 14/600, tracking +0.2. GlassButton.
     public static let boton = InstrumentoType.grotesk(14, weight: .semibold)
@@ -89,12 +93,12 @@ public enum LiquidType {
 
     // MARK: Specs de componente (no forman parte de la escala pública, pero son cerradas)
 
-    /// Label de CargaBar — 9/600, tracking +1.6.
-    public static let cargaLabel = InstrumentoType.grotesk(9, weight: .semibold)
+    /// Label de CargaBar — 10.5/600, tracking +1.6 (subido del 9 del handoff, /inject).
+    public static let cargaLabel = InstrumentoType.grotesk(10.5, weight: .semibold)
     public static let cargaLabelTracking: CGFloat = 1.6
 
-    /// Status de CargaBar — 10/700, tracking +1.
-    public static let cargaStatus = InstrumentoType.grotesk(10, weight: .bold)
+    /// Status de CargaBar — 11.5/700, tracking +1 (subido del 10 del handoff, /inject).
+    public static let cargaStatus = InstrumentoType.grotesk(11.5, weight: .bold)
     public static let cargaStatusTracking: CGFloat = 1
 }
 

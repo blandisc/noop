@@ -94,11 +94,17 @@ public struct LiquidSignalOrb: View {
                                   silhouette: Circle())
                     .padding(4)
             }
-            // Track + progreso, r29 de un lienzo de 64 (relación 29/32 del radio medio).
-            OrbRing().stroke(LiquidColor.tinta10, lineWidth: 3.5)
+            // Medidor CENTRADO (pedido del dueño, sesión /inject): el arco es el semicírculo
+            // superior — nace en la mitad izquierda (9 en punto), corona arriba y muere en la
+            // mitad derecha (3 en punto). 0.5 = arriba = «en tu rango»; izquierda = bajo,
+            // derecha = alto — la misma semántica de las agujas.
+            OrbRing()
+                .trim(from: 0, to: 0.5)
+                .stroke(LiquidColor.tinta10, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                .rotationEffect(.degrees(orbStartAngle))
             if let displayed {
                 OrbRing()
-                    .trim(from: 0, to: displayed)
+                    .trim(from: 0, to: displayed * 0.5)
                     .stroke(state.ring, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                     .rotationEffect(.degrees(orbStartAngle))
                 OrbMarkerDot(progress: displayed)
@@ -106,14 +112,14 @@ public struct LiquidSignalOrb: View {
                 OrbMarkerDot(progress: displayed)
                     .stroke(Color.white, lineWidth: 1.4)
             }
-            LiquidIcon(icon, size: 18, color: LiquidColor.tinta900)
+            LiquidIcon(icon, size: 21, color: LiquidColor.tinta900)
         }
         .frame(width: 64, height: 64)
     }
 }
 
-/// Arranque del arco: −245° desde las 3 en punto (≈ las 7:30 del dial).
-private let orbStartAngle: Double = -245
+/// Arranque del medidor centrado: 180° (las 9 en punto); barre 180° por arriba hasta las 3.
+private let orbStartAngle: Double = 180
 
 /// El círculo del anillo a r = 29/32 del radio del lienzo (64 → 29).
 private struct OrbRing: Shape {
@@ -137,7 +143,8 @@ private struct OrbMarkerDot: Shape {
     func path(in rect: CGRect) -> Path {
         let r = min(rect.width, rect.height) / 2 * (29.0 / 32.0)
         let c = CGPoint(x: rect.midX, y: rect.midY)
-        let angle = (orbStartAngle + progress * 360) * .pi / 180
+        // Semicírculo superior: 180° + p·180°.
+        let angle = (orbStartAngle + progress * 180) * .pi / 180
         let center = CGPoint(x: c.x + r * CGFloat(cos(angle)), y: c.y + r * CGFloat(sin(angle)))
         let dotR: CGFloat = 3.4
         return Path(ellipseIn: CGRect(x: center.x - dotR, y: center.y - dotR,
