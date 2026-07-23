@@ -36,7 +36,7 @@ public struct LiquidReadingLine: View {
         }
         return Text(verbatim: String(text[..<range.lowerBound])).font(base)
             .foregroundColor(LiquidColor.tinta700)
-            + Text(verbatim: String(text[range])).font(base).fontWeight(.semibold)
+            + Text(verbatim: String(text[range])).font(base).fontWeight(.bold)
             .foregroundColor(highlightTone)
             + Text(verbatim: String(text[range.upperBound...])).font(base)
             .foregroundColor(LiquidColor.tinta700)

@@ -64,7 +64,11 @@ public struct LiquidMetricSheet<Content: View>: View {
         case .medio:
             return [.medium]
         case .porContenido:
-            return altoMedido > 0 ? [.height(altoMedido)] : [.large]
+            // `.large` acompaña a la altura medida (/inject 2026-07-23): con contenido
+            // largo (sueño) la hoja se quedaba clavada sin a dónde crecer y el scroll
+            // moría. Con las dos, arranca a la medida del contenido y sube a pantalla
+            // completa para leer el resto.
+            return altoMedido > 0 ? [.height(altoMedido), .large] : [.large]
         }
     }
 }
