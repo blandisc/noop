@@ -208,7 +208,12 @@ public struct LiquidSheetFondo: View {
 
     public var body: some View {
         ZStack {
-            LinearGradient(colors: [LiquidColor.fondoAlto, LiquidColor.fondoBajo],
+            // VIDRIO, no papel (pedido del dueño /inject): material del sistema debajo del
+            // degradado, que ahora es semitransparente para dejarlo respirar. La hoja se
+            // siente cristal sobre la pantalla, no una cartulina encima.
+            Rectangle().fill(.ultraThinMaterial)
+            LinearGradient(colors: [LiquidColor.fondoAlto.opacity(0.82),
+                                    LiquidColor.fondoBajo.opacity(0.72)],
                            startPoint: .top, endPoint: .bottom)
             if let tone {
                 // El acento del tono se VE (pedido del dueño /inject: al 4 % era invisible

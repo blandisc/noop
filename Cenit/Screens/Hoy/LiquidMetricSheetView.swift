@@ -1079,8 +1079,11 @@ struct LiquidMetricSheetView: View {
     private func levelsValueFormat(_ v: Double) -> String {
         switch datoInfo.id {
         case "sleep":
+            // Reloj SIEMPRE con horas y minutos (pedido del dueño /inject): «7:00», no
+            // «7h» — y es el mismo formato del numeral de la hoja, así el eje y el dato
+            // hablan igual.
             let h = Int(v) / 60, m = Int(v) % 60
-            return m == 0 ? "\(h)h" : "\(h)h \(m)m"
+            return String(format: "%d:%02d", h, m)
         case "skin_temp":
             return String(format: "%.1f", v)
         default:

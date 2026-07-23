@@ -105,7 +105,10 @@ struct LiquidScrubPopup: View {
         }
         .padding(.horizontal, LiquidSpace.s200)
         .padding(.vertical, LiquidSpace.s150)
-        .background(LiquidColor.papelAlto, in: forma)
+        // Vidrio, no papel beige (pedido del dueño /inject): material del sistema + un
+        // velo blanco, que es el mismo lenguaje de las recetas de vidrio.
+        .background(.ultraThinMaterial, in: forma)
+        .background(Color.white.opacity(0.55), in: forma)
         .overlay(forma.strokeBorder(LiquidColor.tinta10, lineWidth: 1))
         .liquidShadow(LiquidElevation.e1, silhouette: forma)
         .fixedSize()
@@ -209,7 +212,9 @@ struct LiquidChartPlot: View {
     private var canaleta: CGFloat {
         guard !ticksY.isEmpty else { return 0 }
         let masLargo = ticksY.map(\.etiqueta.count).max() ?? 2
-        let estimado = CGFloat(masLargo) * Self.anchoCaracterEje + LiquidSpace.s100
+        // s300 de aire entre la etiqueta y el plot (pedido del dueño: con s100 el número
+        // quedaba pegado a la gráfica).
+        let estimado = CGFloat(masLargo) * Self.anchoCaracterEje + LiquidSpace.s300
         return Swift.max(Self.canaletaMin, estimado)
     }
     /// Respiro vertical del plot (la serie nunca pega contra el borde).
@@ -398,9 +403,11 @@ struct LiquidChartPlot: View {
     private var marcasEjeX: [Int] {
         let n = puntos.count
         guard n > 1 else { return n == 1 ? [0] : [] }
-        let qs: [Double] = n >= 5 ? [0, 0.25, 0.5, 0.75, 1] : [0, 1]
+        // Con series cortas se marcan TODOS los puntos (pedido del dueño /inject: quería
+        // ver cada fecha); de 9 en adelante volvemos a los cuartiles para no saturar.
+        if n <= 8 { return Array(0..<n) }
         var out: [Int] = []
-        for q in qs {
+        for q in [0, 0.25, 0.5, 0.75, 1.0] {
             let i = Int((Double(n - 1) * q).rounded())
             if out.last != i { out.append(i) }
         }
@@ -421,17 +428,13 @@ struct LiquidChartPlot: View {
                     .foregroundStyle(LiquidColor.tinta500)
                     .lineLimit(1)
                     .fixedSize()
-                if k == 0 {
-                    // La primera se alinea a la canaleta (el arranque del plot).
-                    base.frame(width: ancho, alignment: .leading).position(x: cx, y: cy)
-                } else if k == marcas.count - 1 {
-                    // La última cierra contra el borde derecho.
-                    base.frame(width: ancho, alignment: .trailing).position(x: cx, y: cy)
-                } else {
-                    // Las interiores, centradas en SU x (medidas por `.fixedSize`, sin
-                    // estimar el ancho del texto).
-                    base.position(x: x(i, w), y: cy)
-                }
+                // TODAS centradas en SU punto (pedido del dueño: las fechas no cuadraban
+                // con sus bolitas porque la primera y la última se pegaban al borde).
+                // Se clampan al plot para que ninguna se salga por los extremos.
+                let medio: CGFloat = CGFloat(etiqueta.count) * Self.anchoCaracterEje / 2
+                let px: CGFloat = Swift.min(Swift.max(x(i, w), canaleta + medio),
+                                            canaleta + ancho - medio)
+                base.position(x: px, y: cy)
             }
         }
     }

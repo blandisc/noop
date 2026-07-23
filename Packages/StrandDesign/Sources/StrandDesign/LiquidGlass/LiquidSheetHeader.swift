@@ -73,7 +73,12 @@ public struct LiquidSheetHeader: View {
                 if let icono {
                     LiquidIconDrop(icono, tone: tono)
                 }
-                Text(titulo).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                // El nombre de la métrica manda más (pedido del dueño /inject): sube del
+                // rótulo chico al título del sistema, en tinta plena.
+                Text(titulo)
+                    .font(LiquidType.titulo).tracking(LiquidType.labelTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta900)
                 Spacer()
                 if explicacion != nil {
                     LiquidInfoBoton(abierto: $explicacionAbierta,

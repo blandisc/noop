@@ -12,7 +12,9 @@ public struct LiquidReadingLine: View {
     private let highlight: String?
     private let highlightTone: Color
 
-    @ScaledMetric(relativeTo: .footnote) private var cuerpoSize = LiquidType.lecturaHojaBase
+    // 16 (pedido del dueño /inject: a 14 la frase clave se leía chica para lo
+    /// importante que es).
+    @ScaledMetric(relativeTo: .body) private var cuerpoSize: CGFloat = 16
 
     /// `highlight` debe aparecer dentro de `text` (se pinta su última ocurrencia).
     public init(_ text: String, highlight: String? = nil,

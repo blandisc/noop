@@ -52,7 +52,12 @@ public struct LiquidMetricSheet<Content: View>: View {
                 Color.clear.preference(key: LiquidSheetAltoKey.self, value: geo.size.height)
             })
         }
-        .onPreferenceChange(LiquidSheetAltoKey.self) { altoMedido = $0 }
+        // La altura se fija con la PRIMERA medición (pedido del dueño /inject): si se
+        // re-midiera, abrir el ⓘ agrandaría la hoja y todo saltaría hacia ARRIBA; con la
+        // altura fija, la explicación empuja el contenido hacia abajo dentro del scroll.
+        .onPreferenceChange(LiquidSheetAltoKey.self) { nuevo in
+            if altoMedido == 0 { altoMedido = nuevo }
+        }
         .presentationBackground { LiquidSheetFondo(tone: tono) }
         .presentationDragIndicator(.visible)
         .presentationDetents(detents)
