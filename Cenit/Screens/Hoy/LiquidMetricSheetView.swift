@@ -216,7 +216,9 @@ struct LiquidMetricSheetView: View {
     }
     /// F5 (comportamiento NUEVO, contrato §1.3): el modelo de sueño se construye off-main;
     /// mientras no llega, skeleton — la hoja vieja caía al layout clásico.
-    private var isSleepLoading: Bool { datoInfo.id == "sleep" && sleepDetail == nil }
+    // En demo NO se queda en el esqueleto: sin modelo de noche cae a la variante clásica
+    // de sueño (numeral + niveles), que sí se puede pulir.
+    private var isSleepLoading: Bool { !demo && datoInfo.id == "sleep" && sleepDetail == nil }
     private var isSleepRich: Bool { datoInfo.id == "sleep" && sleepDetail?.night != nil }
     private var isStrainSummary: Bool { datoInfo.id == "strain" && datoInfo.displayValue != "—" }
 

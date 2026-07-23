@@ -934,7 +934,7 @@ struct TodayView: View {
     /// de HealthKit, así que la superficie cae honestamente al héroe de sueño; con esto se
     /// fuerza el estado de veredicto con los datos de muestra del ensamble para pulirlo en
     /// vivo. Computed a propósito: su cuerpo se voltea EN VIVO por inyección.
-    private var liquidDemo: Bool { false }
+    private var liquidDemo: Bool { true }   // /inject: ON para pulir; APAGAR antes de mergear
 
     /// El ambiente semántico que tiñe fondo y pulsos (verde/ámbar/rojo/neutro).
     private var liquidAmbiente: LiquidAmbiente {

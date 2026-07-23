@@ -74,6 +74,8 @@ public struct LiquidSignalOrb: View {
                 .foregroundStyle(progress == nil ? LiquidColor.tinta500 : state.caption)
                 .padding(.top, -3)
         }
+        // Toda la columna es tocable (/inject 2026-07-23), no solo el trazo del glifo.
+        .contentShape(Rectangle())
         .onAppear {
             guard let clamped, shownProgress == 0, !motionDisabled else { return }
             if reduceMotion {
