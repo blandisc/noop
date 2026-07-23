@@ -8,6 +8,20 @@ final class LiquidGlassTests: XCTestCase {
 
     // MARK: Parser SVG
 
+    /// Regresión del bug /inject 2026-07-22: el path DEBE arrancar con un moveTo real —
+    /// macOS perdona un addLine inicial (lo trata como move) pero iOS descarta el path
+    /// en silencio, así que el bounding box por sí solo no bastaba como test.
+    func test_parser_arrancaConMoveTo() {
+        for d in ["M2 3l4 0v5h-4z", "M1 8h3l2-4 3 8 2-4h4",
+                  "M62 56 L62 94 C52 122, 112 132, 130 148"] {
+            var first: CGPathElementType?
+            SVGPathData.path(d).cgPath.applyWithBlock { element in
+                if first == nil { first = element.pointee.type }
+            }
+            XCTAssertEqual(first, .moveToPoint, "«\(d.prefix(12))…» debe abrir con moveTo")
+        }
+    }
+
     func test_parser_lineasYRelativos() {
         // M/l/h/v relativos y absolutos.
         let p = SVGPathData.path("M2 3l4 0v5h-4z")
