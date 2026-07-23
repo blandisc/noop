@@ -484,9 +484,10 @@ struct TodayView: View {
             default:      return false
             }
         }()
-        return MetricInfoSheet(
+        // CUTOVER F6 (épico hoja Liquid): la hoja de resumen es la composición Liquid.
+        // Mismos loaders, mismos gates de origen; el tema Instrumento ya no viaja.
+        return LiquidMetricSheetView(
             info: info,
-            theme: theme,
             appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
             appleSource: fromApple && info.displayValue != "—",
             heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,

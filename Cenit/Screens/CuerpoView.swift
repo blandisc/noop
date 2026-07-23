@@ -187,7 +187,6 @@ private struct CuerpoLanding: View {
     @Environment(\.instrumentoTheme) private var theme
 
     /// Light metric sheet (the same one Today opens), for metrics that have a `MetricInfo` factory.
-    @State private var metricInfo: MetricInfo? = nil
     /// Unified Detalle de Métrica (FER-185): the three vitals (HRV / FC reposo / Respiración) open this
     /// at `.full` depth instead of the legacy `MetricInfoSheet` / dark `MetricDetailView` bridge.
     @State private var metricSpec: MetricDetailSpec? = nil
@@ -334,7 +333,6 @@ private struct CuerpoLanding: View {
         }
         .animation(StrandMotion.interactive, value: detailPresented)
         .task(id: repo.refreshSeq) { await loadAll() }
-        .sheet(item: $metricInfo) { info in metricSheet(for: info) }
         .sheet(isPresented: $showMuscleMap) {
             // Light «Instrumento» Mapa muscular (FER-350) — theme injected at the root (it doesn't cross
             // the `.sheet` boundary, FER-162) and `repo` re-supplied (a sheet starts a fresh environment).
@@ -1222,20 +1220,6 @@ private struct CuerpoLanding: View {
     }
 
     // MARK: - Detail sheets
-
-    /// The light metric sheet (the same one Today opens), with the live theme passed explicitly (it
-    /// does NOT propagate through `.sheet`'s fresh environment) and the matching trend / curve loaders.
-    private func metricSheet(for info: MetricInfo) -> some View {
-        let appleCapable = ["sleep", "hrv", "rhr", "spo2", "steps"].contains(info.id)
-        let notConnected = health.auth != .authorized && health.auth != .unavailable
-        return MetricInfoSheet(
-            info: info,
-            theme: theme,
-            appleConnectHint: appleCapable && notConnected && info.displayValue == "—",
-            heartRateCurveLoader: info.id == "heart_rate" ? { hrPoints } : nil,
-            trendLoader: trendLoader(for: info.id)
-        )
-    }
 
     /// Data Sources, now reskinned to the light «Instrumento» language (FER-338), presented
     /// self-contained: its own NavigationStack + Done button (so «Ver datos importados» pushes the
