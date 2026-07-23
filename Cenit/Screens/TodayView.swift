@@ -1003,6 +1003,7 @@ struct TodayView: View {
         inputs.historias.resp = history(base) { $0.respRateBpm }
         inputs.historias.stress = stressHistory
         inputs.night = liquidNight
+        inputs.sol = solarWindow.map { (start: $0.sunrise, end: $0.sunset) }
         return inputs
     }
 

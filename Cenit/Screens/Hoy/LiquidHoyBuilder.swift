@@ -68,6 +68,8 @@ enum LiquidHoyBuilder {
         var historias = Historias()
         /// Ventana de la sesión de sueño de anoche en horas locales 0–24 (nil = sin sesión).
         var night: (start: Double, end: Double)?
+        /// Amanecer/atardecer locales en horas reloj (SolarClock; nil = caso polar).
+        var sol: (start: Double, end: Double)?
         var now: Date = Date()
         var calendar: Calendar = .current
         var locale: Locale = .current
@@ -91,7 +93,8 @@ enum LiquidHoyBuilder {
                                  nights: i.preparedness?.autonomicNights ?? 0)
         let model = LiquidHoyModel(
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
-            dial: .init(night: i.night, marker: markerHour(now: i.now, calendar: i.calendar)),
+            dial: .init(night: i.night, sol: i.sol,
+                        marker: markerHour(now: i.now, calendar: i.calendar)),
             senales: senales(prep: i.preparedness, thermalDeviation: i.thermalDeviation),
             hero: hero,
             carga: carga(i.trainingLoad),

@@ -45,13 +45,17 @@ public struct LiquidHoyModel: Sendable {
     }
 
     /// El dial-sello 24 h: noche real de anoche (horas 0–24, medianoche arriba) o `nil`
-    /// si no hubo sesión; `marker` = la hora actual.
+    /// si no hubo sesión; `sol` = amanecer/atardecer reales para el arco del día en oro;
+    /// `marker` = la hora actual.
     public struct Dial: Sendable {
         public let night: (start: Double, end: Double)?
+        public let sol: (start: Double, end: Double)?
         public let marker: Double
 
-        public init(night: (start: Double, end: Double)?, marker: Double) {
+        public init(night: (start: Double, end: Double)?,
+                    sol: (start: Double, end: Double)? = nil, marker: Double) {
             self.night = night
+            self.sol = sol
             self.marker = marker
         }
     }
@@ -108,7 +112,7 @@ public struct LiquidHoyModel: Sendable {
     /// El contenido de muestra del ensamble §7.1 («Dale con todo»).
     public static let ejemplo = LiquidHoyModel(
         kicker: "MIÉ 22 DE JUL",
-        dial: Dial(night: (start: 20, end: 4), marker: 8),
+        dial: Dial(night: (start: 20, end: 4), sol: (start: 6.8, end: 20.3), marker: 8),
         senales: [
             .init(id: "autonomico", label: "AUTONÓMICO", caption: "EN TU RANGO",
                   progress: 0.35, icon: .ondaSenal, state: .ok),
@@ -167,7 +171,8 @@ public struct LiquidHoyContent: View {
     public var body: some View {
         VStack(spacing: 0) {
             LiquidScreenHeader(kicker: model.kicker) {
-                LiquidDialSeal(night: model.dial.night, marker: model.dial.marker)
+                LiquidDialSeal(night: model.dial.night, sol: model.dial.sol,
+                               marker: model.dial.marker)
             }
             .liquidEntrada(index: 0)
 

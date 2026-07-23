@@ -33,22 +33,27 @@ public struct LiquidIcon: View {
     }
 
     public var body: some View {
+        // Geometría RELLENA (el contorno del trazo convertido a path con `strokedPath` y
+        // luego `fill`): el render de trazos de glifos chicos se comió dos hipótesis en
+        // device — el relleno de geometría pura no depende de ese camino.
         let spec = glyph.spec
-        LiquidIconShape(glyph: glyph)
-            .stroke(color, style: StrokeStyle(
-                lineWidth: spec.strokeWidth * size / spec.viewBox,
-                lineCap: .round, lineJoin: .round))
+        LiquidIconShape(glyph: glyph,
+                        strokedWidth: spec.strokeWidth * size / spec.viewBox)
+            .fill(color)
             .frame(width: size, height: size)
     }
 }
 
-/// La forma cruda del glifo (escala el path del viewBox al rect). Úsala directo solo si
-/// necesitas un trazo no estándar; el punto de entrada normal es `LiquidIcon`.
+/// La forma cruda del glifo (escala el path del viewBox al rect). `strokedWidth` no-nil
+/// devuelve el CONTORNO del trazo ya convertido a geometría (para rellenar); nil devuelve
+/// el path crudo para trazos custom.
 public struct LiquidIconShape: Shape {
     public let glyph: LiquidIcon.Glyph
+    public var strokedWidth: CGFloat?
 
-    public init(glyph: LiquidIcon.Glyph) {
+    public init(glyph: LiquidIcon.Glyph, strokedWidth: CGFloat? = nil) {
         self.glyph = glyph
+        self.strokedWidth = strokedWidth
     }
 
     public func path(in rect: CGRect) -> Path {
@@ -58,9 +63,12 @@ public struct LiquidIconShape: Shape {
             combined.addPath(SVGPathData.path(d))
         }
         let scale = min(rect.width, rect.height) / spec.viewBox
-        return combined.applying(
+        let scaled = combined.applying(
             CGAffineTransform(translationX: rect.minX, y: rect.minY)
                 .scaledBy(x: scale, y: scale))
+        guard let strokedWidth else { return scaled }
+        return scaled.strokedPath(StrokeStyle(lineWidth: strokedWidth,
+                                              lineCap: .round, lineJoin: .round))
     }
 }
 

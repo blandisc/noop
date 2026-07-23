@@ -143,15 +143,19 @@ public struct LiquidScreenHeader<Trailing: View>: View {
 /// punto de papel a medianoche (arriba).
 public struct LiquidDialSeal: View {
     private let night: (start: Double, end: Double)?
+    private let sol: (start: Double, end: Double)?
     private let marker: Double
     private let size: CGFloat
 
     /// Horas en reloj de 24 (medianoche arriba). Defaults = ensamble de Hoy
     /// (noche 20:00–04:00, marcador 08:00). `night == nil` = sin sesión de sueño
-    /// anoche → solo el marcador de la hora, sin arcos (FER-1045).
-    public init(night: (start: Double, end: Double)? = (20, 4), marker: Double = 8,
-                size: CGFloat = 36) {
+    /// anoche → sin arco de noche. `sol` (amanecer/atardecer) pinta el arco del día
+    /// en ORO siguiendo el sol real — la herencia del DiurnalDial (sesión /inject).
+    public init(night: (start: Double, end: Double)? = (20, 4),
+                sol: (start: Double, end: Double)? = nil,
+                marker: Double = 8, size: CGFloat = 36) {
         self.night = night
+        self.sol = sol
         self.marker = marker
         self.size = size
     }
@@ -188,14 +192,28 @@ public struct LiquidDialSeal: View {
                                      center: .center, startRadius: 0, endRadius: size * 0.21))
                 .frame(width: size * 0.42, height: size * 0.24)
                 .position(x: size * 0.18 + size * 0.21, y: size * 0.08 + size * 0.12)
-            // Dial: track + arco día + arco noche + medianoche + marcador.
+            // Dial: marcas 24 h + track + arco solar (día) + arco de noche + medianoche +
+            // marcador — la lectura del DiurnalDial dicha en vidrio.
+            DialTicks(majors: false)
+                .stroke(LiquidColor.tinta900.opacity(0.12), lineWidth: 0.7)
+            DialTicks(majors: true)
+                .stroke(LiquidColor.tinta900.opacity(0.25), lineWidth: 1)
             DialArc(from: 0, to: 360)
                 .stroke(LiquidColor.tinta900.opacity(0.14), lineWidth: 2)
                 .padding((size - 2 * r) / 2)
-            if night != nil {
+            if let sol {
+                // El día según el sol real: amanecer → atardecer, en oro.
+                DialArc(from: angle(sol.start), to: angle(sol.end) <= angle(sol.start)
+                        ? angle(sol.end) + 360 : angle(sol.end))
+                    .stroke(LiquidColor.oro, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
+                    .padding((size - 2 * r) / 2)
+            } else if night != nil {
+                // Sin ventana solar (caso polar): el día como complemento de la noche, en tinta.
                 DialArc(from: nightTo, to: nightFrom + 360)
                     .stroke(LiquidColor.tinta900, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
                     .padding((size - 2 * r) / 2)
+            }
+            if night != nil {
                 DialArc(from: nightFrom, to: nightTo)
                     .stroke(LiquidColor.indigo, style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
                     .padding((size - 2 * r) / 2)
@@ -230,6 +248,25 @@ private struct DialArc: Shape {
         p.addArc(center: CGPoint(x: rect.midX, y: rect.midY),
                  radius: min(rect.width, rect.height) / 2,
                  startAngle: .degrees(from), endAngle: .degrees(to), clockwise: false)
+        return p
+    }
+}
+
+/// Las 24 marcas horarias del dial (mayores en 0/6/12/18), entre el track y el borde.
+private struct DialTicks: Shape {
+    let majors: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let R = min(rect.width, rect.height) / 2
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        var p = Path()
+        for hour in 0..<24 where (hour % 6 == 0) == majors {
+            let a = (-90 + Double(hour) * 15) * .pi / 180
+            let r1 = R * 0.66
+            let r2 = R * (majors ? 0.80 : 0.74)
+            p.move(to: CGPoint(x: c.x + r1 * CGFloat(cos(a)), y: c.y + r1 * CGFloat(sin(a))))
+            p.addLine(to: CGPoint(x: c.x + r2 * CGFloat(cos(a)), y: c.y + r2 * CGFloat(sin(a))))
+        }
         return p
     }
 }
@@ -296,23 +333,20 @@ public struct LiquidSignalCables: View {
     private func pulse(_ d: String, progress: Double) -> some View {
         let len = LiquidMotion.flowPulseLength
         let style = StrokeStyle(lineWidth: 1.6, lineCap: .round)
-        // 3 pulsos por cable, equiespaciados en fase (pedido del dueño: «más puntos» y que
-        // el flujo se lea naciendo en cada orbe).
+        // 3 pulsos por cable, equiespaciados. Cada pulso NACE suave bajo su orbe (fade-in
+        // corto) y SE APAGA en fade al llegar al final, en vez de cortarse o teletransportarse
+        // al inicio (pedido del dueño, sesión /inject).
         ZStack {
             ForEach(0..<3, id: \.self) { k in
                 let p = (progress + Double(k) / 3).truncatingRemainder(dividingBy: 1)
+                let fadeIn = min(1, p / 0.08)
+                let fadeOut = min(1, max(0, (1 - p - len) / 0.18))
                 CablePath(d: d)
                     .trim(from: p, to: min(1, p + len))
                     .stroke(LiquidColor.verdePrimario, style: style)
-                if p + len > 1 {
-                    // El pulso cruza el final del cable: se completa desde el arranque.
-                    CablePath(d: d)
-                        .trim(from: 0, to: p + len - 1)
-                        .stroke(LiquidColor.verdePrimario, style: style)
-                }
+                    .opacity(0.75 * fadeIn * fadeOut)
             }
         }
-        .opacity(0.75)
     }
 }
 
