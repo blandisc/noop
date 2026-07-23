@@ -33,8 +33,9 @@ public enum LiquidType {
 
     // MARK: Valores y títulos
 
-    /// `valor/l` — 20/700 tabular. Valores de métricas (MetricTile).
-    public static let valorL = InstrumentoType.groteskNumber(20)
+    /// `valor/l` — 22/700 tabular (subido del 20 del handoff, elevación /inject: el
+    /// dato manda en el tile). Valores de métricas (MetricTile).
+    public static let valorL = InstrumentoType.groteskNumber(22)
 
     /// `título` — 15/700. Títulos de tarjeta.
     public static let titulo = InstrumentoType.grotesk(15, weight: .bold)

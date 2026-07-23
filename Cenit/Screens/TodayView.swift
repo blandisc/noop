@@ -614,7 +614,7 @@ struct TodayView: View {
         }
         .overlay(alignment: .top) {
             if !noSources {
-                LiquidVeil()
+                LiquidVeil(tone: liquidAmbiente.acento)
                     .frame(height: LiquidSpace.s1400)
                     .ignoresSafeArea(edges: .top)
             }

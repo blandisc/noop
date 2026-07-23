@@ -13,9 +13,10 @@ public struct LiquidIconDrop: View {
     private let iconSize: CGFloat
     private let fillAlpha: Double
 
-    /// La gota de tile: 22 pt con icono 13, tono al 10 %.
+    /// La gota de tile: 24 pt con icono 14, tono al 10 % (subida del 22 del handoff,
+    /// elevación /inject — más presencia sin robarle al valor).
     public init(_ glyph: LiquidIcon.Glyph, tone: Color) {
-        self.init(glyph, tone: tone, size: 22, iconSize: 13, fillAlpha: 0.10)
+        self.init(glyph, tone: tone, size: 24, iconSize: 14, fillAlpha: 0.10)
     }
 
     /// Variante dimensionada (ModeTile usa 28/15 con alfa 0.12).

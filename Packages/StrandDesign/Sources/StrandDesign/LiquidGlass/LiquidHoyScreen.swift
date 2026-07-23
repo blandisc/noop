@@ -319,7 +319,7 @@ public struct LiquidHoyScreen: View {
             }
         }
         .overlay(alignment: .top) {
-            LiquidVeil().frame(height: LiquidSpace.s1400)
+            LiquidVeil(tone: model.ambiente.acento).frame(height: LiquidSpace.s1400)
         }
         .overlay(alignment: .bottom) {
             LiquidTabBar(active: .hoy, onSelect: onSelectTab)

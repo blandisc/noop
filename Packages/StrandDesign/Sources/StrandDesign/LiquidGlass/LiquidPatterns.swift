@@ -219,7 +219,7 @@ public struct LiquidDialSeal: View {
     /// en ORO siguiendo el sol real — la herencia del DiurnalDial (sesión /inject).
     public init(night: (start: Double, end: Double)? = (20, 4),
                 sol: (start: Double, end: Double)? = nil,
-                marker: Double = 8, size: CGFloat = 36) {
+                marker: Double = 8, size: CGFloat = 40) {
         self.night = night
         self.sol = sol
         self.marker = marker
@@ -361,9 +361,11 @@ public struct LiquidSignalCables: View {
     // Zona comprimida ~25 % (pasada UI /inject): el vacío entre orbes y héroe se recorta
     // para que veredicto + carga + primera fila de tiles entren al primer pantallazo.
     private static let cables: [(d: String, delay: Double)] = [
+        // Pulso de FIRMA (elevación /inject): delay 0 en los tres — las señales laten
+        // JUNTAS y llegan al veredicto al mismo tiempo (un gesto, no tráfico).
         ("M62 56 L62 88 C54 104, 108 110, 124 118 S148 126, 152 128", 0.0),
-        ("M179 56 L179 92 C173 102, 190 110, 186 118 S183 124, 182 127", 0.8),
-        ("M296 56 L296 88 C304 106, 260 112, 238 120 S212 126, 208 128", 1.6),
+        ("M179 56 L179 92 C173 102, 190 110, 186 118 S183 124, 182 127", 0.0),
+        ("M296 56 L296 88 C304 106, 260 112, 238 120 S212 126, 208 128", 0.0),
     ]
 
     public var body: some View {
@@ -406,12 +408,11 @@ public struct LiquidSignalCables: View {
     private func pulse(_ d: String, progress: Double) -> some View {
         let len = LiquidMotion.flowPulseLength
         let style = StrokeStyle(lineWidth: 1.6, lineCap: .round)
-        // 3 pulsos por cable, equiespaciados. Cada pulso NACE suave bajo su orbe (fade-in
-        // corto) y SE APAGA en fade al llegar al final, en vez de cortarse o teletransportarse
-        // al inicio (pedido del dueño, sesión /inject).
+        // UN pulso por cable (firma /inject): nace suave bajo su orbe (fade-in corto) y
+        // se apaga en fade al llegar al veredicto — un latido cada ciclo, no tráfico.
         ZStack {
-            ForEach(0..<3, id: \.self) { k in
-                let p = (progress + Double(k) / 3).truncatingRemainder(dividingBy: 1)
+            ForEach(0..<1, id: \.self) { k in
+                let p = (progress + Double(k)).truncatingRemainder(dividingBy: 1)
                 let fadeIn = min(1, p / 0.08)
                 let fadeOut = min(1, max(0, (1 - p - len) / 0.18))
                 CablePath(d: d)
@@ -541,19 +542,29 @@ public struct LiquidHeroDemotado: View {
 private struct LiquidHeroSubtitle: View {
     let subtitle: String
     let confianza: String?
-    @ScaledMetric(relativeTo: .footnote) private var cuerpoSize: CGFloat = 12.5
-    @ScaledMetric(relativeTo: .caption2) private var captionSize: CGFloat = 9
+    // Elevación /inject: el subtítulo sube a 14 con tracking −0.2 (el veredicto merece un
+    // apoyo con más presencia) y el tether de confianza se asienta como PASTILLA discreta.
+    @ScaledMetric(relativeTo: .footnote) private var cuerpoSize: CGFloat = 14
+    @ScaledMetric(relativeTo: .caption2) private var captionSize: CGFloat = 10.5
 
     var body: some View {
-        VStack(spacing: LiquidSpace.s100) {
+        VStack(spacing: LiquidSpace.s150) {
             Text(subtitle)
                 .font(.system(size: cuerpoSize))
+                .tracking(-0.2)
                 .foregroundStyle(LiquidColor.tinta700)
                 .multilineTextAlignment(.center)
             if let confianza {
                 Text(confianza)
                     .font(InstrumentoType.grotesk(captionSize, weight: .medium))
                     .foregroundStyle(LiquidColor.tinta500)
+                    .padding(.horizontal, LiquidSpace.s250)
+                    .padding(.vertical, 3)
+                    .background {
+                        Capsule().fill(Color.white.opacity(0.35))
+                        Capsule().strokeBorder(LiquidColor.tinta900.opacity(0.08),
+                                               lineWidth: 0.5)
+                    }
             }
         }
     }

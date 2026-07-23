@@ -153,7 +153,13 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
 /// El velo del status bar: blur + degradado de papel que se desvanece con máscara.
 /// Colócalo con `.overlay(alignment: .top)` a alto `LiquidSpace.s1400` (56).
 public struct LiquidVeil: View {
-    public init() {}
+    /// Acento del ambiente del día (elevación /inject): tiñe el velo un 4 % para que el
+    /// clima respire también en el chrome superior. `nil` = velo neutro.
+    private let tone: Color?
+
+    public init(tone: Color? = nil) {
+        self.tone = tone
+    }
 
     public var body: some View {
         Rectangle()
@@ -163,6 +169,12 @@ public struct LiquidVeil: View {
                 LinearGradient(
                     colors: [LiquidColor.fondoAlto.opacity(0.5), LiquidColor.fondoAlto.opacity(0)],
                     startPoint: .top, endPoint: .bottom)
+            }
+            .overlay {
+                if let tone {
+                    LinearGradient(colors: [tone.opacity(0.04), tone.opacity(0)],
+                                   startPoint: .top, endPoint: .bottom)
+                }
             }
             .mask {
                 LinearGradient(
