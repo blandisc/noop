@@ -190,46 +190,17 @@ public struct LiquidSphere: View {
     }
 
     public var body: some View {
-        GeometryReader { geo in
-            let d = min(geo.size.width, geo.size.height)
-            ZStack {
-                // Esfera de vidrio NATIVO en iOS 26 (más cristal, pedido del dueño);
-                // el radial especular de abajo la corona en ambos caminos.
-                if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
-                    Circle().glassEffect(.regular.tint(tone.opacity(0.14)), in: Circle())
-                } else {
-                    Circle().fill(.ultraThinMaterial)
-                }
-                Circle().fill(
-                    RadialGradient(
-                        stops: [
-                            .init(color: .white.opacity(0.55), location: 0),
-                            .init(color: .white.opacity(0.12), location: 0.4),
-                            .init(color: tone.opacity(0.22), location: 1),
-                        ],
-                        center: UnitPoint(x: 0.32, y: 0.24),
-                        startRadius: 0, endRadius: d * 0.8))
-                // Inner-highlights: blanco fuerte arriba-izquierda, tinte abajo-derecha.
-                Circle()
-                    .strokeBorder(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .white.opacity(0.95), location: 0),
-                                .init(color: tone.opacity(0.14), location: 1),
-                            ],
-                            startPoint: .topLeading, endPoint: .bottomTrailing),
-                        lineWidth: 2)
-                    .blur(radius: 1)
-                    .clipShape(Circle())
-                Circle().strokeBorder(Color.white.opacity(0.55), lineWidth: 0.75)
-                // Highlight especular: elipse en left 16 % / top 7 %, 44 % × 26 %.
-                // Especular chico y suave (pasada de elegancia): un beso de luz, no un foco.
-                Ellipse()
-                    .fill(RadialGradient(
-                        colors: [.white.opacity(0.7), .white.opacity(0)],
-                        center: .center, startRadius: 0, endRadius: d * 0.17))
-                    .frame(width: d * 0.34, height: d * 0.20)
-                    .position(x: d * 0.20 + d * 0.17, y: d * 0.10 + d * 0.10)
+        // «LENTE» (elevación /inject 2026-07-22, camino 1 del dueño): disco de vidrio
+        // PLANO — el Liquid Glass real nunca simula volumen. La burbuja esférica del
+        // handoff (radial blanco + especular) se retiró: el arco y la joya brillan solos
+        // sobre vidrio honesto, con apenas un suspiro del tono del estado.
+        ZStack {
+            if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+                Circle().glassEffect(.regular.tint(tone.opacity(0.10)), in: Circle())
+            } else {
+                Circle().fill(.ultraThinMaterial)
+                Circle().fill(tone.opacity(0.06))
+                Circle().strokeBorder(Color.white.opacity(0.45), lineWidth: 0.75)
             }
         }
         .allowsHitTesting(false)
