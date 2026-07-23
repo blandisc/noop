@@ -202,29 +202,54 @@ public struct LiquidVeil: View {
 public struct LiquidSheetFondo: View {
     private let tone: Color?
 
+    /// En renders/previews congelados el `glassEffect` nativo no rasteriza: ahí se usa
+    /// el material, igual que el resto de las recetas.
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
     public init(tone: Color? = nil) {
         self.tone = tone
     }
 
     public var body: some View {
         ZStack {
-            // VIDRIO, no papel (pedido del dueño /inject): material del sistema debajo del
-            // degradado, que ahora es semitransparente para dejarlo respirar. La hoja se
-            // siente cristal sobre la pantalla, no una cartulina encima.
-            Rectangle().fill(.ultraThinMaterial)
-            LinearGradient(colors: [LiquidColor.fondoAlto.opacity(0.82),
-                                    LiquidColor.fondoBajo.opacity(0.72)],
+            // VIDRIO DE VERDAD (pedido del dueño /inject, 2ª ronda): en iOS 26 el vidrio
+            // NATIVO — refracción y lensing reales del sistema, lo mismo que usan el dock
+            // y los tiles. Antes era material + un velo casi opaco (0.82) que lo mataba.
+            if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
+                Color.clear.glassEffect(.regular, in: Rectangle())
+            } else {
+                Rectangle().fill(.ultraThinMaterial)
+            }
+            // El velo baja a la mitad: sostiene el contraste del texto sin tapar el vidrio.
+            LinearGradient(colors: [LiquidColor.fondoAlto.opacity(0.46),
+                                    LiquidColor.fondoBajo.opacity(0.34)],
                            startPoint: .top, endPoint: .bottom)
             if let tone {
-                // El acento del tono se VE (pedido del dueño /inject: al 4 % era invisible
-                // y la hoja se leía como papel plano). Sigue siendo un suspiro: se apaga
-                // hacia el pie para que el dato mande.
+                // El acento del tono, apagándose hacia el pie para que el dato mande.
+                // Transición SUAVE (pedido del dueño /inject): más paradas y el apagado
+                // repartido a lo largo de toda la hoja — antes moría a un tercio y el
+                // corte contra el blanco se veía duro a la altura de la gráfica.
                 LinearGradient(stops: [
-                    .init(color: tone.opacity(0.16), location: 0),
-                    .init(color: tone.opacity(0.06), location: 0.35),
+                    .init(color: tone.opacity(0.15), location: 0),
+                    .init(color: tone.opacity(0.115), location: 0.22),
+                    .init(color: tone.opacity(0.075), location: 0.45),
+                    .init(color: tone.opacity(0.04), location: 0.68),
+                    .init(color: tone.opacity(0.015), location: 0.86),
                     .init(color: tone.opacity(0), location: 1),
                 ], startPoint: .top, endPoint: .bottom)
             }
+            // Reflejo especular en el canto superior: el gesto que delata al cristal
+            // (misma gramática que la receta `lente` del dock).
+            VStack(spacing: 0) {
+                LinearGradient(stops: [
+                    .init(color: LiquidColor.vidrioStreak, location: 0),
+                    .init(color: LiquidColor.vidrioStreak.opacity(0.35), location: 0.45),
+                    .init(color: .clear, location: 1),
+                ], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 140)
+                Spacer(minLength: 0)
+            }
+            .allowsHitTesting(false)
         }
         .ignoresSafeArea()
     }
