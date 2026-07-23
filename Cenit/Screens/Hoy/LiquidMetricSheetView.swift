@@ -473,7 +473,7 @@ struct LiquidMetricSheetView: View {
         levelsBlock
     }
 
-    // MARK: Sueño rica (§1.3 — doble dato + lectura + etapas + lane + niveles + «Para esta noche»)
+    // MARK: Sueño rica (§1.3 — doble dato + lectura + etapas + lane + niveles)
 
     @ViewBuilder private var sleepContent: some View {
         if let night = sleepDetail?.night {
@@ -495,10 +495,8 @@ struct LiquidMetricSheetView: View {
                                 tono: tono)
             }
             levelsBlock
-            LiquidPatternBlock(
-                overline: String(localized: "For tonight"),
-                lineas: [sleepTonightText],
-                tono: tono)
+            // «Para esta noche» RETIRADO (decisión del dueño, /inject 2026-07-23):
+            // la hoja de sueño cierra con los niveles.
         }
     }
 
@@ -536,14 +534,6 @@ struct LiquidMetricSheetView: View {
     /// clave→nombre; nil sin lectura.
     private var sleepLaneName: String? {
         activeLevelKey.map(nombreNivel)
-    }
-
-    /// Paridad `sleepTonightText` (:599-604) — mismas claves.
-    private var sleepTonightText: String {
-        if let r = sleepDetail?.regularity, r.score >= 80 {
-            return String(localized: "Keep to your usual bedtime to hold this rhythm.")
-        }
-        return String(localized: "A steadier bedtime tonight helps your rhythm.")
     }
 
     /// «7:12» desde minutos (paridad `sleepHM` :510-512).
