@@ -90,9 +90,10 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
             // imitar con material + relleno. La elevación tonal sigue siendo nuestra
             // (silueta difuminada); el resto del stack queda como fallback para OS previos.
             content
-                // `.clear`: la variante más transparente del material (pedido del dueño:
-                // «todo más de cristal»); sobre el fondo neutro la tinta conserva AA.
-                .glassEffect(.clear.interactive(), in: shape)
+                // `.regular` SIN `.interactive()` (decisión del dueño /inject: el clear se
+                // sintió aguado y la reactividad táctil del vidrio competía con nuestro
+                // press — la única gramática de toque es `.liquidPress`).
+                .glassEffect(.regular, in: shape)
                 .liquidShadow(shadow, silhouette: shape)
         } else {
             imitacion(content)
@@ -195,8 +196,7 @@ public struct LiquidSphere: View {
                 // Esfera de vidrio NATIVO en iOS 26 (más cristal, pedido del dueño);
                 // el radial especular de abajo la corona en ambos caminos.
                 if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
-                    Circle().glassEffect(.clear.tint(tone.opacity(0.14)).interactive(),
-                                         in: Circle())
+                    Circle().glassEffect(.regular.tint(tone.opacity(0.14)), in: Circle())
                 } else {
                     Circle().fill(.ultraThinMaterial)
                 }
@@ -221,14 +221,15 @@ public struct LiquidSphere: View {
                         lineWidth: 2)
                     .blur(radius: 1)
                     .clipShape(Circle())
-                Circle().strokeBorder(LiquidColor.vidrioBordeFuerte, lineWidth: 1)
+                Circle().strokeBorder(Color.white.opacity(0.55), lineWidth: 0.75)
                 // Highlight especular: elipse en left 16 % / top 7 %, 44 % × 26 %.
+                // Especular chico y suave (pasada de elegancia): un beso de luz, no un foco.
                 Ellipse()
                     .fill(RadialGradient(
-                        colors: [.white.opacity(0.95), .white.opacity(0)],
-                        center: .center, startRadius: 0, endRadius: d * 0.22))
-                    .frame(width: d * 0.44, height: d * 0.26)
-                    .position(x: d * 0.16 + d * 0.22, y: d * 0.07 + d * 0.13)
+                        colors: [.white.opacity(0.7), .white.opacity(0)],
+                        center: .center, startRadius: 0, endRadius: d * 0.17))
+                    .frame(width: d * 0.34, height: d * 0.20)
+                    .position(x: d * 0.20 + d * 0.17, y: d * 0.10 + d * 0.10)
             }
         }
         .allowsHitTesting(false)

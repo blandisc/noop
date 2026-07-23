@@ -936,7 +936,7 @@ struct TodayView: View {
     /// El ambiente semántico que tiñe fondo y pulsos (verde/ámbar/rojo/neutro).
     private var liquidAmbiente: LiquidAmbiente {
         #if DEBUG
-        if liquidDemo { return .bien }
+        if liquidDemo { return .neutro }   // demo NEUTRO en curso (/inject)
         #endif
         return LiquidHoyBuilder.ambiente(prep: repo.todayPreparedness)
     }
@@ -944,7 +944,26 @@ struct TodayView: View {
     private var liquidOutput: LiquidHoyBuilder.Output {
         #if DEBUG
         if liquidDemo {
-            return LiquidHoyBuilder.Output(model: .ejemplo, heroRoute: .autonomic)
+            // Demo NEUTRO (validación en vivo del ambiente semántico, /inject): el clima
+            // «aún sin datos» — orbes sin voto, carga calibrando, héroe honesto.
+            let base = LiquidHoyModel.ejemplo
+            let model = LiquidHoyModel(
+                kicker: base.kicker, dial: .init(night: nil, sol: base.dial.sol,
+                                                 marker: base.dial.marker),
+                senales: [
+                    .init(id: "autonomico", label: "AUTONÓMICO", caption: "SIN DATOS",
+                          progress: nil, icon: .ondaSenal, state: .ok),
+                    .init(id: "sueno", label: "SUEÑO", caption: "SIN DATOS",
+                          progress: nil, icon: .lunaSenal, state: .ok),
+                    .init(id: "termico", label: "TÉRMICO", caption: "SIN DATOS",
+                          progress: nil, icon: .termoSenal, state: .ok),
+                ],
+                hero: .demotado(kicker: "PREPARACIÓN",
+                                title: "Aún sin datos suficientes",
+                                subtitle: "Duerme con tu Apple Watch unas noches y aquí amanece tu veredicto del día."),
+                carga: .calibrando(status: "CALIBRANDO"), metricas: base.metricas,
+                heroHint: base.heroHint, ambiente: .neutro)
+            return LiquidHoyBuilder.Output(model: model, heroRoute: .autonomic)
         }
         #endif
         return LiquidHoyBuilder.build(liquidInputs())

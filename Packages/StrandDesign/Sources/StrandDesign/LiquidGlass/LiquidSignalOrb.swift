@@ -100,21 +100,24 @@ public struct LiquidSignalOrb: View {
             // derecha = alto — la misma semántica de las agujas.
             OrbRing()
                 .trim(from: 0, to: 0.5)
-                .stroke(LiquidColor.tinta10, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                .stroke(LiquidColor.tinta10, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
                 .rotationEffect(.degrees(orbStartAngle))
             if let displayed {
                 OrbRing()
                     .trim(from: 0, to: displayed * 0.5)
-                    .stroke(state.ring, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                    .stroke(state.ring, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(orbStartAngle))
+                // El marcador como JOYA del estado (pasada de elegancia /inject): el tono
+                // del clima con anillo blanco — el punto negro peleaba con todo.
                 OrbMarkerDot(progress: displayed)
-                    .fill(LiquidColor.tinta900)
+                    .fill(state.tone)
                 OrbMarkerDot(progress: displayed)
-                    .stroke(Color.white, lineWidth: 1.4)
+                    .stroke(Color.white, lineWidth: 1.6)
             }
-            LiquidIcon(icon, size: 22, color: LiquidColor.tinta900)
+            LiquidIcon(icon, size: 20, color: LiquidColor.tinta900.opacity(0.85))
+                .offset(y: 1)
         }
-        .frame(width: 64, height: 64)
+        .frame(width: 72, height: 72)
     }
 }
 

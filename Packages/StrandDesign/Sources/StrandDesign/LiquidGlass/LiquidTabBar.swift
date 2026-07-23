@@ -54,7 +54,7 @@ public struct LiquidTabBar: View {
     @ViewBuilder
     private var selectorPill: some View {
         if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
-            Color.clear.glassEffect(.regular.interactive(), in: Capsule())
+            Color.clear.glassEffect(.regular, in: Capsule())
         } else {
             Capsule()
                 .fill(.ultraThinMaterial)

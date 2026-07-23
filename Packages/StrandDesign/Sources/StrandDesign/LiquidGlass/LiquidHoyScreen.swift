@@ -145,21 +145,21 @@ public struct LiquidHoyModel: Sendable {
                          confianza: nil),
         carga: .medida(pos: 51.5, zone: 1, status: "EN EQUILIBRIO", ratio: "1.03", state: .ok),
         metricas: [
-            .init(id: "sueno", label: "SUEÑO", value: "7:20", delta: "En tu base",
+            .init(id: "sleep", label: "SUEÑO", value: "7:20", delta: "En tu base",
                   tone: LiquidColor.indigo, icon: .luna),
             .init(id: "hrv", label: "HRV", value: "56", unit: "ms", delta: "+2 ms vs tu base",
                   deltaTone: .up, tone: LiquidColor.cian, icon: .onda),
             .init(id: "rhr", label: "FC EN REPOSO", value: "52", unit: "lpm", delta: "En tu base",
                   tone: LiquidColor.rosa, icon: .corazon),
-            .init(id: "esfuerzo", label: "ESFUERZO", value: "10.0", delta: "−0.7 vs tu base",
+            .init(id: "strain", label: "ESFUERZO", value: "10.0", delta: "−0.7 vs tu base",
                   deltaTone: .down, tone: LiquidColor.ambar, icon: .llama),
-            .init(id: "pasos", label: "PASOS", value: "8,432", delta: "+612 vs tu base",
+            .init(id: "steps", label: "PASOS", value: "8,432", delta: "+612 vs tu base",
                   deltaTone: .up, tone: LiquidColor.teal, icon: .pasos),
-            .init(id: "piel", label: "TEMP. DE PIEL", value: "+0.1", unit: "°C",
+            .init(id: "skintemp", label: "TEMP. DE PIEL", value: "+0.1", unit: "°C",
                   delta: "En tu base", tone: LiquidColor.ambar, icon: .termo),
-            .init(id: "respiracion", label: "RESPIRACIÓN", value: "14.5", unit: "rpm",
+            .init(id: "resp", label: "RESPIRACIÓN", value: "14.5", unit: "rpm",
                   delta: "En tu base", tone: LiquidColor.azul, icon: .resp),
-            .init(id: "estres", label: "ESTRÉS", value: "1.2", unit: "/3",
+            .init(id: "stress", label: "ESTRÉS", value: "1.2", unit: "/3",
                   delta: "−0.5 vs tu base", deltaTone: .up,
                   tone: LiquidColor.verdePrimario, icon: .estres),
         ])
@@ -266,7 +266,8 @@ public struct LiquidHoyContent: View {
             // entrada — primera impresión serena, el movimiento entra como respiración.
             LiquidSignalCables(tone: model.ambiente.acento)
                 .liquidEntrada(index: 12)
-            HStack(spacing: 53) {
+            // 72 + 45 = 117: el paso de centros no cambia y los cables siguen exactos.
+            HStack(spacing: 45) {
                 ForEach(model.senales) { senal in
                     LiquidSignalOrb(label: senal.label, caption: senal.caption,
                                     progress: senal.progress, icon: senal.icon,
