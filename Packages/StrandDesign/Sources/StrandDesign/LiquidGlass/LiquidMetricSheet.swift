@@ -8,18 +8,31 @@ import SwiftUI
 // y la columna de contenido con el gap de hoja. Las variantes componen adentro
 // (header → cuerpo → pie); el cascarón no conoce métricas.
 
-/// Paridad de detents con MetricInfoSheet:274-278.
+/// Paridad de detents con MetricInfoSheet:274-278 (revote adversarial F1: la hoja corta
+/// es SOLO .medium, y la de instrumento mide su contenido con fallback .large hasta el
+/// primer layout — el mismo mecanismo de la hoja vieja).
 public enum LiquidSheetDetent: Sendable, Equatable {
-    /// Hojas cortas (la mayoría): detent medio del sistema.
+    /// Hojas cortas (la mayoría): detent medio del sistema, sin .large.
     case medio
-    /// Hojas con instrumento/curva (strain, heart_rate, niveles): alto por contenido.
-    case porContenido(CGFloat)
+    /// Hojas con instrumento/curva (strain, heart_rate, trend, niveles): alto medido del
+    /// contenido; .large mientras la primera pasada de layout no ha medido.
+    case porContenido
+}
+
+/// PreferenceKey del alto medido del contenido (paridad SheetContentHeightKey).
+private struct LiquidSheetAltoKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
 }
 
 public struct LiquidMetricSheet<Content: View>: View {
     private let tono: Color
     private let detent: LiquidSheetDetent
     private let content: Content
+
+    @State private var altoMedido: CGFloat = 0
 
     public init(tono: Color, detent: LiquidSheetDetent = .medio,
                 @ViewBuilder content: () -> Content) {
@@ -35,7 +48,11 @@ public struct LiquidMetricSheet<Content: View>: View {
             }
             .padding(LiquidSpace.s550)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(GeometryReader { geo in
+                Color.clear.preference(key: LiquidSheetAltoKey.self, value: geo.size.height)
+            })
         }
+        .onPreferenceChange(LiquidSheetAltoKey.self) { altoMedido = $0 }
         .presentationBackground { LiquidSheetFondo(tone: tono) }
         .presentationDragIndicator(.visible)
         .presentationDetents(detents)
@@ -45,9 +62,9 @@ public struct LiquidMetricSheet<Content: View>: View {
     private var detents: Set<PresentationDetent> {
         switch detent {
         case .medio:
-            return [.medium, .large]
-        case .porContenido(let alto):
-            return [.height(alto), .large]
+            return [.medium]
+        case .porContenido:
+            return altoMedido > 0 ? [.height(altoMedido)] : [.large]
         }
     }
 }

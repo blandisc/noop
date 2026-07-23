@@ -38,8 +38,11 @@ public struct LiquidZoneMeter: View {
 
     /// Ancho del trazo del tick — es trazo, no espaciado (paridad `ZoneMeter`).
     private static let tickAncho: CGFloat = 2.5
-    /// La zona activa se ilumina llena; las demás quedan tenues (paridad `ZoneMeter` 0.28).
-    private static let activaAlfa: Double = 1.0
+    /// Gap entre segmentos — paridad EXACTA con `ZoneMeter` (3, no un token de espacio:
+    /// es geometría del instrumento; revote adversarial F2).
+    private static let gap: CGFloat = 3
+    /// Alfas de paridad `ZoneMeter` (0.9 activa / 0.28 tenue).
+    private static let activaAlfa: Double = 0.9
     private static let tenueAlfa: Double = 0.28
 
     /// El alto de una línea de rótulo — escala con Dynamic Type junto a `microEstado`
@@ -57,7 +60,7 @@ public struct LiquidZoneMeter: View {
     private func anchos(en total: CGFloat) -> [CGFloat] {
         let suma = segmentos.reduce(0) { $0 + $1.peso }
         guard suma > 0 else { return segmentos.map { _ in 0 } }
-        let usable = max(0, total - LiquidSpace.s050 * CGFloat(segmentos.count - 1))
+        let usable = max(0, total - Self.gap * CGFloat(segmentos.count - 1))
         return segmentos.map { CGFloat($0.peso / suma) * usable }
     }
 
@@ -66,7 +69,7 @@ public struct LiquidZoneMeter: View {
             let w = anchos(en: geo.size.width)
             VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 ZStack(alignment: .leading) {
-                    HStack(spacing: LiquidSpace.s050) {
+                    HStack(spacing: Self.gap) {
                         ForEach(segmentos.indices, id: \.self) { i in
                             Capsule()
                                 .fill(segmentos[i].color)
@@ -83,7 +86,7 @@ public struct LiquidZoneMeter: View {
                     }
                 }
                 .frame(height: LiquidSpace.s300)
-                HStack(spacing: LiquidSpace.s050) {
+                HStack(spacing: Self.gap) {
                     ForEach(segmentos.indices, id: \.self) { i in
                         Text(verbatim: segmentos[i].etiqueta)
                             .font(LiquidType.microEstado)

@@ -4,9 +4,9 @@ import SwiftUI
 //
 // El estado «calibrando tu base» de la variante clásica (paridad
 // `MetricInfoSheet.calibrationCard` :1141-1163), re-vestido: vidrio/superficie, rótulo +
-// leyenda ya localizados y PUNTOS de progreso (uno por noche necesaria; los hechos se
-// llenan con el tono de la métrica). Sin animación propia: la calibración es un estado
-// quieto — se pinta asentada siempre, con o sin motion.
+// leyenda ya localizados y una BARRA de progreso — la misma forma que la tarjeta actual
+// (revote adversarial F4: los puntos eran rediseño, no re-vestido). Sin animación propia:
+// la calibración es un estado quieto — se pinta asentada siempre, con o sin motion.
 
 public struct LiquidCalibracionCard: View {
     private let titulo: String
@@ -35,13 +35,21 @@ public struct LiquidCalibracionCard: View {
                     .monospacedDigit()
                     .foregroundStyle(LiquidColor.tinta700)
             }
-            HStack(spacing: LiquidSpace.s200) {
-                ForEach(0..<max(necesarias, 1), id: \.self) { i in
-                    Circle()
-                        .fill(i < hechas ? tono : LiquidColor.tinta10)
-                        .frame(width: 8, height: 8)
+            // Barra de progreso (paridad :1150-1156): pista tenue + relleno del tono,
+            // mínimo visible 6 pt cuando hechas > 0; necesarias == 0 no divide entre cero.
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(LiquidColor.tinta10).frame(height: LiquidSpace.s150)
+                    if hechas > 0 {
+                        Capsule().fill(tono)
+                            .frame(width: max(LiquidSpace.s150,
+                                              geo.size.width * CGFloat(hechas)
+                                                  / CGFloat(max(necesarias, 1))),
+                                   height: LiquidSpace.s150)
+                    }
                 }
             }
+            .frame(height: LiquidSpace.s150)
         }
         .padding(LiquidSpace.s400)
         .frame(maxWidth: .infinity, alignment: .leading)

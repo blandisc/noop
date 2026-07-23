@@ -52,6 +52,11 @@ public enum LiquidType {
 
     // MARK: Cuerpo (SF)
 
+    /// `lectura/hoja` — 14 SF, base del texto de lectura de la hoja de resumen (readings,
+    /// subtítulo del héroe). Los consumidores lo escalan con @ScaledMetric(relativeTo:
+    /// .footnote) — acuñado en el revote adversarial F2 (adiós 14 inline).
+    public static let lecturaHojaBase: CGFloat = 14
+
     /// `cuerpo` — SF 400 12.5. Texto corrido, subtítulos hero.
     public static let cuerpo = Font.system(size: 12.5)
     /// Aproximación del line-height 1.55 de la spec (12.5 × 1.55 ≈ 19.4 pt de línea).
@@ -159,6 +164,10 @@ public extension Text {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text("56").font(LiquidType.valorL).foregroundStyle(LiquidColor.cian)
                 Text("ms").font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("66").font(LiquidType.numeralHoja).foregroundStyle(LiquidColor.cian)
+                Text("ms").font(LiquidType.numeralHojaUnidad).foregroundStyle(LiquidColor.tinta500)
             }
             Text("MIÉ 22 DE JUL").liquidKicker().foregroundStyle(LiquidColor.tinta700)
             Text("FC EN REPOSO").liquidLabel().foregroundStyle(LiquidColor.tinta500)

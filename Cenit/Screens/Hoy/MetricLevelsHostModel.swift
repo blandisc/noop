@@ -72,6 +72,15 @@ final class MetricLevelsHostModel {
         ]
     }
 
+    /// La clasificación de la ventana activa (conteos por nivel, total, nivel de hoy) —
+    /// EXACTAMENTE la misma llamada que hace el explorador (MetricLevelsExplorer:67):
+    /// `MetricLevels.classification(values:today:levels:)` sobre la ventana y los niveles
+    /// resueltos. nil si no hay niveles (HRV sin base).
+    func clasificacion(today: Double?) -> MetricLevels.Classification? {
+        guard let levels else { return nil }
+        return MetricLevels.classification(values: window.values, today: today, levels: levels)
+    }
+
     private func refreshCache() {
         let key = levelsKey
         guard key != cacheKey else { return }

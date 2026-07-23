@@ -100,6 +100,38 @@ final class MetricLevelsHostModelTests: XCTestCase {
                           "otra serie debe re-plegar la banda")
     }
 
+    func test_propiedad_bandaGeometrica() {
+        // Propiedad REAL (no tautológica, revote adversarial F3a): con una serie CONSTANTE
+        // de 55 ms, la banda personal debe (a) abrazar 55 y (b) ser multiplicativamente
+        // simétrica — en dominio log, exp(mu-k*sigma)*exp(mu+k*sigma) = exp(2*mu) = 55^2.
+        let host = MetricLevelsHostModel(metricID: "hrv", levelsMetric: nil,
+                                         levelsRelative: true)
+        host.load(rows: (0..<21).map { (day: String(format: "2026-06-%02d", $0 + 1), value: 55.0) })
+        guard let levels = host.levels,
+              let lower = levels[1].lower, let upper = levels[1].upper else {
+            return XCTFail("sin banda para serie constante")
+        }
+        XCTAssertLessThan(lower, 55)
+        XCTAssertGreaterThan(upper, 55)
+        XCTAssertEqual(lower * upper, 55 * 55, accuracy: 55 * 55 * 0.001,
+                       "la banda log-normal debe ser simetrica multiplicativa alrededor de 55")
+    }
+
+    func test_golden_conteosPorNivel() {
+        // Golden A MANO (no tautológico): 5 valores contra los umbrales FIJOS de FC en
+        // reposo (<50 / 50-60 / 60-80 / >80): 48 atleta, 55 y 58 excelente, 72 normal,
+        // 85 elevada. Conteos esperados por nivel: [1, 2, 1, 1].
+        let host = MetricLevelsHostModel(metricID: "rhr", levelsMetric: .restingHR,
+                                         levelsRelative: false)
+        host.load(rows: [("2026-07-01", 48.0), ("2026-07-02", 55.0), ("2026-07-03", 58.0),
+                         ("2026-07-04", 72.0), ("2026-07-05", 85.0)].map { (day: $0.0, value: $0.1) })
+        host.range = .week
+        guard let c = host.clasificacion(today: 72) else { return XCTFail("sin clasificacion") }
+        XCTAssertEqual(c.counts.reduce(0, +), 5, "los 5 dias deben contarse")
+        XCTAssertEqual(c.counts, [1, 2, 1, 1])
+        XCTAssertEqual(c.activeIndex, 2)
+    }
+
     func test_parseo_unaVez() {
         // Cada fila conserva su day-key y el Date parseado (la memoización FER-607).
         let host = MetricLevelsHostModel(metricID: "rhr", levelsMetric: .restingHR,

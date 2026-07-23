@@ -32,6 +32,12 @@ public struct LiquidPatternBlock: View {
     }
 
     public var body: some View {
+        // Sin líneas no hay bloque: un overline con barra y sin contenido es ruido
+        // (revote adversarial F2 — paridad del guard de vitalPatternBlock).
+        if lineas.isEmpty { EmptyView() } else { contenido }
+    }
+
+    private var contenido: some View {
         HStack(spacing: LiquidSpace.s300) {
             Capsule()
                 .fill(tono)
