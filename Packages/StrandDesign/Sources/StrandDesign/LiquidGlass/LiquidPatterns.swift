@@ -558,7 +558,7 @@ private struct LiquidHeroSubtitle: View {
                 Text(confianza)
                     .font(InstrumentoType.grotesk(captionSize, weight: .medium))
                     .foregroundStyle(LiquidColor.tinta500)
-                    .padding(.horizontal, LiquidSpace.s250)
+                    .padding(.horizontal, LiquidSpace.s300)
                     .padding(.vertical, 3)
                     .background {
                         Capsule().fill(Color.white.opacity(0.35))
