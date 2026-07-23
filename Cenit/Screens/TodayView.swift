@@ -207,7 +207,7 @@ struct TodayView: View {
 
     // Metric-info sheet — tapping any Key Metrics row presents this.
     @State private var metricDetail: MetricInfo? = nil
-    /// FER-953: sleep summary for MetricInfoSheet, built off-main when the sleep info sheet opens.
+    /// FER-953: sleep summary para la hoja de resumen Liquid, built off-main when the sleep info sheet opens.
     @State private var sleepSummaryModel: SleepDetailModel? = nil
 
     // Rich «Instrumento» Detalle drilled into via the summary sheet's "Ver más" (FER-251). These mirror the
@@ -934,7 +934,7 @@ struct TodayView: View {
     /// de HealthKit, así que la superficie cae honestamente al héroe de sueño; con esto se
     /// fuerza el estado de veredicto con los datos de muestra del ensamble para pulirlo en
     /// vivo. Computed a propósito: su cuerpo se voltea EN VIVO por inyección.
-    private var liquidDemo: Bool { true }
+    private var liquidDemo: Bool { false }
 
     /// El ambiente semántico que tiñe fondo y pulsos (verde/ámbar/rojo/neutro).
     private var liquidAmbiente: LiquidAmbiente {

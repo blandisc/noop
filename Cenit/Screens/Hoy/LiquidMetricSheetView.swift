@@ -7,7 +7,7 @@ import StrandAnalytics
 //
 // La hoja de resumen Liquid: compone los componentes del DS (`LiquidGlass/*`) con los
 // MISMOS datos, loaders y copy que `MetricInfoSheet` — misma firma de datos, mismas
-// claves del String Catalog, mismos formatos de valor. NO se monta aún en TodayView
+// Montada en TodayView y SleepDetailScreen desde el cutover F6.
 // (eso es F6): se verifica por arnés y #Preview.
 //
 // Paridad (docs/design-system/LIQUID-SHEET-CONTRACT.md):
