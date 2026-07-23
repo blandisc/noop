@@ -93,6 +93,10 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
             ("sleep_sinnoche", sleepSinNoche()),
             ("sleep_sindato", sleepSinDato()),
             ("recovery_calibrando", recoveryCalibrando()),
+            ("vital_spo2", vitalSpO2()),
+            ("niveles_reposo_filas", nivelesReposoConFilas()),
+            ("niveles_ventana_vacia", nivelesVentanaVacia()),
+            ("charts_cargando_vacio", chartsCargandoVacio()),
             ("strain", strain()),
             ("heart_rate", heartRate()),
             ("clasica", clasica()),
@@ -403,6 +407,116 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 numeral: "—",
                 explicacion: "Cuánto y qué tan parejo dormiste anoche.")
             LiquidNotaLine("Duerme con tu Apple Watch para ver tu noche aquí.")
+        }
+    }
+
+    /// §1.7 · SpO₂ (vital + niveles .bloodOxygen — QA F4-D2/C5): sin entry point vivo,
+    /// verificable solo por arnés (decisión D2 del revote).
+    @MainActor
+    private static func vitalSpO2() -> AnyView {
+        let puntos = serieDiaria(dias: 28, base: 97.2, onda: 0.9).map {
+            (fecha: $0.fecha, valor: min(max($0.valor, 94.5), 99.4))
+        }
+        var grafica = LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: [
+                .init(lo: 95, hi: nil, color: LiquidColor.azul, activa: true),
+                .init(lo: 90, hi: 95, color: LiquidColor.atencion, activa: false),
+                .init(lo: nil, hi: 90, color: LiquidColor.negativo, activa: false),
+            ],
+            dominio: 88...100,
+            ticksY: [(98, "98"), (95, "95"), (90, "90")],
+            tono: LiquidColor.azul,
+            puntoHoy: (fecha: puntos[puntos.count - 1].fecha, valor: 97.0),
+            hoyAnillo: false,
+            formatoScrub: { v, _ in String(format: "%.0f %%", v) },
+            estadoVacio: "Sin lecturas en este rango",
+            a11yLabel: "Oxígeno en sangre")
+        grafica.scrubFijo = 20
+        return columna(tone: LiquidColor.azul) {
+            LiquidSheetHeader(
+                icono: .resp, titulo: "SPO₂", tono: LiquidColor.azul,
+                numeral: "97", unidad: "%",
+                origenEtiqueta: "Apple Salud · anoche",
+                explicacion: "Cuánto oxígeno lleva tu sangre mientras duermes.")
+            LiquidReadingLine("Tu oxígeno se mantuvo en rango normal.",
+                              highlight: "rango normal",
+                              highlightTone: LiquidColor.azul)
+            grafica
+        }
+    }
+
+    /// §6-F3b · Niveles SIN lectura hoy (todas las bandas al reposo 8 %) + las filas
+    /// tocables `LiquidLevelRow` (QA F3b-D1: el arnés no las renderizaba).
+    @MainActor
+    private static func nivelesReposoConFilas() -> AnyView {
+        let puntos = serieDiaria(dias: 28, base: 55, onda: 6)
+        let grafica = LiquidGraficaNiveles(
+            puntos: puntos,
+            bandas: bandasVFC(activa: nil),
+            dominio: 40...72,
+            ticksY: [(66, "66"), (55, "55"), (46, "46")],
+            tono: LiquidColor.cian,
+            puntoHoy: nil, hoyAnillo: false,
+            formatoScrub: { v, _ in "\(Int(v.rounded())) ms" },
+            estadoVacio: "Sin lecturas en este rango",
+            a11yLabel: "VFC por noche")
+        return columna(tone: LiquidColor.cian) {
+            LiquidSheetHeader(
+                icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
+                numeral: "—",
+                explicacion: "La variación entre latidos mientras duermes.")
+            grafica
+            LiquidLevelRow(etiqueta: "Arriba de tu base", rango: "> 63", conteo: "6 noches",
+                           esHoy: false, activa: false, tono: LiquidColor.cian, onTap: {})
+            LiquidLevelRow(etiqueta: "En tu base", rango: "48–63", conteo: "18 noches",
+                           esHoy: true, activa: true, tono: LiquidColor.cian, onTap: {})
+            LiquidLevelRow(etiqueta: "Debajo de tu base", rango: "< 48", conteo: "4 noches",
+                           esHoy: false, activa: false, tono: LiquidColor.cian, onTap: {})
+        }
+    }
+
+    /// §6-F3b · Ventana VACÍA (fellBack): la gráfica muestra su estado vacío.
+    @MainActor
+    private static func nivelesVentanaVacia() -> AnyView {
+        let grafica = LiquidGraficaNiveles(
+            puntos: [],
+            bandas: bandasVFC(activa: nil),
+            dominio: 40...72,
+            ticksY: [(66, "66"), (55, "55"), (46, "46")],
+            tono: LiquidColor.cian,
+            puntoHoy: nil, hoyAnillo: false,
+            formatoScrub: { v, _ in "\(Int(v.rounded())) ms" },
+            estadoVacio: "Sin lecturas en este rango",
+            a11yLabel: "VFC por noche")
+        return columna(tone: LiquidColor.cian) {
+            LiquidSheetHeader(
+                icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
+                numeral: "56", unidad: "ms",
+                origenEtiqueta: "Apple Salud · anoche")
+            grafica
+        }
+    }
+
+    /// §6-F4 (QA D5) · Estados cargando y vacío de los charts clásicos, en columna.
+    @MainActor
+    private static func chartsCargandoVacio() -> AnyView {
+        columna(tone: LiquidColor.rosa) {
+            LiquidSheetHeader(
+                icono: .corazon, titulo: "FC EN REPOSO", tono: LiquidColor.rosa,
+                numeral: "52", unidad: "lpm")
+            LiquidTrendChart(
+                titulo: "Últimos 14 días", readout: nil, puntos: [], bandas: [],
+                dominio: 40...80, ticksY: [], tono: LiquidColor.rosa,
+                formatoScrub: { v, _ in "\(Int(v.rounded()))" },
+                estado: .cargando,
+                a11yLabel: "Tendencia FC en reposo")
+            LiquidTrendChart(
+                titulo: "Últimos 14 días", readout: nil, puntos: [], bandas: [],
+                dominio: 40...80, ticksY: [], tono: LiquidColor.rosa,
+                formatoScrub: { v, _ in "\(Int(v.rounded()))" },
+                estado: .vacio("Sin datos de los últimos 14 días"),
+                a11yLabel: "Tendencia FC en reposo")
         }
     }
 

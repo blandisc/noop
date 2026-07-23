@@ -8,14 +8,17 @@ import StrandAnalytics
 /// fijas. Si estos tests fallan, la hoja Liquid mostraría OTROS números que la Instrumento.
 final class MetricLevelsHostModelTests: XCTestCase {
 
-    /// 40 días sintéticos de HRV (log-normal plausible, valores fijos deterministas).
+    /// 40 días sintéticos de HRV con day-keys VÁLIDAS (parsean a Date — QA F3a-D4:
+    /// las keys con sufijo no parseaban y la ventana solo ejercitaba el camino
+    /// degenerado). Junio completo + primeros 10 de julio, deterministas.
     private static let hrvRows: [(day: String, value: Double)] = {
         let base = 55.0
         return (0..<40).map { i in
-            let day = String(format: "2026-06-%02d", (i % 30) + 1)
+            let day = i < 30 ? String(format: "2026-06-%02d", i + 1)
+                             : String(format: "2026-07-%02d", i - 29)
             // Oscilación determinista ±8 ms sin aleatoriedad.
             let value = base + 8 * sin(Double(i) * 0.7) + Double(i % 5) - 2
-            return (day: "\(day)#\(i)", value: value)
+            return (day: day, value: value)
         }
     }()
 
@@ -85,6 +88,12 @@ final class MetricLevelsHostModelTests: XCTestCase {
                            esperada.values, "\(range)")
             XCTAssertEqual(host.window.fellBack, esperada.fellBack, "\(range)")
         }
+        // Con 40 días válidos, la semana NO cae al camino degenerado (QA F3a-D4): la
+        // ventana semanal recorta de verdad (7 días de julio, no las 40 filas).
+        host.range = .week
+        XCTAssertEqual(host.window.range, .week)
+        XCTAssertEqual(host.window.rows.count, 7)
+        XCTAssertFalse(host.window.fellBack)
     }
 
     func test_cache_estableTrasCargar() {

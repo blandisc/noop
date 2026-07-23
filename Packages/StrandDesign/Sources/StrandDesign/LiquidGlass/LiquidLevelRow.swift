@@ -60,7 +60,7 @@ public struct LiquidLevelRow: View {
             .frame(maxWidth: .infinity)
             .frame(minHeight: 44)
             // I1 en la lista: la fila activa se ilumina con el tono (rango 10-16 % del épico).
-            .background(activa ? tono.opacity(0.12) : Color.clear)
+            .background(activa ? tono.opacity(LiquidChart.filaActivaAlfa) : Color.clear)
             .contentShape(Rectangle())
         }
         .buttonStyle(.liquidPress)

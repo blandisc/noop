@@ -34,6 +34,9 @@ public enum LiquidChart {
     public static let bandaActivaAlfa: Double = 0.16
     /// Wash del resto cuando hay una activa.
     public static let bandaApagadaAlfa: Double = 0.03
+    /// Wash de FILA activa (tabla de bandas, fila de nivel) — un solo número para I1
+    /// fuera de la gráfica (QA F4-D7).
+    public static let filaActivaAlfa: Double = 0.12
 
     // MARK: Scrub (I2 — regla vertical + anillo)
 

@@ -72,7 +72,7 @@ public struct LiquidBandsTable: View {
         .padding(.horizontal, LiquidSpace.s400)
         .padding(.vertical, LiquidSpace.s300)
         // I1 en la tabla: la fila activa se ilumina con el tono (rango 10-16 % del épico).
-        .background(f.activa ? tono.opacity(0.12) : Color.clear)
+        .background(f.activa ? tono.opacity(LiquidChart.filaActivaAlfa) : Color.clear)
         .accessibilityElement(children: .combine)
     }
 
