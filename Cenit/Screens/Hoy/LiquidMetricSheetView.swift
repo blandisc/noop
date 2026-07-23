@@ -534,7 +534,10 @@ struct LiquidMetricSheetView: View {
                 infoMostrar: String(localized: "Show explanation"),
                 infoOcultar: String(localized: "Hide explanation"))
             if let frase = sleepReadingText {
-                LiquidReadingLine(frase)
+                // Pedido del dueño (/inject): la frase clave en negrita, como en las demás
+                // hojas — la lectura de sueño era la única que salía toda en peso normal.
+                LiquidReadingLine(frase, highlight: sleepReadingHighlight,
+                                  highlightTone: tono)
             }
             LiquidStageBar(
                 etapas: sleepEtapas(night),
@@ -561,10 +564,24 @@ struct LiquidMetricSheetView: View {
             .init(minutos: night.stages.light, color: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
                   etiqueta: String(localized: "Light"),
                   duracion: Self.sleepHM(night.stages.light)),
-            .init(minutos: night.stages.awake, color: LiquidColor.tinta10,
+            // «Despierto» ya no es gris (pedido del dueño /inject): ámbar claro — es la
+            // única etapa que NO es sueño, y el gris la volvía parte del fondo.
+            .init(minutos: night.stages.awake, color: LiquidColor.ambarClaro,
                   etiqueta: String(localized: "Awake"),
                   duracion: Self.sleepHM(night.stages.awake)),
         ]
+    }
+
+    /// El trozo de la lectura de sueño que va en negrita: el nombre del rango, que es
+    /// el dato de la frase (pedido del dueño /inject). Claves del MISMO catálogo.
+    private var sleepReadingHighlight: String? {
+        switch activeLevelKey {
+        case "optimal":  return String(localized: "your target range")
+        case "adequate": return String(localized: "close to your target")
+        case "short":    return String(localized: "Short of your target")
+        case "extended": return String(localized: "Longer than usual")
+        default:         return nil
+        }
     }
 
     /// Paridad `sleepReadingText` (:549-557) — mismas claves.

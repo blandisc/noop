@@ -72,9 +72,11 @@ public struct LiquidDobleDato: View {
                 Rectangle()
                     .fill(LiquidColor.tinta10)
                     .frame(width: 1, height: 26)
+                // Pedido del dueño (/inject): el secundario mide LO MISMO que el principal
+                // y va centrado sobre su rótulo; así los dos rótulos caen al mismo nivel.
                 columna(valor: secundario.valor, etiqueta: secundario.etiqueta,
-                        fuente: LiquidType.valorL, color: colorSecundario,
-                        valorA11y: secundarioA11y)
+                        fuente: LiquidType.numeralHoja, color: colorSecundario,
+                        valorA11y: secundarioA11y, alineacion: .center)
                 if secundarioInfo != nil {
                     LiquidInfoBoton(abierto: $infoAbierta,
                                     mostrar: infoMostrar, ocultar: infoOcultar,
@@ -98,8 +100,9 @@ public struct LiquidDobleDato: View {
     /// Un dato = UN elemento de VoiceOver («7:12, horas dormido»): la junta la hace
     /// `children: .combine`, no un separador acuñado aquí (el DS no escribe copy).
     private func columna(valor: String, etiqueta: String, fuente: Font,
-                         color: Color, valorA11y: String?) -> some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                         color: Color, valorA11y: String?,
+                         alineacion: HorizontalAlignment = .leading) -> some View {
+        VStack(alignment: alineacion, spacing: LiquidSpace.s100) {
             Text(verbatim: valor)
                 .font(fuente)
                 .foregroundStyle(color)

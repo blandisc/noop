@@ -68,7 +68,7 @@ public enum LiquidChart {
     // MARK: Puntos por dato
 
     /// Radio del disco que marca cada muestra cuando la serie es corta.
-    public static let puntoDatoRadio: CGFloat = 2.2
+    public static let puntoDatoRadio: CGFloat = 3.0   // 2.2 → 3.0 (pedido del dueño: más peso)
     /// Tope de muestras para dibujar un disco por dato.
     /// INVARIANTE: debe quedar POR DEBAJO del tope de decimación del caller (80 puntos,
     /// `MetricWindowMath.decimatedPoints`). Los discos hacen CONTABLE la ventana; si la

@@ -393,12 +393,12 @@ struct LiquidChartPlot: View {
     // MARK: Eje X (fila de fechas)
 
     /// Los índices marcados: los cuartiles de la serie, deduplicados. Las marcas
-    /// INTERIORES solo con 8 o más puntos (con menos, el eje se satura y las etiquetas
-    /// se tocan).
+    /// INTERIORES desde 5 puntos (pedido del dueño /inject: con los 7 del rango «S» el
+    /// eje se quedaba en dos fechas y se veía vacío; con 4 o menos sí se tocarían).
     private var marcasEjeX: [Int] {
         let n = puntos.count
         guard n > 1 else { return n == 1 ? [0] : [] }
-        let qs: [Double] = n >= 8 ? [0, 0.25, 0.5, 0.75, 1] : [0, 1]
+        let qs: [Double] = n >= 5 ? [0, 0.25, 0.5, 0.75, 1] : [0, 1]
         var out: [Int] = []
         for q in qs {
             let i = Int((Double(n - 1) * q).rounded())

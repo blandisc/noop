@@ -211,8 +211,14 @@ public struct LiquidSheetFondo: View {
             LinearGradient(colors: [LiquidColor.fondoAlto, LiquidColor.fondoBajo],
                            startPoint: .top, endPoint: .bottom)
             if let tone {
-                LinearGradient(colors: [tone.opacity(0.04), tone.opacity(0)],
-                               startPoint: .top, endPoint: .bottom)
+                // El acento del tono se VE (pedido del dueño /inject: al 4 % era invisible
+                // y la hoja se leía como papel plano). Sigue siendo un suspiro: se apaga
+                // hacia el pie para que el dato mande.
+                LinearGradient(stops: [
+                    .init(color: tone.opacity(0.16), location: 0),
+                    .init(color: tone.opacity(0.06), location: 0.35),
+                    .init(color: tone.opacity(0), location: 1),
+                ], startPoint: .top, endPoint: .bottom)
             }
         }
         .ignoresSafeArea()
