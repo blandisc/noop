@@ -37,7 +37,9 @@ public struct LiquidListRow: View {
             Circle()
                 .fill(tone)
                 .frame(width: 8, height: 8)
-                .shadow(color: tone.opacity(0.35), radius: 4)
+                // Glow del punto como geometría (regla del sistema: nada de .shadow a mano).
+                .liquidShadow([.init(color: tone.opacity(0.35), radius: 4, y: 0)],
+                              silhouette: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                 Text(subtitle).font(LiquidType.unidadCompacta).foregroundStyle(LiquidColor.tinta500)
