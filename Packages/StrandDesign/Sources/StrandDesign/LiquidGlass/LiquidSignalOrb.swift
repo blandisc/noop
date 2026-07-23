@@ -87,10 +87,11 @@ public struct LiquidSignalOrb: View {
         // Con el motion congelado (previews/renders) el anillo se pinta ya en su valor.
         let displayed: Double? = motionDisabled ? clamped : (clamped == nil ? nil : shownProgress)
         return ZStack {
+            // «AIRE» (camino 2+3, comparación /inject): SIN disco de vidrio — el
+            // medidor, la joya y el dato flotan directo sobre el ambiente. Solo queda
+            // el glow tonal e/2 como halo suave detrás.
             if !debugHide.contains("esferas") {
-                LiquidSphere(tone: state.tone)
-                    // El glow e/2 como geometría (círculo difuminado detrás): una sombra
-                    // directa sobre material proyecta el RECTÁNGULO de su capa de fondo.
+                Circle().fill(Color.clear)
                     .liquidShadow(debugHide.contains("glow") ? []
                                   : LiquidElevation.e2(tone: state.tone),
                                   silhouette: Circle())
