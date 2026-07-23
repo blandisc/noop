@@ -19871,7 +19871,7 @@
       }
     },
     "HRV" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -19882,7 +19882,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "HRV"
+            "value" : "Variabilidad FC"
           }
         }
       }

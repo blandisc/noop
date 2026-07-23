@@ -119,18 +119,23 @@ extension LiquidIcon.Glyph {
                 "M8 11L10.8 7",
             ])
 
-        // MARK: Señales (viewBox 16, sw 1.5)
+        // MARK: Señales (viewBox 16, sw 1.8 — rediseñadas en la sesión /inject 2026-07-22:
+        // el dueño pidió glifos más presentes y literales; la onda sinusoidal y el termo
+        // fino no se leían en la esfera)
         case .ondaSenal:
-            return Spec(viewBox: 16, strokeWidth: 1.5, paths: [
-                "M1.5 8 C3 4.6, 4.6 4.6, 6 8 S8.6 11.4, 10 8 S12.4 5.2, 14 6.6",
+            // Pulso tipo ECG: línea base con espiga — «autonómico» inconfundible.
+            return Spec(viewBox: 16, strokeWidth: 1.8, paths: [
+                "M1.5 8.5 H5 L6.5 4 L9 12 L10.8 6.5 L11.6 8.5 H14.5",
             ])
         case .lunaSenal:
-            return Spec(viewBox: 16, strokeWidth: 1.5, paths: [
+            return Spec(viewBox: 16, strokeWidth: 1.8, paths: [
                 "M13.8 9.9A5.6 5.6 0 1 1 6.1 2.2 4.5 4.5 0 0 0 13.8 9.9z",
             ])
         case .termoSenal:
-            return Spec(viewBox: 16, strokeWidth: 1.5, paths: [
-                "M8 1.5v8m0 0a2.6 2.6 0 1 0 .01 0M6.5 4.5h3",
+            // Termómetro franco: bulbo grande + tallo + marcas de escala a la derecha.
+            return Spec(viewBox: 16, strokeWidth: 1.8, paths: [
+                "M8 1.8v7.4M8 9.2a3 3 0 1 0 .01 0",
+                "M10.8 3.2h2.2M10.8 5.8h1.7",
             ])
 
         // MARK: Modos (viewBox 16, sw 1.5)

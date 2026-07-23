@@ -699,7 +699,10 @@ struct TodayView: View {
                 PullSyncHint(
                     pullProgress: pullProgressModel,
                     isSyncing: isSyncing,
-                    didFirstPullSync: didFirstPullSync,
+                    // /inject 2026-07-22: el microcopy «Desliza para actualizar» se retiró
+                    // (queda el chevron como cue sutil; el gesto sigue recalculando local
+                    // y releyendo Apple Salud).
+                    didFirstPullSync: true,
                     reduceMotion: reduceMotion
                 )
             }
@@ -707,7 +710,9 @@ struct TodayView: View {
             // margen de pantalla (LiquidSpace.s550) y la clásica conserva screenPadding.
             // Margen inferior compacto: la retícula de señales respira sobre el dock sin flotar.
             .padding(.bottom, CenitMetrics.space1)
-            .padding(.top, CenitMetrics.space2)
+            // /inject 2026-07-22: la superficie Liquid pega su cabecera (fecha + dial) más
+            // arriba — el aire superior solo queda en la superficie clásica.
+            .padding(.top, noSources ? CenitMetrics.space2 : 0)
             // Llena al menos el alto visible y ancla el contenido ARRIBA (FER-1039): sin el pager ya no hay
             // un `Spacer` que reparta el sobrante, así que la alineación vertical `.top` mantiene el header
             // pegado al tope en vez de centrar la superficie; si el contenido excede el alto, crece y scrollea.
