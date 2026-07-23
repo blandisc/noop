@@ -88,7 +88,7 @@ final class LiquidGlassTests: XCTestCase {
         XCTAssertEqual(LiquidMotion.quick, 0.24)
         XCTAssertEqual(LiquidMotion.gentle, 0.42)
         XCTAssertEqual(LiquidMotion.sheetDuration, 0.56)
-        XCTAssertEqual(LiquidMotion.flowPeriod, 9)
+        XCTAssertEqual(LiquidMotion.flowPeriod, 6)   // 9 → 6: ritmo escalonado del dueño
         XCTAssertEqual(LiquidMotion.driftPeriods, 16...26)
         XCTAssertEqual(LiquidMotion.entradaStagger, 0.06)
         XCTAssertEqual(LiquidMotion.pressScale, 0.97)
@@ -104,13 +104,13 @@ final class LiquidGlassTests: XCTestCase {
     }
 
     func test_motion_flowPulse() {
-        // Un recorrido por ciclo de 9 s, continuo, con wrap limpio y delay por cable.
+        // Un recorrido por ciclo de 6 s, continuo, con wrap limpio y delay por cable.
         XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 0), 0, accuracy: 1e-9)
-        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 4.5), 0.5, accuracy: 1e-9)
-        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 9), 0, accuracy: 1e-9)
-        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 0, delay: 0.8),
-                       1 - 0.8 / 9, accuracy: 1e-9)
-        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 5.3, delay: 0.8), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 3), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 6), 0, accuracy: 1e-9)
+        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 0, delay: 2),
+                       1 - 2.0 / 6, accuracy: 1e-9)
+        XCTAssertEqual(LiquidMotion.flowPulseProgress(time: 5, delay: 2), 0.5, accuracy: 1e-9)
     }
 
     // MARK: Contratos a11y (FER-1045) — las composiciones de label que lee VoiceOver
