@@ -44,6 +44,12 @@ public enum LiquidType {
     /// Unidad junto al numeral de hoja — 13, tinta/500.
     public static let numeralHojaUnidad = Font.system(size: 13)
 
+    /// `título/hoja` — 17/700, escala con Dynamic Type. El nombre de la métrica en la
+    /// cabecera de la hoja de resumen: manda sobre los títulos de sección (pasada UX H6;
+    /// con `titulo` empataba con «Últimos 14 días» y además no crecía).
+    public static let tituloHoja = InstrumentoType.grotesk(17, weight: .bold,
+                                                           relativeTo: .headline)
+
     /// `título` — 15/700. Títulos de tarjeta.
     public static let titulo = InstrumentoType.grotesk(15, weight: .bold)
 

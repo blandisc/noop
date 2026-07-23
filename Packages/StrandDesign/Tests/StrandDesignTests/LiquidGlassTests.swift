@@ -213,6 +213,24 @@ final class LiquidGlassTests: XCTestCase {
         XCTAssertEqual(LiquidZoneMeter.a11yLabel(segmentos: ninguna), "")
     }
 
+    // MARK: Lectura de la hoja (negrita del veredicto)
+
+    /// La negrita cae en el veredicto sin necesitar una clave por frase (pasada UX H5).
+    func test_lectura_clausulaDelVeredicto() {
+        // Con coma: solo la primera cláusula.
+        XCTAssertEqual(LiquidReadingLine.clausulaVeredicto("Por encima de tu base, buena señal."),
+                       "Por encima de tu base")
+        XCTAssertEqual(LiquidReadingLine.clausulaVeredicto("Above your base, a good sign."),
+                       "Above your base")
+        // Sin coma: la frase completa, sin el punto final.
+        XCTAssertEqual(LiquidReadingLine.clausulaVeredicto("En tu rango de siempre."),
+                       "En tu rango de siempre")
+        // Degenerados: nada que destacar.
+        XCTAssertNil(LiquidReadingLine.clausulaVeredicto(""))
+        XCTAssertNil(LiquidReadingLine.clausulaVeredicto(","))
+        XCTAssertNil(LiquidReadingLine.clausulaVeredicto("."))
+    }
+
     // MARK: Render de humo (macOS)
 
     #if os(macOS)

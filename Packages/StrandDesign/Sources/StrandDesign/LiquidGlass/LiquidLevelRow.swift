@@ -13,6 +13,9 @@ import SwiftUI
 // «· hoy»); el DS no conoce `MetricLevels` ni locales. `a11yHint` y `hoyEtiqueta` vienen
 // del caller por la misma regla (el DS no puede acuñar copy).
 
+// Pasada UI H2: rango y conteo NO van en `tono` — medido, falla AA (4.5) en 6 de
+// los 7 tonos de dato sobre el wash de la fila activa. El color lo llevan el punto
+// y el wash; el número se lee en tinta.
 public struct LiquidLevelRow: View {
     private let etiqueta: String
     private let rango: String
@@ -60,11 +63,11 @@ public struct LiquidLevelRow: View {
                 Text(verbatim: rango)
                     .font(LiquidType.captionLectura)
                     .monospacedDigit()
-                    .foregroundStyle(activa ? tono : LiquidColor.tinta500)
+                    .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta500)
                 Text(verbatim: conteo)
                     .font(LiquidType.captionLectura)
                     .monospacedDigit()
-                    .foregroundStyle(activa ? tono : LiquidColor.tinta500)
+                    .foregroundStyle(activa ? LiquidColor.tinta900 : LiquidColor.tinta500)
                     .frame(minWidth: 50, alignment: .trailing)
             }
             .padding(.horizontal, LiquidSpace.s400)

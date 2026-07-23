@@ -28,6 +28,7 @@ public struct LiquidSheetHeader: View {
     private let a11y: String
 
     @State private var explicacionAbierta = false
+    @ScaledMetric(relativeTo: .footnote) private var explicacionSize = LiquidType.lecturaHojaBase
     @Environment(\.dynamicTypeSize) private var tamanoTexto
 
     /// `icono == nil` = recovery (sin glifo). `numeral == nil` = la variante rica de sueño
@@ -75,10 +76,11 @@ public struct LiquidSheetHeader: View {
                 }
                 // El nombre de la métrica manda más (pedido del dueño /inject): sube del
                 // rótulo chico al título del sistema, en tinta plena.
+                // Grande pero QUIETO (pasada UI H3): caja alta + tracking + tinta900 lo
+                // volvían un banner que le ganaba el foco al dato. El numeral manda.
                 Text(titulo)
-                    .font(LiquidType.titulo).tracking(LiquidType.labelTracking)
-                    .textCase(.uppercase)
-                    .foregroundStyle(LiquidColor.tinta900)
+                    .font(LiquidType.tituloHoja)
+                    .foregroundStyle(LiquidColor.tinta700)
                 Spacer()
                 if explicacion != nil {
                     LiquidInfoBoton(abierto: $explicacionAbierta,
@@ -114,8 +116,10 @@ public struct LiquidSheetHeader: View {
                 .lineLimit(limiteNumeral)
             }
             if explicacionAbierta, let explicacion {
+                // Voz de LECTURA, no de caption (pasada UX H3): era el texto más largo
+                // de la hoja pintado con la tipografía más chica.
                 Text(explicacion)
-                    .font(LiquidType.captionLectura)
+                    .font(.system(size: explicacionSize))
                     .foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }

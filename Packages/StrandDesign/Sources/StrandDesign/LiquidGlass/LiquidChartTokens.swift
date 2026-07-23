@@ -22,7 +22,7 @@ public enum LiquidChart {
     /// Alfa de la retícula/grid sobre el vidrio.
     public static let gridAlfa: Double = 0.10
     /// El punto final de la serie: la JOYA (mismo lenguaje que el orbe).
-    public static let endpointRadio: CGFloat = 2.8
+    public static let endpointRadio: CGFloat = 3.6   // > puntoDatoRadio 3.0 (pasada UI H5: la jerarquía estaba invertida)
     /// Borde blanco de la joya del endpoint.
     public static let endpointBorde: CGFloat = 1.2
 

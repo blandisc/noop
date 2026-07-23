@@ -30,20 +30,27 @@ private struct LiquidSheetAltoKey: PreferenceKey {
 public struct LiquidMetricSheet<Content: View>: View {
     private let tono: Color
     private let detent: LiquidSheetDetent
+    private let cargando: Bool
     private let content: Content
 
     @State private var altoMedido: CGFloat = 0
 
-    public init(tono: Color, detent: LiquidSheetDetent = .medio,
+    /// `cargando` evita fijar la altura con un frame que todavía no tiene el contenido
+    /// (pasada UX H1): sin esto la hoja se congelaba a la medida del ESQUELETO y el
+    /// contenido rico quedaba apretado en cuanto llegaba.
+    public init(tono: Color, detent: LiquidSheetDetent = .medio, cargando: Bool = false,
                 @ViewBuilder content: () -> Content) {
         self.tono = tono
         self.detent = detent
+        self.cargando = cargando
         self.content = content()
     }
 
     public var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: LiquidSpace.s400) {
+            // Ritmo (pasada UI H4): los BLOQUES respiran más que lo de adentro — s550
+            // entre bloques contra los s150/s300 internos. Un gap uniforme leía plano.
+            VStack(alignment: .leading, spacing: LiquidSpace.s550) {
                 content
             }
             .padding(LiquidSpace.s550)
@@ -56,7 +63,7 @@ public struct LiquidMetricSheet<Content: View>: View {
         // re-midiera, abrir el ⓘ agrandaría la hoja y todo saltaría hacia ARRIBA; con la
         // altura fija, la explicación empuja el contenido hacia abajo dentro del scroll.
         .onPreferenceChange(LiquidSheetAltoKey.self) { nuevo in
-            if altoMedido == 0 { altoMedido = nuevo }
+            if altoMedido == 0, !cargando { altoMedido = nuevo }
         }
         .presentationBackground { LiquidSheetFondo(tone: tono) }
         .presentationDragIndicator(.visible)
@@ -67,7 +74,9 @@ public struct LiquidMetricSheet<Content: View>: View {
     private var detents: Set<PresentationDetent> {
         switch detent {
         case .medio:
-            return [.medium]
+            // `.large` también en las cortas (pasada UX H4): con el ⓘ abierto en Dynamic
+            // Type grande, leer 15 líneas por media pantalla sin poder crecer es hostil.
+            return [.medium, .large]
         case .porContenido:
             // `.large` acompaña a la altura medida (/inject 2026-07-23): con contenido
             // largo (sueño) la hoja se quedaba clavada sin a dónde crecer y el scroll

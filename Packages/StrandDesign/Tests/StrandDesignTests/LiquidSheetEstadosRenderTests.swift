@@ -228,6 +228,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                 icono: nil, titulo: "RECUPERACIÓN", tono: LiquidColor.verdePrimario,
                 numeral: "78", sufijo: "/ 100",
                 numeralTono: LiquidColor.verdeProfundo, origen: .calculado,
+                origenEtiqueta: "Calculado",
                 explicacion: "Qué tan listo amaneció tu cuerpo para el esfuerzo de hoy.")
             LiquidReadingLine("Tu cuerpo amaneció listo para empujar.",
                               highlight: "listo",
@@ -283,7 +284,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
                           etiqueta: "REM", duracion: "1:44"),
                     .init(minutos: 237, color: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
                           etiqueta: "Ligero", duracion: "3:57"),
-                    .init(minutos: 47, color: LiquidColor.tinta10,
+                    .init(minutos: 47, color: LiquidColor.oro,   // igual que el app
                           etiqueta: "Despierto", duracion: "0:47"),
                 ],
                 overline: "Anoche",
@@ -445,7 +446,7 @@ final class LiquidSheetEstadosRenderTests: XCTestCase {
         columna(tone: LiquidColor.verdePrimario) {
             LiquidSheetHeader(
                 icono: nil, titulo: "RECUPERACIÓN", tono: LiquidColor.verdePrimario,
-                numeral: "—", origen: .calculado,
+                numeral: "—", origen: .calculado, origenEtiqueta: "Calculado",
                 explicacion: "Qué tan listo amaneció tu cuerpo.")
             LiquidCalibracionCard(titulo: "Calibrando tu base",
                                   leyenda: "2 de 4 noches",

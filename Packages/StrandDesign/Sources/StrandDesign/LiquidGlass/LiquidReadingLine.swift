@@ -31,9 +31,25 @@ public struct LiquidReadingLine: View {
             .accessibilityLabel(Text(verbatim: text))
     }
 
+    /// El trozo a destacar. Si el caller no lo dice, se usa la PRIMERA CLÁUSULA —el
+    /// veredicto— hasta la primera coma (pasada UX H5: sin esto la negrita solo llegaba a
+    /// sueño y la misma frase salía plana en las otras 11 hojas). Derivarlo del texto en
+    /// vez de acuñar una clave por frase evita el contrato frágil de subcadenas: si un
+    /// traductor reescribe, la negrita sigue cayendo donde debe.
+    static func clausulaVeredicto(_ t: String) -> String? {
+        if let coma = t.firstIndex(of: ",") {
+            let trozo = String(t[t.startIndex..<coma])
+            return trozo.isEmpty ? nil : trozo
+        }
+        let limpio = t.hasSuffix(".") ? String(t.dropLast()) : t
+        return limpio.isEmpty ? nil : limpio
+    }
+
     private var composed: Text {
         let base = Font.system(size: cuerpoSize)
-        guard let highlight, let range = text.range(of: highlight, options: .backwards) else {
+        let trozo: String? = highlight ?? Self.clausulaVeredicto(text)
+        guard let highlight = trozo,
+              let range = text.range(of: highlight, options: .backwards) else {
             return Text(verbatim: text).font(base).foregroundColor(LiquidColor.tinta700)
         }
         return Text(verbatim: String(text[..<range.lowerBound])).font(base)

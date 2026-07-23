@@ -221,8 +221,11 @@ public struct LiquidSheetFondo: View {
                 Rectangle().fill(.ultraThinMaterial)
             }
             // El velo baja a la mitad: sostiene el contraste del texto sin tapar el vidrio.
+            // El velo NO adelgaza hacia abajo (pasada UI H1): el acento ya se apaga solo,
+            // y sumar los dos dejaba el pie —lista de niveles y notas de 10.5— con el
+            // suelo de blanco más delgado de la hoja.
             LinearGradient(colors: [LiquidColor.fondoAlto.opacity(0.46),
-                                    LiquidColor.fondoBajo.opacity(0.34)],
+                                    LiquidColor.fondoBajo.opacity(0.50)],
                            startPoint: .top, endPoint: .bottom)
             if let tone {
                 // El acento del tono, apagándose hacia el pie para que el dato mande.
@@ -241,12 +244,14 @@ public struct LiquidSheetFondo: View {
             // Reflejo especular en el canto superior: el gesto que delata al cristal
             // (misma gramática que la receta `lente` del dock).
             VStack(spacing: 0) {
+                // Filo de cristal, no niebla (pasada UI H6): 140 pt de blanco cubrían el
+                // header y blanqueaban el acento justo donde se calibró.
                 LinearGradient(stops: [
                     .init(color: LiquidColor.vidrioStreak, location: 0),
-                    .init(color: LiquidColor.vidrioStreak.opacity(0.35), location: 0.45),
+                    .init(color: LiquidColor.vidrioStreak.opacity(0.25), location: 0.35),
                     .init(color: .clear, location: 1),
                 ], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 140)
+                    .frame(height: LiquidSpace.s800)
                 Spacer(minLength: 0)
             }
             .allowsHitTesting(false)

@@ -188,7 +188,8 @@ struct LiquidMetricSheetView: View {
     }
 
     var body: some View {
-        LiquidMetricSheet(tono: tono, detent: detent) {
+        LiquidMetricSheet(tono: tono, detent: detent,
+                          cargando: isSleepLoading || trendLoading || heartRateLoading) {
             cabecera
             cuerpo
             pie
@@ -388,7 +389,7 @@ struct LiquidMetricSheetView: View {
 
     @ViewBuilder private var recoveryContent: some View {
         if let frase = recoveryReadingText {
-            LiquidReadingLine(frase)
+            LiquidReadingLine(frase, highlightTone: tinte(datoInfo.headerTint))
         }
         recoveryZoneMeter
         levelsBlock
@@ -435,7 +436,7 @@ struct LiquidMetricSheetView: View {
 
     @ViewBuilder private var vitalContent: some View {
         if let frase = vitalReadingText {
-            LiquidReadingLine(frase)
+            LiquidReadingLine(frase, highlightTone: tinte(datoInfo.headerTint))
         }
         levelsBlock
         if !whatMovesIt.isEmpty {
@@ -506,7 +507,7 @@ struct LiquidMetricSheetView: View {
 
     @ViewBuilder private var strainContent: some View {
         if let frase = vitalReadingText {
-            LiquidReadingLine(frase)
+            LiquidReadingLine(frase, highlightTone: tinte(datoInfo.headerTint))
         }
         levelsBlock
     }
@@ -564,9 +565,11 @@ struct LiquidMetricSheetView: View {
             .init(minutos: night.stages.light, color: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
                   etiqueta: String(localized: "Light"),
                   duracion: Self.sleepHM(night.stages.light)),
-            // «Despierto» ya no es gris (pedido del dueño /inject): ámbar claro — es la
+            // «Despierto» ya no es gris (pedido del dueño /inject): ORO — cálido y distinto de
+            // las etapas, y fuera de la familia de `atencion` (pasada UX: 47 min despierto
+            // es normal y no debe leerse como aviso). Antes: la
             // única etapa que NO es sueño, y el gris la volvía parte del fondo.
-            .init(minutos: night.stages.awake, color: LiquidColor.ambarClaro,
+            .init(minutos: night.stages.awake, color: LiquidColor.oro,
                   etiqueta: String(localized: "Awake"),
                   duracion: Self.sleepHM(night.stages.awake)),
         ]

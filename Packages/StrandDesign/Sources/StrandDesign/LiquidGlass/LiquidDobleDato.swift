@@ -32,6 +32,7 @@ public struct LiquidDobleDato: View {
     private let infoOcultar: String?
 
     @State private var infoAbierta = false
+    @ScaledMetric(relativeTo: .footnote) private var explicacionSize = LiquidType.lecturaHojaBase
 
     /// L5 · `secundarioInfo` = explicación desplegable del segundo dato (sin ella no hay ⓘ).
     /// `secundarioA11y` = lo que VoiceOver dice EN LUGAR del valor pintado — para que «··»
@@ -57,8 +58,11 @@ public struct LiquidDobleDato: View {
     /// «··» = regularidad sin base todavía: el numeral habla en tinta, no en el tono.
     private var sinBase: Bool { secundario.valor == "··" }
 
+    /// El secundario mide igual que el principal pero NO lleva el hue (pasada UX H2):
+    /// con mismo tamaño y mismo color leían como dos protagonistas y el ojo no sabía
+    /// cuál es el dato de la hoja. El color se queda en el principal.
     private var colorSecundario: Color {
-        sinBase ? LiquidColor.tinta500 : tono
+        sinBase ? LiquidColor.tinta500 : LiquidColor.tinta900
     }
 
     public var body: some View {
@@ -90,7 +94,7 @@ public struct LiquidDobleDato: View {
             .accessibilityElement(children: .contain)
             if infoAbierta, let secundarioInfo {
                 Text(verbatim: secundarioInfo)
-                    .font(LiquidType.captionLectura)
+                    .font(.system(size: explicacionSize))
                     .foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -120,21 +124,21 @@ public struct LiquidDobleDato: View {
 #Preview("Liquid · DobleDato") {
     VStack(alignment: .leading, spacing: LiquidSpace.s800) {
         // Con regularidad medida.
-        LiquidDobleDato(principal: (valor: "7:12", etiqueta: "horas dormido"),
+        LiquidDobleDato(principal: (valor: "7:12", etiqueta: "horas dormidas"),
                         secundario: (valor: "84", etiqueta: "regularidad"),
                         tono: LiquidColor.indigo)
         // Regularidad aún sin base: «··» en tinta (el numeral nunca miente).
-        LiquidDobleDato(principal: (valor: "6:48", etiqueta: "horas dormido"),
+        LiquidDobleDato(principal: (valor: "6:48", etiqueta: "horas dormidas"),
                         secundario: (valor: "··", etiqueta: "regularidad"),
                         tono: LiquidColor.indigo)
         // L5 · con ⓘ en el secundario: explicación desplegable + a11y honesto del «··».
-        LiquidDobleDato(principal: (valor: "7:12", etiqueta: "horas dormido"),
+        LiquidDobleDato(principal: (valor: "7:12", etiqueta: "horas dormidas"),
                         secundario: (valor: "84", etiqueta: "regularidad"),
                         tono: LiquidColor.indigo,
                         secundarioInfo: "Qué tan parejo es tu horario de sueño: tomamos el centro de cada noche (entre dormirte y despertar) y medimos cuánto brinca de noche a noche. Menos brincos, más cerca de 100.",
                         infoMostrar: "Mostrar explicación",
                         infoOcultar: "Ocultar explicación")
-        LiquidDobleDato(principal: (valor: "6:48", etiqueta: "horas dormido"),
+        LiquidDobleDato(principal: (valor: "6:48", etiqueta: "horas dormidas"),
                         secundario: (valor: "··", etiqueta: "regularidad"),
                         tono: LiquidColor.indigo,
                         secundarioInfo: "Necesitamos siete noches para medir qué tan parejo es tu horario.",
