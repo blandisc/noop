@@ -162,7 +162,15 @@ private struct LiquidScrubPopupColocado: View {
 /// públicas del paquete (`scrubGesture` / `ChartScrubMath` / `ChartHaptics` /
 /// `CrosshairRule`) — nunca se reimplementa el gesto.
 struct LiquidChartPlot: View {
+    /// La serie que el plot DIBUJA: **siempre ordenada por fecha**. La garantía vive en el
+    /// componente (como en el init viejo de `TrendChart`, que ordenaba sin preguntar) y no
+    /// en cada caller: con `mapeoPorTiempo` una serie desordenada además rompe
+    /// `fraccionTiempo`, que toma `first`/`last` como extremos del span.
     let puntos: [(fecha: Date, valor: Double)]
+    /// Para cada punto ORDENADO, su índice en el arreglo que pasó el caller. Es la
+    /// identidad en el caso normal (serie ya ordenada) y el único puente correcto para
+    /// `onScrub` / `scrubFijo`: quien los lee indexa SU arreglo, no el nuestro.
+    private let ordenOriginal: [Int]
     let bandas: [LiquidChartBanda]
     let dominio: ClosedRange<Double>
     let ticksY: [(valor: Double, etiqueta: String)]
@@ -186,15 +194,66 @@ struct LiquidChartPlot: View {
     /// `GROUP BY ts / bucket` y los buckets sin muestras simplemente no existen), porque un
     /// eje de horas repartido por índice afirmaría una linealidad temporal falsa.
     var mapeoPorTiempo: Bool = false
+    /// `false` (por defecto) deja TODOS los puntos por dato a opacidad plena. `true` los
+    /// apaga fuera de la banda activa — paridad `GraficaRangos`, donde el apagado es la
+    /// respuesta a que el usuario TOQUE un carril. Es opt-in porque `bandas` casi siempre
+    /// trae una banda activa (la del último dato), y con eso el plot apagaba la serie sin
+    /// que nadie hubiera seleccionado nada.
+    var atenuarFuera: Bool = false
     let alto: CGFloat
     /// SOLO previews/arnés: pinta el overlay de scrub asentado en un índice fijo. NO
     /// publica índice al caller (el a11y del arnés debe quedarse en el último punto).
+    /// Llega en índices del CALLER (se traduce a la serie ordenada).
     var scrubFijo: Int? = nil
     /// El índice bajo el dedo, publicado al caller para que su `accessibilityValue` siga
     /// el scrub. Se emite desde `.onChange` (jamás durante el update de la vista) y vuelve
     /// a `nil` al soltar. En `ImageRenderer` los `.onChange` no disparan: en los PNG del
     /// arnés el valor se queda en el último punto, por diseño.
     var onScrub: ((Int?) -> Void)? = nil
+
+    /// Init explícito (no memberwise) para que el orden defensivo por fecha corra UNA vez
+    /// por construcción y no en cada acceso a la geometría.
+    init(puntos: [(fecha: Date, valor: Double)],
+         bandas: [LiquidChartBanda],
+         dominio: ClosedRange<Double>,
+         ticksY: [(valor: Double, etiqueta: String)],
+         tono: Color,
+         puntoHoy: (fecha: Date, valor: Double)?,
+         hoyAnillo: Bool,
+         formatoScrub: ((Double, Date) -> String)? = nil,
+         formatoValorScrub: ((Double) -> String)? = nil,
+         formatoFechaScrub: ((Date) -> String)? = nil,
+         formatoFechaEje: ((Date) -> String)? = nil,
+         mapeoPorTiempo: Bool = false,
+         atenuarFuera: Bool = false,
+         alto: CGFloat,
+         scrubFijo: Int? = nil,
+         onScrub: ((Int?) -> Void)? = nil) {
+        // Camino rápido O(n): la serie ya viene ordenada en todos los callers vivos, así
+        // que no se copia ni se reordena nada; la red solo cuesta el barrido.
+        let yaOrdenada: Bool = puntos.indices.dropFirst()
+            .allSatisfy { puntos[$0 - 1].fecha <= puntos[$0].fecha }
+        let orden: [Int] = yaOrdenada
+            ? Array(puntos.indices)
+            : puntos.indices.sorted { puntos[$0].fecha < puntos[$1].fecha }
+        self.puntos = yaOrdenada ? puntos : orden.map { puntos[$0] }
+        self.ordenOriginal = orden
+        self.bandas = bandas
+        self.dominio = dominio
+        self.ticksY = ticksY
+        self.tono = tono
+        self.puntoHoy = puntoHoy
+        self.hoyAnillo = hoyAnillo
+        self.formatoScrub = formatoScrub
+        self.formatoValorScrub = formatoValorScrub
+        self.formatoFechaScrub = formatoFechaScrub
+        self.formatoFechaEje = formatoFechaEje
+        self.mapeoPorTiempo = mapeoPorTiempo
+        self.atenuarFuera = atenuarFuera
+        self.alto = alto
+        self.scrubFijo = scrubFijo
+        self.onScrub = onScrub
+    }
 
     @State private var hoverX: CGFloat? = nil
     @State private var entrado = false
@@ -243,7 +302,7 @@ struct LiquidChartPlot: View {
                                                    count: puntos.count,
                                                    width: plotW(w))
             }
-            let iActivo = iHover ?? scrubFijo
+            let iActivo = iHover ?? scrubFijoOrdenado
             ZStack(alignment: .topLeading) {
                 washes(w, h)
                 grid(w, h)
@@ -258,6 +317,16 @@ struct LiquidChartPlot: View {
                     overlayScrub(i, w, h)
                 }
             }
+            // FER-219 · «cambiar de periodo SALTA, no morfa». `LiquidRangeSelector` muta el
+            // binding del rango DENTRO de `withAnimation(LiquidMotion.selector)`, así que la
+            // serie nueva entraba interpolando washes, grid, etiquetas de eje, puntos y joya
+            // mientras la polilínea (un `Path`) saltaba de golpe: un híbrido incoherente. Con
+            // la transacción neutralizada, la gráfica entera se re-asienta en un frame.
+            // `value` es `[Date]` a propósito: `puntos` es un arreglo de tuplas y NO conforma
+            // `Equatable`. Solo dispara cuando cambia la serie, así que ni el fade de entrada
+            // (`entrado`) ni la animación de I1 (`washes`, que cambia con `indiceActiva`) se
+            // ven afectados salvo que ambos muten en el MISMO update.
+            .transaction(value: puntos.map(\.fecha)) { $0.animation = nil }
             .contentShape(Rectangle())
             // El gesto público de TrendChart:642 — drag `minimumDistance: 0` en iOS (gana
             // el touch al ScrollView de la hoja), hover en macOS; limpia al soltar.
@@ -266,9 +335,12 @@ struct LiquidChartPlot: View {
                 // Háptica solo al caer en un punto NUEVO (no al soltar) — paridad GraficaRangos.
                 if nuevo != nil { ChartHaptics.datumChanged() }
                 // El índice se publica AQUÍ, nunca desde el body («Modifying state during
-                // view update»). Al soltar, `hoverX` se limpia y el caller vuelve solo al
-                // último punto.
-                onScrub?(nuevo)
+                // view update»), y TRADUCIDO al arreglo del caller: el plot dibuja su copia
+                // ordenada, pero quien lo lee (`valorA11y`) indexa la suya. Al soltar,
+                // `hoverX` se limpia y el caller vuelve solo al último punto.
+                onScrub?(nuevo.flatMap { (i: Int) -> Int? in
+                    ordenOriginal.indices.contains(i) ? ordenOriginal[i] : nil
+                })
             }
         }
         .frame(maxWidth: .infinity)
@@ -286,6 +358,12 @@ struct LiquidChartPlot: View {
     }
 
     // MARK: Geometría
+
+    /// `scrubFijo` llega en índices del CALLER; el overlay dibuja sobre la serie ORDENADA.
+    private var scrubFijoOrdenado: Int? {
+        guard let s = scrubFijo else { return nil }
+        return ordenOriginal.firstIndex(of: s)
+    }
 
     /// Alto de la franja del eje X (0 cuando el caller no pidió fila de fechas).
     private var ejeAlto: CGFloat { formatoFechaEje == nil ? 0 : LiquidChart.ejeXAlto }
@@ -397,16 +475,26 @@ struct LiquidChartPlot: View {
 
     // MARK: Eje X (fila de fechas)
 
-    /// Los índices marcados: los cuartiles de la serie, deduplicados. Las marcas
+    /// Los índices CANDIDATOS a marca, antes de resolver colisiones. Las marcas
     /// INTERIORES desde 5 puntos (pedido del dueño /inject: con los 7 del rango «S» el
     /// eje se quedaba en dos fechas y se veía vacío; con 4 o menos sí se tocarían).
-    private var marcasEjeX: [Int] {
+    private var candidatosEjeX: [Int] {
         let n = puntos.count
         guard n > 1 else { return n == 1 ? [0] : [] }
         // Con series cortas se marcan TODOS los puntos (pedido del dueño /inject: quería
         // ver cada fecha); de 9 en adelante volvemos a los cuartiles para no saturar.
         if n <= 8 { return Array(0..<n) }
         var out: [Int] = []
+        // Con mapeo por TIEMPO los cuartiles se toman del SPAN, no del índice: en una
+        // serie con huecos (12 lecturas en 90 días) el punto nº 6 puede caer al 90 % del
+        // eje, y marcar «el índice de en medio» pondría la etiqueta pegada a la última.
+        if mapeoPorTiempo, fraccionTiempo(0) != nil {
+            for q in [0.0, 0.25, 0.5, 0.75, 1.0] {
+                guard let i = indiceEnFraccion(q) else { continue }
+                if out.last != i { out.append(i) }
+            }
+            return out
+        }
         for q in [0, 0.25, 0.5, 0.75, 1.0] {
             let i = Int((Double(n - 1) * q).rounded())
             if out.last != i { out.append(i) }
@@ -414,12 +502,61 @@ struct LiquidChartPlot: View {
         return out
     }
 
+    /// El punto cuya posición TEMPORAL queda más cerca de la fracción `q` del span.
+    private func indiceEnFraccion(_ q: Double) -> Int? {
+        var mejor: Int? = nil
+        var mejorD = Double.greatestFiniteMagnitude
+        for i in puntos.indices {
+            guard let f = fraccionTiempo(i) else { continue }
+            let d = abs(f - q)
+            if d < mejorD { mejorD = d; mejor = i }
+        }
+        return mejor
+    }
+
+    /// Semiancho ESTIMADO de una etiqueta del eje (el texto todavía no se ha medido:
+    /// misma cuenta por conteo de caracteres que la canaleta del eje Y).
+    private func medioEtiquetaEje(_ etiqueta: String) -> CGFloat {
+        CGFloat(etiqueta.count) * Self.anchoCaracterEje / 2
+    }
+
+    /// La x DIBUJADA de una etiqueta: el centro de SU punto, clampeado al plot para que
+    /// ninguna se salga por los extremos.
+    private func xEtiquetaEje(_ i: Int, _ w: CGFloat, _ medio: CGFloat) -> CGFloat {
+        let ancho = fondoW(w)
+        return Swift.min(Swift.max(x(i, w), canaleta + medio), canaleta + ancho - medio)
+    }
+
+    /// Las marcas que de verdad se pintan. Con mapeo por ÍNDICE los candidatos van
+    /// equiespaciados y no se tocan; con mapeo por TIEMPO dos lecturas consecutivas pueden
+    /// caer a 3 pt una de otra (el clamp de `xEtiquetaEje` protege los DOS bordes, jamás a
+    /// las vecinas), así que se descarta toda etiqueta que se encimaría con la anterior ya
+    /// colocada. La ÚLTIMA marca es intocable —es la lectura más reciente— y reserva su
+    /// hueco antes de repartir el resto.
+    private func marcasEjeX(_ w: CGFloat, _ fmt: (Date) -> String) -> [Int] {
+        let candidatos = candidatosEjeX
+        guard mapeoPorTiempo, candidatos.count > 1 else { return candidatos }
+        func medio(_ i: Int) -> CGFloat { medioEtiquetaEje(fmt(puntos[i].fecha)) }
+        let ultimo: Int = candidatos[candidatos.count - 1]
+        let medioUltimo: CGFloat = medio(ultimo)
+        let reserva: CGFloat = xEtiquetaEje(ultimo, w, medioUltimo) - medioUltimo - LiquidSpace.s200
+        var out: [Int] = []
+        var bordeDerecho: CGFloat = -.greatestFiniteMagnitude
+        for i in candidatos.dropLast() {
+            let m: CGFloat = medio(i)
+            let cx: CGFloat = xEtiquetaEje(i, w, m)
+            guard cx - m >= bordeDerecho, cx + m <= reserva else { continue }
+            out.append(i)
+            bordeDerecho = cx + m + LiquidSpace.s200
+        }
+        out.append(ultimo)
+        return out
+    }
+
     @ViewBuilder private func ejeX(_ w: CGFloat, _ h: CGFloat) -> some View {
         if let fmt = formatoFechaEje {
-            let marcas = marcasEjeX
+            let marcas = marcasEjeX(w, fmt)
             let cy = pisoY(h) + ejeAlto / 2
-            let ancho = fondoW(w)
-            let cx = canaleta + ancho / 2
             ForEach(Array(marcas.enumerated()), id: \.offset) { (k: Int, i: Int) in
                 let etiqueta: String = fmt(puntos[i].fecha)
                 let base = Text(verbatim: etiqueta)
@@ -430,11 +567,7 @@ struct LiquidChartPlot: View {
                     .fixedSize()
                 // TODAS centradas en SU punto (pedido del dueño: las fechas no cuadraban
                 // con sus bolitas porque la primera y la última se pegaban al borde).
-                // Se clampan al plot para que ninguna se salga por los extremos.
-                let medio: CGFloat = CGFloat(etiqueta.count) * Self.anchoCaracterEje / 2
-                let px: CGFloat = Swift.min(Swift.max(x(i, w), canaleta + medio),
-                                            canaleta + ancho - medio)
-                base.position(x: px, y: cy)
+                base.position(x: xEtiquetaEje(i, w, medioEtiquetaEje(etiqueta)), y: cy)
             }
         }
     }
@@ -455,15 +588,18 @@ struct LiquidChartPlot: View {
     }
 
     /// Un disco por muestra cuando la serie es corta Y hay aire real entre puntos. El
-    /// punto ACOMPAÑA a su wash (paridad `GraficaRangos`): en la banda activa va a tono
-    /// pleno; fuera de ella se apaga. A opacidad plena en todas las bandas competiría con
-    /// los 13 puntos de alfa que sostienen I1.
+    /// punto ACOMPAÑA a su wash (paridad `GraficaRangos`): con `atenuarFuera`, en la banda
+    /// activa va a tono pleno y fuera de ella se apaga. **Solo con opt-in**: `bandas` casi
+    /// siempre trae una activa (la del último dato), así que atarlo a `hayActiva` a secas
+    /// apagaba media serie sin que el usuario hubiera tocado ningún carril — ni paridad
+    /// `GraficaRangos` (que apaga al TOCAR) ni paridad con la hoja vieja (que no apagaba
+    /// nunca). En reposo, la banda activa se sigue diciendo con el wash (I1).
     @ViewBuilder private func puntosDato(_ w: CGFloat, _ h: CGFloat) -> some View {
         let n = puntos.count
         let paso: CGFloat = n > 1 ? plotW(w) / CGFloat(n - 1) : plotW(w)
         // Densidad medida, no solo conteo: 60 puntos en un iPhone SE se tocarían.
         if n > 1, n <= LiquidChart.puntoDatoUmbral, paso >= LiquidChart.puntoDatoRadio * 4 {
-            let hayActiva = bandas.contains { $0.activa }
+            let hayActiva = atenuarFuera && bandas.contains { $0.activa }
             ForEach(Array(puntos.enumerated()), id: \.offset) { i, punto in
                 // Mismo resolver de banda que el anillo del scrub.
                 let banda = bandas.first { $0.contiene(punto.valor) }
@@ -496,10 +632,13 @@ struct LiquidChartPlot: View {
                     .offset(x: px - LiquidChart.scrubAnilloDiametro / 2,
                             y: py - LiquidChart.scrubAnilloDiametro / 2)
             } else {
-                // La joya del endpoint (mismo lenguaje que el orbe).
+                // La joya del endpoint (mismo lenguaje que el orbe). El borde es el PAPEL
+                // del contenedor, no blanco duro: el anillo del scrub y el anillo de «hoy»
+                // ya usan `papelAlto`, y sobre el vidrio el blanco puro se veía recortado.
                 Circle()
                     .fill(tono)
-                    .overlay(Circle().strokeBorder(Color.white, lineWidth: LiquidChart.endpointBorde))
+                    .overlay(Circle().strokeBorder(LiquidColor.papelAlto,
+                                                   lineWidth: LiquidChart.endpointBorde))
                     .frame(width: LiquidChart.endpointRadio * 2,
                            height: LiquidChart.endpointRadio * 2)
                     .offset(x: px - LiquidChart.endpointRadio,

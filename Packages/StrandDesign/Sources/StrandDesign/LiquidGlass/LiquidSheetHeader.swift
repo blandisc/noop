@@ -62,10 +62,36 @@ public struct LiquidSheetHeader: View {
                                                 unidad: unidad, origen: origenEtiqueta)
     }
 
-    /// L5 · Dynamic Type: en tamaños de accesibilidad la fila del numeral deja de truncar y
-    /// envuelve (la que desborda es la etiqueta de origen, no el numeral).
+    /// L5 · Dynamic Type: en tamaños grandes la fila del numeral deja de truncar y envuelve
+    /// (la que desborda es la etiqueta de origen, no el numeral).
+    ///
+    /// B4 · el umbral baja de AX a `.xxLarge`: con `.xxLarge`/`.xxxLarge` —tamaños que NO
+    /// son de accesibilidad y que mucha gente usa— «Apple Salud · anoche» ya no cabía y se
+    /// truncaba con «…» en vez de envolver.
     private var limiteNumeral: Int? {
-        tamanoTexto.isAccessibilitySize ? nil : 1
+        tamanoTexto >= .xxLarge ? nil : 1
+    }
+
+    /// B1 · ¿hay procedencia que pintar? El punto solo marca lo CALCULADO (ver `init`), así
+    /// que `origen == .medido` sin etiqueta no dibuja nada y no merece su propia fila.
+    private var hayProcedencia: Bool {
+        origen == .calculado || origenEtiqueta != nil
+    }
+
+    /// B1 · La procedencia («· Apple Salud»), que hasta ahora vivía DENTRO de la fila del
+    /// numeral. Se compone aparte para poder emitirla también cuando no hay numeral.
+    /// `inline` = va detrás del dato (necesita el respiro que la separa de la unidad);
+    /// suelta arranca en el margen, alineada con el título.
+    @ViewBuilder private func procedencia(inline: Bool) -> some View {
+        if origen == .calculado {
+            LiquidOrigenDot()
+        }
+        if let origenEtiqueta {
+            Text(origenEtiqueta)
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta500)
+                .padding(.leading, inline ? LiquidSpace.s100 : 0)
+        }
     }
 
     public var body: some View {
@@ -81,11 +107,19 @@ public struct LiquidSheetHeader: View {
                 Text(titulo)
                     .font(LiquidType.tituloHoja)
                     .foregroundStyle(LiquidColor.tinta700)
+                    // B3 · con numeral, el título ya va DENTRO del label compuesto de la
+                    // fila del dato («VFC, 56 ms, Apple Salud», que empieza por él):
+                    // dejarlo como parada propia lo dice dos veces. Sin numeral, esta ES
+                    // la primera parada y carga el label compuesto entero.
+                    .accessibilityHidden(numeral != nil)
+                    .accessibilityLabel(Text(verbatim: a11y))
+                    .accessibilityAddTraits(.isHeader)
                 Spacer()
                 if explicacion != nil {
                     LiquidInfoBoton(abierto: $explicacionAbierta,
                                     mostrar: infoMostrar, ocultar: infoOcultar,
-                                    rotulo: titulo, alineacion: .trailing)
+                                    rotulo: titulo, alineacion: .trailing,
+                                    tono: tono)
                 }
             }
             if let numeral {
@@ -103,17 +137,25 @@ public struct LiquidSheetHeader: View {
                             .font(LiquidType.numeralHojaUnidad)
                             .foregroundStyle(LiquidColor.tinta500)
                     }
-                    if origen == .calculado {
-                        LiquidOrigenDot()
-                    }
-                    if let origenEtiqueta {
-                        Text(origenEtiqueta)
-                            .font(LiquidType.captionLectura)
-                            .foregroundStyle(LiquidColor.tinta500)
-                            .padding(.leading, LiquidSpace.s100)
-                    }
+                    procedencia(inline: true)
                 }
                 .lineLimit(limiteNumeral)
+                // B3 · el dato dominante es UNA sola parada de VoiceOver: numeral, unidad,
+                // sufijo y procedencia son fragmentos de la misma frase, no cuatro paradas.
+                // `.ignore` sí fusiona (`.contain` del contenedor NO lo hacía, y encima
+                // anteponía la etiqueta del grupo ⇒ el dato se oía dos veces).
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: a11y))
+                .accessibilityAddTraits(.isHeader)
+            } else if hayProcedencia {
+                // B1 · La variante rica de sueño pasa `numeral: nil`, y con la procedencia
+                // atrapada dentro del `if let numeral` la hoja NO mostraba de dónde salía
+                // el dato mientras VoiceOver sí lo decía. Aquí baja a su propia fila.
+                // Muda para VoiceOver: el título de arriba ya lo dice en su label.
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    procedencia(inline: false)
+                }
+                .accessibilityHidden(true)
             }
             if explicacionAbierta, let explicacion {
                 // Voz de LECTURA, no de caption (pasada UX H3): era el texto más largo
@@ -124,9 +166,11 @@ public struct LiquidSheetHeader: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        // B3 · `.contain` mantiene al ⓘ como elemento accionable aparte. El label compuesto
+        // NO va aquí: en un contenedor `.contain` se antepone a la primera parada real y
+        // duplicaba el dato. Vive en la parada que de verdad lo dice (fila del numeral, o
+        // el título cuando no hay numeral).
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text(verbatim: a11y))
-        .accessibilityAddTraits(.isHeader)
     }
 
     /// «{titulo}, {numeral} {unidad}[, {origen}]» — contrato de VoiceOver (testeable en frío).
@@ -157,6 +201,10 @@ struct LiquidInfoBoton: View {
     /// Rótulo del dato al que pertenece el ⓘ — solo se usa como fallback de VoiceOver.
     let rotulo: String
     var alineacion: Alignment = .trailing
+    /// B5 · Tono de la métrica. Con él, el glifo ABIERTO se tiñe (en la hoja vieja el color
+    /// ERA el indicador de estado); sin él (default) se queda en tinta/500 en ambos estados,
+    /// que es el comportamiento que ya tiene `LiquidDobleDato`.
+    var tono: Color? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -178,7 +226,7 @@ struct LiquidInfoBoton: View {
         } label: {
             Image(systemName: "info.circle")
                 .font(LiquidType.infoGlifo)
-                .foregroundStyle(LiquidColor.tinta500)
+                .foregroundStyle(abierto ? (tono ?? LiquidColor.tinta500) : LiquidColor.tinta500)
                 .frame(minWidth: 44, minHeight: 44, alignment: alineacion)
                 .contentShape(Rectangle())
         }
@@ -217,6 +265,28 @@ struct LiquidInfoBoton: View {
     .background(LiquidSheetFondo(tone: LiquidColor.cian))
 }
 
+/// B1 · Sin numeral (la variante rica de sueño y su skeleton) la procedencia baja a su
+/// propia fila: antes desaparecía de la pantalla mientras VoiceOver la seguía diciendo.
+#Preview("Liquid · SheetHeader sin numeral") {
+    VStack(alignment: .leading, spacing: LiquidSpace.s800) {
+        LiquidSheetHeader(icono: .luna, titulo: "SUEÑO", tono: LiquidColor.indigo,
+                          numeral: nil,
+                          origenEtiqueta: "Apple Salud",
+                          explicacion: "Cuánto y qué tan parejo dormiste anoche.",
+                          infoMostrar: "Mostrar explicación",
+                          infoOcultar: "Ocultar explicación")
+        // Calculado sin numeral: el punto de origen también sobrevive.
+        LiquidSheetHeader(icono: .luna, titulo: "SUEÑO", tono: LiquidColor.indigo,
+                          numeral: nil, origen: .calculado,
+                          origenEtiqueta: "Calculado")
+        // Sin procedencia de ningún tipo: no se agrega ninguna fila.
+        LiquidSheetHeader(icono: .luna, titulo: "SUEÑO", tono: LiquidColor.indigo,
+                          numeral: nil)
+    }
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.indigo))
+}
+
 /// L5 · en tamaños AX la fila del numeral envuelve en vez de truncar la etiqueta de origen.
 #Preview("Liquid · SheetHeader AX") {
     LiquidSheetHeader(icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
@@ -228,5 +298,22 @@ struct LiquidInfoBoton: View {
         .padding(LiquidSpace.s550)
         .background(LiquidSheetFondo(tone: LiquidColor.cian))
         .environment(\.dynamicTypeSize, .accessibility3)
+}
+
+/// B4 · `.xxxLarge` NO es tamaño de accesibilidad: aquí es donde la unidad se quedaba
+/// enana junto al numeral y «Apple Salud · anoche» se truncaba con «…».
+#Preview("Liquid · SheetHeader xxxLarge") {
+    VStack(alignment: .leading, spacing: LiquidSpace.s800) {
+        LiquidSheetHeader(icono: .onda, titulo: "VFC", tono: LiquidColor.cian,
+                          numeral: "56", unidad: "ms",
+                          origenEtiqueta: "Apple Salud · anoche")
+        LiquidSheetHeader(icono: nil, titulo: "RECUPERACIÓN", tono: LiquidColor.verdePrimario,
+                          numeral: "78", sufijo: "/ 100",
+                          numeralTono: LiquidColor.verdeProfundo, origen: .calculado,
+                          origenEtiqueta: "Calculado")
+    }
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.cian))
+    .environment(\.dynamicTypeSize, .xxxLarge)
 }
 #endif

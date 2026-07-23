@@ -23,7 +23,9 @@ public enum LiquidChart {
     public static let gridAlfa: Double = 0.10
     /// El punto final de la serie: la JOYA (mismo lenguaje que el orbe).
     public static let endpointRadio: CGFloat = 3.6   // > puntoDatoRadio 3.0 (pasada UI H5: la jerarquía estaba invertida)
-    /// Borde blanco de la joya del endpoint.
+    /// Grosor del borde de la joya del endpoint. El COLOR es `LiquidColor.papelAlto` (el
+    /// papel del contenedor), el mismo del anillo del scrub y del anillo de «hoy» — nunca
+    /// blanco duro.
     public static let endpointBorde: CGFloat = 1.2
 
     // MARK: Bandas (I1 — luminosidad de lo seleccionado)
@@ -129,7 +131,7 @@ public enum LiquidChart {
                        height: LiquidChart.scrubAnilloDiametro)
                 .offset(x: 135, y: 25)
             Circle().fill(hue)
-                .overlay(Circle().strokeBorder(Color.white,
+                .overlay(Circle().strokeBorder(LiquidColor.papelAlto,
                                                lineWidth: LiquidChart.endpointBorde))
                 .frame(width: LiquidChart.endpointRadio * 2,
                        height: LiquidChart.endpointRadio * 2)

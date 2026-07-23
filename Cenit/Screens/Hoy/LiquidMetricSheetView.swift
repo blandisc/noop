@@ -31,6 +31,10 @@ struct LiquidMetricSheetView: View {
     let info: MetricInfo
     let appleConnectHint: Bool
     let appleSource: Bool
+    /// D8 · El esfuerzo de hoy es el ESTIMADO de Apple (FER-883), no el que calculó Cénit.
+    /// El tile de Hoy ya lo dice así (`LiquidHoyBuilder`: «Carga del día» + medido) y la
+    /// hoja está a un tap: sin esto las dos superficies se contradicen.
+    let strainEstimated: Bool
     let heartRateCurveLoader: (() async -> [TrendPoint])?
     let trendLoader: (() async -> [TrendPoint])?
     let onSeeMore: (() -> Void)?
@@ -52,6 +56,7 @@ struct LiquidMetricSheetView: View {
     init(info: MetricInfo,
          appleConnectHint: Bool = false,
          appleSource: Bool = false,
+         strainEstimated: Bool = false,
          heartRateCurveLoader: (() async -> [TrendPoint])? = nil,
          trendLoader: (() async -> [TrendPoint])? = nil,
          onSeeMore: (() -> Void)? = nil,
@@ -61,6 +66,7 @@ struct LiquidMetricSheetView: View {
         self.info = info
         self.appleConnectHint = appleConnectHint
         self.appleSource = appleSource
+        self.strainEstimated = strainEstimated
         self.heartRateCurveLoader = heartRateCurveLoader
         self.trendLoader = trendLoader
         self.onSeeMore = onSeeMore
@@ -96,6 +102,14 @@ struct LiquidMetricSheetView: View {
         case "heart_rate": return .heartRate(avgBpm: 62)
         case "recovery":  return .recovery(score: 78, calibrationNights: nil, nightsNeeded: 4)
         case "vo2max":    return .vo2max(42)
+        // D2 · Las 5 submétricas del Detalle de Sueño caían al `default` (VFC), así que la
+        // variante CLÁSICA —trend de 14 días + tabla de bandas— era inalcanzable en la app
+        // corriendo: se estaba puliendo a ciegas.
+        case "sleep_performance": return .sleepPerformance(85)
+        case "sleep_efficiency":  return .sleepEfficiency(88)
+        case "sleep_restorative": return .sleepRestorative(42)
+        case "sleep_awakenings":  return .sleepAwakenings(3)
+        case "sleep_latency":     return .sleepLatency(14)
         default:          return .hrv(56)
         }
     }
@@ -111,6 +125,16 @@ struct LiquidMetricSheetView: View {
         case "skin_temp": return (0.1, 0.35)
         case "resp_rate": return (14, 1.2)
         case "stress":    return (1.2, 0.5)
+        // D2 · Sin estos casos la SERIE de las submétricas de sueño caía al centro de VFC
+        // (55 ± 8) mientras la cabecera decía «85 %»: la hoja se contradecía y los conteos
+        // de la tabla no se podían leer. Las amplitudes CRUZAN las cotas de cada fábrica
+        // (85 → <70/70-85/85+, 88 → <75/75-85/85+, 42 → <30/30-50/50+, 14 → <10/10-20/20+)
+        // para que los tres conteos salgan repartidos y sumen 14.
+        case "sleep_performance": return (85, 16)
+        case "sleep_efficiency":  return (86, 12)
+        case "sleep_restorative": return (42, 16)
+        case "sleep_awakenings":  return (3, 2)
+        case "sleep_latency":     return (14, 8)
         default:          return (55, 8)   // hrv
         }
     }

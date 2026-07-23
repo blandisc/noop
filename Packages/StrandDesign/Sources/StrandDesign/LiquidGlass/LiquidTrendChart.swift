@@ -90,6 +90,11 @@ public struct LiquidTrendChart: View {
                             formatoValorScrub: formatoValorScrub,
                             formatoFechaScrub: formatoFechaScrub,
                             formatoFechaEje: formatoFechaEje,
+                            // Mismo motivo que el explorador: la serie de 14 días de las
+                            // submétricas de sueño trae solo las NOCHES que existen. Con
+                            // reparto por índice, una semana sin registrar se dibujaba como
+                            // si fueran días consecutivos.
+                            mapeoPorTiempo: true,
                             alto: LiquidChartAlto.trend,
                             scrubFijo: scrubFijo,
                             onScrub: { (i: Int?) in iScrub = i })

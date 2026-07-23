@@ -30,6 +30,10 @@ public struct LiquidGraficaNiveles: View {
     private let formatoFechaEje: ((Date) -> String)?
     private let estadoVacio: String
     private let a11yLabel: String
+    /// Apaga los puntos por dato fuera de la banda activa. `false` = todos a opacidad
+    /// plena (la banda activa se dice solo con su wash, I1). Se enciende cuando el usuario
+    /// EXPLORA un nivel, que es cuando `GraficaRangos` apaga.
+    private let atenuarFuera: Bool
     /// SOLO previews/arnés: overlay de scrub asentado en un índice fijo.
     var scrubFijo: Int? = nil
 
@@ -48,6 +52,7 @@ public struct LiquidGraficaNiveles: View {
                 formatoValorScrub: ((Double) -> String)? = nil,
                 formatoFechaScrub: ((Date) -> String)? = nil,
                 formatoFechaEje: ((Date) -> String)? = nil,
+                atenuarFuera: Bool = false,
                 estadoVacio: String,
                 a11yLabel: String) {
         self.puntos = puntos
@@ -61,6 +66,7 @@ public struct LiquidGraficaNiveles: View {
         self.formatoValorScrub = formatoValorScrub
         self.formatoFechaScrub = formatoFechaScrub
         self.formatoFechaEje = formatoFechaEje
+        self.atenuarFuera = atenuarFuera
         self.estadoVacio = estadoVacio
         self.a11yLabel = a11yLabel
     }
@@ -75,6 +81,14 @@ public struct LiquidGraficaNiveles: View {
                                 formatoValorScrub: formatoValorScrub,
                                 formatoFechaScrub: formatoFechaScrub,
                                 formatoFechaEje: formatoFechaEje,
+                                // El eje del explorador es el CALENDARIO, no el índice: la
+                                // ventana sale de `MetricWindowMath.slice`, que devuelve
+                                // SOLO los días con lectura. Repartir por índice dibuja 12
+                                // lecturas equiespaciadas mientras el eje afirma un span de
+                                // 30 o 90 días: la gráfica borraría los huecos que son el
+                                // dato (VFC / temp. piel / respiración se miden a ratos).
+                                mapeoPorTiempo: true,
+                                atenuarFuera: atenuarFuera,
                                 alto: LiquidChartAlto.explorador,
                                 scrubFijo: scrubFijo,
                                 onScrub: { (i: Int?) in iScrub = i })
@@ -190,6 +204,98 @@ private func bandasDemo(activa: Int?) -> [LiquidChartBanda] {
         .padding(LiquidSpace.s550)
         .background(LiquidSheetFondo(tone: LiquidColor.cian))
         .environment(\.liquidMotionDisabled, true)
+}
+
+/// La serie que el mapeo por índice contaba mal: 12 lecturas repartidas de forma DESIGUAL
+/// dentro de 90 días (dos racimos y un hueco de mes y medio), tal como sale
+/// `MetricWindowMath.slice` para VFC / temp. piel / respiración, que no se miden a diario.
+private func serieConHuecos() -> [(fecha: Date, valor: Double)] {
+    let cal: Calendar = Calendar.current
+    let offsets: [Int] = [-89, -87, -86, -84, -83, -38, -12, -9, -8, -6, -3, 0]
+    return offsets.enumerated().map { (k: Int, d: Int) -> (fecha: Date, valor: Double) in
+        let fecha: Date = cal.date(byAdding: .day, value: d, to: Date())!
+        return (fecha: fecha, valor: 58.0 + 12.0 * sin(Double(k) / 1.7) + Double((k * 5) % 6))
+    }
+}
+
+#Preview("Liquid · Niveles — serie con huecos (90 días)") {
+    // Prueba del hueco (carril A, A1): con reparto por ÍNDICE los 12 puntos salían
+    // equiespaciados y el eje mentía sobre el span. Con mapeo por TIEMPO se ven los dos
+    // racimos y el vacío de mes y medio, y las fechas del eje caen sobre sus bolitas.
+    let puntos = serieConHuecos()
+    let ejeFmt: (Date) -> String = fmtDemo("dMMM")
+    return LiquidGraficaNiveles(
+        puntos: puntos, bandas: bandasDemo(activa: 1), dominio: 30...95,
+        ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
+        puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
+        formatoScrub: { v, _ in "\(Int(v)) ms" },
+        formatoFechaEje: ejeFmt,
+        estadoVacio: "Sin lecturas en este rango.",
+        a11yLabel: "VFC, últimos 90 días")
+        .padding(LiquidSpace.s550)
+        .background(LiquidSheetFondo(tone: LiquidColor.cian))
+        .environment(\.liquidMotionDisabled, true)
+}
+
+#Preview("Liquid · Niveles — serie corta con racimo (n = 5, 7, 8)") {
+    // El reparto `n <= 8 ⇒ todas las fechas` es el que muerde con mapeo por tiempo: dos
+    // lecturas seguidas dentro de un rango largo caen a 3 pt una de otra. La poda por
+    // geometría debe dejar solo las que caben, y NUNCA soltar la última.
+    let ejeFmt: (Date) -> String = fmtDemo("dMMM")
+    func corta(_ offsets: [Int]) -> [(fecha: Date, valor: Double)] {
+        let cal: Calendar = Calendar.current
+        return offsets.enumerated().map { (k: Int, d: Int) -> (fecha: Date, valor: Double) in
+            (fecha: cal.date(byAdding: .day, value: d, to: Date())!,
+             valor: 55.0 + 10.0 * sin(Double(k) / 1.3))
+        }
+    }
+    return VStack(spacing: LiquidSpace.s400) {
+        ForEach([[-60, -59, -58, -20, 0],
+                 [-88, -86, -85, -84, -40, -2, 0],
+                 [-90, -89, -88, -50, -49, -5, -4, 0]], id: \.self) { (offsets: [Int]) in
+            let puntos = corta(offsets)
+            LiquidGraficaNiveles(
+                puntos: puntos, bandas: bandasDemo(activa: 1), dominio: 30...95,
+                ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
+                puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
+                formatoScrub: { v, _ in "\(Int(v)) ms" },
+                formatoFechaEje: ejeFmt,
+                estadoVacio: "Sin lecturas en este rango.",
+                a11yLabel: "VFC, últimos 90 días")
+        }
+    }
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.cian))
+    .environment(\.liquidMotionDisabled, true)
+}
+
+#Preview("Liquid · Niveles — atenuación explícita (opt-in)") {
+    // Sin `atenuarFuera` (el default, y lo que ve la app hoy) todos los puntos van a
+    // opacidad plena; con el opt-in se apagan los de fuera de la banda activa.
+    let puntos = serieDemo(dias: 14)
+    let ejeFmt: (Date) -> String = fmtDemo("dMMM")
+    return VStack(spacing: LiquidSpace.s400) {
+        LiquidGraficaNiveles(
+            puntos: puntos, bandas: bandasDemo(activa: 1), dominio: 30...95,
+            ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
+            puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
+            formatoScrub: { v, _ in "\(Int(v)) ms" },
+            formatoFechaEje: ejeFmt,
+            estadoVacio: "Sin lecturas en este rango.",
+            a11yLabel: "VFC, últimos 14 días")
+        LiquidGraficaNiveles(
+            puntos: puntos, bandas: bandasDemo(activa: 1), dominio: 30...95,
+            ticksY: [(71, "71"), (49, "49")], tono: LiquidColor.cian,
+            puntoHoy: (puntos[puntos.count - 1].fecha, puntos[puntos.count - 1].valor),
+            formatoScrub: { v, _ in "\(Int(v)) ms" },
+            formatoFechaEje: ejeFmt,
+            atenuarFuera: true,
+            estadoVacio: "Sin lecturas en este rango.",
+            a11yLabel: "VFC, últimos 14 días")
+    }
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.cian))
+    .environment(\.liquidMotionDisabled, true)
 }
 
 #Preview("Liquid · Niveles — vacío") {

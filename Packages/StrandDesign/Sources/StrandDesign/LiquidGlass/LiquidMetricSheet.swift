@@ -63,7 +63,13 @@ public struct LiquidMetricSheet<Content: View>: View {
         // re-midiera, abrir el ⓘ agrandaría la hoja y todo saltaría hacia ARRIBA; con la
         // altura fija, la explicación empuja el contenido hacia abajo dentro del scroll.
         .onPreferenceChange(LiquidSheetAltoKey.self) { nuevo in
-            if altoMedido == 0, !cargando { altoMedido = nuevo }
+            // La altura CRECE, nunca encoge, y nunca se fija con un frame de carga.
+            // Congelarla en la PRIMERA medición (intento anterior) la dejaba clavada con
+            // un layout a medio resolver y la hoja abría corta. Al toparse con el techo
+            // de la pantalla deja de crecer, y ahí el ⓘ empuja el contenido hacia abajo
+            // dentro del scroll — que es lo que el dueño pidió.
+            guard !cargando else { return }
+            if nuevo > altoMedido { altoMedido = nuevo }
         }
         .presentationBackground { LiquidSheetFondo(tone: tono) }
         .presentationDragIndicator(.visible)
@@ -78,11 +84,10 @@ public struct LiquidMetricSheet<Content: View>: View {
             // Type grande, leer 15 líneas por media pantalla sin poder crecer es hostil.
             return [.medium, .large]
         case .porContenido:
-            // `.large` acompaña a la altura medida (/inject 2026-07-23): con contenido
-            // largo (sueño) la hoja se quedaba clavada sin a dónde crecer y el scroll
-            // moría. Con las dos, arranca a la medida del contenido y sube a pantalla
-            // completa para leer el resto.
-            return altoMedido > 0 ? [.height(altoMedido), .large] : [.large]
+            // `.large` acompaña a la altura medida: con contenido largo la hoja se
+            // quedaba sin a dónde crecer y el scroll moría. Bajo un mínimo razonable no
+            // vale la pena la medida — mejor abrir en `.large` que en una rendija.
+            return altoMedido > 320 ? [.height(altoMedido), .large] : [.large]
         }
     }
 }

@@ -34,7 +34,7 @@ public struct LiquidStageBar: View {
 
     private let etapas: [Etapa]
     private let overline: String
-    private let ventana: String
+    private let ventana: String?
 
     /// La leyenda de 4 etapas no cabe en una fila cuando el texto crece: en tamaños de
     /// accesibilidad se acomoda en rejilla 2×2 (mismos items, dos columnas).
@@ -43,18 +43,33 @@ public struct LiquidStageBar: View {
     /// Alto de la barra — geometría interna del componente (paridad `SleepStageBar`).
     private let altoBarra: CGFloat = 24
 
-    public init(etapas: [Etapa], overline: String, ventana: String) {
+    /// B7 · `ventana` es OPCIONAL: el fallback diario de Apple fabrica noches con
+    /// `startTs == endTs`, y el caller que no puede afirmar un horario real pasa `nil` en vez
+    /// de imprimir «6:00 → 6:00». Sin ventana no se pinta el reloj ni entra a VoiceOver.
+    public init(etapas: [Etapa], overline: String, ventana: String? = nil) {
         self.etapas = etapas
         self.overline = overline
         self.ventana = ventana
     }
 
+    /// B7 · Las etapas de 0 minutos NO existen para esta barra: con el fallback diario de
+    /// Apple `awake` llega en 0 por construcción y la leyenda imprimía «DESPIERTO 0:00»,
+    /// insinuando una medición que nunca ocurrió. Se filtran UNA vez, arriba, para que
+    /// segmentos, leyenda y VoiceOver cuenten exactamente lo mismo.
+    ///
+    /// Ojo (caller): con TODAS las etapas en 0 esto queda vacío y la barra se dibuja hueca.
+    /// Esa noche no se midió: el caller no debe pintar el componente.
+    private var etapasVisibles: [Etapa] {
+        etapas.filter { $0.minutos > 0 }
+    }
+
     /// Anchos ∝ minutos sobre el total, descontando los gaps (paridad `SleepStageBar.widths`).
     private func anchos(en total: CGFloat) -> [CGFloat] {
-        let suma = etapas.reduce(0) { $0 + $1.minutos }
-        guard suma > 0 else { return etapas.map { _ in 0 } }
-        let usable = max(0, total - LiquidSpace.s050 * CGFloat(etapas.count - 1))
-        return etapas.map { CGFloat($0.minutos / suma) * usable }
+        let visibles = etapasVisibles
+        let suma = visibles.reduce(0) { $0 + $1.minutos }
+        guard suma > 0 else { return visibles.map { _ in 0 } }
+        let usable = max(0, total - LiquidSpace.s050 * CGFloat(max(0, visibles.count - 1)))
+        return visibles.map { CGFloat($0.minutos / suma) * usable }
     }
 
     public var body: some View {
@@ -64,15 +79,17 @@ public struct LiquidStageBar: View {
                     .font(LiquidType.microEstado)
                     .textCase(.uppercase)
                     .foregroundStyle(LiquidColor.tinta500)
-                Spacer(minLength: LiquidSpace.s200)
-                Text(verbatim: ventana)
-                    .font(LiquidType.microEstado)
-                    .foregroundStyle(LiquidColor.tinta700)
+                if let ventana {
+                    Spacer(minLength: LiquidSpace.s200)
+                    Text(verbatim: ventana)
+                        .font(LiquidType.microEstado)
+                        .foregroundStyle(LiquidColor.tinta700)
+                }
             }
             GeometryReader { geo in
                 let w = anchos(en: geo.size.width)
                 HStack(spacing: LiquidSpace.s050) {
-                    ForEach(Array(etapas.enumerated()), id: \.element.id) { i, etapa in
+                    ForEach(Array(etapasVisibles.enumerated()), id: \.element.id) { i, etapa in
                         Rectangle().fill(etapa.color).frame(width: w[i])
                     }
                 }
@@ -84,7 +101,8 @@ public struct LiquidStageBar: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: overline))
         .accessibilityValue(Text(verbatim:
-            (etapas.map { "\($0.etiqueta) \($0.duracion)" } + [ventana])
+            (etapasVisibles.map { "\($0.etiqueta) \($0.duracion)" }
+                + [ventana].compactMap { $0 })
                 .joined(separator: ", ")))
     }
 
@@ -95,11 +113,11 @@ public struct LiquidStageBar: View {
             LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading),
                                 GridItem(.flexible(), alignment: .topLeading)],
                       alignment: .leading, spacing: LiquidSpace.s200) {
-                ForEach(etapas) { item($0) }
+                ForEach(etapasVisibles) { item($0) }
             }
         } else {
             HStack(spacing: LiquidSpace.s300) {
-                ForEach(etapas) { item($0) }
+                ForEach(etapasVisibles) { item($0) }
             }
         }
     }
@@ -133,6 +151,37 @@ public struct LiquidStageBar: View {
         ],
         overline: "Anoche",
         ventana: "23:38 → 7:04")
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.indigo))
+}
+
+/// B7 · Noche sin horario afirmable (fallback diario de Apple: `startTs == endTs`) y sin
+/// despertares MEDIDOS: ni reloj «6:00 → 6:00» ni «DESPIERTO 0:00». La barra pierde el gap
+/// fantasma del segmento de ancho 0 (los tres segmentos reparten los 2 pt que sobran).
+#Preview("Liquid · StageBar (sin ventana, etapa en 0)") {
+    LiquidStageBar(
+        etapas: [
+            .init(minutos: 91, color: LiquidColor.indigo, etiqueta: "Profundo", duracion: "1:31"),
+            .init(minutos: 104, color: LiquidColor.indigo.opacity(0.78), etiqueta: "REM", duracion: "1:44"), // token-exempt: rampa graduada de etapas
+            .init(minutos: 190, color: LiquidColor.indigo.opacity(0.52), etiqueta: "Ligero", duracion: "3:10"), // token-exempt: rampa graduada de etapas
+            .init(minutos: 0, color: LiquidColor.oro, etiqueta: "Despierto", duracion: "0:00"),
+        ],
+        overline: "Anoche")
+    .padding(LiquidSpace.s550)
+    .background(LiquidSheetFondo(tone: LiquidColor.indigo))
+}
+
+/// B7 · Caso degenerado: NINGUNA etapa medida. El componente no inventa nada (barra hueca,
+/// leyenda vacía) — es responsabilidad del CALLER no pintar «Anoche» cuando no hubo noche.
+#Preview("Liquid · StageBar (noche sin medir)") {
+    LiquidStageBar(
+        etapas: [
+            .init(minutos: 0, color: LiquidColor.indigo, etiqueta: "Profundo", duracion: "0:00"),
+            .init(minutos: 0, color: LiquidColor.indigo.opacity(0.78), etiqueta: "REM", duracion: "0:00"), // token-exempt: rampa graduada de etapas
+            .init(minutos: 0, color: LiquidColor.indigo.opacity(0.52), etiqueta: "Ligero", duracion: "0:00"), // token-exempt: rampa graduada de etapas
+            .init(minutos: 0, color: LiquidColor.oro, etiqueta: "Despierto", duracion: "0:00"),
+        ],
+        overline: "Anoche")
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.indigo))
 }

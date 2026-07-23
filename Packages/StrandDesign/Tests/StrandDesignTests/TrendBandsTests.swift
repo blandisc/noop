@@ -161,4 +161,110 @@ final class TrendBandsTests: XCTestCase {
         XCTAssertNil(TrendBands.summarize(values: [], bands: rhr, todayIndex: nil))
         XCTAssertNil(TrendBands.summarize(values: [66.0], bands: [], todayIndex: nil))
     }
+
+    // MARK: - A band with no bounds contains NOTHING (FER-1045 · C2)
+
+    /// The safety net behind the sleep sub-metric fix: an unbounded band used to swallow every value
+    /// (`nil == nil && nil == nil` → true), so any caller that forgot its cutoffs got a free
+    /// "N of the last N nights in this range". A band that declares no interval classifies nothing.
+    func testBandWithoutBoundsContainsNothing() {
+        let unbounded = TrendBand(label: "No bounds", lower: nil, upper: nil)
+        XCTAssertFalse(unbounded.contains(0))
+        XCTAssertFalse(unbounded.contains(-12.5))
+        XCTAssertFalse(unbounded.contains(85))
+        XCTAssertFalse(unbounded.contains(.greatestFiniteMagnitude))
+
+        XCTAssertNil(TrendBands.index(containing: 85, in: [unbounded]))
+        XCTAssertNil(TrendBands.activeBand(values: [70, 85, 92], bands: [unbounded]))
+        XCTAssertNil(TrendBands.summarize(values: [70, 85, 92], bands: [unbounded], todayIndex: nil))
+    }
+
+    /// A half-bounded band is untouched by the guard — only the fully open one is empty.
+    func testHalfBoundedBandStillContains() {
+        XCTAssertTrue(TrendBand(label: "Open below", lower: nil, upper: 70).contains(12))
+        XCTAssertTrue(TrendBand(label: "Open above", lower: 85, upper: nil).contains(1_000))
+    }
+
+    // MARK: - Sleep sub-metric ladders (FER-1045 · C1)
+    //
+    // Mirrors of `MetricInfo.sleepPerformance` / `.sleepEfficiency` / `.sleepRestorative`
+    // (`Cenit/Screens/MetricInfoCatalog.swift`), which live in the app module and so can't be imported
+    // here. Units are PERCENT — the same the trend chart plots. Keep the numbers in sync with the
+    // catalog: they are the cutoffs the sheet's band readout and per-band night counts are built on.
+
+    /// Performance: Low [-,70) · Adequate [70,85) · Optimal [85,-)
+    private let sleepPerformance: [TrendBand] = [
+        TrendBand(label: "Low", lower: nil, upper: 70),
+        TrendBand(label: "Adequate", lower: 70, upper: 85),
+        TrendBand(label: "Optimal", lower: 85, upper: nil),
+    ]
+
+    /// Efficiency: Low [-,75) · Adequate [75,85) · Optimal [85,-)
+    private let sleepEfficiency: [TrendBand] = [
+        TrendBand(label: "Low", lower: nil, upper: 75),
+        TrendBand(label: "Adequate", lower: 75, upper: 85),
+        TrendBand(label: "Optimal", lower: 85, upper: nil),
+    ]
+
+    /// Restorative: Low [-,30) · Typical [30,50) · High [50,-)
+    private let sleepRestorative: [TrendBand] = [
+        TrendBand(label: "Low", lower: nil, upper: 30),
+        TrendBand(label: "Typical", lower: 30, upper: 50),
+        TrendBand(label: "High", lower: 50, upper: nil),
+    ]
+
+    /// The defect this fixes, stated as a test: with the old boundless bands EVERY value landed in the
+    /// FIRST band, so the table read "14 nights / 0 / 0" and the readout "14 of the last 14". With real
+    /// cutoffs the 14 nights split three ways, the counts differ, and they still sum to the window.
+    func testSleepPerformanceSplitsFourteenNightsAcrossThreeBands() {
+        let values = [62.0, 71, 86, 66, 74, 88, 68, 78, 90, 80, 92, 83, 95, 100]
+        let s = TrendBands.summarize(values: values, bands: sleepPerformance, todayIndex: 2)!
+        XCTAssertEqual(s.counts, [3, 5, 6])          // Low 62/66/68 · Adequate 71/74/78/80/83 · Optimal 86/88/90/92/95/100
+        XCTAssertEqual(s.counts.reduce(0, +), 14)    // every night classified, none double-counted
+        XCTAssertEqual(Set(s.counts).count, 3)       // three DIFFERENT counts — not the old 14/0/0
+        XCTAssertEqual(s.n, 14)
+
+        // The readout ("N of the last 14 nights in this range") now says 6, not 14.
+        let active = TrendBands.activeBand(values: values, bands: sleepPerformance)
+        XCTAssertEqual(active?.index, 2)             // last night 100 → Optimal
+        XCTAssertEqual(active?.count, 6)
+        XCTAssertLessThan(active!.count, values.count)
+    }
+
+    func testSleepEfficiencyCutoffs() {
+        XCTAssertEqual(TrendBands.index(containing: 74.9, in: sleepEfficiency), 0)
+        XCTAssertEqual(TrendBands.index(containing: 75.0, in: sleepEfficiency), 1)
+        XCTAssertEqual(TrendBands.index(containing: 84.9, in: sleepEfficiency), 1)
+        XCTAssertEqual(TrendBands.index(containing: 85.0, in: sleepEfficiency), 2)
+    }
+
+    /// The one-integer edge the catalog change documents: the interval is half-open, so **exactly 50**
+    /// is High, not Typical. The catalog's `isActive` for `sleepRestorative` was moved to match
+    /// (`>= 30 && < 50` / `>= 50`); before, a 50.0 night lit the "Typical" row while being counted in
+    /// "High". The visible copy ("30 – 50%" / "> 50%") is deliberately unchanged.
+    func testSleepRestorativeFiftyIsHighNotTypical() {
+        XCTAssertTrue(sleepRestorative[1].contains(49.9))
+        XCTAssertFalse(sleepRestorative[1].contains(50.0))
+        XCTAssertTrue(sleepRestorative[2].contains(50.0))
+        XCTAssertEqual(TrendBands.index(containing: 50.0, in: sleepRestorative), 2)
+
+        // Counts written by hand: Low 28 → 1 · Typical 30 / 44 / 49.9 → 3 · High 50 / 55 / 62 → 3.
+        let values = [28.0, 30.0, 44.0, 49.9, 50.0, 55.0, 62.0]
+        let s = TrendBands.summarize(values: values, bands: sleepRestorative, todayIndex: 2)!
+        XCTAssertEqual(s.counts, [1, 3, 3])
+        XCTAssertEqual(s.n, 7)
+        XCTAssertEqual(s.dominant, 1)                // ties break toward the lower band index
+        XCTAssertEqual(s.todayVsDominant, .higher)
+    }
+
+    /// Each ladder is contiguous and open at both ends, so every possible reading lands in EXACTLY one
+    /// band — no gap that silently drops a night from the counts, no overlap that counts it twice.
+    func testSleepLaddersPartitionTheWholeRange() {
+        for bands in [sleepPerformance, sleepEfficiency, sleepRestorative] {
+            for v in stride(from: -20.0, through: 140.0, by: 0.5) {
+                let hits = bands.filter { $0.contains(v) }.count
+                XCTAssertEqual(hits, 1, "value \(v) landed in \(hits) bands")
+            }
+        }
+    }
 }

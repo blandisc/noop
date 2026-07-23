@@ -41,8 +41,11 @@ public enum LiquidType {
     /// `numeral/hoja` — 34/700 tabular, escala con Dynamic Type. El dato héroe de la
     /// hoja de resumen (épico hoja Liquid, F0): manda sobre todo lo demás de la hoja.
     public static let numeralHoja = InstrumentoType.groteskNumber(34, relativeTo: .largeTitle)
-    /// Unidad junto al numeral de hoja — 13, tinta/500.
-    public static let numeralHojaUnidad = Font.system(size: 13)
+    /// Unidad junto al numeral de hoja — 13 en el tamaño base, tinta/500. ESCALA con
+    /// Dynamic Type (B4): el numeral es `.largeTitle` relativo, así que una unidad fija
+    /// se quedaba enana junto a un numeral inflado. `.footnote` = 13 pt en `.large`,
+    /// paridad exacta con el viejo `StrandFont.unit`.
+    public static let numeralHojaUnidad = Font.system(.footnote)
 
     /// `título/hoja` — 17/700, escala con Dynamic Type. El nombre de la métrica en la
     /// cabecera de la hoja de resumen: manda sobre los títulos de sección (pasada UX H6;

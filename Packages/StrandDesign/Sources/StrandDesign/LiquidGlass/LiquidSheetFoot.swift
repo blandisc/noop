@@ -11,13 +11,27 @@ import SwiftUI
 
 public struct LiquidMetodo<Content: View>: View {
     private let title: String
+    private let mostrar: String?
+    private let ocultar: String?
     private let content: Content
     @State private var open = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(title: String, @ViewBuilder content: () -> Content) {
+    /// B6 · a11y del plegable (mismo contrato L5 que el ⓘ de la cabecera):
+    /// `mostrar`/`ocultar` son la etiqueta de VoiceOver del botón, YA localizadas por el
+    /// caller — `StrandDesign` no tiene catálogo. Sin ellas el label es el propio título.
+    /// El `accessibilityValue` «1»/«0» se retiró en ambos caminos: VoiceOver leía
+    /// «Cómo se calcula, uno», que no significa nada.
+    public init(title: String, mostrar: String? = nil, ocultar: String? = nil,
+                @ViewBuilder content: () -> Content) {
         self.title = title
+        self.mostrar = mostrar
+        self.ocultar = ocultar
         self.content = content()
+    }
+
+    private var etiquetaVO: String {
+        (open ? (ocultar ?? mostrar) : (mostrar ?? ocultar)) ?? title
     }
 
     public var body: some View {
@@ -40,8 +54,7 @@ public struct LiquidMetodo<Content: View>: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.liquidPress)
-            .accessibilityLabel(Text(verbatim: title))
-            .accessibilityValue(Text(verbatim: open ? "1" : "0"))
+            .accessibilityLabel(Text(verbatim: etiquetaVO))
             if open {
                 content
                     .padding(.leading, LiquidSpace.s400)
@@ -137,7 +150,11 @@ public struct LiquidVerMas: View {
 #if DEBUG
 #Preview("Liquid · SheetFoot") {
     VStack(alignment: .leading, spacing: LiquidSpace.s550) {
-        LiquidMetodo(title: "Cómo se calcula") {
+        // B6 · con etiquetas de VoiceOver propias (nunca las del ⓘ: son dos controles
+        // distintos en la misma hoja y con el mismo rótulo se vuelven indistinguibles).
+        LiquidMetodo(title: "Cómo se calcula",
+                     mostrar: "Ver cómo se calcula",
+                     ocultar: "Ocultar cómo se calcula") {
             LiquidNotaLine("SDNN sobre los latidos nocturnos, comparado contra tu base de 21 noches (Task Force, 1996).")
         }
         LiquidNotaLine("Conecta Apple Salud para ver tu VFC aquí.")

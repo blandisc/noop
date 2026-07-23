@@ -45,6 +45,13 @@ public struct LiquidIconDrop: View {
             LiquidIcon(glyph, size: iconSize, color: tone)
         }
         .frame(width: size, height: size)
+        // B2 · La gota es SIEMPRE decorativa: nunca lleva label propio, el rótulo del dato
+        // vive al lado. Sin esto, los glifos de métrica —que se dibujan como SF Symbols—
+        // le regalaban a VoiceOver una parada con el nombre del símbolo EN INGLÉS
+        // («moon», «waveform path ecg») antes del dato, porque el `children: .contain` de
+        // la cabecera y de los tiles no absorbe hijos. Mismo patrón que ya usa
+        // `LiquidVerMas` con el glifo de Tendencias.
+        .accessibilityHidden(true)
     }
 }
 
