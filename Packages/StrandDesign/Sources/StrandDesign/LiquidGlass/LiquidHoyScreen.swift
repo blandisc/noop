@@ -115,13 +115,21 @@ public struct LiquidHoyModel: Sendable {
     public let carga: Carga?
     public let metricas: [Metrica]
     /// Hint de VoiceOver del héroe («Abre el detalle»), YA localizado. `nil` = sin hint.
+    /// Orbes y barra de carga lo reutilizan (revote /inject: navegan igual que el héroe).
     public let heroHint: String?
+    /// Rótulo YA localizado de la barra de carga («CARGA»/«LOAD») — el DS no conoce locales.
+    public let cargaLabel: String
+    /// La fecha completa para VoiceOver («miércoles, 22 de julio de 2026»).
+    public let kickerA11y: String?
     /// El ambiente semántico del día (tiñe fondo y pulsos): verde/ámbar/rojo/neutro.
     public let ambiente: LiquidAmbiente
 
     public init(kicker: String, dial: Dial, senales: [Senal], hero: Hero, carga: Carga?,
                 metricas: [Metrica], heroHint: String? = nil,
-                ambiente: LiquidAmbiente = .bien) {
+                ambiente: LiquidAmbiente = .bien, cargaLabel: String = "CARGA",
+                kickerA11y: String? = nil) {
+        self.cargaLabel = cargaLabel
+        self.kickerA11y = kickerA11y
         self.kicker = kicker
         self.dial = dial
         self.senales = senales
@@ -193,7 +201,7 @@ public struct LiquidHoyContent: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            LiquidScreenHeader(kicker: model.kicker) {
+            LiquidScreenHeader(kicker: model.kicker, kickerA11y: model.kickerA11y) {
                 LiquidDialSeal(night: model.dial.night, sol: model.dial.sol,
                                marker: model.dial.marker)
             }
@@ -204,7 +212,9 @@ public struct LiquidHoyContent: View {
                 .liquidEntrada(index: 1)
 
             hero
-                .padding(.top, LiquidSpace.s050)
+                // s150 (revote /inject): punto medio — la compresión del dueño se queda,
+                // pero el veredicto no pega contra los captions de los orbes.
+                .padding(.top, LiquidSpace.s150)
                 .liquidEntrada(index: 2)
 
             if model.carga != nil {
@@ -226,7 +236,9 @@ public struct LiquidHoyContent: View {
                         .liquidEntrada(index: 4 + i)
                 }
             }
-            .padding(.top, LiquidSpace.s200)
+            // s300 (revote /inject): la barra de carga NO es una fila del grid — el gap
+            // hacia los tiles debe ser mayor que el gap interno del grid (s200).
+            .padding(.top, LiquidSpace.s300)
         }
         .padding(.horizontal, LiquidSpace.s550)
     }
@@ -255,33 +267,36 @@ public struct LiquidHoyContent: View {
     private var carga: some View {
         switch model.carga {
         case .medida(let pos, let zone, let status, let ratio, let state):
-            LiquidCargaBar(modo: .medida(pos: pos, zone: zone), status: status,
-                           ratio: ratio, state: state, action: onTapCarga)
+            LiquidCargaBar(label: model.cargaLabel, modo: .medida(pos: pos, zone: zone),
+                           status: status, ratio: ratio, state: state,
+                           hint: model.heroHint, action: onTapCarga)
         case .calibrando(let status):
-            LiquidCargaBar(modo: .calibrando, status: status, action: onTapCarga)
+            LiquidCargaBar(label: model.cargaLabel, modo: .calibrando, status: status,
+                           hint: model.heroHint, action: onTapCarga)
         case nil:
             EmptyView()
         }
     }
 
-    /// Zona de señales (alto 178): cables vivos de fondo + 3 orbes centrados gap 53.
+    /// Zona de señales (alto `senalesAlto` 140): cables de fondo + 3 orbes a gap `senalGap`.
     private var senales: some View {
         ZStack(alignment: .top) {
             // Detalle fino (pasada UI): los cables llegan al FINAL de la cascada de
             // entrada — primera impresión serena, el movimiento entra como respiración.
             LiquidSignalCables(tone: model.ambiente.acento)
                 .liquidEntrada(index: 12)
-            // 72 + 45 = 117: el paso de centros no cambia y los cables siguen exactos.
-            HStack(spacing: 45) {
+            // 72 + senalGap(45) = 117: el paso de centros es la referencia de los cables.
+            HStack(spacing: LiquidSpace.senalGap) {
                 ForEach(model.senales) { senal in
                     LiquidSignalOrb(label: senal.label, caption: senal.caption,
                                     progress: senal.progress, icon: senal.icon,
                                     state: senal.state, valor: senal.valor,
+                                    hint: model.heroHint,
                                     action: onTapSenal.map { tap in { tap(senal.id) } })
                 }
             }
         }
-        .frame(height: 140)
+        .frame(height: LiquidSpace.senalesAlto)
         .frame(maxWidth: .infinity)
     }
 }

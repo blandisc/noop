@@ -66,6 +66,9 @@ enum LiquidHoyBuilder {
         var resp: Lectura?
         var stress: Double?
         var historias = Historias()
+        /// ¿El permiso de Apple Salud está concedido? Sin él, el héroe «sin datos» pide
+        /// conectar Salud en vez de una instrucción imposible (revote /inject).
+        var healthConnected: Bool = true
         /// Ventana de la sesión de sueño de anoche en horas locales 0–24 (nil = sin sesión).
         var night: (start: Double, end: Double)?
         /// Amanecer/atardecer locales en horas reloj (SolarClock; nil = caso polar).
@@ -90,7 +93,8 @@ enum LiquidHoyBuilder {
 
     static func build(_ i: Inputs) -> Output {
         let (hero, route) = hero(prep: i.preparedness, sleepMin: i.sleep?.value,
-                                 nights: i.preparedness?.autonomicNights ?? 0)
+                                 nights: i.preparedness?.autonomicNights ?? 0,
+                                 healthConnected: i.healthConnected)
         let model = LiquidHoyModel(
             kicker: kicker(now: i.now, calendar: i.calendar, locale: i.locale),
             dial: .init(night: i.night, sol: i.sol,
@@ -100,10 +104,12 @@ enum LiquidHoyBuilder {
                                        sueno: i.sleep.map { sleepClockText($0.value) },
                                        termico: i.skinTemp.map { String(format: "%+.1f°", $0.value) })),
             hero: hero,
-            carga: carga(i.trainingLoad),
+            carga: carga(i.trainingLoad, locale: i.locale),
             metricas: metricas(i),
             heroHint: String(localized: "Opens the detail"),
-            ambiente: ambiente(prep: i.preparedness))
+            ambiente: ambiente(prep: i.preparedness),
+            cargaLabel: String(localized: "Load").uppercased(with: i.locale),
+            kickerA11y: kickerA11y(now: i.now, calendar: i.calendar, locale: i.locale))
         return Output(model: model, heroRoute: route)
     }
 
@@ -118,6 +124,16 @@ enum LiquidHoyBuilder {
         return formatter.string(from: now)
             .replacingOccurrences(of: ",", with: "")
             .uppercased(with: locale)
+    }
+
+    /// La fecha COMPLETA para VoiceOver («miércoles, 22 de julio de 2026») — la
+    /// abreviatura en caja alta del kicker se deletrea mal (revote /inject).
+    static func kickerA11y(now: Date, calendar: Calendar, locale: Locale) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = locale
+        formatter.dateStyle = .full
+        return formatter.string(from: now)
     }
 
     /// La hora local actual como fracción 0–24 para el marcador del dial.
@@ -140,7 +156,8 @@ enum LiquidHoyBuilder {
 
     // MARK: Héroe (tabla canónica — port literal de `TodayView.heroBlock`)
 
-    static func hero(prep: Preparedness.Read?, sleepMin: Double?, nights: Int)
+    static func hero(prep: Preparedness.Read?, sleepMin: Double?, nights: Int,
+                     healthConnected: Bool = true)
         -> (LiquidHoyModel.Hero, HeroRoute) {
         if let prep, prep.verdict != .lowSignal {
             if prep.isNightAnchored {
@@ -151,7 +168,8 @@ enum LiquidHoyBuilder {
         // Decisión del dueño (sesión /inject 2026-07-22): sin veredicto NO se disfraza el
         // héroe con otro dato — los 5 estados canónicos son full/caution/easy · lectura de
         // día · «aún sin datos suficientes». El fallback de sueño de anoche se retiró.
-        return (suenoFallback(sleepMin: sleepMin), .autonomic)
+        return (suenoFallback(sleepMin: sleepMin, healthConnected: healthConnected),
+                .autonomic)
     }
 
     /// Renglones 1 (full/caution/easy con noche): la palabra-veredicto con su tono.
@@ -206,12 +224,18 @@ enum LiquidHoyBuilder {
     /// limpia de la firma en el cierre de la sesión (quitar parámetros no es inyectable).
     // TODO(/inject cierre): mover este copy al String Catalog (clave EN + es-MX) y limpiar
     // la firma + el caso `.sleep` de HeroRoute.
-    private static func suenoFallback(sleepMin: Double?) -> LiquidHoyModel.Hero {
+    private static func suenoFallback(sleepMin: Double?,
+                                      healthConnected: Bool) -> LiquidHoyModel.Hero {
         _ = sleepMin
+        // Sin permiso de Salud, «duerme con tu Watch» es una instrucción imposible: el
+        // único camino real es conceder el permiso (revote /inject).
+        let subtitle = healthConnected
+            ? String(localized: "Sleep with your Apple Watch a few nights and your daily verdict will appear here.")
+            : String(localized: "Connect Apple Health in Settings and your daily verdict will appear here.")
         return .demotado(
             kicker: String(localized: "READINESS"),
             title: String(localized: "Not enough data yet"),
-            subtitle: String(localized: "Sleep with your Apple Watch a few nights and your daily verdict will appear here."))
+            subtitle: subtitle)
     }
 
     // MARK: Señales (port literal de `TodayView.needles()`)
@@ -294,10 +318,12 @@ enum LiquidHoyBuilder {
 
     // MARK: Carga (mismo mapeo que `TrainingLoadStrip`)
 
-    static func carga(_ trainingLoad: TrainingLoadModel?) -> LiquidHoyModel.Carga? {
+    static func carga(_ trainingLoad: TrainingLoadModel?,
+                      locale: Locale = .current) -> LiquidHoyModel.Carga? {
         guard let trainingLoad else { return nil }   // sin sembrar → sin barra (paridad)
         guard let acwr = trainingLoad.acwr, let band = trainingLoad.band else {
-            return .calibrando(status: String(localized: "Calibrating").uppercased())
+            return .calibrando(status: String(localized: "Calibrating")
+                .uppercased(with: locale))
         }
         // Escala 0…2; knob clampeado 0.05–0.95 como la franja actual.
         let pos = min(max(acwr / 2, 0.05), 0.95) * 100
@@ -308,7 +334,8 @@ enum LiquidHoyBuilder {
         case .buildingFast: zone = 2
         case .spiking: zone = 3
         }
-        return .medida(pos: pos, zone: zone, status: band.shortLabel.uppercased(),
+        return .medida(pos: pos, zone: zone,
+                       status: band.shortLabel.uppercased(with: locale),
                        ratio: String(format: "%.2f", acwr),
                        state: band.flag == .good ? .ok : .atencion)
     }
@@ -493,7 +520,8 @@ enum LiquidHoyBuilder {
 
     /// «18m» / «1h 5m» — el delta de sueño en unidades de una letra.
     static func sleepDeltaText(_ minutes: Double) -> String {
+        // «1 h 5 min» / «18 min» (revote /inject): unidades SI legibles en es-MX y en.
         let m = Int(minutes.rounded())
-        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"
+        return m >= 60 ? "\(m / 60) h \(m % 60) min" : "\(m) min"
     }
 }

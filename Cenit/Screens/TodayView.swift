@@ -989,6 +989,7 @@ struct TodayView: View {
     /// el héroe actuales (paridad por construcción; el builder solo mapea/formatea).
     private func liquidInputs() -> LiquidHoyBuilder.Inputs {
         var inputs = LiquidHoyBuilder.Inputs()
+        inputs.healthConnected = health.auth == .authorized
         inputs.preparedness = repo.todayPreparedness
         inputs.thermalDeviation = latestFromDisplay({ $0.skinTempDevC })?.value
         inputs.trainingLoad = trainingLoad

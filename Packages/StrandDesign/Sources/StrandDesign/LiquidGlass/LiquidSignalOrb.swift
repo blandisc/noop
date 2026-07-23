@@ -2,9 +2,9 @@ import SwiftUI
 
 // MARK: - Liquid Glass · SignalOrb (handoff §5.2)
 //
-// Orbe esférico de señal (fila superior de Hoy): esfera de vidrio 56 (inset 4 del lienzo
-// 64) + anillo de progreso r29 sw3.5 + punto marcador en el extremo + icono 18 tinta/900,
-// con label micro y caption de estado debajo.
+// Orbe de señal (fila superior de Hoy): lente de vidrio PLANO 72 + medidor semicircular
+// centrado + joya marcadora + micro-valor del eje adentro («56 ms»), con label rótulo y
+// caption de estado debajo.
 //
 // Geometría del anillo: arranca a −245° (las 7:30 de un velocímetro) y barre
 // `progress × 360°` en sentido horario; el punto marcador viaja EN el extremo del arco
@@ -22,6 +22,7 @@ public struct LiquidSignalOrb: View {
     private let icon: LiquidIcon.Glyph
     private let state: LiquidSignalState
     private let valor: String?
+    private let hint: String?
     private let action: (() -> Void)?
 
     @State private var shownProgress: Double = 0
@@ -33,13 +34,16 @@ public struct LiquidSignalOrb: View {
     /// tinta/500 (el eje no vota — FER-1045).
     public init(label: String, caption: String, progress: Double?,
                 icon: LiquidIcon.Glyph, state: LiquidSignalState,
-                valor: String? = nil, action: (() -> Void)? = nil) {
+                valor: String? = nil, hint: String? = nil, action: (() -> Void)? = nil) {
         self.label = label
         self.caption = caption
         self.progress = progress
         self.icon = icon
         self.state = state
-        self.valor = valor
+        // Revote /inject: sin lectura del eje (`progress == nil`) el valor se SUPRIME —
+        // «Autonómico, 56 ms: sin datos» era contradictorio en pantalla y en VoiceOver.
+        self.valor = progress == nil ? nil : valor
+        self.hint = hint
         self.action = action
     }
 
@@ -48,6 +52,7 @@ public struct LiquidSignalOrb: View {
             Button(action: action) { column }
                 .buttonStyle(.liquidPress)
                 .accessibilityLabel(Self.a11yLabel(label: label, caption: caption, valor: valor))
+                .accessibilityHint(Text(verbatim: hint ?? ""))
         } else {
             column
                 .accessibilityElement(children: .ignore)

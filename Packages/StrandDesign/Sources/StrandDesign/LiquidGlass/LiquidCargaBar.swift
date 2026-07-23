@@ -23,6 +23,7 @@ public struct LiquidCargaBar: View {
     private let status: String
     private let ratio: String?
     private let state: LiquidSignalState
+    private let hint: String?
     private let action: (() -> Void)?
 
     @State private var shownPos: Double = 50
@@ -35,12 +36,13 @@ public struct LiquidCargaBar: View {
     /// jerarquía de dato de la pasada UI /inject.
     public init(label: String = "CARGA", modo: LiquidCargaModo, status: String,
                 ratio: String? = nil, state: LiquidSignalState = .ok,
-                action: (() -> Void)? = nil) {
+                hint: String? = nil, action: (() -> Void)? = nil) {
         self.label = label
         self.modo = modo
         self.status = status
         self.ratio = ratio
         self.state = state
+        self.hint = hint
         self.action = action
     }
 
@@ -55,17 +57,19 @@ public struct LiquidCargaBar: View {
         if let action {
             Button(action: action) { row }
                 .buttonStyle(.liquidPress)
-                .accessibilityLabel(Self.a11yLabel(label: label, status: status))
+                .accessibilityLabel(Self.a11yLabel(label: label, status: status, ratio: ratio))
+                .accessibilityHint(Text(verbatim: hint ?? ""))
         } else {
             row
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Self.a11yLabel(label: label, status: status))
+                .accessibilityLabel(Self.a11yLabel(label: label, status: status, ratio: ratio))
         }
     }
 
-    /// «{label}: {status}» — el contrato de VoiceOver de la barra (testeable en frío).
-    static func a11yLabel(label: String, status: String) -> String {
-        "\(label): \(status)"
+    /// «{label}: {status}[, {ratio}]» — el contrato de VoiceOver de la barra: el ratio
+    /// es el dato protagonista y también se ESCUCHA (revote /inject).
+    static func a11yLabel(label: String, status: String, ratio: String? = nil) -> String {
+        ratio.map { "\(label): \(status), \($0)" } ?? "\(label): \(status)"
     }
 
     private var row: some View {
@@ -137,8 +141,9 @@ public struct LiquidCargaBar: View {
                 .padding(.vertical, 3)
                 if !calibrando {
                     // Halo de llegada (detalle fino /inject): un pulso único al asentarse.
+                    // Revote /inject: el halo habla en el tono del ESTADO, no siempre verde.
                     Circle()
-                        .stroke(LiquidColor.verdeAurora, lineWidth: 1.5)
+                        .stroke(state.tone, lineWidth: 1.5)
                         .frame(width: 10, height: 10)
                         .scaleEffect(haloOut ? 2.6 : 0.8)
                         .opacity(haloOut ? 0 : 0.55)
@@ -166,7 +171,9 @@ public struct LiquidCargaBar: View {
                   : AnyShapeStyle(LiquidColor.tinta7))
             .overlay(Capsule().strokeBorder(
                 Color.white.opacity(active ? 0.5 : 0.4), lineWidth: 0.5))
-            .shadow(color: active ? state.tone.opacity(0.35) : .clear, radius: 5)
+            // Glow del segmento como geometría (regla del sistema: nada de .shadow a mano).
+            .liquidShadow(active ? [.init(color: state.tone.opacity(0.35), radius: 5, y: 0)] : [],
+                          silhouette: Capsule())
             .animation(reduceMotion || motionDisabled ? nil : LiquidMotion.ringProgress,
                        value: entered)
             .frame(maxWidth: .infinity)

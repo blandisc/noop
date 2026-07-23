@@ -107,20 +107,20 @@ public struct LiquidAmbientBackground: View {
                 // Arriba: presencia más fuerte (junto con la aurora).
                 .init(alignment: .topLeading, offset: CGSize(width: -50, height: 110),
                       size: CGSize(width: 280, height: 240), tone: ambiente.orbes.0,
-                      opacity: 0.32 * k, blur: 28, period: 13,
+                      opacity: 0.32 * k, blur: 28, period: 17,
                       orbit: CGSize(width: 120, height: 200)),
                 .init(alignment: .topTrailing, offset: CGSize(width: 60, height: 300),
                       size: CGSize(width: 300, height: 260), tone: ambiente.orbes.1,
-                      opacity: 0.25 * k, blur: 30, period: 17, reverse: true,
+                      opacity: 0.25 * k, blur: 30, period: 19, reverse: true,
                       orbit: CGSize(width: 140, height: 260)),
                 // Abajo: manchas que también circulan (pedido del dueño /inject).
                 .init(alignment: .bottomLeading, offset: CGSize(width: 60, height: -120),
                       size: CGSize(width: 260, height: 220), tone: LiquidColor.indigo,
-                      opacity: 0.19 * k, blur: 28, period: 21,
+                      opacity: 0.19 * k, blur: 28, period: 24,
                       orbit: CGSize(width: 110, height: 200)),
                 .init(alignment: .bottomTrailing, offset: CGSize(width: 40, height: -40),
                       size: CGSize(width: 280, height: 230), tone: ambiente.orbes.0,
-                      opacity: 0.21 * k, blur: 28, period: 15,
+                      opacity: 0.21 * k, blur: 28, period: 21,
                       orbit: CGSize(width: 130, height: 220)),
             ])
     }
@@ -180,22 +180,28 @@ public struct LiquidAmbientBackground: View {
     }
 }
 
-// MARK: Cabecera (kicker + elemento circular 36)
+// MARK: Cabecera (kicker + elemento circular 40)
 
-/// Fila de cabecera: kicker de fecha/contexto a la izquierda, un elemento circular de 36
-/// (dial-sello o anillo de progreso) a la derecha.
+/// Fila de cabecera: kicker de fecha/contexto a la izquierda, un elemento circular de 40
+/// (dial-sello o anillo de progreso) a la derecha. `kickerA11y` = la versión para
+/// VoiceOver («miércoles, 22 de julio de 2026») — la abreviatura en caja alta se
+/// deletrea mal (revote /inject).
 public struct LiquidScreenHeader<Trailing: View>: View {
     private let kicker: String
+    private let kickerA11y: String?
     private let trailing: Trailing
 
-    public init(kicker: String, @ViewBuilder trailing: () -> Trailing) {
+    public init(kicker: String, kickerA11y: String? = nil,
+                @ViewBuilder trailing: () -> Trailing) {
         self.kicker = kicker
+        self.kickerA11y = kickerA11y
         self.trailing = trailing()
     }
 
     public var body: some View {
         HStack {
             Text(kicker).liquidKicker().foregroundStyle(LiquidColor.tinta700)
+                .accessibilityLabel(Text(verbatim: kickerA11y ?? kicker))
             Spacer()
             trailing
         }
@@ -204,7 +210,7 @@ public struct LiquidScreenHeader<Trailing: View>: View {
 
 // MARK: Dial-sello 24 h (Hoy)
 
-/// El sello circular de 36: vidrio de lente en miniatura con el día como dial de 24 h —
+/// El sello circular de 40: vidrio de lente en miniatura con el día como dial de 24 h —
 /// arco de noche (índigo), arco de día (tinta), marcador verde en la hora actual y un
 /// punto de papel a medianoche (arriba).
 public struct LiquidDialSeal: View {
@@ -560,9 +566,10 @@ private struct LiquidHeroSubtitle: View {
                     .foregroundStyle(LiquidColor.tinta500)
                     .padding(.horizontal, LiquidSpace.s300)
                     .padding(.vertical, 3)
+                    // Vidrio del sistema, no ad-hoc (revote /inject).
                     .background {
-                        Capsule().fill(Color.white.opacity(0.35))
-                        Capsule().strokeBorder(LiquidColor.tinta900.opacity(0.08),
+                        Capsule().fill(LiquidColor.vidrioPastilla)
+                        Capsule().strokeBorder(LiquidColor.vidrioBordePastilla,
                                                lineWidth: 0.5)
                     }
             }

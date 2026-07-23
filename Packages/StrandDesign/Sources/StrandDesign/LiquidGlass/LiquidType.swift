@@ -34,8 +34,9 @@ public enum LiquidType {
     // MARK: Valores y títulos
 
     /// `valor/l` — 22/700 tabular (subido del 20 del handoff, elevación /inject: el
-    /// dato manda en el tile). Valores de métricas (MetricTile).
-    public static let valorL = InstrumentoType.groteskNumber(22)
+    /// dato manda en el tile). Escala con Dynamic Type (revote /inject): el dato
+    /// protagonista no puede escalar menos que su delta.
+    public static let valorL = InstrumentoType.groteskNumber(22, relativeTo: .title3)
 
     /// `título` — 15/700. Títulos de tarjeta.
     public static let titulo = InstrumentoType.grotesk(15, weight: .bold)
@@ -62,7 +63,8 @@ public enum LiquidType {
 
     // MARK: Chrome chico (Space Grotesk)
 
-    /// `kicker` — 11/600, tracking +2, MAYÚSCULAS. Fecha, cabeceras («MIÉ 22 DE JUL»).
+    /// `kicker` — 11.5/600, tracking +1.5, MAYÚSCULAS. Fecha, cabeceras («MIÉ 22 DE JUL»).
+    /// (kicker/label/micro son alias del escalón «rótulo» de la escala chica unificada.)
     public static let kicker = InstrumentoType.grotesk(11.5, weight: .semibold)
     public static let kickerTracking: CGFloat = 1.5
 
@@ -72,18 +74,19 @@ public enum LiquidType {
     // labels de tiles/orbes/carga), lectura 10.5 (deltas, captions de estado, unidades) y
     // dato menor 15 tabular (ratio de carga). El estado de carga conserva su 700.
 
-    /// `caption` — 10.5/500. Deltas («+2 ms vs tu base»).
+    /// `caption` — 10.5/500. Sin consumidor en componentes (los deltas usan
+    /// `captionLectura`); se conserva para previews/debug.
     public static let caption = InstrumentoType.grotesk(10.5, weight: .medium)
     /// La variante de LECTURA del caption: escala con Dynamic Type (relativo a .caption2)
     /// — los deltas se leen, no son chrome (FER-1045).
     public static let captionLectura = InstrumentoType.grotesk(10.5, weight: .medium,
                                                                relativeTo: .caption2)
 
-    /// `label` — 10/600, tracking +1.2, MAYÚSCULAS. Labels de tile («FC EN REPOSO»).
+    /// `label` — rótulo 11.5/600 +1.5, MAYÚSCULAS. Labels de tile («FC EN REPOSO»).
     public static let label = InstrumentoType.grotesk(11.5, weight: .semibold)
     public static let labelTracking: CGFloat = 1.5
 
-    /// `micro` — 9.5/700, tracking +0.8. Labels de orbe («AUTONÓMICO»).
+    /// `micro` — rótulo 11.5/600 +1.5. Labels de orbe («AUTONÓMICO»).
     public static let micro = InstrumentoType.grotesk(11.5, weight: .semibold)
     public static let microTracking: CGFloat = 1.5
 
@@ -102,9 +105,11 @@ public enum LiquidType {
                                                            relativeTo: .caption)
     public static let cargaLabelTracking: CGFloat = 1.5
 
-    /// El RATIO de CargaBar — 15/700 tabular, escala con Dynamic Type (el dato de la
-    /// barra, separado del rótulo; pasada UI /inject).
-    public static let cargaRatio = InstrumentoType.groteskNumber(15, relativeTo: .caption)
+    /// `dato/menor` — 15/700 tabular, escala con Dynamic Type. El tercer escalón de la
+    /// escala chica: el ratio de CargaBar y el micro-valor de los orbes (revote /inject).
+    public static let datoMenor = InstrumentoType.groteskNumber(15, relativeTo: .caption)
+    /// Alias histórico de `datoMenor` (nombre original, acuñado para CargaBar).
+    public static let cargaRatio = datoMenor
 
     /// Status de CargaBar — 11.5/700, tracking +1 (subido del 10 del handoff, /inject).
     public static let cargaStatus = InstrumentoType.grotesk(11.5, weight: .bold,

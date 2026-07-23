@@ -12426,6 +12426,23 @@
         }
       }
     },
+    "Connect Apple Health in Settings and your daily verdict will appear here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Apple Health in Settings and your daily verdict will appear here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta Apple Salud en Ajustes y tu veredicto diario aparecerá aquí."
+          }
+        }
+      }
+    },
     "Confidence" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -23036,6 +23053,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cargado"
+          }
+        }
+      }
+    },
+    "Load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carga"
           }
         }
       }

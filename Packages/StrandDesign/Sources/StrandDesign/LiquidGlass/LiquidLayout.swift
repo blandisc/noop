@@ -25,6 +25,12 @@ public enum LiquidSpace {
     /// 56 — safe-area top (velo de status).
     public static let s1400: CGFloat = 56
 
+    /// 45 — gap entre orbes de señal. El paso de centros (orbe 72 + 45 = 117) es la
+    /// referencia EXACTA de los cables: si cambia, los paths del ensamble cambian con él.
+    public static let senalGap: CGFloat = 45
+    /// 140 — alto de la zona de señales (orbes + cables, comprimida ~25 % por el dueño).
+    public static let senalesAlto: CGFloat = 140
+
     /// Margen inferior del dock flotante.
     public static let dockBottom: CGFloat = 14
     /// Margen lateral del dock flotante (absolute left/right 16 en el handoff).
