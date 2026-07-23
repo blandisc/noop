@@ -58,28 +58,28 @@ public struct LiquidAmbientBackground: View {
     public static var hoy: LiquidAmbientBackground {
         LiquidAmbientBackground(
             auroraStops: [
-                .init(color: LiquidColor.verdeAurora.opacity(0.28), location: 0),
-                .init(color: LiquidColor.verdePrimario.opacity(0.16), location: 0.46),
+                .init(color: LiquidColor.verdeAurora.opacity(0.34), location: 0),
+                .init(color: LiquidColor.verdePrimario.opacity(0.20), location: 0.46),
                 .init(color: LiquidColor.verdePrimario.opacity(0), location: 0.78),
             ],
             orbs: [
                 // Arriba: presencia más fuerte (junto con la aurora).
                 .init(alignment: .topLeading, offset: CGSize(width: -50, height: 110),
                       size: CGSize(width: 280, height: 240), tone: LiquidColor.verdeOrbe,
-                      opacity: 0.26, blur: 28, period: 16,
+                      opacity: 0.32, blur: 28, period: 13,
                       orbit: CGSize(width: 120, height: 200)),
                 .init(alignment: .topTrailing, offset: CGSize(width: 60, height: 300),
                       size: CGSize(width: 300, height: 260), tone: LiquidColor.verdePrimario,
-                      opacity: 0.20, blur: 30, period: 21, reverse: true,
+                      opacity: 0.25, blur: 30, period: 17, reverse: true,
                       orbit: CGSize(width: 140, height: 260)),
                 // Abajo: manchas que también circulan (pedido del dueño /inject).
                 .init(alignment: .bottomLeading, offset: CGSize(width: 60, height: -120),
                       size: CGSize(width: 260, height: 220), tone: LiquidColor.indigo,
-                      opacity: 0.15, blur: 28, period: 26,
+                      opacity: 0.19, blur: 28, period: 21,
                       orbit: CGSize(width: 110, height: 200)),
                 .init(alignment: .bottomTrailing, offset: CGSize(width: 40, height: -40),
                       size: CGSize(width: 280, height: 230), tone: LiquidColor.verdeOrbe,
-                      opacity: 0.16, blur: 28, period: 19,
+                      opacity: 0.21, blur: 28, period: 15,
                       orbit: CGSize(width: 130, height: 220)),
             ])
     }
